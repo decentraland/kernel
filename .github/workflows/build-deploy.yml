@@ -38,9 +38,9 @@ jobs:
       - name: deploy preview
         env:
           AWS_DEFAULT_REGION: us-east-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          CDN_BUCKET: ${{ secrets.CDN_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
+          CDN_BUCKET: ${{ secrets.SDK_TEAM_AWS_ID }}
         run: |
           npx @dcl/cdn-uploader@next \
             --bucket $CDN_BUCKET \
@@ -57,9 +57,9 @@ jobs:
           deterministic-snapshot: true
 
           ## publish every package to s3
-          s3-bucket: ${{ secrets.CDN_BUCKET }}
+          s3-bucket: ${{ secrets.SDK_TEAM_AWS_ID }}
           s3-bucket-key-prefix: "@dcl/kernel/branch/${{ github.head_ref }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
