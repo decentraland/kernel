@@ -37,4 +37,3 @@ kernel/static/gif-processor
 kernel/static/voice-chat-codec
 kernel/static/*.js
 !kernel/packages/voice-chat-codec/libopus.wasm.js
-!kernel/scripts/updateContracts.js
