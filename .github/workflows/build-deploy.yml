@@ -2,13 +2,12 @@ on:
   push:
     branches:
       - main
-      - master
   pull_request:
   release:
     types:
       - created
 
-name: CI
+name: build-deploy
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -49,7 +48,7 @@ jobs:
             --bucket-folder "@dcl/kernel/branch/${{ github.head_ref }}"
 
       - name: publish package
-        uses: menduz/oddish-action@master
+        uses: menduz/oddish-action@staging
         with:
           registry-url: "https://registry.npmjs.org"
           access: public

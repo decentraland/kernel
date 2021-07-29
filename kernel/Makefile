@@ -23,6 +23,7 @@ VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-c
 
 config-contracts:
 	@echo 'Updating contracts...'
+	@node ./scripts/updateContracts.js
 	@echo 'Contracts updated!'
 
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json config-contracts
