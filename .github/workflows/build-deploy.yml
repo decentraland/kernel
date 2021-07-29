@@ -33,7 +33,7 @@ jobs:
 
       - name: build
         working-directory: kernel
-        run: make build-release build-deploy
+        run: make build-essentials build-release build-deploy
 
       - name: deploy preview
         env:
