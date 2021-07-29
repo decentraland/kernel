@@ -1,4 +1,4 @@
-import contractInfo from '@dcl/urn-resolver/dist/contracts'
+import * as contractInfo from '@dcl/urn-resolver/dist/contracts'
 import * as queryString from 'query-string'
 import { getWorld } from '@dcl/schemas'
 import { store } from 'shared/store/isolatedStore'
