@@ -35,19 +35,7 @@ jobs:
         working-directory: kernel
         run: make build-essentials build-release build-deploy
 
-      - name: deploy preview
-        env:
-          AWS_DEFAULT_REGION: us-east-1
-          AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
-          CDN_BUCKET: ${{ secrets.SDK_TEAM_AWS_ID }}
-        run: |
-          npx @dcl/cdn-uploader@next \
-            --bucket $CDN_BUCKET \
-            --local-folder kernel/static \
-            --bucket-folder "@dcl/kernel/branch/${{ github.head_ref }}"
-
-      - name: publish package
+      - name: publish packages
         uses: menduz/oddish-action@staging
         with:
           registry-url: "https://registry.npmjs.org"
@@ -63,3 +51,15 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
+
+      - name: deploy preview
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.SDK_TEAM_AWS_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SDK_TEAM_AWS_SECRET }}
+          CDN_BUCKET: ${{ secrets.SDK_TEAM_AWS_ID }}
+        run: |
+          npx @dcl/cdn-uploader@next \
+            --bucket $CDN_BUCKET \
+            --local-folder kernel/static \
+            --bucket-folder "@dcl/kernel/branch/${{ github.head_ref }}"
