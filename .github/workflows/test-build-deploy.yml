@@ -102,7 +102,6 @@ jobs:
 
   notify_deployment:
     needs: [build]
-    if: ${{ github.event.pull_request.number }}
     runs-on: ubuntu-latest
     name: Deployment Notification
     steps:
