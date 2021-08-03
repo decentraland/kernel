@@ -71,7 +71,7 @@ jobs:
         run: make build-essentials build-release build-deploy
 
       - name: publish packages
-        uses: menduz/oddish-action@staging
+        uses: menduz/oddish-action@master
         with:
           registry-url: "https://registry.npmjs.org"
           access: public
