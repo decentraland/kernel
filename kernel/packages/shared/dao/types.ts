@@ -17,6 +17,7 @@ export type CatalystStatus = {
   version: string
   layers?: Layer[]
   usersCount?: number
+  maxUsers?: number
   env: {
     catalystVersion: string
   }
@@ -26,7 +27,6 @@ type BaseCandidate = {
   domain: string
   catalystName: string
   elapsed: number
-  score: number
   status: ServerConnectionStatus
   lighthouseVersion: string
   catalystVersion: string
@@ -40,9 +40,13 @@ export type LayerBasedCandidate = {
 export type IslandsBasedCandidate = {
   type: 'islands-based'
   usersCount: number
+  usersParcels: Parcel[]
+  maxUsers?: number
 } & BaseCandidate
 
 export type Candidate = LayerBasedCandidate | IslandsBasedCandidate
+
+type Parcel = [number, number]
 
 export type LayerUserInfo = {
   userId: string
