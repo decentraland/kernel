@@ -1,7 +1,7 @@
 import { LoginState } from '@dcl/kernel-interface'
+import { RootRendererState } from 'shared/renderer/types'
 import { RootSessionState } from 'shared/session/types'
 import { RootState } from 'shared/store/rootTypes'
-import { PREVIEW } from '../../config'
 import { RootLoadingState } from './reducer'
 
 export const isInitialLoading = (state: RootLoadingState) => state.loading.initialLoad
@@ -11,13 +11,18 @@ export function hasPendingScenes(state: RootLoadingState) {
   return state.loading.pendingScenes !== 0
 }
 
-export function isLoadingScreenVisible(state: RootLoadingState & RootSessionState) {
-  const { session } = state
+export function isLoadingScreenVisible(state: RootLoadingState & RootSessionState & RootRendererState) {
+  const { session, renderer } = state
 
   // in the case of signup, we show the avatars editor instead of the loading screen
   // that is so, to enable the user to customize the avatar while loading the world
   if (!session.identity && session.isSignUp && session.loginState === LoginState.WAITING_PROFILE) {
     return false
+  }
+
+  // if parcel loading is not yet started, the loading screen should be visible
+  if (!renderer.parcelLoadingStarted) {
+    return true
   }
 
   // if it is the initial load
@@ -28,7 +33,7 @@ export function isLoadingScreenVisible(state: RootLoadingState & RootSessionStat
       return true
     }
 
-    if (state.loading.totalScenes === 0 && !PREVIEW) {
+    if (state.loading.totalScenes === 0) {
       // this may happen if we are loading for the first time and this saga
       // gets executed _before_ the initial load of scenes
       return true
@@ -47,6 +52,11 @@ export function isLoadingScreenVisible(state: RootLoadingState & RootSessionStat
 export function isRendererVisible(state: RootState) {
   // of course, if the renderer is not initialized, it is not visible
   if (!state.renderer.initialized) {
+    return false
+  }
+
+  // if it is not yet loading scenes, renderer should not be visible either
+  if (!state.renderer.parcelLoadingStarted) {
     return false
   }
 
