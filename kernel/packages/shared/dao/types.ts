@@ -46,13 +46,13 @@ export type IslandsBasedCandidate = {
 
 export type Candidate = LayerBasedCandidate | IslandsBasedCandidate
 
-type Parcel = [number, number]
+export type Parcel = [number, number]
 
 export type LayerUserInfo = {
   userId: string
   peerId: string
   protocolVersion: number
-  parcel?: [number, number]
+  parcel?: Parcel
 }
 
 export type Realm = {

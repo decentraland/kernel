@@ -6,15 +6,12 @@ export enum AlgorithmLinkTypes {
   LOAD_BALANCING = 'LOAD_BALANCING',
 }
 
-export type AlgorithmLinkConfig = (LargeLatencyConfig | AllPeersScoreConfig | ClosePeersScoreConfig | LoadBalancingConfig) & { name?: string }
-
 export type LargeLatencyConfig = {
   type: AlgorithmLinkTypes.LARGE_LATENCY
   config?: { largeLatencyThreshold: number }
 }
 
 export type LargeLatencyParameters = LargeLatencyConfig['config']
-
 
 export type ClosePeersScoreConfig = {
   type: AlgorithmLinkTypes.CLOSE_PEERS_SCORE
@@ -23,6 +20,7 @@ export type ClosePeersScoreConfig = {
      * Distance in parcels to which a peer is considered close, so it can count for the score.
      */
     closePeersDistance?: number,
+    baseScore?: number,
     latencyDeductionsParameters?: LatencyDeductionsConfig
   }
 }
@@ -51,15 +49,14 @@ export type LatencyDeductionsConfig = {
   maxDeduction?: number
 }
 
+export type LatencyDeductionsParameters = Required<LatencyDeductionsConfig>
+
 export type ClosePeersScoreParameters = Required<ClosePeersScoreConfig['config']> & {
-  latencyDeductionsParameters: Required<LatencyDeductionsConfig>
+  latencyDeductionsParameters: LatencyDeductionsParameters
 }
 
 export type LoadBalancingConfig = {
   type: AlgorithmLinkTypes.LOAD_BALANCING
-  config?: {
-    targetUsersPerServer: number
-  }
 }
 
 export type AllPeersScoreConfig = {
@@ -78,5 +75,7 @@ export type AllPeersScoreConfig = {
 export type AllPeersScoreParameters = Required<AllPeersScoreConfig['config']> & {
   latencyDeductionsParameters: Required<LatencyDeductionsConfig>
 }
+
+export type AlgorithmLinkConfig = (LargeLatencyConfig | AllPeersScoreConfig | ClosePeersScoreConfig | LoadBalancingConfig) & { name?: string }
 
 export type AlgorithmChainConfig = AlgorithmLinkConfig[]
