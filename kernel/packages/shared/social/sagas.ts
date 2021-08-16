@@ -42,14 +42,15 @@ function* saveUnblockedPlayer(action: UnblockPlayers) {
 }
 
 function* addPlayerToProfileSet(playersId: string[], setKey: ProfileSetKey) {
-  const profile = yield getCurrentProfile()
+  const profile: Profile | null = yield call(getCurrentProfile)
 
   if (profile) {
     let idsToAdd = playersId
     let set: string[] = playersId
+
     if (profile[setKey]) {
-      idsToAdd = playersId.filter((id) => !(profile[setKey].indexOf(id) >= 0))
-      set = profile[setKey].concat(idsToAdd)
+      idsToAdd = playersId.filter((id) => !(profile[setKey]!.indexOf(id) >= 0))
+      set = profile[setKey]!.concat(idsToAdd)
     }
 
     yield put(saveProfileRequest({ [setKey]: set }))
@@ -74,7 +75,8 @@ function* removePlayerFromProfileSet(playersId: string[], setKey: ProfileSetKey)
 }
 
 function* getCurrentProfile() {
-  const address = yield select(getCurrentUserId)
+  const address: string | undefined = yield select(getCurrentUserId)
+  if (!address) return null
   const profile: Profile | null = yield select(getProfile, address)
   return profile
 }

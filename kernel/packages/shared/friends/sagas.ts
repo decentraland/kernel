@@ -34,7 +34,7 @@ import { lastPlayerPosition, positionObservable } from 'shared/world/positionThi
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { ADDED_PROFILE_TO_CATALOG } from 'shared/profiles/actions'
 import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
-import { INIT_CATALYST_REALM, SET_CATALYST_REALM, SetCatalystRealm, InitCatalystRealm } from 'shared/dao/actions'
+import { SET_CATALYST_REALM, SetCatalystRealm } from 'shared/dao/actions'
 import { notifyFriendOnlineStatusThroughChat } from 'shared/comms/chat'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState } from 'shared/friends/types'
@@ -440,13 +440,13 @@ function* initializeStatusUpdateInterval(client: SocialAPI) {
     sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
   })
 
-  const handleSetCatalystRealm = (action: SetCatalystRealm | InitCatalystRealm) => {
+  const handleSetCatalystRealm = (action: SetCatalystRealm) => {
     const realm = action.payload
 
     sendOwnStatusIfNecessary({ worldPosition: lastPlayerPosition.clone(), realm, timestamp: Date.now() })
   }
 
-  yield takeEvery([INIT_CATALYST_REALM, SET_CATALYST_REALM], handleSetCatalystRealm)
+  yield takeEvery(SET_CATALYST_REALM, handleSetCatalystRealm)
 }
 
 /**

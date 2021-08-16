@@ -42,7 +42,7 @@ import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
 import { getPois } from '../meta/selectors'
 import { META_CONFIGURATION_INITIALIZED } from '../meta/actions'
 import { retrieve, store as cacheStore } from 'shared/cache'
-import { getPOIService, getUpdateProfileServer } from 'shared/dao/selectors'
+import { getFetchContentServer, getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { realmInitialized } from 'shared/dao'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -234,7 +234,7 @@ function* reportScenes(sceneIds: string[]): any {
         previewImageUrl: getThumbnailUrlFromJsonDataAndContent(
           scene.sceneJsonData,
           scene.contents,
-          getUpdateProfileServer(store.getState())
+          getFetchContentServer(store.getState())
         ),
         name: scene.name,
         type: scene.type,

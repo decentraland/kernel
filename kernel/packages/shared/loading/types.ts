@@ -51,8 +51,6 @@ export const NO_WEBGL_COULD_BE_CREATED = 'Capabilities: Could not create WebGL c
 export const noWebglCouldBeCreated = () => action(NO_WEBGL_COULD_BE_CREATED)
 export const AUTH_ERROR_LOGGED_OUT = 'Auth: Logged out'
 export const authErrorLoggedOut = () => action(AUTH_ERROR_LOGGED_OUT)
-export const CONTENT_SERVER_DOWN = 'Content: Server is down'
-export const contentServerDown = () => action(CONTENT_SERVER_DOWN)
 export const FAILED_FETCHING_UNITY = 'Failed to fetch the rendering engine'
 export const failedFetchingUnity = () => action(FAILED_FETCHING_UNITY)
 export const COMMS_ERROR_RETRYING = 'Communications channel error (will retry)'
@@ -94,7 +92,6 @@ export type ExecutionLifecycleEvent =
   | typeof UNEXPECTED_ERROR_LOADING_CATALOG
   | typeof AUTH_ERROR_LOGGED_OUT
   | typeof MOBILE_NOT_SUPPORTED
-  | typeof CONTENT_SERVER_DOWN
   | typeof FAILED_FETCHING_UNITY
   | typeof COMMS_ERROR_RETRYING
   | typeof COMMS_COULD_NOT_BE_ESTABLISHED
@@ -122,7 +119,6 @@ export const ExecutionLifecycleEventsList: ExecutionLifecycleEvent[] = [
   UNEXPECTED_ERROR,
   UNEXPECTED_ERROR_LOADING_CATALOG,
   AUTH_ERROR_LOGGED_OUT,
-  CONTENT_SERVER_DOWN,
   FAILED_FETCHING_UNITY,
   COMMS_ERROR_RETRYING,
   MOBILE_NOT_SUPPORTED,

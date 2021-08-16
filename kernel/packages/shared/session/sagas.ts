@@ -14,7 +14,7 @@ import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
 import { getFromLocalStorage, saveToLocalStorage } from 'atomicHelpers/localStorage'
 
-import { getLastGuestSession, getStoredSession, Session, setStoredSession } from './index'
+import { getIdentity, getLastGuestSession, getStoredSession, removeStoredSession, setStoredSession } from './index'
 import { ExplorerIdentity, RootSessionState, SessionState, StoredSession } from './types'
 import {
   AUTHENTICATE,
@@ -34,7 +34,7 @@ import {
   AuthenticateAction,
   signUpCancel
 } from './actions'
-import { fetchProfileLocally, doesProfileExist, generateRandomUserProfile } from '../profiles/sagas'
+import { fetchProfileLocally, doesProfileExist, generateRandomUserProfile, localProfilesRepo } from '../profiles/sagas'
 import { getUnityInstance } from '../../unity-interface/IUnityInterface'
 import { getIsGuestLogin, getSignUpIdentity, getSignUpProfile, isLoginCompleted } from './selectors'
 import { waitForRealmInitialized } from '../dao/sagas'
@@ -50,6 +50,7 @@ import { globalObservable } from 'shared/observables'
 import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { disconnect, sendToMordor } from 'shared/comms'
 
 const TOS_KEY = 'tos'
 const logger = createLogger('session: ')
@@ -313,11 +314,23 @@ async function createAuthIdentity(requestManager: RequestManager, isGuest: boole
 }
 
 function* logout() {
-  Session.current.logout().catch((e) => logger.error('error while logging out', e))
+  const identity: ExplorerIdentity | undefined = yield select(getIdentity)
+  const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  if (identity && identity.address && network) {
+    localProfilesRepo.remove(identity.address, network)
+    globalObservable.emit('logout', { address: identity.address, network })
+  }
+  yield sendToMordor()
+  disconnect()
+  if (identity?.address) {
+    removeStoredSession(identity.address)
+  }
+  window.location.reload()
 }
 
 function* redirectToSignUp() {
-  Session.current.redirectToSignUp().catch((e) => logger.error('error while redirecting to sign up', e))
+  window.location.search += '&show_wallet=1'
+  window.location.reload()
 }
 
 export function observeAccountStateChange(

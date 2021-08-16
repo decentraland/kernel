@@ -72,7 +72,6 @@ export type DaoState = {
   poiService: string
   realm: Realm | undefined
   candidates: Candidate[]
-  contentWhitelist: Candidate[]
   addedCandidates: Candidate[]
   commsStatus: CommsStatus
 }

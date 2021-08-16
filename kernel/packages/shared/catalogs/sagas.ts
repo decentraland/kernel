@@ -64,7 +64,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
   const valid = areFiltersValid(filters)
   if (valid) {
     try {
-      const downloadUrl: string = yield select(getFetchContentServer)
+      const fetchContentServer: string = yield select(getFetchContentServer)
 
       const response: PartialWearableV2[] = yield call(fetchWearablesFromCatalyst, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -72,7 +72,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 
       const v2Wearables: WearableV2[] = response.map((wearable) => ({
         ...wearable,
-        baseUrl: wearable.baseUrl ?? downloadUrl + '/contents/',
+        baseUrl: wearable.baseUrl ?? fetchContentServer + '/contents/',
         baseUrlBundles: assetBundlesBaseUrl
       }))
 

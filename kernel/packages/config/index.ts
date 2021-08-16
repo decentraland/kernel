@@ -87,6 +87,11 @@ export const GIF_WORKERS = location.search.includes('GIF_WORKERS')
 
 const qs = queryString.parse(location.search)
 
+function ensureQueryStringUrl(value: string | string[] | null): string | null {
+  if (!value) return null
+  if (typeof value === 'string') return addHttpsIfNoProtocolIsSet(value)
+  return addHttpsIfNoProtocolIsSet(value[0])
+}
 function ensureSingleString(value: string | string[] | null): string | null {
   if (!value) return null
   if (typeof value === 'string') return value
@@ -98,8 +103,8 @@ export const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIE
 export const COMMS = USE_LOCAL_COMMS ? 'v1-local' : qs.COMMS ? ensureSingleString(qs.COMMS)! : 'v2-p2p' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
 
-export const UPDATE_CONTENT_SERVICE = ensureSingleString(qs.UPDATE_CONTENT_SERVICE)
-export const FETCH_CONTENT_SERVICE = ensureSingleString(qs.FETCH_CONTENT_SERVICE)
+export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.UPDATE_CONTENT_SERVICE)
+export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.FETCH_CONTENT_SERVICE)
 export const COMMS_SERVICE = ensureSingleString(qs.COMMS_SERVICE)
 export const RESIZE_SERVICE = ensureSingleString(qs.RESIZE_SERVICE)
 export const HOTSCENES_SERVICE = ensureSingleString(qs.HOTSCENES_SERVICE)
@@ -269,7 +274,11 @@ export function getCatalystNodesDefaultURL() {
   return `https://peer-lb.decentraland.${getTLD()}/lambdas/contracts/servers`
 }
 
-function addHttpsIfNoProtocolIsSet(domain: string): string {
+function addHttpsIfNoProtocolIsSet(domain: string): string
+function addHttpsIfNoProtocolIsSet(domain: undefined): undefined
+function addHttpsIfNoProtocolIsSet(domain: null): null
+function addHttpsIfNoProtocolIsSet(domain: any) {
+  if (typeof domain === 'undefined' || domain === null) return domain
   if (!domain.startsWith('http')) {
     return `https://${domain}`
   }

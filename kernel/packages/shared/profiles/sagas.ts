@@ -42,8 +42,8 @@ import {
   getResizeService,
   isResizeServiceUrl,
   getCatalystServer,
-  getFetchContentServer,
-  getSelectedNetwork
+  getSelectedNetwork,
+  getFetchContentServer
 } from '../dao/selectors'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'

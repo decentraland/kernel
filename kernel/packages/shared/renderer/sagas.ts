@@ -30,13 +30,19 @@ function* initializeRenderer(action: InitializeRenderer) {
   yield put(waitingForRenderer())
 
   // start loading the renderer
-  const renderer: UnityGame = yield delegate(container)
+  try {
+    const renderer: UnityGame = yield delegate(container)
+    // wire the kernel to the renderer
+    yield call(initializeEngine, renderer)
+    // send an "engineStarted" notification
+    yield put(signalRendererInitialized())
 
-  // wire the kernel to the renderer
-  yield call(initializeEngine, renderer)
-
-  // send an "engineStarted" notification
-  yield put(signalRendererInitialized())
-
-  return renderer
+    return renderer
+  } catch (e) {
+    if (e instanceof Error) {
+      throw e
+    } else {
+      throw new Error('Error initializing rendering')
+    }
+  }
 }

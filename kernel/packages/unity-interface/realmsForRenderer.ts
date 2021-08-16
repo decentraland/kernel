@@ -21,6 +21,7 @@ export function startRealmsReportToRenderer() {
 
     observeRealmChange(store, (previous, current) => {
       reportToRenderer({ current: convertCurrentRealmType(current) })
+      fetchAndReportRealmsInfo().catch((e) => defaultLogger.log(e))
     })
 
     fetchAndReportRealmsInfo().catch((e) => defaultLogger.log(e))

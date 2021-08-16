@@ -228,8 +228,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       configureTaskbarDependentHUD(i, false, false)
     })
 
-  await realmInitialized()
   startRealmsReportToRenderer()
+  await realmInitialized()
 
   function reportForeground() {
     if (isForeground()) {
