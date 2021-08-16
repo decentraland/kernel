@@ -1,4 +1,4 @@
-import { applyMiddleware, compose, createStore, StoreEnhancer } from 'redux'
+import { AnyAction, applyMiddleware, compose, createStore, Middleware, StoreEnhancer } from 'redux'
 import createSagaMiddleware from 'redux-saga'
 import { createLogger } from 'redux-logger'
 import { reducers } from './rootReducer'
@@ -8,6 +8,7 @@ import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from '../
 import defaultLogger from '../logger'
 import { setStore } from './isolatedStore'
 import { composeWithDevTools } from 'redux-devtools-extension'
+import { logTrace } from 'unity-interface/trace'
 
 export const buildStore = () => {
   const sagaMiddleware = createSagaMiddleware({
@@ -17,15 +18,23 @@ export const buildStore = () => {
       BringDownClientAndShowError(error.message as any)
     }
   })
+
+  const middlewares: Middleware[] = [sagaMiddleware]
+
+  middlewares.push((_store) => (next) => (action: AnyAction) => {
+    logTrace(action.type, action.payload, 'KK')
+    return next(action)
+  })
+
   const composeEnhancers =
     (DEBUG_REDUX &&
       ((window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || composeWithDevTools({ trace: true, traceLimit: 25 }))) ||
     compose
 
-  let middlewares: StoreEnhancer<any>[] = [applyMiddleware(sagaMiddleware)]
+  let enhancers: StoreEnhancer<any>[] = [applyMiddleware(...middlewares)]
 
   if (DEBUG_REDUX) {
-    middlewares.unshift(
+    enhancers.unshift(
       applyMiddleware(
         createLogger({
           collapsed: true,
@@ -35,7 +44,7 @@ export const buildStore = () => {
     )
   }
 
-  const store = createStore(reducers, composeEnhancers(...middlewares))
+  const store = createStore(reducers, composeEnhancers(...enhancers))
   const startSagas = () => sagaMiddleware.run(createRootSaga())
   setStore(store)
   return { store, startSagas }

@@ -112,6 +112,8 @@ export const POI_SERVICE = ensureSingleString(qs.POI_SERVICE)
 export const REALM = ensureSingleString(qs.realm)
 export const PREFERED_ISLAND = ensureSingleString(qs.island)
 
+export const TRACE_RENDERER = ensureSingleString(qs.TRACE_RENDERER)
+
 export const AUTO_CHANGE_REALM = location.search.includes('AUTO_CHANGE_REALM')
 
 export const LOS = ensureSingleString(qs.LOS)

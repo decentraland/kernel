@@ -7,6 +7,7 @@ import type { UnityGame } from '@dcl/unity-renderer/src/index'
 import type { KernelOptions } from '@dcl/kernel-interface'
 
 import { initializeUnityEditor } from './wsEditorAdapter'
+import { traceDecoratorRendererOptions } from './trace'
 import {
   BringDownClientAndShowError,
   ErrorContext,
@@ -23,7 +24,7 @@ export type InitializeUnityResult = {
 
 const rendererOptions: Partial<KernelOptions['rendererOptions']> = {}
 
-const defaultOptions: CommonRendererOptions = {
+const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
   onMessage(type: string, jsonEncodedMessage: string) {
     let parsedJson = null
     try {
@@ -37,7 +38,7 @@ const defaultOptions: CommonRendererOptions = {
     // keep the following line outside the `try`
     browserInterface.handleUnityMessage(type, parsedJson)
   }
-}
+})
 
 async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityGame> {
   // Remove the following line after https://github.com/decentraland/unity-renderer/pull/974 gets merged
