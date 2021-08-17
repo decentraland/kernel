@@ -8,10 +8,10 @@ export enum AlgorithmLinkTypes {
 
 export type LargeLatencyConfig = {
   type: AlgorithmLinkTypes.LARGE_LATENCY
-  config?: { largeLatencyThreshold: number }
+  config?: LargeLatencyParameters
 }
 
-export type LargeLatencyParameters = LargeLatencyConfig['config']
+export type LargeLatencyParameters =  { largeLatencyThreshold: number }
 
 export type ClosePeersScoreConfig = {
   type: AlgorithmLinkTypes.CLOSE_PEERS_SCORE

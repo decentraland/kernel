@@ -43,6 +43,8 @@ import {
 } from 'shared/loading/ReportFatalError'
 import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
 import { gte } from 'semver'
+import { ReadOnlyVector2 } from 'decentraland-ecs'
+import { parcelAvailable } from 'shared/world/positionThings'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
   return 'last_realm_' + network
@@ -141,12 +143,13 @@ function* waitForCandidates() {
 
 export function* selectRealm() {
   yield call(waitForCandidates)
+  const parcel: ReadOnlyVector2 = yield parcelAvailable()
 
   const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
 
   let realm = yield call(getConfiguredRealm, allCandidates)
   if (!realm) {
-    realm = yield call(pickCatalystRealm, allCandidates)
+    realm = yield call(pickCatalystRealm, allCandidates, [parcel.x, parcel.y])
   }
   return realm
 }

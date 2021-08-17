@@ -1,6 +1,7 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { RenderProfile } from 'shared/types'
 import { Color4 } from 'decentraland-ecs'
+import { AlgorithmChainConfig } from 'shared/dao/pickRealmAlgorithm/types'
 
 export type MetaConfiguration = {
   explorer: {
@@ -12,7 +13,8 @@ export type MetaConfiguration = {
     denied: string[]
     contentWhitelist: string[]
     catalystsNodesEndpoint?: string
-  }
+  },
+  pickRealmAlgorithmConfig?: AlgorithmChainConfig
   bannedUsers: BannedUsers
   synapseUrl: string
   world: WorldConfig

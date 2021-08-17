@@ -2,7 +2,7 @@ import { Candidate, Parcel } from "../types"
 import { defaultAllPeersScoreConfig, defaultClosePeersScoreConfig, defaultLargeLatencyConfig } from "./defaults"
 import { countParcelsCloseTo } from "../../comms/interface/utils"
 import { AlgorithmChainConfig, AlgorithmLinkConfig, AlgorithmLinkTypes, AllPeersScoreParameters, ClosePeersScoreParameters, LargeLatencyParameters, LatencyDeductionsParameters } from "./types"
-import { defaultLogger } from "shared/logger"
+import { defaultLogger } from 'shared/logger'
 
 /**
  * The allCandidates attribute lists all candidates. The "picked" candidates is a sorted list of those candidates picked by all the previous links
@@ -13,16 +13,13 @@ function usersCount(candidate: Candidate) {
   return candidate.type === 'layer-based' ? candidate.layer.usersCount : candidate.usersCount
 }
 
-
 function maxUsers(candidate: Candidate) {
   return candidate.type === 'layer-based' ? candidate.layer.maxUsers : candidate.maxUsers
 }
 
-
 function usersParcels(candidate: Candidate) {
   return candidate.type === 'layer-based' ? candidate.layer.usersParcels : candidate.usersParcels
 }
-
 
 function memoizedScores(scoreFunction: (c: Candidate) => number) {
   const scores = new Map<Candidate, number>()
@@ -31,7 +28,7 @@ function memoizedScores(scoreFunction: (c: Candidate) => number) {
       scores.set(candidate, scoreFunction(candidate))
     }
 
-    return scores.get(candidate)
+    return scores.get(candidate)!
   }
 }
 
@@ -39,7 +36,6 @@ function latencyDeductions(candidate: Candidate, { multiplier, exponentialDiviso
   const expResult = multiplier * (Math.exp(candidate.elapsed / exponentialDivisor) - 1)
   return Math.min(expResult, maxDeduction)
 }
-
 
 function scoreUsingLatencyDeductions(parameters: LatencyDeductionsParameters, baseScoreFunction: (c: Candidate) => number) {
   return (candidate: Candidate) => {
@@ -50,11 +46,17 @@ function scoreUsingLatencyDeductions(parameters: LatencyDeductionsParameters, ba
 }
 
 function selectFirstByScore(context: AlgorithmContext, score: (c: Candidate) => number) {
-  const sorted = context.picked.sort((a, b) => score(b) - score(a))
+  const compareFn = (a: Candidate, b: Candidate) => score(b) - score(a)
+
+  return selectFirstBy(context, compareFn)
+}
+
+function selectFirstBy(context: AlgorithmContext, compareFn: (a: Candidate, b: Candidate) => number) {
+  const sorted = context.picked.sort(compareFn)
 
   context.picked = sorted
 
-  if (context.picked.length === 1 || score(context.picked[0]) > score(context.picked[1])) {
+  if (context.picked.length === 1 || compareFn(context.picked[0], context.picked[1]) < 0) {
     context.selected = context.picked[0]
   }
 
@@ -71,7 +73,7 @@ function allUsersScoreLink({ baseScore, discourageFillTargetPercentage, fillTarg
     const count = usersCount(candidate)
     const max = maxUsers(candidate)
 
-    // We prefer realms that have users
+    // We prefer realms that have users. Those will have at least baseScore
     if (count === 0) return 0
 
     const linearUsersScore = (users: number) => baseScore + users
@@ -91,9 +93,9 @@ function allUsersScoreLink({ baseScore, discourageFillTargetPercentage, fillTarg
         // The score is the result of calculating the corresponding point of this segment at usersCount
         return segment.a.y + slope * (count - segment.a.x)
       }
-    } else {
-      return linearUsersScore(count)
     }
+
+    return linearUsersScore(count)
   }
 
   return {
@@ -105,7 +107,6 @@ function allUsersScoreLink({ baseScore, discourageFillTargetPercentage, fillTarg
     }
   }
 }
-
 
 function largeLatencyLink({ largeLatencyThreshold }: LargeLatencyParameters, name?: string): AlgorithmLink {
   return {
@@ -150,6 +151,7 @@ function loadBalancingLink(): AlgorithmLink {
     name: AlgorithmLinkTypes.LOAD_BALANCING,
     pick: (context: AlgorithmContext) => {
       const usersByDomain: Record<string, number> = {}
+
       context.picked.forEach((it) => {
         if (!usersByDomain[it.domain]) {
           usersByDomain[it.domain] = 0
@@ -157,10 +159,12 @@ function loadBalancingLink(): AlgorithmLink {
 
         usersByDomain[it.domain] += usersCount(it)
       })
+
+      // We pick the realm whose domain has the least amount of users
+      return selectFirstBy(context, (a, b) => usersByDomain[a.domain] - usersByDomain[b.domain])
     }
   }
 }
-
 
 function buildLink(linkConfig: AlgorithmLinkConfig) {
   switch (linkConfig.type) {
@@ -202,7 +206,7 @@ export function createAlgorithm(config: AlgorithmChainConfig) {
   const chain: AlgorithmLink[] = buildChain(config)
 
   return {
-    pickRealm(candidates: Candidate[], userParcel: Parcel) {
+    pickCandidate(candidates: Candidate[], userParcel: Parcel) {
       if (candidates.length === 0) throw new Error("Cannot pick candidates from an empty list")
 
       let context: AlgorithmContext = { allCandidates: candidates, picked: candidates, userParcel }
@@ -212,14 +216,23 @@ export function createAlgorithm(config: AlgorithmChainConfig) {
 
         // If a link picks a particular candidate, we return that
         if (context.selected) {
+          defaultLogger.log(`Picked candidate using algorithm link: ${link.name}`, context.selected)
           return context.selected
+        }
+
+        if (context.picked.length === 0) {
+          defaultLogger.warn(`Trying to pick realms, a link in the chain filtered all the candidates. The first candidate will be picked.`, link, context)
+          break
         }
       }
 
       // If all the links have gone through, and we don't have a clear candidate, we pick the first
-      if (context.picked[0]) return context.picked[0]
+      if (context.picked[0]) {
+        defaultLogger.log(`Picked candidate by most valued. Last link: ${chain[0]?.name}`, context.picked[0])
+        return context.picked[0]
+      }
 
-      throw new Error("No candidate could be picked using the configured algorithm: " + JSON.stringify(config))
+      return candidates[0]
     }
   }
 }

@@ -18,6 +18,7 @@ export type CatalystStatus = {
   layers?: Layer[]
   usersCount?: number
   maxUsers?: number
+  usersParcels?: Parcel[]
   env: {
     catalystVersion: string
   }
@@ -40,7 +41,7 @@ export type LayerBasedCandidate = {
 export type IslandsBasedCandidate = {
   type: 'islands-based'
   usersCount: number
-  usersParcels: Parcel[]
+  usersParcels?: Parcel[]
   maxUsers?: number
 } & BaseCandidate
 

@@ -1,6 +1,7 @@
 import { BannedUsers, CommsConfig, FeatureFlags, MessageOfTheDayConfig, RootMetaState } from './types'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { VOICE_CHAT_DISABLED_FLAG } from 'config'
+import { AlgorithmChainConfig } from 'shared/dao/pickRealmAlgorithm/types'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
   const { config } = store.meta
@@ -35,6 +36,8 @@ export const getPois = (store: RootMetaState): Vector2Component[] => store.meta.
 export const getCommsConfig = (store: RootMetaState): CommsConfig => store.meta.config.comms ?? {}
 
 export const getBannedUsers = (store: RootMetaState): BannedUsers => store.meta.config.bannedUsers ?? {}
+
+export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmChainConfig | undefined => store.meta.config.pickRealmAlgorithmConfig
 
 export const isMOTDInitialized = (store: RootMetaState): boolean =>
   store.meta.config.world ? store.meta.config.world?.messageOfTheDayInit || false : false
