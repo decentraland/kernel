@@ -27,7 +27,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Repo deployment info
           ref: ${{ github.event.ref }}
-          sha: ${{ env.GITHUB_SHA }}
+          sha: ${{ github.sha }}
 
           # CDN information
           packageName: "@dcl/kernel"
