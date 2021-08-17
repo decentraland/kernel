@@ -3,7 +3,7 @@ import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJs
 import { SceneJsonData } from 'shared/types'
 import { reportScenesFromTiles } from 'shared/atlas/actions'
 import { getSceneNameFromAtlasState, postProcessSceneName, getPoiTiles } from 'shared/atlas/selectors'
-import { getHotScenesService, getUpdateProfileServer } from 'shared/dao/selectors'
+import { getFetchContentServer, getHotScenesService } from 'shared/dao/selectors'
 import {
   getOwnerNameFromJsonData,
   getThumbnailUrlFromJsonDataAndContent,
@@ -71,7 +71,7 @@ async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
         getThumbnailUrlFromJsonDataAndContent(
           land.sceneJsonData,
           land.mappingsResponse.contents,
-          getUpdateProfileServer(store.getState())
+          getFetchContentServer(store.getState())
         ) ?? '',
       baseCoords: TileStringToVector2(land.sceneJsonData.scene.base),
       parcels: land.sceneJsonData

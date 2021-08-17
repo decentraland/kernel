@@ -14,7 +14,7 @@ import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
 import { getFromLocalStorage, saveToLocalStorage } from 'atomicHelpers/localStorage'
 
-import { getLastGuestSession, getStoredSession, Session, setStoredSession } from './index'
+import { getIdentity, getLastGuestSession, getStoredSession, removeStoredSession, setStoredSession } from './index'
 import { ExplorerIdentity, RootSessionState, SessionState, StoredSession } from './types'
 import {
   AUTHENTICATE,
@@ -34,10 +34,10 @@ import {
   AuthenticateAction,
   signUpCancel
 } from './actions'
-import { fetchProfileLocally, doesProfileExist, generateRandomUserProfile } from '../profiles/sagas'
+import { fetchProfileLocally, doesProfileExist, generateRandomUserProfile, localProfilesRepo } from '../profiles/sagas'
 import { getUnityInstance } from '../../unity-interface/IUnityInterface'
 import { getIsGuestLogin, getSignUpIdentity, getSignUpProfile, isLoginCompleted } from './selectors'
-import { ensureRealmInitialized } from '../dao/sagas'
+import { waitForRealmInitialized } from '../dao/sagas'
 import { saveProfileRequest } from '../profiles/actions'
 import { Profile } from '../profiles/types'
 import { ensureUnityInterface } from '../renderer'
@@ -49,14 +49,13 @@ import { store } from 'shared/store/isolatedStore'
 import { globalObservable } from 'shared/observables'
 import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
+import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { disconnect, sendToMordor } from 'shared/comms'
 
 const TOS_KEY = 'tos'
 const logger = createLogger('session: ')
 
 export function* sessionSaga(): any {
-  yield call(initialize)
-  yield call(initializeReferral)
-
   yield takeEvery(UPDATE_TOS, updateTermOfService)
   yield takeLatest(INIT_SESSION, initSession)
   yield takeLatest(LOGOUT, logout)
@@ -65,6 +64,9 @@ export function* sessionSaga(): any {
   yield takeLatest(SIGNUP_CANCEL, cancelSignUp)
   yield takeLatest(AUTHENTICATE, authenticate)
   yield takeLatest(AWAITING_USER_SIGNATURE, signaturePrompt)
+
+  yield call(initialize)
+  yield call(initializeReferral)
 }
 
 function* initialize() {
@@ -111,7 +113,7 @@ function* authenticate(action: AuthenticateAction) {
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
   yield put(selectNetwork(net))
   registerProviderNetChanges()
-  yield call(ensureRealmInitialized)
+  yield call(waitForRealmInitialized)
 
   const profileExists: boolean = yield doesProfileExist(identity.address)
   const isGuest: boolean = yield select(getIsGuestLogin)
@@ -146,6 +148,7 @@ function* startSignUp(identity: ExplorerIdentity) {
   } else {
     const profile: Partial<Profile> = yield select(getSignUpProfile)
 
+    yield call(waitForRendererInstance)
     // TODO: Fix as any
     getUnityInstance().LoadProfile(profile as any)
     getUnityInstance().ShowAvatarEditorInSignIn()
@@ -311,11 +314,23 @@ async function createAuthIdentity(requestManager: RequestManager, isGuest: boole
 }
 
 function* logout() {
-  Session.current.logout().catch((e) => logger.error('error while logging out', e))
+  const identity: ExplorerIdentity | undefined = yield select(getIdentity)
+  const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  if (identity && identity.address && network) {
+    localProfilesRepo.remove(identity.address, network)
+    globalObservable.emit('logout', { address: identity.address, network })
+  }
+  yield sendToMordor()
+  disconnect()
+  if (identity?.address) {
+    removeStoredSession(identity.address)
+  }
+  window.location.reload()
 }
 
 function* redirectToSignUp() {
-  Session.current.redirectToSignUp().catch((e) => logger.error('error while redirecting to sign up', e))
+  window.location.search += '&show_wallet=1'
+  window.location.reload()
 }
 
 export function observeAccountStateChange(

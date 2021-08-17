@@ -1,11 +1,7 @@
 import {
-  initCatalystRealm,
   setCatalystCandidates,
   setAddedCatalystCandidates,
-  setContentWhitelist,
-  INIT_CATALYST_REALM,
   SET_CATALYST_REALM,
-  InitCatalystRealm,
   SetCatalystRealm,
   SET_CATALYST_CANDIDATES,
   SET_ADDED_CATALYST_CANDIDATES,
@@ -13,7 +9,8 @@ import {
   SetAddedCatalystCandidates,
   catalystRealmsScanSuccess,
   catalystRealmsScanRequested,
-  SELECT_NETWORK
+  SELECT_NETWORK,
+  setCatalystRealm
 } from './actions'
 import { call, put, takeEvery, select, fork, take } from 'redux-saga/effects'
 import { REALM, PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW } from 'config'
@@ -27,12 +24,7 @@ import {
   ping,
   commsStatusUrl
 } from '.'
-import {
-  getAddedServers,
-  getCatalystNodesEndpoint,
-  getContentWhitelist,
-  getMinCatalystVersion
-} from 'shared/meta/selectors'
+import { getAddedServers, getCatalystNodesEndpoint, getMinCatalystVersion } from 'shared/meta/selectors'
 import { getAllCatalystCandidates, getSelectedNetwork, isRealmInitialized } from './selectors'
 import { saveToLocalStorage, getFromLocalStorage } from '../../atomicHelpers/localStorage'
 import defaultLogger from '../logger'
@@ -55,7 +47,7 @@ function getLastRealmCandidatesCacheKey(network: ETHEREUM_NETWORK) {
 
 export function* daoSaga(): any {
   yield takeEvery(SELECT_NETWORK, loadCatalystRealms)
-  yield takeEvery([INIT_CATALYST_REALM, SET_CATALYST_REALM], cacheCatalystRealm)
+  yield takeEvery(SET_CATALYST_REALM, cacheCatalystRealm)
   yield takeEvery([SET_CATALYST_CANDIDATES, SET_ADDED_CATALYST_CANDIDATES], cacheCatalystCandidates)
 }
 
@@ -124,7 +116,7 @@ function* loadCatalystRealms() {
     throw new Error('Unable to select a realm')
   }
 
-  yield put(initCatalystRealm(realm!))
+  yield put(setCatalystRealm(realm!))
 
   defaultLogger.info(`Using Catalyst configuration: `, yield select((state) => state.dao))
 }
@@ -132,7 +124,6 @@ function* loadCatalystRealms() {
 function* initLocalCatalyst() {
   yield put(setCatalystCandidates([]))
   yield put(setAddedCatalystCandidates([]))
-  yield put(setContentWhitelist([]))
 }
 
 function* waitForCandidates() {
@@ -186,16 +177,6 @@ function* initializeCatalystCandidates() {
 
   yield put(setAddedCatalystCandidates(filteredAddedCandidates))
 
-  const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
-
-  const whitelist: string[] = PIN_CATALYST ? [] : yield select(getContentWhitelist)
-  let whitelistedCandidates = allCandidates.filter((candidate) => whitelist.includes(candidate.domain))
-  if (whitelistedCandidates.length === 0) {
-    // if intersection is empty (no whitelisted or not in our candidate set) => whitelist all candidates
-    whitelistedCandidates = allCandidates
-  }
-
-  yield put(setContentWhitelist(whitelistedCandidates))
   yield put(catalystRealmsScanSuccess())
 }
 
@@ -212,7 +193,7 @@ function* checkValidRealm(realm: Realm) {
   )
 }
 
-function* cacheCatalystRealm(action: InitCatalystRealm | SetCatalystRealm) {
+function* cacheCatalystRealm(action: SetCatalystRealm) {
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   return saveToLocalStorage(getLastRealmCacheKey(network), action.payload)
 }
@@ -223,8 +204,8 @@ function* cacheCatalystCandidates(action: SetCatalystCandidates | SetAddedCataly
   saveToLocalStorage(getLastRealmCandidatesCacheKey(network), allCandidates)
 }
 
-export function* ensureRealmInitialized() {
+export function* waitForRealmInitialized() {
   while (!(yield select(isRealmInitialized))) {
-    yield take(INIT_CATALYST_REALM)
+    yield take(SET_CATALYST_REALM)
   }
 }

@@ -1,4 +1,4 @@
-import { put, select, takeEvery } from 'redux-saga/effects'
+import { call, put, select, takeEvery } from 'redux-saga/effects'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { getProfile } from 'shared/profiles/selectors'
 import { saveProfileRequest } from 'shared/profiles/actions'
@@ -14,6 +14,7 @@ import {
 } from './actions'
 import { Profile } from 'shared/profiles/types'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { waitForRendererInstance } from 'shared/renderer/sagas'
 
 type ProfileSetKey = 'muted' | 'blocked'
 
@@ -41,18 +42,20 @@ function* saveUnblockedPlayer(action: UnblockPlayers) {
 }
 
 function* addPlayerToProfileSet(playersId: string[], setKey: ProfileSetKey) {
-  const profile = yield getCurrentProfile()
+  const profile: Profile | null = yield call(getCurrentProfile)
 
   if (profile) {
     let idsToAdd = playersId
     let set: string[] = playersId
+
     if (profile[setKey]) {
-      idsToAdd = playersId.filter((id) => !(profile[setKey].indexOf(id) >= 0))
-      set = profile[setKey].concat(idsToAdd)
+      idsToAdd = playersId.filter((id) => !(profile[setKey]!.indexOf(id) >= 0))
+      set = profile[setKey]!.concat(idsToAdd)
     }
 
     yield put(saveProfileRequest({ [setKey]: set }))
     if (setKey === 'muted') {
+      yield call(waitForRendererInstance)
       getUnityInstance().SetUsersMuted(idsToAdd, true)
     }
   }
@@ -65,13 +68,15 @@ function* removePlayerFromProfileSet(playersId: string[], setKey: ProfileSetKey)
     const set = profile[setKey] ? profile[setKey]!.filter((id) => !playersId.includes(id)) : []
     yield put(saveProfileRequest({ ...profile, [setKey]: set }))
     if (setKey === 'muted') {
+      yield call(waitForRendererInstance)
       getUnityInstance().SetUsersMuted(playersId, false)
     }
   }
 }
 
 function* getCurrentProfile() {
-  const address = yield select(getCurrentUserId)
+  const address: string | undefined = yield select(getCurrentUserId)
+  if (!address) return null
   const profile: Profile | null = yield select(getProfile, address)
   return profile
 }

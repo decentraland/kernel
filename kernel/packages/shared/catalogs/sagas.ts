@@ -21,8 +21,8 @@ import {
   PartialWearableV2,
   UnpublishedWearable
 } from './types'
-import { ensureRealmInitialized } from 'shared/dao/sagas'
-import { ensureRenderer } from 'shared/renderer/sagas'
+import { waitForRealmInitialized } from 'shared/dao/sagas'
+import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
@@ -55,7 +55,7 @@ export function* catalogsSaga(): any {
 }
 
 function* initialLoad() {
-  yield call(ensureRealmInitialized)
+  yield call(waitForRealmInitialized)
 }
 
 export function* handleWearablesRequest(action: WearablesRequest) {
@@ -64,7 +64,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
   const valid = areFiltersValid(filters)
   if (valid) {
     try {
-      const downloadUrl: string = yield select(getFetchContentServer)
+      const fetchContentServer: string = yield select(getFetchContentServer)
 
       const response: PartialWearableV2[] = yield call(fetchWearablesFromCatalyst, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -72,7 +72,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 
       const v2Wearables: WearableV2[] = response.map((wearable) => ({
         ...wearable,
-        baseUrl: wearable.baseUrl ?? downloadUrl + '/contents/',
+        baseUrl: wearable.baseUrl ?? fetchContentServer + '/contents/',
         baseUrlBundles: assetBundlesBaseUrl
       }))
 
@@ -216,7 +216,7 @@ function mapCatalystWearableIntoV2(v2Wearable: any): PartialWearableV2 {
 export function* handleWearablesSuccess(action: WearablesSuccess) {
   const { wearables, context } = action.payload
 
-  yield call(ensureRenderer)
+  yield call(waitForRendererInstance)
   yield call(sendWearablesCatalog, wearables, context)
 }
 
@@ -225,7 +225,7 @@ export function* handleWearablesFailure(action: WearablesFailure) {
 
   defaultLogger.error(`Failed to fetch wearables for context '${context}'`, error)
 
-  yield call(ensureRenderer)
+  yield call(waitForRendererInstance)
   yield call(informRequestFailure, error, context)
 }
 

@@ -1,7 +1,6 @@
 import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, NO_ASSET_BUNDLES, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
-import { defaultLogger } from 'shared/logger'
 import { ILand, SceneJsonData } from 'shared/types'
 import { enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
@@ -24,6 +23,7 @@ import type { UnityGame } from '@dcl/unity-renderer/src'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
+import { traceDecoratorUnityGame } from './trace'
 
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
@@ -56,23 +56,6 @@ export function setLoadingScreenBasedOnState() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-function debuggingDecorator(gameInstance: UnityGame): UnityGame {
-  const debug = false
-
-  if (debug) {
-    return Object.assign(Object.create(gameInstance), {
-      // @ts-ignore
-      SendMessage: (...args) => {
-        defaultLogger.info('gameInstance', ...args)
-        // @ts-ignore
-        return gameInstance.SendMessage(...args)
-      }
-    })
-  }
-
-  return gameInstance
-}
-
 /**
  *
  * Common initialization logic for the unity engine
@@ -80,7 +63,7 @@ function debuggingDecorator(gameInstance: UnityGame): UnityGame {
  * @param _gameInstance Unity game instance
  */
 export async function initializeEngine(_gameInstance: UnityGame): Promise<void> {
-  const gameInstance = debuggingDecorator(_gameInstance)
+  const gameInstance = traceDecoratorUnityGame(_gameInstance)
 
   getUnityInstance().Init(gameInstance)
 

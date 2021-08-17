@@ -2,7 +2,6 @@ import { call, put, select, take, takeLatest } from 'redux-saga/effects'
 import { ETHEREUM_NETWORK, FORCE_RENDERING_STYLE, getAssetBundlesBaseUrl, getServerConfigurations } from 'config'
 import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized, metaUpdateMessageOfTheDay } from './actions'
 import defaultLogger from '../logger'
-import { buildNumber } from './env'
 import { BannedUsers, MetaConfiguration, WorldConfig } from './types'
 import { isMetaConfigurationInitiazed } from './selectors'
 import { USER_AUTHENTIFIED } from '../session/actions'
@@ -10,6 +9,7 @@ import { getCurrentUserId } from '../session/selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
 import { AlgorithmChainConfig } from 'shared/dao/pickRealmAlgorithm/types'
+import { RootState } from 'shared/store/rootTypes'
 
 function valueFromVariants<T>(variants: Record<string, any> | undefined, key: string): T | undefined {
   const variant = variants?.[key]
@@ -30,10 +30,23 @@ function pickRealmAlgorithmConfigFromVariants(variants: Record<string, any> | un
   return valueFromVariants(variants, 'explorer-pick_realm_algorithm_config')
 }
 
-export function* metaSaga(): any {
-  yield take(SELECT_NETWORK)
+export function* waitForMetaConfigurationInitialization() {
+  if (!(yield select(isMetaConfigurationInitiazed))) {
+    yield take(META_CONFIGURATION_INITIALIZED)
+  }
+}
 
+function* waitForNetworkSelected() {
+  while (!(yield select((state: RootState) => !!state.dao.network))) {
+    yield take(SELECT_NETWORK)
+  }
   const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  return net
+}
+
+function* initMeta() {
+  const net: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
+
   const config: Partial<MetaConfiguration> = yield call(fetchMetaConfiguration, net)
   const flagsAndVariants: { flags: Record<string, boolean>; variants: Record<string, any> } | undefined = yield call(
     fetchFeatureFlagsAndVariants,
@@ -55,8 +68,11 @@ export function* metaSaga(): any {
   }
 
   yield put(metaConfigurationInitialized(merge))
-  yield call(checkExplorerVersion, merge)
+}
+
+export function* metaSaga(): any {
   yield takeLatest(USER_AUTHENTIFIED, fetchMessageOfTheDay)
+  yield call(initMeta)
 }
 
 function* fetchMessageOfTheDay() {
@@ -74,20 +90,6 @@ function* fetchMessageOfTheDay() {
       }
     })
     yield put(metaUpdateMessageOfTheDay(result))
-  }
-}
-
-function checkExplorerVersion(config: Partial<MetaConfiguration>) {
-  const currentBuildNumber = buildNumber
-  defaultLogger.info(`Current build number: `, currentBuildNumber)
-
-  if (!config || !config.explorer || !config.explorer.minBuildNumber) {
-    return
-  }
-
-  if (currentBuildNumber < config.explorer.minBuildNumber) {
-    // force client to reload from server
-    window.location.reload(true)
   }
 }
 
@@ -137,11 +139,5 @@ async function fetchMetaConfiguration(network: ETHEREUM_NETWORK) {
         maxConnections: 6
       }
     }
-  }
-}
-
-export function* waitForMetaConfigurationInitialization() {
-  if (!(yield select(isMetaConfigurationInitiazed))) {
-    yield take(META_CONFIGURATION_INITIALIZED)
   }
 }

@@ -1,4 +1,3 @@
-import { disconnect, sendToMordor } from 'shared/comms'
 import { getCurrentIdentity, hasWallet as hasWalletSelector } from './selectors'
 import {
   getFromLocalStorage,
@@ -8,9 +7,6 @@ import {
 } from 'atomicHelpers/localStorage'
 import { StoredSession } from './types'
 import { store } from 'shared/store/isolatedStore'
-import { localProfilesRepo } from 'shared/profiles/sagas'
-import { getSelectedNetwork } from 'shared/dao/selectors'
-import { globalObservable } from 'shared/observables'
 
 const SESSION_KEY_PREFIX = 'dcl-session'
 const LAST_SESSION_KEY = 'dcl-last-session-id'
@@ -82,37 +78,3 @@ export const getLastGuestSession = (): StoredSession | null => {
 export const getIdentity = () => getCurrentIdentity(store.getState())
 
 export const hasWallet = () => hasWalletSelector(store.getState())
-
-export class Session {
-  private static _instance: Session = new Session()
-
-  static get current() {
-    return Session._instance
-  }
-
-  async logout() {
-    const address = getIdentity()?.address
-    const network = getSelectedNetwork(store.getState())
-    sendToMordor().then(() => {
-      disconnect()
-      removeStoredSession(getIdentity()?.address)
-      removeUrlParam('position')
-      removeUrlParam('show_wallet')
-      if (address && network) {
-        localProfilesRepo.remove(address, network)
-      }
-      globalObservable.emit('logout', { address, network })
-      window.location.reload()
-    })
-  }
-
-  async redirectToSignUp() {
-    window.location.search += '&show_wallet=1'
-  }
-}
-
-function removeUrlParam(paramToRemove: string) {
-  let params = new URLSearchParams(window.location.search)
-  params.delete(paramToRemove)
-  window.history.replaceState({}, document.title, '?' + params.toString())
-}
