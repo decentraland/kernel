@@ -15,6 +15,7 @@ import { Position, positionHash } from '../interface/utils'
 import defaultLogger, { createLogger } from 'shared/logger'
 import { PeerMessageTypes, PeerMessageType } from 'decentraland-katalyst-peer/src/messageTypes'
 import { Peer as LayerBasedPeerType } from 'decentraland-katalyst-peer'
+import { PeerConfig as LayerBasedPeerConfig } from 'decentraland-katalyst-peer'
 import {
   Peer as IslandBasedPeer,
   buildCatalystPeerStatsData,
@@ -315,11 +316,17 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     const statusHandler = (status: PeerStatus): void =>
       this.statusHandler({ status, connectedPeers: this.connectedPeersCount() })
 
-    if (this.peerConfig.eventsHandler) {
-      this.peerConfig.eventsHandler.statusHandler = statusHandler
+    if (this.realm.layer) {
+      // Layer based peer
+      (this.peerConfig as LayerBasedPeerConfig).statusHandler = statusHandler
     } else {
-      this.peerConfig.eventsHandler = {
-        statusHandler
+      // Island based peer based peer
+      if (this.peerConfig.eventsHandler) {
+        this.peerConfig.eventsHandler.statusHandler = statusHandler
+      } else {
+        this.peerConfig.eventsHandler = {
+          statusHandler
+        }
       }
     }
 
