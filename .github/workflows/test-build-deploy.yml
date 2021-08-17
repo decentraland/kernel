@@ -12,7 +12,9 @@ jobs:
   validations:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
 
       - uses: browser-actions/setup-chrome@latest
 
