@@ -31,7 +31,7 @@ jobs:
 
           # CDN information
           packageName: "@dcl/kernel"
-          packageVersion: ${{ github.event.inputs.version }}
+          packageVersion: ${{ github.event.inputs.packageVersion }}
 
           # Rollout information
           deploymentDomain: ${{ github.event.inputs.deploymentDomain }}
