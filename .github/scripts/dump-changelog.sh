@@ -14,11 +14,8 @@ add_line_prefix "${KERNEL_CHANGELOG}"
 echo " "
 echo "## Unity renderer changelog:"
 
-HEAD_HASH=$(git rev-parse HEAD)
-LAST_RELEASE_HASH=$(git rev-parse origin/release)
-
-HEAD_PACKAGE=$(git show HEAD:kernel/package.json)
-LAST_RELEASE_PACKAGE=$(git show origin/release:kernel/package.json)
+HEAD_PACKAGE=$(git show HEAD:package.json)
+LAST_RELEASE_PACKAGE=$(git show origin/release:package.json)
 
 HEAD_RENDERER_VERSION=$(jq '."devDependencies"."@dcl/unity-renderer"' <<<"$HEAD_PACKAGE" | tr -dc '0-9.')
 LAST_RELEASE_RENDERER_VERSION=$(jq '."devDependencies"."@dcl/unity-renderer"' <<<"$LAST_RELEASE_PACKAGE" | tr -dc '0-9.')

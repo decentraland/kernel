@@ -34,14 +34,16 @@ export function startRealmsReportToRenderer() {
 
 async function fetchAndReportRealmsInfo() {
   const url = getExploreRealmsService(store.getState())
-  try {
-    const response = await fetch(url)
-    if (response.ok) {
-      const value = await response.json()
-      reportToRenderer({ realms: value })
+  if (url) {
+    try {
+      const response = await fetch(url)
+      if (response.ok) {
+        const value = await response.json()
+        reportToRenderer({ realms: value })
+      }
+    } catch (e) {
+      defaultLogger.error(url, e)
     }
-  } catch (e) {
-    defaultLogger.log(e)
   }
 }
 

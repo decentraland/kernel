@@ -64,7 +64,7 @@ jobs:
         with:
           deterministic-snapshot: true
           only-update-versions: true
-          cwd: ./kernel/static
+          cwd: ./static
 
       - name: install
         working-directory: kernel
@@ -79,7 +79,7 @@ jobs:
         with:
           registry-url: "https://registry.npmjs.org"
           access: public
-          cwd: ./kernel/static
+          cwd: ./static
           ## use action runId instead of current date to generate snapshot numbers
           deterministic-snapshot: true
 
@@ -105,7 +105,7 @@ jobs:
         run: |
           npx @dcl/cdn-uploader@next \
             --bucket $CDN_BUCKET \
-            --local-folder kernel/static \
+            --local-folder static \
             --bucket-folder "@dcl/kernel/branch/${{ steps.myref.outputs.branch }}"
 
   notify_deployment:
