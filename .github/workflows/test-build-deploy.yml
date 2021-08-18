@@ -47,7 +47,7 @@ jobs:
 
       - name: Get the current branch name
         shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+        run: node -e "console.log('::set-output name=branch::' +    ('${{github.head_ref}}' || '$GITHUB_REF'.replace('refs/heads/',''))    )"
         id: myref
 
       - name: Use Node.js 14.x
@@ -117,6 +117,11 @@ jobs:
           comment-author: 'github-actions[bot]'
           body-includes: Test this pull request
 
+      - name: Get the current branch name
+        shell: bash
+        run: node -e "console.log('::set-output name=branch::' +    ('${{github.head_ref}}' || '$GITHUB_REF'.replace('refs/heads/',''))    )"
+        id: myref
+
       - name: Create or update comment
         uses: peter-evans/create-or-update-comment@v1
         with:
@@ -124,5 +129,5 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             # Test this pull request
-            This branch can be previewed at https://play.decentraland.zone/?kernel-branch=${{ github.head_ref }}
+            This branch can be previewed at https://play.decentraland.zone/?kernel-branch=${{ steps.myref.outputs.branch }}
           edit-mode: replace
