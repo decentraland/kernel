@@ -8,7 +8,7 @@ import { USER_AUTHENTIFIED } from '../session/actions'
 import { getCurrentUserId } from '../session/selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
-import { AlgorithmChainConfig } from 'shared/dao/pickRealmAlgorithm/types'
+import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { RootState } from 'shared/store/rootTypes'
 
 function valueFromVariants<T>(variants: Record<string, any> | undefined, key: string): T | undefined {

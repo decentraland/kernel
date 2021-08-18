@@ -13,7 +13,7 @@ export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, f
     const linearUsersScore = (users: number) => baseScore + users
 
     if (max) {
-      if (count >= max) return -baseScore // A full realm has negative score. They should've been filtered before, but you never know
+      if (count >= max) return -baseScore // A full realm has negative score.
 
       // We try to fill all realms until around the percentage provided
       if (count >= fillTargetPercentage * max) {

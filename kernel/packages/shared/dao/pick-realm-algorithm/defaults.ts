@@ -21,7 +21,7 @@ export const defaultAllPeersScoreConfig: AllPeersScoreParameters = {
   latencyDeductionsParameters: {
     exponentialDivisor: 1500,
     multiplier: 50,
-    maxDeduction: 100
+    maxDeduction: 1000
   }
 }
 

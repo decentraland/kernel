@@ -1,6 +1,6 @@
 import { BannedUsers, CommsConfig, FeatureFlags, MessageOfTheDayConfig, RootMetaState } from './types'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
-import { AlgorithmChainConfig } from 'shared/dao/pickRealmAlgorithm/types'
+import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
   const { config } = store.meta
