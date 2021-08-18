@@ -12,7 +12,9 @@ jobs:
   validations:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
 
       - uses: browser-actions/setup-chrome@latest
 
@@ -42,7 +44,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
 
       - name: Get the current branch name
         shell: bash

@@ -147,24 +147,28 @@
           }
         })
 
-        kernel.trackingEventObservable.add(({ eventName, eventData }) => {
+        kernel.on('trackingEvent', ({ eventName, eventData }) => {
           console.log(`> event`, eventName, eventData)
         })
 
-        kernel.openUrlObservable.add(({ url }) => {
+        kernel.on('openUrl', ({ url }) => {
           const newWindow = window.open(url, '_blank', 'noopener,noreferrer')
           if (newWindow != null) newWindow.opener = null
         })
 
-        kernel.accountStateObservable.add((account) => {
+        kernel.on('accountState', (account) => {
           console.log('> account state', account)
         })
 
-        kernel.signUpObservable.add(({ email }) => {
+        kernel.on('signUp', ({ email }) => {
           console.log(`> sign up ${email}`)
         })
 
-        kernel.errorObservable.add((error) => {
+        kernel.on('logout', (data) => {
+          console.log(`> logout ${data}`)
+        })
+        
+        kernel.on('error', (error) => {
           try {
             handleError('Critical error', '' + (error.error.message || error.error))
           } catch {
@@ -172,12 +176,8 @@
           }
         })
 
-        kernel.rendererVisibleObservable.add((event) => {
+        kernel.on('rendererVisible', (event) => {
           document.getElementById('overlay').style.display = event.visible ? 'none' : 'block'
-        })
-
-        kernel.loadingProgressObservable.add((event) => {
-          console.log('> loading', event)
         })
 
         return kernel
