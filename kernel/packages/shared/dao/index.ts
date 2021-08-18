@@ -32,8 +32,8 @@ import { PIN_CATALYST } from 'config'
 import * as qs from 'query-string'
 import { store } from 'shared/store/isolatedStore'
 import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
-import { defaultChainConfig } from './pickRealmAlgorithm/defaults'
-import { createAlgorithm } from './pickRealmAlgorithm'
+import { defaultChainConfig } from './pick-realm-algorithm/defaults'
+import { createAlgorithm } from './pick-realm-algorithm'
 
 const DEFAULT_TIMEOUT = 5000
 

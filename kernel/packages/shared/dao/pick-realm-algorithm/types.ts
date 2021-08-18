@@ -1,3 +1,4 @@
+import { Candidate, Parcel } from "../types"
 
 export enum AlgorithmLinkTypes {
   LARGE_LATENCY = 'LARGE_LATENCY',
@@ -11,7 +12,7 @@ export type LargeLatencyConfig = {
   config?: LargeLatencyParameters
 }
 
-export type LargeLatencyParameters =  { largeLatencyThreshold: number }
+export type LargeLatencyParameters = { largeLatencyThreshold: number }
 
 export type ClosePeersScoreConfig = {
   type: AlgorithmLinkTypes.CLOSE_PEERS_SCORE
@@ -26,8 +27,8 @@ export type ClosePeersScoreConfig = {
 }
 
 /**
- * Score deduced by latency, equivalent to users. This responds to the following formula: m * (e ^ (x / c) - 1)
- * Where m is the multiplier, e is Euler's number, x is the latency and c is the exponencialDivisor. 
+ * Score deduced by latency, equivalent to users. This responds to the following formula: m * (e ^ (x / d) - 1)
+ * Where m is the multiplier, e is Euler's number, x is the latency and d is the exponencialDivisor. 
  * See here for a visualization of the formula: https://www.desmos.com/calculator/7iiz4njm26
  * By default, these values are 60 for the multiplier, and 700 for the divisor, resulting, for example, in the following values:
  * 
@@ -43,13 +44,13 @@ export type ClosePeersScoreConfig = {
  * 
  * If a maxDeduction is provided, then no more than that number of users will be deduced from the score.
  */
-export type LatencyDeductionsConfig = {
-  multiplier?: number
-  exponentialDivisor?: number
-  maxDeduction?: number
+export type LatencyDeductionsParameters = {
+  multiplier: number
+  exponentialDivisor: number
+  maxDeduction: number
 }
 
-export type LatencyDeductionsParameters = Required<LatencyDeductionsConfig>
+export type LatencyDeductionsConfig = Partial<LatencyDeductionsParameters>
 
 export type ClosePeersScoreParameters = Required<ClosePeersScoreConfig['config']> & {
   latencyDeductionsParameters: LatencyDeductionsParameters
@@ -79,3 +80,13 @@ export type AllPeersScoreParameters = Required<AllPeersScoreConfig['config']> & 
 export type AlgorithmLinkConfig = (LargeLatencyConfig | AllPeersScoreConfig | ClosePeersScoreConfig | LoadBalancingConfig) & { name?: string }
 
 export type AlgorithmChainConfig = AlgorithmLinkConfig[]
+
+/**
+ * The allCandidates attribute lists all candidates. The "picked" candidates is a sorted list of those candidates picked by all the previous links
+ */
+export type AlgorithmContext = { allCandidates: Candidate[], picked: Candidate[], userParcel: Parcel, selected?: Candidate }
+
+export type AlgorithmLink = {
+  name: string,
+  pick: (context: AlgorithmContext) => AlgorithmContext
+}
