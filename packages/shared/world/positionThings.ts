@@ -55,13 +55,17 @@ positionObservable.add(({ position, immediate }) => {
   worldToGrid(position, parcel)
   if (!lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
     parcelObservable.notifyObservers({ previousParcel: lastPlayerParcel, newParcel: parcel, immediate })
-    if (!lastPlayerParcel) {
-      lastPlayerParcel = parcel
-    } else {
-      lastPlayerParcel.copyFrom(parcel)
-    }
+    setLastPlayerParcel(parcel)
   }
 })
+
+function setLastPlayerParcel(parcel: Vector2) {
+  if (!lastPlayerParcel) {
+    lastPlayerParcel = parcel
+  } else {
+    lastPlayerParcel.copyFrom(parcel)
+  }
+}
 
 export function initializeUrlPositionObserver() {
   let lastTime: number = performance.now()
@@ -98,6 +102,12 @@ export function initializeUrlPositionObserver() {
       lastPlayerPosition.z = 0
     }
   }
+
+  const v = Vector2.Zero()
+
+  worldToGrid(lastPlayerPosition, v)
+
+  setLastPlayerParcel(v)
 }
 
 function replaceQueryStringPosition(x: any, y: any) {
@@ -214,4 +224,19 @@ export function getLandBase(land: ILand): { x: number; y: number } {
   } else {
     return parseParcelPosition(land.mappingsResponse.parcel_id)
   }
+}
+
+export async function parcelAvailable(): Promise<ReadOnlyVector2> {
+  if (lastPlayerParcel) return lastPlayerParcel
+
+  return new Promise((resolve, reject) => {
+    parcelObservable.addOnce(parcel => {
+      resolve(parcel.newParcel)
+    })
+
+    setTimeout(() => {
+      if (lastPlayerParcel) resolve(lastPlayerParcel)
+      else reject("Timed out awaiting for parcel")
+    }, 60000)
+  })
 }
