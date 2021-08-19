@@ -2,7 +2,7 @@ import { getTLD } from 'config'
 import { trackEvent } from 'shared/analytics'
 import { ExplorerIdentity } from 'shared/session/types'
 import { defaultLogger } from 'shared/logger'
-import { saveToLocalStorage, getFromLocalStorage, removeFromLocalStorage } from '../../atomicHelpers/localStorage'
+import { saveToPersistentStorage, getFromPersistentStorage, removeFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
 
 const REFERRAL_KEY = 'dcl-referral'
 
@@ -29,7 +29,7 @@ export function saveReferral() {
   const params = new URLSearchParams(location.search)
   const code = params.get('referral')
   if (code) {
-    saveToLocalStorage(REFERRAL_KEY, code)
+    saveToPersistentStorage(REFERRAL_KEY, code)
     trackEvent('referral_save', { code })
 
     params.delete('referral')
@@ -38,7 +38,7 @@ export function saveReferral() {
 }
 
 export function referUser(identity: ExplorerIdentity) {
-  const code = getFromLocalStorage(REFERRAL_KEY)
+  const code = getFromPersistentStorage(REFERRAL_KEY)
   const endpoint = getReferralEndpoint()
   if (code && endpoint && identity && identity.authChain) {
     const options: RequestInit = {
@@ -57,7 +57,7 @@ export function referUser(identity: ExplorerIdentity) {
           const address = identity.address
           const referral_of = result.data.referral_of
           trackEvent('referral_save', { code, address, referral_of })
-          removeFromLocalStorage(REFERRAL_KEY)
+          removeFromPersistentStorage(REFERRAL_KEY)
         }
       })
       .catch((err) => defaultLogger.error(err.message, err))

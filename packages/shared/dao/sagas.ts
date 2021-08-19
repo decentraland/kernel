@@ -26,7 +26,7 @@ import {
 } from '.'
 import { getAddedServers, getCatalystNodesEndpoint, getMinCatalystVersion } from 'shared/meta/selectors'
 import { getAllCatalystCandidates, getSelectedNetwork, isRealmInitialized } from './selectors'
-import { saveToLocalStorage, getFromLocalStorage } from '../../atomicHelpers/localStorage'
+import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
 import defaultLogger from '../logger'
 import {
   BringDownClientAndShowError,
@@ -66,11 +66,11 @@ function* loadCatalystRealms() {
   if (!PREVIEW) {
     const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
 
-    const cachedRealm: Realm | undefined = getFromLocalStorage(getLastRealmCacheKey(network))
+    const cachedRealm: Realm | undefined = getFromPersistentStorage(getLastRealmCacheKey(network))
 
     // check for cached realms if any
     if (cachedRealm && (!PIN_CATALYST || cachedRealm.domain === PIN_CATALYST)) {
-      const cachedCandidates: Candidate[] = getFromLocalStorage(getLastRealmCandidatesCacheKey(network)) ?? []
+      const cachedCandidates: Candidate[] = getFromPersistentStorage(getLastRealmCandidatesCacheKey(network)) ?? []
 
       let configuredRealm: Realm
       if (REALM) {
@@ -192,13 +192,13 @@ function* checkValidRealm(realm: Realm) {
 
 function* cacheCatalystRealm(action: SetCatalystRealm) {
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-  return saveToLocalStorage(getLastRealmCacheKey(network), action.payload)
+  return saveToPersistentStorage(getLastRealmCacheKey(network), action.payload)
 }
 
 function* cacheCatalystCandidates(action: SetCatalystCandidates | SetAddedCatalystCandidates) {
   const allCandidates = yield select(getAllCatalystCandidates)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-  saveToLocalStorage(getLastRealmCandidatesCacheKey(network), allCandidates)
+  saveToPersistentStorage(getLastRealmCandidatesCacheKey(network), allCandidates)
 }
 
 export function* waitForRealmInitialized() {

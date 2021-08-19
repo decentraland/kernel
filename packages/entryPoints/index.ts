@@ -39,6 +39,7 @@ import { onLoginCompleted } from 'shared/session/sagas'
 import { authenticate } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
+import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
 
 const logger = createLogger('kernel: ')
 
@@ -100,6 +101,10 @@ globalThis.DecentralandKernel = {
     options.rendererOptions.baseUrl = await resolveBaseUrl(
       options.rendererOptions.baseUrl || orFail('MISSING rendererOptions.baseUrl')
     )
+    
+    if (options.kernelOptions.storage){
+      setPersistentStorage(options.kernelOptions.storage)
+    }
 
     const { container } = options.rendererOptions
     const { baseUrl } = options.kernelOptions

@@ -551,6 +551,49 @@
     <script src="/@/artifacts/index.js"></script>
 
     <script>
+      function storageMock( { toLocalStorageKey = '' }) {
+        let storage = {};
+
+        function update(){
+          if (toLocalStorageKey !== ''){
+            localStorage.setItem(toLocalStorageKey, JSON.stringify(storage))
+          }
+        }
+        
+        if (toLocalStorageKey !== ''){
+          storage = JSON.parse(localStorage.getItem(toLocalStorageKey) || '{}');
+        }
+
+        return {
+          setItem: function(key, value) {
+            storage[key] = value || '';
+            update();
+          },
+          getItem: function(key) {
+            return key in storage ? storage[key] : null;
+          },
+          removeItem: function(key) {
+            delete storage[key];
+            update();
+          },
+          get length() {
+            return Object.keys(storage).length;
+          },
+          key: function(i) {
+            const keys = Object.keys(storage);
+            return keys[i] || null;
+          }
+        };
+      }
+
+      function getPlayerSessionKey() {
+        const qs = new URLSearchParams(document.location.search)
+        if (qs.has('PLAYER')){
+          return 'dcl-preview-' + qs.get('PLAYER').toLowerCase().replace(' ', '_');
+        }
+        return '';
+      }
+
       function handleError(title, message) {
         const titleElement = document.getElementsByClassName('error-overlay-title')[0]
         const descElement = document.getElementsByClassName('error-overlay-description')[0]
@@ -589,7 +632,10 @@
         const kernel = await DecentralandKernel.initKernel({
           kernelOptions: {
             baseUrl: new URL(`@/artifacts`, location.toString()).toString(),
-            previewMode: true
+            previewMode: true,
+            storage: storageMock({
+              toLocalStorageKey: getPlayerSessionKey()
+            })
           },
           rendererOptions: {
             container,

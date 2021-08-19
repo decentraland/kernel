@@ -1,5 +1,5 @@
 import { exposeMethod, setAPIName } from 'decentraland-rpc/lib/host'
-import { getFromLocalStorage, saveToLocalStorage } from 'atomicHelpers/localStorage'
+import { getFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { ContentClient } from 'dcl-catalyst-client'
 import { EntityType, Pointer, ContentFileHash } from 'dcl-catalyst-commons'
 import { Authenticator } from 'dcl-crypto'
@@ -153,7 +153,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
     const storableFormat = fromSerializedStateToStorableFormat(sceneState)
 
     if (DEBUG) {
-      saveToLocalStorage(`scene-state-${sceneId}`, storableFormat)
+      saveToPersistentStorage(`scene-state-${sceneId}`, storableFormat)
       result = { ok: true }
     } else {
       try {
@@ -238,7 +238,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
   @exposeMethod
   async getStoredState(sceneId: string): Promise<SerializedSceneState | undefined> {
     if (DEBUG) {
-      const sceneState: StorableSceneState = getFromLocalStorage(`scene-state-${sceneId}`)
+      const sceneState: StorableSceneState = getFromPersistentStorage(`scene-state-${sceneId}`)
       if (sceneState) {
         return fromStorableFormatToSerializedState(sceneState)
       }

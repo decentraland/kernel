@@ -12,7 +12,7 @@ import { setLocalInformationForComms } from 'shared/comms/peers'
 import { awaitingUserSignature, AWAITING_USER_SIGNATURE, setLoadingWaitTutorial } from 'shared/loading/types'
 import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
-import { getFromLocalStorage, saveToLocalStorage } from 'atomicHelpers/localStorage'
+import { getFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 
 import { getIdentity, getLastGuestSession, getStoredSession, removeStoredSession, setStoredSession } from './index'
 import { ExplorerIdentity, RootSessionState, SessionState, StoredSession } from './types'
@@ -70,12 +70,12 @@ export function* sessionSaga(): any {
 }
 
 function* initialize() {
-  const tosAgreed: boolean = !!getFromLocalStorage(TOS_KEY)
+  const tosAgreed: boolean = !!getFromPersistentStorage(TOS_KEY)
   yield put(updateTOS(tosAgreed))
 }
 
 function* updateTermOfService(action: any) {
-  return saveToLocalStorage(TOS_KEY, action.payload)
+  return saveToPersistentStorage(TOS_KEY, action.payload)
 }
 
 function* signaturePrompt() {
