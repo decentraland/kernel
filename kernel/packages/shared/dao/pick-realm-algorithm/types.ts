@@ -22,6 +22,10 @@ export type ClosePeersScoreConfig = {
      */
     closePeersDistance?: number,
     baseScore?: number,
+    /**
+     * If the score difference between two candidates is greater than this value, we can make a definitive decision. Otherwise, we delegate to the next link
+     */
+    definitiveDecisionThreshold?: number
     latencyDeductionsParameters?: LatencyDeductionsConfig
   }
 }
@@ -29,7 +33,7 @@ export type ClosePeersScoreConfig = {
 /**
  * Score deduced by latency, equivalent to users. This responds to the following formula: m * (e ^ (x / d) - 1)
  * Where m is the multiplier, e is Euler's number, x is the latency and d is the exponencialDivisor. 
- * See here for a visualization of the formula: https://www.desmos.com/calculator/7iiz4njm26
+ * See here for a visualization of the formula: https://www.desmos.com/calculator/zflj2ik6pl
  * By default, these values are 60 for the multiplier, and 700 for the divisor, resulting, for example, in the following values:
  * 
  * | latency | deduction |
@@ -69,6 +73,10 @@ export type AllPeersScoreConfig = {
     fillTargetPercentage?: number
     /** If the realm has maxUsers, the score will become baseScore when this percentage is reached*/
     discourageFillTargetPercentage?: number
+    /**
+    * If the score difference between two candidates is greater than this value, we can make a definitive decision. Otherwise, we delegate to the next link
+    */
+    definitiveDecisionThreshold?: number
     latencyDeductionsParameters?: LatencyDeductionsConfig
   }
 }

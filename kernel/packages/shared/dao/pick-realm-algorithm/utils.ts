@@ -37,18 +37,31 @@ export function scoreUsingLatencyDeductions(parameters: LatencyDeductionsParamet
   }
 }
 
-export function selectFirstByScore(context: AlgorithmContext, score: (c: Candidate) => number) {
-  const compareFn = (a: Candidate, b: Candidate) => score(b) - score(a)
-
-  return selectFirstBy(context, compareFn)
+export function defaultScoreAddons(latencyDeductionsParameters: LatencyDeductionsParameters, baseScore: number, baseScoreFunction: (c: Candidate) => number) {
+  return memoizedScores(penalizeFull(baseScore, scoreUsingLatencyDeductions(latencyDeductionsParameters, baseScoreFunction)))
 }
 
-export function selectFirstBy(context: AlgorithmContext, compareFn: (a: Candidate, b: Candidate) => number) {
+export function penalizeFull(baseScore: number, baseScoreFunction: (c: Candidate) => number) {
+  return (candidate: Candidate) => {
+    const max = maxUsers(candidate)
+    const count = usersCount(candidate)
+
+    return max && count >= max ? -baseScore : baseScoreFunction(candidate)
+  }
+}
+
+export function selectFirstByScore(context: AlgorithmContext, score: (c: Candidate) => number, almostEqualThreshold: number = 0) {
+  const compareFn = (a: Candidate, b: Candidate) => score(b) - score(a)
+
+  return selectFirstBy(context, compareFn, (a, b) => Math.abs(score(b) - score(a)) < almostEqualThreshold)
+}
+
+export function selectFirstBy(context: AlgorithmContext, compareFn: (a: Candidate, b: Candidate) => number, almostEqual: (a: Candidate, b: Candidate) => boolean = () => false) {
   const sorted = context.picked.sort(compareFn)
 
   context.picked = sorted
 
-  if (context.picked.length === 1 || compareFn(context.picked[0], context.picked[1]) < 0) {
+  if (context.picked.length === 1 || (compareFn(context.picked[0], context.picked[1]) < 0 && !almostEqual(context.picked[0], context.picked[1]))) {
     context.selected = context.picked[0]
   }
 

@@ -1,6 +1,6 @@
 import { Candidate } from "../types"
 import { AlgorithmContext, AlgorithmLink, AlgorithmLinkTypes, AllPeersScoreParameters } from "./types"
-import { usersCount, maxUsers, memoizedScores, scoreUsingLatencyDeductions, selectFirstByScore } from "./utils"
+import { usersCount, maxUsers, selectFirstByScore, defaultScoreAddons } from "./utils"
 
 export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, fillTargetPercentage, latencyDeductionsParameters }: AllPeersScoreParameters): AlgorithmLink {
   function usersScore(candidate: Candidate) {
@@ -13,8 +13,6 @@ export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, f
     const linearUsersScore = (users: number) => baseScore + users
 
     if (max) {
-      if (count >= max) return -baseScore // A full realm has negative score.
-
       // We try to fill all realms until around the percentage provided
       if (count >= fillTargetPercentage * max) {
         // If this is the case, we are in the "downward" phase of the score
@@ -35,7 +33,7 @@ export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, f
   return {
     name: AlgorithmLinkTypes.ALL_PEERS_SCORE,
     pick: (context: AlgorithmContext) => {
-      const score = memoizedScores(scoreUsingLatencyDeductions(latencyDeductionsParameters, usersScore))
+      const score = defaultScoreAddons(latencyDeductionsParameters, baseScore, usersScore)
 
       return selectFirstByScore(context, score)
     }

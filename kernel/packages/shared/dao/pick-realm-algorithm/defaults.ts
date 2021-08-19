@@ -7,10 +7,12 @@ export const defaultLargeLatencyConfig: LargeLatencyParameters = {
 export const defaultClosePeersScoreConfig: ClosePeersScoreParameters = {
   baseScore: 40,
   closePeersDistance: 6,
+  definitiveDecisionThreshold: 10,
   latencyDeductionsParameters: {
-    exponentialDivisor: 700,
-    multiplier: 60,
-    maxDeduction: 10000
+    // Close peers should be quite insensitive to latency because we usually don't have many people close
+    exponentialDivisor: 1500,
+    multiplier: 20,
+    maxDeduction: 200
   }
 }
 
@@ -18,10 +20,11 @@ export const defaultAllPeersScoreConfig: AllPeersScoreParameters = {
   baseScore: 40,
   fillTargetPercentage: 0.5,
   discourageFillTargetPercentage: 0.8,
+  definitiveDecisionThreshold: 10,
   latencyDeductionsParameters: {
-    exponentialDivisor: 1500,
-    multiplier: 50,
-    maxDeduction: 1000
+    exponentialDivisor: 900,
+    multiplier: 60,
+    maxDeduction: 10000
   }
 }
 
