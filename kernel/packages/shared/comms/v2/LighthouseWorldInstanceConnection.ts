@@ -14,8 +14,7 @@ import {
 import { Position, positionHash } from '../interface/utils'
 import defaultLogger, { createLogger } from 'shared/logger'
 import { PeerMessageTypes, PeerMessageType } from 'decentraland-katalyst-peer/src/messageTypes'
-import { Peer as LayerBasedPeerType } from 'decentraland-katalyst-peer'
-import { PeerConfig as LayerBasedPeerConfig } from 'decentraland-katalyst-peer'
+import { Peer as LayerBasedPeerType, PeerConfig as LayerBasedPeerConfig } from 'decentraland-katalyst-peer'
 import {
   Peer as IslandBasedPeer,
   buildCatalystPeerStatsData,

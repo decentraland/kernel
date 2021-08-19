@@ -4,7 +4,7 @@ export enum AlgorithmLinkTypes {
   LARGE_LATENCY = 'LARGE_LATENCY',
   CLOSE_PEERS_SCORE = 'CLOSE_PEERS_SCORE',
   ALL_PEERS_SCORE = 'ALL_PEERS_SCORE',
-  LOAD_BALANCING = 'LOAD_BALANCING',
+  LOAD_BALANCING = 'LOAD_BALANCING'
 }
 
 export type LargeLatencyConfig = {
@@ -20,8 +20,8 @@ export type ClosePeersScoreConfig = {
     /**
      * Distance in parcels to which a peer is considered close, so it can count for the score.
      */
-    closePeersDistance?: number,
-    baseScore?: number,
+    closePeersDistance?: number
+    baseScore?: number
     /**
      * If the score difference between two candidates is greater than this value, we can make a definitive decision. Otherwise, we delegate to the next link
      */
@@ -32,10 +32,10 @@ export type ClosePeersScoreConfig = {
 
 /**
  * Score deduced by latency, equivalent to users. This responds to the following formula: m * (e ^ (x / d) - 1)
- * Where m is the multiplier, e is Euler's number, x is the latency and d is the exponencialDivisor. 
+ * Where m is the multiplier, e is Euler's number, x is the latency and d is the exponencialDivisor.
  * See here for a visualization of the formula: https://www.desmos.com/calculator/zflj2ik6pl
  * By default, these values are 60 for the multiplier, and 700 for the divisor, resulting, for example, in the following values:
- * 
+ *
  * | latency | deduction |
  * | ------- | --------- |
  * | 500     | 62        |
@@ -45,7 +45,7 @@ export type ClosePeersScoreConfig = {
  * | 1500    | 451       |
  * | 1750    | 670       |
  * | 2000    | 984       |
- * 
+ *
  * If a maxDeduction is provided, then no more than that number of users will be deduced from the score.
  */
 export type LatencyDeductionsParameters = {
@@ -71,11 +71,11 @@ export type AllPeersScoreConfig = {
     baseScore?: number,
     /** If the realm has maxUsers, the score will rise only until the target percentage of fullness represented by this value is reached */
     fillTargetPercentage?: number
-    /** If the realm has maxUsers, the score will become baseScore when this percentage is reached*/
+    /** If the realm has maxUsers, the score will become baseScore when this percentage is reached */
     discourageFillTargetPercentage?: number
     /**
-    * If the score difference between two candidates is greater than this value, we can make a definitive decision. Otherwise, we delegate to the next link
-    */
+     * If the score difference between two candidates is greater than this value, we can make a definitive decision. Otherwise, we delegate to the next link
+     */
     definitiveDecisionThreshold?: number
     latencyDeductionsParameters?: LatencyDeductionsConfig
   }
