@@ -13,7 +13,7 @@ describe('Close Peers Score Link', () => {
   it("Should prefer close peers", () => {
     const context = link.pick(contextForCandidates([100, 100],
       { catalystName: "second", usersCount: 10, usersParcels: [[100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]] },
-      { catalystName: "first", usersCount: 10, usersParcels: [[100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100]] },
+      { catalystName: "first", usersCount: 20, usersParcels: [[100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100]] },
       { catalystName: "third", usersCount: 100 })
     )
 
