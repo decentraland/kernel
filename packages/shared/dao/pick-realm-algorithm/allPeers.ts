@@ -18,12 +18,12 @@ export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, f
         // If this is the case, we are in the "downward" phase of the score
         // We calculate a segment joining the fillTargetPercentage% of users with baseScore at discourageFillTargetPercentage% maxUsers
         // In that way, when we reach discourageFillTargetPercentage% maxUsers, realms that have at least one user start to get prioritized
-        const segment = { a: { x: fillTargetPercentage * max, y: linearUsersScore(fillTargetPercentage * max) }, b: { x: discourageFillTargetPercentage * max, y: baseScore } }
+        const segment = { start: { x: fillTargetPercentage * max, y: linearUsersScore(fillTargetPercentage * max) }, end: { x: discourageFillTargetPercentage * max, y: baseScore } }
 
-        const slope = (segment.b.y - segment.a.y) / (segment.b.x - segment.a.x)
+        const slope = (segment.end.y - segment.start.y) / (segment.end.x - segment.start.x)
 
         // The score is the result of calculating the corresponding point of this segment at usersCount
-        return segment.a.y + slope * (count - segment.a.x)
+        return segment.start.y + slope * (count - segment.start.x)
       }
     }
 
