@@ -227,6 +227,15 @@ function checkDiff(imageAPath: string, imageBPath: string, threshold: number, di
     })
   )
 
+  app.use(
+    '/index.html',
+    express.static(resolve(__dirname, '../static/index.html'), {
+      setHeaders: (res) => {
+        res.setHeader('Content-Type', 'text/html')
+      }
+    })
+  )
+
   function getAllParcelIdsBetween(coords: { pointer: string[] }) {
     return Array.isArray(coords.pointer) ? coords.pointer : [coords.pointer] // if a single value is given, we should wrap it in an array
   }
