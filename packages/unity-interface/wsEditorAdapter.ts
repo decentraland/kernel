@@ -67,7 +67,7 @@ export async function initializeUnityEditor(
     logger.info('WS open!')
     gameInstance.SendMessage('', 'Reset', '')
     container.innerHTML = `<h3  style='color:green'>Connected</h3>`
-    // @see kernel/packages/shared/renderer/sagas.ts
+    // @see packages/shared/renderer/sagas.ts
     engineStartedFuture.resolve(gameInstance)
   }
 

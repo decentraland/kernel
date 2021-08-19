@@ -22,24 +22,21 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: 14.x
-          cache: "npm"
+          cache: 'npm'
 
       - name: install
-        working-directory: kernel
         run: npm ci
 
       - name: test-ci
-        working-directory: kernel
         run: make test-ci
         if: ${{ always() }}
 
       - name: lint
-        working-directory: kernel
         run: make lint
         if: ${{ always() }}
 
       # - name: codecov
-      #   working-directory: kernel
+
       #   run: npx codecov
   build:
     runs-on: ubuntu-latest
@@ -50,42 +47,40 @@ jobs:
 
       - name: Get the current branch name
         shell: bash
-        run: echo "::set-output name=branch::${GITHUB_REF#refs/heads/}"
+        run: node -e "console.log('::set-output name=branch::' +    ('${{github.head_ref}}' || '$GITHUB_REF'.replace('refs/heads/',''))    )"
         id: myref
 
       - name: Use Node.js 14.x
         uses: actions/setup-node@v2
         with:
           node-version: 14.x
-          cache: "npm"
+          cache: 'npm'
 
       - name: set package.json version
         uses: menduz/oddish-action@master
         with:
           deterministic-snapshot: true
           only-update-versions: true
-          cwd: ./kernel/static
+          cwd: ./static
 
       - name: install
-        working-directory: kernel
         run: npm ci
 
       - name: build
-        working-directory: kernel
         run: make build-essentials build-release build-deploy
       - uses: hmarr/debug-action@v2
       - name: publish packages
         uses: menduz/oddish-action@master
         with:
-          registry-url: "https://registry.npmjs.org"
+          registry-url: 'https://registry.npmjs.org'
           access: public
-          cwd: ./kernel/static
+          cwd: ./static
           ## use action runId instead of current date to generate snapshot numbers
           deterministic-snapshot: true
 
           ## publish every package to s3
           s3-bucket: ${{ secrets.SDK_TEAM_S3_BUCKET }}
-          s3-bucket-key-prefix: "@dcl/kernel/branch/${{ steps.myref.outputs.branch }}"
+          s3-bucket-key-prefix: '@dcl/kernel/branch/${{ steps.myref.outputs.branch }}'
 
           ## inform gitlab after publishing to proceed with CDN propagation
           gitlab-token: ${{ secrets.GITLAB_TOKEN }}
@@ -105,7 +100,7 @@ jobs:
         run: |
           npx @dcl/cdn-uploader@next \
             --bucket $CDN_BUCKET \
-            --local-folder kernel/static \
+            --local-folder static \
             --bucket-folder "@dcl/kernel/branch/${{ steps.myref.outputs.branch }}"
 
   notify_deployment:
@@ -119,8 +114,13 @@ jobs:
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
+          comment-author: 'github-actions[bot]'
           body-includes: Test this pull request
+
+      - name: Get the current branch name
+        shell: bash
+        run: node -e "console.log('::set-output name=branch::' +    ('${{github.head_ref}}' || '$GITHUB_REF'.replace('refs/heads/',''))    )"
+        id: myref
 
       - name: Create or update comment
         uses: peter-evans/create-or-update-comment@v1
@@ -129,5 +129,5 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             # Test this pull request
-            This branch can be previewed at https://${{ github.head_ref }}
+            This branch can be previewed at https://play.decentraland.zone/?kernel-branch=${{ steps.myref.outputs.branch }}
           edit-mode: replace
