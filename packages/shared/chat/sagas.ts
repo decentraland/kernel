@@ -36,7 +36,7 @@ import { waitForRendererInstance } from 'shared/renderer/sagas'
 interface IChatCommand {
   name: string
   description: string
-  run: (message: string) => ChatMessage
+  run: (message: string) => Promise<ChatMessage>
 }
 
 const chatCommands: { [key: string]: IChatCommand } = {}
@@ -109,7 +109,7 @@ function* handleSendMessage(action: SendMessage) {
 
   // Check if message is a command
   if (message[0] === '/') {
-    entry = handleChatCommand(message)
+    entry = yield call(handleChatCommand, message)
 
     if (entry && entry.body.length === 0) {
       // Command is found but has no feedback message
@@ -146,7 +146,7 @@ function* handleSendMessage(action: SendMessage) {
   getUnityInstance().AddMessageToChatWindow(entry)
 }
 
-function handleChatCommand(message: string) {
+async function handleChatCommand(message: string) {
   const words = message.split(' ')
 
   const command = words[0].substring(1).trim() // remove the leading '/'
@@ -158,13 +158,13 @@ function handleChatCommand(message: string) {
   const cmd = chatCommands[command]
 
   if (cmd) {
-    return cmd.run(restOfMessage)
+    return await cmd.run(restOfMessage)
   }
 
   return null
 }
 
-function addChatCommand(name: string, description: string, fn: (message: string) => ChatMessage): void {
+function addChatCommand(name: string, description: string, fn: (message: string) => Promise<ChatMessage>): void {
   if (chatCommands[name]) {
     // Chat command already registered
     return
@@ -173,12 +173,12 @@ function addChatCommand(name: string, description: string, fn: (message: string)
   chatCommands[name] = {
     name,
     description,
-    run: (message: string) => fn(message)
+    run: async (message: string) => await fn(message)
   }
 }
 
 function initChatCommands() {
-  addChatCommand('goto', 'Teleport to another parcel', (message) => {
+  addChatCommand('goto', 'Teleport to another parcel', async (message) => {
     const coordinates = parseParcelPosition(message)
     const isValid = isFinite(coordinates.x) && isFinite(coordinates.y)
 
@@ -189,9 +189,8 @@ function initChatCommands() {
         response = TeleportController.goToMagic().message
       } else if (message.trim().toLowerCase() === 'random') {
         response = TeleportController.goToRandom().message
-      // TODO: this isn't a async or function generator...
-        // } else if (message.trim().toLowerCase() === 'next') {
-        // response = (await TeleportController.goToNext()).message
+      } else if (message.trim().toLowerCase() === 'next') {
+        response = (await TeleportController.goToNext()).message
       } else if (message.trim().toLowerCase() === 'crowd') {
         response = `Teleporting to a crowd of people in current realm...`
 
@@ -218,7 +217,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('changerealm', 'Changes communications realms', (message) => {
+  addChatCommand('changerealm', 'Changes communications realms', async (message) => {
     const realmString = message.trim()
     let response = ''
 
@@ -267,7 +266,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('players', 'Shows a list of players around you', (message) => {
+  addChatCommand('players', 'Shows a list of players around you',  async (message) => {
     const users = [...peerMap.entries()]
 
     const strings = users
@@ -290,7 +289,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('showfps', 'Show FPS counter', (message) => {
+  addChatCommand('showfps', 'Show FPS counter', async (message) => {
     fpsConfiguration.visible = !fpsConfiguration.visible
     fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
 
@@ -303,7 +302,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('getname', 'Gets your username', (message) => {
+  addChatCommand('getname', 'Gets your username', async (message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
     if (!currentUserProfile) throw new Error('profileNotInitialized')
     return {
@@ -318,7 +317,7 @@ function initChatCommands() {
   addChatCommand(
     'emote',
     'Trigger avatar animation named [expression] ("robot", "wave", or "fistpump")',
-    (expression) => {
+    async (expression) => {
       if (!isValidExpression(expression)) {
         return {
           messageId: uuid(),
@@ -345,7 +344,7 @@ function initChatCommands() {
     }
   )
 
-  let whisperFn = (expression: string) => {
+  let whisperFn = async (expression: string) => {
     const [userName, message] = parseWhisperExpression(expression)
 
     const currentUserId = getCurrentUserId(store.getState())
@@ -432,23 +431,23 @@ function initChatCommands() {
     }
   }
 
-  addChatCommand('mute', 'Mute [username]', (message) => {
+  addChatCommand('mute', 'Mute [username]', async (message) => {
     return performSocialActionOnPlayer(message, mutePlayers, 'mute')
   })
 
-  addChatCommand('unmute', 'Unmute [username]', (message) => {
+  addChatCommand('unmute', 'Unmute [username]', async (message) => {
     return performSocialActionOnPlayer(message, unmutePlayers, 'unmute')
   })
 
-  addChatCommand('block', 'Block [username]', (message) => {
+  addChatCommand('block', 'Block [username]', async (message) => {
     return performSocialActionOnPlayer(message, blockPlayers, 'block')
   })
 
-  addChatCommand('unblock', 'Unblock [username]', (message) => {
+  addChatCommand('unblock', 'Unblock [username]', async (message) => {
     return performSocialActionOnPlayer(message, unblockPlayers, 'unblock')
   })
 
-  addChatCommand('help', 'Show a list of commands', (message) => {
+  addChatCommand('help', 'Show a list of commands', async (message) => {
     return {
       messageId: uuid(),
       messageType: ChatMessageType.SYSTEM,
@@ -466,7 +465,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('feelinglonely', 'Show a list of crowded scenes', (message) => {
+  addChatCommand('feelinglonely', 'Show a list of crowded scenes', async (message) => {
     fetchHotScenes().then(
       ($) => {
         let body = ''
