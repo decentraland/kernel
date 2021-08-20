@@ -492,6 +492,7 @@ export class VoiceCommunicator {
       .catch((e) => defaultLogger.error('Error loading worklet modules: ', e))
       return [aContext, workletInitializedPromise]
     }else{
+      // TODO: trackEvent('error_initializing_worklet') to gain visibility about how many times is this issue happening
       defaultLogger.error('Error loading worklet modules: audioWorklet undefined')
       return [aContext, Promise.resolve()]
     }
