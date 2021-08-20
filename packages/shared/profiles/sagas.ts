@@ -213,7 +213,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
   if (currentId === userId) {
     const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-    const localProfile = yield fetchProfileLocally(userId, net)
+    const localProfile = yield call(fetchProfileLocally,userId, net)
     // checks if profile name was changed on builder
     if (profile && localProfile && localProfile.name !== profile.name) {
       localProfile.name = profile.name

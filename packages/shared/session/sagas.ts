@@ -51,6 +51,7 @@ import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { disconnect, sendToMordor } from 'shared/comms'
+import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
 
 const TOS_KEY = 'tos'
 const logger = createLogger('session: ')
@@ -70,12 +71,12 @@ export function* sessionSaga(): any {
 }
 
 function* initialize() {
-  const tosAgreed: boolean = !!(yield getFromPersistentStorage(TOS_KEY))
+  const tosAgreed: boolean = !!((yield call(getFromPersistentStorage, TOS_KEY)) as boolean)
   yield put(updateTOS(tosAgreed))
 }
 
 function* updateTermOfService(action: any) {
-  yield saveToPersistentStorage(TOS_KEY, action.payload)
+  yield call(saveToPersistentStorage, TOS_KEY, action.payload)
 }
 
 function* signaturePrompt() {
@@ -117,7 +118,8 @@ function* authenticate(action: AuthenticateAction) {
 
   const profileExists: boolean = yield doesProfileExist(identity.address)
   const isGuest: boolean = yield select(getIsGuestLogin)
-  const isGuestWithProfileLocal: boolean = isGuest && !!(yield fetchProfileLocally(identity.address, net))
+  const profileLocally: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
+  const isGuestWithProfileLocal: boolean = isGuest && (profileLocally !== null)
 
   if (profileExists || isGuestWithProfileLocal) {
     yield put(setLoadingWaitTutorial(false))
@@ -132,7 +134,7 @@ function* startSignUp(identity: ExplorerIdentity) {
   yield put(signUpSetIsSignUp(true))
 
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
-  let cachedProfile = yield fetchProfileLocally(identity.address, net)
+  let cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
   let profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
   profile.userId = identity.address
   profile.ethAddress = identity.rawAddress

@@ -12,46 +12,28 @@ class PersistentLocalStorage implements PersistentAsyncStorage {
     }
   }
 
-  clear(): Promise<void> {
-    console.log("PersistentLocalStorage::clear")
-    return new Promise(resolve => {
-      this.storage.clear()
-      resolve()
-    })
+  async clear(): Promise<void> {
+    this.storage.clear()
   }
 
-  getItem(key: string): Promise<string | null> {
-    console.log("PersistentLocalStorage::getItem", key)
-    return new Promise(resolve => {
-      resolve(this.storage.getItem(key))
-    })
+  async getItem(key: string): Promise<string | null> {
+    return this.storage.getItem(key)
   }
 
-  keys(): Promise<string[]> {
-    console.log("PersistentLocalStorage::keys")
-    return new Promise(resolve => {
-      let keys: string[] = []
-      for (let i = 0; i < this.storage.length; i++) {
-        keys.push(this.storage.key(i) as string)
-      }
-      resolve(keys)
-    })
+  async keys(): Promise<string[]> {
+    let keys: string[] = []
+    for (let i = 0; i < this.storage.length; i++) {
+      keys.push(this.storage.key(i) as string)
+    }
+    return keys
   }
 
-  removeItem(key: string): Promise<void> {
-    console.log("PersistentLocalStorage::removeItem", key)
-    return new Promise(resolve => {
-      this.storage.removeItem(key)
-      resolve()
-    })
+  async removeItem(key: string): Promise<void> {
+    this.storage.removeItem(key)
   }
 
-  setItem(key: string, value: string): Promise<void> {
-    console.log("PersistentLocalStorage::setItem", key, value)
-    return new Promise(resolve => {
-      this.storage.setItem(key, value)
-      resolve()
-    })
+  async setItem(key: string, value: string): Promise<void> {
+    this.storage.setItem(key, value)
   }
 
 }

@@ -565,27 +565,19 @@
         }
 
         return {
-          setItem: function(key, value) {
-            return new Promise(resolve => {
-              storage[key] = value || '';
-              update();
-              resolve();
-            });
+          setItem: async function(key, value) {
+            storage[key] = value || '';
+            update();
           },
-          getItem: function(key) {
-            return new Promise(resolve => {
-              resolve(key in storage ? storage[key] : null);
-            });
+          getItem: async function(key) {
+            return (key in storage ? storage[key] : null);
           },
-          removeItem: function(key) {
-            return new Promise(resolve => {
-              delete storage[key];
-              update();
-              resolve()
-            });
+          removeItem: async function(key) {
+            delete storage[key];
+            update();
           },
-          keys: function() {
-            return new Promise(resolve => resolve(Object.keys(storage)));
+          keys: async function() {
+            return Object.keys(storage);
           }
         };
       }

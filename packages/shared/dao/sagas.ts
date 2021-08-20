@@ -66,11 +66,11 @@ function* loadCatalystRealms() {
   if (!PREVIEW) {
     const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
 
-    const cachedRealm: Realm | undefined = yield getFromPersistentStorage(getLastRealmCacheKey(network))
+    const cachedRealm: Realm | undefined = yield call(getFromPersistentStorage, getLastRealmCacheKey(network))
 
     // check for cached realms if any
     if (cachedRealm && (!PIN_CATALYST || cachedRealm.domain === PIN_CATALYST)) {
-      const cachedCandidates: Candidate[] = yield getFromPersistentStorage(getLastRealmCandidatesCacheKey(network)) ?? []
+      const cachedCandidates: Candidate[] = yield call(getFromPersistentStorage, getLastRealmCandidatesCacheKey(network)) ?? []
 
       let configuredRealm: Realm
       if (REALM) {
@@ -198,7 +198,7 @@ function* cacheCatalystRealm(action: SetCatalystRealm) {
 function* cacheCatalystCandidates(action: SetCatalystCandidates | SetAddedCatalystCandidates) {
   const allCandidates = yield select(getAllCatalystCandidates)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-  yield saveToPersistentStorage(getLastRealmCandidatesCacheKey(network), allCandidates)
+  yield call(saveToPersistentStorage, getLastRealmCandidatesCacheKey(network), allCandidates)
 }
 
 export function* waitForRealmInitialized() {
