@@ -551,7 +551,7 @@
     <script src="/@/artifacts/index.js"></script>
 
     <script>
-      function storageMock( { toLocalStorageKey = '' }) {
+      function mockStorage( { toLocalStorageKey = '' }) {
         let storage = {};
 
         function update(){
@@ -633,7 +633,7 @@
           kernelOptions: {
             baseUrl: new URL(`@/artifacts`, location.toString()).toString(),
             previewMode: true,
-            storage: storageMock({
+            persistentStorage: mockStorage({
               toLocalStorageKey: getPlayerSessionKey()
             })
           },

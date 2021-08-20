@@ -102,8 +102,8 @@ globalThis.DecentralandKernel = {
       options.rendererOptions.baseUrl || orFail('MISSING rendererOptions.baseUrl')
     )
     
-    if (options.kernelOptions.storage){
-      setPersistentStorage(options.kernelOptions.storage)
+    if (options.kernelOptions.persistentStorage){
+      setPersistentStorage(options.kernelOptions.persistentStorage)
     }
 
     const { container } = options.rendererOptions
