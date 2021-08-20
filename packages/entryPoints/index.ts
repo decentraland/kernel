@@ -149,7 +149,7 @@ globalThis.DecentralandKernel = {
       async hasStoredSession(address: string, networkId: number) {
         if (!getStoredSession(address)) return { result: false }
 
-        const profile = localProfilesRepo.get(
+        const profile = await localProfilesRepo.get(
           address,
           networkId == 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
         )

@@ -25,11 +25,11 @@ export function getReferralEndpoint() {
   }
 }
 
-export function saveReferral() {
+export async function saveReferral() {
   const params = new URLSearchParams(location.search)
   const code = params.get('referral')
   if (code) {
-    saveToPersistentStorage(REFERRAL_KEY, code)
+    await saveToPersistentStorage(REFERRAL_KEY, code)
     trackEvent('referral_save', { code })
 
     params.delete('referral')
@@ -37,8 +37,8 @@ export function saveReferral() {
   }
 }
 
-export function referUser(identity: ExplorerIdentity) {
-  const code = getFromPersistentStorage(REFERRAL_KEY)
+export async function referUser(identity: ExplorerIdentity) {
+  const code = await getFromPersistentStorage(REFERRAL_KEY)
   const endpoint = getReferralEndpoint()
   if (code && endpoint && identity && identity.authChain) {
     const options: RequestInit = {
@@ -57,7 +57,7 @@ export function referUser(identity: ExplorerIdentity) {
           const address = identity.address
           const referral_of = result.data.referral_of
           trackEvent('referral_save', { code, address, referral_of })
-          removeFromPersistentStorage(REFERRAL_KEY)
+          return removeFromPersistentStorage(REFERRAL_KEY)
         }
       })
       .catch((err) => defaultLogger.error(err.message, err))

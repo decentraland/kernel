@@ -70,12 +70,12 @@ export function* sessionSaga(): any {
 }
 
 function* initialize() {
-  const tosAgreed: boolean = !!getFromPersistentStorage(TOS_KEY)
+  const tosAgreed: boolean = !!(yield getFromPersistentStorage(TOS_KEY))
   yield put(updateTOS(tosAgreed))
 }
 
 function* updateTermOfService(action: any) {
-  return saveToPersistentStorage(TOS_KEY, action.payload)
+  yield saveToPersistentStorage(TOS_KEY, action.payload)
 }
 
 function* signaturePrompt() {
@@ -117,7 +117,7 @@ function* authenticate(action: AuthenticateAction) {
 
   const profileExists: boolean = yield doesProfileExist(identity.address)
   const isGuest: boolean = yield select(getIsGuestLogin)
-  const isGuestWithProfileLocal: boolean = isGuest && !!fetchProfileLocally(identity.address, net)
+  const isGuestWithProfileLocal: boolean = isGuest && !!(yield fetchProfileLocally(identity.address, net))
 
   if (profileExists || isGuestWithProfileLocal) {
     yield put(setLoadingWaitTutorial(false))
@@ -132,7 +132,7 @@ function* startSignUp(identity: ExplorerIdentity) {
   yield put(signUpSetIsSignUp(true))
 
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
-  let cachedProfile = fetchProfileLocally(identity.address, net)
+  let cachedProfile = yield fetchProfileLocally(identity.address, net)
   let profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
   profile.userId = identity.address
   profile.ethAddress = identity.rawAddress
@@ -161,12 +161,12 @@ function* authorize(requestManager: RequestManager) {
   const isGuest: boolean = yield select(getIsGuestLogin)
 
   if (isGuest) {
-    userData = getLastGuestSession()
+    userData = yield getLastGuestSession()
   } else {
     try {
       const address: string = yield getUserAccount(requestManager, false)
       if (address) {
-        userData = getStoredSession(address)
+        userData = yield getStoredSession(address)
 
         if (userData) {
           // We save the raw ethereum address of the current user to avoid having to convert-back later after lowercasing it for the userId
@@ -317,7 +317,7 @@ function* logout() {
   const identity: ExplorerIdentity | undefined = yield select(getIdentity)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   if (identity && identity.address && network) {
-    localProfilesRepo.remove(identity.address, network)
+    yield localProfilesRepo.remove(identity.address, network)
     globalObservable.emit('logout', { address: identity.address, network })
   }
   yield sendToMordor()

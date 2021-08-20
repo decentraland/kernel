@@ -153,7 +153,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
     const storableFormat = fromSerializedStateToStorableFormat(sceneState)
 
     if (DEBUG) {
-      saveToPersistentStorage(`scene-state-${sceneId}`, storableFormat)
+      await saveToPersistentStorage(`scene-state-${sceneId}`, storableFormat)
       result = { ok: true }
     } else {
       try {
@@ -238,7 +238,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
   @exposeMethod
   async getStoredState(sceneId: string): Promise<SerializedSceneState | undefined> {
     if (DEBUG) {
-      const sceneState: StorableSceneState = getFromPersistentStorage(`scene-state-${sceneId}`)
+      const sceneState: StorableSceneState = await getFromPersistentStorage(`scene-state-${sceneId}`)
       if (sceneState) {
         return fromStorableFormatToSerializedState(sceneState)
       }

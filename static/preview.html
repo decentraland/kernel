@@ -566,22 +566,26 @@
 
         return {
           setItem: function(key, value) {
-            storage[key] = value || '';
-            update();
+            return new Promise(resolve => {
+              storage[key] = value || '';
+              update();
+              resolve();
+            });
           },
           getItem: function(key) {
-            return key in storage ? storage[key] : null;
+            return new Promise(resolve => {
+              resolve(key in storage ? storage[key] : null);
+            });
           },
           removeItem: function(key) {
-            delete storage[key];
-            update();
+            return new Promise(resolve => {
+              delete storage[key];
+              update();
+              resolve()
+            });
           },
-          get length() {
-            return Object.keys(storage).length;
-          },
-          key: function(i) {
-            const keys = Object.keys(storage);
-            return keys[i] || null;
+          keys: function() {
+            return new Promise(resolve => resolve(Object.keys(storage)));
           }
         };
       }

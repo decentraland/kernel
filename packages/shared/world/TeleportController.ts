@@ -116,9 +116,9 @@ export class TeleportController {
     return TeleportController.goTo(x, y, tpMessage)
   }
 
-  public static goToNext(): { message: string; success: boolean } {
-    const current = getFromPersistentStorage('launch-campaign-status') || 0
-    saveToPersistentStorage('launch-campaign-status', current + 1)
+  public static async goToNext(): Promise<{ message: string; success: boolean }> {
+    const current = (await getFromPersistentStorage('launch-campaign-status')) || 0
+    await saveToPersistentStorage('launch-campaign-status', current + 1)
     const { x, y } = CAMPAIGN_PARCEL_SEQUENCE[current % CAMPAIGN_PARCEL_SEQUENCE.length]
     return TeleportController.goTo(x, y, `Teleporting you to the next scene... and more treasures!`)
   }

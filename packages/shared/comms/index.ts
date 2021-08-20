@@ -894,7 +894,7 @@ let idTaken = false
 
 export async function connect(userId: string) {
   try {
-    const user = getStoredSession(userId)
+    const user = await getStoredSession(userId)
     if (!user) {
       return undefined
     }
