@@ -74,18 +74,16 @@ export class ClientDebug {
   public StartBotsRandomizedMovement(
       populationNormalizedPercentage: number,
       waypointsUpdateTime: number,
-      xPos: number,
-      yPos: number,
-      zPos: number,
+      xCoord: number,
+      yCoord: number,
       areaWidth: number,
       areaDepth: number
   ) {
     const payload = {
       populationNormalizedPercentage: populationNormalizedPercentage,
       waypointsUpdateTime: waypointsUpdateTime,
-      xPos: xPos,
-      yPos: yPos,
-      zPos: zPos,
+      xCoord: xCoord,
+      yCoord: yCoord,
       areaWidth: areaWidth,
       areaDepth: areaDepth
     }
