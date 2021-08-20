@@ -44,7 +44,7 @@ function* initializeRenderer(action: InitializeRenderer) {
     yield call(initializeEngine, renderer)
 
     // wait for renderer start
-    yield take(RENDERER_INITIALIZED_CORRECTLY)
+    yield call(waitForRendererInstance)
 
     trackEvent('renderer_initializing_end', {
       loading_time: performance.now() - startTime
