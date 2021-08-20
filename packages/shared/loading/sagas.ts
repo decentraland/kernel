@@ -1,7 +1,7 @@
 import { AnyAction } from 'redux'
 import { fork, put, race, select, take, takeEvery } from 'redux-saga/effects'
 
-import { PARCEL_LOADING_STARTED, RENDERER_INITIALIZED } from 'shared/renderer/types'
+import { PARCEL_LOADING_STARTED, RENDERER_INITIALIZED_CORRECTLY } from 'shared/renderer/types'
 import { ChangeLoginStateAction, CHANGE_LOGIN_STAGE } from 'shared/session/actions'
 import { trackEvent } from '../analytics'
 import { lastPlayerPosition } from '../world/positionThings'
@@ -22,7 +22,7 @@ export function* loadingSaga() {
 }
 
 function* translateActions() {
-  yield takeEvery(RENDERER_INITIALIZED, triggerUnityClientLoaded)
+  yield takeEvery(RENDERER_INITIALIZED_CORRECTLY, triggerUnityClientLoaded)
   yield takeEvery(CHANGE_LOGIN_STAGE, triggerAuthSuccessful)
 }
 

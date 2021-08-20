@@ -1,6 +1,6 @@
-import { UnityGame } from '@dcl/unity-renderer/src'
+import type { UnityGame } from '@dcl/unity-renderer/src'
 import { TRACE_RENDERER } from 'config'
-import { CommonRendererOptions } from './loader'
+import type { CommonRendererOptions } from './loader'
 
 let pendingMessagesInTrace = 0
 let currentTrace: string[] = []

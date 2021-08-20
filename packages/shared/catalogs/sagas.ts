@@ -3,7 +3,6 @@ import { call, put, select, takeEvery } from 'redux-saga/effects'
 import { WITH_FIXED_COLLECTIONS, getAssetBundlesBaseUrl, getTLD, PREVIEW, DEBUG, ETHEREUM_NETWORK } from 'config'
 
 import defaultLogger from 'shared/logger'
-import { RENDERER_INITIALIZED } from 'shared/renderer/types'
 import {
   WearablesFailure,
   wearablesFailure,
@@ -21,7 +20,6 @@ import {
   PartialWearableV2,
   UnpublishedWearable
 } from './types'
-import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
@@ -47,15 +45,9 @@ export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1.
  *
  */
 export function* catalogsSaga(): any {
-  yield takeEvery(RENDERER_INITIALIZED, initialLoad)
-
   yield takeEvery(WEARABLES_REQUEST, handleWearablesRequest)
   yield takeEvery(WEARABLES_SUCCESS, handleWearablesSuccess)
   yield takeEvery(WEARABLES_FAILURE, handleWearablesFailure)
-}
-
-function* initialLoad() {
-  yield call(waitForRealmInitialized)
 }
 
 export function* handleWearablesRequest(action: WearablesRequest) {
