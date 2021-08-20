@@ -1,5 +1,5 @@
 import { AnyAction } from 'redux'
-import { PARCEL_LOADING_STARTED, RendererState, RENDERER_INITIALIZED } from './types'
+import { PARCEL_LOADING_STARTED, RendererState, RENDERER_INITIALIZED_CORRECTLY } from './types'
 
 const INITIAL_STATE: RendererState = {
   initialized: false,
@@ -14,7 +14,7 @@ export function rendererReducer(state?: RendererState, action?: AnyAction): Rend
     return state
   }
   switch (action.type) {
-    case RENDERER_INITIALIZED:
+    case RENDERER_INITIALIZED_CORRECTLY:
       return {
         ...state,
         initialized: true
