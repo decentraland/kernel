@@ -8,17 +8,26 @@ import { USER_AUTHENTIFIED } from '../session/actions'
 import { getCurrentUserId } from '../session/selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
+import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { RootState } from 'shared/store/rootTypes'
 
-function bannedUsersFromVariants(variants: Record<string, any> | undefined): BannedUsers | undefined {
-  const variant = variants?.['explorer-banned_users']
+function valueFromVariants<T>(variants: Record<string, any> | undefined, key: string): T | undefined {
+  const variant = variants?.[key]
   if (variant && variant.enabled) {
     try {
       return JSON.parse(variant.payload.value)
     } catch (e) {
-      defaultLogger.warn("Couldn't parse banned users from variants. The variants response was: ", variants)
+      defaultLogger.warn(`Couldn't parse value for ${key} from variants. The variants response was: `, variants)
     }
   }
+}
+
+function bannedUsersFromVariants(variants: Record<string, any> | undefined): BannedUsers | undefined {
+  return valueFromVariants(variants, 'explorer-banned_users')
+}
+
+function pickRealmAlgorithmConfigFromVariants(variants: Record<string, any> | undefined): AlgorithmChainConfig | undefined {
+  return valueFromVariants(variants, 'explorer-pick_realm_algorithm_config')
 }
 
 export function* waitForMetaConfigurationInitialization() {
@@ -46,7 +55,8 @@ function* initMeta() {
   const merge: Partial<MetaConfiguration> = {
     ...config,
     featureFlags: flagsAndVariants?.flags,
-    bannedUsers: bannedUsersFromVariants(flagsAndVariants?.variants)
+    bannedUsers: bannedUsersFromVariants(flagsAndVariants?.variants),
+    pickRealmAlgorithmConfig: pickRealmAlgorithmConfigFromVariants(flagsAndVariants?.variants)
   }
 
   if (FORCE_RENDERING_STYLE) {
