@@ -71,6 +71,31 @@ export class ClientDebug {
     this.unityInterface.SendMessageToUnity('Main', 'InstantiateBotsAtCoords', JSON.stringify(payload))
   }
 
+  public StartBotsRandomizedMovement(
+      populationNormalizedPercentage: number,
+      waypointsUpdateTime: number,
+      xPos: number,
+      yPos: number,
+      zPos: number,
+      areaWidth: number,
+      areaDepth: number
+  ) {
+    const payload = {
+      populationNormalizedPercentage: populationNormalizedPercentage,
+      waypointsUpdateTime: waypointsUpdateTime,
+      xPos: xPos,
+      yPos: yPos,
+      zPos: zPos,
+      areaWidth: areaWidth,
+      areaDepth: areaDepth
+    }
+    this.unityInterface.SendMessageToUnity('Main', 'StartBotsRandomizedMovement', JSON.stringify(payload))
+  }
+
+  public StopBotsMovement() {
+    this.unityInterface.SendMessageToUnity('Main', 'StopBotsMovement')
+  }
+
   public RemoveBot(targetEntityId: string) {
     this.unityInterface.SendMessageToUnity('Main', 'RemoveBot', targetEntityId)
   }
