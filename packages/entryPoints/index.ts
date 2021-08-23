@@ -148,7 +148,7 @@ globalThis.DecentralandKernel = {
       version: 'mockedversion',
       // this method is used for auto-login
       async hasStoredSession(address: string, networkId: number) {
-        if (!getStoredSession(address)) return { result: false }
+        if (!await getStoredSession(address)) return { result: false }
 
         const profile = await localProfilesRepo.get(
           address,

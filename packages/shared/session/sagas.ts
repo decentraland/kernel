@@ -163,12 +163,12 @@ function* authorize(requestManager: RequestManager) {
   const isGuest: boolean = yield select(getIsGuestLogin)
 
   if (isGuest) {
-    userData = yield getLastGuestSession()
+    userData = yield call(getLastGuestSession)
   } else {
     try {
-      const address: string = yield getUserAccount(requestManager, false)
+      const address: string = yield call(getUserAccount, requestManager, false)
       if (address) {
-        userData = yield getStoredSession(address)
+        userData = yield call(getStoredSession, address)
 
         if (userData) {
           // We save the raw ethereum address of the current user to avoid having to convert-back later after lowercasing it for the userId
