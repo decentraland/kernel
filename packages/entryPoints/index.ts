@@ -230,6 +230,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     })
 
   startRealmsReportToRenderer()
+
   await realmInitialized()
 
   function reportForeground() {
@@ -258,6 +259,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     })
 
   await startUnitySceneWorkers()
+
   teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
 
   if (options.previewMode) {

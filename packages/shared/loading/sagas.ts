@@ -6,19 +6,36 @@ import { ChangeLoginStateAction, CHANGE_LOGIN_STAGE } from 'shared/session/actio
 import { trackEvent } from '../analytics'
 import { lastPlayerPosition } from '../world/positionThings'
 
-import { PENDING_SCENES, SceneLoad, SCENE_FAIL, SCENE_LOAD, SCENE_START } from './actions'
+import { PENDING_SCENES, SceneFail, SceneLoad, SCENE_FAIL, SCENE_LOAD, SCENE_START } from './actions'
 import { metricsUnityClientLoaded, metricsAuthSuccessful, experienceStarted } from './types'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { LoginState } from '@dcl/kernel-interface'
 import { call } from 'redux-saga-test-plan/matchers'
 import { RootState } from 'shared/store/rootTypes'
 import { onLoginCompleted } from 'shared/session/sagas'
+import { getResourcesURL } from 'shared/location'
+import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
+import { getAssetBundlesBaseUrl } from 'config'
 
 export function* loadingSaga() {
   yield takeEvery(SCENE_LOAD, trackLoadTime)
+  yield takeEvery(SCENE_FAIL, reportFailedScene)
 
   yield fork(translateActions)
   yield fork(initialSceneLoading)
+}
+
+function* reportFailedScene(action: SceneFail) {
+  const sceneId = action.payload
+  const fullRootUrl = getResourcesURL('.')
+
+  trackEvent('scene_loading_failed', {
+    sceneId,
+    contentServer: yield select(getFetchContentServer),
+    catalystServer: yield select(getCatalystServer),
+    contentServerBundles: getAssetBundlesBaseUrl(yield select(getSelectedNetwork)) + '/',
+    rootUrl: fullRootUrl
+  })
 }
 
 function* translateActions() {
