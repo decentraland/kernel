@@ -195,7 +195,7 @@ function* checkValidRealm(realm: Realm) {
 
 function* cacheCatalystRealm(action: SetCatalystRealm) {
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-  return saveToPersistentStorage(getLastRealmCacheKey(network), action.payload)
+  yield call(saveToPersistentStorage, getLastRealmCacheKey(network), action.payload)
 }
 
 function* cacheCatalystCandidates(action: SetCatalystCandidates | SetAddedCatalystCandidates) {

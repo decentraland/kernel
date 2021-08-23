@@ -1,5 +1,6 @@
 import { saveReferral } from './utils'
+import { call } from 'redux-saga/effects'
 
 export function* initializeReferral() {
-  saveReferral()
+  yield call(saveReferral)
 }

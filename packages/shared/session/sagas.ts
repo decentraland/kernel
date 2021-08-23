@@ -201,10 +201,10 @@ function* signIn(identity: ExplorerIdentity) {
   logger.log(`User ${identity.address} logged in`)
 
   const isGuest: boolean = yield select(getIsGuestLogin)
-  saveSession(identity, isGuest)
+  yield call(saveSession, identity, isGuest)
 
   if (identity.hasConnectedWeb3) {
-    referUser(identity)
+    yield call(referUser, identity)
   }
 
   let net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -249,10 +249,10 @@ function* cancelSignUp() {
   yield put(changeLoginState(LoginState.WAITING_PROVIDER))
 }
 
-function saveSession(identity: ExplorerIdentity, isGuest: boolean) {
+async function saveSession(identity: ExplorerIdentity, isGuest: boolean) {
   const userId = identity.address
 
-  setStoredSession({
+  await setStoredSession({
     identity,
     isGuest
   })
@@ -325,7 +325,7 @@ function* logout() {
   yield sendToMordor()
   disconnect()
   if (identity?.address) {
-    removeStoredSession(identity.address)
+    yield call(removeStoredSession, identity.address)
   }
   window.location.reload()
 }

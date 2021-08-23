@@ -15,7 +15,7 @@ function sessionKey(userId: string) {
   return `${SESSION_KEY_PREFIX}-${userId.toLocaleLowerCase()}`
 }
 
-export const setStoredSession: (session: StoredSession) => void =  async (session) => {
+export const setStoredSession: (session: StoredSession) => Promise<void> = async (session) => {
   await saveToPersistentStorage(LAST_SESSION_KEY, session.identity.address)
   await saveToPersistentStorage(sessionKey(session.identity.address), session)
 }
@@ -29,7 +29,7 @@ export const getStoredSession: (userId: string) => Promise<StoredSession | null>
     // If not existing session was found, we check the old session storage
     const oldSession: StoredSession | null = (await getFromPersistentStorage('dcl-profile')) || {}
     if (oldSession && oldSession.identity && oldSession.identity.address === userId) {
-      setStoredSession(oldSession)
+      await setStoredSession(oldSession)
       return oldSession
     }
   }
