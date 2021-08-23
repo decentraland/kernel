@@ -36,7 +36,7 @@ import { waitForRendererInstance } from 'shared/renderer/sagas'
 interface IChatCommand {
   name: string
   description: string
-  run: (message: string) => Promise<ChatMessage>
+  run: (message: string) => ChatMessage
 }
 
 const chatCommands: { [key: string]: IChatCommand } = {}
@@ -109,7 +109,7 @@ function* handleSendMessage(action: SendMessage) {
 
   // Check if message is a command
   if (message[0] === '/') {
-    entry = yield call(handleChatCommand, message)
+    entry = handleChatCommand(message)
 
     if (entry && entry.body.length === 0) {
       // Command is found but has no feedback message
@@ -146,7 +146,7 @@ function* handleSendMessage(action: SendMessage) {
   getUnityInstance().AddMessageToChatWindow(entry)
 }
 
-async function handleChatCommand(message: string) {
+function handleChatCommand(message: string) {
   const words = message.split(' ')
 
   const command = words[0].substring(1).trim() // remove the leading '/'
@@ -158,13 +158,13 @@ async function handleChatCommand(message: string) {
   const cmd = chatCommands[command]
 
   if (cmd) {
-    return await cmd.run(restOfMessage)
+    return cmd.run(restOfMessage)
   }
 
   return null
 }
 
-function addChatCommand(name: string, description: string, fn: (message: string) => Promise<ChatMessage>): void {
+function addChatCommand(name: string, description: string, fn: (message: string) => ChatMessage): void {
   if (chatCommands[name]) {
     // Chat command already registered
     return
@@ -173,12 +173,12 @@ function addChatCommand(name: string, description: string, fn: (message: string)
   chatCommands[name] = {
     name,
     description,
-    run: async (message: string) => await fn(message)
+    run: (message: string) => fn(message)
   }
 }
 
 function initChatCommands() {
-  addChatCommand('goto', 'Teleport to another parcel', async (message) => {
+  addChatCommand('goto', 'Teleport to another parcel', (message) => {
     const coordinates = parseParcelPosition(message)
     const isValid = isFinite(coordinates.x) && isFinite(coordinates.y)
 
@@ -189,8 +189,9 @@ function initChatCommands() {
         response = TeleportController.goToMagic().message
       } else if (message.trim().toLowerCase() === 'random') {
         response = TeleportController.goToRandom().message
-      } else if (message.trim().toLowerCase() === 'next') {
-        response = (await TeleportController.goToNext()).message
+      // TODO: this isn't a async or function generator...
+        // } else if (message.trim().toLowerCase() === 'next') {
+        // response = (await TeleportController.goToNext()).message
       } else if (message.trim().toLowerCase() === 'crowd') {
         response = `Teleporting to a crowd of people in current realm...`
 
@@ -217,7 +218,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('changerealm', 'Changes communications realms', async (message) => {
+  addChatCommand('changerealm', 'Changes communications realms', (message) => {
     const realmString = message.trim()
     let response = ''
 
@@ -266,7 +267,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('players', 'Shows a list of players around you',  async (message) => {
+  addChatCommand('players', 'Shows a list of players around you', (message) => {
     const users = [...peerMap.entries()]
 
     const strings = users
@@ -289,7 +290,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('showfps', 'Show FPS counter', async (message) => {
+  addChatCommand('showfps', 'Show FPS counter', (message) => {
     fpsConfiguration.visible = !fpsConfiguration.visible
     fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
 
@@ -302,7 +303,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('getname', 'Gets your username', async (message) => {
+  addChatCommand('getname', 'Gets your username', (message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
     if (!currentUserProfile) throw new Error('profileNotInitialized')
     return {
@@ -317,7 +318,7 @@ function initChatCommands() {
   addChatCommand(
     'emote',
     'Trigger avatar animation named [expression] ("robot", "wave", or "fistpump")',
-    async (expression) => {
+    (expression) => {
       if (!isValidExpression(expression)) {
         return {
           messageId: uuid(),
@@ -344,7 +345,7 @@ function initChatCommands() {
     }
   )
 
-  let whisperFn = async (expression: string) => {
+  let whisperFn = (expression: string) => {
     const [userName, message] = parseWhisperExpression(expression)
 
     const currentUserId = getCurrentUserId(store.getState())
@@ -431,23 +432,23 @@ function initChatCommands() {
     }
   }
 
-  addChatCommand('mute', 'Mute [username]', async (message) => {
+  addChatCommand('mute', 'Mute [username]', (message) => {
     return performSocialActionOnPlayer(message, mutePlayers, 'mute')
   })
 
-  addChatCommand('unmute', 'Unmute [username]', async (message) => {
+  addChatCommand('unmute', 'Unmute [username]', (message) => {
     return performSocialActionOnPlayer(message, unmutePlayers, 'unmute')
   })
 
-  addChatCommand('block', 'Block [username]', async (message) => {
+  addChatCommand('block', 'Block [username]', (message) => {
     return performSocialActionOnPlayer(message, blockPlayers, 'block')
   })
 
-  addChatCommand('unblock', 'Unblock [username]', async (message) => {
+  addChatCommand('unblock', 'Unblock [username]', (message) => {
     return performSocialActionOnPlayer(message, unblockPlayers, 'unblock')
   })
 
-  addChatCommand('help', 'Show a list of commands', async (message) => {
+  addChatCommand('help', 'Show a list of commands', (message) => {
     return {
       messageId: uuid(),
       messageType: ChatMessageType.SYSTEM,
@@ -465,7 +466,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('feelinglonely', 'Show a list of crowded scenes', async (message) => {
+  addChatCommand('feelinglonely', 'Show a list of crowded scenes', (message) => {
     fetchHotScenes().then(
       ($) => {
         let body = ''
