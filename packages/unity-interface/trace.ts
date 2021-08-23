@@ -1,6 +1,6 @@
-import { UnityGame } from '@dcl/unity-renderer/src'
+import type { UnityGame } from '@dcl/unity-renderer/src'
 import { TRACE_RENDERER } from 'config'
-import { CommonRendererOptions } from './loader'
+import type { CommonRendererOptions } from './loader'
 
 let pendingMessagesInTrace = 0
 let currentTrace: string[] = []
@@ -64,12 +64,12 @@ export function logTrace(type: string, payload: string | number, direction: 'RK'
       console.log('[TRACING] Pending messages to download: ' + pendingMessagesInTrace)
     }
     if (pendingMessagesInTrace == 0) {
-      finishTrace()
+      endTrace()
     }
   }
 }
 
-function finishTrace() {
+export function endTrace() {
   pendingMessagesInTrace = 0
   const content = currentTrace.join('\n')
   let file = new File([content], 'decentraland-trace.csv', { type: 'text/csv' })
@@ -80,6 +80,7 @@ function finishTrace() {
 }
 
 ;(globalThis as any).beginTrace = beginTrace
+;(globalThis as any).endTrace = endTrace
 
 const parametricTrace = parseInt(TRACE_RENDERER || '0', 10)
 if (!isNaN(parametricTrace) && parametricTrace > 0) {

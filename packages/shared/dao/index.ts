@@ -8,7 +8,8 @@ import {
   PingResult,
   HealthStatus,
   LayerBasedCandidate,
-  IslandsBasedCandidate
+  IslandsBasedCandidate,
+  Parcel
 } from './types'
 import { Store } from 'redux'
 import {
@@ -30,37 +31,11 @@ import { realmToString } from './utils/realmToString'
 import { PIN_CATALYST } from 'config'
 import * as qs from 'query-string'
 import { store } from 'shared/store/isolatedStore'
+import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
+import { defaultChainConfig } from './pick-realm-algorithm/defaults'
+import { createAlgorithm } from './pick-realm-algorithm'
 
 const DEFAULT_TIMEOUT = 5000
-
-const v = 50
-// See here: https://github.com/decentraland/explorer/pull/604
-const layerScore = ({ usersCount, maxUsers = 50 }: Layer) => {
-  if (usersCount === 0) {
-    return -v
-  }
-  if (usersCount >= maxUsers) {
-    // We prefer empty layers to full layers
-    return -10 * v
-  }
-
-  const phase = -Math.PI / 1.8
-
-  const period = Math.PI / (0.67 * (maxUsers ? maxUsers : 50))
-
-  return v + v * Math.cos(phase + period * usersCount)
-}
-
-// When using islands, the more users the better. We also prioritize these over the old lighthouses.
-// That means the score starts over 100 for any candidate that has at least 1 user.
-// We should probably revamp score altogether
-const islandsScore = (usersCount: number) => {
-  if (usersCount === 0) {
-    return -v + 1 // if we have two empty realms, one old and one new, we prioritize the new one
-  }
-
-  return 100 + usersCount
-}
 
 export async function ping(url: string, timeoutMs: number = 5000): Promise<PingResult> {
   try {
@@ -176,16 +151,27 @@ export function peerHealthStatusUrl(domain: string) {
   return `${domain}/lambdas/health`
 }
 
-export function commsStatusUrl(domain: string, includeLayers: boolean = false) {
+export function commsStatusUrl(domain: string, includeLayers: boolean = false, includeUsersParcels: boolean = false) {
   let url = `${domain}/comms/status`
+  const queryParameters: string[] = []
+
   if (includeLayers) {
-    url += `?includeLayers=true`
+    queryParameters.push("includeLayers=true")
   }
+
+  if (includeUsersParcels) {
+    queryParameters.push("includeUsersParcels=true")
+  }
+
+  if (queryParameters.length > 0) {
+    url += "?" + queryParameters.join("&")
+  }
+
   return url
 }
 
 export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
-  const results: PingResult[] = await Promise.all(nodes.map((node) => ping(commsStatusUrl(node.domain, true))))
+  const results: PingResult[] = await Promise.all(nodes.map((node) => ping(commsStatusUrl(node.domain, true, true))))
 
   return zip(nodes, results).reduce(
     (union: Candidate[], [{ domain }, { elapsed, result, status }]: [CatalystNode, PingResult]) => {
@@ -204,17 +190,17 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
         return {
           ...buildBaseCandidate(),
           layer,
-          type: 'layer-based',
-          score: layerScore(layer)
+          type: 'layer-based'
         }
       }
 
-      function buildIslandsCandidate(usersCount: number): IslandsBasedCandidate {
+      function buildIslandsCandidate(usersCount: number, usersParcels: Parcel[] | undefined, maxUsers: number | undefined): IslandsBasedCandidate {
         return {
           ...buildBaseCandidate(),
           usersCount,
-          type: 'islands-based',
-          score: islandsScore(usersCount)
+          maxUsers,
+          usersParcels,
+          type: 'islands-based'
         }
       }
 
@@ -222,7 +208,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
         if (result!.layers) {
           return [...union, ...result!.layers.map((layer) => buildLayerCandidate(layer))]
         } else {
-          return [...union, buildIslandsCandidate(result!.usersCount!)]
+          return [...union, buildIslandsCandidate(result!.usersCount!, result!.usersParcels, result!.maxUsers)]
         }
       } else return union
     },
@@ -230,47 +216,16 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
   )
 }
 
-function candidateUsers(candidate: Candidate) {
-  return candidate.type === 'layer-based' ? candidate.layer.usersCount : candidate.usersCount
-}
+export function pickCatalystRealm(candidates: Candidate[], currentUserParcel: Parcel): Realm {
+  let config = getPickRealmsAlgorithmConfig(store.getState())
 
-export function pickCatalystRealm(candidates: Candidate[]): Realm {
-  const usersByDomain: Record<string, number> = {}
-
-  candidates.forEach((it) => {
-    if (!usersByDomain[it.domain]) {
-      usersByDomain[it.domain] = 0
-    }
-
-    usersByDomain[it.domain] += candidateUsers(it)
-  })
-
-  const sorted = candidates
-    .filter((it) => it)
-    .filter(
-      (it) =>
-        it.status === ServerConnectionStatus.OK &&
-        (it.type === 'islands-based' || it.layer.usersCount < it.layer.maxUsers)
-    )
-    .sort((c1, c2) => {
-      const elapsedDiff = c1.elapsed - c2.elapsed
-      const usersDiff = usersByDomain[c1.domain] - usersByDomain[c2.domain]
-      const scoreDiff = c2.score - c1.score
-
-      return Math.abs(elapsedDiff) > 1500
-        ? elapsedDiff // If the latency difference is greater than 1500, we consider that as the main factor
-        : scoreDiff !== 0
-        ? scoreDiff // If there's score difference, we consider that
-        : usersDiff !== 0
-        ? usersDiff // If the score is the same (as when they are empty)
-        : elapsedDiff // If the candidates have the same score by users, we consider the latency again
-    })
-
-  if (sorted.length === 0 && candidates.length > 0) {
-    throw new Error('No available realm found!')
+  if (!config || config.length === 0) {
+    config = defaultChainConfig
   }
 
-  return candidateToRealm(sorted[0])
+  const algorithm = createAlgorithm(config)
+
+  return candidateToRealm(algorithm.pickCandidate(candidates, currentUserParcel))
 }
 
 export async function candidatesFetched(): Promise<void> {

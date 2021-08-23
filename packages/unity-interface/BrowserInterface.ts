@@ -68,6 +68,7 @@ import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
+import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export let futures: Record<string, IFuture<any>> = {}
@@ -182,6 +183,12 @@ export class BrowserInterface {
 
   public SystemInfoReport(data: SystemInfoPayload) {
     trackEvent('system info report', data)
+
+    queueMicrotask(() => {
+      // send an "engineStarted" notification, use a queueMicrotask
+      // to escape the current stack leveraging the JS event loop
+      store.dispatch(signalRendererInitializedCorrectly())
+    })
   }
 
   public CrashPayloadResponse(data: { payload: any }) {
@@ -200,7 +207,7 @@ export class BrowserInterface {
       }
     }
 
-    trackEvent(data.name, properties)
+    trackEvent(data.name, { context: properties.context || 'unity-event', ...properties })
   }
 
   public TriggerExpression(data: { id: string; timestamp: number }) {
@@ -225,7 +232,7 @@ export class BrowserInterface {
   }
 
   public TermsOfServiceResponse(data: { sceneId: string; accepted: boolean; dontShowAgain: boolean }) {
-    // TODO
+    trackEvent('TermsOfServiceResponse', data)
   }
 
   public MotdConfirmClicked() {

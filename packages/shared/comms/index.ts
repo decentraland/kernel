@@ -10,7 +10,7 @@ import {
 import { CommunicationsController } from 'shared/apis/CommunicationsController'
 import { defaultLogger } from 'shared/logger'
 import { ChatMessage as InternalChatMessage, ChatMessageType, SceneFeatureToggles } from 'shared/types'
-import { positionObservable, PositionReport } from 'shared/world/positionThings'
+import { lastPlayerParcel, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { lastPlayerScene } from 'shared/world/sceneState'
 import { ProfileAsPromise } from '../profiles/ProfileAsPromise'
 import { notifyStatusThroughChat } from './chat'
@@ -531,28 +531,28 @@ function processProfileRequest(context: Context, fromAlias: string, message: Pac
   if (context.sendingProfileResponse) return
 
   context.sendingProfileResponse = true
-  ;(async () => {
-    const timeSinceLastProfile = Date.now() - context.lastProfileResponseTime
+    ; (async () => {
+      const timeSinceLastProfile = Date.now() - context.lastProfileResponseTime
 
-    // We don't want to send profile responses too frequently, so we delay the response to send a maximum of 1 per TIME_BETWEEN_PROFILE_RESPONSES
-    if (timeSinceLastProfile < TIME_BETWEEN_PROFILE_RESPONSES) {
-      await sleep(TIME_BETWEEN_PROFILE_RESPONSES - timeSinceLastProfile)
-    }
+      // We don't want to send profile responses too frequently, so we delay the response to send a maximum of 1 per TIME_BETWEEN_PROFILE_RESPONSES
+      if (timeSinceLastProfile < TIME_BETWEEN_PROFILE_RESPONSES) {
+        await sleep(TIME_BETWEEN_PROFILE_RESPONSES - timeSinceLastProfile)
+      }
 
-    const profile = await ProfileAsPromise(
-      myAddress,
-      message.data.version ? parseInt(message.data.version, 10) : undefined,
-      getProfileType(myIdentity)
-    )
+      const profile = await ProfileAsPromise(
+        myAddress,
+        message.data.version ? parseInt(message.data.version, 10) : undefined,
+        getProfileType(myIdentity)
+      )
 
-    if (context.currentPosition) {
-      context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
-    }
+      if (context.currentPosition) {
+        context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
+      }
 
-    context.lastProfileResponseTime = Date.now()
-  })()
-    .finally(() => (context.sendingProfileResponse = false))
-    .catch((e) => defaultLogger.error('Error getting profile for responding request to comms', e))
+      context.lastProfileResponseTime = Date.now()
+    })()
+      .finally(() => (context.sendingProfileResponse = false))
+      .catch((e) => defaultLogger.error('Error getting profile for responding request to comms', e))
 }
 
 function processProfileResponse(context: Context, fromAlias: string, message: Package<ProfileResponse>) {
@@ -1220,7 +1220,7 @@ async function doStartCommunications(context: Context) {
       voiceCommunicator.addStreamRecordingListener((recording) => {
         store.dispatch(voiceRecordingUpdate(recording))
       })
-      ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
+        ; (globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
     }
   } catch (e) {
     throw new ConnectionEstablishmentError(e.message)
@@ -1236,7 +1236,7 @@ function handleReconnectionError() {
 
   const candidates = getAllCatalystCandidates(store.getState())
 
-  const otherRealm = pickCatalystRealm(candidates)
+  const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
 
   const notificationMessage = realm
     ? `Lost connection to ${realmToString(realm)}, joining realm ${realmToString(otherRealm)} instead`
@@ -1262,7 +1262,7 @@ function handleFullLayer() {
 
   const candidates = getAllCatalystCandidates(store.getState())
 
-  const otherRealm = pickCatalystRealm(candidates)
+  const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
 
   notifyStatusThroughChat(
     `Joining realm ${otherRealm.catalystName}-${otherRealm.layer} since the previously requested was full`

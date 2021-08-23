@@ -17,6 +17,8 @@ export type CatalystStatus = {
   version: string
   layers?: Layer[]
   usersCount?: number
+  maxUsers?: number
+  usersParcels?: Parcel[]
   env: {
     catalystVersion: string
   }
@@ -26,7 +28,6 @@ type BaseCandidate = {
   domain: string
   catalystName: string
   elapsed: number
-  score: number
   status: ServerConnectionStatus
   lighthouseVersion: string
   catalystVersion: string
@@ -40,15 +41,19 @@ export type LayerBasedCandidate = {
 export type IslandsBasedCandidate = {
   type: 'islands-based'
   usersCount: number
+  usersParcels?: Parcel[]
+  maxUsers?: number
 } & BaseCandidate
 
 export type Candidate = LayerBasedCandidate | IslandsBasedCandidate
+
+export type Parcel = [number, number]
 
 export type LayerUserInfo = {
   userId: string
   peerId: string
   protocolVersion: number
-  parcel?: [number, number]
+  parcel?: Parcel
 }
 
 export type Realm = {

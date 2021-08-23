@@ -23,7 +23,7 @@ VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-c
 
 
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
-	@npx tsc --build scripts/tsconfig.json
+	@node_modules/.bin/tsc --build scripts/tsconfig.json
 
 static/loader/lifecycle/worker.js: packages/decentraland-loader/**/*.ts
 	@$(COMPILER) targets/engine/loader.json
@@ -191,7 +191,7 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 # Development
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
-	@NODE_ENV=development npx concurrently \
+	@NODE_ENV=development @node_modules/.bin/concurrently \
 		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,simulator,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
