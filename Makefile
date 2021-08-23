@@ -3,6 +3,7 @@
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 BUILD_ECS = $(NODE) --max-old-space-size=4096 node_modules/.bin/build-ecs
+CONCURRENTLY = node_modules/.bin/concurrently
 CWD = $(shell pwd)
 
 # Remove default Makefile rules
@@ -160,7 +161,7 @@ npm-link: build-essentials static/editor.js ## Run `npm link` to develop local s
 	cd static; npm link
 
 watch-builder: build-essentials static/editor.js ## Watch the files required for hacking with the builder
-	@node_modules/.bin/concurrently \
+	@$(CONCURRENTLY) \
 		-n "scene-system,internal-scenes,loader,builder,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
@@ -169,7 +170,7 @@ watch-builder: build-essentials static/editor.js ## Watch the files required for
 			"node ./scripts/runTestServer.js --keep-open"
 
 watch-cli: build-essentials ## Watch the files required for building the CLI
-	@node_modules/.bin/concurrently \
+	@$(CONCURRENTLY) \
 		-n "scene-system,internal-scenes,loader,kernel,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
@@ -191,7 +192,7 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 # Development
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
-	@NODE_ENV=development @node_modules/.bin/concurrently \
+	@NODE_ENV=development $(CONCURRENTLY) \
 		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,simulator,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \

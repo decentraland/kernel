@@ -10,6 +10,7 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { RootState } from 'shared/store/rootTypes'
+import { trackEvent } from 'shared/analytics'
 
 function valueFromVariants<T>(variants: Record<string, any> | undefined, key: string): T | undefined {
   const variant = variants?.[key]
@@ -26,7 +27,9 @@ function bannedUsersFromVariants(variants: Record<string, any> | undefined): Ban
   return valueFromVariants(variants, 'explorer-banned_users')
 }
 
-function pickRealmAlgorithmConfigFromVariants(variants: Record<string, any> | undefined): AlgorithmChainConfig | undefined {
+function pickRealmAlgorithmConfigFromVariants(
+  variants: Record<string, any> | undefined
+): AlgorithmChainConfig | undefined {
   return valueFromVariants(variants, 'explorer-pick_realm_algorithm_config')
 }
 
@@ -85,6 +88,7 @@ function* fetchMessageOfTheDay() {
         const data = await response.json()
         return data?.length ? data[0] : null
       } catch (e) {
+        trackEvent('motd_failed', {})
         defaultLogger.error(`Error fetching Message of the day ${e}`)
         return null
       }
