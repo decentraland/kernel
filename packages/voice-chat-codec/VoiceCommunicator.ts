@@ -486,10 +486,16 @@ export class VoiceCommunicator {
 
   private createContext(contextOptions?: AudioContextOptions): AudioContextWithInitPromise {
     const aContext = new AudioContext(contextOptions)
-    const workletInitializedPromise = aContext.audioWorklet
+    if (aContext.audioWorklet){
+      const workletInitializedPromise = aContext.audioWorklet
       .addModule(workletWorkerUrl)
       .catch((e) => defaultLogger.error('Error loading worklet modules: ', e))
-    return [aContext, workletInitializedPromise]
+      return [aContext, workletInitializedPromise]
+    }else{
+      // TODO: trackEvent('error_initializing_worklet') to gain visibility about how many times is this issue happening
+      defaultLogger.error('Error loading worklet modules: audioWorklet undefined')
+      return [aContext, Promise.resolve()]
+    }
   }
 
   private destroyOutput(outputId: string) {
