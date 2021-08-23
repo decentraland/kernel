@@ -6,7 +6,6 @@ import { POIs } from 'shared/comms/POIs'
 import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
 import defaultLogger from 'shared/logger'
 
-import { getFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
 import { getCommsServer, getRealm } from 'shared/dao/selectors'
@@ -114,13 +113,6 @@ export class TeleportController {
     const y = Math.floor(Math.random() * 301) - 150
     const tpMessage = `Teleporting to random location (${x}, ${y})...`
     return TeleportController.goTo(x, y, tpMessage)
-  }
-
-  public static async goToNext(): Promise<{ message: string; success: boolean }> {
-    const current = (await getFromPersistentStorage('launch-campaign-status')) || 0
-    await saveToPersistentStorage('launch-campaign-status', current + 1)
-    const { x, y } = CAMPAIGN_PARCEL_SEQUENCE[current % CAMPAIGN_PARCEL_SEQUENCE.length]
-    return TeleportController.goTo(x, y, `Teleporting you to the next scene... and more treasures!`)
   }
 
   public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
