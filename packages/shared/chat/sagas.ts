@@ -189,7 +189,7 @@ function initChatCommands() {
         response = TeleportController.goToMagic().message
       } else if (message.trim().toLowerCase() === 'random') {
         response = TeleportController.goToRandom().message
-      // TODO: remove this 
+      // TODO: remove this
         // } else if (message.trim().toLowerCase() === 'next') {
         // response = (await TeleportController.goToNext()).message
       } else if (message.trim().toLowerCase() === 'crowd') {

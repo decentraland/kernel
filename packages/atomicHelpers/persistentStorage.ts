@@ -4,10 +4,10 @@ declare var window: any
 
 class PersistentLocalStorage implements PersistentAsyncStorage {
   storage: any
-  constructor(storage: any){
+  constructor(storage: any) {
     if (storage) {
       this.storage = storage
-    }else{
+    } else {
       throw new Error("Cannot create PersistentLocalStorage without localStorage object")
     }
   }

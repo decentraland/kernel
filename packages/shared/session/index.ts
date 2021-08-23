@@ -60,7 +60,7 @@ export const getLastSessionByAddress: (address: string) => Promise<StoredSession
 export const getLastGuestSession: () => Promise<StoredSession | null> = async () => {
   const sessionsKey = (await getKeysFromPersistentStorage()).filter((k) => k.indexOf(SESSION_KEY_PREFIX) === 0)
   const sessions: StoredSession[] = await Promise.all(sessionsKey.map(id => getFromPersistentStorage(id)))
-  
+
   const filteredSessions: StoredSession[] = sessions
     .filter(({ isGuest }) => isGuest)
     .sort((a, b) => {
