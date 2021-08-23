@@ -99,6 +99,9 @@ export async function initializeUnity(options: KernelOptions['rendererOptions'])
     store.dispatch(initializeRenderer(loadInjectedUnityDelegate, container))
   }
 
+  // wait until the renderer is fully loaded before returning, this
+  // is important because once this function returns, it is assumed
+  // that the renderer will be ready
   await ensureUnityInterface()
 
   return {
