@@ -40,6 +40,8 @@ jobs:
       #   run: npx codecov
   build:
     runs-on: ubuntu-latest
+    outputs:
+      dcl_kernel_s3_bucket_key: ${{ steps.publish_dcl_kernel.outputs.s3-bucket-key }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -71,6 +73,7 @@ jobs:
       - uses: hmarr/debug-action@v2
       - name: publish packages
         uses: menduz/oddish-action@master
+        id: publish_dcl_kernel
         with:
           registry-url: 'https://registry.npmjs.org'
           access: public
@@ -122,6 +125,12 @@ jobs:
         run: node -e "console.log('::set-output name=branch::' +    ('${{github.head_ref}}' || '$GITHUB_REF'.replace('refs/heads/',''))    )"
         id: myref
 
+      - name: Generate S3 URL
+        id: url-generator
+        run: |
+          body=$(echo ${{ secrets.SDK_TEAM_S3_BASE_URL }})/${{ needs.build.outputs.dcl_kernel_s3_bucket_key }}
+          echo ::set-output name=body::$body
+
       - name: Create or update comment
         uses: peter-evans/create-or-update-comment@v1
         with:
@@ -129,5 +138,9 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             # Test this pull request
-            This branch can be previewed at https://play.decentraland.zone/?kernel-branch=${{ steps.myref.outputs.branch }}
+            - This branch can be previewed at https://play.decentraland.zone/?kernel-branch=${{ steps.myref.outputs.branch }}
+            - The `@dcl/kernel` package can be tested in scenes by running
+               ```bash
+               npm install "${{ steps.url-generator.outputs.body }}"
+               ```
           edit-mode: replace
