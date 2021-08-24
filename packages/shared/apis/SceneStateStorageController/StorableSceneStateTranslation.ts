@@ -59,6 +59,7 @@ export async function toBuilderFromStateDefinitionFormat(
       // This is a special case where we are assinging the builder url field for NFTs
       if (componentType === 'NFTShape') {
         component.data.url = component.data.src
+        entityName = "nft"
       }
 
       // We iterate over the GLTF to find the asset.
