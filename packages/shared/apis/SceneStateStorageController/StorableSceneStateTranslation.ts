@@ -68,7 +68,6 @@ export async function toBuilderFromStateDefinitionFormat(
         for (const value of Object.values(assets)) {
           entityName = camelize(value.name)
         }
-
       }
 
       // we add the component to the builder format
@@ -80,12 +79,12 @@ export async function toBuilderFromStateDefinitionFormat(
       builderComponents[builderComponent.id] = builderComponent
     }
 
-      // We iterate over the name of the entities to asign it in a builder format
-      for (let component of Object.values(mappedComponents)) {
-        if (component.componentId === fromHumanReadableType('Name')) {
-          component.data.builderValue = entityName
-        }
+    // We iterate over the name of the entities to asign it in a builder format
+    for (let component of Object.values(mappedComponents)) {
+      if (component.componentId === fromHumanReadableType('Name')) {
+        component.data.builderValue = entityName
       }
+    }
 
     // we add the entity to builder format
     let builderEntity: BuilderEntity = {

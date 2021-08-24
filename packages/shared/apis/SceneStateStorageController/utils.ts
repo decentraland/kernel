@@ -18,8 +18,8 @@ const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
 
 export function camelize(str: string) {
   return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function(word: any, index: any) {
-    return index === 0 ? word.toLowerCase() : word.toUpperCase();
-  }).replace(/\s+/g, '');
+    return index === 0 ? word.toLowerCase() : word.toUpperCase()
+  }).replace(/\s+/g, '')
 }
 
 export function toHumanReadableType(type: number): string {
