@@ -7,10 +7,10 @@ import { contextForCandidates } from "./test-utils"
 describe('All Peers Score Link', () => {
   let link: AlgorithmLink
   beforeEach(() => {
-    link = allPeersScoreLink(defaultAllPeersScoreConfig)
+    link = allPeersScoreLink({ ...defaultAllPeersScoreConfig, definitiveDecisionThreshold: 10000 })
   })
 
-  it("Should sort by users when no max users is provided and select the first", () => {
+  it("Should sort by users when no max users is provided", () => {
     const context = link.pick(contextForCandidates([0, 0],
       { catalystName: "second", usersCount: 2000 },
       { catalystName: "first", usersCount: 2500 },
@@ -19,7 +19,6 @@ describe('All Peers Score Link', () => {
     )
 
     expect(context.picked.map(it => it.catalystName)).to.eql(["first", "second", "third", "fourth"])
-    expect(context.selected?.catalystName).to.eql("first")
   })
 
   it("should prefer more users until around 50% when max users are provided", () => {
@@ -31,7 +30,6 @@ describe('All Peers Score Link', () => {
     )
 
     expect(context.picked.map(it => it.catalystName)).to.eql(["first", "second", "third", "fourth"])
-    expect(context.selected?.catalystName).to.eql("first")
   })
 
   it("should prefer realms with at least 1 user", () => {
@@ -42,7 +40,6 @@ describe('All Peers Score Link', () => {
     )
 
     expect(context.picked.map(it => it.catalystName)).to.eql(["first", "second", "third"])
-    expect(context.selected?.catalystName).to.eql("first")
   })
 
   it("should consider small latency with small differences", () => {
@@ -53,7 +50,6 @@ describe('All Peers Score Link', () => {
     )
 
     expect(context.picked.map(it => it.catalystName)).to.eql(["first", "second", "third"])
-    expect(context.selected?.catalystName).to.eql("first")
   })
 
   it("should consider large latency with large differences", () => {
@@ -64,7 +60,6 @@ describe('All Peers Score Link', () => {
     )
 
     expect(context.picked.map(it => it.catalystName)).to.eql(["first", "second", "third"])
-    expect(context.selected?.catalystName).to.eql("first")
   })
 
   it("should penalize full realms", () => {
@@ -74,6 +69,32 @@ describe('All Peers Score Link', () => {
     )
 
     expect(context.picked.map(it => it.catalystName)).to.eql(["first", "second"])
+  })
+
+  it("should filter when inside definitive selection threshold", () => {
+    link = allPeersScoreLink({ ...defaultAllPeersScoreConfig, definitiveDecisionThreshold: 20 })
+
+    const context = link.pick(contextForCandidates([0, 0],
+      { catalystName: "second", usersCount: 60 },
+      { catalystName: "third", usersCount: 45 },
+      { catalystName: "first", usersCount: 75 },
+      { catalystName: "fourth", usersCount: 20 })
+    )
+
+    expect(context.picked.map(it => it.catalystName)).to.eql(["first", "second"])
+  })
+
+  it("should select when there is only one candidate inside definitive selection threshold", () => {
+    link = allPeersScoreLink({ ...defaultAllPeersScoreConfig, definitiveDecisionThreshold: 10 })
+
+    const context = link.pick(contextForCandidates([0, 0],
+      { catalystName: "second", usersCount: 60 },
+      { catalystName: "third", usersCount: 45 },
+      { catalystName: "first", usersCount: 75 },
+      { catalystName: "fourth", usersCount: 20 })
+    )
+
+    expect(context.picked.map(it => it.catalystName)).to.eql(["first"])
     expect(context.selected?.catalystName).to.eql("first")
   })
 
