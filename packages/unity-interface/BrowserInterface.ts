@@ -237,7 +237,8 @@ export class BrowserInterface {
 
   public MotdConfirmClicked() {
     if (hasWallet()) {
-      TeleportController.goToNext()
+      // TODO: no longer used
+      // TeleportController.goToNext()
     } else {
       globalObservable.emit('openUrl', { url: 'https://docs.decentraland.org/get-a-wallet/' })
     }

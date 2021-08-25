@@ -213,7 +213,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
   if (currentId === userId) {
     const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-    const localProfile = fetchProfileLocally(userId, net)
+    const localProfile = yield call(fetchProfileLocally,userId, net)
     // checks if profile name was changed on builder
     if (profile && localProfile && localProfile.name !== profile.name) {
       localProfile.name = profile.name
@@ -360,7 +360,7 @@ function* handleSaveAvatar(saveAvatar: SaveProfileRequest) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
 
-    localProfilesRepo.persist(identity.address, network, profile)
+    yield localProfilesRepo.persist(identity.address, network, profile)
 
     yield put(saveProfileSuccess(userId, profile.version, profile))
 
@@ -396,8 +396,8 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
   }
 }
 
-export function fetchProfileLocally(address: string, network: ETHEREUM_NETWORK) {
-  const profile: Profile | null = localProfilesRepo.get(address, network)
+export async function fetchProfileLocally(address: string, network: ETHEREUM_NETWORK) {
+  const profile: Profile | null = await localProfilesRepo.get(address, network)
   if (profile?.userId === address) {
     return ensureServerFormat(profile)
   } else {

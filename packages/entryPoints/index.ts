@@ -40,6 +40,8 @@ import { onLoginCompleted } from 'shared/session/sagas'
 import { authenticate } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
+import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
@@ -101,6 +103,10 @@ globalThis.DecentralandKernel = {
     options.rendererOptions.baseUrl = await resolveBaseUrl(
       options.rendererOptions.baseUrl || orFail('MISSING rendererOptions.baseUrl')
     )
+    
+    if (options.kernelOptions.persistentStorage){
+      setPersistentStorage(options.kernelOptions.persistentStorage)
+    }
 
     const { container } = options.rendererOptions
     const { baseUrl } = options.kernelOptions
@@ -143,9 +149,9 @@ globalThis.DecentralandKernel = {
       version: 'mockedversion',
       // this method is used for auto-login
       async hasStoredSession(address: string, networkId: number) {
-        if (!getStoredSession(address)) return { result: false }
+        if (!await getStoredSession(address)) return { result: false }
 
-        const profile = localProfilesRepo.get(
+        const profile = await localProfilesRepo.get(
           address,
           networkId == 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
         )
@@ -198,6 +204,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.features.enableBuilderInWorld = BUILDER_IN_WORLD_ENABLED
+      configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
 
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED)

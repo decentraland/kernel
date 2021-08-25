@@ -582,6 +582,7 @@ export type KernelConfigForRenderer = {
   }
   gifSupported: boolean
   tld: string
+  network: string
   validWorldRanges: Object
 }
 
