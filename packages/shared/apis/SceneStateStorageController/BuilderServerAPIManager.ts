@@ -32,7 +32,7 @@ export class BuilderServerAPIManager {
   private readonly baseUrl: string
 
   constructor(network: ETHEREUM_NETWORK) {
-    if (network == ETHEREUM_NETWORK.MAINNET) {
+    if (network === ETHEREUM_NETWORK.MAINNET) {
       this.baseUrl = BASE_BUILDER_SERVER_URL
     } else {
       this.baseUrl = BASE_BUILDER_SERVER_URL_ROPSTEN
