@@ -12,7 +12,7 @@ import {
   UnityColor
 } from './types'
 import { BuilderServerAPIManager } from './BuilderServerAPIManager'
-import { toHumanReadableType, fromHumanReadableType } from './utils'
+import { toHumanReadableType, fromHumanReadableType, camelize } from './utils'
 import { SceneTransformTranslator } from './SceneTransformTranslator'
 
 const CURRENT_SCHEMA_VERSION = 1
@@ -45,6 +45,8 @@ export async function toBuilderFromStateDefinitionFormat(
   for (const [entityId, components] of scene.getState().entries()) {
     let builderComponentsIds: string[] = []
 
+    let entityName = entityId
+
     // Iterate the entity components to transform them to the builder format
     const mappedComponents = Array.from(components.entries()).map(([componentId, data]) => ({ componentId, data }))
     for (let component of mappedComponents) {
@@ -57,6 +59,16 @@ export async function toBuilderFromStateDefinitionFormat(
       // This is a special case where we are assinging the builder url field for NFTs
       if (componentType === 'NFTShape') {
         component.data.url = component.data.src
+        entityName = "nft"
+      }
+
+      // We iterate over the GLTF to find the asset.
+      // Builder needs a camel case name of the asset to work correctly
+      if (componentType === 'GLTFShape') {
+        const assets = await builderApiManager.getAssets([component.data.assetId])
+        for (const value of Object.values(assets)) {
+          entityName = camelize(value.name)
+        }
       }
 
       // we add the component to the builder format
@@ -68,12 +80,10 @@ export async function toBuilderFromStateDefinitionFormat(
       builderComponents[builderComponent.id] = builderComponent
     }
 
-    let entityName = entityId
-
     // We iterate over the name of the entities to asign it in a builder format
-    for (let component of Object.values(builderComponents)) {
-      if (component.type === 'Name') {
-        entityName = component.data.builderValue
+    for (let component of Object.values(mappedComponents)) {
+      if (component.componentId === fromHumanReadableType('Name')) {
+        component.data.builderValue = entityName
       }
     }
 
