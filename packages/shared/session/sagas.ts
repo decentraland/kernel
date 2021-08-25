@@ -12,7 +12,7 @@ import { setLocalInformationForComms } from 'shared/comms/peers'
 import { awaitingUserSignature, AWAITING_USER_SIGNATURE, setLoadingWaitTutorial } from 'shared/loading/types'
 import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
-import { getFromLocalStorage, saveToLocalStorage } from 'atomicHelpers/localStorage'
+import { getFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 
 import { getIdentity, getLastGuestSession, getStoredSession, removeStoredSession, setStoredSession } from './index'
 import { ExplorerIdentity, RootSessionState, SessionState, StoredSession } from './types'
@@ -51,6 +51,7 @@ import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { disconnect, sendToMordor } from 'shared/comms'
+import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
 
 const TOS_KEY = 'tos'
 const logger = createLogger('session: ')
@@ -70,12 +71,12 @@ export function* sessionSaga(): any {
 }
 
 function* initialize() {
-  const tosAgreed: boolean = !!getFromLocalStorage(TOS_KEY)
+  const tosAgreed: boolean = !!((yield call(getFromPersistentStorage, TOS_KEY)) as boolean)
   yield put(updateTOS(tosAgreed))
 }
 
 function* updateTermOfService(action: any) {
-  return saveToLocalStorage(TOS_KEY, action.payload)
+  yield call(saveToPersistentStorage, TOS_KEY, action.payload)
 }
 
 function* signaturePrompt() {
@@ -117,7 +118,8 @@ function* authenticate(action: AuthenticateAction) {
 
   const profileExists: boolean = yield doesProfileExist(identity.address)
   const isGuest: boolean = yield select(getIsGuestLogin)
-  const isGuestWithProfileLocal: boolean = isGuest && !!fetchProfileLocally(identity.address, net)
+  const profileLocally: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
+  const isGuestWithProfileLocal: boolean = isGuest && (profileLocally !== null)
 
   if (profileExists || isGuestWithProfileLocal) {
     yield put(setLoadingWaitTutorial(false))
@@ -132,7 +134,7 @@ function* startSignUp(identity: ExplorerIdentity) {
   yield put(signUpSetIsSignUp(true))
 
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
-  let cachedProfile = fetchProfileLocally(identity.address, net)
+  let cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
   let profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
   profile.userId = identity.address
   profile.ethAddress = identity.rawAddress
@@ -161,12 +163,12 @@ function* authorize(requestManager: RequestManager) {
   const isGuest: boolean = yield select(getIsGuestLogin)
 
   if (isGuest) {
-    userData = getLastGuestSession()
+    userData = yield call(getLastGuestSession)
   } else {
     try {
-      const address: string = yield getUserAccount(requestManager, false)
+      const address: string = yield call(getUserAccount, requestManager, false)
       if (address) {
-        userData = getStoredSession(address)
+        userData = yield call(getStoredSession, address)
 
         if (userData) {
           // We save the raw ethereum address of the current user to avoid having to convert-back later after lowercasing it for the userId
@@ -199,10 +201,10 @@ function* signIn(identity: ExplorerIdentity) {
   logger.log(`User ${identity.address} logged in`)
 
   const isGuest: boolean = yield select(getIsGuestLogin)
-  saveSession(identity, isGuest)
+  yield call(saveSession, identity, isGuest)
 
   if (identity.hasConnectedWeb3) {
-    referUser(identity)
+    yield call(referUser, identity)
   }
 
   let net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -247,10 +249,10 @@ function* cancelSignUp() {
   yield put(changeLoginState(LoginState.WAITING_PROVIDER))
 }
 
-function saveSession(identity: ExplorerIdentity, isGuest: boolean) {
+async function saveSession(identity: ExplorerIdentity, isGuest: boolean) {
   const userId = identity.address
 
-  setStoredSession({
+  await setStoredSession({
     identity,
     isGuest
   })
@@ -317,13 +319,13 @@ function* logout() {
   const identity: ExplorerIdentity | undefined = yield select(getIdentity)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   if (identity && identity.address && network) {
-    localProfilesRepo.remove(identity.address, network)
+    yield localProfilesRepo.remove(identity.address, network)
     globalObservable.emit('logout', { address: identity.address, network })
   }
   yield sendToMordor()
   disconnect()
   if (identity?.address) {
-    removeStoredSession(identity.address)
+    yield call(removeStoredSession, identity.address)
   }
   window.location.reload()
 }
