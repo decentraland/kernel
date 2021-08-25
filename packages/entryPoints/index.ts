@@ -41,6 +41,7 @@ import { authenticate } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
 import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
@@ -203,6 +204,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.features.enableBuilderInWorld = BUILDER_IN_WORLD_ENABLED
+      configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
 
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED)
