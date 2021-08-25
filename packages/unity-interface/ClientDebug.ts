@@ -41,52 +41,35 @@ export class ClientDebug {
       })
   }
 
-  public InstantiateBotsAtWorldPos(
+  public InstantiateBotsAtWorldPos(payload: {
     amount: number,
     xPos: number,
     yPos: number,
     zPos: number,
     areaWidth: number,
     areaDepth: number
-  ) {
-    const payload = {
-      amount: amount,
-      xPos: xPos,
-      yPos: yPos,
-      zPos: zPos,
-      areaWidth: areaWidth,
-      areaDepth: areaDepth
-    }
+  }) {
     this.unityInterface.SendMessageToUnity('Main', 'InstantiateBotsAtWorldPos', JSON.stringify(payload))
   }
 
-  public InstantiateBotsAtCoords(amount: number, xCoord: number, yCoord: number, areaWidth: number, areaDepth: number) {
-    const payload = {
-      amount: amount,
-      xCoord: xCoord,
-      yCoord: yCoord,
-      areaWidth: areaWidth,
-      areaDepth: areaDepth
-    }
+  public InstantiateBotsAtCoords(payload: {
+    amount: number,
+    xCoord: number,
+    yCoord: number,
+    areaWidth: number,
+    areaDepth: number
+  }) {
     this.unityInterface.SendMessageToUnity('Main', 'InstantiateBotsAtCoords', JSON.stringify(payload))
   }
 
-  public StartBotsRandomizedMovement(
-      populationNormalizedPercentage: number,
-      waypointsUpdateTime: number,
-      xCoord: number,
-      yCoord: number,
-      areaWidth: number,
-      areaDepth: number
-  ) {
-    const payload = {
-      populationNormalizedPercentage: populationNormalizedPercentage,
-      waypointsUpdateTime: waypointsUpdateTime,
-      xCoord: xCoord,
-      yCoord: yCoord,
-      areaWidth: areaWidth,
-      areaDepth: areaDepth
-    }
+  public StartBotsRandomizedMovement(payload: {
+    populationNormalizedPercentage: number,
+    waypointsUpdateTime: number,
+    xCoord: number,
+    yCoord: number,
+    areaWidth: number,
+    areaDepth: number
+  }) {
     this.unityInterface.SendMessageToUnity('Main', 'StartBotsRandomizedMovement', JSON.stringify(payload))
   }
 
