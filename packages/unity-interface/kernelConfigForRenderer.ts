@@ -24,6 +24,7 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       // tslint:disable-next-line
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
     tld: getTLD(),
+    network: "mainnet",
     validWorldRanges: getWorld().validWorldRanges
   }
 }
