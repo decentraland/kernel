@@ -50,16 +50,22 @@ export function penalizeFull(baseScore: number, baseScoreFunction: (c: Candidate
   }
 }
 
-export function selectFirstByScore(context: AlgorithmContext, score: (c: Candidate) => number, almostEqualThreshold: number = 0) {
+export function selectFirstByScore(context: AlgorithmContext, score: (c: Candidate) => number, almostEqualThreshold: number = 0, pickOnlyTheBest: boolean = false) {
   const compareFn = (a: Candidate, b: Candidate) => score(b) - score(a)
 
-  return selectFirstBy(context, compareFn, (a, b) => Math.abs(score(b) - score(a)) < almostEqualThreshold)
+  return selectFirstBy(context, compareFn, (a, b) => Math.abs(score(b) - score(a)) <= almostEqualThreshold, pickOnlyTheBest)
 }
 
-export function selectFirstBy(context: AlgorithmContext, compareFn: (a: Candidate, b: Candidate) => number, almostEqual: (a: Candidate, b: Candidate) => boolean = () => false) {
+export function selectFirstBy(context: AlgorithmContext,
+  compareFn: (a: Candidate, b: Candidate) => number,
+  almostEqual: (a: Candidate, b: Candidate) => boolean = () => false,
+  pickOnlyTheBest: boolean = false) {
   const sorted = context.picked.sort(compareFn)
 
-  context.picked = sorted
+  // We pick those that are equivalent to the first one
+  if (pickOnlyTheBest) {
+    context.picked = sorted.filter(it => compareFn(context.picked[0], it) === 0 || almostEqual(context.picked[0], it))
+  }
 
   if (context.picked.length === 1 || (compareFn(context.picked[0], context.picked[1]) < 0 && !almostEqual(context.picked[0], context.picked[1]))) {
     context.selected = context.picked[0]

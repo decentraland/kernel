@@ -20,7 +20,7 @@ export const defaultAllPeersScoreConfig: AllPeersScoreParameters = {
   baseScore: 40,
   fillTargetPercentage: 0.5,
   discourageFillTargetPercentage: 0.8,
-  definitiveDecisionThreshold: 10,
+  definitiveDecisionThreshold: 20,
   latencyDeductionsParameters: {
     exponentialDivisor: 900,
     multiplier: 60,

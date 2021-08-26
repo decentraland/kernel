@@ -2,7 +2,7 @@ import { Candidate } from "../types"
 import { AlgorithmContext, AlgorithmLink, AlgorithmLinkTypes, AllPeersScoreParameters } from "./types"
 import { usersCount, maxUsers, selectFirstByScore, defaultScoreAddons } from "./utils"
 
-export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, fillTargetPercentage, latencyDeductionsParameters }: AllPeersScoreParameters): AlgorithmLink {
+export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, fillTargetPercentage, latencyDeductionsParameters, definitiveDecisionThreshold }: AllPeersScoreParameters): AlgorithmLink {
   function usersScore(candidate: Candidate) {
     const count = usersCount(candidate)
     const max = maxUsers(candidate)
@@ -35,7 +35,7 @@ export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, f
     pick: (context: AlgorithmContext) => {
       const score = defaultScoreAddons(latencyDeductionsParameters, baseScore, usersScore)
 
-      return selectFirstByScore(context, score)
+      return selectFirstByScore(context, score, definitiveDecisionThreshold, true)
     }
   }
 }
