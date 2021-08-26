@@ -23,7 +23,7 @@ describe("Pick realm algorithm default configuration", () => {
   it("Should select using close peers second", () => {
     const candidate = algorithm.pickCandidate(
       buildCandidates({ catalystName: "second", usersCount: 1000 },
-        { catalystName: "first", usersCount: 10, usersParcels: [[100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100]] },
+        { catalystName: "first", usersCount: 11, usersParcels: [[100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100], [100, 100]] },
         { catalystName: "fourth", usersCount: 5000 },
         { catalystName: "third", usersCount: 10000 }), [100, 100])
 
