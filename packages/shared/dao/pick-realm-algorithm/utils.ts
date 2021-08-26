@@ -53,7 +53,7 @@ export function penalizeFull(baseScore: number, baseScoreFunction: (c: Candidate
 export function selectFirstByScore(context: AlgorithmContext, score: (c: Candidate) => number, almostEqualThreshold: number = 0, pickOnlyTheBest: boolean = false) {
   const compareFn = (a: Candidate, b: Candidate) => score(b) - score(a)
 
-  return selectFirstBy(context, compareFn, (a, b) => Math.abs(score(b) - score(a)) < almostEqualThreshold, pickOnlyTheBest)
+  return selectFirstBy(context, compareFn, (a, b) => Math.abs(score(b) - score(a)) <= almostEqualThreshold, pickOnlyTheBest)
 }
 
 export function selectFirstBy(context: AlgorithmContext,
