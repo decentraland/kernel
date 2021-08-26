@@ -1,5 +1,5 @@
 import { KernelConfigForRenderer } from 'shared/types'
-import { commConfigurations, getTLD, WSS_ENABLED } from 'config'
+import { commConfigurations, WSS_ENABLED } from 'config'
 import { nameValidCharacterRegex, nameValidRegex } from 'shared/profiles/utils/names'
 import { getWorld } from '@dcl/schemas'
 import { isFeatureEnabled } from 'shared/meta/selectors'
