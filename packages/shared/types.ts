@@ -581,7 +581,6 @@ export type KernelConfigForRenderer = {
     enableAvatarLODs: boolean
   }
   gifSupported: boolean
-  tld: string
   network: string
   validWorldRanges: Object
 }
