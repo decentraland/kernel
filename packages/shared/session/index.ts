@@ -1,10 +1,10 @@
 import { getCurrentIdentity, hasWallet as hasWalletSelector } from './selectors'
 import {
-  getFromLocalStorage,
-  getKeysFromLocalStorage,
-  removeFromLocalStorage,
-  saveToLocalStorage
-} from 'atomicHelpers/localStorage'
+  getFromPersistentStorage,
+  getKeysFromPersistentStorage,
+  removeFromPersistentStorage,
+  saveToPersistentStorage
+} from 'atomicHelpers/persistentStorage'
 import { StoredSession } from './types'
 import { store } from 'shared/store/isolatedStore'
 
@@ -15,21 +15,21 @@ function sessionKey(userId: string) {
   return `${SESSION_KEY_PREFIX}-${userId.toLocaleLowerCase()}`
 }
 
-export const setStoredSession: (session: StoredSession) => void = (session) => {
-  saveToLocalStorage(LAST_SESSION_KEY, session.identity.address)
-  saveToLocalStorage(sessionKey(session.identity.address), session)
+export const setStoredSession: (session: StoredSession) => Promise<void> = async (session) => {
+  await saveToPersistentStorage(LAST_SESSION_KEY, session.identity.address)
+  await saveToPersistentStorage(sessionKey(session.identity.address), session)
 }
 
-export const getStoredSession: (userId: string) => StoredSession | null = (userId) => {
-  const existingSession: StoredSession | null = getFromLocalStorage(sessionKey(userId))
+export const getStoredSession: (userId: string) => Promise<StoredSession | null>  = async (userId) => {
+  const existingSession: StoredSession | null = (await getFromPersistentStorage(sessionKey(userId))) as StoredSession
 
   if (existingSession) {
     return existingSession
   } else {
     // If not existing session was found, we check the old session storage
-    const oldSession: StoredSession | null = getFromLocalStorage('dcl-profile') || {}
+    const oldSession: StoredSession | null = (await getFromPersistentStorage('dcl-profile')) || {}
     if (oldSession && oldSession.identity && oldSession.identity.address === userId) {
-      setStoredSession(oldSession)
+      await setStoredSession(oldSession)
       return oldSession
     }
   }
@@ -37,32 +37,31 @@ export const getStoredSession: (userId: string) => StoredSession | null = (userI
   return null
 }
 
-export const removeStoredSession = (userId?: string) => {
-  if (userId) removeFromLocalStorage(sessionKey(userId))
+export const removeStoredSession = async (userId?: string) => {
+  if (userId) await removeFromPersistentStorage(sessionKey(userId))
 }
-export const getLastSessionWithoutWallet: () => StoredSession | null = () => {
-  const lastSessionId = getFromLocalStorage(LAST_SESSION_KEY)
+export const getLastSessionWithoutWallet: () => Promise<StoredSession | null> = async () => {
+  const lastSessionId = await getFromPersistentStorage(LAST_SESSION_KEY)
   if (lastSessionId) {
-    const lastSession = getStoredSession(lastSessionId)
+    const lastSession = await getStoredSession(lastSessionId)
     return lastSession ? lastSession : null
   } else {
-    return getFromLocalStorage('dcl-profile')
+    return await getFromPersistentStorage('dcl-profile')
   }
 }
 
-export const getLastSessionByAddress = (address: string): StoredSession | null => {
-  const sessions: StoredSession[] = getKeysFromLocalStorage()
-    .filter((k) => k.indexOf(SESSION_KEY_PREFIX) === 0)
-    .map((id) => getFromLocalStorage(id) as StoredSession)
-    .filter(({ identity }) => ('' + identity.address).toLowerCase() === address.toLowerCase())
-
-  return sessions.length > 0 ? sessions[0] : null
+export const getLastSessionByAddress: (address: string) => Promise<StoredSession | null> = async (address: string) => {
+  const sessionsKey = (await getKeysFromPersistentStorage()).filter((k) => k.indexOf(SESSION_KEY_PREFIX) === 0)
+  const sessions: StoredSession[] = await Promise.all(sessionsKey.map(id => getFromPersistentStorage(id)))
+  const filteredSessions = sessions.filter(({ identity }) => ('' + identity.address).toLowerCase() === address.toLowerCase())
+  return filteredSessions.length > 0 ? filteredSessions[0] : null
 }
 
-export const getLastGuestSession = (): StoredSession | null => {
-  const sessions: StoredSession[] = getKeysFromLocalStorage()
-    .filter((k) => k.indexOf(SESSION_KEY_PREFIX) === 0)
-    .map((id) => getFromLocalStorage(id) as StoredSession)
+export const getLastGuestSession: () => Promise<StoredSession | null> = async () => {
+  const sessionsKey = (await getKeysFromPersistentStorage()).filter((k) => k.indexOf(SESSION_KEY_PREFIX) === 0)
+  const sessions: StoredSession[] = await Promise.all(sessionsKey.map(id => getFromPersistentStorage(id)))
+
+  const filteredSessions: StoredSession[] = sessions
     .filter(({ isGuest }) => isGuest)
     .sort((a, b) => {
       const da = new Date(a.identity.expiration)
@@ -72,7 +71,7 @@ export const getLastGuestSession = (): StoredSession | null => {
       return 0
     }) // last expiration is first
 
-  return sessions.length > 0 ? sessions[0] : null
+  return filteredSessions.length > 0 ? filteredSessions[0] : null
 }
 
 export const getIdentity = () => getCurrentIdentity(store.getState())

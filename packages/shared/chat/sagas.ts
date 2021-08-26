@@ -189,8 +189,9 @@ function initChatCommands() {
         response = TeleportController.goToMagic().message
       } else if (message.trim().toLowerCase() === 'random') {
         response = TeleportController.goToRandom().message
-      } else if (message.trim().toLowerCase() === 'next') {
-        response = TeleportController.goToNext().message
+      // TODO: remove this
+        // } else if (message.trim().toLowerCase() === 'next') {
+        // response = (await TeleportController.goToNext()).message
       } else if (message.trim().toLowerCase() === 'crowd') {
         response = `Teleporting to a crowd of people in current realm...`
 
