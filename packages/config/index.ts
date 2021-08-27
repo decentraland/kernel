@@ -142,7 +142,7 @@ export const NO_ASSET_BUNDLES = location.search.includes('NO_ASSET_BUNDLES')
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
 export const PIN_CATALYST = PREVIEW
-  ? location.origin
+  ? `${location.origin}${location.pathname}`
   : typeof qs.CATALYST === 'string'
   ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
   : undefined

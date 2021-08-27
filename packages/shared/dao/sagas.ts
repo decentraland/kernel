@@ -105,10 +105,13 @@ function* loadCatalystRealms() {
   } else {
     yield initLocalCatalyst()
     realm = {
-      domain: window.location.origin,
+      domain: `${window.location.origin}${window.location.pathname}`,
       catalystName: 'localhost',
       layer: 'stub',
       lighthouseVersion: '0.1'
+    }
+    if (realm.domain.endsWith('/')){
+      realm.domain = realm.domain.substr(0, realm.domain.length - 1)
     }
   }
 

@@ -1,4 +1,5 @@
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
+import { PREVIEW } from 'config'
 import { WorldConfig } from 'shared/meta/types'
 import { ILand, ContentMapping } from 'shared/types'
 
@@ -18,7 +19,11 @@ export class EmptyParcelController {
     }
   ) {
     /* tslint:disable */
-    this.baseUrl = `${options.rootUrl}loader/empty-scenes/`
+    if (PREVIEW){
+      this.baseUrl = `${options.catalystServer}loader/empty-scenes/`
+    }else{
+      this.baseUrl = `${options.rootUrl}loader/empty-scenes/`
+    }
     /* tslint:enable */
   }
 

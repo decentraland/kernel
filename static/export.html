@@ -548,7 +548,7 @@
       globalThis.preview = true
     </script>
 
-    <script src="/index.js"></script>
+    <script src="./index.js"></script>
 
     <script>
       function handleError(title, message) {
@@ -576,7 +576,7 @@
           return `https://renderer-artifacts.decentraland.org/branch/${qs.get('renderer-branch')}`
         }
 
-        return new URL('/unity-renderer', location.toString()).toString()
+        return new URL(`${location.origin}${location.pathname}unity-renderer`).toString()
       }
 
       async function initKernel() {
@@ -588,7 +588,7 @@
 
         const kernel = await DecentralandKernel.initKernel({
           kernelOptions: {
-            baseUrl: new URL(`/`, location.toString()).toString(),
+            baseUrl: `${location.origin}${location.pathname}`,
             previewMode: true
           },
           rendererOptions: {
