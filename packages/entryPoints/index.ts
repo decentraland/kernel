@@ -6,7 +6,6 @@ import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'sha
 import {
   AUTH_ERROR_LOGGED_OUT,
   FAILED_FETCHING_UNITY,
-  loadingStarted,
   NOT_INVITED,
   renderingInBackground,
   renderingInForeground
@@ -124,7 +123,6 @@ globalThis.DecentralandKernel = {
     // initInternal must be called asynchronously, _after_ returning
     async function initInternal() {
       // Initializes the Session Saga
-      store.dispatch(loadingStarted())
       store.dispatch(initSession())
 
       await initializeUnity(options.rendererOptions)
