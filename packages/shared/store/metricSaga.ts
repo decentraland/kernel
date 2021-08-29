@@ -7,7 +7,6 @@ import {
   ESTABLISHING_COMMS,
   ExecutionLifecycleEvent,
   ExecutionLifecycleEventsList,
-  LOADING_STARTED,
   NOT_STARTED,
   WAITING_FOR_RENDERER,
   METRICS_UNITY_CLIENT_LOADED,
@@ -30,11 +29,12 @@ import {
   AVATAR_LOADING_ERROR
 } from '../loading/types'
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
+import { INIT_SESSION } from 'shared/session/actions'
 
 const trackingEvents: Record<ExecutionLifecycleEvent, string> = {
   // lifecycle events
   [NOT_STARTED]: 'session_start',
-  [LOADING_STARTED]: 'loading_1_start',
+  [INIT_SESSION]: 'loading_1_start',
   [AWAITING_USER_SIGNATURE]: 'loading_1_1_awaiting_user_signature',
   [METRICS_AUTH_SUCCESSFUL]: 'loading_2_authOK',
   [ESTABLISHING_COMMS]: 'loading_3_init_comms',

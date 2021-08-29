@@ -28,7 +28,7 @@ import {
 import { uuid } from 'atomicHelpers/math'
 import { CLASS_ID } from 'decentraland-ecs'
 import { ParcelIdentity } from '../ParcelIdentity'
-import { getSelectedNetwork, getUpdateProfileServer } from 'shared/dao/selectors'
+import { getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { createGameFile } from './SceneStateDefinitionCodeGenerator'
 import { SceneStateDefinition } from 'scene-system/stateful-scene/SceneStateDefinition'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -389,7 +389,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
   }
 
   private getContentClient(): ContentClient {
-    const contentUrl = getUpdateProfileServer(store.getState())
+    const contentUrl = getFetchContentServer(store.getState())
     return new ContentClient(contentUrl, 'builder in-world')
   }
 
