@@ -192,7 +192,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   let hasConnectedWeb3 = false
   try {
     if (profileType === ProfileType.LOCAL && currentId !== userId) {
-      const peerProfile: Profile = yield requestLocalProfileToPeers(userId)
+      const peerProfile: Profile = yield call(requestLocalProfileToPeers, userId)
       if (peerProfile) {
         profile = ensureServerFormat(peerProfile)
         profile.hasClaimedName = false // for now, comms profiles can't have claimed names
@@ -213,7 +213,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
   if (currentId === userId) {
     const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-    const localProfile = yield call(fetchProfileLocally,userId, net)
+    const localProfile = yield call(fetchProfileLocally, userId, net)
     // checks if profile name was changed on builder
     if (profile && localProfile && localProfile.name !== profile.name) {
       localProfile.name = profile.name
@@ -383,7 +383,7 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
   const userId: string = yield select(getCurrentUserId)
   const profile: Profile = deployProfileAction.payload.profile
   try {
-    yield modifyAvatar({
+    yield call(modifyAvatar, {
       url,
       userId,
       identity,
