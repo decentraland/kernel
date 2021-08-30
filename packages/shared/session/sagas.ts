@@ -32,7 +32,8 @@ import {
   updateTOS,
   userAuthentified,
   AuthenticateAction,
-  signUpCancel
+  signUpCancel,
+  signupForm
 } from './actions'
 import { fetchProfileLocally, doesProfileExist, generateRandomUserProfile, localProfilesRepo } from '../profiles/sagas'
 import { getUnityInstance } from '../../unity-interface/IUnityInterface'
@@ -148,13 +149,15 @@ function* startSignUp(identity: ExplorerIdentity) {
   if (cachedProfile) {
     yield signUp()
   } else {
-    const profile: Partial<Profile> = yield select(getSignUpProfile)
+    if (PREVIEW) {
+      yield put(signupForm('Test', ''))
+      yield signUp()
+    } else {
+      const profile: Partial<Profile> = yield select(getSignUpProfile)
+      yield call(waitForRendererInstance)
 
-    yield call(waitForRendererInstance)
-
-    // TODO: Fix as any
-    getUnityInstance().LoadProfile(profile as any)
-    if (!PREVIEW) {
+      // TODO: Fix as any
+      getUnityInstance().LoadProfile(profile as any)
       getUnityInstance().ShowAvatarEditorInSignIn()
     }
   }
