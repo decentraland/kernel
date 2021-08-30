@@ -144,9 +144,9 @@ export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 export const rootURLPreviewMode = ({ endsWithSlash }: { endsWithSlash: boolean } = { endsWithSlash: false }) => {
   const url = `${location.origin}${location.pathname}`
   if (url.endsWith('/')) {
-    return endsWithSlash ? url : url.replace(/$\//, '')
+    return endsWithSlash ? url : url.replace(/\/$/, '')
   } else {
-    return !endsWithSlash ? url : `${url}/`
+    return endsWithSlash ? `${url}/` : url
   }
 }
 
