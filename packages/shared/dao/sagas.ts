@@ -13,7 +13,7 @@ import {
   setCatalystRealm
 } from './actions'
 import { call, put, takeEvery, select, fork, take } from 'redux-saga/effects'
-import { REALM, PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW } from 'config'
+import { REALM, PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization } from '../meta/sagas'
 import { Candidate, Realm, ServerConnectionStatus } from './types'
 import {
@@ -105,7 +105,7 @@ function* loadCatalystRealms() {
   } else {
     yield initLocalCatalyst()
     realm = {
-      domain: window.location.origin,
+      domain: rootURLPreviewMode(),
       catalystName: 'localhost',
       layer: 'stub',
       lighthouseVersion: '0.1'
