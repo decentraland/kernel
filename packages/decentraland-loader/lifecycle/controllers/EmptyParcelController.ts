@@ -1,4 +1,5 @@
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
+import { PREVIEW, rootURLPreviewMode } from 'config'
 import { WorldConfig } from 'shared/meta/types'
 import { ILand, ContentMapping } from 'shared/types'
 
@@ -17,8 +18,14 @@ export class EmptyParcelController {
       rootUrl: string
     }
   ) {
+    let rootUrl = options.rootUrl
+    if (PREVIEW) {
+      // rootURLPreviewMode returns rootUrl without ending slash
+      rootUrl = rootURLPreviewMode() + '/'
+    }
+
     /* tslint:disable */
-    this.baseUrl = `${options.rootUrl}loader/empty-scenes/`
+    this.baseUrl = `${rootUrl}loader/empty-scenes/`
     /* tslint:enable */
   }
 
