@@ -105,7 +105,7 @@ function* loadCatalystRealms() {
   } else {
     yield initLocalCatalyst()
     realm = {
-      domain: rootURLPreviewMode({ endsWithSlash: false }),
+      domain: rootURLPreviewMode(),
       catalystName: 'localhost',
       layer: 'stub',
       lighthouseVersion: '0.1'

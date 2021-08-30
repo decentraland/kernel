@@ -20,7 +20,8 @@ export class EmptyParcelController {
   ) {
     let rootUrl = options.rootUrl
     if (PREVIEW) {
-      rootUrl = rootURLPreviewMode({ endsWithSlash: true })
+      // rootURLPreviewMode returns rootUrl without ending slash
+      rootUrl = rootURLPreviewMode() + '/'
     }
 
     /* tslint:disable */
