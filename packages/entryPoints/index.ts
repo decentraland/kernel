@@ -37,7 +37,7 @@ import { resolveUrlFromUrn } from '@dcl/urn-resolver'
 import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { onLoginCompleted } from 'shared/session/sagas'
-import { authenticate } from 'shared/session/actions'
+import { authenticate, initSession } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
 import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
@@ -103,8 +103,8 @@ globalThis.DecentralandKernel = {
     options.rendererOptions.baseUrl = await resolveBaseUrl(
       options.rendererOptions.baseUrl || orFail('MISSING rendererOptions.baseUrl')
     )
-    
-    if (options.kernelOptions.persistentStorage){
+
+    if (options.kernelOptions.persistentStorage) {
       setPersistentStorage(options.kernelOptions.persistentStorage)
     }
 
@@ -117,19 +117,30 @@ globalThis.DecentralandKernel = {
 
     if (!container) throw new Error('cannot find element #gameContainer')
 
+    // initShared must be called immediately, before return
     initShared()
 
-    Promise.resolve()
-      .then(() => initializeUnity(options.rendererOptions))
-      .then(() => loadWebsiteSystems(options.kernelOptions))
-      .catch((err) => {
-        ReportFatalError(err, ErrorContext.WEBSITE_INIT)
-        if (err.message === AUTH_ERROR_LOGGED_OUT || err.message === NOT_INVITED) {
-          BringDownClientAndShowError(NOT_INVITED)
-        } else {
-          BringDownClientAndShowError(FAILED_FETCHING_UNITY)
-        }
-      })
+    // initInternal must be called asynchronously, _after_ returning
+    async function initInternal() {
+      // Initializes the Session Saga
+      store.dispatch(initSession())
+
+      await initializeUnity(options.rendererOptions)
+      await loadWebsiteSystems(options.kernelOptions)
+    }
+
+    setTimeout(
+      () =>
+        initInternal().catch((err) => {
+          ReportFatalError(err, ErrorContext.WEBSITE_INIT)
+          if (err.message === AUTH_ERROR_LOGGED_OUT || err.message === NOT_INVITED) {
+            BringDownClientAndShowError(NOT_INVITED)
+          } else {
+            BringDownClientAndShowError(FAILED_FETCHING_UNITY)
+          }
+        }),
+      0
+    )
 
     return {
       authenticate(provider: any, isGuest: boolean) {
@@ -149,7 +160,7 @@ globalThis.DecentralandKernel = {
       version: 'mockedversion',
       // this method is used for auto-login
       async hasStoredSession(address: string, networkId: number) {
-        if (!await getStoredSession(address)) return { result: false }
+        if (!(await getStoredSession(address))) return { result: false }
 
         const profile = await localProfilesRepo.get(
           address,
