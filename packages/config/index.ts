@@ -141,13 +141,17 @@ export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 export const NO_ASSET_BUNDLES = location.search.includes('NO_ASSET_BUNDLES')
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
-export const previewPinCatalyst = () => {
+export const rootURLPreviewMode = ({ endsWithSlash }: { endsWithSlash: boolean } = { endsWithSlash: false }) => {
   const url = `${location.origin}${location.pathname}`
-  return url.endsWith('/') ? url.substr(0, url.length-1) : url
+  if (url.endsWith('/')) {
+    return endsWithSlash ? url : url.replace(/$\//, '')
+  } else {
+    return !endsWithSlash ? url : `${url}/`
+  }
 }
 
 export const PIN_CATALYST = PREVIEW
-  ? previewPinCatalyst()
+  ? rootURLPreviewMode({ endsWithSlash: false })
   : typeof qs.CATALYST === 'string'
   ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
   : undefined

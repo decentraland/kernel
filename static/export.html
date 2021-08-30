@@ -541,6 +541,10 @@
     <script src="./index.js"></script>
 
     <script>
+      function rootURL() {
+        return location.origin + location.pathname
+      }
+      
       function handleError(title, message) {
         const titleElement = document.getElementsByClassName('error-overlay-title')[0]
         const descElement = document.getElementsByClassName('error-overlay-description')[0]
@@ -566,7 +570,7 @@
           return `https://renderer-artifacts.decentraland.org/branch/${qs.get('renderer-branch')}`
         }
 
-        return new URL(`${location.origin}${location.pathname}unity-renderer`).toString()
+        return new URL(rootURL() + unity-renderer).toString()
       }
 
       async function initKernel() {
@@ -578,7 +582,7 @@
 
         const kernel = await DecentralandKernel.initKernel({
           kernelOptions: {
-            baseUrl: `${location.origin}${location.pathname}`,
+            baseUrl: rootURL(),
             previewMode: true
           },
           rendererOptions: {
