@@ -11,7 +11,7 @@ import { getRealm } from 'shared/dao/selectors'
 import { CATALYST_REALMS_SCAN_SUCCESS, setCatalystRealm } from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
 import { realmToString } from 'shared/dao/utils/realmToString'
-import { createLogger } from 'shared/logger'
+import defaultLogger, { createLogger } from 'shared/logger'
 
 import {
   connect,
@@ -98,7 +98,9 @@ function* userAuthentified() {
 }
 
 function* updateVoiceChatRecordingStatus() {
+  defaultLogger.log('SANTI -> updateVoiceChatRecordingStatus()')
   const recording = yield select(isVoiceChatRecording)
+  defaultLogger.log('SANTI -> updateVoiceChatRecordingStatus() ->' + recording)
   updateVoiceRecordingStatus(recording)
 }
 

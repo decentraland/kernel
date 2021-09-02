@@ -247,17 +247,21 @@ export class VoiceCommunicator {
 
   start() {
     if (this.input) {
+      defaultLogger.log('SANTI -> VOICE COMMUNICATOR -> start() -> sendToInputWorklet -> destination: ' + this.input.recordingContext[0].destination)
       this.input.workletNode.connect(this.input.recordingContext[0].destination)
       this.sendToInputWorklet(InputWorkletRequestTopic.RESUME)
     } else {
+      defaultLogger.log('SANTI -> VOICE COMMUNICATOR -> start() -> notifyRecording(false)')
       this.notifyRecording(false)
     }
   }
 
   pause() {
     if (this.input) {
+      defaultLogger.log('SANTI -> VOICE COMMUNICATOR -> pause() -> sendToInputWorklet -> PAUSE')
       this.sendToInputWorklet(InputWorkletRequestTopic.PAUSE)
     } else {
+      defaultLogger.log('SANTI -> VOICE COMMUNICATOR -> pause() -> notifyRecording(false)')
       this.notifyRecording(false)
     }
   }

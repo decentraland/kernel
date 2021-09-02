@@ -244,6 +244,7 @@ function getParcelSceneSubscriptions(): string[] {
 let audioRequestPending = false
 
 function requestMediaDevice() {
+  defaultLogger.log('SANTI -> requestMediaDevice() -> audioRequestPending: ' + audioRequestPending)
   if (!audioRequestPending) {
     audioRequestPending = true
     // tslint:disable-next-line
@@ -260,10 +261,13 @@ function requestMediaDevice() {
         video: false
       })
       .then(async (a) => {
+        defaultLogger.log('SANTI -> requestMediaDevice() -> navigator.mediaDevices.getUserMedia -> SUCCESS')
         await voiceCommunicator!.setInputStream(a)
         if (isVoiceChatRecording(store.getState())) {
+          defaultLogger.log('SANTI -> requestMediaDevice() -> navigator.mediaDevices.getUserMedia -> SUCCESS -> voiceCommunicator!.start()')
           voiceCommunicator!.start()
         } else {
+          defaultLogger.log('SANTI -> requestMediaDevice() -> navigator.mediaDevices.getUserMedia -> SUCCESS -> voiceCommunicator!.pause()')
           voiceCommunicator!.pause()
         }
       })
@@ -277,10 +281,13 @@ function requestMediaDevice() {
 }
 
 export function updateVoiceRecordingStatus(recording: boolean) {
+  defaultLogger.log('SANTI -> updateVoiceRecordingStatus() -> recording: ' + recording)
+  defaultLogger.log('SANTI -> updateVoiceRecordingStatus() -> voiceCommunicator: ' + voiceCommunicator)
   if (!voiceCommunicator) {
     return
   }
 
+  defaultLogger.log('SANTI -> updateVoiceRecordingStatus() -> isVoiceChatAllowedByCurrentScene: ' + isVoiceChatAllowedByCurrentScene())
   if (!isVoiceChatAllowedByCurrentScene()) {
     voiceCommunicator.pause()
     return
@@ -291,6 +298,7 @@ export function updateVoiceRecordingStatus(recording: boolean) {
     return
   }
 
+  defaultLogger.log('SANTI -> updateVoiceRecordingStatus() -> voiceCommunicator.hasInput(): ' + voiceCommunicator.hasInput())
   if (!voiceCommunicator.hasInput()) {
     requestMediaDevice()
   } else {

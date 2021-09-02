@@ -420,6 +420,7 @@ export class BrowserInterface {
   }
 
   public SetVoiceChatRecording(recordingMessage: { recording: boolean }) {
+    defaultLogger.log('SANTI -> SetVoiceChatRecording() -> ' + recordingMessage.recording)
     store.dispatch(setVoiceChatRecording(recordingMessage.recording))
   }
 
