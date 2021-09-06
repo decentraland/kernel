@@ -39,7 +39,7 @@ function extractSemver(url: string): string | null {
 export async function loadUnity(baseUrl: string, options: CommonRendererOptions): Promise<LoadRendererResult> {
   const rendererVersion = extractSemver(baseUrl) || 'dynamic'
 
-  const scriptUrl = new URL('index.js', baseUrl).toString()
+  const scriptUrl = new URL('index.js?cors', baseUrl).toString()
 
   window['console'].log('Renderer: ' + scriptUrl)
 
