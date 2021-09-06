@@ -626,6 +626,28 @@ export class BrowserInterface {
   public async NotifyStatusThroughChat(data: { value: string }) {
     notifyStatusThroughChat(data.value)
   }
+
+  public VideoProgressEvent(videoEvent: {
+    componentId: string
+    sceneId: string
+    videoClipId: string
+    videoStatus: number
+    currentOffset: number
+    length: number
+  }) {
+    const scene = getSceneWorkerBySceneID(videoEvent.sceneId)
+    if (scene) {
+      scene.emit('videoEvent' as IEventNames, {
+        componentId: videoEvent.componentId,
+        videoClipId: videoEvent.videoClipId,
+        videoStatus: videoEvent.videoStatus,
+        currentOffset: videoEvent.currentOffset,
+        totalVideoLength: videoEvent.length,
+      })
+    } else {
+      defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
+    }
+  }
 }
 
 function arrayCleanup<T>(array: T[] | null | undefined): T[] | undefined {
