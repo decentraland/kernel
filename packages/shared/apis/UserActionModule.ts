@@ -2,7 +2,7 @@ import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import { ExposableAPI } from './ExposableAPI'
 import defaultLogger from 'shared/logger'
 import { getOwnerNameFromJsonData, getThumbnailUrlFromJsonDataAndContent } from 'shared/selectors'
-import { getUpdateProfileServer } from 'shared/dao/selectors'
+import { getFetchContentServer } from 'shared/dao/selectors'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJson'
 import { getSceneNameFromAtlasState, postProcessSceneName } from 'shared/atlas/selectors'
@@ -40,7 +40,7 @@ export class UserActionModule extends ExposableAPI implements IUserActionModule 
       sceneThumbnailUrl = getThumbnailUrlFromJsonDataAndContent(
         mapSceneData.sceneJsonData,
         mapSceneData.mappingsResponse.contents,
-        getUpdateProfileServer(store.getState())
+        getFetchContentServer(store.getState())
       )
     }
     if (!sceneThumbnailUrl) {

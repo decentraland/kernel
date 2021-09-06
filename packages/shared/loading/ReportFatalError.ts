@@ -45,7 +45,7 @@ export function BringDownClientAndShowError(event: ExecutionLifecycleEvent) {
   globalObservable.emit('error', {
     error: new Error(event),
     code: targetError,
-    level: targetError as any
+    level: 'fatal'
   })
 }
 
@@ -89,6 +89,8 @@ export function ReportFatalErrorWithUnityPayload(error: Error, context: ErrorCon
       //
     })
 }
+
+Object.assign(globalThis, { BringDownClientAndShowError, ReportFatalErrorWithUnityPayloadAsync, ReportFatalError })
 
 export async function ReportFatalErrorWithUnityPayloadAsync(error: Error, context: ErrorContextTypes) {
   try {

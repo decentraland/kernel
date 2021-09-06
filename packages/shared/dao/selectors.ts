@@ -36,7 +36,11 @@ export const getUpdateProfileServer = (state: RootDaoState & RootMetaState) => {
   if (UPDATE_CONTENT_SERVICE) {
     return UPDATE_CONTENT_SERVICE
   }
-  return getAllowedContentServer(state.dao.updateContentServer, state)
+  // if a catalyst is pinned => avoid any override
+  if (PIN_CATALYST) {
+    return PIN_CATALYST + '/content'
+  }
+  return state.dao.updateContentServer
 }
 
 export const getFetchContentServer = (state: RootDaoState & RootMetaState) => {
