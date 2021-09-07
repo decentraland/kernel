@@ -25,7 +25,13 @@ import {
   commsStatusUrl
 } from '.'
 import { getAddedServers, getCatalystNodesEndpoint, getMinCatalystVersion } from 'shared/meta/selectors'
-import { getAllCatalystCandidates, getSelectedNetwork, isRealmInitialized } from './selectors'
+import {
+  getAllCatalystCandidates,
+  getFetchContentServer,
+  getSelectedNetwork,
+  getUpdateProfileServer,
+  isRealmInitialized
+} from './selectors'
 import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
 import defaultLogger from '../logger'
 import {
@@ -72,7 +78,10 @@ function* loadCatalystRealms() {
 
     // check for cached realms if any
     if (cachedRealm && (!PIN_CATALYST || cachedRealm.domain === PIN_CATALYST)) {
-      const cachedCandidates: Candidate[] = yield call(getFromPersistentStorage, getLastRealmCandidatesCacheKey(network)) ?? []
+      const cachedCandidates: Candidate[] = yield call(
+        getFromPersistentStorage,
+        getLastRealmCandidatesCacheKey(network)
+      ) ?? []
 
       let configuredRealm: Realm
       if (REALM) {
@@ -118,7 +127,13 @@ function* loadCatalystRealms() {
 
   yield put(setCatalystRealm(realm!))
 
-  defaultLogger.info(`Using Catalyst configuration: `, yield select((state) => state.dao))
+  defaultLogger.info(`Using Catalyst configuration: `, {
+    original: yield select((state) => state.dao),
+    calculated: {
+      fetchContentServer: yield select(getFetchContentServer),
+      updateContentServer: yield select(getUpdateProfileServer)
+    }
+  })
 }
 
 function* initLocalCatalyst() {
