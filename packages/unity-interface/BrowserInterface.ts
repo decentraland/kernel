@@ -630,7 +630,7 @@ export class BrowserInterface {
   public VideoProgressEvent(videoEvent: {
     componentId: string
     sceneId: string
-    videoClipId: string
+    videoTextureId: string
     status: number
     currentOffset: number
     videoLength: number
@@ -639,7 +639,7 @@ export class BrowserInterface {
     if (scene) {
       scene.emit('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,
-        videoClipId: videoEvent.videoClipId,
+        videoClipId: videoEvent.videoTextureId,
         videoStatus: videoEvent.status,
         currentOffset: videoEvent.currentOffset,
         totalVideoLength: videoEvent.videoLength
