@@ -41,11 +41,9 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
 })
 
 async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityGame> {
-  // Remove the following line after https://github.com/decentraland/unity-renderer/pull/974 gets merged
-  ;(globalThis as any).USE_UNITY_INDEXED_DB_CACHE = Promise.resolve(false)
-
   // inject unity loader
   const rootArtifactsUrl = rendererOptions.baseUrl || ''
+
   const { createWebRenderer } = await loadUnity(rootArtifactsUrl, defaultOptions)
 
   preventUnityKeyboardLock()
