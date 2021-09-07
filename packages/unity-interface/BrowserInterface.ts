@@ -6,7 +6,7 @@ import { hasConnectedWeb3 } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
-import { ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
+import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3 } from 'decentraland-ecs'
 import { IEventNames } from 'decentraland-ecs'
 import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
@@ -119,7 +119,9 @@ export class BrowserInterface {
       // tslint:disable-next-line:semicolon
       ;(this as any)[type](message)
     } else {
-      defaultLogger.info(`Unknown message (did you forget to add ${type} to unity-interface/dcl.ts?)`, message)
+      if (DEBUG) {
+        defaultLogger.info(`Unknown message (did you forget to add ${type} to unity-interface/dcl.ts?)`, message)
+      }
     }
   }
 
@@ -623,6 +625,28 @@ export class BrowserInterface {
 
   public async NotifyStatusThroughChat(data: { value: string }) {
     notifyStatusThroughChat(data.value)
+  }
+
+  public VideoProgressEvent(videoEvent: {
+    componentId: string
+    sceneId: string
+    videoClipId: string
+    videoStatus: number
+    currentOffset: number
+    length: number
+  }) {
+    const scene = getSceneWorkerBySceneID(videoEvent.sceneId)
+    if (scene) {
+      scene.emit('videoEvent' as IEventNames, {
+        componentId: videoEvent.componentId,
+        videoClipId: videoEvent.videoClipId,
+        videoStatus: videoEvent.videoStatus,
+        currentOffset: videoEvent.currentOffset,
+        totalVideoLength: videoEvent.length,
+      })
+    } else {
+      defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
+    }
   }
 }
 
