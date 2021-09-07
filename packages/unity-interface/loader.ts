@@ -115,7 +115,14 @@ async function injectScript(url: string) {
   theScript.type = 'application/javascript'
   theScript.crossOrigin = 'anonymous'
   theScript.addEventListener('load', theFuture.resolve)
-  theScript.addEventListener('error', (e) => theFuture.reject(e.error || new Error('Error loading the script ' + url)))
+  theScript.addEventListener('error', (e) =>
+    theFuture.reject(
+      e.error ||
+        new Error(
+          `The script ${url} failed to load. If this error persists, please try emptying the cache of your browser and reloading this page.`
+        )
+    )
+  )
   document.body.appendChild(theScript)
   return theFuture
 }
