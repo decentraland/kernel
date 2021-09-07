@@ -631,18 +631,18 @@ export class BrowserInterface {
     componentId: string
     sceneId: string
     videoClipId: string
-    videoStatus: number
+    status: number
     currentOffset: number
-    length: number
+    videoLength: number
   }) {
     const scene = getSceneWorkerBySceneID(videoEvent.sceneId)
     if (scene) {
       scene.emit('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,
         videoClipId: videoEvent.videoClipId,
-        videoStatus: videoEvent.videoStatus,
+        videoStatus: videoEvent.status,
         currentOffset: videoEvent.currentOffset,
-        totalVideoLength: videoEvent.length,
+        totalVideoLength: videoEvent.videoLength
       })
     } else {
       defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
