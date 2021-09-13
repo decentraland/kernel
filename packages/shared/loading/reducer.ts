@@ -5,7 +5,6 @@ import {
   ExecutionLifecycleEvent,
   EXPERIENCE_STARTED,
   NOT_STARTED,
-  SET_ERROR_TLD,
   SET_LOADING_WAIT_TUTORIAL,
   TELEPORT_TRIGGERED,
   RENDERING_ACTIVATED,
@@ -85,9 +84,6 @@ export function loadingReducer(state?: LoadingState, action?: AnyAction): Loadin
   }
   if (action.type === FATAL_ERROR) {
     return { ...state, error: action.payload.type }
-  }
-  if (action.type === SET_ERROR_TLD) {
-    return { ...state, error: 'networkmismatch', tldError: action.payload }
   }
   return state
 }

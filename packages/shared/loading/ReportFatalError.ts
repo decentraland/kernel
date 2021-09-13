@@ -45,7 +45,7 @@ export function BringDownClientAndShowError(event: ExecutionLifecycleEvent) {
   globalObservable.emit('error', {
     error: new Error(event),
     code: targetError,
-    level: targetError as any
+    level: 'fatal'
   })
 }
 
@@ -57,6 +57,7 @@ export namespace ErrorContext {
   export const KERNEL_SCENE = `kernel#scene`
   export const RENDERER_AVATARS = `renderer#avatars`
   export const RENDERER_ERRORHANDLER = `renderer#errorHandler`
+  export const RENDERER_NEWERRORHANDLER = `renderer#newErrorHandler`
 }
 
 export type ErrorContextTypes =
@@ -67,6 +68,7 @@ export type ErrorContextTypes =
   | typeof ErrorContext.KERNEL_SCENE
   | typeof ErrorContext.RENDERER_AVATARS
   | typeof ErrorContext.RENDERER_ERRORHANDLER
+  | typeof ErrorContext.RENDERER_NEWERRORHANDLER
 
 export function ReportFatalErrorWithCatalystPayload(error: Error, context: ErrorContextTypes) {
   // TODO(Brian): Get some useful catalyst payload to append here
@@ -87,6 +89,8 @@ export function ReportFatalErrorWithUnityPayload(error: Error, context: ErrorCon
       //
     })
 }
+
+Object.assign(globalThis, { BringDownClientAndShowError, ReportFatalErrorWithUnityPayloadAsync, ReportFatalError })
 
 export async function ReportFatalErrorWithUnityPayloadAsync(error: Error, context: ErrorContextTypes) {
   try {

@@ -3,7 +3,7 @@ import { createIdentity } from 'eth-crypto'
 import { Account } from 'web3x/account'
 import { Authenticator } from 'dcl-crypto'
 
-import { ETHEREUM_NETWORK } from 'config'
+import { ETHEREUM_NETWORK, PREVIEW } from 'config'
 
 import { createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
@@ -32,7 +32,8 @@ import {
   updateTOS,
   userAuthentified,
   AuthenticateAction,
-  signUpCancel
+  signUpCancel,
+  signupForm
 } from './actions'
 import { fetchProfileLocally, doesProfileExist, generateRandomUserProfile, localProfilesRepo } from '../profiles/sagas'
 import { getUnityInstance } from '../../unity-interface/IUnityInterface'
@@ -119,7 +120,7 @@ function* authenticate(action: AuthenticateAction) {
   const profileExists: boolean = yield doesProfileExist(identity.address)
   const isGuest: boolean = yield select(getIsGuestLogin)
   const profileLocally: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
-  const isGuestWithProfileLocal: boolean = isGuest && (profileLocally !== null)
+  const isGuestWithProfileLocal: boolean = isGuest && profileLocally !== null
 
   if (profileExists || isGuestWithProfileLocal) {
     yield put(setLoadingWaitTutorial(false))
@@ -148,12 +149,17 @@ function* startSignUp(identity: ExplorerIdentity) {
   if (cachedProfile) {
     yield signUp()
   } else {
-    const profile: Partial<Profile> = yield select(getSignUpProfile)
+    if (PREVIEW) {
+      yield put(signupForm('Test', ''))
+      yield signUp()
+    } else {
+      const profile: Partial<Profile> = yield select(getSignUpProfile)
+      yield call(waitForRendererInstance)
 
-    yield call(waitForRendererInstance)
-    // TODO: Fix as any
-    getUnityInstance().LoadProfile(profile as any)
-    getUnityInstance().ShowAvatarEditorInSignIn()
+      // TODO: Fix as any
+      getUnityInstance().LoadProfile(profile as any)
+      getUnityInstance().ShowAvatarEditorInSignIn()
+    }
   }
 }
 

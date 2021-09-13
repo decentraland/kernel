@@ -141,8 +141,16 @@ export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 export const NO_ASSET_BUNDLES = location.search.includes('NO_ASSET_BUNDLES')
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
+/**
+ * Get the root URL and ensure not to end with slash
+ * @returns Root URL with pathname where the index.html is served.
+ */
+export const rootURLPreviewMode = () => {
+  return `${location.origin}${location.pathname}`.replace(/\/$/, '')
+}
+
 export const PIN_CATALYST = PREVIEW
-  ? location.origin
+  ? rootURLPreviewMode()
   : typeof qs.CATALYST === 'string'
   ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
   : undefined

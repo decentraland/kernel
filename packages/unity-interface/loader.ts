@@ -1,10 +1,14 @@
 import future from 'fp-future'
 import type * as _TheRenderer from '@dcl/unity-renderer/src/index'
 import { trackEvent } from 'shared/analytics'
+import {
+  ReportFatalErrorWithUnityPayload,
+  ErrorContext,
+  BringDownClientAndShowError
+} from 'shared/loading/ReportFatalError'
+import { UNEXPECTED_ERROR } from 'shared/loading/types'
 
 declare const globalThis: { DclRenderer?: DclRenderer }
-
-const rendererPackageJson = require('@dcl/unity-renderer/package.json')
 
 export type DclRenderer = typeof _TheRenderer
 
@@ -22,12 +26,21 @@ export type CommonRendererOptions = {
   onMessage: (type: string, payload: string) => void
 }
 
-async function injectRenderer(
-  baseUrl: string,
-  rendererVersion: string,
-  options: CommonRendererOptions
-): Promise<LoadRendererResult> {
-  const scriptUrl = new URL('index.js?v=' + rendererVersion, baseUrl).toString()
+function extractSemver(url: string): string | null {
+  const r = url.match(/([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?/)
+
+  if (r) {
+    return r[0]!
+  }
+
+  return null
+}
+
+export async function loadUnity(baseUrl: string, options: CommonRendererOptions): Promise<LoadRendererResult> {
+  const rendererVersion = extractSemver(baseUrl) || 'dynamic'
+
+  const scriptUrl = new URL('index.js?cors', baseUrl).toString()
+
   window['console'].log('Renderer: ' + scriptUrl)
 
   let startTime = performance.now()
@@ -81,41 +94,39 @@ async function injectRenderer(
       return globalThis.DclRenderer!.initializeWebRenderer({
         baseUrl,
         canvas,
-        versionQueryParam: rendererVersion,
+        versionQueryParam: rendererVersion == 'dynamic' ? Date.now().toString() : rendererVersion,
         onProgress,
-        onMessageLegacy: options.onMessage
+        onMessageLegacy: options.onMessage,
+        onError: (error) => {
+          ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_NEWERRORHANDLER)
+          BringDownClientAndShowError(UNEXPECTED_ERROR)
+        }
       })
     },
     baseUrl
   }
 }
 
-async function loadDefaultRenderer(
-  rootArtifactsUrl: string,
-  options: CommonRendererOptions
-): Promise<LoadRendererResult> {
-  // PAY ATTENTION:
-  //  Whenever we decide to not bundle the renderer anymore and have independant
-  //  release cycles for the explorer, replace this whole function by the following commented line
-  //
-  // > return loadRendererByBranch('master')
-
-  // Load the embeded renderer from the artifacts root folder
-  return injectRenderer(rootArtifactsUrl, rendererPackageJson.version, options)
-}
-
-export async function loadUnity(rootArtifactsUrl: string, options: CommonRendererOptions): Promise<LoadRendererResult> {
-  return loadDefaultRenderer(rootArtifactsUrl, options)
-}
-
 async function injectScript(url: string) {
   const theFuture = future<Event>()
   const theScript = document.createElement('script')
+  const persistMessage =
+    'If this error persists, please try emptying the cache of your browser and reloading this page.'
   theScript.src = url
   theScript.async = true
   theScript.type = 'application/javascript'
+  theScript.crossOrigin = 'anonymous'
   theScript.addEventListener('load', theFuture.resolve)
-  theScript.addEventListener('error', (e) => theFuture.reject(e.error || (e as any)))
+  theScript.addEventListener('error', (e) =>
+    theFuture.reject(e.error || new Error(`The script ${url} failed to load.\n${persistMessage}`))
+  )
+  theScript.addEventListener('abort', () =>
+    theFuture.reject(
+      new Error(
+        `Script loading aborted: ${url}.\nThis may be caused because you manually stopped the loading or because of a network error.\n${persistMessage}`
+      )
+    )
+  )
   document.body.appendChild(theScript)
   return theFuture
 }

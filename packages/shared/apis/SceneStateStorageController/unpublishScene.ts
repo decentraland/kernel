@@ -1,7 +1,7 @@
 import { Authenticator } from 'dcl-crypto'
 import { ContentClient } from 'dcl-catalyst-client'
 import { EntityType } from 'dcl-catalyst-commons'
-import { getUpdateProfileServer } from 'shared/dao/selectors'
+import { getFetchContentServer } from 'shared/dao/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { EMPTY_PARCEL_NAME } from 'shared/atlas/selectors'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
@@ -144,6 +144,6 @@ async function getModelsFiles(baseUrl: string, mappings: ContentMapping[]) {
 }
 
 function getContentClient(): ContentClient {
-  const contentUrl = getUpdateProfileServer(store.getState())
+  const contentUrl = getFetchContentServer(store.getState())
   return new ContentClient(contentUrl, 'builder in-world')
 }

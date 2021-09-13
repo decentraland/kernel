@@ -1,10 +1,9 @@
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
+import { INIT_SESSION } from 'shared/session/actions'
 import { action } from 'typesafe-actions'
 
 export const NOT_STARTED = 'Getting things ready...'
 export const notStarted = () => action(NOT_STARTED)
-export const LOADING_STARTED = 'Authenticating user...'
-export const loadingStarted = () => action(LOADING_STARTED)
 export const AWAITING_USER_SIGNATURE = 'Awaiting your signature...'
 export const awaitingUserSignature = () => action(AWAITING_USER_SIGNATURE)
 export const METRICS_AUTH_SUCCESSFUL = 'Authentication successful. Loading the experience...'
@@ -66,8 +65,6 @@ export const newLogin = () => action(NEW_LOGIN)
 export const NETWORK_MISMATCH = 'Network mismatch'
 export const FATAL_ERROR = 'fatal error'
 export const fatalError = (type: string) => action(FATAL_ERROR, { type })
-export const SET_ERROR_TLD = 'TLD network error'
-export const setTLDError = (values: any) => action(SET_ERROR_TLD, values)
 export const AVATAR_LOADING_ERROR = 'The avatar could not be loaded correctly'
 export const avatarLoadingError = () => action(AVATAR_LOADING_ERROR)
 
@@ -76,7 +73,7 @@ export const setLoadingWaitTutorial = (waiting: boolean) => action(SET_LOADING_W
 
 export type ExecutionLifecycleEvent =
   | typeof NOT_STARTED
-  | typeof LOADING_STARTED
+  | typeof INIT_SESSION
   | typeof METRICS_AUTH_SUCCESSFUL
   | typeof NOT_INVITED
   | typeof ESTABLISHING_COMMS
@@ -103,7 +100,7 @@ export type ExecutionLifecycleEvent =
 
 export const ExecutionLifecycleEventsList: ExecutionLifecycleEvent[] = [
   NOT_STARTED,
-  LOADING_STARTED,
+  INIT_SESSION,
   AWAITING_USER_SIGNATURE,
   METRICS_AUTH_SUCCESSFUL,
   METRICS_UNITY_CLIENT_LOADED,
