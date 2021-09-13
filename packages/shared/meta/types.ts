@@ -13,7 +13,7 @@ export type MetaConfiguration = {
     denied: string[]
     contentWhitelist: string[]
     catalystsNodesEndpoint?: string
-  },
+  }
   pickRealmAlgorithmConfig?: AlgorithmChainConfig
   bannedUsers: BannedUsers
   synapseUrl: string
@@ -72,5 +72,6 @@ export type CommsConfig = {
 export enum FeatureFlags {
   QUESTS = 'quests',
   BUILDER_IN_WORLD = 'builder_in_world',
-  AVATAR_LODS = 'avatar_lods'
+  AVATAR_LODS = 'avatar_lods',
+  ASSET_BUNDLES = 'asset_bundles'
 }

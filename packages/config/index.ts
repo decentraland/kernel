@@ -138,7 +138,6 @@ export const HAS_INITIAL_POSITION_MARK = location.search.includes('position')
 export const WSS_ENABLED = !!ensureSingleString(qs.ws)
 export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 
-export const NO_ASSET_BUNDLES = location.search.includes('NO_ASSET_BUNDLES')
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
 /**

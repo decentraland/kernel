@@ -1,4 +1,4 @@
-import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, NO_ASSET_BUNDLES, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
+import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import { ILand, SceneJsonData } from 'shared/types'
@@ -77,10 +77,6 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   if (SCENE_DEBUG_PANEL) {
     getUnityInstance().SetSceneDebugPanel()
-  }
-
-  if (NO_ASSET_BUNDLES) {
-    getUnityInstance().SetDisableAssetBundles()
   }
 
   if (SHOW_FPS_COUNTER) {

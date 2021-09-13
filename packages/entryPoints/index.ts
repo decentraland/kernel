@@ -3,14 +3,7 @@ declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 import defaultLogger, { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
-import {
-  AUTH_ERROR_LOGGED_OUT,
-  FAILED_FETCHING_UNITY,
-  NOT_INVITED,
-  renderingInBackground,
-  renderingInForeground
-  // setLoadingWaitTutorial
-} from 'shared/loading/types'
+import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
@@ -122,6 +115,8 @@ globalThis.DecentralandKernel = {
 
     // initInternal must be called asynchronously, _after_ returning
     async function initInternal() {
+      runCompatibilityChecks()
+
       // Initializes the Session Saga
       store.dispatch(initSession())
 
@@ -133,11 +128,7 @@ globalThis.DecentralandKernel = {
       () =>
         initInternal().catch((err) => {
           ReportFatalError(err, ErrorContext.WEBSITE_INIT)
-          if (err.message === AUTH_ERROR_LOGGED_OUT || err.message === NOT_INVITED) {
-            BringDownClientAndShowError(NOT_INVITED)
-          } else {
-            BringDownClientAndShowError(FAILED_FETCHING_UNITY)
-          }
+          BringDownClientAndShowError(err.toString())
         }),
       0
     )
@@ -173,6 +164,16 @@ globalThis.DecentralandKernel = {
   }
 }
 
+function runCompatibilityChecks() {
+  const qs = new URLSearchParams(document.location.search)
+
+  if (qs.has('NO_ASSET_BUNDLES')) {
+    throw new Error(
+      'NO_ASSET_BUNDLES option was deprecated, it is now a FeatureFlag, use DISABLE_ASSET_BUNDLES or ENABLE_ASSET_BUNDLES instead'
+    )
+  }
+}
+
 async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   const i = (await ensureUnityInterface()).unityInterface
 
@@ -186,6 +187,11 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.SetRenderProfile(renderProfile)
   const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
   const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
+
+  // killswitch, disable asset bundles
+  if (!isFeatureEnabled(store.getState(), FeatureFlags.ASSET_BUNDLES, false)) {
+    i.SetDisableAssetBundles()
+  }
 
   i.ConfigureHUDElement(HUDElementID.MINIMAP, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.NOTIFICATION, { active: true, visible: true })
