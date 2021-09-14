@@ -6,6 +6,13 @@ import { isFeatureEnabled } from 'shared/meta/selectors'
 import { FeatureFlags } from 'shared/meta/types'
 import { store } from 'shared/store/isolatedStore'
 
+type Environment = {
+  KERNEL_BASE_URL: string
+  RENDERER_BASE_URL: string
+}
+
+declare const globalThis: Environment
+
 export function kernelConfigForRenderer(): KernelConfigForRenderer {
   return {
     comms: {
@@ -24,6 +31,8 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       // tslint:disable-next-line
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
     network: "mainnet",
-    validWorldRanges: getWorld().validWorldRanges
+    validWorldRanges: getWorld().validWorldRanges,
+    kernelURL: globalThis.KERNEL_BASE_URL,
+    rendererURL: globalThis.RENDERER_BASE_URL
   }
 }
