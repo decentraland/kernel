@@ -9,7 +9,7 @@ export interface AudioWorkletProcessor {
 
 declare var AudioWorkletProcessor: {
   prototype: AudioWorkletProcessor
-  new (options?: AudioWorkletNodeOptions): AudioWorkletProcessor
+  new(options?: AudioWorkletNodeOptions): AudioWorkletProcessor
 }
 
 declare function registerProcessor(
@@ -46,25 +46,25 @@ class InputProcessor extends AudioWorkletProcessor {
 
   process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>) {
     if (this.status === InputProcessorStatus.PAUSED) return true
-    let data = inputs[0][0]
+    let inputData = inputs?.[0]?.[0] ?? new Float32Array()
 
     if (this.status === InputProcessorStatus.PAUSE_REQUESTED) {
       // We try to use as many samples as we can that would complete some frames
       const samplesToUse =
-        Math.floor(data.length / OPUS_SAMPLES_PER_FRAME) * OPUS_SAMPLES_PER_FRAME +
+        Math.floor(inputData.length / OPUS_SAMPLES_PER_FRAME) * OPUS_SAMPLES_PER_FRAME +
         OPUS_SAMPLES_PER_FRAME -
         (this.inputSamplesCount % OPUS_SAMPLES_PER_FRAME)
 
       // If we still don't have enough samples to complete a frame, we cannot pause recording yet.
-      if (samplesToUse <= data.length) {
-        data = data.slice(0, samplesToUse)
+      if (samplesToUse <= inputData.length) {
+        inputData = inputData.slice(0, samplesToUse)
         this.status = InputProcessorStatus.PAUSED
         this.notify(InputWorkletRequestTopic.ON_PAUSED)
       }
     }
 
-    this.inputSamplesCount += data.length
-    this.sendDataToEncode(data)
+    this.inputSamplesCount += inputData.length
+    this.sendDataToEncode(inputData)
 
     return true
   }
