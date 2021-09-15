@@ -151,8 +151,8 @@ export const rootURLPreviewMode = () => {
 export const PIN_CATALYST = PREVIEW
   ? rootURLPreviewMode()
   : typeof qs.CATALYST === 'string'
-  ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
-  : undefined
+    ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
+    : undefined
 
 export const FORCE_RENDERING_STYLE = ensureSingleString(qs.FORCE_RENDERING_STYLE) as any
 
@@ -173,10 +173,6 @@ export namespace commConfigurations {
 
   export const iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478?transport=udp' },
-    {
-      urls: ['stun:stun2.l.google.com:19302', 'stun:stun3.l.google.com:19302', 'stun:stun4.l.google.com:19302']
-    },
     {
       urls: 'turn:stun.decentraland.org:3478',
       credential: 'passworddcl',
