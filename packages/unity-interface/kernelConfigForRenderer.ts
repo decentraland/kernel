@@ -5,13 +5,7 @@ import { getWorld } from '@dcl/schemas'
 import { isFeatureEnabled } from 'shared/meta/selectors'
 import { FeatureFlags } from 'shared/meta/types'
 import { store } from 'shared/store/isolatedStore'
-
-type Environment = {
-  KERNEL_BASE_URL: string
-  RENDERER_BASE_URL: string
-}
-
-declare const globalThis: Environment
+import { injectVersions } from 'shared/rolloutVersions'
 
 export function kernelConfigForRenderer(): KernelConfigForRenderer {
   return {
@@ -32,7 +26,15 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
     network: "mainnet",
     validWorldRanges: getWorld().validWorldRanges,
-    kernelURL: globalThis.KERNEL_BASE_URL,
-    rendererURL: globalThis.RENDERER_BASE_URL
+    kernelVersion: getKernelVersion(),
+    rendererVersion: getRendererVersion()
   }
+}
+
+export function getKernelVersion(): string {
+  return injectVersions({})['@dcl/kernel'] || "unknown-kernel-version"
+}
+
+export function getRendererVersion(): string {
+  return injectVersions({})['@dcl/unity-renderer'] || "unknown-renderer-version"
 }

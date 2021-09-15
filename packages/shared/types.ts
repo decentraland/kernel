@@ -583,8 +583,8 @@ export type KernelConfigForRenderer = {
   gifSupported: boolean
   network: string
   validWorldRanges: Object
-  kernelURL: string
-  rendererURL: string
+  kernelVersion: string
+  rendererVersion: string
 }
 
 export type RealmsInfoForRenderer = {
