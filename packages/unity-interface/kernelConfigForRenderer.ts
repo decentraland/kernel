@@ -27,8 +27,8 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
     network: "mainnet",
     validWorldRanges: getWorld().validWorldRanges,
-    kernelVersion: getKernelVersion(),
-    rendererVersion: getRendererVersion()
+    kernelVersion: versions['@dcl/kernel'] || "unknown-kernel-version",
+    rendererVersion: versions['@dcl/unity-renderer'] || "unknown-renderer-version"
   }
 }
 
