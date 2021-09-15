@@ -31,11 +31,3 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
     rendererVersion: versions['@dcl/unity-renderer'] || "unknown-renderer-version"
   }
 }
-
-export function getKernelVersion(): string {
-  return injectVersions({})['@dcl/kernel'] || "unknown-kernel-version"
-}
-
-export function getRendererVersion(): string {
-  return injectVersions({})['@dcl/unity-renderer'] || "unknown-renderer-version"
-}
