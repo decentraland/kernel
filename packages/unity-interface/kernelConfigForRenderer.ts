@@ -5,8 +5,10 @@ import { getWorld } from '@dcl/schemas'
 import { isFeatureEnabled } from 'shared/meta/selectors'
 import { FeatureFlags } from 'shared/meta/types'
 import { store } from 'shared/store/isolatedStore'
+import { injectVersions } from 'shared/rolloutVersions'
 
 export function kernelConfigForRenderer(): KernelConfigForRenderer {
+  const versions = injectVersions({})
   return {
     comms: {
       commRadius: commConfigurations.commRadius,
@@ -24,6 +26,8 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       // tslint:disable-next-line
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
     network: "mainnet",
-    validWorldRanges: getWorld().validWorldRanges
+    validWorldRanges: getWorld().validWorldRanges,
+    kernelVersion: versions['@dcl/kernel'] || "unknown-kernel-version",
+    rendererVersion: versions['@dcl/unity-renderer'] || "unknown-renderer-version"
   }
 }
