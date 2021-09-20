@@ -1,6 +1,7 @@
 import { BannedUsers, CommsConfig, FeatureFlags, MessageOfTheDayConfig, RootMetaState } from './types'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
+import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
   const { config } = store.meta
@@ -32,7 +33,7 @@ export const isMetaConfigurationInitiazed = (store: RootMetaState): boolean => s
 
 export const getPois = (store: RootMetaState): Vector2Component[] => store.meta.config.world?.pois || []
 
-export const getCommsConfig = (store: RootMetaState): CommsConfig => store.meta.config.comms ?? {}
+export const getCommsConfig = (store: RootMetaState): CommsConfig => store.meta.config.comms ?? { maxVisiblePeers: DEFAULT_MAX_VISIBLE_PEERS }
 
 export const getBannedUsers = (store: RootMetaState): BannedUsers => store.meta.config.bannedUsers ?? {}
 
