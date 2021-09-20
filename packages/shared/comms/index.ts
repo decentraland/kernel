@@ -765,6 +765,7 @@ function collectInfo(context: Context) {
 
   const now = Date.now()
   const visiblePeers: ProcessingPeerInfo[] = []
+  const commsMetaConfig = getCommsConfig(store.getState())
   const commArea = new CommunicationArea(position2parcel(context.currentPosition), commConfigurations.commRadius)
   for (let [peerAlias, trackingInfo] of context.peerData) {
     const msSinceLastUpdate = now - trackingInfo.lastUpdate
@@ -799,7 +800,7 @@ function collectInfo(context: Context) {
     })
   }
 
-  if (visiblePeers.length <= commConfigurations.maxVisiblePeers) {
+  if (visiblePeers.length <= commsMetaConfig.maxVisiblePeers) {
     for (let peerInfo of visiblePeers) {
       const alias = peerInfo.alias
       receiveUserVisible(alias, true)
@@ -813,7 +814,7 @@ function collectInfo(context: Context) {
       const peer = sortedBySqDistanceVisiblePeers[i]
       const alias = peer.alias
 
-      if (i < commConfigurations.maxVisiblePeers) {
+      if (i < commsMetaConfig.maxVisiblePeers) {
         receiveUserVisible(alias, true)
         receiveUserPose(alias, peer.position as Pose)
         receiveUserData(alias, peer.userInfo)
