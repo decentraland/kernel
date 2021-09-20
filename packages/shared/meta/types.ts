@@ -67,6 +67,7 @@ export type CommsConfig = {
   relaySuspensionDisabled?: boolean
   relaySuspensionInterval?: number
   relaySuspensionDuration?: number
+  maxVisiblePeers: number
 }
 
 export enum FeatureFlags {

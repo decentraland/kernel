@@ -32,3 +32,5 @@ export async function waitForMessageOfTheDay(): Promise<MessageOfTheDayConfig | 
     })
   })
 }
+
+export const DEFAULT_MAX_VISIBLE_PEERS = 25
