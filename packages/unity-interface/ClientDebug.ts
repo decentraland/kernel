@@ -1,9 +1,11 @@
 import { defaultLogger } from 'shared/logger'
 import { ErrorContextTypes, ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { getUnityInstance, IUnityInterface } from './IUnityInterface'
+import future, { IFuture } from 'fp-future'
 
 export class ClientDebug {
   private unityInterface: IUnityInterface
+  private onDebugBridgeReady: IFuture<boolean> = future()
 
   public constructor(unityInterface: IUnityInterface) {
     this.unityInterface = unityInterface
@@ -83,6 +85,14 @@ export class ClientDebug {
 
   public ClearBots() {
     this.unityInterface.SendMessageToUnity('Main', 'ClearBots')
+  }
+
+  public SetDebugBridgeReady() {
+    this.onDebugBridgeReady.resolve(true)
+  }
+
+  public EnsureDebugBridgeReady(): IFuture<boolean> {
+    return this.onDebugBridgeReady
   }
 }
 

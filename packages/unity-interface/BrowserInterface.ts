@@ -69,8 +69,9 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { ClientDebug } from './ClientDebug'
 
-declare const globalThis: { gifProcessor?: GIFProcessor }
+declare const globalThis: { gifProcessor?: GIFProcessor, clientDebug: ClientDebug }
 export let futures: Record<string, IFuture<any>> = {}
 
 // ** TODO - move to friends related file - moliva - 15/07/2020
@@ -647,6 +648,10 @@ export class BrowserInterface {
     } else {
       defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
     }
+  }
+
+  public SetDebugBridgeReady() {
+    globalThis.clientDebug.SetDebugBridgeReady()
   }
 }
 

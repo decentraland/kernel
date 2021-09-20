@@ -71,21 +71,25 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   getUnityInstance().SetKernelConfiguration(kernelConfigForRenderer())
 
-  if (DEBUG) {
-    getUnityInstance().SetDebug()
-  }
-
-  if (SCENE_DEBUG_PANEL) {
-    getUnityInstance().SetSceneDebugPanel()
-  }
-
-  if (SHOW_FPS_COUNTER) {
-    getUnityInstance().ShowFPSPanel()
-  }
-
-  if (ENGINE_DEBUG_PANEL) {
-    getUnityInstance().SetEngineDebugPanel()
-  }
+  // Renderer's receiver for these kind of messages is created at runtime
+  // so we should wait until renderer notify us that the receiver is up and ready
+  clientDebug.EnsureDebugBridgeReady().then($ => {
+    if (DEBUG) {
+      getUnityInstance().SetDebug()
+    }
+  
+    if (SCENE_DEBUG_PANEL) {
+      getUnityInstance().SetSceneDebugPanel()
+    }
+  
+    if (SHOW_FPS_COUNTER) {
+      getUnityInstance().ShowFPSPanel()
+    }
+  
+    if (ENGINE_DEBUG_PANEL) {
+      getUnityInstance().SetEngineDebugPanel()
+    }
+  }).catch()
 
   observeLoadingStateChange(() => {
     setLoadingScreenBasedOnState()
