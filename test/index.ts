@@ -25,6 +25,7 @@ import './unit/catalog.saga.test'
 import './unityIntegration/ecs/math/quaternion.test'
 import './unityIntegration/ecs/math/vector3.test'
 import './dao/pick-realm-algorithm'
+import './dao/isNodeUsable.test'
 
 declare var mocha: any
 declare var globalThis: any

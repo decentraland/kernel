@@ -31,9 +31,10 @@ import { realmToString } from './utils/realmToString'
 import { PIN_CATALYST } from 'config'
 import * as qs from 'query-string'
 import { store } from 'shared/store/isolatedStore'
-import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
+import { getPickRealmsAlgorithmConfig, isFeatureEnabled } from 'shared/meta/selectors'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import { createAlgorithm } from './pick-realm-algorithm'
+import { FeatureFlags } from 'shared/meta/types'
 
 const DEFAULT_TIMEOUT = 5000
 
@@ -116,9 +117,11 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
     nodes.map(async (node) => ({ ...node, health: await fetchPeerHealthStatus(node) }))
   )
 
-  const healthyNodes = responses.filter((node) => isPeerHealthy(node.health))
+  const allowUnhealthyCatalysts = isFeatureEnabled(store.getState(), FeatureFlags.ALLOW_UNHEALTHY_CATALYSTS, false)
 
-  return fetchCatalystStatuses(healthyNodes)
+  const usableNodes = responses.filter((node) => isNodeUsable(node.health, allowUnhealthyCatalysts))
+
+  return fetchCatalystStatuses(usableNodes)
 }
 
 async function fetchPeerHealthStatus(node: CatalystNode) {
@@ -138,11 +141,11 @@ async function fetchPeerHealthStatus(node: CatalystNode) {
   }
 }
 
-export function isPeerHealthy(peerStatus: Record<string, HealthStatus>) {
+export function isNodeUsable(nodeStatus: Record<string, HealthStatus>, allowUnhealthy: boolean) {
   return (
-    Object.keys(peerStatus).length > 0 &&
-    !Object.keys(peerStatus).some((server) => {
-      return peerStatus[server] !== HealthStatus.HEALTHY
+    Object.keys(nodeStatus).length > 0 &&
+    Object.keys(nodeStatus).every((server) => {
+      return nodeStatus[server] === HealthStatus.HEALTHY || (allowUnhealthy && nodeStatus[server] === HealthStatus.UNHEALTHY)
     })
   )
 }
