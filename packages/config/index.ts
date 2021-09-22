@@ -203,7 +203,8 @@ export function getTLD() {
 }
 
 export const WITH_FIXED_COLLECTIONS = (qs.WITH_COLLECTIONS && ensureSingleString(qs.WITH_COLLECTIONS)) || ''
-export const ENABLE_EMPTY_SCENES = !DEBUG || knownTLDs.includes(getTLD())
+export const ENABLE_EMPTY_SCENES = !location.search.includes('DISABLE_EMPTY_SCENES')
+export const ENABLE_TEST_SCENES = location.search.includes('ENABLE_TEST_SCENES')
 
 export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
   const state = store.getState()
