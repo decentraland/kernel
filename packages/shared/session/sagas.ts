@@ -107,6 +107,8 @@ function* authenticate(action: AuthenticateAction) {
     }
   }
 
+  yield put(changeLoginState(LoginState.WAITING_RENDERER))
+
   yield ensureUnityInterface()
 
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
