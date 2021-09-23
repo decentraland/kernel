@@ -25,6 +25,7 @@ import type {
   OpenNFTDialogPayload
 } from 'shared/types'
 import { generatePBObject } from './Utils'
+import { run as runWasm } from '@dcl/wasm-runtime'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
@@ -169,9 +170,10 @@ export abstract class SceneRuntime extends Script {
       const mapping = bootstrapData.mappings.find(($) => $.file === mappingName)
       const url = resolveMapping(mapping && mapping.hash, mappingName, bootstrapData.baseUrl)
       const codeRequest = await fetch(url)
+      const wasmScene = mappingName.toLowerCase().endsWith('.wasm')
 
       if (codeRequest.ok) {
-        return [bootstrapData, await codeRequest.text()] as const
+        return [bootstrapData, codeRequest, wasmScene] as const
       } else {
         // even though the loading failed, we send the message initMessagesFinished to not block loading
         // in spawning points
@@ -227,9 +229,9 @@ export abstract class SceneRuntime extends Script {
     this.eventSubscriber = new EventSubscriber(this.engine as any)
 
     try {
-      const [sceneData, source] = await this.loadProject()
+      const [sceneData, sourceData, wasmScene] = await this.loadProject()
 
-      if (!source) {
+      if (!sourceData) {
         throw new Error('Received empty source.')
       }
 
@@ -530,7 +532,16 @@ export abstract class SceneRuntime extends Script {
       }
 
       try {
-        await this.runCode((source as any) as string, { dcl })
+        if (!wasmScene) {
+          await this.runCode((await sourceData.text()) as any as string, { dcl })
+        } else {
+          const wasmBytes = new Uint8Array(await sourceData.arrayBuffer())
+          const result = await runWasm({ wasmBytes })
+          await result.start()
+          await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRenderer}`)
+
+          this.initWasmScene(result, dcl)
+        }
 
         let modulesNotLoaded: string[] = []
 
@@ -638,5 +649,129 @@ export abstract class SceneRuntime extends Script {
         return event.data.payload.buttonId !== undefined
     }
     return false
+  }
+
+  private initWasmScene(result: any, dcl: DecentralandInterface) {
+    this.onUpdateFunctions.push(async (dt: number) => {
+      result.update(dt)
+    })
+
+    let entities: Set<number>[] = []
+    let components: any[] = []
+    const putComponent = ({
+      entityId,
+      componentNumber,
+      componentData,
+      timestamp
+    }: {
+      entityId: number
+      componentNumber: number
+      componentData: any
+      timestamp: number
+    }) => {
+      if (entities[entityId] === undefined) {
+        //debugger
+        entities[entityId] = new Set()
+        dcl.addEntity(entityId.toString())
+      }
+      ;(entities[entityId] as Set<number>).add(componentNumber)
+
+      // see https://github.com/decentraland/unity-renderer/blob/master/unity-renderer/Assets/Scripts/MainScripts/DCL/Models/Protocol/Protocol.cs#L5-L69
+      // CLASS_ID_COMPONENT are updateEntityComponent and
+      // CLASS_ID component are only componentUpdate
+      const classId = componentData['classId']
+      const CLASS_ID_COMPONENT = [1]
+
+      if (components[componentNumber]) {
+        if (components[componentNumber].timestamp >= timestamp) {
+          return
+        }
+
+        if (CLASS_ID_COMPONENT.includes(classId)) {
+          dcl.updateEntityComponent(
+            entityId.toString(),
+            `engine.${componentNumber.toString()}`,
+            componentData['classId'],
+            JSON.stringify(componentData['data'])
+          )
+        } else {
+          debugger
+          dcl.componentUpdated(`engine.${componentNumber.toString()}`, JSON.stringify(componentData['data']))
+        }
+      } else {
+        //debugger
+        if (!CLASS_ID_COMPONENT.includes(classId)) {
+          debugger
+
+          dcl.componentCreated(
+            componentNumber.toString(),
+            `engine.${componentNumber.toString()}`,
+            componentData['classId']
+          )
+          dcl.attachEntityComponent(
+            entityId.toString(),
+            `engine.${componentNumber.toString()}`,
+            componentNumber.toString()
+          )
+        }
+      }
+
+      components[componentNumber] = {
+        data: componentData,
+        timestamp
+      }
+    }
+
+    result.metaverseWrapper.setRendererCallback((args: any[]) => {
+      if (args.length > 0) {
+        const buf = args[0]
+        if (buf instanceof Uint8Array) {
+          const rendererBuffer = Buffer.from(buf)
+          // tslint:disable: no-console
+          const messageType = rendererBuffer.readInt32LE(0)
+          const entityId = rendererBuffer.readInt32LE(4) // BIGINT INSTEAD
+          const componentNumber = rendererBuffer.readInt32LE(12) // BIGINT INSTEAD
+          const timestamp = rendererBuffer.readInt32LE(20) // BIGINT INSTEAD
+          const dataLength = rendererBuffer.readInt32LE(28)
+          let componentData: any | null = null
+          if (dataLength > 0) {
+            if (rendererBuffer.length - 32 !== dataLength) {
+              console.error('corrupt message')
+              return
+            }
+
+            // console.log(`data ${dataLength} bytes in buffer with ${rendererBuffer.length - 32} bytes`)
+
+            try {
+              const componentDataStr = Buffer.from(rendererBuffer.subarray(32, 32 + dataLength)).toString('utf-8')
+              componentData = JSON.parse(componentDataStr)
+            } catch (err) {
+              console.error(err)
+            }
+          }
+
+          // remove component
+          if (componentData == null) {
+            if (messageType == 2) {
+            } else {
+              // ??? put component with no data
+            }
+          } else {
+            if (messageType == 1) {
+              // frequently use case: put component and udpate
+              setTimeout(() => {
+                putComponent({ entityId, componentNumber, componentData, timestamp })
+              }, 1)
+            } else {
+              // ??? remove component with data
+            }
+          }
+        } else {
+          // invalid write call
+        }
+      } else {
+        // invalid write call
+      }
+    })
   }
 }

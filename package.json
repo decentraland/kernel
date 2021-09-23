@@ -95,6 +95,7 @@
     "@dcl/kernel-interface": "^2.0.0-20210823094935.commit-f7cb26b",
     "@dcl/schemas": "^1.2.0",
     "@dcl/urn-resolver": "^1.2.1",
+    "@dcl/wasm-runtime": "https://sdk-team-cdn.decentraland.org/@dcl/wasm-runtime/branch/feat/add-first-ci-package-publish/dcl-wasm-runtime-0.0.0-1247000343.commit-df90b36.tgz",
     "@types/redux-logger": "^3.0.9",
     "bignumber.js": "^9.0.1",
     "blob-to-buffer": "^1.2.8",
