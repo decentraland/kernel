@@ -26,6 +26,7 @@ import type {
 } from 'shared/types'
 import { generatePBObject } from './Utils'
 import { run as runWasm } from '@dcl/wasm-runtime'
+import { rendererAdapter } from './RendererAdapter'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
@@ -636,7 +637,7 @@ export abstract class SceneRuntime extends Script {
       if (this.events.length) {
         const batch = this.events.slice()
         this.events.length = 0
-        ;((this.engine as any) as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
+        ;(this.engine as any as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
       }
     } catch (e) {
       this.onError(e)
@@ -658,114 +659,14 @@ export abstract class SceneRuntime extends Script {
 
     let entities: Set<number>[] = []
     let components: any[] = []
-    const putComponent = ({
-      entityId,
-      componentNumber,
-      componentData,
-      timestamp
-    }: {
-      entityId: number
-      componentNumber: number
-      componentData: any
-      timestamp: number
-    }) => {
-      if (entities[entityId] === undefined) {
-        //debugger
-        entities[entityId] = new Set()
-        dcl.addEntity(entityId.toString())
-      }
-      ;(entities[entityId] as Set<number>).add(componentNumber)
 
-      // see https://github.com/decentraland/unity-renderer/blob/master/unity-renderer/Assets/Scripts/MainScripts/DCL/Models/Protocol/Protocol.cs#L5-L69
-      // CLASS_ID_COMPONENT are updateEntityComponent and
-      // CLASS_ID component are only componentUpdate
-      const classId = componentData['classId']
-      const CLASS_ID_COMPONENT = [1]
-
-      if (components[componentNumber]) {
-        if (components[componentNumber].timestamp >= timestamp) {
-          return
-        }
-
-        if (CLASS_ID_COMPONENT.includes(classId)) {
-          dcl.updateEntityComponent(
-            entityId.toString(),
-            `engine.${componentNumber.toString()}`,
-            componentData['classId'],
-            JSON.stringify(componentData['data'])
-          )
-        } else {
-          //debugger
-          dcl.componentUpdated(`engine.${componentNumber.toString()}`, JSON.stringify(componentData['data']))
-        }
-      } else {
-        //debugger
-        if (!CLASS_ID_COMPONENT.includes(classId)) {
-          //debugger
-
-          dcl.componentCreated(
-            componentNumber.toString(),
-            `engine.${componentNumber.toString()}`,
-            componentData['classId']
-          )
-          dcl.attachEntityComponent(
-            entityId.toString(),
-            `engine.${componentNumber.toString()}`,
-            componentNumber.toString()
-          )
-        }
-      }
-
-      components[componentNumber] = {
-        data: componentData,
-        timestamp
-      }
-    }
+    const { bufferReader } = rendererAdapter({ entities, components, dcl })
 
     result.metaverseWrapper.setRendererCallback((args: any[]) => {
       if (args.length > 0) {
         const buf = args[0]
         if (buf instanceof Uint8Array) {
-          const rendererBuffer = Buffer.from(buf)
-          // tslint:disable: no-console
-          const messageType = rendererBuffer.readInt32LE(0)
-          const entityId = rendererBuffer.readInt32LE(4) // BIGINT INSTEAD
-          const componentNumber = rendererBuffer.readInt32LE(12) // BIGINT INSTEAD
-          const timestamp = rendererBuffer.readInt32LE(20) // BIGINT INSTEAD
-          const dataLength = rendererBuffer.readInt32LE(28)
-          let componentData: any | null = null
-          if (dataLength > 0) {
-            if (rendererBuffer.length - 32 !== dataLength) {
-              console.error('corrupt message')
-              return
-            }
-
-            // console.log(`data ${dataLength} bytes in buffer with ${rendererBuffer.length - 32} bytes`)
-
-            try {
-              const componentDataStr = Buffer.from(rendererBuffer.subarray(32, 32 + dataLength)).toString('utf-8')
-              componentData = JSON.parse(componentDataStr)
-            } catch (err) {
-              console.error(err)
-            }
-          }
-
-          // remove component
-          if (componentData == null) {
-            if (messageType == 2) {
-            } else {
-              // ??? put component with no data
-            }
-          } else {
-            if (messageType == 1) {
-              // frequently use case: put component and udpate
-              setTimeout(() => {
-                putComponent({ entityId, componentNumber, componentData, timestamp })
-              }, 1)
-            } else {
-              // ??? remove component with data
-            }
-          }
+          bufferReader(Buffer.from(buf))
         } else {
           // invalid write call
         }
