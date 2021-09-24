@@ -579,6 +579,7 @@ export type KernelConfigForRenderer = {
   features: {
     enableBuilderInWorld: boolean
     enableAvatarLODs: boolean
+    enableExploreV2: boolean
   }
   gifSupported: boolean
   network: string
