@@ -538,7 +538,7 @@ export abstract class SceneRuntime extends Script {
           const wasmBytes = new Uint8Array(await sourceData.arrayBuffer())
           const result = await runWasm({ wasmBytes })
           await result.start()
-          await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRenderer}`)
+          await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRendererInput}`)
 
           this.initWasmScene(result, dcl)
         }
@@ -695,13 +695,13 @@ export abstract class SceneRuntime extends Script {
             JSON.stringify(componentData['data'])
           )
         } else {
-          debugger
+          //debugger
           dcl.componentUpdated(`engine.${componentNumber.toString()}`, JSON.stringify(componentData['data']))
         }
       } else {
         //debugger
         if (!CLASS_ID_COMPONENT.includes(classId)) {
-          debugger
+          //debugger
 
           dcl.componentCreated(
             componentNumber.toString(),
