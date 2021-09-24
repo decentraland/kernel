@@ -536,6 +536,13 @@
 
     <script>
       globalThis.preview = true
+
+      const qs = new URLSearchParams(document.location.search)
+      const position = qs.get('position') || qs.get('POSITION') || null
+      if (!position){
+        qs.append('position', '{{ scene.scene.base }}')
+        document.location.search = qs.toString()
+      }
     </script>
 
     <script src="./index.js"></script>
