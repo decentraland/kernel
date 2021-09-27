@@ -4,7 +4,7 @@ import { defaultLogger } from 'shared/logger'
 import { RunOptions, SceneRuntime } from './sdk/SceneRuntime'
 import { DevToolsAdapter } from './sdk/DevToolsAdapter'
 import { customEval, getES5Context } from './sdk/sandbox'
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'\
+import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 
 import { run as runWasm } from '@dcl/wasm-runtime'
 import { rendererAdapter } from './sdk/RendererAdapter'
@@ -35,18 +35,18 @@ class WebWorkerScene extends SceneRuntime {
     })
   }
 
-  async run({ sourceResponse, isWasm, dcl }: RunOptions): Promise<void> {
-    if (!isWasm){
+  async run({ sourceResponse, isWasmScene, dcl }: RunOptions): Promise<void> {
+    if (!isWasmScene) {
       await customEval(await sourceResponse.text(), getES5Context({ dcl }))
-    }else{
+    } else {
       const wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
-      this.runWasm({wasmBytes, dcl})
+      this.runWasm({ wasmBytes, dcl })
     }
   }
 
-  private runWasm({ wasmBytes,  dcl }: {wasmBytes: Uint8Array; dcl:DecentralandInterface})  {
+  private async runWasm({ wasmBytes, dcl }: { wasmBytes: Uint8Array; dcl: DecentralandInterface }) {
     const result = await runWasm({ wasmBytes })
-    
+
     await result.start()
     await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRendererInput}`)
 

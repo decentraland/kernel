@@ -76,7 +76,7 @@ const componentNameRE = /^(engine\.)/
 
 export type RunOptions = {
   sourceResponse: Response
-  isWasm: boolean
+  isWasmScene: boolean
   dcl: DecentralandInterface
 }
 
@@ -537,7 +537,7 @@ export abstract class SceneRuntime extends Script {
       }
 
       try {
-        await this.runCode({
+        await this.run({
           sourceResponse: sourceData,
           isWasmScene,
           dcl
@@ -650,5 +650,4 @@ export abstract class SceneRuntime extends Script {
     }
     return false
   }
-
 }

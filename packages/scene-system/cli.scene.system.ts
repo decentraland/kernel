@@ -1,5 +1,5 @@
 import { WebWorkerTransport } from 'decentraland-rpc'
-import { SceneRuntime } from './sdk/SceneRuntime'
+import { RunOptions, SceneRuntime } from './sdk/SceneRuntime'
 import type { IWorker } from 'decentraland-rpc/lib/common/transports/WebWorker'
 
 /**
@@ -31,9 +31,9 @@ class CliScene extends SceneRuntime {
     globalObject.__env__log(...messages)
   }
 
-  async runCode(location: string, env: any): Promise<void> {
-    Object.assign(globalObject, env)
-    return globalObject.runCode(location)
+  async run(options: RunOptions): Promise<void> {
+    Object.assign(globalObject, { dcl: options.dcl })
+    return globalObject.runCode(await options.sourceResponse.text())
   }
 
   startLoop(): void {
