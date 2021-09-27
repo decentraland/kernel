@@ -61,7 +61,7 @@ NOTE(optional): If you don't need to modify the test-scenes and just build them 
 3. Run `dcl start`. A new tab in your browser will be open with the scene in preview mode.
 4. In Unity, deactivate the "Open Browser When Start" flag (`WSSController` game object in the `InitialScene` scene).
 5. Click on PLAY button.
-6. Go to the browser tab that was opened by the previous `dcl start` command and append the following query parameter to the url: `&ws=ws://localhost:4999/dcl`.
+6. Go to the browser tab that was opened by the previous `dcl start` command and append the following query parameter to the url: `&ws=ws://localhost:5000/dcl`.
 7. Notice that the Unity editor starts loading the scene.
 
 #### Debugging a scene in Preview Mode from Unity Editor and using the local Kernel version
@@ -74,5 +74,5 @@ NOTE(optional): If you don't need to modify the test-scenes and just build them 
 6. Run `dcl start`. A new tab in your browser will be open with the scene in preview mode.
 7. In Unity, deactivate the "Open Browser When Start" flag (`WSSController` game object in the `InitialScene` scene).
 8. Click on PLAY button.
-9. Go to the browser tab that was opened by the previous `dcl start` command and append the following query parameter to the url: `&ws=ws://localhost:4999/dcl`.
+9. Go to the browser tab that was opened by the previous `dcl start` command and append the following query parameter to the url: `&ws=ws://localhost:5000/dcl`.
 10. Notice that the Unity editor starts loading the scene.

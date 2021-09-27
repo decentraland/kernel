@@ -58,4 +58,4 @@ jobs:
           # Rollout information
           deploymentDomain: "play.decentraland.org"
           deploymentName: "@dcl/kernel"
-          percentage: 50
+          percentage: 100
