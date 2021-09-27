@@ -20,7 +20,8 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
     },
     features: {
       enableBuilderInWorld: false,
-      enableAvatarLODs: isFeatureEnabled(store.getState(), FeatureFlags.AVATAR_LODS, false)
+      enableAvatarLODs: isFeatureEnabled(store.getState(), FeatureFlags.AVATAR_LODS, false),
+      enableExploreV2: false
     },
     gifSupported:
       // tslint:disable-next-line

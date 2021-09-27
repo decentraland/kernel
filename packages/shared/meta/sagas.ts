@@ -1,5 +1,5 @@
 import { call, put, select, take, takeLatest } from 'redux-saga/effects'
-import { ETHEREUM_NETWORK, FORCE_RENDERING_STYLE, getAssetBundlesBaseUrl, getServerConfigurations } from 'config'
+import { ETHEREUM_NETWORK, FORCE_RENDERING_STYLE, getAssetBundlesBaseUrl, getServerConfigurations, QS_MAX_VISIBLE_PEERS } from 'config'
 import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized, metaUpdateMessageOfTheDay } from './actions'
 import defaultLogger from '../logger'
 import { BannedUsers, MetaConfiguration, WorldConfig } from './types'
@@ -11,6 +11,7 @@ import { SELECT_NETWORK } from 'shared/dao/actions'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { RootState } from 'shared/store/rootTypes'
 import { trackEvent } from 'shared/analytics'
+import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 
 function valueFromVariants<T>(variants: Record<string, any> | undefined, key: string): T | undefined {
   const variant = variants?.[key]
@@ -47,6 +48,13 @@ function* waitForNetworkSelected() {
   return net
 }
 
+function getMaxVisiblePeers(variants: Record<string, any> | undefined): number {
+  if (QS_MAX_VISIBLE_PEERS !== undefined) return QS_MAX_VISIBLE_PEERS
+  const fromVariants = valueFromVariants(variants, "explorer-max_visible_peers")
+
+  return typeof fromVariants === "number" ? fromVariants : DEFAULT_MAX_VISIBLE_PEERS
+}
+
 function* initMeta() {
   const net: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
 
@@ -55,8 +63,15 @@ function* initMeta() {
     fetchFeatureFlagsAndVariants,
     net
   )
+
+  const maxVisiblePeers = getMaxVisiblePeers(flagsAndVariants?.variants)
+
   const merge: Partial<MetaConfiguration> = {
     ...config,
+    comms: {
+      ...config.comms,
+      maxVisiblePeers
+    },
     featureFlags: flagsAndVariants?.flags,
     bannedUsers: bannedUsersFromVariants(flagsAndVariants?.variants),
     pickRealmAlgorithmConfig: pickRealmAlgorithmConfigFromVariants(flagsAndVariants?.variants)

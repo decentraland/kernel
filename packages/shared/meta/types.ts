@@ -67,11 +67,13 @@ export type CommsConfig = {
   relaySuspensionDisabled?: boolean
   relaySuspensionInterval?: number
   relaySuspensionDuration?: number
+  maxVisiblePeers: number
 }
 
 export enum FeatureFlags {
   QUESTS = 'quests',
   BUILDER_IN_WORLD = 'builder_in_world',
   AVATAR_LODS = 'avatar_lods',
-  ASSET_BUNDLES = 'asset_bundles'
+  ASSET_BUNDLES = 'asset_bundles',
+  EXPLORE_V2_ENABLED = 'explorev2'
 }

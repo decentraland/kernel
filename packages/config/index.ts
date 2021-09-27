@@ -140,6 +140,8 @@ export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
+export const QS_MAX_VISIBLE_PEERS = typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
+
 /**
  * Get the root URL and ensure not to end with slash
  * @returns Root URL with pathname where the index.html is served.
@@ -165,8 +167,6 @@ export namespace commConfigurations {
   export const sendAnalytics = true
 
   export const peerTtlMs = 60000
-
-  export const maxVisiblePeers = typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : 25
 
   export const autoChangeRealmInterval =
     typeof qs.AUTO_CHANGE_INTERVAL === 'string' ? parseInt(qs.AUTO_CHANGE_INTERVAL, 10) * 1000 : 40000
@@ -203,7 +203,8 @@ export function getTLD() {
 }
 
 export const WITH_FIXED_COLLECTIONS = (qs.WITH_COLLECTIONS && ensureSingleString(qs.WITH_COLLECTIONS)) || ''
-export const ENABLE_EMPTY_SCENES = !DEBUG || knownTLDs.includes(getTLD())
+export const ENABLE_EMPTY_SCENES = !location.search.includes('DISABLE_EMPTY_SCENES')
+export const ENABLE_TEST_SCENES = location.search.includes('ENABLE_TEST_SCENES')
 
 export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
   const state = store.getState()
