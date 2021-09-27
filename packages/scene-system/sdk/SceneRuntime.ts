@@ -25,8 +25,6 @@ import type {
   OpenNFTDialogPayload
 } from 'shared/types'
 import { generatePBObject } from './Utils'
-import { run as runWasm } from '@dcl/wasm-runtime'
-import { rendererAdapter } from './RendererAdapter'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
@@ -76,6 +74,12 @@ function getIdAsNumber(id: string): number {
 
 const componentNameRE = /^(engine\.)/
 
+export type RunOptions = {
+  sourceResponse: Response
+  isWasm: boolean
+  dcl: DecentralandInterface
+}
+
 export abstract class SceneRuntime extends Script {
   @inject('EngineAPI')
   engine: IEngineAPI | null = null
@@ -110,7 +114,7 @@ export abstract class SceneRuntime extends Script {
     super(transport, opt)
   }
 
-  abstract runCode(source: string, env: any): Promise<void>
+  abstract run(options: RunOptions): Promise<void>
   abstract onError(error: Error): void
   abstract onLog(...messages: any[]): void
   abstract startLoop(): void
@@ -171,10 +175,10 @@ export abstract class SceneRuntime extends Script {
       const mapping = bootstrapData.mappings.find(($) => $.file === mappingName)
       const url = resolveMapping(mapping && mapping.hash, mappingName, bootstrapData.baseUrl)
       const codeRequest = await fetch(url)
-      const wasmScene = mappingName.toLowerCase().endsWith('.wasm')
+      const isWasmScene = mappingName.toLowerCase().endsWith('.wasm')
 
       if (codeRequest.ok) {
-        return [bootstrapData, codeRequest, wasmScene] as const
+        return [bootstrapData, codeRequest, isWasmScene] as const
       } else {
         // even though the loading failed, we send the message initMessagesFinished to not block loading
         // in spawning points
@@ -230,7 +234,7 @@ export abstract class SceneRuntime extends Script {
     this.eventSubscriber = new EventSubscriber(this.engine as any)
 
     try {
-      const [sceneData, sourceData, wasmScene] = await this.loadProject()
+      const [sceneData, sourceData, isWasmScene] = await this.loadProject()
 
       if (!sourceData) {
         throw new Error('Received empty source.')
@@ -533,16 +537,11 @@ export abstract class SceneRuntime extends Script {
       }
 
       try {
-        if (!wasmScene) {
-          await this.runCode((await sourceData.text()) as any as string, { dcl })
-        } else {
-          const wasmBytes = new Uint8Array(await sourceData.arrayBuffer())
-          const result = await runWasm({ wasmBytes })
-          await result.start()
-          await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRendererInput}`)
-
-          this.initWasmScene(result, dcl)
-        }
+        await this.runCode({
+          sourceResponse: sourceData,
+          isWasmScene,
+          dcl
+        })
 
         let modulesNotLoaded: string[] = []
 
@@ -652,27 +651,4 @@ export abstract class SceneRuntime extends Script {
     return false
   }
 
-  private initWasmScene(result: any, dcl: DecentralandInterface) {
-    this.onUpdateFunctions.push(async (dt: number) => {
-      result.update(dt)
-    })
-
-    let entities: Set<number>[] = []
-    let components: any[] = []
-
-    const { bufferReader } = rendererAdapter({ entities, components, dcl })
-
-    result.metaverseWrapper.setRendererCallback((args: any[]) => {
-      if (args.length > 0) {
-        const buf = args[0]
-        if (buf instanceof Uint8Array) {
-          bufferReader(Buffer.from(buf))
-        } else {
-          // invalid write call
-        }
-      } else {
-        // invalid write call
-      }
-    })
-  }
 }

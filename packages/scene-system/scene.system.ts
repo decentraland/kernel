@@ -1,10 +1,14 @@
 import { WebWorkerTransport } from 'decentraland-rpc'
 import { inject } from 'decentraland-rpc/lib/client/Script'
 import { defaultLogger } from 'shared/logger'
-import { SceneRuntime } from './sdk/SceneRuntime'
+import { RunOptions, SceneRuntime } from './sdk/SceneRuntime'
 import { DevToolsAdapter } from './sdk/DevToolsAdapter'
 import { customEval, getES5Context } from './sdk/sandbox'
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
+import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'\
+
+import { run as runWasm } from '@dcl/wasm-runtime'
+import { rendererAdapter } from './sdk/RendererAdapter'
+import { DecentralandInterface } from 'decentraland-ecs'
 
 /**
  * This file starts the scene in a WebWorker context.
@@ -31,8 +35,42 @@ class WebWorkerScene extends SceneRuntime {
     })
   }
 
-  async runCode(source: string, env: any): Promise<void> {
-    await customEval(source, getES5Context(env))
+  async run({ sourceResponse, isWasm, dcl }: RunOptions): Promise<void> {
+    if (!isWasm){
+      await customEval(await sourceResponse.text(), getES5Context({ dcl }))
+    }else{
+      const wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
+      this.runWasm({wasmBytes, dcl})
+    }
+  }
+
+  private runWasm({ wasmBytes,  dcl }: {wasmBytes: Uint8Array; dcl:DecentralandInterface})  {
+    const result = await runWasm({ wasmBytes })
+    
+    await result.start()
+    await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRendererInput}`)
+
+    this.onUpdateFunctions.push(async (dt: number) => {
+      result.update(dt)
+    })
+
+    let entities: Set<number>[] = []
+    let components: any[] = []
+
+    const { bufferReader } = rendererAdapter({ entities, components, dcl })
+
+    result.metaverseWrapper.setRendererCallback((args: any[]) => {
+      if (args.length > 0) {
+        const buf = args[0]
+        if (buf instanceof Uint8Array) {
+          bufferReader(Buffer.from(buf))
+        } else {
+          // invalid write call
+        }
+      } else {
+        // invalid write call
+      }
+    })
   }
 
   async systemDidEnable() {
