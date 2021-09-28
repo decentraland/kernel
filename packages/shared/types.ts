@@ -576,6 +576,7 @@ export type KernelConfigForRenderer = {
     nameValidRegex: string
     nameValidCharacterRegex: string
   }
+
   features: Record<string,boolean>
   gifSupported: boolean
   network: string
