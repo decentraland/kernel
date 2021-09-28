@@ -89,8 +89,7 @@ import {
   NEW_LOGIN,
   commsEstablished,
   COMMS_COULD_NOT_BE_ESTABLISHED,
-  commsErrorRetrying,
-  ESTABLISHING_COMMS
+  commsErrorRetrying
 } from 'shared/loading/types'
 import { getIdentity, getStoredSession } from 'shared/session'
 import { createLogger } from '../logger'
@@ -1057,7 +1056,7 @@ export async function connect(userId: string) {
         disconnect()
         defaultLogger.error(`error while trying to establish communications `, e)
         ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
-        BringDownClientAndShowError(ESTABLISHING_COMMS)
+        BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
       })
 
     return context
@@ -1081,9 +1080,6 @@ export async function startCommunications(context: Context) {
         if (i >= maxAttemps) {
           // max number of attemps reached => rethrow error
           logger.info(`Max number of attemps reached (${maxAttemps}), unsuccessful connection`)
-          disconnect()
-          ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
-          BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
           throw e
         } else {
           // max number of attempts not reached => continue with loop
