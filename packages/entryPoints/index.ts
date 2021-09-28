@@ -17,7 +17,7 @@ import { realmInitialized } from 'shared/dao'
 import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
 import { ensureMetaConfigurationInitialized, waitForMessageOfTheDay } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
-import { isFeatureEnabled } from 'shared/meta/selectors'
+import { getFeatureFlags, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { startRealmsReportToRenderer } from 'unity-interface/realmsForRenderer'
 import { isWaitingTutorial } from 'shared/loading/selectors'
@@ -182,11 +182,11 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   // NOTE(Pablo): We also need meta configuration to know if we need to enable voice chat
   await ensureMetaConfigurationInitialized()
 
+  const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
   const worldConfig: WorldConfig | undefined = store.getState().meta.config.world
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
   const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
-  const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
 
   // killswitch, disable asset bundles
   if (!isFeatureEnabled(store.getState(), FeatureFlags.ASSET_BUNDLES, false)) {
@@ -219,6 +219,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
         identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
 
       const configForRenderer = kernelConfigForRenderer()
+      
+      configForRenderer.features = getFeatureFlags(store.getState())
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.features.enableBuilderInWorld = BUILDER_IN_WORLD_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())

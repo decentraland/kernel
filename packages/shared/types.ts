@@ -576,10 +576,7 @@ export type KernelConfigForRenderer = {
     nameValidRegex: string
     nameValidCharacterRegex: string
   }
-  features: {
-    enableBuilderInWorld: boolean
-    enableAvatarLODs: boolean
-  }
+  features: Record<string,boolean>
   gifSupported: boolean
   network: string
   validWorldRanges: Object
