@@ -52,15 +52,15 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
     variants: {}
   }
 
-  if (store?.meta?.config?.featureFlags2 !== undefined) {
-    for (const feature in store?.meta?.config?.featureFlags2.flags) {
+  if (store?.meta?.config?.featureFlagsV2 !== undefined) {
+    for (const feature in store?.meta?.config?.featureFlagsV2.flags) {
       const featureName = feature.replace('explorer-', '')
-      featureFlag.flags[featureName] = store?.meta?.config?.featureFlags2.flags[feature]
+      featureFlag.flags[featureName] = store?.meta?.config?.featureFlagsV2.flags[feature]
     }
 
-    for (const feature in store?.meta?.config?.featureFlags2.variants) {
+    for (const feature in store?.meta?.config?.featureFlagsV2.variants) {
       const featureName = feature.replace('explorer-', '')
-      featureFlag.variants[featureName] = store?.meta?.config?.featureFlags2.variants[feature]
+      featureFlag.variants[featureName] = store?.meta?.config?.featureFlagsV2.variants[feature]
       featureFlag.variants[featureName].name = featureName
     }
   }

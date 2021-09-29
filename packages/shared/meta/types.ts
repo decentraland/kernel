@@ -21,7 +21,7 @@ export type MetaConfiguration = {
   comms: CommsConfig
   minCatalystVersion?: string
   featureFlags?: Record<string, boolean>
-  featureFlags2?: FeatureFlag
+  featureFlagsV2?: FeatureFlag
 }
 
 export type BannedUsers = Record<string, Ban[]>
