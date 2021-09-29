@@ -76,6 +76,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 
   if (SCENE_DEBUG_PANEL) {
+    getUnityInstance().SetKernelConfiguration({ debugConfig: { sceneDebugPanelEnabled: true } })
     getUnityInstance().SetSceneDebugPanel()
   }
 
@@ -164,29 +165,34 @@ export async function startUnitySceneWorkers() {
   store.dispatch(signalParcelLoadingStarted())
 }
 
-export async function loadPreviewScene(ws?: string) {
+export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
   const result = await fetch('/scene.json?nocache=' + Math.random())
 
   if (result.ok) {
     const scene = (await result.json()) as SceneJsonData
 
     const [sceneId] = await fetchSceneIds([scene.scene.base])
-
-    if (sceneId) {
-      await reloadScene(sceneId)
-    } else {
-      console.log(`Unable to load sceneId of ${scene.scene.base}`)
-      debugger
-    }
-
-    // let transport: undefined | ScriptingTransport = undefined
-
-    // if (ws) {
-    //   transport = WebSocketTransport(new WebSocket(ws, ['dcl-scene']))
-    // }
+    return { sceneId, sceneBase: scene.scene.base }
   } else {
     throw new Error('Could not load scene.json')
   }
+}
+
+export async function loadPreviewScene(ws?: string) {
+  const { sceneId, sceneBase } = await getPreviewSceneId()
+
+  if (sceneId) {
+    await reloadScene(sceneId)
+  } else {
+    console.log(`Unable to load sceneId of ${sceneBase}`)
+    debugger
+  }
+
+  // let transport: undefined | ScriptingTransport = undefined
+
+  // if (ws) {
+  //   transport = WebSocketTransport(new WebSocket(ws, ['dcl-scene']))
+  // }
 }
 
 export function loadBuilderScene(sceneData: ILand): UnityParcelScene | undefined {

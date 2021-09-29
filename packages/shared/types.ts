@@ -580,6 +580,13 @@ export type KernelConfigForRenderer = {
     enableBuilderInWorld: boolean
     enableAvatarLODs: boolean
   }
+  debugConfig:
+    | Partial<{
+        sceneDebugPanelEnabled: boolean
+        sceneDebugPanelTargetSceneId: string | undefined
+        sceneLimitsWarningSceneId: string | undefined
+      }>
+    | undefined
   gifSupported: boolean
   network: string
   validWorldRanges: Object

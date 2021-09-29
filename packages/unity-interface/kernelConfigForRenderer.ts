@@ -22,12 +22,13 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       enableBuilderInWorld: false,
       enableAvatarLODs: isFeatureEnabled(store.getState(), FeatureFlags.AVATAR_LODS, false)
     },
+    debugConfig: undefined,
     gifSupported:
       // tslint:disable-next-line
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
-    network: "mainnet",
+    network: 'mainnet',
     validWorldRanges: getWorld().validWorldRanges,
-    kernelVersion: versions['@dcl/kernel'] || "unknown-kernel-version",
-    rendererVersion: versions['@dcl/unity-renderer'] || "unknown-renderer-version"
+    kernelVersion: versions['@dcl/kernel'] || 'unknown-kernel-version',
+    rendererVersion: versions['@dcl/unity-renderer'] || 'unknown-renderer-version'
   }
 }

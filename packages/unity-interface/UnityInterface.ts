@@ -167,6 +167,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity(`SceneController`, `SendSceneMessage`, messages)
   }
 
+  /**@deprecated send it with the kernelConfigForRenderer instead.*/
   public SetSceneDebugPanel() {
     this.SendMessageToUnity('Main', 'SetSceneDebugPanel')
   }
@@ -406,7 +407,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'SetVoiceChatEnabledByScene', enabled ? 1 : 0)
   }
 
-  public SetKernelConfiguration(config: KernelConfigForRenderer) {
+  public SetKernelConfiguration(config: Partial<KernelConfigForRenderer>) {
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
   }
 
