@@ -79,10 +79,9 @@ export enum FeatureFlags {
   EXPLORE_V2_ENABLED = 'explorev2'
 }
 
-
 export type FeatureFlag = {
   flags: Record<string, boolean>
-  variants:  Record<string, FeatureFlagVariant>
+  variants: Record<string, FeatureFlagVariant>
 }
 
 export type FeatureFlagVariant = {
