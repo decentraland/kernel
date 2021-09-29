@@ -46,12 +46,19 @@ class WebWorkerScene extends SceneRuntime {
 
   private async runWasm({ wasmBytes, dcl }: { wasmBytes: Uint8Array; dcl: DecentralandInterface }) {
     const result = await runWasm({ wasmBytes })
-
+    debugger
     await result.start()
     await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRendererInput}`)
+    await result.sendCommand(`set_fd DEBUG_IN ${result.metaverseWrapper.fdSceneDebuggerInput}`)
+    await result.sendCommand(`set_fd DEBUG_OUT ${result.metaverseWrapper.fdSceneDebuggerOutput}`)
 
     this.onUpdateFunctions.push(async (dt: number) => {
       result.update(dt)
+      const resultOut = await result.metaverseWrapper.wasmFs.getStdOut()
+      if (resultOut) {
+        console.log(resultOut)
+        await result.metaverseWrapper.wasmFs.fs.writeFileSync('/dev/stdout', '')
+      }
     })
 
     let entities: Set<number>[] = []
@@ -69,6 +76,20 @@ class WebWorkerScene extends SceneRuntime {
         }
       } else {
         // invalid write call
+      }
+    })
+
+    result.metaverseWrapper.setDebuggerOutputCallback((args: any[]) => {
+      if (args.length == 4){
+        // args[0] UInt8Array
+        // args[2] length
+      }
+    })
+    result.metaverseWrapper.setDebuggerInputCallback((args: any[]) => {
+      console.log('debugger input', args)
+      if (args.length == 4){
+        // args[0] UInt8Array
+        // args[2] length
       }
     })
   }
