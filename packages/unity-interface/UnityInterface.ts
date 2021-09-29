@@ -412,7 +412,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public SetFeatureFlagsConfiguration(config: FeatureFlag) {
-    this.SendMessageToUnity('Bridges', 'SetFeatureFlagConfiguration', JSON.stringify(config))
+    this.SendMessageToUnity('Main', 'SetFeatureFlagConfiguration', JSON.stringify(config))
   }
 
   public UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>) {
