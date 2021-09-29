@@ -219,13 +219,12 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const EXPLORE_V2_ENABLED = isFeatureEnabled(store.getState(), FeatureFlags.EXPLORE_V2_ENABLED, false)
 
       const configForRenderer = kernelConfigForRenderer()
-      
-      configForRenderer.features = getFeatureFlags(store.getState())
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.features.enableBuilderInWorld = BUILDER_IN_WORLD_ENABLED
       configForRenderer.features.enableExploreV2 = EXPLORE_V2_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
+      i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
 
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
 

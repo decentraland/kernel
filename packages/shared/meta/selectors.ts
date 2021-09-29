@@ -1,4 +1,4 @@
-import { BannedUsers, CommsConfig, MessageOfTheDayConfig, RootMetaState } from './types'
+import { BannedUsers, CommsConfig, FeatureFlag, MessageOfTheDayConfig, RootMetaState } from './types'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
@@ -46,13 +46,22 @@ export const isMOTDInitialized = (store: RootMetaState): boolean =>
 export const getMessageOfTheDay = (store: RootMetaState): MessageOfTheDayConfig | null =>
   store.meta.config.world ? store.meta.config.world.messageOfTheDay || null : null
 
-export function getFeatureFlags(store: RootMetaState): Record<string, boolean> {
-  const featureFlags: Record<string, boolean> = {}
+export function getFeatureFlags(store: RootMetaState): FeatureFlag {
+  let featureFlag: FeatureFlag = {
+    flags: {},
+    variants: {}
+  }
 
-  if (store?.meta?.config?.featureFlags !== undefined) {
-    for (const feature in store?.meta?.config?.featureFlags) {
+  if (store?.meta?.config?.featureFlags2 !== undefined) {
+    for (const feature in store?.meta?.config?.featureFlags2.flags) {
       const featureName = feature.replace('explorer-', '')
-      featureFlags[featureName] = store?.meta?.config?.featureFlags[feature]
+      featureFlag.flags[featureName] = store?.meta?.config?.featureFlags2.flags[feature]
+    }
+
+    for (const feature in store?.meta?.config?.featureFlags2.variants) {
+      const featureName = feature.replace('explorer-', '')
+      featureFlag.variants[featureName] = store?.meta?.config?.featureFlags2.variants[feature]
+      featureFlag.variants[featureName].name = featureName
     }
   }
   if (location.search.length !== 0) {
@@ -60,14 +69,14 @@ export function getFeatureFlags(store: RootMetaState): Record<string, boolean> {
     flags.forEach((element) => {
       if (element.includes(`DISABLE_`)) {
         const featureName = element.replace('DISABLE_', '').toLowerCase()
-        featureFlags[featureName] = false
+        featureFlag.flags[featureName] = false
       } else if (location.search.includes(`ENABLE_`)) {
         const featureName = element.replace('ENABLE_', '').toLowerCase()
-        featureFlags[featureName] = true
+        featureFlag.flags[featureName] = true
       }
     })
   }
-  return featureFlags
+  return featureFlag
 }
 
 export const isFeatureEnabled = (store: RootMetaState, featureName: string, ifNotSet: boolean): boolean => {
