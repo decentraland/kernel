@@ -124,8 +124,7 @@ export function ReportFatalError(error: Error, context: ErrorContextTypes, paylo
   globalObservable.emit('error', {
     error,
     level: 'fatal',
-    extra: { context, ...payload },
-    context
+    extra: { context, ...payload }
   })
 }
 
