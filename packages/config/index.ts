@@ -173,7 +173,22 @@ export namespace commConfigurations {
 
   export const iceServers: RTCIceServer[] = [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
+    { urls: 'stun:global.stun.twilio.com:3478?transport=udp' },
+    {
+      "username": "358752c81e2e244d90f5da574130cf209488c6c9c079e05e988a19efc09c2ce0",
+      "urls": "turn:global.turn.twilio.com:3478?transport=udp",
+      "credential": "Xpe4FZGS9Zw1kdG84BLgsWKU4cfE7IgYdFmb6TbW9AM="
+    },
+    {
+      "username": "358752c81e2e244d90f5da574130cf209488c6c9c079e05e988a19efc09c2ce0",
+      "urls": "turn:global.turn.twilio.com:3478?transport=tcp",
+      "credential": "Xpe4FZGS9Zw1kdG84BLgsWKU4cfE7IgYdFmb6TbW9AM="
+    },
+    {
+      "username": "358752c81e2e244d90f5da574130cf209488c6c9c079e05e988a19efc09c2ce0",
+      "urls": "turn:global.turn.twilio.com:443?transport=tcp",
+      "credential": "Xpe4FZGS9Zw1kdG84BLgsWKU4cfE7IgYdFmb6TbW9AM="
+    }
   ]
 
   export const voiceChatUseHRTF = location.search.includes('VOICE_CHAT_USE_HRTF')
