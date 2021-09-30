@@ -124,7 +124,8 @@ export function ReportFatalError(error: Error, context: ErrorContextTypes, paylo
   globalObservable.emit('error', {
     error,
     level: 'fatal',
-    extra: { context, ...payload }
+    extra: { context, ...payload },
+    context
   })
 }
 
@@ -134,7 +135,7 @@ function getStack(error?: any) {
   } else {
     try {
       throw new Error((error && error.message) || error || '<nullish error>')
-    } catch (e) {
+    } catch (e: any) {
       return e.stack || '' + error
     }
   }

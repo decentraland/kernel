@@ -118,7 +118,7 @@ export const AUTO_CHANGE_REALM = location.search.includes('AUTO_CHANGE_REALM')
 
 export const LOS = ensureSingleString(qs.LOS)
 
-export const DEBUG = location.search.includes('DEBUG_MODE') || !!(global as any).mocha || PREVIEW || EDITOR
+export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
 export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
 export const DEBUG_MESSAGES = location.search.includes('DEBUG_MESSAGES')
@@ -171,13 +171,9 @@ export namespace commConfigurations {
   export const autoChangeRealmInterval =
     typeof qs.AUTO_CHANGE_INTERVAL === 'string' ? parseInt(qs.AUTO_CHANGE_INTERVAL, 10) * 1000 : 40000
 
-  export const iceServers = [
+  export const iceServers: RTCIceServer[] = [
     { urls: 'stun:stun.l.google.com:19302' },
-    {
-      urls: 'turn:stun.decentraland.org:3478',
-      credential: 'passworddcl',
-      username: 'usernamedcl'
-    }
+    { urls: 'stun:global.stun.twilio.com:3478?transport=udp' }
   ]
 
   export const voiceChatUseHRTF = location.search.includes('VOICE_CHAT_USE_HRTF')
@@ -267,7 +263,7 @@ export namespace ethereumConfigurations {
   }
 }
 
-export const isRunningTest: boolean = (global as any)['isRunningTests'] === true
+export const isRunningTest: boolean = (globalThis as any)['isRunningTests'] === true
 
 export const genericAvatarSnapshots: Record<string, string> = {
   face: '/images/avatar_snapshot_default.png',
