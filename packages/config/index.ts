@@ -160,6 +160,13 @@ export const FORCE_RENDERING_STYLE = ensureSingleString(qs.FORCE_RENDERING_STYLE
 
 const META_CONFIG_URL = ensureSingleString(qs.META_CONFIG_URL)
 
+interface RTCIceServer {
+  credential?: string;
+  credentialType?: "password";
+  urls: string | string[];
+  username?: string;
+}
+
 export namespace commConfigurations {
   export const debug = true
   export const commRadius = 4
