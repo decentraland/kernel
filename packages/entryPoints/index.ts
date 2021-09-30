@@ -303,16 +303,15 @@ export async function startPreview() {
     wsScene = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${document.location.host}/?scene`
   }
 
-  getPreviewSceneId().then((sceneData) => {
+  getPreviewSceneId().then(async (sceneData) => {
     if (sceneData.sceneId) {
-      ensureUnityInterface().then((unityInterface) =>
-        unityInterface.unityInterface.SetKernelConfiguration({
-          debugConfig: {
-            sceneDebugPanelTargetSceneId: sceneData.sceneId!,
-            sceneLimitsWarningSceneId: sceneData.sceneId!
-          }
-        })
-      )
+      const { unityInterface } = await ensureUnityInterface()
+      unityInterface.SetKernelConfiguration({
+        debugConfig: {
+          sceneDebugPanelTargetSceneId: sceneData.sceneId!,
+          sceneLimitsWarningSceneId: sceneData.sceneId!
+        }
+      })
     }
   })
 
