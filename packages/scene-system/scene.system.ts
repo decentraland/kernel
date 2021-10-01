@@ -79,15 +79,40 @@ class WebWorkerScene extends SceneRuntime {
       }
     })
 
+    let debugWsConnected = false
+    //let readBuffer = new Uint8Array()
+    const debugWs = new WebSocket('ws://localhost:7667')
+    debugWs.onopen = (ev) => {
+      console.log('OpenWS')
+      debugWsConnected = true
+    }
+    debugWs.onclose = (ev) => {
+      console.log('CloseWS')
+      debugWsConnected = false
+    }
+    debugWs.onmessage = async (msg) => {
+      console.log('DebugWS', msg)
+      msg.data.arrayBuffer().then((buffer: ArrayBuffer) => {
+        result.metaverseWrapper.wasmFs.fs.writeFileSync(
+          result.metaverseWrapper.fdSceneDebuggerOutput,
+          new Uint8Array(buffer)
+        )
+      })
+    }
+
     result.metaverseWrapper.setDebuggerOutputCallback((args: any[]) => {
-      if (args.length == 4){
+      if (args.length == 4) {
+        // debugger
         // args[0] UInt8Array
         // args[2] length
       }
     })
     result.metaverseWrapper.setDebuggerInputCallback((args: any[]) => {
       console.log('debugger input', args)
-      if (args.length == 4){
+      if (args.length == 4) {
+        if (debugWsConnected) {
+          debugWs.send(args[0])
+        }
         // args[0] UInt8Array
         // args[2] length
       }
