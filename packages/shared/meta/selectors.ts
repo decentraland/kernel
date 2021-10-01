@@ -1,4 +1,4 @@
-import { BannedUsers, CommsConfig, FeatureFlags, MessageOfTheDayConfig, RootMetaState } from './types'
+import { BannedUsers, CommsConfig, FeatureFlag, MessageOfTheDayConfig, RootMetaState } from './types'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
@@ -33,18 +33,53 @@ export const isMetaConfigurationInitiazed = (store: RootMetaState): boolean => s
 
 export const getPois = (store: RootMetaState): Vector2Component[] => store.meta.config.world?.pois || []
 
-export const getCommsConfig = (store: RootMetaState): CommsConfig => store.meta.config.comms ?? { maxVisiblePeers: DEFAULT_MAX_VISIBLE_PEERS }
+export const getCommsConfig = (store: RootMetaState): CommsConfig =>
+  store.meta.config.comms ?? { maxVisiblePeers: DEFAULT_MAX_VISIBLE_PEERS }
 
 export const getBannedUsers = (store: RootMetaState): BannedUsers => store.meta.config.bannedUsers ?? {}
 
-export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmChainConfig | undefined => store.meta.config.pickRealmAlgorithmConfig
+export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmChainConfig | undefined =>
+  store.meta.config.pickRealmAlgorithmConfig
 
 export const isMOTDInitialized = (store: RootMetaState): boolean =>
   store.meta.config.world ? store.meta.config.world?.messageOfTheDayInit || false : false
 export const getMessageOfTheDay = (store: RootMetaState): MessageOfTheDayConfig | null =>
   store.meta.config.world ? store.meta.config.world.messageOfTheDay || null : null
 
-export const isFeatureEnabled = (store: RootMetaState, featureName: FeatureFlags, ifNotSet: boolean): boolean => {
+export function getFeatureFlags(store: RootMetaState): FeatureFlag {
+  let featureFlag: FeatureFlag = {
+    flags: {},
+    variants: {}
+  }
+
+  if (store?.meta?.config?.featureFlagsV2 !== undefined) {
+    for (const feature in store?.meta?.config?.featureFlagsV2.flags) {
+      const featureName = feature.replace('explorer-', '')
+      featureFlag.flags[featureName] = store?.meta?.config?.featureFlagsV2.flags[feature]
+    }
+
+    for (const feature in store?.meta?.config?.featureFlagsV2.variants) {
+      const featureName = feature.replace('explorer-', '')
+      featureFlag.variants[featureName] = store?.meta?.config?.featureFlagsV2.variants[feature]
+      featureFlag.variants[featureName].name = featureName
+    }
+  }
+  if (location.search.length !== 0) {
+    const flags = location.search.substr(1, location.search.length - 1).split('&')
+    flags.forEach((element) => {
+      if (element.includes(`DISABLE_`)) {
+        const featureName = element.replace('DISABLE_', '').toLowerCase()
+        featureFlag.flags[featureName] = false
+      } else if (location.search.includes(`ENABLE_`)) {
+        const featureName = element.replace('ENABLE_', '').toLowerCase()
+        featureFlag.flags[featureName] = true
+      }
+    })
+  }
+  return featureFlag
+}
+
+export const isFeatureEnabled = (store: RootMetaState, featureName: string, ifNotSet: boolean): boolean => {
   const queryParamFlag = toUrlFlag(featureName)
   if (location.search.includes(`DISABLE_${queryParamFlag}`)) {
     return false
