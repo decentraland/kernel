@@ -289,6 +289,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
 
   if (options.previewMode) {
+    i.SetDisableAssetBundles()
     await startPreview()
     // const position = pickWorldSpawnpoint(scene)
     // i.Teleport(position)
