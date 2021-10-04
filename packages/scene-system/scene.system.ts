@@ -7,7 +7,7 @@ import { customEval, getES5Context } from './sdk/sandbox'
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 
 import { run as runWasm } from '@dcl/wasm-runtime'
-import { rendererAdapter } from './sdk/RendererAdapter'
+// import { rendererAdapter } from './sdk/RendererAdapter'
 import { DecentralandInterface } from 'decentraland-ecs'
 
 /**
@@ -46,12 +46,8 @@ class WebWorkerScene extends SceneRuntime {
 
   private async runWasm({ wasmBytes, dcl }: { wasmBytes: Uint8Array; dcl: DecentralandInterface }) {
     const result = await runWasm({ wasmBytes })
-    debugger
     await result.start()
-    await result.sendCommand(`set_fd RENDERER ${result.metaverseWrapper.fdRendererInput}`)
-    await result.sendCommand(`set_fd DEBUG_IN ${result.metaverseWrapper.fdSceneDebuggerInput}`)
-    await result.sendCommand(`set_fd DEBUG_OUT ${result.metaverseWrapper.fdSceneDebuggerOutput}`)
-
+    
     this.onUpdateFunctions.push(async (dt: number) => {
       result.update(dt)
       const resultOut = await result.metaverseWrapper.wasmFs.getStdOut()
@@ -59,64 +55,75 @@ class WebWorkerScene extends SceneRuntime {
         console.log(resultOut)
         await result.metaverseWrapper.wasmFs.fs.writeFileSync('/dev/stdout', '')
       }
+
+      const msg = new Uint8Array(5)
+      msg[0] = 122
+      msg[1] = 123
+      msg[2] = 112
+      msg[3] = 115
+      msg[4] = 113
+      result.metaverseWrapper.Renderer0FDSocket.writeMessage(
+        msg
+      );
+    
     })
 
-    let entities: Set<number>[] = []
-    let components: any[] = []
+    // let entities: Set<number>[] = []
+    // let components: any[] = []
 
-    const { bufferReader } = rendererAdapter({ entities, components, dcl })
+    // const { bufferReader } = rendererAdapter({ entities, components, dcl })
 
-    result.metaverseWrapper.setRendererCallback((args: any[]) => {
-      if (args.length > 0) {
-        const buf = args[0]
-        if (buf instanceof Uint8Array) {
-          bufferReader(Buffer.from(buf))
-        } else {
-          // invalid write call
-        }
-      } else {
-        // invalid write call
-      }
-    })
+    // result.metaverseWrapper.setRendererCallback((args: any[]) => {
+    //   if (args.length > 0) {
+    //     const buf = args[0]
+    //     if (buf instanceof Uint8Array) {
+    //       bufferReader(Buffer.from(buf))
+    //     } else {
+    //       // invalid write call
+    //     }
+    //   } else {
+    //     // invalid write call
+    //   }
+    // })
 
-    let debugWsConnected = false
+    // let debugWsConnected = false
     //let readBuffer = new Uint8Array()
-    const debugWs = new WebSocket('ws://localhost:7667')
-    debugWs.onopen = (ev) => {
-      console.log('OpenWS')
-      debugWsConnected = true
-    }
-    debugWs.onclose = (ev) => {
-      console.log('CloseWS')
-      debugWsConnected = false
-    }
-    debugWs.onmessage = async (msg) => {
-      console.log('DebugWS', msg)
-      msg.data.arrayBuffer().then((buffer: ArrayBuffer) => {
-        result.metaverseWrapper.wasmFs.fs.writeFileSync(
-          result.metaverseWrapper.fdSceneDebuggerOutput,
-          new Uint8Array(buffer)
-        )
-      })
-    }
+    // const debugWs = new WebSocket('ws://localhost:7667')
+    // debugWs.onopen = (ev) => {
+    //   console.log('OpenWS')
+    //   debugWsConnected = true
+    // }
+    // debugWs.onclose = (ev) => {
+    //   console.log('CloseWS')
+    //   debugWsConnected = false
+    // }
+    // debugWs.onmessage = async (msg) => {
+    //   console.log('DebugWS', msg)
+    //   msg.data.arrayBuffer().then((buffer: ArrayBuffer) => {
+    //     result.metaverseWrapper.wasmFs.fs.writeFileSync(
+    //       result.metaverseWrapper.fdSceneDebuggerOutput,
+    //       new Uint8Array(buffer)
+    //     )
+    //   })
+    // }
 
-    result.metaverseWrapper.setDebuggerOutputCallback((args: any[]) => {
-      if (args.length == 4) {
-        // debugger
-        // args[0] UInt8Array
-        // args[2] length
-      }
-    })
-    result.metaverseWrapper.setDebuggerInputCallback((args: any[]) => {
-      console.log('debugger input', args)
-      if (args.length == 4) {
-        if (debugWsConnected) {
-          debugWs.send(args[0])
-        }
-        // args[0] UInt8Array
-        // args[2] length
-      }
-    })
+    // result.metaverseWrapper.setDebuggerOutputCallback((args: any[]) => {
+    //   if (args.length == 4) {
+    //     // debugger
+    //     // args[0] UInt8Array
+    //     // args[2] length
+    //   }
+    // })
+    // result.metaverseWrapper.setDebuggerInputCallback((args: any[]) => {
+    //   console.log('debugger input', args)
+    //   if (args.length == 4) {
+    //     if (debugWsConnected) {
+    //       debugWs.send(args[0])
+    //     }
+    //     // args[0] UInt8Array
+    //     // args[2] length
+    //   }
+    // })
   }
 
   async systemDidEnable() {
