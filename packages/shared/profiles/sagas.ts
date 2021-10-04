@@ -1,5 +1,6 @@
 import { EntityType, Hashing } from 'dcl-catalyst-commons'
-import { CatalystClient, ContentClient, DeploymentData } from 'dcl-catalyst-client'
+import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
+import { Fetcher } from 'dcl-catalyst-commons'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 
 import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
@@ -185,7 +186,7 @@ export function* doesProfileExist(userId: string): any {
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
-  const { userId, profileType } = action.payload
+  const { userId, profileType, version } = action.payload
 
   const currentId = yield select(getCurrentUserId)
   let profile: ServerFormatProfile | null = null
@@ -198,7 +199,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
         profile.hasClaimedName = false // for now, comms profiles can't have claimed names
       }
     } else {
-      const profiles: { avatars: ServerFormatProfile[] } = yield call(profileServerRequest, userId)
+      const profiles: { avatars: ServerFormatProfile[] } = yield call(profileServerRequest, userId, version)
 
       if (profiles.avatars.length !== 0) {
         profile = profiles.avatars[0]
@@ -285,15 +286,23 @@ function* populateFaceIfNecessary(profile: any, resolution: string) {
   }
 }
 
-export async function profileServerRequest(userId: string) {
+export async function profileServerRequest(userId: string, version?: number) {
   const state = store.getState()
   const catalystUrl = getCatalystServer(state)
-  const client = new CatalystClient(catalystUrl, 'EXPLORER')
 
   try {
-    const profiles = await client.fetchProfiles([userId])
+    // TODO: We should use catalyst client here. But it cannot be updated to use version in profiles request because
+    // the latest version is not compatible with kernel build.
+    // This should be changed once this issue is solved: https://github.com/decentraland/catalyst-client/issues/109
+
+    let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
+    if (version) url = url + `&version=${version}`
+    
+    const fetcher = new Fetcher()
+    const profiles = await fetcher.fetchJson(url)
+
     return profiles[0] || { avatars: [] }
-  } catch (e) {
+  } catch (e: any) {
     defaultLogger.error(e)
     return { avatars: [] }
   }
