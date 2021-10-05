@@ -182,6 +182,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   // NOTE(Pablo): We also need meta configuration to know if we need to enable voice chat
   await ensureMetaConfigurationInitialized()
 
+  i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
+
   const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
   const worldConfig: WorldConfig | undefined = store.getState().meta.config.world
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
@@ -224,8 +226,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       configForRenderer.features.enableExploreV2 = EXPLORE_V2_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
-      i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
-
+  
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
 
       i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
