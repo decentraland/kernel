@@ -174,7 +174,7 @@ export namespace commConfigurations {
   export const iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
     {
-      urls: 'turn:137.184.103.20:3478',
+      urls: 'turn:coturn-raw.decentraland.services:3478',
       credential: 'passworddcl',
       username: 'usernamedcl'
     }
