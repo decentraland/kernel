@@ -224,7 +224,9 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     }
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-    profile!.ethAddress = identity.rawAddress
+    if (profile) {
+      profile!.ethAddress = identity.rawAddress
+    }
   }
 
   if (!profile) {
