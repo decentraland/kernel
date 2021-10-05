@@ -182,6 +182,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   // NOTE(Pablo): We also need meta configuration to know if we need to enable voice chat
   await ensureMetaConfigurationInitialized()
 
+  //Note: This should be sent to unity before any other feature because some features may need a system init from FeatureFlag
+  //      For example disable AssetBundles needs a system from FeatureFlag
   i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
 
   const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
