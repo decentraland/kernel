@@ -15,3 +15,7 @@ export enum VoicePolicy {
   ALLOW_VERIFIED_ONLY,
   ALLOW_FRIENDS_ONLY
 }
+
+export type PeerParameters = {
+  iceServers: RTCIceServer[]
+}
