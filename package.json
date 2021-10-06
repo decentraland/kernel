@@ -117,6 +117,7 @@
     "gifuct-js": "^2.0.0",
     "google-protobuf": "^3.6.1",
     "hls.js": "^0.14.17",
+    "ion-sdk-js": "^1.7.2",
     "keccakjs": "^0.2.3",
     "long": "^4.0.0",
     "mitt": "^3.0.0",
