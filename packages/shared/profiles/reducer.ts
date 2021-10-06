@@ -5,12 +5,15 @@ import {
   PROFILE_SUCCESS,
   PROFILE_FAILURE,
   PROFILE_REQUEST,
-  LOCAL_PROFILE_IN_RENDERER
+  LOCAL_PROFILE_IN_RENDERER,
+  ADD_WEARABLES_PORTABLE_EXPERIENCE,
+  REMOVE_WEARABLES_PORTABLE_EXPERIENCE
 } from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
   userInfo: {},
-  localProfileUploaded: false
+  localProfileUploaded: false,
+  activeWearablesWithPortableExperiences: []
 }
 
 export function profileReducer(state?: ProfileState, action?: AnyAction): ProfileState {
@@ -64,6 +67,20 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
             addedToCatalog: true
           }
         }
+      }
+    case ADD_WEARABLES_PORTABLE_EXPERIENCE:
+      return {
+        ...state,
+        activeWearablesWithPortableExperiences: state.activeWearablesWithPortableExperiences.concat(
+          action.payload.wearables
+        )
+      }
+    case REMOVE_WEARABLES_PORTABLE_EXPERIENCE:
+      return {
+        ...state,
+        activeWearablesWithPortableExperiences: state.activeWearablesWithPortableExperiences.filter(
+          (wId) => !action.payload.wearables.includes(wId)
+        )
       }
     default:
       return state

@@ -45,6 +45,7 @@ export type ProfileState = {
     [key: string]: ProfileUserInfo
   }
   localProfileUploaded: boolean
+  activeWearablesWithPortableExperiences: WearableId[]
 }
 
 export type RootProfileState = {

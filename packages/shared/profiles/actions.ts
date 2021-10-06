@@ -1,6 +1,7 @@
 import { action } from 'typesafe-actions'
 import { Profile, ProfileType } from './types'
 import { ProfileForRenderer } from 'decentraland-ecs'
+import { PartialWearableV2 } from 'shared/catalogs/types'
 
 // Profile fetching
 
@@ -65,3 +66,12 @@ export const LOCAL_PROFILE_RECEIVED = 'Local Profile Received'
 export const localProfileReceived = (userId: string, profile: Profile) =>
   action(LOCAL_PROFILE_RECEIVED, { userId, profile })
 export type LocalProfileReceived = ReturnType<typeof localProfileReceived>
+
+export const ADD_WEARABLES_PORTABLE_EXPERIENCE = '[Add] Wearables with portable experiences'
+export const REMOVE_WEARABLES_PORTABLE_EXPERIENCE = '[Remove] Wearables with portable experiences'
+export const addWearablesWithPortableExperience = (wearables: PartialWearableV2[]) =>
+  action(ADD_WEARABLES_PORTABLE_EXPERIENCE, { wearables })
+export const removeWearablesWithPortableExperience = (wearables: PartialWearableV2[]) =>
+  action(REMOVE_WEARABLES_PORTABLE_EXPERIENCE, { wearables })
+export type AddedWearableWithPortableExperience = ReturnType<typeof addWearablesWithPortableExperience>
+export type RemovedWearableWithPortableExperience = ReturnType<typeof removeWearablesWithPortableExperience>
