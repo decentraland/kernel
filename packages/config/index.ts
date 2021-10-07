@@ -172,12 +172,7 @@ export namespace commConfigurations {
     typeof qs.AUTO_CHANGE_INTERVAL === 'string' ? parseInt(qs.AUTO_CHANGE_INTERVAL, 10) * 1000 : 40000
 
   export const defaultIceServers = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    {
-      urls: 'turn:coturn-raw.decentraland.services:3478',
-      credential: 'passworddcl',
-      username: 'usernamedcl'
-    }
+    { urls: 'stun:stun.l.google.com:19302' }
   ]
 
   export const voiceChatUseHRTF = location.search.includes('VOICE_CHAT_USE_HRTF')
