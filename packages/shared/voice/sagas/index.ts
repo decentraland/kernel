@@ -4,11 +4,12 @@ import { WORLD_EXPLORER } from 'config'
 
 import { SET_COMMS_ISLAND } from '../../comms/actions'
 import { USER_AUTHENTIFIED } from '../../session/actions'
-import { RECONNECT_VOICE, START_LOCAL_STREAM } from '../actions'
+import { ADD_REMOTE_STREAM, RECONNECT_VOICE, REMOVE_REMOTE_STREAM, START_LOCAL_STREAM } from '../actions'
 import { joinRoom } from './joinRoom'
 import { initializeVoiceSaga } from './signalConnection'
 import { streamLocalVoice } from './streamLocalVoice'
 import { reconnectVoice } from './reconnectVoice'
+import { voiceStream } from './voice-stream'
 
 export function* voiceSaga() {
   // preview or builder mode
@@ -25,5 +26,9 @@ export function* voiceSaga() {
 
     // Reconnect voice signal
     yield takeEvery(RECONNECT_VOICE, reconnectVoice)
+
+    // Start/Stop streams
+    yield takeEvery(ADD_REMOTE_STREAM, voiceStream)
+    yield takeEvery(REMOVE_REMOTE_STREAM, voiceStream)
   }
 }
