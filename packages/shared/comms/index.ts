@@ -85,12 +85,7 @@ import {
   ErrorContext,
   ReportFatalErrorWithCommsPayload
 } from 'shared/loading/ReportFatalError'
-import {
-  NEW_LOGIN,
-  commsEstablished,
-  COMMS_COULD_NOT_BE_ESTABLISHED,
-  commsErrorRetrying
-} from 'shared/loading/types'
+import { NEW_LOGIN, commsEstablished, COMMS_COULD_NOT_BE_ESTABLISHED, commsErrorRetrying } from 'shared/loading/types'
 import { getIdentity, getStoredSession } from 'shared/session'
 import { createLogger } from '../logger'
 import { VoiceCommunicator, VoiceSpatialParams } from 'voice-chat-codec/VoiceCommunicator'
@@ -113,7 +108,7 @@ import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { BannedUsers } from 'shared/meta/types'
 import { signedFetch } from 'atomicHelpers/signedFetch'
 
-export type CommsVersion = 'v1' | 'v2'
+export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
 export type CommsV1Mode = 'local' | 'remote'
 export type CommsV2Mode = 'p2p' | 'server'
@@ -531,28 +526,28 @@ function processProfileRequest(context: Context, fromAlias: string, message: Pac
   if (context.sendingProfileResponse) return
 
   context.sendingProfileResponse = true
-    ; (async () => {
-      const timeSinceLastProfile = Date.now() - context.lastProfileResponseTime
+  ;(async () => {
+    const timeSinceLastProfile = Date.now() - context.lastProfileResponseTime
 
-      // We don't want to send profile responses too frequently, so we delay the response to send a maximum of 1 per TIME_BETWEEN_PROFILE_RESPONSES
-      if (timeSinceLastProfile < TIME_BETWEEN_PROFILE_RESPONSES) {
-        await sleep(TIME_BETWEEN_PROFILE_RESPONSES - timeSinceLastProfile)
-      }
+    // We don't want to send profile responses too frequently, so we delay the response to send a maximum of 1 per TIME_BETWEEN_PROFILE_RESPONSES
+    if (timeSinceLastProfile < TIME_BETWEEN_PROFILE_RESPONSES) {
+      await sleep(TIME_BETWEEN_PROFILE_RESPONSES - timeSinceLastProfile)
+    }
 
-      const profile = await ProfileAsPromise(
-        myAddress,
-        message.data.version ? parseInt(message.data.version, 10) : undefined,
-        getProfileType(myIdentity)
-      )
+    const profile = await ProfileAsPromise(
+      myAddress,
+      message.data.version ? parseInt(message.data.version, 10) : undefined,
+      getProfileType(myIdentity)
+    )
 
-      if (context.currentPosition) {
-        context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
-      }
+    if (context.currentPosition) {
+      context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
+    }
 
-      context.lastProfileResponseTime = Date.now()
-    })()
-      .finally(() => (context.sendingProfileResponse = false))
-      .catch((e) => defaultLogger.error('Error getting profile for responding request to comms', e))
+    context.lastProfileResponseTime = Date.now()
+  })()
+    .finally(() => (context.sendingProfileResponse = false))
+    .catch((e) => defaultLogger.error('Error getting profile for responding request to comms', e))
 }
 
 function processProfileResponse(context: Context, fromAlias: string, message: Package<ProfileResponse>) {
@@ -594,23 +589,18 @@ function hasBlockedMe(myAddress: string | undefined, theirAddress: string): bool
   return !!profile && !!myAddress && isBlocked(profile, myAddress)
 }
 
-export function processProfileMessage(
-  context: Context,
-  fromAlias: string,
-  peerIdentity: string,
-  message: Package<ProfileVersion>
-) {
+export function processProfileMessage(context: Context, message: Package<ProfileVersion>) {
   const msgTimestamp = message.time
 
-  const peerTrackingInfo = ensurePeerTrackingInfo(context, fromAlias)
+  const peerTrackingInfo = ensurePeerTrackingInfo(context, message.sender)
 
   if (msgTimestamp > peerTrackingInfo.lastProfileUpdate) {
     peerTrackingInfo.lastProfileUpdate = msgTimestamp
-    peerTrackingInfo.identity = peerIdentity
+    peerTrackingInfo.identity = message.data.user
     peerTrackingInfo.lastUpdate = Date.now()
     peerTrackingInfo.profileType = message.data.type
 
-    if (ensureTrackingUniqueAndLatest(context, fromAlias, peerIdentity, msgTimestamp)) {
+    if (ensureTrackingUniqueAndLatest(context, message.sender, message.data.user, msgTimestamp)) {
       const profileVersion = message.data.version
       peerTrackingInfo.loadProfileIfNecessary(profileVersion ? parseInt(profileVersion, 10) : 0)
     }
@@ -677,7 +667,7 @@ let lastPositionSent: Position | undefined
 export function onPositionUpdate(context: Context, p: Position) {
   const worldConnection = context.worldInstanceConnection
 
-  if (!worldConnection || !worldConnection.isAuthenticated) {
+  if (!worldConnection) {
     return
   }
 
@@ -899,12 +889,14 @@ async function getPeerParameters(): Promise<PeerParameters> {
   }
 
   try {
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, { responseBodyType: 'json' })
+    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, {
+      responseBodyType: 'json'
+    })
 
     if (peerParameters.ok) {
       return { ...defaultPeerParameters, ...peerParameters.json }
     } else {
-      throw new Error("Server response was not OK: " + peerParameters.status)
+      throw new Error('Server response was not OK: ' + peerParameters.status)
     }
   } catch (e) {
     defaultLogger.warn("Couldn't fetch peer parameters for comms server. Using defaults!", e)
@@ -956,13 +948,21 @@ export async function connect(userId: string) {
             commsBroker = new CliBrokerConnection(url.href)
             break
           }
+          // 1 case 'remote': {
+          // 1  const qs = new URLSearchParams(document.location.search)
+          // 1  const nats = qs.get('nats') || 'wss://nats.decentraland.io'
+          // 1  commsBroker = new NatsBrokerConnection(nats)
+          // 1  break
+          // 1 }
           default: {
             throw new UnknownCommsModeError(`unrecognized mode for comms v1 "${mode}"`)
           }
         }
 
         const instance = new BrokerWorldInstanceConnection(commsBroker)
-        await instance.isConnected
+
+        await commsBroker.connectedPromise
+
         store.dispatch(commsEstablished())
 
         connection = instance
@@ -977,7 +977,6 @@ export async function connect(userId: string) {
         if (COMMS_SERVICE) {
           // For now, we assume that if we provided a hardcoded url for comms it will be island based
           realm = { ...realm!, lighthouseVersion: '1.0.0' }
-          delete realm.layer
         }
 
         const peerConfig: LighthouseConnectionConfig = {
@@ -1077,11 +1076,11 @@ export async function connect(userId: string) {
 
     ensureRendererEnabled()
       .then(() => startCommunications(context!))
-      .catch((e) => {
-        disconnect()
+      .catch(async (e) => {
         defaultLogger.error(`error while trying to establish communications `, e)
         ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
         BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
+        await disconnect()
       })
 
     return context
@@ -1113,7 +1112,7 @@ export async function startCommunications(context: Context) {
       } else {
         // not a comms issue per se => rethrow error
         logger.error(`error while trying to establish communications `, e)
-        disconnect()
+        await disconnect()
         const realm = getRealm(store.getState())
         store.dispatch(markCatalystRealmConnectionError(realm!))
       }
@@ -1136,26 +1135,26 @@ async function doStartCommunications(context: Context) {
       }
     }
 
-    connection.positionHandler = (alias: string, data: Package<Position>) => {
-      processPositionMessage(context, alias, data)
+    connection.positionHandler = (data: Package<Position>) => {
+      processPositionMessage(context, data.sender, data)
     }
-    connection.profileHandler = (alias: string, identity: string, data: Package<ProfileVersion>) => {
-      processProfileMessage(context, alias, identity, data)
+    connection.profileHandler = (data: Package<ProfileVersion>) => {
+      processProfileMessage(context, data)
     }
-    connection.chatHandler = (alias: string, data: Package<ChatMessage>) => {
-      processChatMessage(context, alias, data)
+    connection.chatHandler = (data: Package<ChatMessage>) => {
+      processChatMessage(context, data.sender, data)
     }
-    connection.sceneMessageHandler = (alias: string, data: Package<BusMessage>) => {
-      processParcelSceneCommsMessage(context, alias, data)
+    connection.sceneMessageHandler = (data: Package<BusMessage>) => {
+      processParcelSceneCommsMessage(context, data.sender, data)
     }
-    connection.voiceHandler = (alias: string, data: Package<VoiceFragment>) => {
-      processVoiceFragment(context, alias, data)
+    connection.voiceHandler = (data: Package<VoiceFragment>) => {
+      processVoiceFragment(context, data.sender, data)
     }
-    connection.profileRequestHandler = (alias: string, data: Package<ProfileRequest>) => {
-      processProfileRequest(context, alias, data)
+    connection.profileRequestHandler = (data: Package<ProfileRequest>) => {
+      processProfileRequest(context, data.sender, data)
     }
-    connection.profileResponseHandler = (alias: string, data: Package<ProfileResponse>) => {
-      processProfileResponse(context, alias, data)
+    connection.profileResponseHandler = (data: Package<ProfileResponse>) => {
+      processProfileResponse(context, data.sender, data)
     }
 
     if (commConfigurations.debug) {
@@ -1208,7 +1207,7 @@ async function doStartCommunications(context: Context) {
 
     window.addEventListener('beforeunload', () => {
       context.positionUpdatesPaused = true
-      sendToMordor()
+      sendToMordor().catch(NOOP)
     })
 
     context.infoCollecterInterval = setInterval(() => {
@@ -1242,7 +1241,7 @@ async function doStartCommunications(context: Context) {
       voiceCommunicator.addStreamRecordingListener((recording) => {
         store.dispatch(voiceRecordingUpdate(recording))
       })
-        ; (globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
+      ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
     }
   } catch (e) {
     throw new ConnectionEstablishmentError(e.message)
@@ -1271,8 +1270,11 @@ function handleReconnectionError() {
 
 function handleIdTaken() {
   disconnect()
-  ReportFatalErrorWithCommsPayload(new Error(`Handle Id already taken`), ErrorContext.COMMS_INIT)
-  BringDownClientAndShowError(NEW_LOGIN)
+    .finally(() => {
+      ReportFatalErrorWithCommsPayload(new Error(`Handle Id already taken`), ErrorContext.COMMS_INIT)
+      BringDownClientAndShowError(NEW_LOGIN)
+    })
+    .catch(NOOP)
 }
 
 function handleFullLayer() {
@@ -1286,16 +1288,14 @@ function handleFullLayer() {
 
   const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
 
-  notifyStatusThroughChat(
-    `Joining realm ${otherRealm.catalystName}-${otherRealm.layer} since the previously requested was full`
-  )
+  notifyStatusThroughChat(`Joining realm ${otherRealm.catalystName} since the previously requested was full`)
 
   store.dispatch(setCatalystRealm(otherRealm))
 }
 
 export function onWorldRunning(isRunning: boolean, _context: Context | null = context) {
   if (!isRunning) {
-    sendToMordor(_context)
+    sendToMordor(_context).catch(NOOP)
   }
 }
 
@@ -1309,7 +1309,7 @@ async function sendToMordorAsync(_context: Context | null = context) {
   }
 }
 
-export function disconnect() {
+export async function disconnect() {
   if (context) {
     if (context.profileInterval) {
       clearInterval(context.profileInterval)
@@ -1327,7 +1327,7 @@ export function disconnect() {
       renderStateObservable.remove(context.worldRunningObserver)
     }
     if (context.worldInstanceConnection) {
-      context.worldInstanceConnection.close()
+      await context.worldInstanceConnection.close()
     }
   }
 }

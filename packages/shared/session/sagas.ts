@@ -330,8 +330,8 @@ function* logout() {
     yield localProfilesRepo.remove(identity.address, network)
     globalObservable.emit('logout', { address: identity.address, network })
   }
-  yield sendToMordor()
-  disconnect()
+  yield call(sendToMordor)
+  yield call(disconnect)
   if (identity?.address) {
     yield call(removeStoredSession, identity.address)
   }

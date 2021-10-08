@@ -46,13 +46,13 @@ const NOOP = () => {
 export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
   aliases: Record<number, string> = {}
 
-  positionHandler: (fromAlias: string, positionData: Package<Position>) => void = NOOP
-  profileHandler: (fromAlias: string, identity: string, profileData: Package<ProfileVersion>) => void = NOOP
-  chatHandler: (fromAlias: string, chatData: Package<ChatMessage>) => void = NOOP
-  sceneMessageHandler: (fromAlias: string, chatData: Package<BusMessage>) => void = NOOP
-  voiceHandler: (alias: string, data: Package<VoiceFragment>) => void = NOOP
-  profileResponseHandler: (alias: string, data: Package<ProfileResponse>) => void = NOOP
-  profileRequestHandler: (alias: string, data: Package<ProfileRequest>) => void = NOOP
+  positionHandler: (positionData: Package<Position>) => void = NOOP
+  profileHandler: (profileData: Package<ProfileVersion>) => void = NOOP
+  chatHandler: (chatData: Package<ChatMessage>) => void = NOOP
+  sceneMessageHandler: (chatData: Package<BusMessage>) => void = NOOP
+  voiceHandler: (data: Package<VoiceFragment>) => void = NOOP
+  profileResponseHandler: (data: Package<ProfileResponse>) => void = NOOP
+  profileRequestHandler: (data: Package<ProfileRequest>) => void = NOOP
 
   ping: number = -1
 
@@ -71,17 +71,9 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
       msg.setTime(Date.now())
       const bytes = msg.serializeBinary()
 
-      if (this.connection.hasUnreliableChannel) {
-        this.connection.sendUnreliable(bytes)
-      } else {
-        this.ping = -1
-      }
+      this.connection.send(bytes, false)
     }, 10000)
     this.connection.onMessageObservable.add(this.handleMessage.bind(this))
-  }
-
-  async connectPeer() {
-    return
   }
 
   printDebugInformation() {
@@ -91,14 +83,6 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
   set stats(_stats: Stats) {
     this._stats = _stats
     this.connection.stats = _stats
-  }
-
-  get isAuthenticated() {
-    return this.connection.isAuthenticated
-  }
-
-  get isConnected() {
-    return this.connection.isConnected
   }
 
   async sendPositionMessage(p: Position) {
@@ -231,28 +215,20 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
   }
 
   async updateSubscriptions(rawTopics: string[]) {
-    if (!this.connection.hasReliableChannel) {
-      if (!this.fatalErrorSent) {
-        this.fatalErrorSent = true
-        throw new Error('trying to send topic subscription message but reliable channel is not ready')
-      } else {
-        return Promise.reject()
-      }
-    }
     const subscriptionMessage = new SubscriptionMessage()
     subscriptionMessage.setType(MessageType.SUBSCRIPTION)
     subscriptionMessage.setFormat(Format.PLAIN)
     // TODO: use TextDecoder instead of Buffer, it is a native browser API, works faster
     subscriptionMessage.setTopics(Buffer.from(rawTopics.join(' '), 'utf8'))
     const bytes = subscriptionMessage.serializeBinary()
-    this.connection.sendReliable(bytes)
+    this.connection.send(bytes, true)
   }
 
-  close() {
+  async close() {
     if (this.pingInterval) {
       clearInterval(this.pingInterval)
     }
-    this.connection.close()
+    await this.connection.close()
   }
 
   analyticsData() {
@@ -281,7 +257,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     try {
       msgType = MessageHeader.deserializeBinary(message.data).getType()
     } catch (err) {
-      this.logger.error('cannot deserialize worldcomm message header ' + message.channel + ' ' + msgSize)
+      this.logger.error('cannot deserialize worldcomm message header ' + message.topic + ' ' + msgSize)
       return
     }
 
@@ -330,7 +306,8 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
             }
 
             this.positionHandler &&
-              this.positionHandler(alias, {
+              this.positionHandler({
+                sender: alias,
                 type: 'position',
                 time: positionData.getTime(),
                 data: [
@@ -355,7 +332,8 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
             }
 
             this.chatHandler &&
-              this.chatHandler(alias, {
+              this.chatHandler({
+                sender: alias,
                 type: 'chat',
                 time: chatData.getTime(),
                 data: {
@@ -374,7 +352,8 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
             }
 
             this.sceneMessageHandler &&
-              this.sceneMessageHandler(alias, {
+              this.sceneMessageHandler({
+                sender: alias,
                 type: 'chat',
                 time: chatData.getTime(),
                 data: { id: chatData.getMessageId(), text: chatData.getText() }
@@ -422,7 +401,8 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
               this._stats.profile.incrementRecv(msgSize)
             }
             this.profileHandler &&
-              this.profileHandler(alias, userId, {
+              this.profileHandler({
+                sender: alias,
                 type: 'profile',
                 time: profileData.getTime(),
                 data: {
@@ -475,27 +455,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     if (this._stats) {
       this._stats.topic.incrementSent(1, bytes.length)
     }
-    if (reliable) {
-      if (!this.connection.hasReliableChannel) {
-        if (!this.fatalErrorSent) {
-          this.fatalErrorSent = true
-          throw new Error('trying to send a topic message using null reliable channel')
-        } else {
-          return new SendResult(0)
-        }
-      }
-      this.connection.sendReliable(bytes)
-    } else {
-      if (!this.connection.hasUnreliableChannel) {
-        if (!this.fatalErrorSent) {
-          this.fatalErrorSent = true
-          throw new Error('trying to send a topic message using null unreliable channel')
-        } else {
-          return new SendResult(0)
-        }
-      }
-      this.connection.sendUnreliable(bytes)
-    }
+    this.connection.send(bytes, reliable)
     return new SendResult(bytes.length)
   }
 }

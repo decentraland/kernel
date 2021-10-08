@@ -59,7 +59,6 @@ export type LayerUserInfo = {
 export type Realm = {
   domain: string
   catalystName: string
-  layer?: string
   lighthouseVersion: string
 }
 

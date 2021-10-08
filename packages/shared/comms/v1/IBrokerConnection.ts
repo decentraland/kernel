@@ -3,25 +3,18 @@ import { Stats } from '../../comms/debug'
 
 export type BrokerMessage = {
   data: Uint8Array
-  channel: string
-}
-
-export enum SocketReadyState {
-  CONNECTING,
-  OPEN,
-  CLOSING,
-  CLOSED
+  topic: string
 }
 
 export interface IBrokerConnection {
   stats: Stats | null
   onMessageObservable: Observable<BrokerMessage>
-  readonly hasUnreliableChannel: boolean
-  readonly hasReliableChannel: boolean
-  readonly isAuthenticated: boolean
-  readonly isConnected: Promise<void>
-  sendReliable(data: Uint8Array): void
-  sendUnreliable(data: Uint8Array): void
+
+  readonly connectedPromise: Promise<void>
+
+  send(data: Uint8Array, reliable: boolean): void
+  setTopics(topics: string[]): void
+  close(): Promise<void>
+
   printDebugInformation(): void
-  close(): void
 }

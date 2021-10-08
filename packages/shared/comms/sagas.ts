@@ -52,7 +52,7 @@ export function* commsSaga() {
 }
 
 function* bringDownComms() {
-  disconnect()
+  yield call(disconnect)
 }
 
 function* listenToWhetherSceneSupportsVoiceChat() {
@@ -138,5 +138,5 @@ function* changeRealm() {
 }
 
 function sameRealm(realm1: Realm, realm2: Realm) {
-  return realm1.catalystName === realm2.catalystName && realm1.layer === realm2.layer
+  return realm1.catalystName === realm2.catalystName && realm2.domain === realm2.domain
 }

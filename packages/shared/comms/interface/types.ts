@@ -115,6 +115,7 @@ export type PoseInformation = {
 export type PackageType = 'profile' | 'chat' | 'position' | 'voice' | 'profileRequest' | 'profileResponse'
 
 export type Package<T> = {
+  sender: string
   type: PackageType
   time: number
   data: T
