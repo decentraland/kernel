@@ -1,6 +1,6 @@
 import * as qs from 'query-string'
 import { Vector3, ReadOnlyVector3, ReadOnlyQuaternion, Vector2, ReadOnlyVector2 } from 'decentraland-ecs'
-import { Observable } from 'mz-observable'
+import { Observable } from 'decentraland-ecs'
 import { ILand } from 'shared/types'
 import { InstancedSpawnPoint } from '../types'
 import {

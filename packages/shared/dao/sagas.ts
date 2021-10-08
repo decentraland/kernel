@@ -116,7 +116,6 @@ function* loadCatalystRealms() {
     realm = {
       domain: rootURLPreviewMode(),
       catalystName: 'localhost',
-      layer: 'stub',
       lighthouseVersion: '0.1'
     }
   }
@@ -125,7 +124,7 @@ function* loadCatalystRealms() {
     throw new Error('Unable to select a realm')
   }
 
-  yield put(setCatalystRealm(realm!))
+  yield put(setCatalystRealm(realm))
 
   defaultLogger.info(`Using Catalyst configuration: `, {
     original: yield select((state) => state.dao),
@@ -196,7 +195,7 @@ function* initializeCatalystCandidates() {
 }
 
 function* checkValidRealm(realm: Realm) {
-  const realmHasValues = realm && realm.domain && realm.catalystName && realm.layer
+  const realmHasValues = realm && realm.domain && realm.catalystName
   if (!realmHasValues) {
     return false
   }

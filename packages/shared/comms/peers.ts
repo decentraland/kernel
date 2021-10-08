@@ -1,9 +1,12 @@
-import { Observable } from 'mz-observable'
+import { Observable, ProfileForRenderer } from 'decentraland-ecs'
 import { UUID, PeerInformation, AvatarMessage, UserInformation, AvatarMessageType, Pose } from './interface/types'
+import { Position } from 'shared/comms/interface/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import defaultLogger from 'shared/logger'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { getProfileType } from 'shared/profiles/getProfileType'
+import { Timestamp } from 'dcl-social-client'
+import { ProfileType } from 'shared/profiles/types'
 
 export const peerMap = new Map<UUID, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
@@ -153,4 +156,58 @@ export function receiveUserVisible(uuid: string, visible: boolean) {
     uuid,
     visible
   })
+}
+
+export type ProfilePromiseState = {
+  promise: Promise<ProfileForRenderer | void>
+  version: number | null
+  status: 'ok' | 'loading' | 'error'
+}
+
+export class PeerTrackingInfo {
+  public position: Position | null = null
+  public identity: string | null = null
+  public userInfo: UserInformation | null = null
+  public lastPositionUpdate: Timestamp = 0
+  public lastProfileUpdate: Timestamp = 0
+  public lastUpdate: Timestamp = 0
+  public receivedPublicChatMessages = new Set<string>()
+  public talking = false
+
+  profilePromise: ProfilePromiseState = {
+    promise: Promise.resolve(),
+    version: null,
+    status: 'loading'
+  }
+
+  profileType?: ProfileType
+
+  public loadProfileIfNecessary(profileVersion: number) {
+    if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
+      if (!this.userInfo || !this.userInfo.userId) {
+        this.userInfo = {
+          ...(this.userInfo || {}),
+          userId: this.identity
+        }
+      }
+      this.profilePromise = {
+        promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
+          .then((profile) => {
+            const forRenderer = profileToRendererFormat(profile)
+            this.lastProfileUpdate = new Date().getTime()
+            const userInfo = this.userInfo || {}
+            userInfo.version = profile.version
+            this.userInfo = userInfo
+            this.profilePromise.status = 'ok'
+            return forRenderer
+          })
+          .catch((error) => {
+            this.profilePromise.status = 'error'
+            defaultLogger.error('Error fetching profile!', error)
+          }),
+        version: profileVersion,
+        status: 'loading'
+      }
+    }
+  }
 }

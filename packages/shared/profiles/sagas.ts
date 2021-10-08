@@ -1,6 +1,5 @@
-import { EntityType, Hashing } from 'dcl-catalyst-commons'
+import { EntityType, Hashing, Fetcher } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { Fetcher } from 'dcl-catalyst-commons'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 
 import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
@@ -52,7 +51,7 @@ import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork } from 'shared/
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
-import { requestLocalProfileToPeers, updateCommsUser } from 'shared/comms'
+import { updateCommsUser } from 'shared/comms'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { base64ToBlob } from 'atomicHelpers/base64ToBlob'
@@ -65,6 +64,9 @@ import { ParcelsWithAccess } from 'decentraland-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
+import { requestLocalProfileToPeers } from 'shared/comms/handlers'
+import { getCommsContext } from 'shared/protocol/selectors'
+import { CommsContext } from 'shared/comms/context'
 
 const toBuffer = require('blob-to-buffer')
 
@@ -192,8 +194,9 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   let profile: ServerFormatProfile | null = null
   let hasConnectedWeb3 = false
   try {
-    if (profileType === ProfileType.LOCAL && currentId !== userId) {
-      const peerProfile: Profile = yield call(requestLocalProfileToPeers, userId)
+    const commsContext: CommsContext | undefined = yield select(getCommsContext)
+    if (profileType === ProfileType.LOCAL && currentId !== userId && commsContext) {
+      const peerProfile: Profile = yield call(requestLocalProfileToPeers, commsContext, userId)
       if (peerProfile) {
         profile = ensureServerFormat(peerProfile)
         profile.hasClaimedName = false // for now, comms profiles can't have claimed names
@@ -224,8 +227,9 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     }
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+
     if (profile) {
-      profile!.ethAddress = identity.rawAddress
+      profile.ethAddress = identity.rawAddress
     }
   }
 
@@ -299,7 +303,7 @@ export async function profileServerRequest(userId: string, version?: number) {
 
     let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
-    
+
     const fetcher = new Fetcher()
     const profiles = await fetcher.fetchJson(url)
 

@@ -1,7 +1,7 @@
 import { AnyAction } from 'redux'
 import { ProtocolState } from './types'
 import { SET_WORLD_CONTEXT } from './actions'
-import { Context } from '../comms'
+import { CommsContext } from '../comms/context'
 
 export function protocolReducer(state?: ProtocolState, action?: AnyAction): ProtocolState {
   if (!state) {
@@ -12,7 +12,7 @@ export function protocolReducer(state?: ProtocolState, action?: AnyAction): Prot
   }
   switch (action.type) {
     case SET_WORLD_CONTEXT:
-      return { ...state, context: action.payload as Context | undefined }
+      return { ...state, context: action.payload as CommsContext | undefined }
   }
   return state
 }

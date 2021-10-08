@@ -486,8 +486,6 @@ export type GraphResponse = {
   }[]
 }
 
-export type AnalyticsContainer = { analytics: SegmentAnalytics.AnalyticsJS }
-
 export enum ChatMessageType {
   NONE,
   PUBLIC,
@@ -544,7 +542,6 @@ export enum PresenceStatus {
 }
 
 type Realm = {
-  layer: string
   serverName: string
 }
 

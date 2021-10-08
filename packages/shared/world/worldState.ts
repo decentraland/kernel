@@ -1,4 +1,4 @@
-import { Observable } from 'mz-observable'
+import { Observable } from 'decentraland-ecs'
 import { store } from 'shared/store/isolatedStore'
 import { LoadingState } from 'shared/loading/reducer'
 import { RendererState } from 'shared/renderer/types'

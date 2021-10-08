@@ -51,7 +51,7 @@ import { globalObservable } from 'shared/observables'
 import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { disconnect, sendToMordor } from 'shared/comms'
+import { disconnect } from 'shared/comms'
 import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
 
 const TOS_KEY = 'tos'
@@ -197,12 +197,6 @@ function* authorize(requestManager: RequestManager) {
   }
 
   return userData.identity
-  // } catch (e) {
-  // logger.error(e)
-  // ReportFatalError(e, ErrorContext.KERNEL_INIT)
-  // BringDownClientAndShowError(AUTH_ERROR_LOGGED_OUT)
-  // throw e
-  // }
 }
 
 function* signIn(identity: ExplorerIdentity) {
@@ -330,7 +324,6 @@ function* logout() {
     yield localProfilesRepo.remove(identity.address, network)
     globalObservable.emit('logout', { address: identity.address, network })
   }
-  yield call(sendToMordor)
   yield call(disconnect)
   if (identity?.address) {
     yield call(removeStoredSession, identity.address)

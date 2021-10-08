@@ -5,7 +5,8 @@
     "declaration": false,
     "strictNullChecks": false,
     "lib": ["es2017", "dom"],
-    "baseUrl": "../packages"
+    "baseUrl": "../packages",
+    "types": ["mocha"]
   },
   "exclude": ["../packages/engine"],
   "extends": "../tsconfig.json"

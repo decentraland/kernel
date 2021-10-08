@@ -112,14 +112,6 @@ export class VoiceCommunicator {
     this.startOutputsExpiration()
   }
 
-  public setSelfId(selfId: string) {
-    this.voiceChatWorkerMain.destroyEncodeStream(this.selfId)
-    this.selfId = selfId
-    if (this.input) {
-      this.input.encodeStream = this.createInputEncodeStream(this.input.recordingContext[0], this.input.workletNode)
-    }
-  }
-
   public addStreamPlayingListener(listener: StreamPlayingListener) {
     this.streamPlayingListeners.push(listener)
   }

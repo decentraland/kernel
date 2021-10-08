@@ -7,8 +7,7 @@ import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3 } from 'decentraland-ecs'
-import { IEventNames } from 'decentraland-ecs'
+import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3, IEventNames } from 'decentraland-ecs'
 import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -238,10 +237,7 @@ export class BrowserInterface {
   }
 
   public MotdConfirmClicked() {
-    if (hasWallet()) {
-      // TODO: no longer used
-      // TeleportController.goToNext()
-    } else {
+    if (!hasWallet()) {
       globalObservable.emit('openUrl', { url: 'https://docs.decentraland.org/get-a-wallet/' })
     }
   }
@@ -482,10 +478,10 @@ export class BrowserInterface {
   public async JumpIn(data: WorldPosition) {
     const {
       gridPosition: { x, y },
-      realm: { serverName, layer }
+      realm: { serverName }
     } = data
 
-    const realmString = realmToString({ serverName, layer })
+    const realmString = realmToString({ serverName })
 
     notifyStatusThroughChat(`Jumping to ${realmString} at ${x},${y}...`)
 
@@ -552,7 +548,7 @@ export class BrowserInterface {
   }
 
   public FetchBalanceOfMANA() {
-    ;(async () => {
+    const fn = async () => {
       const identity = getIdentity()
 
       if (!identity?.hasConnectedWeb3) {
@@ -564,7 +560,9 @@ export class BrowserInterface {
         this.lastBalanceOfMana = balance
         getUnityInstance().UpdateBalanceOfMANA(`${balance}`)
       }
-    })().catch((err) => console.error(err))
+    }
+
+    fn().catch(defaultLogger.error)
   }
 
   public SetMuteUsers(data: { usersId: string[]; mute: boolean }) {

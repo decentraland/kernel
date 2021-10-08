@@ -28,7 +28,7 @@ export class SignedFetch extends ExposableAPI {
       tld: network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
       network,
       isGuest,
-      realm: realm ? { ...realm, layer: realm.layer ?? '' } : undefined // If the realm doesn't have layer, we send it
+      realm: realm ? { ...realm, layer: '' } : undefined // If the realm doesn't have layer, we send it
     }
 
     return signedFetch(url, identity!, init, additionalMetadata)

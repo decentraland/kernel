@@ -4,24 +4,15 @@ import { EDITOR } from 'config'
 
 import { establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getCurrentIdentity } from 'shared/session/selectors'
-import { setWorldContext } from 'shared/protocol/actions'
 import { waitForRealmInitialized, selectRealm } from 'shared/dao/sagas'
 import { getRealm } from 'shared/dao/selectors'
 import { CATALYST_REALMS_SCAN_SUCCESS, setCatalystRealm } from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
 import { realmToString } from 'shared/dao/utils/realmToString'
-import { createLogger } from 'shared/logger'
 
-import {
-  connect,
-  Context,
-  disconnect,
-  updatePeerVoicePlaying,
-  updateVoiceCommunicatorMute,
-  updateVoiceCommunicatorVolume,
-  updateVoiceRecordingStatus
-} from '.'
+import { CommsContext, commsLogger } from './context'
+import { connect, disconnect, initComms } from '.'
+
 import {
   SetVoiceMute,
   SetVoiceVolume,
@@ -35,20 +26,22 @@ import {
   VOICE_RECORDING_UPDATE
 } from './actions'
 
-import { isVoiceChatRecording } from './selectors'
+import { isVoiceChatAllowedByCurrentScene, isVoiceChatRecording } from './selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { sceneObservable } from 'shared/world/sceneState'
 import { SceneFeatureToggles } from 'shared/types'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-
-const DEBUG = false
-const logger = createLogger('comms: ')
+import { setVoiceCommunicatorInputStream, voiceCommunicator } from './voice-over-comms'
+import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
+import { getCommsContext } from 'shared/protocol/selectors'
 
 export function* commsSaga() {
   yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
   yield takeLatest(CATALYST_REALMS_SCAN_SUCCESS, changeRealm)
   yield takeEvery(FATAL_ERROR, bringDownComms)
+
+  yield call(initComms)
 }
 
 function* bringDownComms() {
@@ -67,7 +60,7 @@ function* listenToWhetherSceneSupportsVoiceChat() {
       getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
       if (!nowEnabled) {
         // We want to stop any potential recordings when a user enters a new scene
-        updateVoiceRecordingStatus(false)
+        updateVoiceRecordingStatus(false).catch(commsLogger.error)
       }
     }
   })
@@ -80,8 +73,6 @@ function* userAuthentified() {
 
   yield call(waitForRealmInitialized)
 
-  const identity = yield select(getCurrentIdentity)
-
   yield takeEvery(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlaying)
@@ -91,27 +82,39 @@ function* userAuthentified() {
   yield listenToWhetherSceneSupportsVoiceChat()
 
   yield put(establishingComms())
-  const context: Context | undefined = yield call(connect, identity.address)
-  if (context !== undefined) {
-    yield put(setWorldContext(context))
-  }
+
+  yield call(connect)
 }
 
 function* updateVoiceChatRecordingStatus() {
   const recording = yield select(isVoiceChatRecording)
-  updateVoiceRecordingStatus(recording)
+  yield call(updateVoiceRecordingStatus, recording)
 }
 
 function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
-  updatePeerVoicePlaying(action.payload.userId, action.payload.playing)
+  const { userId, playing } = action.payload
+  const commsContext: CommsContext | undefined = yield select(getCommsContext)
+  if (commsContext) {
+    for (const peerInfo of commsContext.peerData.values()) {
+      if (peerInfo.identity === userId) {
+        peerInfo.talking = playing
+        break
+      }
+    }
+  }
+  getUnityInstance().SetUserTalking(userId, playing)
 }
 
 function* updateVoiceChatVolume(action: SetVoiceVolume) {
-  updateVoiceCommunicatorVolume(action.payload.volume)
+  if (voiceCommunicator) {
+    voiceCommunicator.setVolume(action.payload.volume)
+  }
 }
 
 function* updateVoiceChatMute(action: SetVoiceMute) {
-  updateVoiceCommunicatorMute(action.payload.mute)
+  if (voiceCommunicator) {
+    voiceCommunicator.setMute(action.payload.mute)
+  }
 }
 
 function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
@@ -121,8 +124,9 @@ function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
 
 function* changeRealm() {
   const currentRealm: ReturnType<typeof getRealm> = yield select(getRealm)
+
   if (!currentRealm) {
-    DEBUG && logger.info(`No realm set, wait for actual DAO initialization`)
+    commsLogger.info(`No realm set, wait for actual DAO initialization`)
     // if not realm is set => wait for actual dao initialization
     return
   }
@@ -130,13 +134,66 @@ function* changeRealm() {
   const otherRealm = yield call(selectRealm)
 
   if (!sameRealm(currentRealm, otherRealm)) {
-    logger.info(`Changing realm from ${realmToString(currentRealm)} to ${realmToString(otherRealm)}`)
+    commsLogger.info(`Changing realm from ${realmToString(currentRealm)} to ${realmToString(otherRealm)}`)
     yield put(setCatalystRealm(otherRealm))
   } else {
-    DEBUG && logger.info(`Realm already set ${realmToString(currentRealm)}`)
+    commsLogger.info(`Realm already set ${realmToString(currentRealm)}`)
   }
 }
 
 function sameRealm(realm1: Realm, realm2: Realm) {
   return realm1.catalystName === realm2.catalystName && realm2.domain === realm2.domain
+}
+
+let audioRequestPending = false
+
+async function requestMediaDevice() {
+  // TODO: Push redux action to inform the user to ACCEPT the microphone usage
+
+  if (!audioRequestPending) {
+    audioRequestPending = true
+
+    try {
+      // tslint:disable-next-line
+      const media = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: VOICE_CHAT_SAMPLE_RATE,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          advanced: [{ echoCancellation: true }, { autoGainControl: true }, { noiseSuppression: true }] as any
+        },
+        video: false
+      })
+
+      await setVoiceCommunicatorInputStream(media)
+    } catch (e: any) {
+      commsLogger.log('Error requesting audio: ', e)
+    } finally {
+      audioRequestPending = false
+    }
+  }
+}
+
+async function updateVoiceRecordingStatus(recording: boolean) {
+  if (!voiceCommunicator) {
+    return
+  }
+
+  if (!isVoiceChatAllowedByCurrentScene()) {
+    voiceCommunicator.pause()
+    return
+  }
+
+  if (!recording) {
+    voiceCommunicator.pause()
+    return
+  }
+
+  if (!voiceCommunicator.hasInput()) {
+    await requestMediaDevice()
+  } else {
+    voiceCommunicator.start()
+  }
 }

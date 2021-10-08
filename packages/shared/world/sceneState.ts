@@ -1,4 +1,4 @@
-import { Observable } from 'mz-observable'
+import { Observable } from 'decentraland-ecs'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJson'
 import { ILand } from 'shared/types'

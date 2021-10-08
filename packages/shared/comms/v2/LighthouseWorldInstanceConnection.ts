@@ -114,10 +114,13 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     this.peer = this.initializePeer()
   }
 
-  async connectPeer() {
+  async connect() {
     try {
-      await this.peer.awaitConnectionEstablished(60000)
+      if (!this.peer.connectedCount()) {
+        await this.peer.awaitConnectionEstablished(60000)
+      }
       this.statusHandler({ status: 'connected', connectedPeers: this.connectedPeersCount() })
+      return true
     } catch (e) {
       defaultLogger.error('Error while connecting to layer', e)
       this.statusHandler({
@@ -139,15 +142,11 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     this.peerConfig.eventsHandler?.onIslandChange?.(undefined, [])
 
     this.initializePeer()
-    await this.connectPeer()
+    await this.connect()
     await this.syncRoomsWithPeer()
   }
 
-  printDebugInformation() {
-    // TODO - implement this - moliva - 20/12/2019
-  }
-
-  close() {
+  disconnect() {
     return this.cleanUpPeer()
   }
 
@@ -232,7 +231,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     await this.sendData(topic, chatMessage, PeerMessageTypes.reliable('chat'))
   }
 
-  async updateSubscriptions(rooms: string[]) {
+  async setTopics(rooms: string[]) {
     this.rooms = rooms
     await this.syncRoomsWithPeer()
   }

@@ -19,7 +19,7 @@ import { parseParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePosit
 import { TeleportController } from 'shared/world/TeleportController'
 import { notifyStatusThroughChat } from 'shared/comms/chat'
 import defaultLogger from 'shared/logger'
-import { catalystRealmConnected, changeRealm, changeToCrowdedRealm } from 'shared/dao'
+import { catalystRealmConnected, changeRealm } from 'shared/dao'
 import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
 import { SHOW_FPS_COUNTER } from 'config'
 import { AvatarMessage, AvatarMessageType } from 'shared/comms/interface/types'
@@ -222,24 +222,6 @@ function initChatCommands() {
     const realmString = message.trim()
     let response = ''
 
-    if (realmString === 'crowd') {
-      response = `Changing to realm that is crowded nearby...`
-
-      changeToCrowdedRealm().then(
-        ([changed, realm]) => {
-          if (changed) {
-            notifyStatusThroughChat(`Found a crowded realm to join. Welcome to the realm ${realmToString(realm)}!`)
-          } else {
-            notifyStatusThroughChat(`Already on most crowded realm for location. Nothing changed.`)
-          }
-        },
-        (e) => {
-          const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-          notifyStatusThroughChat('Could not join realm.' + cause)
-          defaultLogger.error(`Error joining crowded realm ${realmString}`, e)
-        }
-      )
-    } else {
       const realm = changeRealm(realmString)
 
       if (realm) {
@@ -256,7 +238,6 @@ function initChatCommands() {
       } else {
         response = `Couldn't find realm ${realmString}`
       }
-    }
 
     return {
       messageId: uuid(),

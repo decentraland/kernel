@@ -19,6 +19,7 @@
     "noUnusedLocals": true,
     "jsx": "react",
     "jsxFactory": "createElement",
+    "types": [],
     "plugins": [
       {
         "name": "tslint-language-service"

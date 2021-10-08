@@ -46,12 +46,12 @@ export class EnvironmentAPI extends ExposableAPI {
     if (!realm) {
       return undefined
     }
-    const { domain, layer, catalystName: serverName } = realm
+    const { domain, catalystName: serverName } = realm
     return {
       domain,
-      layer: layer ?? '', // We shouldn't send undefined because it would break contract
+      layer: '', // We shouldn't send undefined because it would break contract
       serverName,
-      displayName: `${serverName}-${layer}`
+      displayName: `${serverName}-`
     }
   }
 

@@ -10,7 +10,6 @@ import {
   ProfileRequest
 } from './types'
 import { Stats } from '../debug'
-import { Realm } from 'shared/dao/types'
 import { Profile } from 'shared/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 
@@ -31,10 +30,9 @@ export interface WorldInstanceConnection { // extends Emitter<CommsEvents> {
 
   // TODO - review metrics API - moliva - 19/12/2019
   readonly ping: number
-  printDebugInformation(): void
   analyticsData(): Record<string, any>
 
-  close(): Promise<void>
+  disconnect(): Promise<void>
 
   sendInitialMessage(userInfo: Partial<UserInformation>): Promise<void>
   sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>
@@ -46,8 +44,7 @@ export interface WorldInstanceConnection { // extends Emitter<CommsEvents> {
   sendChatMessage(currentPosition: Position, messageId: string, text: string): Promise<void>
   sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void>
 
-  updateSubscriptions(topics: string[]): Promise<void>
+  setTopics(topics: string[]): Promise<void>
 
-  changeRealm(realm: Realm, url: string): Promise<void>
-
+  connect(): Promise<boolean>
 }

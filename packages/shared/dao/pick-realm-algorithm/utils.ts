@@ -1,16 +1,16 @@
-import { Candidate } from "../types"
-import { AlgorithmContext, LatencyDeductionsParameters } from "./types"
+import { Candidate } from '../types'
+import { AlgorithmContext, LatencyDeductionsParameters } from './types'
 
 export function usersCount(candidate: Candidate) {
-  return candidate.type === 'layer-based' ? candidate.layer.usersCount : candidate.usersCount
+  return candidate.usersCount
 }
 
 export function maxUsers(candidate: Candidate) {
-  return candidate.type === 'layer-based' ? candidate.layer.maxUsers : candidate.maxUsers
+  return candidate.maxUsers
 }
 
 export function usersParcels(candidate: Candidate) {
-  return candidate.type === 'layer-based' ? candidate.layer.usersParcels : candidate.usersParcels
+  return candidate.usersParcels
 }
 
 export function memoizedScores(scoreFunction: (c: Candidate) => number) {
@@ -24,12 +24,18 @@ export function memoizedScores(scoreFunction: (c: Candidate) => number) {
   }
 }
 
-export function latencyDeductions(candidate: Candidate, { multiplier, exponentialDivisor, maxDeduction }: LatencyDeductionsParameters) {
+export function latencyDeductions(
+  candidate: Candidate,
+  { multiplier, exponentialDivisor, maxDeduction }: LatencyDeductionsParameters
+) {
   const expResult = multiplier * (Math.exp(candidate.elapsed / exponentialDivisor) - 1)
   return Math.min(expResult, maxDeduction)
 }
 
-export function scoreUsingLatencyDeductions(parameters: LatencyDeductionsParameters, baseScoreFunction: (c: Candidate) => number) {
+export function scoreUsingLatencyDeductions(
+  parameters: LatencyDeductionsParameters,
+  baseScoreFunction: (c: Candidate) => number
+) {
   return (candidate: Candidate) => {
     const scoreByUsers = baseScoreFunction(candidate)
 
@@ -37,8 +43,14 @@ export function scoreUsingLatencyDeductions(parameters: LatencyDeductionsParamet
   }
 }
 
-export function defaultScoreAddons(latencyDeductionsParameters: LatencyDeductionsParameters, baseScore: number, baseScoreFunction: (c: Candidate) => number) {
-  return memoizedScores(penalizeFull(baseScore, scoreUsingLatencyDeductions(latencyDeductionsParameters, baseScoreFunction)))
+export function defaultScoreAddons(
+  latencyDeductionsParameters: LatencyDeductionsParameters,
+  baseScore: number,
+  baseScoreFunction: (c: Candidate) => number
+) {
+  return memoizedScores(
+    penalizeFull(baseScore, scoreUsingLatencyDeductions(latencyDeductionsParameters, baseScoreFunction))
+  )
 }
 
 export function penalizeFull(baseScore: number, baseScoreFunction: (c: Candidate) => number) {
@@ -50,24 +62,39 @@ export function penalizeFull(baseScore: number, baseScoreFunction: (c: Candidate
   }
 }
 
-export function selectFirstByScore(context: AlgorithmContext, score: (c: Candidate) => number, almostEqualThreshold: number = 0, pickOnlyTheBest: boolean = false) {
+export function selectFirstByScore(
+  context: AlgorithmContext,
+  score: (c: Candidate) => number,
+  almostEqualThreshold: number = 0,
+  pickOnlyTheBest: boolean = false
+) {
   const compareFn = (a: Candidate, b: Candidate) => score(b) - score(a)
 
-  return selectFirstBy(context, compareFn, (a, b) => Math.abs(score(b) - score(a)) <= almostEqualThreshold, pickOnlyTheBest)
+  return selectFirstBy(
+    context,
+    compareFn,
+    (a, b) => Math.abs(score(b) - score(a)) <= almostEqualThreshold,
+    pickOnlyTheBest
+  )
 }
 
-export function selectFirstBy(context: AlgorithmContext,
+export function selectFirstBy(
+  context: AlgorithmContext,
   compareFn: (a: Candidate, b: Candidate) => number,
   almostEqual: (a: Candidate, b: Candidate) => boolean = () => false,
-  pickOnlyTheBest: boolean = false) {
+  pickOnlyTheBest: boolean = false
+) {
   const sorted = context.picked.sort(compareFn)
 
   // We pick those that are equivalent to the first one
   if (pickOnlyTheBest) {
-    context.picked = sorted.filter(it => compareFn(context.picked[0], it) === 0 || almostEqual(context.picked[0], it))
+    context.picked = sorted.filter((it) => compareFn(context.picked[0], it) === 0 || almostEqual(context.picked[0], it))
   }
 
-  if (context.picked.length === 1 || (compareFn(context.picked[0], context.picked[1]) < 0 && !almostEqual(context.picked[0], context.picked[1]))) {
+  if (
+    context.picked.length === 1 ||
+    (compareFn(context.picked[0], context.picked[1]) < 0 && !almostEqual(context.picked[0], context.picked[1]))
+  ) {
     context.selected = context.picked[0]
   }
 

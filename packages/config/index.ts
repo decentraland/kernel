@@ -114,8 +114,6 @@ export const PREFERED_ISLAND = ensureSingleString(qs.island)
 
 export const TRACE_RENDERER = ensureSingleString(qs.TRACE_RENDERER)
 
-export const AUTO_CHANGE_REALM = location.search.includes('AUTO_CHANGE_REALM')
-
 export const LOS = ensureSingleString(qs.LOS)
 
 export const DEBUG = location.search.includes('DEBUG_MODE') || !!(global as any).mocha || PREVIEW || EDITOR

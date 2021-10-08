@@ -67,8 +67,6 @@ export const getCommsServer = (store: RootDaoState) => {
 
 export const getRealm = (store: RootDaoState) => store.dao.realm
 
-export const getLayer = (store: RootDaoState) => (store.dao.realm ? store.dao.realm.layer : '')
-
 export const getCatalystCandidates = (store: RootDaoState) => store.dao.candidates
 export const getAddedCatalystCandidates = (store: RootDaoState) => store.dao.addedCandidates
 
@@ -81,10 +79,6 @@ export const isRealmInitialized = (store: RootDaoState) => store.dao.initialized
 export const areCandidatesFetched = (store: RootDaoState) => store.dao.candidatesFetched
 
 export const getCatalystRealmCommsStatus = (store: RootDaoState) => store.dao.commsStatus
-
-export const isResizeServiceUrl = (store: RootDaoState, url: string | undefined) =>
-  url?.startsWith(getResizeService(store)) ||
-  url?.startsWith(getServerConfigurations(getSelectedNetwork(store)).fallbackResizeServiceUrl)
 
 export const getHotScenesService = (store: RootDaoState) => {
   if (HOTSCENES_SERVICE) {
@@ -105,3 +99,7 @@ export const getSelectedNetwork = (store: RootDaoState) => {
   }
   throw new Error('Missing network')
 }
+
+export const isResizeServiceUrl = (store: RootDaoState, url: string | undefined) =>
+  url?.startsWith(getResizeService(store)) ||
+  url?.startsWith(getServerConfigurations(getSelectedNetwork(store)).fallbackResizeServiceUrl)

@@ -1,5 +1,4 @@
 import { defaultLogger } from 'shared/logger'
-import { Context } from './index'
 import { PositionData } from '../comms/v1/proto/comms'
 
 export class TrackAvgDuration {
@@ -108,9 +107,14 @@ export class Stats {
 
   private reportInterval: any
 
-  constructor(private context: Context) {}
-
   public printDebugInformation() {
+    // 1 connection.printDebugInformation()
+
+    // 1  if (connection.ping >= 0) {
+    // 1    defaultLogger.info(`  ping: ${connection.ping} ms`)
+    // 1  } else {
+    // 1    defaultLogger.info(`  ping: ? ms`)
+    // 1  }
     const reportDuration = (name: string, duration: TrackAvgDuration) => {
       const durationsMs = duration.durationsMs
       if (durationsMs.length > 0) {
@@ -135,15 +139,6 @@ export class Stats {
     defaultLogger.info(`tracking peers: ${this.trackingPeersCount}, visible peers: ${this.visiblePeerIds.length}`)
 
     defaultLogger.info('World instance: ')
-
-    const connection = this.context.worldInstanceConnection!
-    connection.printDebugInformation()
-
-    if (connection.ping >= 0) {
-      defaultLogger.info(`  ping: ${connection.ping} ms`)
-    } else {
-      defaultLogger.info(`  ping: ? ms`)
-    }
 
     reportPkgStats('  topic (total)', this.topic)
     reportPkgStats('    - position', this.position)

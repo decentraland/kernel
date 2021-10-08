@@ -24,12 +24,11 @@ import {
   ProfileResponse,
   ProfileRequest
 } from '../../comms/interface/types'
-import { IBrokerConnection, BrokerMessage } from './IBrokerConnection'
+import { IBrokerTransport, TransportMessage } from './IBrokerTransport'
 import { Stats } from '../../comms/debug'
 import { createLogger } from 'shared/logger'
 
 import { WorldInstanceConnection } from '../../comms/interface/index'
-import { Realm } from 'shared/dao/types'
 import { getProfileType } from 'shared/profiles/getProfileType'
 import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
@@ -64,25 +63,26 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
 
   private logger = createLogger('World: ')
 
-  constructor(private connection: IBrokerConnection) {
+  constructor(private broker: IBrokerTransport) {
     this.pingInterval = setInterval(() => {
       const msg = new PingMessage()
       msg.setType(MessageType.PING)
       msg.setTime(Date.now())
       const bytes = msg.serializeBinary()
 
-      this.connection.send(bytes, false)
+      this.broker.send(bytes, false)
     }, 10000)
-    this.connection.onMessageObservable.add(this.handleMessage.bind(this))
+    this.broker.onMessageObservable.add(this.handleMessage.bind(this))
   }
 
-  printDebugInformation() {
-    this.connection.printDebugInformation()
+  async connect(): Promise<boolean> {
+    await this.broker.connect()
+    return true
   }
 
   set stats(_stats: Stats) {
     this._stats = _stats
-    this.connection.stats = _stats
+    this.broker.stats = _stats
   }
 
   async sendPositionMessage(p: Position) {
@@ -210,25 +210,21 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     return this.sendMessage(reliable, message)
   }
 
-  async changeRealm(realm: Realm, url: string) {
-    return
-  }
-
-  async updateSubscriptions(rawTopics: string[]) {
+  async setTopics(rawTopics: string[]) {
     const subscriptionMessage = new SubscriptionMessage()
     subscriptionMessage.setType(MessageType.SUBSCRIPTION)
     subscriptionMessage.setFormat(Format.PLAIN)
     // TODO: use TextDecoder instead of Buffer, it is a native browser API, works faster
     subscriptionMessage.setTopics(Buffer.from(rawTopics.join(' '), 'utf8'))
     const bytes = subscriptionMessage.serializeBinary()
-    this.connection.send(bytes, true)
+    this.broker.send(bytes, true)
   }
 
-  async close() {
+  async disconnect() {
     if (this.pingInterval) {
       clearInterval(this.pingInterval)
     }
-    await this.connection.close()
+    await this.broker.disconnect()
   }
 
   analyticsData() {
@@ -250,7 +246,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     return Promise.resolve()
   }
 
-  private handleMessage(message: BrokerMessage) {
+  private handleMessage(message: TransportMessage) {
     const msgSize = message.data.length
 
     let msgType = MessageType.UNKNOWN_MESSAGE_TYPE
@@ -455,7 +451,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     if (this._stats) {
       this._stats.topic.incrementSent(1, bytes.length)
     }
-    this.connection.send(bytes, reliable)
+    this.broker.send(bytes, reliable)
     return new SendResult(bytes.length)
   }
 }

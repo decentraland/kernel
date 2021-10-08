@@ -12,6 +12,7 @@ import { RootRendererState } from 'shared/renderer/types'
 import { RootCatalogState } from 'shared/catalogs/types'
 import { RootLoadingState } from '../loading/reducer'
 import { RootQuestsState } from 'shared/quests/types'
+import { RootProtocolState } from 'shared/protocol/types'
 
 export type RootState = RootAtlasState &
   RootProfileState &
@@ -24,6 +25,7 @@ export type RootState = RootAtlasState &
   RootRendererState &
   RootLoadingState &
   RootCatalogState &
-  RootQuestsState
+  RootQuestsState &
+  RootProtocolState
 
 export type RootStore = Store<RootState>

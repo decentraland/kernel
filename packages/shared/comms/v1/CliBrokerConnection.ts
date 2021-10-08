@@ -1,19 +1,19 @@
 import { future, IFuture } from 'fp-future'
 
-import { MessageType, CoordinatorMessage, WelcomeMessage, ConnectMessage } from '../comms/v1/proto/broker'
-import { Stats } from './debug'
-import { IBrokerConnection, BrokerMessage } from '../comms/v1/IBrokerConnection'
+import { MessageType, CoordinatorMessage, WelcomeMessage, ConnectMessage } from './proto/broker'
+import { Stats } from '../debug'
+import { IBrokerTransport, TransportMessage } from './IBrokerTransport'
 import { ILogger, createLogger } from 'shared/logger'
-import { Observable } from 'mz-observable'
+import { Observable } from 'decentraland-ecs'
 
-export class CliBrokerConnection implements IBrokerConnection {
+export class CliBrokerConnection implements IBrokerTransport {
   public alias: number | null = null
 
   public stats: Stats | null = null
 
   public logger: ILogger = createLogger('Broker: ')
 
-  public onMessageObservable = new Observable<BrokerMessage>()
+  public onMessageObservable = new Observable<TransportMessage>()
 
   private connected = future<void>()
 
@@ -23,33 +23,27 @@ export class CliBrokerConnection implements IBrokerConnection {
 
   private ws: WebSocket | null = null
 
-  constructor(public url: string) {
-    this.connectWS()
-  }
+  constructor(public url: string) {}
 
-  setTopics(topics: string[]): void {
-    throw new Error('Method not implemented.')
-  }
-
-  printDebugInformation(): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const state = (this.alias ? 'authenticated' : 'not authenticated') + ` my alias is ${this.alias}`
-      this.logger.log(state)
-    } else {
-      this.logger.log(`non active coordinator connection to ${this.url}`)
+  async connect(): Promise<void> {
+    if (!this.ws) {
+      this.connectWS()
     }
+
+    await this.connected
   }
 
   send(data: Uint8Array, _reliable: boolean) {
     this.sendCoordinatorMessage(data)
   }
 
-  async close() {
+  async disconnect() {
     if (this.ws) {
       this.ws.onmessage = null
       this.ws.onerror = null
       this.ws.onclose = null
       this.ws.close()
+      this.ws = null
     }
   }
 

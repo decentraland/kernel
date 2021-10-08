@@ -29,7 +29,7 @@ import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorage
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { WearableV2 } from 'shared/catalogs/types'
-import { Observable } from 'mz-observable'
+import { Observable } from 'decentraland-ecs'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { FeatureFlag } from 'shared/meta/types'
 
