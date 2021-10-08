@@ -224,8 +224,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
-      configForRenderer.features.enableBuilderInWorld = BUILDER_IN_WORLD_ENABLED
-      configForRenderer.features.enableExploreV2 = EXPLORE_V2_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
   

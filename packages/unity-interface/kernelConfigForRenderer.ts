@@ -3,9 +3,6 @@ import { commConfigurations, WSS_ENABLED } from 'config'
 import { nameValidCharacterRegex, nameValidRegex } from 'shared/profiles/utils/names'
 import { getWorld } from '@dcl/schemas'
 import { injectVersions } from 'shared/rolloutVersions'
-import { isFeatureEnabled } from 'shared/meta/selectors'
-import { FeatureFlags } from 'shared/meta/types'
-import { store } from 'shared/store/isolatedStore'
 
 export function kernelConfigForRenderer(): KernelConfigForRenderer {
   const versions = injectVersions({})
@@ -17,11 +14,6 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
     profiles: {
       nameValidCharacterRegex: nameValidCharacterRegex.toString().replace(/[/]/g, ''),
       nameValidRegex: nameValidRegex.toString().replace(/[/]/g, '')
-    },
-    features: {
-      enableBuilderInWorld: false,
-      enableAvatarLODs: isFeatureEnabled(store.getState(), FeatureFlags.AVATAR_LODS, false),
-      enableExploreV2: false
     },
     gifSupported:
       // tslint:disable-next-line
