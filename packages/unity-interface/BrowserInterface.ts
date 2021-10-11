@@ -310,7 +310,7 @@ export class BrowserInterface {
     store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
   }
   
-  public SendSaveUserDescription(changes: { description: string }) {
+  public SaveUserDescription(changes: { description: string }) {
     store.dispatch(saveProfileRequest({ description: changes.description }))
   }
 
