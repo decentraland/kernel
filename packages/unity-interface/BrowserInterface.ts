@@ -309,6 +309,10 @@ export class BrowserInterface {
   public SaveUserUnverifiedName(changes: { newUnverifiedName: string }) {
     store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
   }
+  
+  public SaveUserDescription(changes: { description: string }) {
+    store.dispatch(saveProfileRequest({ description: changes.description }))
+  }
 
   public CloseUserAvatar(isSignUpFlow = false) {
     if (isSignUpFlow) {
@@ -588,6 +592,15 @@ export class BrowserInterface {
       const headers = BuilderServerAPIManager.authorize(identity, 'get', '/assetpacks')
       getUnityInstance().SendBuilderCatalogHeaders(headers)
     }
+  }
+
+  public RequestHeaderForUrl(data: { method: string; url: string }) {
+    const identity = getCurrentIdentity(store.getState())
+
+    const headers: Record<string, string> = identity
+      ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
+      : {}
+    getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
   public RequestWearables(data: {
