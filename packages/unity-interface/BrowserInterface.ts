@@ -309,6 +309,10 @@ export class BrowserInterface {
   public SaveUserUnverifiedName(changes: { newUnverifiedName: string }) {
     store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
   }
+  
+  public SaveUserDescription(changes: { description: string }) {
+    store.dispatch(saveProfileRequest({ description: changes.description }))
+  }
 
   public CloseUserAvatar(isSignUpFlow = false) {
     if (isSignUpFlow) {
