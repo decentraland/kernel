@@ -1,7 +1,6 @@
 import { Profile, ProfileStatus, ProfileUserInfo, RootProfileState } from './types'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { RootSessionState } from 'shared/session/types'
-import { WearableId } from 'shared/types'
 
 export const getProfileStatusAndData = (
   store: RootProfileState,
@@ -65,9 +64,6 @@ export const getEthereumAddress = (store: RootProfileState, userId: string): str
     (info) => (info.data as Profile).userId,
     () => undefined
   )
-
-export const getActiveWearablesWithPortableExperiences = (store: RootProfileState): WearableId[] =>
-  store.profiles.activeWearablesWithPortableExperiences
 
 function getProfileValueIfOkOrLoading<T>(
   store: RootProfileState,

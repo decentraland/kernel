@@ -29,15 +29,9 @@ import {
   deployProfileFailure,
   profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer,
-  ADD_WEARABLES_PORTABLE_EXPERIENCE,
-  REMOVE_WEARABLES_PORTABLE_EXPERIENCE,
-  AddedWearableWithPortableExperience,
-  RemovedWearableWithPortableExperience,
-  addWearablesWithPortableExperience,
-  removeWearablesWithPortableExperience
+  localProfileSentToRenderer
 } from './actions'
-import { getActiveWearablesWithPortableExperiences, getProfile, hasConnectedWeb3 } from './selectors'
+import { getProfile, hasConnectedWeb3 } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
 import { profileToRendererFormat } from './transformations/profileToRendererFormat'
 import { buildServerMetadata, ensureServerFormat, ServerFormatProfile } from './transformations/profileToServerFormat'
@@ -71,8 +65,6 @@ import { ParcelsWithAccess } from 'decentraland-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
-import { getWearables } from 'shared/catalogs/index'
-import { WearableId, PartialWearableV2 } from 'shared/catalogs/types'
 
 const toBuffer = require('blob-to-buffer')
 
@@ -111,9 +103,6 @@ export function* profileSaga(): any {
   yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
 
   yield throttle(3000, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
-
-  yield takeEvery(ADD_WEARABLES_PORTABLE_EXPERIENCE, handleAddWearablesWithPortableExperience)
-  yield takeEvery(REMOVE_WEARABLES_PORTABLE_EXPERIENCE, handleRemoveWearablesWithPortableExperience)
 }
 
 function* initialProfileLoad() {
@@ -310,7 +299,7 @@ export async function profileServerRequest(userId: string, version?: number) {
 
     let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
-
+    
     const fetcher = new Fetcher()
     const profiles = await fetcher.fetchJson(url)
 
@@ -367,7 +356,6 @@ function* sendLoadProfile(profile: Profile) {
   const parcels: ParcelsWithAccess = !identity.hasConnectedWeb3 ? [] : yield fetchParcelsWithAccess(identity.address)
   const rendererFormat = profileToRendererFormat(profile, { identity, parcels })
   yield call(waitForRendererInstance)
-  yield call(checkWearablesForPortableExperiences, profile.avatar.wearables)
   getUnityInstance().LoadProfile(rendererFormat)
   yield put(localProfileSentToRenderer())
 }
@@ -553,29 +541,4 @@ export async function generateRandomUserProfile(userId: string): Promise<Profile
   profile.version = -1 // We signal random user profiles with -1
 
   return profile
-}
-
-function* handleAddWearablesWithPortableExperience(action: AddedWearableWithPortableExperience) {
-  debugger
-}
-
-function* handleRemoveWearablesWithPortableExperience(action: RemovedWearableWithPortableExperience) {
-  debugger
-}
-
-async function checkWearablesForPortableExperiences(wearablesId: WearableId[]) {
-  const wearables = await getWearables(wearablesId)
-  const wearablesWithPortableExperience = wearables.filter((w) => isWearablePortableExperience(w))
-
-  const activeWearables = getActiveWearablesWithPortableExperiences(store.getState())
-
-  const wearablesToAdd = wearablesWithPortableExperience.filter((w) => !activeWearables.includes(w.id))
-  const wearablesToRemove = await getWearables(activeWearables.filter((w) => !wearablesId.includes(w)))
-
-  put(addWearablesWithPortableExperience(wearablesToAdd))
-  put(removeWearablesWithPortableExperience(wearablesToRemove))
-}
-
-function isWearablePortableExperience(wearable: PartialWearableV2): boolean {
-  return false
 }
