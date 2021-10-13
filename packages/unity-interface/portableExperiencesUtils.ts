@@ -147,7 +147,7 @@ export async function spawnPortableExperience(
   }
 
   const sceneJsonData: SceneJsonData = {
-    main: 'game.js',
+    main: mappings.filter((m) => m.file.endsWith('game.js'))[0]?.hash,
     display: { title: name, favicon: icon },
     scene: {
       base: '0,0',
