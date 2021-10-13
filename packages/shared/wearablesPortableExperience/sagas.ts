@@ -6,6 +6,7 @@ import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { WearableId } from 'shared/types'
 import {
   getCurrentWearables,
   getPendingWearables,
@@ -42,7 +43,7 @@ function* handleProfileSuccess(action: ProfileSuccessAction): any {
   }
 
   const profileWearables = action.payload.profile.avatar.wearables
-  const currentWearables = getCurrentWearables(store.getState())
+  const currentWearables: WearableId[] = yield select(getCurrentWearables)
   const wearablesToAdd = profileWearables.filter((w) => !currentWearables.includes(w))
   const wearablesToRemove = currentWearables.filter((w) => !profileWearables.includes(w))
 
@@ -64,7 +65,7 @@ function* handleWearablesUpdate(action: UpdateWearablesAction): any {
 }
 
 function* handleWearablesSuccess(action: WearablesSuccess): any {
-  const pendingWearables = getPendingWearables(store.getState())
+  const pendingWearables: WearableId[] = yield select(getPendingWearables)
 
   if (pendingWearables.length === 0) {
     return
@@ -82,7 +83,7 @@ function* handleProcessWearables(action: ProcessWearablesAction): any {
   const { wearables } = action.payload
 
   const wearablesWithPortableExperiences = wearables.filter((w) =>
-    w.data.representations.some((r) => r.contents.some((c) => c.key.includes('game.js')))
+    w.data.representations.some((r) => r.contents.some((c) => c.key.endsWith('game.js')))
   )
 
   if (wearablesWithPortableExperiences.length > 0) {
@@ -104,11 +105,11 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
       const baseUrl = wearable.baseUrl ?? fetchContentServer + '/contents/'
 
       const mappings = wearable.data.representations
-        .filter((r) => r.contents.some((c) => c.key.includes('game.js')))[0]
+        .filter((r) => r.contents.some((c) => c.key.endsWith('game.js')))[0]
         .contents.map((c) => ({ file: c.key, hash: c.hash }))
 
       const name = wearable.i18n[0].text
-      const icon = wearable.thumbnail.split('/').pop()
+      const icon = baseUrl + wearable.thumbnail
 
       spawnPortableExperience(wearable.id, 'main', name, baseUrl, mappings, icon)
     } catch (e) {
