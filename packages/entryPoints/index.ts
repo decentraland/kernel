@@ -17,7 +17,7 @@ import { realmInitialized } from 'shared/dao'
 import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
 import { ensureMetaConfigurationInitialized, waitForMessageOfTheDay } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
-import { isFeatureEnabled } from 'shared/meta/selectors'
+import { getFeatureFlags, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { startRealmsReportToRenderer } from 'unity-interface/realmsForRenderer'
 import { isWaitingTutorial } from 'shared/loading/selectors'
@@ -182,11 +182,15 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   // NOTE(Pablo): We also need meta configuration to know if we need to enable voice chat
   await ensureMetaConfigurationInitialized()
 
+  //Note: This should be sent to unity before any other feature because some features may need a system init from FeatureFlag
+  //      For example disable AssetBundles needs a system from FeatureFlag
+  i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
+
+  const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
   const worldConfig: WorldConfig | undefined = store.getState().meta.config.world
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
   const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
-  const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
 
   // killswitch, disable asset bundles
   if (!isFeatureEnabled(store.getState(), FeatureFlags.ASSET_BUNDLES, false)) {
@@ -224,7 +228,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       configForRenderer.features.enableExploreV2 = EXPLORE_V2_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
-
+  
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
 
       i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
@@ -288,6 +292,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
 
   if (options.previewMode) {
+    i.SetDisableAssetBundles()
     await startPreview()
     // const position = pickWorldSpawnpoint(scene)
     // i.Teleport(position)

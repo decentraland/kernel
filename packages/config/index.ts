@@ -171,10 +171,10 @@ export namespace commConfigurations {
   export const autoChangeRealmInterval =
     typeof qs.AUTO_CHANGE_INTERVAL === 'string' ? parseInt(qs.AUTO_CHANGE_INTERVAL, 10) * 1000 : 40000
 
-  export const iceServers = [
+  export const defaultIceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
     {
-      urls: 'turn:stun.decentraland.org:3478',
+      urls: 'turn:coturn-raw.decentraland.services:3478',
       credential: 'passworddcl',
       username: 'usernamedcl'
     }

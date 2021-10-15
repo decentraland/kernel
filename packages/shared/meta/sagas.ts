@@ -73,6 +73,7 @@ function* initMeta() {
       maxVisiblePeers
     },
     featureFlags: flagsAndVariants?.flags,
+    featureFlagsV2: flagsAndVariants,
     bannedUsers: bannedUsersFromVariants(flagsAndVariants?.variants),
     pickRealmAlgorithmConfig: pickRealmAlgorithmConfigFromVariants(flagsAndVariants?.variants)
   }
