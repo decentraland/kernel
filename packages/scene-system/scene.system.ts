@@ -3,13 +3,14 @@ import { inject } from 'decentraland-rpc/lib/client/Script'
 import { defaultLogger } from 'shared/logger'
 import { RunOptions, SceneRuntime } from './sdk/SceneRuntime'
 import { DevToolsAdapter } from './sdk/DevToolsAdapter'
-import { customEval, getES5Context } from './sdk/sandbox'
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 
 import { run as runWasm } from '@dcl/wasm-runtime'
 // import { rendererAdapter } from './sdk/RendererAdapter'
-import { DecentralandInterface } from 'decentraland-ecs'
+import { CHANNELS } from '@dcl/wasm-runtime/dist/io/fs'
+import { IChannel } from '@dcl/wasm-runtime/dist/io/IChannel'
 
+// const quickJsLoader = require('@dcl/wasm-quickjs-loader/dist/index.js')
 /**
  * This file starts the scene in a WebWorker context.
  */
@@ -36,18 +37,43 @@ class WebWorkerScene extends SceneRuntime {
   }
 
   async run({ sourceResponse, isWasmScene, dcl }: RunOptions): Promise<void> {
-    if (!isWasmScene) {
-      await customEval(await sourceResponse.text(), getES5Context({ dcl }))
-    } else {
-      const wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
-      this.runWasm({ wasmBytes, dcl })
-    }
-  }
+    // const myRndMs= Math.random() * 10000 + 2000
+    // console.log(`Scene in position ${this.scenePosition} will delay ${myRndMs}ms`)
+    // await new Promise(resolve => setTimeout(resolve, myRndMs))
 
-  private async runWasm({ wasmBytes, dcl }: { wasmBytes: Uint8Array; dcl: DecentralandInterface }) {
-    const result = await runWasm({ wasmBytes })
-    await result.start()
+    // debugger
     
+    let wasmBytes: Uint8Array
+    if (isWasmScene) {
+      wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
+    } else {
+      const quicksJSLoaderWasmRequest = await fetch('http://192.168.0.16:7666/loader.wasm')
+      const quicksJSLoaderWasm = await quicksJSLoaderWasmRequest.arrayBuffer()
+      wasmBytes = new Uint8Array(quicksJSLoaderWasm)
+    }
+
+    const result = await runWasm({ wasmBytes })
+    const rendererChannel = result.metaverseWrapper.channels.get(CHANNELS.RENDERER.KEY) as IChannel
+
+    if (!isWasmScene) {
+      result.metaverseWrapper.wasmFs.fs.writeFileSync('/game.js', await sourceResponse.text())
+    }
+
+    rendererChannel.setDataArriveCallback((data: Uint8Array) => {
+      try {
+        const msg: {method:string, params:any[]} = JSON.parse(Buffer.from(data).toString('utf8'))
+        ;(((dcl as any)[msg.method]) as Function).apply(dcl, msg.params)
+        
+      } catch(err) {
+        console.error(err)
+        
+      }
+      // console.log(`Scene->Kernel: ${data.length} bytes "${Buffer.from(data).toString('utf8')}"`)
+    })
+
+    await result.start()
+
+    let counter = 0.0
     this.onUpdateFunctions.push(async (dt: number) => {
       result.update(dt)
       const resultOut = await result.metaverseWrapper.wasmFs.getStdOut()
@@ -56,74 +82,12 @@ class WebWorkerScene extends SceneRuntime {
         await result.metaverseWrapper.wasmFs.fs.writeFileSync('/dev/stdout', '')
       }
 
-      const msg = new Uint8Array(5)
-      msg[0] = 122
-      msg[1] = 123
-      msg[2] = 112
-      msg[3] = 115
-      msg[4] = 113
-      result.metaverseWrapper.Renderer0FDSocket.writeMessage(
-        msg
-      );
-    
+      counter += dt
+      if (counter > 0.2) {
+        counter = 0.0
+      }
     })
 
-    // let entities: Set<number>[] = []
-    // let components: any[] = []
-
-    // const { bufferReader } = rendererAdapter({ entities, components, dcl })
-
-    // result.metaverseWrapper.setRendererCallback((args: any[]) => {
-    //   if (args.length > 0) {
-    //     const buf = args[0]
-    //     if (buf instanceof Uint8Array) {
-    //       bufferReader(Buffer.from(buf))
-    //     } else {
-    //       // invalid write call
-    //     }
-    //   } else {
-    //     // invalid write call
-    //   }
-    // })
-
-    // let debugWsConnected = false
-    //let readBuffer = new Uint8Array()
-    // const debugWs = new WebSocket('ws://localhost:7667')
-    // debugWs.onopen = (ev) => {
-    //   console.log('OpenWS')
-    //   debugWsConnected = true
-    // }
-    // debugWs.onclose = (ev) => {
-    //   console.log('CloseWS')
-    //   debugWsConnected = false
-    // }
-    // debugWs.onmessage = async (msg) => {
-    //   console.log('DebugWS', msg)
-    //   msg.data.arrayBuffer().then((buffer: ArrayBuffer) => {
-    //     result.metaverseWrapper.wasmFs.fs.writeFileSync(
-    //       result.metaverseWrapper.fdSceneDebuggerOutput,
-    //       new Uint8Array(buffer)
-    //     )
-    //   })
-    // }
-
-    // result.metaverseWrapper.setDebuggerOutputCallback((args: any[]) => {
-    //   if (args.length == 4) {
-    //     // debugger
-    //     // args[0] UInt8Array
-    //     // args[2] length
-    //   }
-    // })
-    // result.metaverseWrapper.setDebuggerInputCallback((args: any[]) => {
-    //   console.log('debugger input', args)
-    //   if (args.length == 4) {
-    //     if (debugWsConnected) {
-    //       debugWs.send(args[0])
-    //     }
-    //     // args[0] UInt8Array
-    //     // args[2] length
-    //   }
-    // })
   }
 
   async systemDidEnable() {
