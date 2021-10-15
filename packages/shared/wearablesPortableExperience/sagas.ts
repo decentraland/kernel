@@ -104,9 +104,13 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
     try {
       const baseUrl = wearable.baseUrl ?? fetchContentServer + '/contents/'
 
-      const mappings = wearable.data.representations
-        .filter((r) => r.contents.some((c) => c.key.endsWith('game.js')))[0]
-        .contents.map((c) => ({ file: c.key, hash: c.hash }))
+      const wearableContent = wearable.data.representations.filter((r) =>
+        r.contents.some((c) => c.key.endsWith('game.js'))
+      )[0].contents
+
+      const gameJs = wearableContent.filter((c) => c.key.endsWith('game.js'))[0].key
+      const gameJsRootLength = gameJs.lastIndexOf('/') + 1
+      const mappings = wearableContent.map((c) => ({ file: c.key.substring(gameJsRootLength), hash: c.hash }))
 
       const name = wearable.i18n[0].text
       const icon = baseUrl + wearable.thumbnail
