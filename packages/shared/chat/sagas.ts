@@ -32,6 +32,7 @@ import { realmToString } from 'shared/dao/utils/realmToString'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { injectVersions } from 'shared/rolloutVersions'
 
 interface IChatCommand {
   name: string
@@ -444,6 +445,19 @@ function initChatCommands() {
           .map((name) => `\t/${name}: ${chatCommands[name].description}`)
           .concat('\t/help: Show this list of commands')
           .join('\n')}`
+    }
+  })
+  
+  addChatCommand('version', 'Shows application version', message => {
+    let versions = injectVersions({})
+    let kernelVersion = versions['@dcl/kernel'] || 'unknown'
+    let rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
+    return {
+      messageId: uuid(),
+      sender: 'Decentraland',
+      messageType: ChatMessageType.SYSTEM,
+      timestamp: Date.now(),
+      body: `\nKernel: ${kernelVersion}\nRenderer: ${rendererVersion}`
     }
   })
 

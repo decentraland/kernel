@@ -13,6 +13,7 @@ import { RootCatalogState } from 'shared/catalogs/types'
 import { RootLoadingState } from '../loading/reducer'
 import { RootQuestsState } from 'shared/quests/types'
 import { RootProtocolState } from 'shared/protocol/types'
+import { RootWearablesPortableExperienceState } from 'shared/wearablesPortableExperience/types'
 
 export type RootState = RootAtlasState &
   RootProfileState &
@@ -26,6 +27,7 @@ export type RootState = RootAtlasState &
   RootLoadingState &
   RootCatalogState &
   RootQuestsState &
-  RootProtocolState
+  RootProtocolState &
+  RootWearablesPortableExperienceState
 
 export type RootStore = Store<RootState>

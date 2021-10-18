@@ -34,7 +34,7 @@ export interface WorldInstanceConnection { // extends Emitter<CommsEvents> {
 
   disconnect(): Promise<void>
 
-  sendInitialMessage(userInfo: Partial<UserInformation>): Promise<void>
+  sendInitialMessage(userInfo: UserInformation): Promise<void>
   sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>
   sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void>
   sendProfileResponse(currentPosition: Position, profile: Profile): Promise<void>

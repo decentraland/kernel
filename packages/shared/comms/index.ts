@@ -141,6 +141,11 @@ export async function connect(): Promise<void> {
     if (!user) {
       return
     }
+    
+    const userInfo = {
+      userId,
+      ...user
+    }
 
     const commsContext = new CommsContext(user)
 
