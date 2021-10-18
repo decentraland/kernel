@@ -15,7 +15,7 @@ export let localProfileUUID: UUID | null = null
 /**
  * @param uuid the UUID used by the communication engine
  */
-export function setLocalInformationForComms(uuid: UUID, user: UserInformation) {
+export function setLocalInformationForComms(uuid: UUID, user: UserInformation = {}) {
   if (typeof (uuid as any) !== 'string') throw new Error('Did not receive a valid UUID')
 
   if (localProfileUUID) {
@@ -104,10 +104,10 @@ export function setUpID(uuid: UUID): PeerInformation | null {
   return peer
 }
 
-export function receiveUserData(uuid: string, data: UserInformation) {
+export function receiveUserData(uuid: string, data: Partial<UserInformation>) {
   const peerData = setUpID(uuid)
   if (peerData) {
-    const userData = peerData.user || (peerData.user = peerData.user || { userId: uuid })
+    const userData = peerData.user || (peerData.user = peerData.user || {})
     const profileChanged = data.version && userData.version !== data.version
 
     if (profileChanged) {
@@ -184,18 +184,15 @@ export class PeerTrackingInfo {
 
   public loadProfileIfNecessary(profileVersion: number) {
     if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
-      if (!this.userInfo || !this.userInfo.userId) {
-        this.userInfo = {
-          ...(this.userInfo || {}),
-          userId: this.identity
-        }
+      if (!this.userInfo) {
+        this.userInfo = { userId: this.identity }
       }
       this.profilePromise = {
         promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
           .then((profile) => {
             const forRenderer = profileToRendererFormat(profile)
             this.lastProfileUpdate = new Date().getTime()
-            const userInfo = this.userInfo || {}
+            const userInfo = this.userInfo || { userId: this.identity } as UserInformation
             userInfo.version = profile.version
             this.userInfo = userInfo
             this.profilePromise.status = 'ok'
