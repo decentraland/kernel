@@ -93,7 +93,7 @@ export type PeerInformation = {
 }
 
 export type UserInformation = {
-  userId?: string
+  userId: string
   version?: number
   pose?: Pose
   expression?: AvatarExpression
