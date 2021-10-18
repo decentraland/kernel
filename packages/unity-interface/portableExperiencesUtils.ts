@@ -8,9 +8,15 @@ import {
 import { getSceneNameFromJsonData } from '../shared/selectors'
 import { parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
 import { UnityPortableExperienceScene } from './UnityParcelScene'
-import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
+import {
+  forceStopParcelSceneWorker,
+  getSceneWorkerBySceneID,
+  loadedSceneWorkers,
+  loadParcelScene
+} from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
+import { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 
 declare var window: any
 // TODO: Remove this when portable experiences are full-available
@@ -131,6 +137,17 @@ export async function getLoadablePortableExperience(data: {
       icon: sceneJsonData.display?.favicon
     }
   }
+}
+
+export async function getLoadedPortableExperiences() {
+  let portableExperiences:string[] = []
+  await loadedSceneWorkers.forEach(async (worker, key) => {
+    const parcelIdentity = await worker.getAPIInstance(ParcelIdentity)
+    if (parcelIdentity.isPortableExperience){
+      portableExperiences.push(key)
+    }
+  })
+  return portableExperiences
 }
 
 export async function spawnPortableExperience(

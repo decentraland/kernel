@@ -1,10 +1,5 @@
 import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
-import {
-  spawnPortableExperienceScene,
-  getPortableExperience,
-  PortableExperienceHandle,
-  killPortableExperienceScene
-} from 'unity-interface/portableExperiencesUtils'
+import * as PEUtils from 'unity-interface/portableExperiencesUtils'
 import { ExposableAPI } from './ExposableAPI'
 import { ParcelIdentity } from './ParcelIdentity'
 
@@ -19,9 +14,9 @@ export class PortableExperiences extends ExposableAPI {
    * Returns the handle of the portable experience.
    */
   @exposeMethod
-  async spawn(pid: PortableExperienceUrn): Promise<PortableExperienceHandle> {
+  async spawn(pid: PortableExperienceUrn): Promise<PEUtils.PortableExperienceHandle> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    return await spawnPortableExperienceScene(pid, parcelIdentity.cid)
+    return await PEUtils.spawnPortableExperienceScene(pid, parcelIdentity.cid)
   }
 
   /**
@@ -33,10 +28,11 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async kill(pid: PortableExperienceUrn): Promise<boolean> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    const portableExperience: PortableExperienceHandle | undefined = await getPortableExperience(pid)
+    const portableExperience: PEUtils.PortableExperienceHandle | undefined =
+      await PEUtils.getPortableExperience(pid)
 
     if (!!portableExperience && portableExperience.parentCid == parcelIdentity.cid) {
-      return await killPortableExperienceScene(pid)
+      return await PEUtils.killPortableExperienceScene(pid)
     }
     return false
   }
@@ -50,6 +46,11 @@ export class PortableExperiences extends ExposableAPI {
   async exit(): Promise<boolean> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
 
-    return await killPortableExperienceScene(parcelIdentity.cid)
+    return await PEUtils.killPortableExperienceScene(parcelIdentity.cid)
+  }
+
+  @exposeMethod
+  async getLoadedPortableExperiences(): Promise<string[]> {
+    return await PEUtils.getLoadedPortableExperiences()
   }
 }
