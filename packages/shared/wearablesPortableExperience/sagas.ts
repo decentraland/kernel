@@ -104,15 +104,22 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
     try {
       const baseUrl = wearable.baseUrl ?? fetchContentServer + '/contents/'
 
+      // Get the wearable content containing the game.js
       const wearableContent = wearable.data.representations.filter((r) =>
         r.contents.some((c) => c.key.endsWith('game.js'))
       )[0].contents
 
+      // Get the game.js path
       const gameJs = wearableContent.filter((c) => c.key.endsWith('game.js'))[0].key
       const gameJsRootLength = gameJs.lastIndexOf('/') + 1
+
+      // Convert wearable mapping to scene's mapping and modify file path so game.js directory becomes the root directory
+      // for asset loading
       const mappings = wearableContent.map((c) => ({ file: c.key.substring(gameJsRootLength), hash: c.hash }))
 
       const name = wearable.i18n[0].text
+
+      // TODO: make sure thumbnail is added to the mappings if not there to avoid creating an url for the icon here
       const icon = baseUrl + wearable.thumbnail
 
       spawnPortableExperience(wearable.id, 'main', name, baseUrl, mappings, icon)
