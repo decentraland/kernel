@@ -50,7 +50,7 @@ export class PortableExperiences extends ExposableAPI {
   }
 
   @exposeMethod
-  async getLoadedPortableExperiences(): Promise<string[]> {
-    return await PEUtils.getLoadedPortableExperiences()
+  async getPortableExperiencesLoaded(): Promise<string[]> {
+    return await PEUtils.getPortableExperiencesLoaded()
   }
 }

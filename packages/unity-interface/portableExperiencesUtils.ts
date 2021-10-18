@@ -139,14 +139,14 @@ export async function getLoadablePortableExperience(data: {
   }
 }
 
-export async function getLoadedPortableExperiences() {
+export async function getPortableExperiencesLoaded() {
   let portableExperiences:string[] = []
-  await loadedSceneWorkers.forEach(async (worker, key) => {
+  for (const [key, worker]  of loadedSceneWorkers) {
     const parcelIdentity = await worker.getAPIInstance(ParcelIdentity)
     if (parcelIdentity.isPortableExperience){
       portableExperiences.push(key)
     }
-  })
+  }
   return portableExperiences
 }
 
