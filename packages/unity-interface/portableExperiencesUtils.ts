@@ -140,14 +140,11 @@ export async function getLoadablePortableExperience(data: {
 }
 
 export async function getPortableExperiencesLoaded() {
-  let portableExperiences:string[] = []
-  for (const [key, worker]  of loadedSceneWorkers) {
-    const parcelIdentity = await worker.getAPIInstance(ParcelIdentity)
-    if (parcelIdentity.isPortableExperience){
-      portableExperiences.push(key)
-    }
+  let portableExperiences: any[] = []
+  for (const [id, parentCid] of currentPortableExperiences) {
+    portableExperiences.push({ id, parentCid })
   }
-  return portableExperiences
+  return { portableExperiences: portableExperiences }
 }
 
 export async function spawnPortableExperience(
