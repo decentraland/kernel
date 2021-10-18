@@ -54,7 +54,6 @@ export class PortableExperiences extends ExposableAPI {
     return await killPortableExperienceScene(parcelIdentity.cid)
   }
 
-
   /**
    *
    * Returns current portable experiences loaded with ids and parentCid
