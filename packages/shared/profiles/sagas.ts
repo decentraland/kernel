@@ -65,6 +65,7 @@ import { ParcelsWithAccess } from 'decentraland-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
+import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
 const toBuffer = require('blob-to-buffer')
 
@@ -95,7 +96,7 @@ export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
 
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
-  yield takeLatestByUserId(PROFILE_SUCCESS, submitProfileToRenderer)
+  yield takeLatestByUserId(PROFILE_SUCCESS, submitProfileToRendererAndScenes)
   yield takeLatestByUserId(PROFILE_RANDOM, handleRandomAsSuccess)
 
   yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
@@ -299,7 +300,7 @@ export async function profileServerRequest(userId: string, version?: number) {
 
     let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
-    
+
     const fetcher = new Fetcher()
     const profiles = await fetcher.fetchJson(url)
 
@@ -326,7 +327,7 @@ function* handleLocalProfile(action: LocalProfileReceived) {
   }
 }
 
-function* submitProfileToRenderer(action: ProfileSuccessAction): any {
+function* submitProfileToRendererAndScenes(action: ProfileSuccessAction): any {
   const profile = { ...action.payload.profile }
   if (profile.avatar) {
     const { snapshots } = profile.avatar
@@ -337,6 +338,14 @@ function* submitProfileToRenderer(action: ProfileSuccessAction): any {
       face256: snapshots.face256 || snapshots.face
     }
   }
+
+  allScenesEvent({
+    eventType: 'profileChanged',
+    payload: {
+      ethAddress: action.payload.profile.ethAddress,
+      version: action.payload.profile.version
+    }
+  })
 
   if ((yield select(getCurrentUserId)) === action.payload.userId) {
     yield call(sendLoadProfile, profile)
