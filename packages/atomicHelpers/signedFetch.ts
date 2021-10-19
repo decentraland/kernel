@@ -1,5 +1,11 @@
 import { AuthChain, Authenticator, AuthIdentity } from "dcl-crypto"
-import { flatFetch, FlatFetchInit, SignedFetchInit } from "./flatFetch"
+import { flatFetch, FlatFetchInit } from "./flatFetch"
+
+export type SignedFetchInit = FlatFetchInit & {
+  /** Overrides path in signature. To use when the requested service is behind a reverse proxy or something similar,
+   *  and the exposed path doesn't correspond with the server's internal path for the request */
+  pathToSignOverride?: string
+}
 
 const AUTH_CHAIN_HEADER_PREFIX = 'x-identity-auth-chain-'
 const AUTH_TIMESTAMP_HEADER = 'x-identity-timestamp'

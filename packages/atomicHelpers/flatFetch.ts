@@ -11,12 +11,6 @@ export type BodyType = 'json' | 'text'
 
 export type FlatFetchInit = RequestInit & { responseBodyType?: BodyType }
 
-export type SignedFetchInit = FlatFetchInit & {
-  /** Overrides path in signature. To use when the requested service is behind a reverse proxy or something similar,
-   *  and the exposed path doesn't correspond with the server's internal path for the request */
-  pathToSignOverride?: string
-}
-
 export async function flatFetch(url: string, init?: FlatFetchInit): Promise<FlatFetchResponse> {
   const response = await fetch(url, init)
 
