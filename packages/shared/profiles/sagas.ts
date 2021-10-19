@@ -29,7 +29,9 @@ import {
   deployProfileFailure,
   profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer
+  localProfileSentToRenderer,
+  SAVE_PROFILE_SUCCESS,
+  SaveProfileSuccess
 } from './actions'
 import { getProfile, hasConnectedWeb3 } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
@@ -96,10 +98,11 @@ export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
 
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
-  yield takeLatestByUserId(PROFILE_SUCCESS, submitProfileToRendererAndScenes)
+  yield takeLatestByUserId(PROFILE_SUCCESS, submitProfileToRenderer)
   yield takeLatestByUserId(PROFILE_RANDOM, handleRandomAsSuccess)
 
   yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
+  yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
 
   yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
 
@@ -327,7 +330,7 @@ function* handleLocalProfile(action: LocalProfileReceived) {
   }
 }
 
-function* submitProfileToRendererAndScenes(action: ProfileSuccessAction): any {
+function* submitProfileToRenderer(action: ProfileSuccessAction): any {
   const profile = { ...action.payload.profile }
   if (profile.avatar) {
     const { snapshots } = profile.avatar
@@ -338,14 +341,6 @@ function* submitProfileToRendererAndScenes(action: ProfileSuccessAction): any {
       face256: snapshots.face256 || snapshots.face
     }
   }
-
-  allScenesEvent({
-    eventType: 'profileChanged',
-    payload: {
-      ethAddress: action.payload.profile.ethAddress,
-      version: action.payload.profile.version
-    }
-  })
 
   if ((yield select(getCurrentUserId)) === action.payload.userId) {
     yield call(sendLoadProfile, profile)
@@ -367,6 +362,16 @@ function* sendLoadProfile(profile: Profile) {
   yield call(waitForRendererInstance)
   getUnityInstance().LoadProfile(rendererFormat)
   yield put(localProfileSentToRenderer())
+}
+
+function* submitProfileToScenes(action: SaveProfileSuccess) {
+  allScenesEvent({
+    eventType: 'profileChanged',
+    payload: {
+      ethAddress: action.payload.profile.ethAddress,
+      version: action.payload.profile.version
+    }
+  })
 }
 
 function* handleSaveAvatar(saveAvatar: SaveProfileRequest) {
