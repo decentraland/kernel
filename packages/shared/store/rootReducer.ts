@@ -1,4 +1,5 @@
 import { combineReducers } from 'redux'
+import { voiceReducer } from '@dcl/voice/dist/reducer'
 
 import { profileReducer } from '../profiles/reducer'
 import { catalogsReducer } from '../catalogs/reducer'
@@ -14,7 +15,6 @@ import { friendsReducer } from '../friends/reducer'
 import { sessionReducer } from '../session/reducer'
 import { questsReducer } from '../quests/reducer'
 import { wearablesPortableExperienceReducer } from '../wearablesPortableExperience/reducer'
-import { voiceReducer } from '../voice/reducer'
 
 export const reducers = combineReducers({
   atlas: atlasReducer,

@@ -1,34 +1,45 @@
-import { takeEvery } from 'redux-saga/effects'
+import { all, put, select, takeEvery } from 'redux-saga/effects'
+import { voiceSaga as defaultSaga } from '@dcl/voice/dist/sagas'
+import { VoiceState } from '@dcl/voice/dist/types'
+import { joinRoom, startVoice } from '@dcl/voice/dist/actions'
+import { getRoomId } from '@dcl/voice/dist/selectors'
 
-import { WORLD_EXPLORER } from 'config'
-
-import { SET_COMMS_ISLAND } from '../../comms/actions'
-import { USER_AUTHENTIFIED } from '../../session/actions'
-import { ADD_REMOTE_STREAM, RECONNECT_VOICE, REMOVE_REMOTE_STREAM, START_LOCAL_STREAM } from '../actions'
-import { joinRoom } from './joinRoom'
-import { initializeVoiceSaga } from './signalConnection'
-import { streamLocalVoice } from './streamLocalVoice'
-import { reconnectVoice } from './reconnectVoice'
-import { voiceStream } from './voice-stream'
+import { SET_COMMS_ISLAND, SetCommsIsland } from '../../comms/actions'
+import { USER_AUTHENTIFIED, UserAuthentified } from '../../session/actions'
+import { getCommsIsland } from '../../comms/selectors'
 
 export function* voiceSaga() {
-  // preview or builder mode
-  if (WORLD_EXPLORER) {
-    // User authenticates => initalize sfu webscoket => call joinRoom to join default island.
-    // If fails, call reconnect voice.
-    yield takeEvery(USER_AUTHENTIFIED, initializeVoiceSaga)
+  yield all([sagas(), defaultSaga()])
+}
 
-    // Island change => Leave current room and join the island room
-    yield takeEvery(SET_COMMS_ISLAND, joinRoom)
+export function* sagas() {
+  yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
+  yield takeEvery(SET_COMMS_ISLAND, changeIsland)
+}
 
-    // Publish client stream
-    yield takeEvery(START_LOCAL_STREAM, streamLocalVoice)
+// TODO: remove constants
+const ONE_MIMNUTE = 1000 * 60
+const URL = 'wss://test-sfu.decentraland.zone/ws'
 
-    // Reconnect voice signal
-    yield takeEvery(RECONNECT_VOICE, reconnectVoice)
-
-    // Start/Stop streams
-    yield takeEvery(ADD_REMOTE_STREAM, voiceStream)
-    yield takeEvery(REMOVE_REMOTE_STREAM, voiceStream)
+function* userAuthentified(action: UserAuthentified) {
+  // TODO: This should be an env var.
+  const config: VoiceState['config'] = {
+    url: URL,
+    userAddress: action.payload.identity.address,
+    retryTimes: 10,
+    pingInterval: ONE_MIMNUTE
   }
+
+  yield put(startVoice(config))
+}
+
+function* changeIsland(action: SetCommsIsland) {
+  const island: ReturnType<typeof getCommsIsland> = yield select(getCommsIsland)
+  const roomId: ReturnType<typeof getRoomId> = yield select(getRoomId)
+
+  if (!island || island === roomId) {
+    return
+  }
+
+  yield put(joinRoom(island))
 }

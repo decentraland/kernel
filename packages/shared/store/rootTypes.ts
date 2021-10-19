@@ -1,4 +1,5 @@
 import { Store } from 'redux'
+import { RootVoiceState } from '@dcl/voice/dist/types'
 
 import { RootAtlasState } from '../atlas/types'
 import { RootProfileState } from '../profiles/types'
@@ -11,9 +12,8 @@ import { RootFriendsState } from '../friends/types'
 import { RootRendererState } from '../renderer/types'
 import { RootCatalogState } from '../catalogs/types'
 import { RootLoadingState } from '../loading/reducer'
-import { RootVoiceState } from '../voice/types'
-import { RootQuestsState } from 'shared/quests/types'
-import { RootWearablesPortableExperienceState } from 'shared/wearablesPortableExperience/types'
+import { RootQuestsState } from '../quests/types'
+import { RootWearablesPortableExperienceState } from '../wearablesPortableExperience/types'
 
 export type RootState = RootAtlasState &
   RootProfileState &
