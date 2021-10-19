@@ -896,7 +896,7 @@ async function getPeerParameters(): Promise<PeerParameters> {
   }
 
   try {
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, { responseBodyType: 'json' })
+    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, { pathToSignOverride: '/peer-parameters', responseBodyType: 'json' })
 
     if (peerParameters.ok) {
       return { ...defaultPeerParameters, ...peerParameters.json }
