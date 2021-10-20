@@ -69,6 +69,7 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { isAddress } from "eth-connect"
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export let futures: Record<string, IFuture<any>> = {}
@@ -449,9 +450,10 @@ export class BrowserInterface {
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     if (action === FriendshipAction.REQUESTED_TO) {
       await ensureFriendProfile(userId)
-      found = hasConnectedWeb3(state, userId)
       
-      if (!found) {
+      if (isAddress(userId)) {
+        found = hasConnectedWeb3(state, userId)  
+      } else {
         let profileByName = findProfileByName(state, userId)
         if (profileByName) {
           userId = profileByName.userId
