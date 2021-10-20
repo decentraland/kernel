@@ -155,6 +155,15 @@ export class BrowserInterface {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
       scene.emit(data.eventType as IEventNames, data.payload)
+
+      // Keep backward compatibility with old scenes using deprecated `pointerEvent`
+      if (data.eventType === 'actionButtonEvent') {
+        const { payload } = data.payload
+        // CLICK, PRIMARY or SECONDARY
+        if (payload.buttonId >= 0 && payload.buttonId <= 2) {
+          scene.emit('pointerEvent', data.payload)
+        }
+      }
     } else {
       if (data.eventType !== 'metricsUpdate') {
         defaultLogger.error(`SceneEvent: Scene ${data.sceneId} not found`, data)
