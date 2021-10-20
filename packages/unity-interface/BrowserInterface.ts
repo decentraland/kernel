@@ -30,7 +30,7 @@ import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  loadedSceneWorkers
+  allScenesEvent
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -95,12 +95,6 @@ type SystemInfoPayload = {
   processorType: string
   processorCount: number
   systemMemorySize: number
-}
-
-function allScenesEvent(data: { eventType: string; payload: any }) {
-  for (const [_key, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType as IEventNames, data.payload)
-  }
 }
 
 // the BrowserInterface is a visitor for messages received from Unity
@@ -308,6 +302,10 @@ export class BrowserInterface {
 
   public SaveUserUnverifiedName(changes: { newUnverifiedName: string }) {
     store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
+  }
+
+  public SaveUserDescription(changes: { description: string }) {
+    store.dispatch(saveProfileRequest({ description: changes.description }))
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
@@ -588,6 +586,15 @@ export class BrowserInterface {
       const headers = BuilderServerAPIManager.authorize(identity, 'get', '/assetpacks')
       getUnityInstance().SendBuilderCatalogHeaders(headers)
     }
+  }
+
+  public RequestHeaderForUrl(data: { method: string; url: string }) {
+    const identity = getCurrentIdentity(store.getState())
+
+    const headers: Record<string, string> = identity
+      ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
+      : {}
+    getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
   public RequestWearables(data: {

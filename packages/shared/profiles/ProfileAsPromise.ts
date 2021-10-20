@@ -38,7 +38,7 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
         return resolve(profile)
       }
     })
-    store.dispatch(profileRequest(userId, profileType))
+    store.dispatch(profileRequest(userId, profileType, version))
 
     setTimeout(() => {
       if (pending) {

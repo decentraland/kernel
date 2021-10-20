@@ -89,8 +89,7 @@ import {
   NEW_LOGIN,
   commsEstablished,
   COMMS_COULD_NOT_BE_ESTABLISHED,
-  commsErrorRetrying,
-  ESTABLISHING_COMMS
+  commsErrorRetrying
 } from 'shared/loading/types'
 import { getIdentity, getStoredSession } from 'shared/session'
 import { createLogger } from '../logger'
@@ -104,7 +103,7 @@ import { sleep } from 'atomicHelpers/sleep'
 import { localProfileReceived } from 'shared/profiles/actions'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { isURL } from 'atomicHelpers/isURL'
-import { RootCommsState, VoicePolicy } from './types'
+import { PeerParameters, RootCommsState, VoicePolicy } from './types'
 import { isFriend } from 'shared/friends/selectors'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import Html from 'shared/Html'
@@ -112,6 +111,7 @@ import { isFeatureToggleEnabled } from 'shared/selectors'
 import * as qs from 'query-string'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { BannedUsers } from 'shared/meta/types'
+import { signedFetch } from 'atomicHelpers/signedFetch'
 
 export type CommsVersion = 'v1' | 'v2'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -165,18 +165,15 @@ export class PeerTrackingInfo {
 
   public loadProfileIfNecessary(profileVersion: number) {
     if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
-      if (!this.userInfo || !this.userInfo.userId) {
-        this.userInfo = {
-          ...(this.userInfo || {}),
-          userId: this.identity
-        }
+      if (!this.userInfo) {
+        this.userInfo = { userId: this.identity }
       }
       this.profilePromise = {
         promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
           .then((profile) => {
             const forRenderer = profileToRendererFormat(profile)
             this.lastProfileUpdate = new Date().getTime()
-            const userInfo = this.userInfo || {}
+            const userInfo = this.userInfo || { userId: this.identity } as UserInformation
             userInfo.version = profile.version
             this.userInfo = userInfo
             this.profilePromise.status = 'ok'
@@ -891,16 +888,39 @@ function subscribeToRealmChange(store: Store<RootState>) {
   )
 }
 
+async function getPeerParameters(): Promise<PeerParameters> {
+  const commsServer = getCommsServer(store.getState())
+
+  const defaultPeerParameters: PeerParameters = {
+    iceServers: commConfigurations.defaultIceServers
+  }
+
+  try {
+    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, { responseBodyType: 'json' })
+
+    if (peerParameters.ok) {
+      return { ...defaultPeerParameters, ...peerParameters.json }
+    } else {
+      throw new Error("Server response was not OK: " + peerParameters.status)
+    }
+  } catch (e) {
+    defaultLogger.warn("Couldn't fetch peer parameters for comms server. Using defaults!", e)
+    return defaultPeerParameters
+  }
+}
+
 let idTaken = false
 
 export async function connect(userId: string) {
   try {
     const user = await getStoredSession(userId)
+
     if (!user) {
       return undefined
     }
 
     const userInfo = {
+      userId,
       ...user
     }
 
@@ -909,6 +929,8 @@ export async function connect(userId: string) {
     const [version, mode] = parseCommsMode(COMMS)
 
     idTaken = false
+
+    const peerParameters = await getPeerParameters()
 
     switch (version) {
       case 'v1': {
@@ -958,7 +980,7 @@ export async function connect(userId: string) {
 
         const peerConfig: LighthouseConnectionConfig = {
           connectionConfig: {
-            iceServers: commConfigurations.iceServers
+            iceServers: peerParameters.iceServers
           },
           authHandler: async (msg: string) => {
             try {
@@ -1057,7 +1079,7 @@ export async function connect(userId: string) {
         disconnect()
         defaultLogger.error(`error while trying to establish communications `, e)
         ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
-        BringDownClientAndShowError(ESTABLISHING_COMMS)
+        BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
       })
 
     return context
@@ -1081,9 +1103,6 @@ export async function startCommunications(context: Context) {
         if (i >= maxAttemps) {
           // max number of attemps reached => rethrow error
           logger.info(`Max number of attemps reached (${maxAttemps}), unsuccessful connection`)
-          disconnect()
-          ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
-          BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
           throw e
         } else {
           // max number of attempts not reached => continue with loop

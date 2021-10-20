@@ -132,3 +132,73 @@ export async function getLoadablePortableExperience(data: {
     }
   }
 }
+
+export async function getPortableExperiencesLoaded() {
+  let portableExperiences: any[] = []
+  for (const [id, parentCid] of currentPortableExperiences) {
+    portableExperiences.push({ id, parentCid })
+  }
+  return { portableExperiences: portableExperiences }
+}
+
+export async function spawnPortableExperience(
+  id: string,
+  parentCid: string,
+  name: string,
+  baseUrl: string,
+  mappings: ContentMapping[],
+  icon?: string
+): Promise<PortableExperienceHandle> {
+  const peWorker = getSceneWorkerBySceneID(id)
+  if (peWorker) {
+    throw new Error(`Portable Scene: "${id}" is already running.`)
+  }
+
+  const sceneJsonData: SceneJsonData = {
+    main: mappings.filter((m) => m.file.endsWith('game.js'))[0]?.hash,
+    display: { title: name, favicon: icon },
+    scene: {
+      base: '0,0',
+      parcels: ['0,0']
+    }
+  }
+
+  const data: EnvironmentData<LoadablePortableExperienceScene> = {
+    sceneId: id,
+    baseUrl: baseUrl,
+    name: sceneJsonData.display?.title ?? id,
+    main: sceneJsonData.main,
+    useFPSThrottling: false,
+    mappings,
+    data: {
+      id: id,
+      basePosition: parseParcelPosition(sceneJsonData.scene.base),
+      name: sceneJsonData.display?.title ?? id,
+      parcels:
+        (sceneJsonData &&
+          sceneJsonData.scene &&
+          sceneJsonData.scene.parcels &&
+          sceneJsonData.scene.parcels.map(parseParcelPosition)) ||
+        [],
+      baseUrl: baseUrl,
+      baseUrlBundles: '',
+      contents: mappings,
+      icon: sceneJsonData.display?.favicon
+    }
+  }
+
+  const scene = new UnityPortableExperienceScene(data)
+  loadParcelScene(scene, undefined, true)
+
+  getUnityInstance().CreateGlobalScene({
+    id: id,
+    name: scene.data.name,
+    baseUrl: scene.data.baseUrl,
+    contents: scene.data.data.contents,
+    icon: scene.data.data.icon,
+    isPortableExperience: true
+  })
+  currentPortableExperiences.set(id, parentCid)
+
+  return { pid: id, parentCid: parentCid }
+}

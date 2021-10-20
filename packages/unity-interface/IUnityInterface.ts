@@ -24,6 +24,7 @@ import {
   UpdateUserStatusMessage,
   WorldPosition
 } from '../shared/types'
+import { FeatureFlag } from 'shared/meta/types'
 
 export type RealmInfo = {
   serverName: string
@@ -138,6 +139,7 @@ export interface IUnityInterface {
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
   SetKernelConfiguration(config: Partial<KernelConfigForRenderer>): void
+  SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SendPublishSceneResult(result: DeploymentResult): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void

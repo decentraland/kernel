@@ -31,6 +31,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { WearableV2 } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
+import { FeatureFlag } from 'shared/meta/types'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -409,6 +410,10 @@ export class UnityInterface implements IUnityInterface {
 
   public SetKernelConfiguration(config: Partial<KernelConfigForRenderer>) {
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
+  }
+
+  public SetFeatureFlagsConfiguration(config: FeatureFlag) {
+    this.SendMessageToUnity('Bridges', 'SetFeatureFlagConfiguration', JSON.stringify(config))
   }
 
   public UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>) {

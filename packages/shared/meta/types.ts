@@ -21,6 +21,7 @@ export type MetaConfiguration = {
   comms: CommsConfig
   minCatalystVersion?: string
   featureFlags?: Record<string, boolean>
+  featureFlagsV2?: FeatureFlag
 }
 
 export type BannedUsers = Record<string, Ban[]>
@@ -74,5 +75,20 @@ export enum FeatureFlags {
   QUESTS = 'quests',
   BUILDER_IN_WORLD = 'builder_in_world',
   AVATAR_LODS = 'avatar_lods',
-  ASSET_BUNDLES = 'asset_bundles'
+  ASSET_BUNDLES = 'asset_bundles',
+  EXPLORE_V2_ENABLED = 'explorev2'
+}
+
+export type FeatureFlag = {
+  flags: Record<string, boolean>
+  variants: Record<string, FeatureFlagVariant>
+}
+
+export type FeatureFlagVariant = {
+  name: string
+  enabled: boolean
+  payload?: {
+    type: string
+    value: string
+  }
 }

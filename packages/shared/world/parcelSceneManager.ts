@@ -13,6 +13,7 @@ import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
 import { SceneSystemWorker } from './SceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { IEventNames } from 'decentraland-ecs'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: { new (x: EnvironmentData<LoadableParcelScene>): ParcelSceneAPI }
@@ -215,4 +216,10 @@ export async function enableParcelSceneLoading(options: EnableParcelSceneLoading
 
     ret.notify('User.setPosition', { position: obj.newParcel, teleported: false })
   })
+}
+
+export function allScenesEvent(data: { eventType: string; payload: any }) {
+  for (const [_key, scene] of loadedSceneWorkers) {
+    scene.emit(data.eventType as IEventNames, data.payload)
+  }
 }

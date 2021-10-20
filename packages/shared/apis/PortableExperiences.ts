@@ -3,7 +3,8 @@ import {
   spawnPortableExperienceScene,
   getPortableExperience,
   PortableExperienceHandle,
-  killPortableExperienceScene
+  killPortableExperienceScene,
+  getPortableExperiencesLoaded
 } from 'unity-interface/portableExperiencesUtils'
 import { ExposableAPI } from './ExposableAPI'
 import { ParcelIdentity } from './ParcelIdentity'
@@ -51,5 +52,14 @@ export class PortableExperiences extends ExposableAPI {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
 
     return await killPortableExperienceScene(parcelIdentity.cid)
+  }
+
+  /**
+   *
+   * Returns current portable experiences loaded with ids and parentCid
+   */
+  @exposeMethod
+  async getPortableExperiencesLoaded() {
+    return await getPortableExperiencesLoaded()
   }
 }
