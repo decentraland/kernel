@@ -133,6 +133,14 @@ export async function getLoadablePortableExperience(data: {
   }
 }
 
+export async function getPortableExperiencesLoaded() {
+  let portableExperiences: any[] = []
+  for (const [id, parentCid] of currentPortableExperiences) {
+    portableExperiences.push({ id, parentCid })
+  }
+  return { portableExperiences: portableExperiences }
+}
+
 export async function spawnPortableExperience(
   id: string,
   parentCid: string,

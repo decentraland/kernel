@@ -30,7 +30,7 @@ import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  loadedSceneWorkers
+  allScenesEvent
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -97,12 +97,6 @@ type SystemInfoPayload = {
   systemMemorySize: number
 }
 
-function allScenesEvent(data: { eventType: string; payload: any }) {
-  for (const [_key, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType as IEventNames, data.payload)
-  }
-}
-
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {
   private lastBalanceOfMana: number = -1
@@ -161,6 +155,15 @@ export class BrowserInterface {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
       scene.emit(data.eventType as IEventNames, data.payload)
+
+      // Keep backward compatibility with old scenes using deprecated `pointerEvent`
+      if (data.eventType === 'actionButtonEvent') {
+        const { payload } = data.payload
+        // CLICK, PRIMARY or SECONDARY
+        if (payload.buttonId >= 0 && payload.buttonId <= 2) {
+          scene.emit('pointerEvent', data.payload)
+        }
+      }
     } else {
       if (data.eventType !== 'metricsUpdate') {
         defaultLogger.error(`SceneEvent: Scene ${data.sceneId} not found`, data)
@@ -309,7 +312,7 @@ export class BrowserInterface {
   public SaveUserUnverifiedName(changes: { newUnverifiedName: string }) {
     store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
   }
-  
+
   public SaveUserDescription(changes: { description: string }) {
     store.dispatch(saveProfileRequest({ description: changes.description }))
   }
