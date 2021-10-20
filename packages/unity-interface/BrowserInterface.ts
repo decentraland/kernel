@@ -30,7 +30,7 @@ import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  loadedSceneWorkers
+  allScenesEvent
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -95,12 +95,6 @@ type SystemInfoPayload = {
   processorType: string
   processorCount: number
   systemMemorySize: number
-}
-
-function allScenesEvent(data: { eventType: string; payload: any }) {
-  for (const [_key, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType as IEventNames, data.payload)
-  }
 }
 
 // the BrowserInterface is a visitor for messages received from Unity
