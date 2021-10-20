@@ -142,6 +142,8 @@ export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
 export const QS_MAX_VISIBLE_PEERS = typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
 
+export const BUILDER_SERVER_URL = qs.BUILDER_SERVER_URL ?? 'https://builder-api.decentraland.org/v1'
+
 /**
  * Get the root URL and ensure not to end with slash
  * @returns Root URL with pathname where the index.html is served.

@@ -1,6 +1,14 @@
 import { call, put, select, takeEvery } from 'redux-saga/effects'
 
-import { WITH_FIXED_COLLECTIONS, getAssetBundlesBaseUrl, getTLD, PREVIEW, DEBUG, ETHEREUM_NETWORK } from 'config'
+import {
+  WITH_FIXED_COLLECTIONS,
+  getAssetBundlesBaseUrl,
+  getTLD,
+  PREVIEW,
+  DEBUG,
+  ETHEREUM_NETWORK,
+  BUILDER_SERVER_URL
+} from 'config'
 
 import defaultLogger from 'shared/logger'
 import {
@@ -24,11 +32,7 @@ import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
-import {
-  BASE_BUILDER_SERVER_URL,
-  BASE_DOWNLOAD_URL,
-  BuilderServerAPIManager
-} from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
+import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { onLoginCompleted } from 'shared/session/sagas'
@@ -36,6 +40,8 @@ import { ExplorerIdentity } from 'shared/session/types'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
+
+const BASE_BUILDER_DOWNLOAD_URL = `${BUILDER_SERVER_URL}/storage/contents`
 
 /**
  * This saga handles wearable definition fetching.
@@ -173,7 +179,7 @@ async function fetchWearablesByCollectionFromBuilder(
 
     const path = `collections/${collectionUuid}/items`
     const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
-    const collection: { data: UnpublishedWearable[] } = await fetchJson(`${BASE_BUILDER_SERVER_URL}${path}`, {
+    const collection: { data: UnpublishedWearable[] } = await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
       headers
     })
     const v2Wearables = collection.data.map((wearable) => mapUnpublishedWearableIntoCatalystWearable(wearable))
@@ -194,7 +200,7 @@ function mapUnpublishedWearableIntoCatalystWearable(wearable: UnpublishedWearabl
     id,
     rarity,
     i18n: [{ code: 'en', text: name }],
-    thumbnail: `${BASE_DOWNLOAD_URL}/${contentToHash[thumbnail]}`,
+    thumbnail: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[thumbnail]}`,
     description,
     data: {
       ...data,
@@ -202,7 +208,7 @@ function mapUnpublishedWearableIntoCatalystWearable(wearable: UnpublishedWearabl
         ...other,
         contents: contents.map((key) => ({
           key,
-          url: `${BASE_DOWNLOAD_URL}/${contentToHash[key]}`
+          url: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[key]}`
         }))
       }))
     }
