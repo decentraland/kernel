@@ -81,7 +81,8 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const catalystUrl = yield select(getCatalystServer)
   const client: CatalystClient = new CatalystClient(catalystUrl, 'EXPLORER')
-  const COLLECTIONS_ALLOWED = PREVIEW || DEBUG || getTLD() !== 'org'
+  const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
 
   const result: any[] = []
   if (filters.ownedByUser) {
