@@ -165,18 +165,15 @@ export class PeerTrackingInfo {
 
   public loadProfileIfNecessary(profileVersion: number) {
     if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
-      if (!this.userInfo || !this.userInfo.userId) {
-        this.userInfo = {
-          ...(this.userInfo || {}),
-          userId: this.identity
-        }
+      if (!this.userInfo) {
+        this.userInfo = { userId: this.identity }
       }
       this.profilePromise = {
         promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
           .then((profile) => {
             const forRenderer = profileToRendererFormat(profile)
             this.lastProfileUpdate = new Date().getTime()
-            const userInfo = this.userInfo || {}
+            const userInfo = this.userInfo || { userId: this.identity } as UserInformation
             userInfo.version = profile.version
             this.userInfo = userInfo
             this.profilePromise.status = 'ok'
@@ -923,6 +920,7 @@ export async function connect(userId: string) {
     }
 
     const userInfo = {
+      userId,
       ...user
     }
 
