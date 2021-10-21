@@ -6,7 +6,6 @@ import { getRoomId } from '@dcl/voice/dist/selectors'
 
 import { SET_COMMS_ISLAND, SetCommsIsland } from '../../comms/actions'
 import { USER_AUTHENTIFIED, UserAuthentified } from '../../session/actions'
-import { getCommsIsland } from '../../comms/selectors'
 
 export function* voiceSaga() {
   yield all([sagas(), defaultSaga()])
@@ -34,8 +33,10 @@ function* userAuthentified(action: UserAuthentified) {
 }
 
 function* changeIsland(action: SetCommsIsland) {
-  const island: ReturnType<typeof getCommsIsland> = yield select(getCommsIsland)
+  // TODO:
+  // When u jump and see the loading scene page we need to leave the room
   const roomId: ReturnType<typeof getRoomId> = yield select(getRoomId)
+  const { island } = action.payload
 
   if (!island || island === roomId) {
     return
