@@ -1,3 +1,5 @@
+import { DEBUG_KERNEL_LOG } from 'config'
+
 // tslint:disable:no-console
 export type ILogger = {
   error(message: string, ...args: any[]): void
@@ -27,7 +29,17 @@ export function createDummyLogger(): ILogger {
   }
 }
 
-export function createLogger(prefix: string): ILogger {
+export function createLogger(prefix: string): ILogger
+export function createLogger(prefix: string, enabled: boolean): ILogger
+export function createLogger(prefix: string, enabled?: any): ILogger {
+  if (enabled === undefined) {
+    enabled = DEBUG_KERNEL_LOG
+  }
+
+  if (!enabled) {
+    return createDummyLogger()
+  }
+
   return {
     error(message: string | Error, ...args: any[]): void {
       if (typeof message === 'object' && message.stack) {

@@ -633,8 +633,13 @@
           }
         })
 
+        const qs = new URLSearchParams(document.location.search)
+        const enableLogs = qs.has('DEBUG_KERNEL_LOG')
+
         kernel.on('trackingEvent', ({ eventName, eventData }) => {
-          console.log(`> event`, eventName, eventData)
+          if (enableLogs) {
+            console.log(`> event`, eventName, eventData)
+          }
         })
 
         kernel.on('openUrl', ({ url }) => {
@@ -643,15 +648,21 @@
         })
 
         kernel.on('accountState', (account) => {
-          console.log('> account state', account)
+          if (enableLogs) {
+            console.log('> account state', account)
+          }
         })
 
         kernel.on('signUp', ({ email }) => {
-          console.log(`> sign up ${email}`)
+          if (enableLogs) {
+            console.log(`> sign up ${email}`)
+          }
         })
 
         kernel.on('logout', (data) => {
-          console.log(`> logout ${data}`)
+          if (enableLogs) {
+            console.log(`> logout ${data}`)
+          }
         })
 
         kernel.on('error', (error) => {
