@@ -3,11 +3,18 @@ import { voiceSaga as defaultSaga } from '@dcl/voice/dist/sagas'
 import { VoiceState } from '@dcl/voice/dist/types'
 import { joinRoom, startVoice } from '@dcl/voice/dist/actions'
 import { getRoomId } from '@dcl/voice/dist/selectors'
+import { getStreamByAddress } from '@dcl/voice/dist/utils'
+import { udpateLocalPosition, updateStreamPosition } from '@dcl/voice/dist/position'
 
 import { SET_COMMS_ISLAND, SetCommsIsland } from '../../comms/actions'
 import { USER_AUTHENTIFIED, UserAuthentified } from '../../session/actions'
+import { avatarMessageObservable, getUser } from '../../comms/peers'
+import { AvatarMessageType } from '../../comms/interface/types'
+import { getSpatialParamsFor } from '../../comms'
+import { VoiceSpatialParams } from '../../../voice-chat-codec/VoiceCommunicator'
 
 export function* voiceSaga() {
+  takeStreamPositionsUpdate()
   yield all([sagas(), defaultSaga()])
 }
 
@@ -43,4 +50,37 @@ function* changeIsland(action: SetCommsIsland) {
   }
 
   yield put(joinRoom(island))
+}
+
+function takeStreamPositionsUpdate() {
+  avatarMessageObservable.add((evt) => {
+    if (evt.type === AvatarMessageType.USER_POSE) {
+      const userId = getUser(evt.uuid)?.userId
+      const stream = userId && getStreamByAddress(userId)
+
+      if (!userId || !stream) return
+      const { orientation, position } = getSpatialParamsFor(evt.pose)
+
+      updateStreamPosition(
+        stream,
+        spatialToPositionVector(position),
+        spatialToPositionVector(orientation)
+      )
+    }
+  })
+}
+
+export function updateLocalStreamPosition(spatialParams: VoiceSpatialParams) {
+  udpateLocalPosition(
+    spatialToPositionVector(spatialParams.position),
+    spatialToPositionVector(spatialParams.orientation)
+  )
+}
+
+function spatialToPositionVector(position: [number, number, number]) {
+  return {
+    x: position[0],
+    y: position[1],
+    z: position[2]
+  }
 }

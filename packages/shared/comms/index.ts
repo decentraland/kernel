@@ -112,6 +112,7 @@ import * as qs from 'query-string'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { BannedUsers } from 'shared/meta/types'
 import { signedFetch } from 'atomicHelpers/signedFetch'
+import { updateLocalStreamPosition } from '../voice/sagas'
 
 export type CommsVersion = 'v1' | 'v2'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -726,8 +727,10 @@ export function onPositionUpdate(context: Context, p: Position) {
   }
 
   context.currentPosition = p
+  const spatialParams = getSpatialParamsFor(context.currentPosition)
+  voiceCommunicator?.setListenerSpatialParams(spatialParams)
+  updateLocalStreamPosition(spatialParams)
 
-  voiceCommunicator?.setListenerSpatialParams(getSpatialParamsFor(context.currentPosition))
 
   const now = Date.now()
   const elapsed = now - lastNetworkUpdatePosition
@@ -744,7 +747,7 @@ export function onPositionUpdate(context: Context, p: Position) {
   }
 }
 
-function getSpatialParamsFor(position: Position): VoiceSpatialParams {
+export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
   return {
     position: position.slice(0, 3) as [number, number, number],
     orientation: rotateUsingQuaternion(position, 0, 0, -1)

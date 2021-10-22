@@ -95,7 +95,7 @@
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
     "@dcl/schemas": "^1.2.0",
     "@dcl/urn-resolver": "^1.2.1",
-    "@dcl/voice": "^1.0.0-20211022172705.commit-e3e1fa0",
+    "@dcl/voice": "^1.0.0-20211022204530.commit-285c4e2",
     "@types/redux-logger": "^3.0.9",
     "bignumber.js": "^9.0.1",
     "blob-to-buffer": "^1.2.8",
