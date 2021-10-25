@@ -197,12 +197,6 @@ function* authorize(requestManager: RequestManager) {
   }
 
   return userData.identity
-  // } catch (e) {
-  // logger.error(e)
-  // ReportFatalError(e, ErrorContext.KERNEL_INIT)
-  // BringDownClientAndShowError(AUTH_ERROR_LOGGED_OUT)
-  // throw e
-  // }
 }
 
 function* signIn(identity: ExplorerIdentity) {

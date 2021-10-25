@@ -295,7 +295,6 @@ export async function fetchCatalystNodesFromDAO(): Promise<CatalystNode[]> {
   } = (await new ContractFactory(requestManager, catalystABI).at(ethereumConfigurations[net].CatalystProxy)) as any
 
   const count = Number.parseInt(await retry(() => contract2.catalystCount()), 10)
-  console.dir({ count })
   const nodes = []
   for (let i = 0; i < count; ++i) {
     const ids = '0x' + bytesToHex(await retry(() => contract2.catalystIds(i)))
