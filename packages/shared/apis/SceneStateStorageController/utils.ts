@@ -21,9 +21,10 @@ export function getUniqueNameForGLTF(currentNames: String[], gltfName: string, a
 
   if (amountOfTimesAppear > 1) nameToReturn = nameToReturn + amountOfTimesAppear
 
-  currentNames.forEach((name) => {
-    if (name === nameToReturn) nameToReturn = getUniqueNameForGLTF(currentNames, gltfName, amountOfTimesAppear + 1)
-  })
+  for (let i = 0; i < currentNames.length; i++) {
+    if (currentNames[i] === nameToReturn) 
+      nameToReturn = getUniqueNameForGLTF(currentNames, gltfName, amountOfTimesAppear + 1)
+  }
   return nameToReturn
 }
 
