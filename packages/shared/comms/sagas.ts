@@ -1,6 +1,6 @@
 import { put, takeEvery, select, call, takeLatest } from 'redux-saga/effects'
 
-import { EDITOR } from 'config'
+import { EDITOR, DEBUG_KERNEL_LOG } from 'config'
 
 import { establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
@@ -11,7 +11,7 @@ import { getRealm } from 'shared/dao/selectors'
 import { CATALYST_REALMS_SCAN_SUCCESS, setCatalystRealm } from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
 import { realmToString } from 'shared/dao/utils/realmToString'
-import { createLogger } from 'shared/logger'
+import { createLogger, createDummyLogger } from 'shared/logger'
 
 import {
   connect,
@@ -43,7 +43,7 @@ import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 
 const DEBUG = false
-const logger = createLogger('comms: ')
+const logger = DEBUG_KERNEL_LOG? createLogger('comms: ') : createDummyLogger()
 
 export function* commsSaga() {
   yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
