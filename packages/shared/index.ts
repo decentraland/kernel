@@ -11,7 +11,6 @@ import { isRendererVisible } from './loading/selectors'
 import { RootStore } from './store/rootTypes'
 import { initializeSessionObserver } from './session/sagas'
 import { hookAnalyticsObservables } from './analytics'
-import defaultLogger from './logger'
 
 declare const globalThis: { globalStore: RootStore }
 
@@ -52,7 +51,6 @@ function observeIsRendererVisibleChanges(store: RootStore, cb: (visible: boolean
 
 export function initializeRendererVisibleObserver(store: RootStore) {
   observeIsRendererVisibleChanges(store, (visible: boolean) => {
-    defaultLogger.log('renderer visible', visible)
     globalObservable.emit('rendererVisible', {
       visible
     })
