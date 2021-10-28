@@ -5,10 +5,11 @@ import {
   AUTO_CHANGE_REALM,
   genericAvatarSnapshots,
   COMMS_PROFILE_TIMEOUT,
-  COMMS_SERVICE
+  COMMS_SERVICE,
+  DEBUG_KERNEL_LOG
 } from 'config'
 import { CommunicationsController } from 'shared/apis/CommunicationsController'
-import { defaultLogger } from 'shared/logger'
+import { createDummyLogger, defaultLogger } from 'shared/logger'
 import { ChatMessage as InternalChatMessage, ChatMessageType, SceneFeatureToggles } from 'shared/types'
 import { lastPlayerParcel, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { lastPlayerScene } from 'shared/world/sceneState'
@@ -138,7 +139,7 @@ type CommsContainer = {
 
 declare const globalThis: CommsContainer
 
-const logger = createLogger('comms: ')
+const logger = DEBUG_KERNEL_LOG? createLogger('comms: ') : createDummyLogger()
 
 type ProfilePromiseState = {
   promise: Promise<ProfileForRenderer | void>

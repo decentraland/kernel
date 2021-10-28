@@ -3,9 +3,9 @@ import { createIdentity } from 'eth-crypto'
 import { Account } from 'web3x/account'
 import { Authenticator } from 'dcl-crypto'
 
-import { ETHEREUM_NETWORK, PREVIEW } from 'config'
+import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK, PREVIEW } from 'config'
 
-import { createLogger } from 'shared/logger'
+import { createDummyLogger, createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
 import { getUserAccount, isSessionExpired, requestManager } from 'shared/ethereum/provider'
 import { setLocalInformationForComms } from 'shared/comms/peers'
@@ -55,7 +55,8 @@ import { disconnect, sendToMordor } from 'shared/comms'
 import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
 
 const TOS_KEY = 'tos'
-const logger = createLogger('session: ')
+const logger = DEBUG_KERNEL_LOG? createLogger('session: ') : createDummyLogger()
+
 
 export function* sessionSaga(): any {
   yield takeEvery(UPDATE_TOS, updateTermOfService)
