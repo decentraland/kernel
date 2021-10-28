@@ -128,6 +128,7 @@ export const DEBUG_REDUX = location.search.includes('DEBUG_REDUX')
 export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
 export const DEBUG_PM = location.search.includes('DEBUG_PM')
 export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
+export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
 
 export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
@@ -244,8 +245,8 @@ function assertValue<T>(val: T | undefined | null): T {
 
 export namespace ethereumConfigurations {
   export const mainnet = {
-    wss: 'wss://mainnet.infura.io/ws/v3/074a68d50a7c4e6cb46aec204a50cbf0',
-    http: 'https://mainnet.infura.io/v3/074a68d50a7c4e6cb46aec204a50cbf0/',
+    wss: 'wss://mainnet.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa',
+    http: 'https://mainnet.infura.io/v3/f54f2e10b59647778de06d884121f8fa/',
     etherscan: 'https://etherscan.io',
     names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace',
 
@@ -256,8 +257,8 @@ export namespace ethereumConfigurations {
     MANAToken: assertValue(contractInfo.mainnet.MANAToken)
   }
   export const ropsten = {
-    wss: 'wss://ropsten.infura.io/ws/v3/074a68d50a7c4e6cb46aec204a50cbf0',
-    http: 'https://ropsten.infura.io/v3/074a68d50a7c4e6cb46aec204a50cbf0/',
+    wss: 'wss://ropsten.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa',
+    http: 'https://ropsten.infura.io/v3/f54f2e10b59647778de06d884121f8fa/',
     etherscan: 'https://ropsten.etherscan.io',
     names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten',
 

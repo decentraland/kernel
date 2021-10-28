@@ -13,13 +13,13 @@ import {
   Realm as SocialRealm
 } from 'dcl-social-client'
 
-import { DEBUG_PM, WORLD_EXPLORER } from 'config'
+import { DEBUG_PM, WORLD_EXPLORER, DEBUG_KERNEL_LOG } from 'config'
 
 import { Vector3Component } from 'atomicHelpers/landHelpers'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
-import { createLogger } from 'shared/logger'
+import { createLogger, createDummyLogger } from 'shared/logger'
 import {
   ChatMessage,
   NotificationType,
@@ -57,7 +57,8 @@ import { store } from 'shared/store/isolatedStore'
 
 const DEBUG = DEBUG_PM
 
-const logger = createLogger('chat: ')
+const logger = DEBUG_KERNEL_LOG? createLogger('chat: ') : createDummyLogger()
+
 
 const INITIAL_CHAT_SIZE = 50
 
