@@ -140,13 +140,21 @@ export interface IUnityInterface {
   SetKernelConfiguration(config: KernelConfigForRenderer): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
+  SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
+  
+  // *********************************************************************************
+  // ************** Builder in world messages **************
+  // *********************************************************************************
+
   SendPublishSceneResult(result: DeploymentResult): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void
-  SendBuilderCatalogHeaders(headers: Record<string, string>): void
   SendCatalogHeaders(endpoint: string,headers: Record<string, string>): void
   SendSceneAssets(assets: BuilderAsset[]): void
-  SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
   SendUnpublishSceneResult(result: DeploymentResult): void
+
+  //Note: This message is deprecated and should be deleted in the future.
+  //      We are maintaining it for backward compatibility
+  SendBuilderCatalogHeaders(headers: Record<string, string>): void
 
   // *********************************************************************************
   // ************** Quests messages **************

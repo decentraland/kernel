@@ -597,6 +597,8 @@ export class BrowserInterface {
     await killPortableExperienceScene(data.portableExperienceId)
   }
 
+  //Note: This message is deprecated and should be deleted in the future.
+  //      We are maintaining it for backward compatibility
   public RequestBIWCatalogHeader() {
     const identity = getCurrentIdentity(store.getState())
     if (!identity) {

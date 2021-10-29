@@ -432,6 +432,8 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
+  //Note: This message is deprecated and should be deleted in the future.
+  //      We are maintaining it for backward compatibility
   public SendBuilderCatalogHeaders(headers: Record<string, string>) {
     this.SendMessageToUnity('Main', 'BuilderInWorldCatalogHeaders', JSON.stringify(headers))
   }
