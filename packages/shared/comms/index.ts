@@ -139,7 +139,7 @@ type CommsContainer = {
 
 declare const globalThis: CommsContainer
 
-const logger = DEBUG_KERNEL_LOG? createLogger('comms: ') : createDummyLogger()
+const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
 
 type ProfilePromiseState = {
   promise: Promise<ProfileForRenderer | void>
