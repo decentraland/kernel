@@ -20,7 +20,8 @@ import {
   ContentMapping,
   Profile,
   TutorialInitializationMessage,
-  WorldPosition
+  WorldPosition,
+  HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { defaultLogger } from 'shared/logger'
@@ -433,6 +434,14 @@ export class UnityInterface implements IUnityInterface {
 
   public SendBuilderCatalogHeaders(headers: Record<string, string>) {
     this.SendMessageToUnity('Main', 'BuilderInWorldCatalogHeaders', JSON.stringify(headers))
+  }
+
+  public SendCatalogHeaders(endpoint: string, headers: Record<string, string>) {
+    var request: HeaderRequest = {
+      endpoint: endpoint,
+      headers: headers
+    }
+    this.SendMessageToUnity('Main', 'RequestedHeaders', JSON.stringify(request))
   }
 
   public SendSceneAssets(assets: BuilderAsset[]) {

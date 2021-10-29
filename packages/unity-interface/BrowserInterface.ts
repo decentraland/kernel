@@ -617,6 +617,15 @@ export class BrowserInterface {
     getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
+  public RequestHeaderForEndpoint(data: { method: string; url: string }) {
+    const identity = getCurrentIdentity(store.getState())
+
+    const headers: Record<string, string> = identity
+      ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
+      : {}
+    getUnityInstance().SendCatalogHeaders(data.url, headers)
+  }
+
   public RequestWearables(data: {
     filters: {
       ownedByUser: string | null

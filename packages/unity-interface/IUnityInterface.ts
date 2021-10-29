@@ -143,6 +143,7 @@ export interface IUnityInterface {
   SendPublishSceneResult(result: DeploymentResult): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void
   SendBuilderCatalogHeaders(headers: Record<string, string>): void
+  SendCatalogHeaders(endpoint: string,headers: Record<string, string>): void
   SendSceneAssets(assets: BuilderAsset[]): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
   SendUnpublishSceneResult(result: DeploymentResult): void
