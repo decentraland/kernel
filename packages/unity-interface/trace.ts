@@ -30,10 +30,11 @@ export function traceDecoratorUnityGame(game: UnityGame): UnityGame {
   return game
 }
 
-export function beginTrace(number: number) {
-  if (number > 0) {
+export function beginTrace(messagesCount: number) {
+  if (messagesCount > 0) {
     currentTrace.length = 0
-    pendingMessagesInTrace = number
+    pendingMessagesInTrace = messagesCount
+     // tslint:disable-next-line
     console.log('[TRACING] Beginning trace')
   }
 }
@@ -43,7 +44,7 @@ export function beginTrace(number: number) {
  * KR: Kernel->Renderer
  * KK: Kernel->Kernel
  */
-export function logTrace(type: string, payload: string | number, direction: 'RK' | 'KR' | 'KK') {
+export function logTrace(type: string, payload: string | number | undefined, direction: 'RK' | 'KR' | 'KK') {
   if (pendingMessagesInTrace > 0) {
     const now = performance.now().toFixed(1)
     if (direction === 'KK') {
@@ -60,10 +61,11 @@ export function logTrace(type: string, payload: string | number, direction: 'RK'
       )
     }
     pendingMessagesInTrace--
-    if (pendingMessagesInTrace % 11 == 0) {
+    if (pendingMessagesInTrace % 11 === 0) {
+      // tslint:disable-next-line
       console.log('[TRACING] Pending messages to download: ' + pendingMessagesInTrace)
     }
-    if (pendingMessagesInTrace == 0) {
+    if (pendingMessagesInTrace === 0) {
       endTrace()
     }
   }
@@ -74,12 +76,13 @@ export function endTrace() {
   const content = currentTrace.join('\n')
   let file = new File([content], 'decentraland-trace.csv', { type: 'text/csv' })
   let exportUrl = URL.createObjectURL(file)
+  // tslint:disable-next-line
   console.log('[TRACING] Ending trace, downloading file: ', exportUrl, ' check your downloads folder.')
   window.location.assign(exportUrl)
   currentTrace.length = 0
 }
 
-;(globalThis as any).beginTrace = beginTrace
+(globalThis as any).beginTrace = beginTrace
 ;(globalThis as any).endTrace = endTrace
 
 const parametricTrace = parseInt(TRACE_RENDERER || '0', 10)

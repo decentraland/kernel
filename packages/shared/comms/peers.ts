@@ -110,7 +110,7 @@ export function receiveUserData(uuid: string, data: UserInformation) {
     if (profileChanged) {
       Object.assign(userData, data)
       ;(async () => {
-        const profile = await ProfileAsPromise(data.userId!, data.version, getProfileType(data.identity))
+        const profile = await ProfileAsPromise(data.userId, data.version, getProfileType(data.identity))
 
         if (profile) {
           avatarMessageObservable.notifyObservers({

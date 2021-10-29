@@ -139,7 +139,7 @@ type CommsContainer = {
 
 declare const globalThis: CommsContainer
 
-const logger = DEBUG_KERNEL_LOG? createLogger('comms: ') : createDummyLogger()
+const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
 
 type ProfilePromiseState = {
   promise: Promise<ProfileForRenderer | void>
@@ -897,7 +897,13 @@ async function getPeerParameters(): Promise<PeerParameters> {
   }
 
   try {
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, { responseBodyType: 'json' })
+    const identity = getIdentity()
+
+    if (!identity) {
+      throw new Error('identity is undefined')
+    }
+
+    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, identity, { responseBodyType: 'json' })
 
     if (peerParameters.ok) {
       return { ...defaultPeerParameters, ...peerParameters.json }
@@ -1207,7 +1213,7 @@ async function doStartCommunications(context: Context) {
 
     window.addEventListener('beforeunload', () => {
       context.positionUpdatesPaused = true
-      sendToMordor()
+      sendToMordor().catch(e => defaultLogger.warn(e))
     })
 
     context.infoCollecterInterval = setInterval(() => {
@@ -1218,7 +1224,7 @@ async function doStartCommunications(context: Context) {
 
     if (!voiceCommunicator) {
       voiceCommunicator = new VoiceCommunicator(
-        context.userInfo.userId!,
+        context.userInfo.userId,
         {
           send(frame: EncodedFrame) {
             if (context.currentPosition) {
@@ -1294,12 +1300,12 @@ function handleFullLayer() {
 
 export function onWorldRunning(isRunning: boolean, _context: Context | null = context) {
   if (!isRunning) {
-    sendToMordor(_context)
+    sendToMordor(_context).catch(e => defaultLogger.warn(e))
   }
 }
 
-export async function sendToMordor(_context: Context | null = context) {
-  await sendToMordorAsync().catch((e) => defaultLogger.warn(`error while sending message `, e))
+export function sendToMordor(_context: Context | null = context) {
+  return sendToMordorAsync().catch((e) => defaultLogger.warn(`error while sending message `, e))
 }
 
 async function sendToMordorAsync(_context: Context | null = context) {

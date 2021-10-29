@@ -55,8 +55,7 @@ import { disconnect, sendToMordor } from 'shared/comms'
 import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
 
 const TOS_KEY = 'tos'
-const logger = DEBUG_KERNEL_LOG? createLogger('session: ') : createDummyLogger()
-
+const logger = DEBUG_KERNEL_LOG ? createLogger('session: ') : createDummyLogger()
 
 export function* sessionSaga(): any {
   yield takeEvery(UPDATE_TOS, updateTermOfService)
@@ -198,12 +197,6 @@ function* authorize(requestManager: RequestManager) {
   }
 
   return userData.identity
-  // } catch (e) {
-  // logger.error(e)
-  // ReportFatalError(e, ErrorContext.KERNEL_INIT)
-  // BringDownClientAndShowError(AUTH_ERROR_LOGGED_OUT)
-  // throw e
-  // }
 }
 
 function* signIn(identity: ExplorerIdentity) {

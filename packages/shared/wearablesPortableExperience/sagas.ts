@@ -122,9 +122,9 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
       // TODO: make sure thumbnail is added to the mappings if not there to avoid creating an url for the icon here
       const icon = baseUrl + wearable.thumbnail
 
-      spawnPortableExperience(wearable.id, 'main', name, baseUrl, mappings, icon)
+      spawnPortableExperience(wearable.id, 'main', name, baseUrl, mappings, icon).catch((e) => defaultLogger.error(e))
     } catch (e) {
-      defaultLogger.log(e as any)
+      defaultLogger.log(e)
     }
   }
 }

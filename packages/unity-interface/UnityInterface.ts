@@ -1,6 +1,5 @@
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
-import { Vector3 } from 'decentraland-ecs'
-import { ProfileForRenderer, MinimapSceneInfo } from 'decentraland-ecs'
+import { Vector3, ProfileForRenderer, MinimapSceneInfo } from 'decentraland-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {

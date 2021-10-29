@@ -20,7 +20,7 @@ export const setStoredSession: (session: StoredSession) => Promise<void> = async
   await saveToPersistentStorage(sessionKey(session.identity.address), session)
 }
 
-export const getStoredSession: (userId: string) => Promise<StoredSession | null>  = async (userId) => {
+export const getStoredSession: (userId: string) => Promise<StoredSession | null> = async (userId) => {
   const existingSession: StoredSession | null = (await getFromPersistentStorage(sessionKey(userId))) as StoredSession
 
   if (existingSession) {
@@ -46,20 +46,22 @@ export const getLastSessionWithoutWallet: () => Promise<StoredSession | null> = 
     const lastSession = await getStoredSession(lastSessionId)
     return lastSession ? lastSession : null
   } else {
-    return await getFromPersistentStorage('dcl-profile')
+    return getFromPersistentStorage('dcl-profile')
   }
 }
 
 export const getLastSessionByAddress: (address: string) => Promise<StoredSession | null> = async (address: string) => {
   const sessionsKey = (await getKeysFromPersistentStorage()).filter((k) => k.indexOf(SESSION_KEY_PREFIX) === 0)
-  const sessions: StoredSession[] = await Promise.all(sessionsKey.map(id => getFromPersistentStorage(id)))
-  const filteredSessions = sessions.filter(({ identity }) => ('' + identity.address).toLowerCase() === address.toLowerCase())
+  const sessions: StoredSession[] = await Promise.all(sessionsKey.map((id) => getFromPersistentStorage(id)))
+  const filteredSessions = sessions.filter(
+    ({ identity }) => ('' + identity.address).toLowerCase() === address.toLowerCase()
+  )
   return filteredSessions.length > 0 ? filteredSessions[0] : null
 }
 
 export const getLastGuestSession: () => Promise<StoredSession | null> = async () => {
   const sessionsKey = (await getKeysFromPersistentStorage()).filter((k) => k.indexOf(SESSION_KEY_PREFIX) === 0)
-  const sessions: StoredSession[] = await Promise.all(sessionsKey.map(id => getFromPersistentStorage(id)))
+  const sessions: StoredSession[] = await Promise.all(sessionsKey.map((id) => getFromPersistentStorage(id)))
 
   const filteredSessions: StoredSession[] = sessions
     .filter(({ isGuest }) => isGuest)

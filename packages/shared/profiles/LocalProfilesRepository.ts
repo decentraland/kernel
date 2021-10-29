@@ -15,7 +15,7 @@ export class LocalProfilesRepository {
   }
 
   async get(address: string, network: ETHEREUM_NETWORK) {
-    return await getFromPersistentStorage(this.profileKey(address, network))
+    return getFromPersistentStorage(this.profileKey(address, network))
   }
 
   private profileKey(address: string, network: ETHEREUM_NETWORK): string {

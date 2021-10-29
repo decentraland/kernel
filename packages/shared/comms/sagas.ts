@@ -43,7 +43,7 @@ import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 
 const DEBUG = false
-const logger = DEBUG_KERNEL_LOG? createLogger('comms: ') : createDummyLogger()
+const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
 
 export function* commsSaga() {
   yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
