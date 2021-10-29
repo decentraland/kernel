@@ -217,12 +217,12 @@ export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
 }
 
 function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
-  const tld = network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
   return `https://content-assets-as-bundle.decentraland.${tld}`
 }
 
 export function getServerConfigurations(network: ETHEREUM_NETWORK) {
-  const tld = network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
   const metaConfigBaseUrl = META_CONFIG_URL || `https://config.decentraland.${tld}/explorer.json`
   const metaFeatureFlagsBaseUrl = `https://feature-flags.decentraland.${tld}/explorer.json`

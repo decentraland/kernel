@@ -92,7 +92,7 @@ export interface IUnityInterface {
   UpdateParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
   UnloadScene(sceneId: string): void
   SendSceneMessage(messages: string): void
-  /**@deprecated send it with the kernelConfigForRenderer instead.*/
+  /** @deprecated send it with the kernelConfigForRenderer instead. */
   SetSceneDebugPanel(): void
   ShowFPSPanel(): void
   HideFPSPanel(): void
