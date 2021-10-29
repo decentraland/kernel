@@ -14,16 +14,14 @@ import {
   BuilderComponent,
   BuilderGround
 } from './types'
-import { ETHEREUM_NETWORK } from 'config'
+import { BUILDER_SERVER_URL, ETHEREUM_NETWORK } from 'config'
 import { defaultLogger } from '../../logger'
 import { getParcelSceneLimits } from 'atomicHelpers/landHelpers'
 import { CLASS_ID } from 'decentraland-ecs'
 import { toHumanReadableType, fromHumanReadableType, getLayoutFromParcels } from './utils'
 import { SceneSourcePlacement } from 'shared/types'
 
-export const BASE_DOWNLOAD_URL = 'https://builder-api.decentraland.org/v1/storage/contents'
-const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1/'
-export const BASE_BUILDER_SERVER_URL = 'https://builder-api.decentraland.org/v1/'
+const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1'
 export const BUILDER_MANIFEST_VERSION = 10
 
 export class BuilderServerAPIManager {
@@ -32,11 +30,7 @@ export class BuilderServerAPIManager {
   private readonly baseUrl: string
 
   constructor(network: ETHEREUM_NETWORK) {
-    if (network === ETHEREUM_NETWORK.MAINNET) {
-      this.baseUrl = BASE_BUILDER_SERVER_URL
-    } else {
-      this.baseUrl = BASE_BUILDER_SERVER_URL_ROPSTEN
-    }
+    this.baseUrl = network === ETHEREUM_NETWORK.MAINNET ? BUILDER_SERVER_URL : BASE_BUILDER_SERVER_URL_ROPSTEN
   }
 
   static authorize(identity: ExplorerIdentity, method: string = 'get', path: string = '') {
@@ -68,7 +62,7 @@ export class BuilderServerAPIManager {
     if (unknownAssets.length > 0) {
       const queryParams = 'assets?id=' + unknownAssets.join('&id=')
       try {
-        const url = `${this.baseUrl}${queryParams}`
+        const url = `${this.baseUrl}/${queryParams}`
         // Fetch unknown assets
         const response = await fetch(url)
         const { data }: { data: BuilderAsset[] } = await response.json()
@@ -104,7 +98,7 @@ export class BuilderServerAPIManager {
     try {
       // Fetch builder manifest by ID
       const queryParams = 'projects/' + projectId + '/manifest'
-      const urlToFecth = `${this.baseUrl}${queryParams}`
+      const urlToFecth = `${this.baseUrl}/${queryParams}`
 
       let params: RequestInit = {
         headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + queryParams)
@@ -131,7 +125,7 @@ export class BuilderServerAPIManager {
     try {
       // Fetch builder manifest by lands coordinates
       const queryParams = 'manifests?' + 'creation_coords_eq=' + land
-      const urlToFecth = `${this.baseUrl}${queryParams}`
+      const urlToFecth = `${this.baseUrl}/${queryParams}`
 
       let params: RequestInit = {
         headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + queryParams)
@@ -288,13 +282,13 @@ export class BuilderServerAPIManager {
       id: webAsset.id,
       model: webAsset.model,
       mappings: Object.entries(webAsset.contents).map(([file, hash]) => ({ file, hash })),
-      baseUrl: BASE_DOWNLOAD_URL
+      baseUrl: `${this.baseUrl}/storage/contents`
     }
   }
 
   private async setManifestOnServer(builderManifest: BuilderManifest, identity: ExplorerIdentity) {
     const queryParams = 'projects/' + builderManifest.project.id + '/manifest'
-    const urlToFecth = `${this.baseUrl}${queryParams}`
+    const urlToFecth = `${this.baseUrl}/${queryParams}`
 
     const body = JSON.stringify({ manifest: builderManifest })
     const headers = BuilderServerAPIManager.authorize(identity, 'put', '/' + queryParams)
@@ -313,7 +307,7 @@ export class BuilderServerAPIManager {
 
   private async setThumbnailOnServer(projectId: string, thumbnailBlob: Blob, identity: ExplorerIdentity) {
     const queryParams = 'projects/' + projectId + '/media'
-    const urlToFecth = `${this.baseUrl}${queryParams}`
+    const urlToFecth = `${this.baseUrl}/${queryParams}`
 
     const thumbnailData = new FormData()
     thumbnailData.append('thumbnail', thumbnailBlob)
