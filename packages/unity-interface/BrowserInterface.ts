@@ -2,7 +2,7 @@ import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { AvatarMessageType } from 'shared/comms/interface/types'
 import { avatarMessageObservable, localProfileUUID } from 'shared/comms/peers'
-import { hasConnectedWeb3 } from 'shared/profiles/selectors'
+import { findProfileByName, hasConnectedWeb3 } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
@@ -69,6 +69,7 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { isAddress } from "eth-connect"
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export let futures: Record<string, IFuture<any>> = {}
@@ -155,6 +156,15 @@ export class BrowserInterface {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
       scene.emit(data.eventType as IEventNames, data.payload)
+
+      // Keep backward compatibility with old scenes using deprecated `pointerEvent`
+      if (data.eventType === 'actionButtonEvent') {
+        const { payload } = data.payload
+        // CLICK, PRIMARY or SECONDARY
+        if (payload.buttonId >= 0 && payload.buttonId <= 2) {
+          scene.emit('pointerEvent', data.payload)
+        }
+      }
     } else {
       if (data.eventType !== 'metricsUpdate') {
         defaultLogger.error(`SceneEvent: Scene ${data.sceneId} not found`, data)
@@ -434,17 +444,27 @@ export class BrowserInterface {
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     let { userId, action } = message
-
-    // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     let found = false
+    let state = store.getState()
+    
+    // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     if (action === FriendshipAction.REQUESTED_TO) {
       await ensureFriendProfile(userId)
-      found = hasConnectedWeb3(store.getState(), userId)
+      
+      if (isAddress(userId)) {
+        found = hasConnectedWeb3(state, userId)  
+      } else {
+        let profileByName = findProfileByName(state, userId)
+        if (profileByName) {
+          userId = profileByName.userId
+          found = true
+        }
+      }
     }
 
     if (!found) {
       // if user profile was not found on server -> no connected web3, check if it's a claimed name
-      const net = getSelectedNetwork(store.getState())
+      const net = getSelectedNetwork(state)
       const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
       if (address) {
         // if an address was found for the name -> set as user id & add that instead

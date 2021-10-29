@@ -51,7 +51,6 @@ function observeIsRendererVisibleChanges(store: RootStore, cb: (visible: boolean
 
 export function initializeRendererVisibleObserver(store: RootStore) {
   observeIsRendererVisibleChanges(store, (visible: boolean) => {
-    console.log('renderer visible', visible)
     globalObservable.emit('rendererVisible', {
       visible
     })
