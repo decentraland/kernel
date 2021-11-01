@@ -176,5 +176,12 @@ export interface IUnityInterface {
   ResetBuilderScene(): void
   OnBuilderKeyDown(key: string): void
   SetBuilderConfiguration(config: BuilderConfiguration): void
+
+  // *********************************************************************************
+  // ************** DCL Events messages **************
+  // *********************************************************************************
+
+  SendDCLEvents(isOk: boolean, eventListPayload: string): void
+
   SendMessageToUnity(object: string, method: string, payload?: any): void
 }

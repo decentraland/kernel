@@ -69,6 +69,7 @@ import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { isAddress } from "eth-connect"
+import { signedFetch } from 'atomicHelpers/signedFetch'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export let futures: Record<string, IFuture<any>> = {}
@@ -670,6 +671,35 @@ export class BrowserInterface {
     } else {
       defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
     }
+  }
+
+  public async RequestDCLEvents(urlPayload: { value: string }) {
+    var eventListPayload = null
+    var isOk = false
+
+    try {
+      const identity = getIdentity()
+
+      if (!identity) {
+        throw new Error('identity is undefined')
+      }
+
+      const requestResult = await signedFetch(urlPayload.value, identity, { responseBodyType: 'json' })
+
+      isOk = requestResult.ok
+      if (requestResult.ok) {
+        eventListPayload = requestResult.json
+      } else {
+        eventListPayload = requestResult.text
+      }
+    }
+    catch (e) {
+      defaultLogger.warn("Couldn't fetch DCL Events!", e)
+      isOk = false
+      eventListPayload = e.message
+    }
+
+    getUnityInstance().SendDCLEvents(isOk, eventListPayload)
   }
 }
 

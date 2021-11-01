@@ -547,6 +547,14 @@ export class UnityInterface implements IUnityInterface {
     this.SendBuilderMessage('SetBuilderConfiguration', JSON.stringify(config))
   }
 
+  // *********************************************************************************
+  // ************** DCL Events messages **************
+  // *********************************************************************************
+
+  SendDCLEvents(isOk: boolean, eventListPayload: string) {
+    this.SendMessageToUnity('Bridges', 'DCLEvents', JSON.stringify({ ok: isOk, data: eventListPayload }))
+  }
+
   // NOTE: we override wasm's setThrew function before sending message to unity and restore it to it's
   // original function after message is sent. If an exception is thrown during SendMessage we assume that it's related
   // to the code executed by the SendMessage on unity's side.
