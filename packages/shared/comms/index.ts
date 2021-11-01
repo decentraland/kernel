@@ -113,6 +113,7 @@ import * as qs from 'query-string'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { BannedUsers } from 'shared/meta/types'
 import { signedFetch } from 'atomicHelpers/signedFetch'
+import { peerRemoveObservable, peerUpdateObservable } from './peerObservable'
 
 export type CommsVersion = 'v1' | 'v2'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -786,6 +787,7 @@ function collectInfo(context: Context) {
 
     if (!commArea.contains(trackingInfo.position)) {
       receiveUserVisible(peerAlias, false)
+      peerRemoveObservable.notifyObservers(peerAlias)
       continue
     }
 
@@ -805,6 +807,15 @@ function collectInfo(context: Context) {
       receiveUserPose(alias, peerInfo.position as Pose)
       receiveUserData(alias, peerInfo.userInfo)
       receiveUserTalking(alias, peerInfo.talking)
+      peerUpdateObservable.notifyObservers({
+        peerAlias: peerInfo.alias,
+        userId: peerInfo.userInfo.userId,
+        position: {
+          x: peerInfo.position[0],
+          y: peerInfo.position[1],
+          z: peerInfo.position[2]
+        }
+      })
     }
   } else {
     const sortedBySqDistanceVisiblePeers = visiblePeers.sort((p1, p2) => p1.squareDistance - p2.squareDistance)
@@ -817,8 +828,18 @@ function collectInfo(context: Context) {
         receiveUserPose(alias, peer.position as Pose)
         receiveUserData(alias, peer.userInfo)
         receiveUserTalking(alias, peer.talking)
+        peerUpdateObservable.notifyObservers({
+          peerAlias: peer.alias,
+          userId: peer.userInfo.userId,
+          position: {
+            x: peer.position[0],
+            y: peer.position[1],
+            z: peer.position[2]
+          }
+        })
       } else {
         receiveUserVisible(alias, false)
+        peerRemoveObservable.notifyObservers(alias)
       }
     }
   }
@@ -870,6 +891,7 @@ function removeAllPeers(context: Context) {
 function removePeer(context: Context, peerAlias: string) {
   context.peerData.delete(peerAlias)
   removeById(peerAlias)
+  peerRemoveObservable.notifyObservers(peerAlias)
   if (context.stats) {
     context.stats.onPeerRemoved(peerAlias)
   }
