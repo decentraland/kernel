@@ -674,8 +674,8 @@ export class BrowserInterface {
   }
 
   public async RequestDCLEvents(urlPayload: { value: string }) {
-    var eventListPayload = null
-    var isOk = false
+    let eventListPayload = null
+    let isOk = false
 
     try {
       const identity = getIdentity()
@@ -692,8 +692,7 @@ export class BrowserInterface {
       } else {
         eventListPayload = requestResult.text
       }
-    }
-    catch (e) {
+    } catch (e) {
       defaultLogger.warn("Couldn't fetch DCL Events!", e)
       isOk = false
       eventListPayload = e.message
