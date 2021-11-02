@@ -57,8 +57,7 @@ import { store } from 'shared/store/isolatedStore'
 
 const DEBUG = DEBUG_PM
 
-const logger = DEBUG_KERNEL_LOG? createLogger('chat: ') : createDummyLogger()
-
+const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
 const INITIAL_CHAT_SIZE = 50
 

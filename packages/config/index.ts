@@ -143,6 +143,8 @@ export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
 export const QS_MAX_VISIBLE_PEERS = typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
 
+export const BUILDER_SERVER_URL = ensureSingleString(qs.BUILDER_SERVER_URL) ?? 'https://builder-api.decentraland.org/v1'
+
 /**
  * Get the root URL and ensure not to end with slash
  * @returns Root URL with pathname where the index.html is served.
@@ -215,12 +217,12 @@ export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
 }
 
 function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
-  const tld = network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
   return `https://content-assets-as-bundle.decentraland.${tld}`
 }
 
 export function getServerConfigurations(network: ETHEREUM_NETWORK) {
-  const tld = network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
   const metaConfigBaseUrl = META_CONFIG_URL || `https://config.decentraland.${tld}/explorer.json`
   const metaFeatureFlagsBaseUrl = `https://feature-flags.decentraland.${tld}/explorer.json`

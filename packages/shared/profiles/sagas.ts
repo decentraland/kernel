@@ -1,6 +1,5 @@
-import { EntityType, Hashing } from 'dcl-catalyst-commons'
+import { EntityType, Hashing, Fetcher } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { Fetcher } from 'dcl-catalyst-commons'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 
 import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
@@ -229,7 +228,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     if (profile) {
-      profile!.ethAddress = identity.rawAddress
+      profile.ethAddress = identity.rawAddress
     }
   }
 
