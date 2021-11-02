@@ -153,7 +153,7 @@ export interface IUnityInterface {
   SendUnpublishSceneResult(result: DeploymentResult): void
 
   //Note: This message is deprecated and should be deleted in the future.
-  //      We are maintaining it for backward compatibility
+  //      We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
   SendBuilderCatalogHeaders(headers: Record<string, string>): void
 
   // *********************************************************************************
