@@ -620,7 +620,7 @@ export class BrowserInterface {
     const headers: Record<string, string> = identity
       ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
       : {}
-    getUnityInstance().SendHeaders(data.url, headers)
+    getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
