@@ -22,6 +22,8 @@ export class SignedFetch extends ExposableAPI {
     const network = getSelectedNetwork(state)
 
     const additionalMetadata: Record<string, any> = {
+      // specify that we are signing this message FOR the SDK
+      signedFor: 'sdk',
       sceneId: this.parcelIdentity.cid,
       parcel: this.getSceneData().scene.base,
       // THIS WILL BE DEPRECATED
