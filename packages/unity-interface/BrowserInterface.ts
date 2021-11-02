@@ -623,7 +623,6 @@ export class BrowserInterface {
     getUnityInstance().SendHeaders(data.url, headers)
   }
 
-
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
@@ -637,14 +636,10 @@ export class BrowserInterface {
     const identity = getCurrentIdentity(store.getState())
 
     const headers: Record<string, string> = identity
-    ? getAuthHeaders( 
-      data.method,
-      data.url,
-      data.metadata,
-      (payload) => Authenticator.signPayload(identity, data.url))
-    : {}
+      ? getAuthHeaders(data.method, data.url, data.metadata, (payload) => Authenticator.signPayload(identity, data.url))
+      : {}
 
-    getUnityInstance().SendHeaders(data.url,headers)
+    getUnityInstance().SendHeaders(data.url, headers)
   }
 
   public RequestWearables(data: {
