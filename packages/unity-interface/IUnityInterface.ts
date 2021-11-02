@@ -141,6 +141,7 @@ export interface IUnityInterface {
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
+  SendHeaders(endpoint: string,headers: Record<string, string>): void
   
   // *********************************************************************************
   // ************** Builder in world messages **************
@@ -148,7 +149,6 @@ export interface IUnityInterface {
 
   SendPublishSceneResult(result: DeploymentResult): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void
-  SendHeaders(endpoint: string,headers: Record<string, string>): void
   SendSceneAssets(assets: BuilderAsset[]): void
   SendUnpublishSceneResult(result: DeploymentResult): void
 
