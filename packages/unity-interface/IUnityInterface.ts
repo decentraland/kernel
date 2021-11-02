@@ -148,7 +148,7 @@ export interface IUnityInterface {
 
   SendPublishSceneResult(result: DeploymentResult): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void
-  SendCatalogHeaders(endpoint: string,headers: Record<string, string>): void
+  SendHeaders(endpoint: string,headers: Record<string, string>): void
   SendSceneAssets(assets: BuilderAsset[]): void
   SendUnpublishSceneResult(result: DeploymentResult): void
 

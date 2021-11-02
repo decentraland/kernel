@@ -69,7 +69,9 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
-import { isAddress } from "eth-connect"
+import { isAddress } from 'eth-connect'
+import { getAuthHeaders } from 'atomicHelpers/signedFetch'
+import { Authenticator } from 'dcl-crypto'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export let futures: Record<string, IFuture<any>> = {}
@@ -446,13 +448,13 @@ export class BrowserInterface {
     let { userId, action } = message
     let found = false
     let state = store.getState()
-    
+
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     if (action === FriendshipAction.REQUESTED_TO) {
       await ensureFriendProfile(userId)
-      
+
       if (isAddress(userId)) {
-        found = hasConnectedWeb3(state, userId)  
+        found = hasConnectedWeb3(state, userId)
       } else {
         let profileByName = findProfileByName(state, userId)
         if (profileByName) {
@@ -598,7 +600,7 @@ export class BrowserInterface {
   }
 
   //Note: This message is deprecated and should be deleted in the future.
-  //      We are maintaining it for backward compatibility
+  //      We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
   public RequestBIWCatalogHeader() {
     const identity = getCurrentIdentity(store.getState())
     if (!identity) {
@@ -610,22 +612,39 @@ export class BrowserInterface {
     }
   }
 
+  //Note: This message is deprecated and should be deleted in the future.
+  //      We are maintaining it for compatibility we can safely delete if we are further than 2/03/2022
   public RequestHeaderForUrl(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
     const headers: Record<string, string> = identity
       ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
       : {}
-    getUnityInstance().SendBuilderCatalogHeaders(headers)
+    getUnityInstance().SendHeaders(data.url, headers)
   }
 
-  public RequestHeaderForEndpoint(data: { method: string; url: string }) {
+
+  public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
     const headers: Record<string, string> = identity
       ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
       : {}
-    getUnityInstance().SendCatalogHeaders(data.url, headers)
+    getUnityInstance().SendHeaders(data.url, headers)
+  }
+
+  public RequestSignedHeader(data: { method: string; url: string; metadata: Record<string, any> }) {
+    const identity = getCurrentIdentity(store.getState())
+
+    const headers: Record<string, string> = identity
+    ? getAuthHeaders( 
+      data.method,
+      data.url,
+      data.metadata,
+      (payload) => Authenticator.signPayload(identity, data.url))
+    : {}
+
+    getUnityInstance().SendHeaders(data.url,headers)
   }
 
   public RequestWearables(data: {
