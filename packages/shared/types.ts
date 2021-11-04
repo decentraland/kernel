@@ -1,5 +1,6 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from 'decentraland-ecs'
+import type { Profile } from './profiles/types'
 export { Avatar, Profile, ColorString } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
@@ -26,6 +27,8 @@ export type UserData = {
   publicKey: string | null
   hasConnectedWeb3: boolean
   userId: string
+  version: Profile['version']
+  avatar: Profile['avatar']
 }
 
 export type MessageEntry = {

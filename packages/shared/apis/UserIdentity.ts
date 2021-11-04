@@ -6,6 +6,8 @@ import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
 
 import { ExposableAPI } from './ExposableAPI'
 import { onLoginCompleted } from 'shared/session/sagas'
+import { store } from 'shared/store/isolatedStore'
+import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/selectors'
 
 export interface IUserIdentity {
   /**
@@ -31,21 +33,34 @@ export class UserIdentity extends ExposableAPI implements IUserIdentity {
   }
 
   @exposeMethod
-  async getUserData(): Promise<UserData | null> {
-    const { identity } = await onLoginCompleted()
+  async getUserData(opt?: { userId?: string }): Promise<UserData | null> {
+    let profile = null
+    let userId = opt?.userId
+    let hasConnectedWeb3 = false
 
-    if (!identity || !identity.address) {
-      debugger
-      return null
+    if (!userId) {
+      const { identity } = await onLoginCompleted()
+
+      if (!identity || !identity.address) {
+        debugger
+        return null
+      }
+
+      profile = await EnsureProfile(identity?.address)
+      userId = profile.userId
+      hasConnectedWeb3 = !!identity.hasConnectedWeb3
+    } else {
+      profile = await EnsureProfile(userId)
+      hasConnectedWeb3 = hasConnectedWeb3Selector(store.getState(), userId)
     }
 
-    const profile = await EnsureProfile(identity?.address)
-
     return {
-      displayName: calculateDisplayName(identity.address, profile),
-      publicKey: identity.hasConnectedWeb3 ? identity.address : null,
-      hasConnectedWeb3: !!identity.hasConnectedWeb3,
-      userId: identity.address
+      displayName: calculateDisplayName(userId, profile),
+      publicKey: hasConnectedWeb3 ? profile?.ethAddress : null,
+      hasConnectedWeb3: hasConnectedWeb3,
+      userId: userId,
+      version: profile.version,
+      avatar: { ...profile.avatar }
     }
   }
 }
