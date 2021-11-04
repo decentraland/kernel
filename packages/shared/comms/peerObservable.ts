@@ -38,7 +38,7 @@ peerRemoveObservable.add((peerAlias) => {
 peerUpdateObservable.add(async (event) => {
   const { peerAlias, userId, position } = event
 
-  const peer = peersInfo[peerAlias] ?? { peerAlias, userId }
+  const peer = peersInfo[peerAlias] ?? { peerAlias, userId, scene: undefined }
   peersInfo[peerAlias] = peer
 
   if (peer.scene) {
