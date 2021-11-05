@@ -1,6 +1,5 @@
 import { LightweightWriter } from 'dcl-scene-writer'
 import * as ECS from 'decentraland-ecs'
-import { CLASS_ID } from 'decentraland-ecs'
 import { SerializedSceneState, CONTENT_PATH, Asset, AssetId } from './types'
 
 export function createGameFile(state: SerializedSceneState, assets: Map<AssetId, Asset>): string {
@@ -11,7 +10,7 @@ export function createGameFile(state: SerializedSceneState, assets: Map<AssetId,
 
     for (const component of entity.components) {
       switch (component.type) {
-        case CLASS_ID.TRANSFORM:
+        case ECS.CLASS_ID.TRANSFORM:
           const { position, rotation, scale } = component.value
           ecsEntity.addComponentOrReplace(
             new ECS.Transform({
@@ -21,18 +20,18 @@ export function createGameFile(state: SerializedSceneState, assets: Map<AssetId,
             })
           )
           break
-        case CLASS_ID.GLTF_SHAPE:
+        case ECS.CLASS_ID.GLTF_SHAPE:
           const { assetId } = component.value
           const asset: Asset | undefined = assetId ? assets.get(assetId) : undefined
           if (asset) {
             ecsEntity.addComponentOrReplace(new ECS.GLTFShape(`${CONTENT_PATH.MODELS_FOLDER}/${asset.model}`))
           }
           break
-        case CLASS_ID.NFT_SHAPE:
+        case ECS.CLASS_ID.NFT_SHAPE:
           const { src, style, color } = component.value
           ecsEntity.addComponentOrReplace(new ECS.NFTShape(src, { style, color }))
           break
-        case CLASS_ID.NAME:
+        case ECS.CLASS_ID.NAME:
           const { value } = component.value
           entityName = value
           break

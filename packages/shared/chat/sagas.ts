@@ -190,9 +190,6 @@ function initChatCommands() {
         response = TeleportController.goToMagic().message
       } else if (message.trim().toLowerCase() === 'random') {
         response = TeleportController.goToRandom().message
-      // TODO: remove this
-        // } else if (message.trim().toLowerCase() === 'next') {
-        // response = (await TeleportController.goToNext()).message
       } else if (message.trim().toLowerCase() === 'crowd') {
         response = `Teleporting to a crowd of people in current realm...`
 
@@ -466,7 +463,7 @@ function initChatCommands() {
           .join('\n')}`
     }
   })
-  
+
   addChatCommand('version', 'Shows application version', message => {
     let versions = injectVersions({})
     let kernelVersion = versions['@dcl/kernel'] || 'unknown'

@@ -30,7 +30,7 @@ function extractSemver(url: string): string | null {
   const r = url.match(/([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?/)
 
   if (r) {
-    return r[0]!
+    return r[0]
   }
 
   return null
@@ -94,7 +94,7 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
       return globalThis.DclRenderer!.initializeWebRenderer({
         baseUrl,
         canvas,
-        versionQueryParam: rendererVersion == 'dynamic' ? Date.now().toString() : rendererVersion,
+        versionQueryParam: rendererVersion === 'dynamic' ? Date.now().toString() : rendererVersion,
         onProgress,
         onMessageLegacy: options.onMessage,
         onError: (error) => {
