@@ -14,7 +14,7 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
     profiles: {
       nameValidCharacterRegex: nameValidCharacterRegex.toString().replace(/[/]/g, ''),
       nameValidRegex: nameValidRegex.toString().replace(/[/]/g, '')
-    }
+    },
     debugConfig: undefined,
     gifSupported:
       // tslint:disable-next-line
