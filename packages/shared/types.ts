@@ -437,7 +437,10 @@ export enum HUDElementID {
   NOTIFICATION = 3,
   AVATAR_EDITOR = 4,
   SETTINGS_PANEL = 5,
+
+  /** @deprecaed */
   EXPRESSIONS = 6,
+
   PLAYER_INFO_CARD = 7,
   AIRDROPPING = 8,
   TERMS_OF_SERVICE = 9,
@@ -463,7 +466,8 @@ export enum HUDElementID {
   BUILDER_PROJECTS_PANEL = 28,
   SIGNUP = 29,
   LOADING_HUD = 30,
-  AVATAR_NAMES = 31
+  AVATAR_NAMES = 31,
+  EMOTES= 32
 }
 
 export type HUDConfiguration = {
