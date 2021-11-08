@@ -619,6 +619,8 @@ export class BrowserInterface {
     getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
+  //Note: This message is deprecated and should be deleted in the future.
+  //      It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
