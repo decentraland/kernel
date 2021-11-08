@@ -8,7 +8,7 @@ import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import { loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
+import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -306,6 +306,18 @@ export async function startPreview() {
   if (location.search.indexOf('WS_SCENE') !== -1) {
     wsScene = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${document.location.host}/?scene`
   }
+
+  getPreviewSceneId().then(async (sceneData) => {
+    if (sceneData.sceneId) {
+      const { unityInterface } = await ensureUnityInterface()
+      unityInterface.SetKernelConfiguration({
+        debugConfig: {
+          sceneDebugPanelTargetSceneId: sceneData.sceneId!,
+          sceneLimitsWarningSceneId: sceneData.sceneId!
+        }
+      })
+    }
+  })
 
   function handleServerMessage(message: any) {
     if (message.type === 'update') {

@@ -14,13 +14,14 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
     profiles: {
       nameValidCharacterRegex: nameValidCharacterRegex.toString().replace(/[/]/g, ''),
       nameValidRegex: nameValidRegex.toString().replace(/[/]/g, '')
-    },
+    }
+    debugConfig: undefined,
     gifSupported:
       // tslint:disable-next-line
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
-    network: "mainnet",
+    network: 'mainnet',
     validWorldRanges: getWorld().validWorldRanges,
-    kernelVersion: versions['@dcl/kernel'] || "unknown-kernel-version",
-    rendererVersion: versions['@dcl/unity-renderer'] || "unknown-renderer-version"
+    kernelVersion: versions['@dcl/kernel'] || 'unknown-kernel-version',
+    rendererVersion: versions['@dcl/unity-renderer'] || 'unknown-renderer-version'
   }
 }

@@ -575,6 +575,11 @@ export type KernelConfigForRenderer = {
     nameValidRegex: string
     nameValidCharacterRegex: string
   }
+  debugConfig?: Partial<{
+    sceneDebugPanelEnabled?: boolean
+    sceneDebugPanelTargetSceneId?: string
+    sceneLimitsWarningSceneId?: string
+  }>
   gifSupported: boolean
   network: string
   validWorldRanges: Object

@@ -5,10 +5,11 @@ import {
   AUTO_CHANGE_REALM,
   genericAvatarSnapshots,
   COMMS_PROFILE_TIMEOUT,
-  COMMS_SERVICE
+  COMMS_SERVICE,
+  DEBUG_KERNEL_LOG
 } from 'config'
 import { CommunicationsController } from 'shared/apis/CommunicationsController'
-import { defaultLogger } from 'shared/logger'
+import { createDummyLogger, defaultLogger } from 'shared/logger'
 import { ChatMessage as InternalChatMessage, ChatMessageType, SceneFeatureToggles } from 'shared/types'
 import { lastPlayerParcel, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { lastPlayerScene } from 'shared/world/sceneState'
@@ -138,7 +139,7 @@ type CommsContainer = {
 
 declare const globalThis: CommsContainer
 
-const logger = createLogger('comms: ')
+const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
 
 type ProfilePromiseState = {
   promise: Promise<ProfileForRenderer | void>
@@ -165,18 +166,15 @@ export class PeerTrackingInfo {
 
   public loadProfileIfNecessary(profileVersion: number) {
     if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
-      if (!this.userInfo || !this.userInfo.userId) {
-        this.userInfo = {
-          ...(this.userInfo || {}),
-          userId: this.identity
-        }
+      if (!this.userInfo) {
+        this.userInfo = { userId: this.identity }
       }
       this.profilePromise = {
         promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
           .then((profile) => {
             const forRenderer = profileToRendererFormat(profile)
             this.lastProfileUpdate = new Date().getTime()
-            const userInfo = this.userInfo || {}
+            const userInfo = this.userInfo || { userId: this.identity } as UserInformation
             userInfo.version = profile.version
             this.userInfo = userInfo
             this.profilePromise.status = 'ok'
@@ -899,7 +897,13 @@ async function getPeerParameters(): Promise<PeerParameters> {
   }
 
   try {
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, { responseBodyType: 'json' })
+    const identity = getIdentity()
+
+    if (!identity) {
+      throw new Error('identity is undefined')
+    }
+
+    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, identity, { responseBodyType: 'json' })
 
     if (peerParameters.ok) {
       return { ...defaultPeerParameters, ...peerParameters.json }
@@ -923,6 +927,7 @@ export async function connect(userId: string) {
     }
 
     const userInfo = {
+      userId,
       ...user
     }
 
@@ -1208,7 +1213,7 @@ async function doStartCommunications(context: Context) {
 
     window.addEventListener('beforeunload', () => {
       context.positionUpdatesPaused = true
-      sendToMordor()
+      sendToMordor().catch(e => defaultLogger.warn(e))
     })
 
     context.infoCollecterInterval = setInterval(() => {
@@ -1219,7 +1224,7 @@ async function doStartCommunications(context: Context) {
 
     if (!voiceCommunicator) {
       voiceCommunicator = new VoiceCommunicator(
-        context.userInfo.userId!,
+        context.userInfo.userId,
         {
           send(frame: EncodedFrame) {
             if (context.currentPosition) {
@@ -1295,12 +1300,12 @@ function handleFullLayer() {
 
 export function onWorldRunning(isRunning: boolean, _context: Context | null = context) {
   if (!isRunning) {
-    sendToMordor(_context)
+    sendToMordor(_context).catch(e => defaultLogger.warn(e))
   }
 }
 
-export async function sendToMordor(_context: Context | null = context) {
-  await sendToMordorAsync().catch((e) => defaultLogger.warn(`error while sending message `, e))
+export function sendToMordor(_context: Context | null = context) {
+  return sendToMordorAsync().catch((e) => defaultLogger.warn(`error while sending message `, e))
 }
 
 async function sendToMordorAsync(_context: Context | null = context) {

@@ -1,6 +1,5 @@
-import { EntityType, Hashing } from 'dcl-catalyst-commons'
+import { EntityType, Hashing, Fetcher } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { Fetcher } from 'dcl-catalyst-commons'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 
 import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
@@ -29,7 +28,9 @@ import {
   deployProfileFailure,
   profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer
+  localProfileSentToRenderer,
+  SAVE_PROFILE_SUCCESS,
+  SaveProfileSuccess
 } from './actions'
 import { getProfile, hasConnectedWeb3 } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
@@ -65,6 +66,7 @@ import { ParcelsWithAccess } from 'decentraland-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
+import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
 const toBuffer = require('blob-to-buffer')
 
@@ -99,6 +101,7 @@ export function* profileSaga(): any {
   yield takeLatestByUserId(PROFILE_RANDOM, handleRandomAsSuccess)
 
   yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
+  yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
 
   yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
 
@@ -225,7 +228,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     if (profile) {
-      profile!.ethAddress = identity.rawAddress
+      profile.ethAddress = identity.rawAddress
     }
   }
 
@@ -299,7 +302,7 @@ export async function profileServerRequest(userId: string, version?: number) {
 
     let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
-    
+
     const fetcher = new Fetcher()
     const profiles = await fetcher.fetchJson(url)
 
@@ -358,6 +361,16 @@ function* sendLoadProfile(profile: Profile) {
   yield call(waitForRendererInstance)
   getUnityInstance().LoadProfile(rendererFormat)
   yield put(localProfileSentToRenderer())
+}
+
+function* submitProfileToScenes(action: SaveProfileSuccess) {
+  allScenesEvent({
+    eventType: 'profileChanged',
+    payload: {
+      ethAddress: action.payload.profile.ethAddress,
+      version: action.payload.profile.version
+    }
+  })
 }
 
 function* handleSaveAvatar(saveAvatar: SaveProfileRequest) {
