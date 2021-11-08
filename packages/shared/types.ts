@@ -616,3 +616,8 @@ export type TutorialInitializationMessage = {
   fromDeepLink: boolean
   enableNewTutorialCamera: boolean
 }
+
+export type HeaderRequest = {
+  endpoint: string
+  headers: Record<string,string>
+}
