@@ -78,3 +78,7 @@ export function EnsureProfile(userId: string, version?: number): Promise<Profile
     })
   })
 }
+
+export function getProfileIfExist(userId: string): Profile | null {
+  return getProfile(store.getState(), userId)
+}
