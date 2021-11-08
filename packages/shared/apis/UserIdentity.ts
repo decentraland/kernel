@@ -33,30 +33,33 @@ export class UserIdentity extends ExposableAPI implements IUserIdentity {
   }
 
   @exposeMethod
-  async getUserData(opt?: { userId?: string }): Promise<UserData | null> {
-    let profile = null
-    let userId = opt?.userId
-    let hasConnectedWeb3 = false
+  async getUserData(): Promise<UserData | null> {
+    const { identity } = await onLoginCompleted()
 
-    if (!userId) {
-      const { identity } = await onLoginCompleted()
-
-      if (!identity || !identity.address) {
-        debugger
-        return null
-      }
-
-      profile = await EnsureProfile(identity?.address)
-      userId = profile.userId
-      hasConnectedWeb3 = !!identity.hasConnectedWeb3
-    } else {
-      profile = await EnsureProfile(userId)
-      hasConnectedWeb3 = hasConnectedWeb3Selector(store.getState(), userId)
+    if (!identity || !identity.address) {
+      debugger
+      return null
     }
+
+    const profile = await EnsureProfile(identity?.address)
+
+    return {
+      displayName: calculateDisplayName(identity.address, profile),
+      publicKey: identity.hasConnectedWeb3 ? identity.address : null,
+      hasConnectedWeb3: !!identity.hasConnectedWeb3,
+      userId: identity.address
+    }
+  }
+
+  @exposeMethod
+  async getUserDataById(opt: { userId: string }): Promise<UserData | null> {
+    const userId = opt.userId
+    const profile = await EnsureProfile(userId)
+    const hasConnectedWeb3 = hasConnectedWeb3Selector(store.getState(), userId)
 
     return {
       displayName: calculateDisplayName(userId, profile),
-      publicKey: hasConnectedWeb3 ? profile?.ethAddress : null,
+      publicKey: hasConnectedWeb3 ? profile.ethAddress : null,
       hasConnectedWeb3: hasConnectedWeb3,
       userId: userId,
       version: profile.version,

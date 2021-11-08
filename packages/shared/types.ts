@@ -27,8 +27,8 @@ export type UserData = {
   publicKey: string | null
   hasConnectedWeb3: boolean
   userId: string
-  version: Profile['version']
-  avatar: Profile['avatar']
+  version?: Profile['version']
+  avatar?: Profile['avatar']
 }
 
 export type MessageEntry = {
