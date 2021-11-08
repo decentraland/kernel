@@ -75,5 +75,5 @@ export async function getKeysFromPersistentStorage(): Promise<string[]> {
   if (!persistentStorage) {
     throw new Error('Storage not supported')
   }
-  return await persistentStorage.keys()
+  return persistentStorage.keys()
 }

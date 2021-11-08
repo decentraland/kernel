@@ -125,7 +125,7 @@ function* loadCatalystRealms() {
     throw new Error('Unable to select a realm')
   }
 
-  yield put(setCatalystRealm(realm!))
+  yield put(setCatalystRealm(realm))
 
   defaultLogger.info(`Using Catalyst configuration: `, {
     original: yield select((state) => state.dao),

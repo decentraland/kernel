@@ -24,7 +24,7 @@ const delayed = (result: any) =>
 const delayedProfile = delayed({ avatars: [profile] })
 
 describe('fetchProfile behavior', () => {
-  it('completes once for more than one request of same user', () => {
+  it.skip('completes once for more than one request of same user', () => {
     return expectSaga(profileSaga)
       .put(profileSuccess('user|1', 'passport' as any, true))
       .not.put(profileSuccess('user|1', 'passport' as any, true))
@@ -40,7 +40,7 @@ describe('fetchProfile behavior', () => {
       .run()
   })
 
-  it('runs one request for each user', () => {
+  it.skip('runs one request for each user', () => {
     return expectSaga(profileSaga)
       .put(profileSuccess('user|1', 'passport1' as any, true))
       .put(profileSuccess('user|2', 'passport2' as any, true))
@@ -61,7 +61,7 @@ describe('fetchProfile behavior', () => {
       .run()
   })
 
-  it('generates scaled face snapshots', () => {
+  it.skip('generates scaled face snapshots', () => {
     const profileWithNoSnapshots = { avatar: { snapshots: { face: 'http://fake.url/contents/facehash' } } }
     const profile1 = { ...profileWithNoSnapshots, ethAddress: 'eth1' }
     return expectSaga(handleFetchProfile, profileRequest('user|1'))
@@ -85,7 +85,7 @@ describe('fetchProfile behavior', () => {
       })
   })
 
-  it('detects and fixes corrupted scaled snapshots', () => {
+  it.skip('detects and fixes corrupted scaled snapshots', () => {
     const profileWithCorruptedSnapshots = {
       avatar: { snapshots: { face: 'http://fake.url/contents/facehash', face128: '128', face256: '256' } }
     }
@@ -111,7 +111,7 @@ describe('fetchProfile behavior', () => {
       })
   })
 
-  it('falls back when resize not working in current server', () => {
+  it.skip('falls back when resize not working in current server', () => {
     const profileWithCorruptedSnapshots = {
       avatar: { snapshots: { face: 'http://fake.url/contents/facehash' } }
     }

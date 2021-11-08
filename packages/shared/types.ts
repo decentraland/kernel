@@ -1,6 +1,5 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from 'decentraland-ecs'
-
 export { Avatar, Profile, ColorString } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
@@ -580,11 +579,17 @@ export type KernelConfigForRenderer = {
     nameValidRegex: string
     nameValidCharacterRegex: string
   }
+
   features: {
     enableBuilderInWorld: boolean
     enableAvatarLODs: boolean
     enableExploreV2: boolean
   }
+  debugConfig?: Partial<{
+    sceneDebugPanelEnabled?: boolean
+    sceneDebugPanelTargetSceneId?: string
+    sceneLimitsWarningSceneId?: string
+  }>
   gifSupported: boolean
   network: string
   validWorldRanges: Object

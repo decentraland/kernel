@@ -1,6 +1,14 @@
 import { call, put, select, takeEvery } from 'redux-saga/effects'
 
-import { WITH_FIXED_COLLECTIONS, getAssetBundlesBaseUrl, getTLD, PREVIEW, DEBUG, ETHEREUM_NETWORK } from 'config'
+import {
+  WITH_FIXED_COLLECTIONS,
+  getAssetBundlesBaseUrl,
+  getTLD,
+  PREVIEW,
+  DEBUG,
+  ETHEREUM_NETWORK,
+  BUILDER_SERVER_URL
+} from 'config'
 
 import defaultLogger from 'shared/logger'
 import {
@@ -24,17 +32,16 @@ import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
-import {
-  BASE_BUILDER_SERVER_URL,
-  BASE_DOWNLOAD_URL,
-  BuilderServerAPIManager
-} from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
+import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { onLoginCompleted } from 'shared/session/sagas'
+import { ExplorerIdentity } from 'shared/session/types'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
+
+const BASE_BUILDER_DOWNLOAD_URL = `${BUILDER_SERVER_URL}/storage/contents`
 
 /**
  * This saga handles wearable definition fetching.
@@ -80,10 +87,11 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const catalystUrl = yield select(getCatalystServer)
   const client: CatalystClient = new CatalystClient(catalystUrl, 'EXPLORER')
+  const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
 
   const result: any[] = []
   if (filters.ownedByUser) {
-    const COLLECTIONS_ALLOWED = PREVIEW || DEBUG || getTLD() !== 'org'
     if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
       // The WITH_FIXED_COLLECTIONS config can only be used in zone. However, we want to be able to use prod collections for testing.
       // That's why we are also querying a prod catalyst for the given collections
@@ -93,8 +101,8 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       const urnCollections = collectionIds.filter((collectionId) => collectionId.startsWith('urn'))
       if (urnCollections.length > 0) {
         const orgClient: CatalystClient = yield CatalystClient.connectedToCatalystIn('mainnet', 'EXPLORER')
-        const zoneWearables = yield client.fetchWearables({ collectionIds: urnCollections })
-        const orgWearables = yield orgClient.fetchWearables({ collectionIds: urnCollections })
+        const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
+        const orgWearables: PartialWearableV2[] = yield orgClient.fetchWearables({ collectionIds: urnCollections })
         result.push(...zoneWearables, ...orgWearables)
       }
 
@@ -102,16 +110,14 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       const uuidCollections = collectionIds.filter((collectionId) => !collectionId.startsWith('urn'))
       if (uuidCollections.length > 0) {
         yield onLoginCompleted()
-        const identity = yield select(getCurrentIdentity)
-        for (const collectionUuid of uuidCollections) {
-          const path = `collections/${collectionUuid}/items`
-          const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
-          const collection: { data: UnpublishedWearable[] } = yield fetchJson(`${BASE_BUILDER_SERVER_URL}${path}`, {
-            headers
-          })
-          const v2Wearables = collection.data.map((wearable) => mapUnpublishedWearableIntoCatalystWearable(wearable))
-          result.push(...v2Wearables)
-        }
+        const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+        const v2Wearables: PartialWearableV2[] = yield call(
+          fetchWearablesByCollectionFromBuilder,
+          uuidCollections,
+          filters,
+          identity
+        )
+        result.push(...v2Wearables)
       }
     } else {
       const ownedWearables: OwnedWearablesWithDefinition[] = yield call(
@@ -128,8 +134,25 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       }
     }
   } else {
-    const wearables = yield call(fetchWearablesByFilters, filters, client)
+    const wearables: PartialWearableV2[] = yield call(fetchWearablesByFilters, filters, client)
     result.push(...wearables)
+
+    if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
+      const uuidCollections = WITH_FIXED_COLLECTIONS.split(',').filter(
+        (collectionId) => !collectionId.startsWith('urn')
+      )
+      if (uuidCollections.length > 0) {
+        yield onLoginCompleted()
+        const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+        const v2Wearables: PartialWearableV2[] = yield call(
+          fetchWearablesByCollectionFromBuilder,
+          uuidCollections,
+          filters,
+          identity
+        )
+        result.push(...v2Wearables)
+      }
+    }
   }
 
   return result.map(mapCatalystWearableIntoV2)
@@ -143,6 +166,31 @@ async function fetchWearablesByFilters(filters: WearablesRequestFilters, client:
   return client.fetchWearables(filters)
 }
 
+async function fetchWearablesByCollectionFromBuilder(
+  uuidCollections: string[],
+  filters: WearablesRequestFilters | undefined,
+  identity: ExplorerIdentity
+) {
+  const result = []
+  for (const collectionUuid of uuidCollections) {
+    if (filters?.collectionIds && !filters.collectionIds.includes(collectionUuid)) {
+      continue
+    }
+
+    const path = `collections/${collectionUuid}/items`
+    const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
+    const collection: { data: UnpublishedWearable[] } = await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
+      headers
+    })
+    const v2Wearables = collection.data.map((wearable) => mapUnpublishedWearableIntoCatalystWearable(wearable))
+    result.push(...v2Wearables)
+  }
+  if (filters?.wearableIds) {
+    return result.filter((w) => filters.wearableIds!.includes(w.id))
+  }
+  return result
+}
+
 /**
  * We are now mapping wearables that were fetched from the builder server into the same format that is returned by the catalysts
  */
@@ -152,7 +200,7 @@ function mapUnpublishedWearableIntoCatalystWearable(wearable: UnpublishedWearabl
     id,
     rarity,
     i18n: [{ code: 'en', text: name }],
-    thumbnail: `${BASE_DOWNLOAD_URL}/${contentToHash[thumbnail]}`,
+    thumbnail: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[thumbnail]}`,
     description,
     data: {
       ...data,
@@ -160,7 +208,7 @@ function mapUnpublishedWearableIntoCatalystWearable(wearable: UnpublishedWearabl
         ...other,
         contents: contents.map((key) => ({
           key,
-          url: `${BASE_DOWNLOAD_URL}/${contentToHash[key]}`
+          url: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[key]}`
         }))
       }))
     }

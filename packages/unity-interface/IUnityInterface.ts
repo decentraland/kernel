@@ -24,6 +24,7 @@ import {
   UpdateUserStatusMessage,
   WorldPosition
 } from '../shared/types'
+import { FeatureFlag } from 'shared/meta/types'
 
 export type RealmInfo = {
   serverName: string
@@ -91,6 +92,7 @@ export interface IUnityInterface {
   UpdateParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
   UnloadScene(sceneId: string): void
   SendSceneMessage(messages: string): void
+  /** @deprecated send it with the kernelConfigForRenderer instead. */
   SetSceneDebugPanel(): void
   ShowFPSPanel(): void
   HideFPSPanel(): void
@@ -136,7 +138,8 @@ export interface IUnityInterface {
   SetUserTalking(userId: string, talking: boolean): void
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
-  SetKernelConfiguration(config: KernelConfigForRenderer): void
+  SetKernelConfiguration(config: Partial<KernelConfigForRenderer>): void
+  SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SendPublishSceneResult(result: DeploymentResult): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void

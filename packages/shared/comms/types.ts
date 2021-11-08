@@ -15,3 +15,18 @@ export enum VoicePolicy {
   ALLOW_VERIFIED_ONLY,
   ALLOW_FRIENDS_ONLY
 }
+
+// These types appear to be unavailable when compiling for some reason, so we add them here
+
+type RTCIceCredentialType = "password"
+
+export interface RTCIceServer {
+  credential?: string
+  credentialType?: RTCIceCredentialType
+  urls: string | string[]
+  username?: string
+}
+
+export type PeerParameters = {
+  iceServers: RTCIceServer[]
+}

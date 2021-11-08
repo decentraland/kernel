@@ -1,6 +1,5 @@
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
-import { Vector3 } from 'decentraland-ecs'
-import { ProfileForRenderer, MinimapSceneInfo } from 'decentraland-ecs'
+import { Vector3, ProfileForRenderer, MinimapSceneInfo } from 'decentraland-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {
@@ -31,6 +30,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { WearableV2 } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
+import { FeatureFlag } from 'shared/meta/types'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -167,6 +167,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity(`SceneController`, `SendSceneMessage`, messages)
   }
 
+  /** @deprecated send it with the kernelConfigForRenderer instead. */
   public SetSceneDebugPanel() {
     this.SendMessageToUnity('Main', 'SetSceneDebugPanel')
   }
@@ -406,8 +407,12 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'SetVoiceChatEnabledByScene', enabled ? 1 : 0)
   }
 
-  public SetKernelConfiguration(config: KernelConfigForRenderer) {
+  public SetKernelConfiguration(config: Partial<KernelConfigForRenderer>) {
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
+  }
+
+  public SetFeatureFlagsConfiguration(config: FeatureFlag) {
+    this.SendMessageToUnity('Bridges', 'SetFeatureFlagConfiguration', JSON.stringify(config))
   }
 
   public UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>) {

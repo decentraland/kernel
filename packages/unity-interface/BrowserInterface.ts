@@ -2,13 +2,12 @@ import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { AvatarMessageType } from 'shared/comms/interface/types'
 import { avatarMessageObservable, localProfileUUID } from 'shared/comms/peers'
-import { hasConnectedWeb3 } from 'shared/profiles/selectors'
+import { findProfileByName, hasConnectedWeb3 } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3 } from 'decentraland-ecs'
-import { IEventNames } from 'decentraland-ecs'
+import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3, IEventNames } from 'decentraland-ecs'
 import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -30,7 +29,7 @@ import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  loadedSceneWorkers
+  allScenesEvent
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -69,6 +68,7 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { isAddress } from "eth-connect"
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export let futures: Record<string, IFuture<any>> = {}
@@ -95,12 +95,6 @@ type SystemInfoPayload = {
   processorType: string
   processorCount: number
   systemMemorySize: number
-}
-
-function allScenesEvent(data: { eventType: string; payload: any }) {
-  for (const [_key, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType as IEventNames, data.payload)
-  }
 }
 
 // the BrowserInterface is a visitor for messages received from Unity
@@ -161,6 +155,15 @@ export class BrowserInterface {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
       scene.emit(data.eventType as IEventNames, data.payload)
+
+      // Keep backward compatibility with old scenes using deprecated `pointerEvent`
+      if (data.eventType === 'actionButtonEvent') {
+        const { payload } = data.payload
+        // CLICK, PRIMARY or SECONDARY
+        if (payload.buttonId >= 0 && payload.buttonId <= 2) {
+          scene.emit('pointerEvent', data.payload)
+        }
+      }
     } else {
       if (data.eventType !== 'metricsUpdate') {
         defaultLogger.error(`SceneEvent: Scene ${data.sceneId} not found`, data)
@@ -238,10 +241,7 @@ export class BrowserInterface {
   }
 
   public MotdConfirmClicked() {
-    if (hasWallet()) {
-      // TODO: no longer used
-      // TeleportController.goToNext()
-    } else {
+    if (!hasWallet()) {
       globalObservable.emit('openUrl', { url: 'https://docs.decentraland.org/get-a-wallet/' })
     }
   }
@@ -308,6 +308,10 @@ export class BrowserInterface {
 
   public SaveUserUnverifiedName(changes: { newUnverifiedName: string }) {
     store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
+  }
+
+  public SaveUserDescription(changes: { description: string }) {
+    store.dispatch(saveProfileRequest({ description: changes.description }))
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
@@ -436,17 +440,27 @@ export class BrowserInterface {
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     let { userId, action } = message
+    let found = false
+    let state = store.getState()
 
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
-    let found = false
     if (action === FriendshipAction.REQUESTED_TO) {
       await ensureFriendProfile(userId)
-      found = hasConnectedWeb3(store.getState(), userId)
+
+      if (isAddress(userId)) {
+        found = hasConnectedWeb3(state, userId)
+      } else {
+        let profileByName = findProfileByName(state, userId)
+        if (profileByName) {
+          userId = profileByName.userId
+          found = true
+        }
+      }
     }
 
     if (!found) {
       // if user profile was not found on server -> no connected web3, check if it's a claimed name
-      const net = getSelectedNetwork(store.getState())
+      const net = getSelectedNetwork(state)
       const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
       if (address) {
         // if an address was found for the name -> set as user id & add that instead
@@ -552,7 +566,7 @@ export class BrowserInterface {
   }
 
   public FetchBalanceOfMANA() {
-    ;(async () => {
+    (async () => {
       const identity = getIdentity()
 
       if (!identity?.hasConnectedWeb3) {
@@ -564,7 +578,7 @@ export class BrowserInterface {
         this.lastBalanceOfMana = balance
         getUnityInstance().UpdateBalanceOfMANA(`${balance}`)
       }
-    })().catch((err) => console.error(err))
+    })().catch((err) => defaultLogger.error(err))
   }
 
   public SetMuteUsers(data: { usersId: string[]; mute: boolean }) {
@@ -588,6 +602,15 @@ export class BrowserInterface {
       const headers = BuilderServerAPIManager.authorize(identity, 'get', '/assetpacks')
       getUnityInstance().SendBuilderCatalogHeaders(headers)
     }
+  }
+
+  public RequestHeaderForUrl(data: { method: string; url: string }) {
+    const identity = getCurrentIdentity(store.getState())
+
+    const headers: Record<string, string> = identity
+      ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
+      : {}
+    getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
   public RequestWearables(data: {

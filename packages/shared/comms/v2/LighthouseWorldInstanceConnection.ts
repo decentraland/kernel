@@ -169,8 +169,8 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     }
   }
 
-  async sendInitialMessage(userInfo: Partial<UserInformation>) {
-    const topic = userInfo.userId!
+  async sendInitialMessage(userInfo: UserInformation) {
+    const topic = userInfo.userId
 
     await this.sendProfileData(userInfo, topic, 'initialProfile')
   }
