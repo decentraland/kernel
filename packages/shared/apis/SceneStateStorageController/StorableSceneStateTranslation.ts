@@ -12,7 +12,7 @@ import {
   UnityColor
 } from './types'
 import { BuilderServerAPIManager } from './BuilderServerAPIManager'
-import { toHumanReadableType, fromHumanReadableType, camelize } from './utils'
+import { toHumanReadableType, fromHumanReadableType, camelize, getUniqueNameForGLTF } from './utils'
 import { SceneTransformTranslator } from './SceneTransformTranslator'
 
 const CURRENT_SCHEMA_VERSION = 1
@@ -40,6 +40,8 @@ export async function toBuilderFromStateDefinitionFormat(
 ): Promise<BuilderManifest> {
   let entities: Record<string, BuilderEntity> = {}
   let builderComponents: Record<string, BuilderComponent> = {}
+  let gltfNames: string[] = []
+  let nftCount = 0
 
   // Iterate every entity to get the components for builder
   for (const [entityId, components] of scene.getState().entries()) {
@@ -59,7 +61,13 @@ export async function toBuilderFromStateDefinitionFormat(
       // This is a special case where we are assinging the builder url field for NFTs
       if (componentType === 'NFTShape') {
         component.data.url = component.data.src
-        entityName = "nft"
+        if (nftCount >= 1) {
+          //This is the format that is used by builder
+          entityName = 'nft' + (nftCount + 1)
+        } else {
+          entityName = 'nft'
+          nftCount = nftCount + 1
+        }
       }
 
       // We iterate over the GLTF to find the asset.
@@ -67,7 +75,7 @@ export async function toBuilderFromStateDefinitionFormat(
       if (componentType === 'GLTFShape') {
         const assets = await builderApiManager.getAssets([component.data.assetId])
         for (const value of Object.values(assets)) {
-          entityName = camelize(value.name)
+          entityName = getUniqueNameForGLTF(gltfNames, camelize(value.name), 1)
         }
       }
 
@@ -86,6 +94,8 @@ export async function toBuilderFromStateDefinitionFormat(
         component.data.builderValue = entityName
       }
     }
+
+    gltfNames.push(entityName)
 
     // we add the entity to builder format
     let builderEntity: BuilderEntity = {

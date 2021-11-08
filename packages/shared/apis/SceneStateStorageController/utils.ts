@@ -16,10 +16,38 @@ const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
   ['Script', CLASS_ID.SMART_ITEM]
 ])
 
+export function getUniqueNameForGLTF(currentNames: string[], gltfName: string, amountOfTimesAppear: number): string {
+  let nameToReturn: string = gltfName
+
+  nameToReturn = removesSpecialCharacters(nameToReturn,currentNames)
+  
+  if (amountOfTimesAppear > 1) nameToReturn = nameToReturn + amountOfTimesAppear
+
+  for (let i = 0; i < currentNames.length; i++) {
+    if (currentNames[i] === nameToReturn) 
+      nameToReturn = getUniqueNameForGLTF(currentNames, gltfName, amountOfTimesAppear + 1)
+  }
+  return nameToReturn
+}
+
+function removesSpecialCharacters(assetName: string, takenNames: string[]) {
+  const parts = assetName.match(/[A-Za-z]+/g)
+  const rawName = parts ? parts.map(part => part.toLowerCase()).join('_') : 'entity'
+  let entityName = rawName
+  let count = 1
+  const takenNamesSet = new Set(takenNames)
+  while(takenNamesSet.has(entityName)) {
+    entityName = `${rawName}_${++count}`
+  }
+  return entityName
+}
+
 export function camelize(str: string) {
-  return str.replace(/(?:^\w|[A-Z]|\b\w)/g, function(word: any, index: any) {
-    return index === 0 ? word.toLowerCase() : word.toUpperCase()
-  }).replace(/\s+/g, '')
+  return str
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, function (word: any, index: any) {
+      return index === 0 ? word.toLowerCase() : word.toUpperCase()
+    })
+    .replace(/\s+/g, '')
 }
 
 export function toHumanReadableType(type: number): string {
