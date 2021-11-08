@@ -2,7 +2,7 @@ import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER 
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import { ILand, SceneJsonData } from 'shared/types'
-import { enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
+import { allScenesEvent, enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
 import {
   observeLoadingStateChange,
@@ -221,6 +221,12 @@ teleportObservable.add((position: { x: number; y: number; text?: string }) => {
       getUnityInstance().SetCursorState(isLocked)
     }
     isPointerLocked = isLocked
+    allScenesEvent({
+      eventType: 'onPointerLock',
+      payload: {
+        locked: isPointerLocked
+      }
+    })
   }
 
   document.addEventListener('pointerlockchange', pointerLockChange, false)
