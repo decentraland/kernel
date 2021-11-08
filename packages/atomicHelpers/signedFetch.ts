@@ -5,7 +5,7 @@ const AUTH_CHAIN_HEADER_PREFIX = 'x-identity-auth-chain-'
 const AUTH_TIMESTAMP_HEADER = 'x-identity-timestamp'
 const AUTH_METADATA_HEADER = 'x-identity-metadata'
 
-function getAuthHeaders(
+export function getAuthHeaders(
   method: string,
   path: string,
   metadata: Record<string, any>,

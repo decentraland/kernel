@@ -596,12 +596,6 @@ export type KernelConfigForRenderer = {
     nameValidRegex: string
     nameValidCharacterRegex: string
   }
-
-  features: {
-    enableBuilderInWorld: boolean
-    enableAvatarLODs: boolean
-    enableExploreV2: boolean
-  }
   debugConfig?: Partial<{
     sceneDebugPanelEnabled?: boolean
     sceneDebugPanelTargetSceneId?: string
@@ -636,4 +630,9 @@ export type CurrentRealmInfoForRenderer = {
 export type TutorialInitializationMessage = {
   fromDeepLink: boolean
   enableNewTutorialCamera: boolean
+}
+
+export type HeaderRequest = {
+  endpoint: string
+  headers: Record<string,string>
 }
