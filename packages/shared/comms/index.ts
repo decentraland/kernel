@@ -106,9 +106,13 @@ async function getPeerParameters(): Promise<PeerParameters> {
   }
 
   try {
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, {
-      responseBodyType: 'json'
-    })
+    const identity = getIdentity()
+
+    if (!identity) {
+      throw new Error('identity is undefined')
+    }
+
+    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, identity, { responseBodyType: 'json' })
 
     if (peerParameters.ok) {
       return { ...defaultPeerParameters, ...peerParameters.json }
@@ -136,18 +140,18 @@ export async function connect(): Promise<void> {
       return
     }
 
-    const user = await getStoredSession(identity?.address)
+    const user = await getStoredSession(identity.address)
 
     if (!user) {
       return
     }
-    
+
     const userInfo = {
-      userId,
+      userId: identity.address,
       ...user
     }
 
-    const commsContext = new CommsContext(user)
+    const commsContext = new CommsContext(userInfo)
 
     initVoiceCommunicator(user.identity.address)
 

@@ -8,7 +8,7 @@ import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import { loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
+import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -205,6 +205,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.AVATAR_NAMES, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.SETTINGS_PANEL, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.EXPRESSIONS, { active: true, visible: true })
+  i.ConfigureHUDElement(HUDElementID.EMOTES, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.PLAYER_INFO_CARD, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.AIRDROPPING, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.TERMS_OF_SERVICE, { active: true, visible: true })
@@ -224,8 +225,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
-      configForRenderer.features.enableBuilderInWorld = BUILDER_IN_WORLD_ENABLED
-      configForRenderer.features.enableExploreV2 = EXPLORE_V2_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
   
@@ -308,6 +307,18 @@ export async function startPreview() {
   if (location.search.indexOf('WS_SCENE') !== -1) {
     wsScene = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${document.location.host}/?scene`
   }
+
+  getPreviewSceneId().then(async (sceneData) => {
+    if (sceneData.sceneId) {
+      const { unityInterface } = await ensureUnityInterface()
+      unityInterface.SetKernelConfiguration({
+        debugConfig: {
+          sceneDebugPanelTargetSceneId: sceneData.sceneId!,
+          sceneLimitsWarningSceneId: sceneData.sceneId!
+        }
+      })
+    }
+  })
 
   function handleServerMessage(message: any) {
     if (message.type === 'update') {

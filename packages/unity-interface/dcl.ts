@@ -2,7 +2,7 @@ import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER 
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import { ILand, SceneJsonData } from 'shared/types'
-import { enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
+import { allScenesEvent, enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
 import {
   observeLoadingStateChange,
@@ -24,6 +24,7 @@ import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
+import defaultLogger from 'shared/logger'
 
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
@@ -76,6 +77,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 
   if (SCENE_DEBUG_PANEL) {
+    getUnityInstance().SetKernelConfiguration({ debugConfig: { sceneDebugPanelEnabled: true } })
     getUnityInstance().SetSceneDebugPanel()
   }
 
@@ -164,63 +166,43 @@ export async function startUnitySceneWorkers() {
   store.dispatch(signalParcelLoadingStarted())
 }
 
-export async function loadPreviewScene(ws?: string) {
+export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
   const result = await fetch('/scene.json?nocache=' + Math.random())
 
   if (result.ok) {
     const scene = (await result.json()) as SceneJsonData
 
     const [sceneId] = await fetchSceneIds([scene.scene.base])
-
-    if (sceneId) {
-      await reloadScene(sceneId)
-    } else {
-      console.log(`Unable to load sceneId of ${scene.scene.base}`)
-      debugger
-    }
-
-    // let transport: undefined | ScriptingTransport = undefined
-
-    // if (ws) {
-    //   transport = WebSocketTransport(new WebSocket(ws, ['dcl-scene']))
-    // }
+    return { sceneId, sceneBase: scene.scene.base }
   } else {
     throw new Error('Could not load scene.json')
   }
 }
 
+export async function loadPreviewScene(ws?: string) {
+  const { sceneId, sceneBase } = await getPreviewSceneId()
+
+  if (sceneId) {
+    await reloadScene(sceneId)
+  } else {
+    defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
+    debugger
+  }
+}
+
 export function loadBuilderScene(sceneData: ILand): UnityParcelScene | undefined {
+  // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
-  // unloadCurrentBuilderScene()
-
-  // const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(sceneData))
-
-  // const target: LoadableParcelScene = { ...ILandToLoadableParcelScene(sceneData).data }
-  // delete target.land
-
-  // getUnityInstance().LoadParcelScenes([target])
-  // return parcelScene
 }
 
 export function unloadCurrentBuilderScene() {
+  // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
-  // if (currentLoadedScene) {
-  //   getUnityInstance().DeactivateRendering()
-  //   currentLoadedScene.emit('builderSceneUnloaded', {})
-
-  //   stopParcelSceneWorker(currentLoadedScene)
-  //   getUnityInstance().SendBuilderMessage('UnloadBuilderScene', currentLoadedScene.getSceneId())
-  //   currentLoadedScene = null
-  // }
 }
 
 export function updateBuilderScene(sceneData: ILand) {
+  // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
-  // if (currentLoadedScene) {
-  //   const target: LoadableParcelScene = { ...ILandToLoadableParcelSceneUpdate(sceneData).data }
-  //   delete target.land
-  //   getUnityInstance().UpdateParcelScenes([target])
-  // }
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {
@@ -239,6 +221,12 @@ teleportObservable.add((position: { x: number; y: number; text?: string }) => {
       getUnityInstance().SetCursorState(isLocked)
     }
     isPointerLocked = isLocked
+    allScenesEvent({
+      eventType: 'onPointerLock',
+      payload: {
+        locked: isPointerLocked
+      }
+    })
   }
 
   document.addEventListener('pointerlockchange', pointerLockChange, false)

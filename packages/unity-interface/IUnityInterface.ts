@@ -92,6 +92,7 @@ export interface IUnityInterface {
   UpdateParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
   UnloadScene(sceneId: string): void
   SendSceneMessage(messages: string): void
+  /** @deprecated send it with the kernelConfigForRenderer instead. */
   SetSceneDebugPanel(): void
   ShowFPSPanel(): void
   HideFPSPanel(): void
@@ -137,15 +138,24 @@ export interface IUnityInterface {
   SetUserTalking(userId: string, talking: boolean): void
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
-  SetKernelConfiguration(config: KernelConfigForRenderer): void
+  SetKernelConfiguration(config: Partial<KernelConfigForRenderer>): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
+  SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
+  SendHeaders(endpoint: string,headers: Record<string, string>): void
+  
+  // *********************************************************************************
+  // ************** Builder in world messages **************
+  // *********************************************************************************
+
   SendPublishSceneResult(result: DeploymentResult): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void
-  SendBuilderCatalogHeaders(headers: Record<string, string>): void
   SendSceneAssets(assets: BuilderAsset[]): void
-  SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
   SendUnpublishSceneResult(result: DeploymentResult): void
+
+  //Note: This message is deprecated and should be deleted in the future.
+  //      We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
+  SendBuilderCatalogHeaders(headers: Record<string, string>): void
 
   // *********************************************************************************
   // ************** Quests messages **************

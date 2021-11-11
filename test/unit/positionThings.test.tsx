@@ -22,10 +22,10 @@ describe('pickWorldSpawnPoint unit tests', function () {
 
     const pick = pickWorldSpawnpoint(land)
 
-    expect(pick).to.deep.equal({
+    expect(JSON.stringify(pick)).to.deep.equal(JSON.stringify({
       position: { x: 1 + basePosition.x, y: 2 + basePosition.y, z: 3 + basePosition.z },
       cameraTarget: { x: 9 + basePosition.x, y: 8 + basePosition.y, z: 7 + basePosition.z }
-    })
+    }))
   })
 
   it('picks a spawn point from the default ones when existing', () => {
@@ -53,10 +53,10 @@ describe('pickWorldSpawnPoint unit tests', function () {
 
     const pick = pickWorldSpawnpoint(land)
 
-    expect(pick).to.deep.equal({
+    expect(JSON.stringify(pick)).to.deep.equal(JSON.stringify({
       position: { x: 1 + basePosition.x, y: 2 + basePosition.y, z: 3 + basePosition.z },
       cameraTarget: { x: 9 + basePosition.x, y: 8 + basePosition.y, z: 7 + basePosition.z }
-    })
+    }))
   })
 
   it('spawn point with components in range', () => {
@@ -93,10 +93,10 @@ describe('pickWorldSpawnPoint unit tests', function () {
 
     const pick = pickWorldSpawnpoint(land)
 
-    expect(pick).to.deep.equal({
+    expect(JSON.stringify(pick)).to.deep.equal(JSON.stringify({
       position: basePosition,
       cameraTarget: undefined
-    })
+    }))
   })
 
 })

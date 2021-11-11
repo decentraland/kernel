@@ -110,7 +110,7 @@ TEST_SOURCE_FILES := $(wildcard test/**/*.ts)
 test/out/index.js: build-essentials $(TEST_SOURCE_FILES)
 	@$(COMPILER) ./targets/test.json
 
-test: build-essentials test-scenes test/out/index.js ## Run all the tests
+test: build-essentials test/out/index.js ## Run all the tests
 	$(MAKE) generate-mocks
 	@node scripts/runTestServer.js
 

@@ -18,13 +18,13 @@ export enum VoicePolicy {
 
 // These types appear to be unavailable when compiling for some reason, so we add them here
 
-type RTCIceCredentialType = "password";
+type RTCIceCredentialType = "password"
 
 export interface RTCIceServer {
-  credential?: string;
-  credentialType?: RTCIceCredentialType;
-  urls: string | string[];
-  username?: string;
+  credential?: string
+  credentialType?: RTCIceCredentialType
+  urls: string | string[]
+  username?: string
 }
 
 export type PeerParameters = {

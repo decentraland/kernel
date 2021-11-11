@@ -142,7 +142,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
   }
 
   async sendInitialMessage(userProfile: UserInformation) {
-    const topic = userProfile.userId!
+    const topic = userProfile.userId
 
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)

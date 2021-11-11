@@ -15,6 +15,8 @@ enum Category {
      PROFILE = 2;
      CHAT = 3;
      SCENE_MESSAGE = 4;
+     PROF_REQ = 5;
+     PROF_RES = 6;
 }
 
 message DataHeader {

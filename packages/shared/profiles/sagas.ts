@@ -28,7 +28,9 @@ import {
   deployProfileFailure,
   profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer
+  localProfileSentToRenderer,
+  SAVE_PROFILE_SUCCESS,
+  SaveProfileSuccess
 } from './actions'
 import { getProfile, hasConnectedWeb3 } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
@@ -67,6 +69,7 @@ import { createFakeName } from './utils/fakeName'
 import { requestLocalProfileToPeers } from 'shared/comms/handlers'
 import { getCommsContext } from 'shared/protocol/selectors'
 import { CommsContext } from 'shared/comms/context'
+import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
 const toBuffer = require('blob-to-buffer')
 
@@ -101,6 +104,7 @@ export function* profileSaga(): any {
   yield takeLatestByUserId(PROFILE_RANDOM, handleRandomAsSuccess)
 
   yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
+  yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
 
   yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
 
@@ -362,6 +366,16 @@ function* sendLoadProfile(profile: Profile) {
   yield call(waitForRendererInstance)
   getUnityInstance().LoadProfile(rendererFormat)
   yield put(localProfileSentToRenderer())
+}
+
+function* submitProfileToScenes(action: SaveProfileSuccess) {
+  allScenesEvent({
+    eventType: 'profileChanged',
+    payload: {
+      ethAddress: action.payload.profile.ethAddress,
+      version: action.payload.profile.version
+    }
+  })
 }
 
 function* handleSaveAvatar(saveAvatar: SaveProfileRequest) {
