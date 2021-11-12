@@ -158,7 +158,6 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     d.setTime(Date.now())
     d.setProfileType(getProfileType(userProfile.identity))
     userProfile.version && d.setProfileVersion('' + userProfile.version)
-    console.log('Sending profile message ', d.toObject())
 
     const r = this.sendTopicIdentityMessage(true, topic, d)
     if (this._stats) {
@@ -175,7 +174,6 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     d.setUserId(userId)
     version && d.setProfileVersion('' + version)
 
-    console.log('Sending profile request ', d.toObject())
     const r = this.sendTopicIdentityMessage(true, topic, d)
     if (this._stats) {
       this._stats.profile.incrementSent(1, r.bytesSize)
@@ -189,7 +187,6 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     d.setCategory(Category.PROF_RES)
     d.setTime(Date.now())
     d.setSerializedProfile(JSON.stringify(profile))
-    console.log('Sending profile response ', d.toObject())
 
     const r = this.sendTopicIdentityMessage(true, topic, d)
     if (this._stats) {
