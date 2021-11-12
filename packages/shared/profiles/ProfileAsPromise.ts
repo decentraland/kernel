@@ -12,7 +12,8 @@ const PROFILE_HARD_TIMEOUT_MS = COMMS_PROFILE_TIMEOUT + 20000
 
 export function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Profile> {
   function isExpectedVersion(aProfile: Profile) {
-    return !version || aProfile.version >= version || aProfile.version === -1 // We signal random profiles with -1
+    return !version || aProfile.version >= version 
+    // || aProfile.version === -1 // We signal random profiles with -1
   }
 
   const [status, existingProfile] = getProfileStatusAndData(store.getState(), userId)

@@ -195,6 +195,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   let profile: ServerFormatProfile | null = null
   let hasConnectedWeb3 = false
   try {
+    debugger
     if (profileType === ProfileType.LOCAL && currentId !== userId) {
       const peerProfile: Profile = yield call(requestLocalProfileToPeers, userId)
       if (peerProfile) {
