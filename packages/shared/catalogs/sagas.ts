@@ -196,15 +196,12 @@ async function fetchWearablesByCollectionFromBuilder(
   }
   return result
 }
-async function fetchWearablesByCollectionFromCli(
-  filters: WearablesRequestFilters | undefined
-) {
+async function fetchWearablesByCollectionFromCli(filters: WearablesRequestFilters | undefined) {
   const result = []
   try {
     const url = `${rootURLPreviewMode()}/preview-wearables`
-    const collection: { data: UnpublishedWearable[] } = await (await fetch(url)).json()
-    const v2Wearables = collection.data.map((wearable) => mapUnpublishedWearableIntoCatalystWearable(wearable))
-    result.push(...v2Wearables)
+    const collection: { data: any[] } = await (await fetch(url)).json()
+    result.push(...collection.data)
 
     if (filters?.wearableIds) {
       return result.filter((w) => filters.wearableIds!.includes(w.id))
