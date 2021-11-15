@@ -156,7 +156,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     }
   }
 
-  if (PREVIEW && COLLECTIONS_ALLOWED) {
+  if (PREVIEW) {
     const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByCollectionFromPreviewMode, filters)
     result.push(...v2Wearables)
   }
