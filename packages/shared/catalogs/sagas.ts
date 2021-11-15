@@ -157,7 +157,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   }
 
   if (PREVIEW && COLLECTIONS_ALLOWED) {
-    const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByCollectionFromCli, filters)
+    const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByCollectionFromPreviewMode, filters)
     result.push(...v2Wearables)
   }
 
@@ -196,7 +196,7 @@ async function fetchWearablesByCollectionFromBuilder(
   }
   return result
 }
-async function fetchWearablesByCollectionFromCli(filters: WearablesRequestFilters | undefined) {
+async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesRequestFilters | undefined) {
   const result = []
   try {
     const url = `${rootURLPreviewMode()}/preview-wearables`
