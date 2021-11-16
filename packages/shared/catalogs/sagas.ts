@@ -7,7 +7,8 @@ import {
   PREVIEW,
   DEBUG,
   ETHEREUM_NETWORK,
-  BUILDER_SERVER_URL
+  BUILDER_SERVER_URL,
+  rootURLPreviewMode
 } from 'config'
 
 import defaultLogger from 'shared/logger'
@@ -155,6 +156,11 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     }
   }
 
+  if (PREVIEW) {
+    const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByCollectionFromPreviewMode, filters)
+    result.push(...v2Wearables)
+  }
+
   return result.map(mapCatalystWearableIntoV2)
 }
 
@@ -187,6 +193,21 @@ async function fetchWearablesByCollectionFromBuilder(
   }
   if (filters?.wearableIds) {
     return result.filter((w) => filters.wearableIds!.includes(w.id))
+  }
+  return result
+}
+async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesRequestFilters | undefined) {
+  const result = []
+  try {
+    const url = `${rootURLPreviewMode()}/preview-wearables`
+    const collection: { data: any[] } = await (await fetch(url)).json()
+    result.push(...collection.data)
+
+    if (filters?.wearableIds) {
+      return result.filter((w) => filters.wearableIds!.includes(w.id))
+    }
+  } catch (err) {
+    defaultLogger.error(`Couldn't get the preview wearables. Check wearables folder.`, err)
   }
   return result
 }
