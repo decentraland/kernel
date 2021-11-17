@@ -51,8 +51,8 @@ import { globalObservable } from 'shared/observables'
 import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { disconnect } from 'shared/comms'
 import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
+import { setWorldContext } from 'shared/protocol/actions'
 
 const TOS_KEY = 'tos'
 const logger = DEBUG_KERNEL_LOG ? createLogger('session: ') : createDummyLogger()
@@ -324,7 +324,7 @@ function* logout() {
     yield localProfilesRepo.remove(identity.address, network)
     globalObservable.emit('logout', { address: identity.address, network })
   }
-  yield call(disconnect)
+  yield put(setWorldContext(undefined))
   if (identity?.address) {
     yield call(removeStoredSession, identity.address)
   }

@@ -1,5 +1,5 @@
 import { commConfigurations, parcelLimits } from 'config'
-import { positionObservable, PositionReport } from 'shared/world/positionThings'
+import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { Stats } from './debug'
 import {
   receiveUserData,
@@ -10,7 +10,14 @@ import {
   PeerTrackingInfo
 } from './peers'
 import { ConnectionEstablishmentError, Pose, UserInformation } from './interface/types'
-import { CommunicationArea, Position, position2parcel, sameParcel, squareDistance } from './interface/utils'
+import {
+  CommunicationArea,
+  Position,
+  position2parcel,
+  positionReportToCommsPosition,
+  sameParcel,
+  squareDistance
+} from './interface/utils'
 import { isRendererEnabled, renderStateObservable } from '../world/worldState'
 import { WorldInstanceConnection } from './interface/index'
 import { store } from 'shared/store/isolatedStore'
@@ -78,16 +85,16 @@ export class CommsContext {
   private infoCollecterInterval?: ReturnType<typeof setInterval>
   private idTaken = false
 
+  private currentParcelTopics = ''
+  private previousTopics = ''
+
+  private lastNetworkUpdatePosition = new Date().getTime()
+  private lastPositionSent: Position | undefined
+
   constructor(userInfo: UserInformation) {
     this.userInfo = userInfo
 
     this.commRadius = commConfigurations.commRadius
-
-    if (typeof (window as any) !== 'undefined') {
-      window.addEventListener('beforeunload', () => {
-        this.disconnect().catch(commsLogger.error)
-      })
-    }
   }
 
   async connect(connection: WorldInstanceConnection) {
@@ -178,6 +185,87 @@ export class CommsContext {
     return peerTrackingInfo
   }
 
+  private onPositionUpdate(p: Position) {
+    const worldConnection = this.worldInstanceConnection
+
+    if (!worldConnection) {
+      return
+    }
+
+    const oldParcel = this.currentPosition ? position2parcel(this.currentPosition) : null
+    const newParcel = position2parcel(p)
+    const immediateReposition = p[7]
+
+    if (!sameParcel(oldParcel, newParcel)) {
+      const commArea = new CommunicationArea(newParcel, this.commRadius)
+
+      const xMin = ((commArea.vMin.x + parcelLimits.maxParcelX) >> 2) << 2
+      const xMax = ((commArea.vMax.x + parcelLimits.maxParcelX) >> 2) << 2
+      const zMin = ((commArea.vMin.z + parcelLimits.maxParcelZ) >> 2) << 2
+      const zMax = ((commArea.vMax.z + parcelLimits.maxParcelZ) >> 2) << 2
+
+      let rawTopics: string[] = []
+      for (let x = xMin; x <= xMax; x += 4) {
+        for (let z = zMin; z <= zMax; z += 4) {
+          const hash = `${x >> 2}:${z >> 2}`
+          if (!rawTopics.includes(hash)) {
+            rawTopics.push(hash)
+          }
+        }
+      }
+      this.currentParcelTopics = rawTopics.join(' ')
+      if (this.currentPosition && !this.positionUpdatesPaused) {
+        worldConnection
+          .sendParcelUpdateMessage(this.currentPosition, p)
+          .catch((e) => commsLogger.warn(`error while sending message `, e))
+      }
+    }
+
+    if (!immediateReposition) {
+      // Otherwise the topics get lost on an immediate reposition...
+      const parcelSceneSubscriptions = getParcelSceneSubscriptions()
+      const parcelSceneCommsTopics = parcelSceneSubscriptions.join(' ')
+
+      const topics =
+        (this.userInfo.userId ? this.userInfo.userId + ' ' : '') +
+        this.currentParcelTopics +
+        (parcelSceneCommsTopics.length ? ' ' + parcelSceneCommsTopics : '')
+
+      if (topics !== this.previousTopics) {
+        worldConnection
+          .setTopics(topics.split(' '))
+          .catch((e) => commsLogger.warn(`error while updating subscriptions`, e))
+        this.previousTopics = topics
+      }
+    }
+
+    this.currentPosition = p
+
+    setListenerSpatialParams(this)
+
+    const now = Date.now()
+    const elapsed = now - this.lastNetworkUpdatePosition
+
+    // We only send the same position message as a ping if we have not sent positions in the last 5 seconds
+    if (!immediateReposition && arrayEquals(p, this.lastPositionSent) && elapsed < 5000) {
+      return
+    }
+
+    if ((immediateReposition || elapsed > 100) && !this.positionUpdatesPaused) {
+      this.lastPositionSent = p
+      this.lastNetworkUpdatePosition = now
+      worldConnection.sendPositionMessage(p).catch((e) => commsLogger.warn(`error while sending message `, e))
+    }
+  }
+
+  private sendCurrentProfile() {
+    if (this.currentPosition && this.worldInstanceConnection) {
+      this.worldInstanceConnection
+        .sendProfileMessage(this.currentPosition, this.userInfo)
+        .catch((e) => commsLogger.warn(`error while sending message `, e))
+    }
+  }
+
   private onConnected() {
     this.worldRunningObserver = renderStateObservable.add(() => {
       if (!isRendererEnabled()) {
@@ -186,19 +274,8 @@ export class CommsContext {
     })
 
     this.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-      const p = [
-        obj.position.x,
-        obj.position.y - obj.playerHeight,
-        obj.position.z,
-        obj.quaternion.x,
-        obj.quaternion.y,
-        obj.quaternion.z,
-        obj.quaternion.w,
-        obj.immediate
-      ] as Position
-
       if (isRendererEnabled()) {
-        onPositionUpdate(this, p)
+        this.onPositionUpdate(positionReportToCommsPosition(obj))
       }
     })
 
@@ -207,12 +284,14 @@ export class CommsContext {
     }, 100)
 
     this.profileInterval = setInterval(() => {
-      if (this && this.currentPosition && this.worldInstanceConnection) {
-        this.worldInstanceConnection
-          .sendProfileMessage(this.currentPosition, this.userInfo)
-          .catch((e) => commsLogger.warn(`error while sending message `, e))
-      }
+      this.sendCurrentProfile()
     }, 1000)
+
+    // send current profile and position right after connection
+    this.sendCurrentProfile()
+    if (lastPlayerPositionReport) {
+      this.onPositionUpdate(positionReportToCommsPosition(lastPlayerPositionReport))
+    }
 
     if (commConfigurations.sendAnalytics) {
       this.analyticsInterval = setInterval(() => {
@@ -349,85 +428,6 @@ export class CommsContext {
       this.stats.trackingPeersCount = this.peerData.size
       this.stats.collectInfoDuration.stop()
     }
-  }
-}
-
-let currentParcelTopics = ''
-let previousTopics = ''
-
-let lastNetworkUpdatePosition = new Date().getTime()
-let lastPositionSent: Position | undefined
-
-function onPositionUpdate(context: CommsContext, p: Position) {
-  const worldConnection = context.worldInstanceConnection
-
-  if (!worldConnection) {
-    return
-  }
-
-  const oldParcel = context.currentPosition ? position2parcel(context.currentPosition) : null
-  const newParcel = position2parcel(p)
-  const immediateReposition = p[7]
-
-  if (!sameParcel(oldParcel, newParcel)) {
-    const commArea = new CommunicationArea(newParcel, context.commRadius)
-
-    const xMin = ((commArea.vMin.x + parcelLimits.maxParcelX) >> 2) << 2
-    const xMax = ((commArea.vMax.x + parcelLimits.maxParcelX) >> 2) << 2
-    const zMin = ((commArea.vMin.z + parcelLimits.maxParcelZ) >> 2) << 2
-    const zMax = ((commArea.vMax.z + parcelLimits.maxParcelZ) >> 2) << 2
-
-    let rawTopics: string[] = []
-    for (let x = xMin; x <= xMax; x += 4) {
-      for (let z = zMin; z <= zMax; z += 4) {
-        const hash = `${x >> 2}:${z >> 2}`
-        if (!rawTopics.includes(hash)) {
-          rawTopics.push(hash)
-        }
-      }
-    }
-    currentParcelTopics = rawTopics.join(' ')
-    if (context.currentPosition && !context.positionUpdatesPaused) {
-      worldConnection
-        .sendParcelUpdateMessage(context.currentPosition, p)
-        .catch((e) => commsLogger.warn(`error while sending message `, e))
-    }
-  }
-
-  if (!immediateReposition) {
-    // Otherwise the topics get lost on an immediate reposition...
-    const parcelSceneSubscriptions = getParcelSceneSubscriptions()
-    const parcelSceneCommsTopics = parcelSceneSubscriptions.join(' ')
-
-    const topics =
-      (context.userInfo.userId ? context.userInfo.userId + ' ' : '') +
-      currentParcelTopics +
-      (parcelSceneCommsTopics.length ? ' ' + parcelSceneCommsTopics : '')
-
-    if (topics !== previousTopics) {
-      worldConnection
-        .setTopics(topics.split(' '))
-        .catch((e) => commsLogger.warn(`error while updating subscriptions`, e))
-      previousTopics = topics
-    }
-  }
-
-  context.currentPosition = p
-
-  setListenerSpatialParams(context)
-
-  const now = Date.now()
-  const elapsed = now - lastNetworkUpdatePosition
-
-  // We only send the same position message as a ping if we have not sent positions in the last 5 seconds
-  if (!immediateReposition && arrayEquals(p, lastPositionSent) && elapsed < 5000) {
-    return
-  }
-
-  if ((immediateReposition || elapsed > 100) && !context.positionUpdatesPaused) {
-    lastPositionSent = p
-    lastNetworkUpdatePosition = now
-    worldConnection.sendPositionMessage(p).catch((e) => commsLogger.warn(`error while sending message `, e))
   }
 }
 

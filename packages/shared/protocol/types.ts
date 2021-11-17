@@ -6,4 +6,5 @@ export type RootProtocolState = {
 
 export type ProtocolState = {
   context: CommsContext | undefined
+  prevContext: CommsContext | undefined
 }

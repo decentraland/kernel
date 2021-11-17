@@ -11,6 +11,7 @@ import { isRendererVisible } from './loading/selectors'
 import { RootStore } from './store/rootTypes'
 import { initializeSessionObserver } from './session/sagas'
 import { hookAnalyticsObservables } from './analytics'
+import { beforeUnloadAction } from './protocol/actions'
 
 declare const globalThis: { globalStore: RootStore }
 
@@ -32,6 +33,12 @@ export function initShared() {
   initializeRendererVisibleObserver(store)
   initializeSessionObserver()
   hookAnalyticsObservables()
+
+  if (typeof (window as any) !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+      store.dispatch(beforeUnloadAction())
+    })
+  }
 }
 
 function observeIsRendererVisibleChanges(store: RootStore, cb: (visible: boolean) => void) {

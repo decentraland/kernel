@@ -11,7 +11,7 @@ import { Realm } from 'shared/dao/types'
 import { realmToString } from 'shared/dao/utils/realmToString'
 
 import { CommsContext, commsLogger } from './context'
-import { connect, disconnect, initComms } from '.'
+import { connect, initComms } from '.'
 
 import {
   SetVoiceMute,
@@ -34,18 +34,36 @@ import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { setVoiceCommunicatorInputStream, voiceCommunicator } from './voice-over-comms'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
-import { getCommsContext } from 'shared/protocol/selectors'
+import { getCommsContext, getPrevCommsContext } from 'shared/protocol/selectors'
+import { BEFORE_UNLOAD, setWorldContext, SET_WORLD_CONTEXT } from 'shared/protocol/actions'
 
 export function* commsSaga() {
   yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
   yield takeLatest(CATALYST_REALMS_SCAN_SUCCESS, changeRealm)
-  yield takeEvery(FATAL_ERROR, bringDownComms)
+
+  yield takeEvery(FATAL_ERROR, function* () {
+    // set null context on fatal error
+    yield put(setWorldContext(undefined))
+  })
+
+  yield takeEvery(SET_WORLD_CONTEXT, handleNewCommsContext)
+
+  yield takeEvery(BEFORE_UNLOAD, function* () {
+    // this would disconnect the comms context
+    yield put(setWorldContext(undefined))
+  })
 
   yield call(initComms)
 }
 
-function* bringDownComms() {
-  yield call(disconnect)
+function* handleNewCommsContext() {
+  const oldContext = (yield select(getPrevCommsContext)) as CommsContext | undefined
+  const newContext = (yield select(getCommsContext)) as CommsContext | undefined
+
+  if (oldContext && oldContext !== newContext) {
+    // disconnect previous context
+    yield call(oldContext.disconnect)
+  }
 }
 
 function* listenToWhetherSceneSupportsVoiceChat() {

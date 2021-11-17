@@ -1,6 +1,5 @@
 import * as qs from 'query-string'
-import { Vector3, ReadOnlyVector3, ReadOnlyQuaternion, Vector2, ReadOnlyVector2 } from 'decentraland-ecs'
-import { Observable } from 'decentraland-ecs'
+import { Vector3, ReadOnlyVector3, ReadOnlyQuaternion, Vector2, ReadOnlyVector2, Observable } from 'decentraland-ecs'
 import { ILand } from 'shared/types'
 import { InstancedSpawnPoint } from '../types'
 import {
@@ -43,10 +42,12 @@ export const parcelObservable = new Observable<ParcelReport>()
 export const teleportObservable = new Observable<ReadOnlyVector2 & { text?: string }>()
 
 export const lastPlayerPosition = new Vector3()
+export let lastPlayerPositionReport: Readonly<PositionReport> | null = null
 export let lastPlayerParcel: Vector2
 
 positionObservable.add((event) => {
   lastPlayerPosition.copyFrom(event.position)
+  lastPlayerPositionReport = event
 })
 
 // Listen to position changes, and notify if the parcel changed

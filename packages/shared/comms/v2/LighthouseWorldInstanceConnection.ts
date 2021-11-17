@@ -120,6 +120,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
         await this.peer.awaitConnectionEstablished(60000)
       }
       this.statusHandler({ status: 'connected', connectedPeers: this.connectedPeersCount() })
+      await this.syncRoomsWithPeer()
       return true
     } catch (e) {
       defaultLogger.error('Error while connecting to layer', e)
@@ -131,20 +132,20 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     }
   }
 
-  public async changeRealm(realm: Realm, url: string) {
-    this.statusHandler({ status: 'connecting', connectedPeers: this.connectedPeersCount() })
-    if (this.peer) {
-      await this.cleanUpPeer()
-    }
+  // `public async changeRealm(realm: Realm, url: string) {
+  // `  this.statusHandler({ status: 'connecting', connectedPeers: this.connectedPeersCount() })
+  // `  if (this.peer) {
+  // `    await this.cleanUpPeer()
+  // `  }
 
-    this.realm = realm
-    this.lighthouseUrl = url
-    this.peerConfig.eventsHandler?.onIslandChange?.(undefined, [])
+  // `  this.realm = realm
+  // `  this.lighthouseUrl = url
+  // `  this.peerConfig.eventsHandler?.onIslandChange?.(undefined, [])
 
-    this.initializePeer()
-    await this.connect()
-    await this.syncRoomsWithPeer()
-  }
+  // `  this.initializePeer()
+  // `  await this.connect()
+  // `  await this.syncRoomsWithPeer()
+  // `}
 
   disconnect() {
     return this.cleanUpPeer()
@@ -250,6 +251,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
         return Promise.resolve()
       }
     })
+
     const leaving = currentRooms.map(async (current) => {
       if (!this.rooms.some((room) => isSameRoom(room, current))) {
         if (typeof (current as any) === 'string') {
@@ -257,6 +259,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
         }
       }
     })
+
     return Promise.all([...joining, ...leaving])
   }
 

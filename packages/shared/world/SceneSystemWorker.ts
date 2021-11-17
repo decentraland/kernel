@@ -1,10 +1,8 @@
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
-
 import { playerConfigurations } from 'config'
 import { SceneWorker } from './SceneWorker'
-import { Vector3, Quaternion } from 'decentraland-ecs'
+import { Vector3, Quaternion, Observer } from 'decentraland-ecs'
 import { PositionReport, positionObservable } from './positionThings'
-import { Observer } from 'decentraland-ecs'
 import { sceneLifeCycleObservable } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { renderStateObservable, isRendererEnabled } from './worldState'
 import { ParcelSceneAPI } from './ParcelSceneAPI'

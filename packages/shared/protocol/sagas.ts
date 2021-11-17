@@ -14,11 +14,11 @@ export function* rootProtocolSaga() {
   yield takeLatest(ANNOUNCE_PROFILE, handleAnnounceProfile)
 }
 
-export function* announceNewAvatar(action: { type: string; payload: { userId: string; version: number } }) {
+function* announceNewAvatar(action: { type: string; payload: { userId: string; version: number } }) {
   yield put(announceProfile(action.payload.userId, action.payload.version))
 }
 
-export function* handleAnnounceProfile(action: AnnounceProfileAction) {
+function* handleAnnounceProfile(action: AnnounceProfileAction) {
   const context = (yield select(getCommsContext)) as CommsContext | undefined
   if (context === undefined) {
     defaultLogger.warn('Announce profile is impossible (no connection found)')

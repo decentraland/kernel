@@ -94,10 +94,6 @@ function parseCommsMode(modeString: string) {
   return segments as [CommsVersion, CommsMode]
 }
 
-const NOOP = () => {
-  // do nothing
-}
-
 async function getPeerParameters(): Promise<PeerParameters> {
   const commsServer = getCommsServer(store.getState())
 
@@ -128,7 +124,7 @@ async function getPeerParameters(): Promise<PeerParameters> {
 export async function initComms() {
   observeRealmChange(store, (_, realm) => {
     commsLogger.log('Changing connection realm to ', realm)
-    disconnect().finally(connect).catch(commsLogger.error)
+    connect().catch(commsLogger.error)
   })
 }
 
@@ -293,13 +289,13 @@ export async function connect(): Promise<void> {
 
     store.dispatch(commsEstablished())
   } catch (e) {
-    commsLogger.error(`error while trying to establish communications`)
+    commsLogger.error(`Error while trying to establish communications`)
     commsLogger.error(e)
 
     ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
     BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
 
-    await disconnect()
+    store.dispatch(setWorldContext(undefined))
 
     throw new ConnectionEstablishmentError(e.message)
   }
@@ -326,12 +322,9 @@ function handleReconnectionError() {
 }
 
 function handleIdTaken() {
-  disconnect()
-    .finally(() => {
-      ReportFatalErrorWithCommsPayload(new Error(`Handle Id already taken`), ErrorContext.COMMS_INIT)
-      BringDownClientAndShowError(NEW_LOGIN)
-    })
-    .catch(NOOP)
+  store.dispatch(setWorldContext(undefined))
+  ReportFatalErrorWithCommsPayload(new Error(`Handle Id already taken`), ErrorContext.COMMS_INIT)
+  BringDownClientAndShowError(NEW_LOGIN)
 }
 
 function handleFullLayer() {
@@ -348,14 +341,6 @@ function handleFullLayer() {
   notifyStatusThroughChat(`Joining realm ${otherRealm.catalystName} since the previously requested was full`)
 
   store.dispatch(setCatalystRealm(otherRealm))
-}
-
-export async function disconnect() {
-  const commsContext = getCommsContext(store.getState())
-  if (commsContext) {
-    await commsContext.disconnect()
-    store.dispatch(setWorldContext(undefined))
-  }
 }
 
 function observeIslandChange(

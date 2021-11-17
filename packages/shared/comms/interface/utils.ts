@@ -1,4 +1,5 @@
 import { parcelLimits } from 'config'
+import { PositionReport } from 'shared/world/positionThings'
 
 export type Position = [number, number, number, number, number, number, number, boolean]
 
@@ -47,14 +48,8 @@ export class CommunicationArea {
   public vMax: V2
 
   constructor(center: Parcel, radius: number) {
-    this.vMin = new V2(
-      center.x - radius,
-      center.z - radius
-    )
-    this.vMax = new V2(
-      center.x + radius,
-      center.z + radius
-    )
+    this.vMin = new V2(center.x - radius, center.z - radius)
+    this.vMax = new V2(center.x + radius, center.z + radius)
   }
 
   public contains(p: Position) {
@@ -110,4 +105,19 @@ export function rotateUsingQuaternion(pos: Position, x: number, y: number, z: nu
   const rz = iz * qw + iw * -qz + ix * -qy - iy * -qx
 
   return [rx, ry, rz]
+}
+
+export function positionReportToCommsPosition(report: Readonly<PositionReport>) {
+  const p = [
+    report.position.x,
+    report.position.y - report.playerHeight,
+    report.position.z,
+    report.quaternion.x,
+    report.quaternion.y,
+    report.quaternion.z,
+    report.quaternion.w,
+    report.immediate
+  ] as Position
+
+  return p
 }
