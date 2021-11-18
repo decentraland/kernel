@@ -1,3 +1,7 @@
+import {
+  killPortableExperienceScene,
+  spawnPortableExperience
+} from 'unity-interface/portableExperiencesUtils'
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
 import defaultLogger, { createLogger } from 'shared/logger'
@@ -5,7 +9,13 @@ import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, Lo
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
-import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
+import {
+  DEBUG_WS_MESSAGES,
+  ETHEREUM_NETWORK,
+  HAS_INITIAL_POSITION_MARK,
+  OPEN_AVATAR_EDITOR,
+  rootURLPreviewMode
+} from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
 import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
@@ -326,7 +336,32 @@ export async function startPreview() {
         defaultLogger.info('Message received: ', message)
       }
 
-      loadPreviewScene(wsScene)
+      if (
+        message.payload &&
+        message.payload.body?.sceneType === 'portable-experience' &&
+        message.payload.body?.sceneId
+      ) {
+        ;(async () => {
+          const sceneId = message.payload.body?.sceneId
+          const url = `${rootURLPreviewMode()}/preview-wearables/${sceneId}`
+          const collection: { data: any[] } = await (await fetch(url)).json()
+
+          if (collection.data.length > 0) {
+            const wearable = collection.data[0]
+            await killPortableExperienceScene(wearable.id)
+            await spawnPortableExperience(
+              wearable.id,
+              'main',
+              wearable.name,
+              `${wearable.baseUrl}/`,
+              wearable.data.scene,
+              wearable.thumbnail
+            )
+          }
+        })()
+      } else {
+        loadPreviewScene(wsScene)
+      }
     }
   }
 
