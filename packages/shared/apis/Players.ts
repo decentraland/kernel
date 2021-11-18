@@ -8,7 +8,7 @@ import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/se
 import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
-import { getVisibleAvatarsUserId } from '../../ui/avatar/avatarTracker'
+import { getVisibleAvatarsUserId } from 'shared/social/avatarTracker'
 
 export interface IPlayers {
   /**
