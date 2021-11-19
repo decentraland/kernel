@@ -1,7 +1,3 @@
-import {
-  killPortableExperienceScene,
-  spawnPortableExperience
-} from 'unity-interface/portableExperiencesUtils'
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
 import defaultLogger, { createLogger } from 'shared/logger'
@@ -9,13 +5,7 @@ import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, Lo
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
-import {
-  DEBUG_WS_MESSAGES,
-  ETHEREUM_NETWORK,
-  HAS_INITIAL_POSITION_MARK,
-  OPEN_AVATAR_EDITOR,
-  rootURLPreviewMode
-} from '../config/index'
+import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
 import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
@@ -48,7 +38,12 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
-function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean, exploreV2Enables: boolean) {
+function configureTaskbarDependentHUD(
+  i: IUnityInterface,
+  voiceChatEnabled: boolean,
+  builderInWorldEnabled: boolean,
+  exploreV2Enables: boolean
+) {
   // The elements below, require the taskbar to be active before being activated.
 
   i.ConfigureHUDElement(
@@ -230,14 +225,15 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const identity = getCurrentIdentity(store.getState())!
 
       const VOICE_CHAT_ENABLED = true
-      const BUILDER_IN_WORLD_ENABLED = identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
+      const BUILDER_IN_WORLD_ENABLED =
+        identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
       const EXPLORE_V2_ENABLED = isFeatureEnabled(store.getState(), FeatureFlags.EXPLORE_V2_ENABLED, false)
 
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
-  
+
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
 
       i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
@@ -330,51 +326,13 @@ export async function startPreview() {
     }
   })
 
-  let sceneLoading: Map<string, boolean> = new Map<string, boolean>()
-
   function handleServerMessage(message: any) {
     if (message.type === 'update') {
       if (DEBUG_WS_MESSAGES) {
         defaultLogger.info('Message received: ', message)
       }
 
-      if (
-        message.payload &&
-        message.payload.body?.sceneType === 'portable-experience' &&
-        message.payload.body?.sceneId
-      ) {
-        ;(async () => {
-          const sceneId = message.payload.body?.sceneId
-          const url = `${rootURLPreviewMode()}/preview-wearables/${sceneId}`
-          const collection: { data: any[] } = await (await fetch(url)).json()
-
-          if (collection.data.length > 0) {
-            const wearable = collection.data[0]
-            if (!sceneLoading.get(wearable.id)) {
-              await killPortableExperienceScene(wearable.id)
-
-              sceneLoading.set(wearable, true)
-              // This timeout is because the killPortableExperience isn't really async
-              //  and before spawn the portable experience it's neccesary that be kill
-              //  the previous scene
-              // TODO: catch the Scene.unloaded and then call the spawn.
-              await new Promise((resolve) => setTimeout(resolve, 100))
-
-              await spawnPortableExperience(
-                wearable.id,
-                'main',
-                wearable.name,
-                `${wearable.baseUrl}/`,
-                wearable.data.scene,
-                wearable.thumbnail
-              )
-              sceneLoading.set(wearable, false)
-            }
-          }
-        })()
-      } else {
-        loadPreviewScene(wsScene)
-      }
+      loadPreviewScene({ ws: wsScene, message })
     }
   }
 
