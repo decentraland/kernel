@@ -1,4 +1,3 @@
-import { spawnPortableExperience } from 'unity-interface/portableExperiencesUtils';
 import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
@@ -26,7 +25,7 @@ import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
-import { killPortableExperienceScene } from './portableExperiencesUtils'
+import { killPortableExperienceScene, spawnPortableExperience } from './portableExperiencesUtils'
 
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])

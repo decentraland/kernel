@@ -38,12 +38,8 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
-function configureTaskbarDependentHUD(
-  i: IUnityInterface,
-  voiceChatEnabled: boolean,
-  builderInWorldEnabled: boolean,
-  exploreV2Enables: boolean
-) {
+function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean, exploreV2Enables: boolean) {
+
   // The elements below, require the taskbar to be active before being activated.
 
   i.ConfigureHUDElement(
@@ -225,8 +221,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const identity = getCurrentIdentity(store.getState())!
 
       const VOICE_CHAT_ENABLED = true
-      const BUILDER_IN_WORLD_ENABLED =
-        identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
+      const BUILDER_IN_WORLD_ENABLED = identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
       const EXPLORE_V2_ENABLED = isFeatureEnabled(store.getState(), FeatureFlags.EXPLORE_V2_ENABLED, false)
 
       const configForRenderer = kernelConfigForRenderer()
