@@ -330,6 +330,8 @@ export async function startPreview() {
     }
   })
 
+  let sceneLoading: Map<string, boolean> = new Map<string, boolean>()
+
   function handleServerMessage(message: any) {
     if (message.type === 'update') {
       if (DEBUG_WS_MESSAGES) {
@@ -348,15 +350,26 @@ export async function startPreview() {
 
           if (collection.data.length > 0) {
             const wearable = collection.data[0]
-            await killPortableExperienceScene(wearable.id)
-            await spawnPortableExperience(
-              wearable.id,
-              'main',
-              wearable.name,
-              `${wearable.baseUrl}/`,
-              wearable.data.scene,
-              wearable.thumbnail
-            )
+            if (!sceneLoading.get(wearable.id)) {
+              await killPortableExperienceScene(wearable.id)
+
+              sceneLoading.set(wearable, true)
+              // This timeout is because the killPortableExperience isn't really async
+              //  and before spawn the portable experience it's neccesary that be kill
+              //  the previous scene
+              // TODO: catch the Scene.unloaded and then call the spawn.
+              await new Promise((resolve) => setTimeout(resolve, 100))
+
+              await spawnPortableExperience(
+                wearable.id,
+                'main',
+                wearable.name,
+                `${wearable.baseUrl}/`,
+                wearable.data.scene,
+                wearable.thumbnail
+              )
+              sceneLoading.set(wearable, false)
+            }
           }
         })()
       } else {
