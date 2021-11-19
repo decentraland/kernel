@@ -2,8 +2,8 @@ import { AvatarMessageType } from 'shared/comms/interface/types'
 import { avatarMessageObservable } from 'shared/comms/peers'
 import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
-const avatarConnected = 'avatarConnected'
-const avatarDisconnected = 'avatarDisconnected'
+const avatarConnected = 'playerConnected'
+const avatarDisconnected = 'playerDisconnected'
 
 const avatarMap: Record<string, { userId: string; visible: boolean }> = {}
 
