@@ -109,13 +109,18 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
         r.contents.some((c) => c.key.endsWith('game.js'))
       )[0].contents
 
-      // Get the game.js path
-      const gameJs = wearableContent.filter((c) => c.key.endsWith('game.js'))[0].key
-      const gameJsRootLength = gameJs.lastIndexOf('/') + 1
+      const femaleCrop = wearableContent.filter(($) => $.key.substr(0, 7) == 'female/').length == wearableContent.length
+      const maleCrop = wearableContent.filter(($) => $.key.substr(0, 5) == 'male/').length == wearableContent.length
 
-      // Convert wearable mapping to scene's mapping and modify file path so game.js directory becomes the root directory
-      // for asset loading
-      const mappings = wearableContent.map((c) => ({ file: c.key.substring(gameJsRootLength), hash: c.hash }))
+      let mappings: any = []
+
+      if (femaleCrop) {
+        mappings = wearableContent.map(($) => ({ file: $.key.substring(7), hash: $.hash }))
+      } else if (maleCrop) {
+        mappings = wearableContent.map(($) => ({ file: $.key.substring(5), hash: $.hash }))
+      } else {
+        mappings = wearableContent.map(($) => ({ file: $.key, hash: $.hash }))
+      }
 
       const name = wearable.i18n[0].text
 
