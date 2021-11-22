@@ -4,10 +4,13 @@ import { EnvironmentData } from 'shared/types'
 import { getRealm, getSelectedNetwork } from 'shared/dao/selectors'
 import { getServerConfigurations, PREVIEW } from 'config'
 import { store } from 'shared/store/isolatedStore'
+import { getCommsIsland } from 'shared/comms/selectors'
 
 type EnvironmentRealm = {
   domain: string
+  /** @deprecated use room instead */
   layer: string
+  room: string
   serverName: string
   displayName: string
 }
@@ -42,16 +45,18 @@ export class EnvironmentAPI extends ExposableAPI {
   @exposeMethod
   async getCurrentRealm(): Promise<EnvironmentRealm | undefined> {
     const realm = getRealm(store.getState())
+    const island = getCommsIsland(store.getState()) ?? '' // We shouldn't send undefined because it would break contract
 
     if (!realm) {
       return undefined
     }
-    const { domain, layer, catalystName: serverName } = realm
+    const { domain, catalystName: serverName } = realm
     return {
       domain,
-      layer: layer ?? '', // We shouldn't send undefined because it would break contract
+      layer: island,
+      room: island,
       serverName,
-      displayName: `${serverName}-${layer}`
+      displayName: `${serverName}-${island}`
     }
   }
 
