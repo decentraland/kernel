@@ -1,48 +1,46 @@
 import { AvatarMessageType } from 'shared/comms/interface/types'
+import { getUser } from 'shared/comms/peers'
 import { avatarMessageObservable } from 'shared/comms/peers'
 import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
 const avatarConnected = 'playerConnected'
 const avatarDisconnected = 'playerDisconnected'
 
-const avatarMap: Record<string, { userId: string; visible: boolean }> = {}
+const visibleAvatars: Map<string, string> = new Map<string, string>()
 
 export function getVisibleAvatarsUserId(): string[] {
-  return Object.values(avatarMap)
-    .filter((value) => value.visible)
-    .map((value) => value.userId)
+  return Array.from(visibleAvatars.values())
 }
 
 avatarMessageObservable.add((evt) => {
   if (evt.type === AvatarMessageType.USER_VISIBLE) {
-    if (avatarMap[evt.uuid]) {
-      const isVisible = avatarMap[evt.uuid].visible
-      const userId = avatarMap[evt.uuid].userId
+    const visible = visibleAvatars.has(evt.uuid)
 
-      if (!userId) {
+    if (visible !== evt.visible) {
+      const userId = getUser(evt.uuid)?.userId
+
+      if (!userId) return
+
+      allScenesEvent({
+        eventType: evt.visible ? avatarConnected : avatarDisconnected,
+        payload: { userId }
+      })
+
+      if (!evt.visible) {
+        visibleAvatars.delete(evt.uuid)
         return
       }
 
-      if (isVisible != evt.visible) {
-        allScenesEvent({
-          eventType: evt.visible ? avatarConnected : avatarDisconnected,
-          payload: { userId: userId }
-        })
-      }
-      avatarMap[evt.uuid].visible = evt.visible
-    }
-  } else if (evt.type === AvatarMessageType.USER_DATA) {
-    if (!avatarMap[evt.uuid]) {
-      avatarMap[evt.uuid] = { userId: evt.profile.userId, visible: false }
+      visibleAvatars.set(evt.uuid, userId)
     }
   } else if (evt.type === AvatarMessageType.USER_REMOVED) {
-    const userId = avatarMap[evt.uuid].userId
-    if (!userId) {
+    const userId = visibleAvatars.get(evt.uuid)
+
+    if (visibleAvatars.delete(evt.uuid) && userId) {
       allScenesEvent({
         eventType: avatarDisconnected,
-        payload: { userId: userId }
+        payload: { userId }
       })
     }
-    delete avatarMap[evt.uuid]
   }
 })
