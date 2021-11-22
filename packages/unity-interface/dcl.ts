@@ -1,3 +1,4 @@
+import { sleep } from 'atomicHelpers/sleep'
 import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
@@ -189,12 +190,12 @@ export async function loadPreviewScene({ ws, message }: { ws?: string; message?:
     message.payload.body?.sceneType === 'portable-experience' &&
     message.payload.body?.sceneId
   ) {
-    ;(async () => {
+    try {
       const sceneId = message.payload.body?.sceneId
       const url = `${rootURLPreviewMode()}/preview-wearables/${sceneId}`
       const collection: { data: any[] } = await (await fetch(url)).json()
 
-      if (collection.data.length > 0) {
+      if (!!collection.data.length) {
         const wearable = collection.data[0]
         if (!sceneLoading.get(wearable.id)) {
           await killPortableExperienceScene(wearable.id)
@@ -204,7 +205,7 @@ export async function loadPreviewScene({ ws, message }: { ws?: string; message?:
           //  and before spawn the portable experience it's neccesary that be kill
           //  the previous scene
           // TODO: catch the Scene.unloaded and then call the spawn.
-          await new Promise((resolve) => setTimeout(resolve, 100))
+          await sleep(100)
 
           await spawnPortableExperience(
             wearable.id,
@@ -217,7 +218,9 @@ export async function loadPreviewScene({ ws, message }: { ws?: string; message?:
           sceneLoading.set(wearable, false)
         }
       }
-    })()
+    } catch (err) {
+      defaultLogger.error(`Unable to loader the preview portable experience`, message, err)
+    }
   } else {
     const { sceneId, sceneBase } = await getPreviewSceneId()
 

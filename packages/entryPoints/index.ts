@@ -39,7 +39,6 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 const logger = createLogger('kernel: ')
 
 function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean, exploreV2Enables: boolean) {
-
   // The elements below, require the taskbar to be active before being activated.
 
   i.ConfigureHUDElement(
