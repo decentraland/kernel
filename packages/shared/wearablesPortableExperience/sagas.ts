@@ -109,19 +109,20 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
         r.contents.some((c) => c.key.endsWith('game.js'))
       )[0].contents
 
+      // In the deployment the content was replicated when the bodyShape selected was 'both'
+      //  this add the prefix 'female/' or '/male' if they have more than one representations.
+      // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
+    
       const femaleCrop = wearableContent.filter(($) => $.key.substr(0, 7) == 'female/').length == wearableContent.length
       const maleCrop = wearableContent.filter(($) => $.key.substr(0, 5) == 'male/').length == wearableContent.length
 
-      let mappings: any = []
-
-      if (femaleCrop) {
-        mappings = wearableContent.map(($) => ({ file: $.key.substring(7), hash: $.hash }))
-      } else if (maleCrop) {
-        mappings = wearableContent.map(($) => ({ file: $.key.substring(5), hash: $.hash }))
-      } else {
-        mappings = wearableContent.map(($) => ({ file: $.key, hash: $.hash }))
+      const getFile = (key: string): string => {
+        if (femaleCrop) return key.substring(7)
+        if (maleCrop) return key.substring(5)
+        return key
       }
 
+      const mappings = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
       const name = wearable.i18n[0].text
 
       // TODO: make sure thumbnail is added to the mappings if not there to avoid creating an url for the icon here
