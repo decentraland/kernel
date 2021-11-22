@@ -36,7 +36,6 @@ import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'sh
 import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { onLoginCompleted } from 'shared/session/sagas'
 import { ExplorerIdentity } from 'shared/session/types'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
@@ -109,9 +108,8 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
 
       // Fetch unpublished collections from builder server
       const uuidCollections = collectionIds.filter((collectionId) => !collectionId.startsWith('urn'))
-      if (uuidCollections.length > 0) {
-        yield onLoginCompleted()
-        const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      if (uuidCollections.length > 0 && identity) {
         const v2Wearables: PartialWearableV2[] = yield call(
           fetchWearablesByCollectionFromBuilder,
           uuidCollections,
@@ -142,9 +140,8 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       const uuidCollections = WITH_FIXED_COLLECTIONS.split(',').filter(
         (collectionId) => !collectionId.startsWith('urn')
       )
-      if (uuidCollections.length > 0) {
-        yield onLoginCompleted()
-        const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      if (uuidCollections.length > 0 && identity) {
         const v2Wearables: PartialWearableV2[] = yield call(
           fetchWearablesByCollectionFromBuilder,
           uuidCollections,
