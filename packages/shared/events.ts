@@ -1,5 +1,3 @@
-import { IEventNames, IEvents } from 'decentraland-ecs'
-
 export type RPCEvent<K extends IEventNames, D = any> = {
   event: K
   data: D

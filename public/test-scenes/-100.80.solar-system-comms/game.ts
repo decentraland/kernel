@@ -9,7 +9,6 @@ import {
   Material,
   Color3,
   MessageBus,
-  ReadOnlyVector3,
   Input,
   ActionButton
 } from 'decentraland-ecs'

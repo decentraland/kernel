@@ -1,5 +1,4 @@
 import { engine, DisposableComponent, Entity, log, DisposableComponentRemoved } from 'decentraland-ecs'
-import { DecentralandInterface } from 'decentraland-ecs'
 
 declare var dcl: DecentralandInterface
 

@@ -41,7 +41,6 @@ import {
 } from 'shared/loading/ReportFatalError'
 import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
 import { gte } from 'semver'
-import { ReadOnlyVector2 } from 'decentraland-ecs'
 import { parcelAvailable } from 'shared/world/positionThings'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {

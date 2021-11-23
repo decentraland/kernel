@@ -1,5 +1,4 @@
 import * as qs from 'query-string'
-import { Vector3, ReadOnlyVector3, ReadOnlyQuaternion, Vector2, ReadOnlyVector2 } from 'decentraland-ecs'
 import { Observable } from 'mz-observable'
 import { ILand } from 'shared/types'
 import { InstancedSpawnPoint } from '../types'
@@ -11,6 +10,7 @@ import {
 } from 'atomicHelpers/parcelScenePositions'
 import { DEBUG } from '../../config'
 import { isInsideWorldLimits } from '@dcl/schemas'
+import { Vector2, Vector3 } from 'decentraland-ecs'
 
 declare var location: any
 declare var history: any

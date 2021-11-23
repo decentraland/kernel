@@ -1,6 +1,5 @@
 import { EventDispatcher } from 'decentraland-rpc/lib/common/core/EventDispatcher'
 import { WSS_ENABLED, FORCE_SEND_MESSAGE, DEBUG_MESSAGES_QUEUE_PERF, DEBUG_SCENE_LOG } from 'config'
-import type { IEventNames, IEvents } from 'decentraland-ecs'
 import { createDummyLogger, createLogger, ILogger } from 'shared/logger'
 import { EntityAction, EnvironmentData } from 'shared/types'
 import { ParcelSceneAPI } from 'shared/world/ParcelSceneAPI'

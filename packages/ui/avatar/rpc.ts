@@ -1,4 +1,4 @@
-import { executeTask, DecentralandInterface } from 'decentraland-ecs'
+import { executeTask } from 'decentraland-ecs'
 
 declare var dcl: DecentralandInterface
 

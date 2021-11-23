@@ -5,7 +5,7 @@ import { sleep } from 'atomicHelpers/sleep'
 import future, { IFuture } from 'fp-future'
 
 import type { ScriptingTransport, ILogOpts } from 'decentraland-rpc/src/common/json-rpc/types'
-import type { QueryType, DecentralandInterface, IEvents } from 'decentraland-ecs'
+import type { QueryType } from 'decentraland-ecs'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import type {
@@ -496,7 +496,7 @@ export abstract class SceneRuntime extends Script {
           that.onStartFunctions.push(cb)
         },
         error(message, data) {
-          that.onError(Object.assign(new Error(message), { data }))
+          that.onError(Object.assign(new Error(message as any), { data }))
         }
       }
 

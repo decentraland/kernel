@@ -29,8 +29,11 @@
       "es2018",
       "dom",
       "esnext.asynciterable"
-    ]
+    ],
   },
+  "files": [
+    "node_modules/@dcl/posix/index.d.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist",
