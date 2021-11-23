@@ -109,14 +109,20 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
         r.contents.some((c) => c.key.endsWith('game.js'))
       )[0].contents
 
-      // Get the game.js path
-      const gameJs = wearableContent.filter((c) => c.key.endsWith('game.js'))[0].key
-      const gameJsRootLength = gameJs.lastIndexOf('/') + 1
+      // In the deployment the content was replicated when the bodyShape selected was 'both'
+      //  this add the prefix 'female/' or '/male' if they have more than one representations.
+      // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
+    
+      const femaleCrop = wearableContent.filter(($) => $.key.substr(0, 7) == 'female/').length == wearableContent.length
+      const maleCrop = wearableContent.filter(($) => $.key.substr(0, 5) == 'male/').length == wearableContent.length
 
-      // Convert wearable mapping to scene's mapping and modify file path so game.js directory becomes the root directory
-      // for asset loading
-      const mappings = wearableContent.map((c) => ({ file: c.key.substring(gameJsRootLength), hash: c.hash }))
+      const getFile = (key: string): string => {
+        if (femaleCrop) return key.substring(7)
+        if (maleCrop) return key.substring(5)
+        return key
+      }
 
+      const mappings = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
       const name = wearable.i18n[0].text
 
       // TODO: make sure thumbnail is added to the mappings if not there to avoid creating an url for the icon here
