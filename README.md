@@ -28,18 +28,15 @@ Make sure you have the following dependencies:
 
 When all the dependencies are in place, you can start building the project.
 
-First off, we need the npm packages for **website** and **kernel**. In most of the cases this should be done only once:
+First off, we need the npm package dependencies. In most of the cases this should be done only once:
 
-    cd website
     npm install
-    cd kernel
-    npm install
-
+    
 By now, you can run and watch a server with the kernel build by typing:
 
     make watch
 
-The make process will take a while. When its finished, you can start debugging the browser's explorer by going to http://localhost:3000/
+The make process will take a while. When its finished, you can start debugging the browser's explorer by going to http://localhost:8080/
 
 ### Update local renderer build version
 
