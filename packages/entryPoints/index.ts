@@ -205,6 +205,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.AVATAR_NAMES, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.SETTINGS_PANEL, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.EXPRESSIONS, { active: true, visible: true })
+  i.ConfigureHUDElement(HUDElementID.EMOTES, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.PLAYER_INFO_CARD, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.AIRDROPPING, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.TERMS_OF_SERVICE, { active: true, visible: true })

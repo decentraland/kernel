@@ -143,11 +143,71 @@ export namespace ProfileData {
   }
 
   export interface ProfileTypeMap {
-    DEPLOYED: 0;
-    LOCAL: 1;
+    LOCAL: 0;
+    DEPLOYED: 1;
   }
 
   export const ProfileType: ProfileTypeMap;
+}
+
+export class ProfileRequestData extends jspb.Message {
+  getCategory(): CategoryMap[keyof CategoryMap];
+  setCategory(value: CategoryMap[keyof CategoryMap]): void;
+
+  getTime(): number;
+  setTime(value: number): void;
+
+  getProfileVersion(): string;
+  setProfileVersion(value: string): void;
+
+  getUserId(): string;
+  setUserId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ProfileRequestData.AsObject;
+  static toObject(includeInstance: boolean, msg: ProfileRequestData): ProfileRequestData.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ProfileRequestData, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ProfileRequestData;
+  static deserializeBinaryFromReader(message: ProfileRequestData, reader: jspb.BinaryReader): ProfileRequestData;
+}
+
+export namespace ProfileRequestData {
+  export type AsObject = {
+    category: CategoryMap[keyof CategoryMap],
+    time: number,
+    profileVersion: string,
+    userId: string,
+  }
+}
+
+export class ProfileResponseData extends jspb.Message {
+  getCategory(): CategoryMap[keyof CategoryMap];
+  setCategory(value: CategoryMap[keyof CategoryMap]): void;
+
+  getTime(): number;
+  setTime(value: number): void;
+
+  getSerializedProfile(): string;
+  setSerializedProfile(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ProfileResponseData.AsObject;
+  static toObject(includeInstance: boolean, msg: ProfileResponseData): ProfileResponseData.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ProfileResponseData, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ProfileResponseData;
+  static deserializeBinaryFromReader(message: ProfileResponseData, reader: jspb.BinaryReader): ProfileResponseData;
+}
+
+export namespace ProfileResponseData {
+  export type AsObject = {
+    category: CategoryMap[keyof CategoryMap],
+    time: number,
+    serializedProfile: string,
+  }
 }
 
 export class ChatData extends jspb.Message {
@@ -188,6 +248,8 @@ export interface CategoryMap {
   PROFILE: 2;
   CHAT: 3;
   SCENE_MESSAGE: 4;
+  PROF_REQ: 5;
+  PROF_RES: 6;
 }
 
 export const Category: CategoryMap;

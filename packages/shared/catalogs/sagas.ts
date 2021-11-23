@@ -7,7 +7,8 @@ import {
   PREVIEW,
   DEBUG,
   ETHEREUM_NETWORK,
-  BUILDER_SERVER_URL
+  BUILDER_SERVER_URL,
+  rootURLPreviewMode
 } from 'config'
 
 import defaultLogger from 'shared/logger'
@@ -35,7 +36,6 @@ import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'sh
 import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { onLoginCompleted } from 'shared/session/sagas'
 import { ExplorerIdentity } from 'shared/session/types'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
@@ -108,9 +108,8 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
 
       // Fetch unpublished collections from builder server
       const uuidCollections = collectionIds.filter((collectionId) => !collectionId.startsWith('urn'))
-      if (uuidCollections.length > 0) {
-        yield onLoginCompleted()
-        const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      if (uuidCollections.length > 0 && identity) {
         const v2Wearables: PartialWearableV2[] = yield call(
           fetchWearablesByCollectionFromBuilder,
           uuidCollections,
@@ -141,9 +140,8 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       const uuidCollections = WITH_FIXED_COLLECTIONS.split(',').filter(
         (collectionId) => !collectionId.startsWith('urn')
       )
-      if (uuidCollections.length > 0) {
-        yield onLoginCompleted()
-        const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+      if (uuidCollections.length > 0 && identity) {
         const v2Wearables: PartialWearableV2[] = yield call(
           fetchWearablesByCollectionFromBuilder,
           uuidCollections,
@@ -153,6 +151,11 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
         result.push(...v2Wearables)
       }
     }
+  }
+
+  if (PREVIEW) {
+    const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByCollectionFromPreviewMode, filters)
+    result.push(...v2Wearables)
   }
 
   return result.map(mapCatalystWearableIntoV2)
@@ -187,6 +190,21 @@ async function fetchWearablesByCollectionFromBuilder(
   }
   if (filters?.wearableIds) {
     return result.filter((w) => filters.wearableIds!.includes(w.id))
+  }
+  return result
+}
+async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesRequestFilters | undefined) {
+  const result = []
+  try {
+    const url = `${rootURLPreviewMode()}/preview-wearables`
+    const collection: { data: any[] } = await (await fetch(url)).json()
+    result.push(...collection.data)
+
+    if (filters?.wearableIds) {
+      return result.filter((w) => filters.wearableIds!.includes(w.id))
+    }
+  } catch (err) {
+    defaultLogger.error(`Couldn't get the preview wearables. Check wearables folder.`, err)
   }
   return result
 }
