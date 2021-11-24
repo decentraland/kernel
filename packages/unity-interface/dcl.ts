@@ -188,7 +188,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
   if (
     message.type === sdk.SCENE_UPDATE
     && sdk.SceneUpdate.validate(message)
-    && message.payload.sceneType === 'portable-experience'
+    && message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE
   ) {
     try {
       const { sceneId } = message.payload
