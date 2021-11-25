@@ -5,8 +5,9 @@ import { getRealm, getSelectedNetwork } from 'shared/dao/selectors'
 import { getServerConfigurations, PREVIEW } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsIsland } from 'shared/comms/selectors'
+import { Realm } from 'shared/dao/types'
 
-type EnvironmentRealm = {
+export type EnvironmentRealm = {
   domain: string
   /** @deprecated use room instead */
   layer: string
@@ -50,14 +51,8 @@ export class EnvironmentAPI extends ExposableAPI {
     if (!realm) {
       return undefined
     }
-    const { domain, catalystName: serverName } = realm
-    return {
-      domain,
-      layer: island,
-      room: island,
-      serverName,
-      displayName: `${serverName}-${island}`
-    }
+
+    return toEnvironmentRealmType(realm, island)
   }
 
   /**
@@ -71,5 +66,16 @@ export class EnvironmentAPI extends ExposableAPI {
         questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl
       }
     }
+  }
+}
+
+export function toEnvironmentRealmType(realm: Realm, island: string): EnvironmentRealm {
+  const { domain, catalystName: serverName } = realm
+  return {
+    domain,
+    layer: island,
+    room: island,
+    serverName,
+    displayName: `${serverName}-${island}`
   }
 }
