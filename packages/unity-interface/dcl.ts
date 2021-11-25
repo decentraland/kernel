@@ -27,6 +27,7 @@ import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { killPortableExperienceScene, spawnPortableExperience } from './portableExperiencesUtils'
+import { sdk } from '@dcl/schemas'
 
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
@@ -183,15 +184,14 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
   }
 }
 
-export async function loadPreviewScene({ ws, message }: { ws?: string; message?: any }) {
+export async function loadPreviewScene(message: sdk.Messages) {
   if (
-    message &&
-    message.payload &&
-    message.payload.body?.sceneType === 'portable-experience' &&
-    message.payload.body?.sceneId
+    message.type === sdk.SCENE_UPDATE
+    && sdk.SceneUpdate.validate(message)
+    && message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE
   ) {
     try {
-      const sceneId = message.payload.body?.sceneId
+      const { sceneId } = message.payload
       const url = `${rootURLPreviewMode()}/preview-wearables/${sceneId}`
       const collection: { data: any[] } = await (await fetch(url)).json()
 
