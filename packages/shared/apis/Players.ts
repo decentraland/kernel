@@ -10,6 +10,9 @@ import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
 import { getVisibleAvatarsUserId, getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
+import { lastPlayerPosition } from 'shared/world/positionThings'
+import { getCurrentUserId } from 'shared/session/selectors'
+import { isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
 
 export interface IPlayers {
   /**
@@ -53,8 +56,19 @@ export class Players extends ExposableAPI implements IPlayers {
   @exposeMethod
   async getPlayersInScene(): Promise<{ userId: string }[]> {
     const parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    return getInSceneAvatarsUserId(parcelIdentity.cid).map((userId) => {
+
+    const result = getInSceneAvatarsUserId(parcelIdentity.cid).map((userId) => {
       return { userId }
     })
+
+    // check also for current user, since it will appear in `getInSceneAvatarsUserId` result
+    if (isWorldPositionInsideParcels(parcelIdentity.land.sceneJsonData.scene.parcels, lastPlayerPosition)) {
+      const currentUserId = getCurrentUserId(store.getState())
+      if (currentUserId) {
+        result.push({ userId: currentUserId })
+      }
+    }
+
+    return result
   }
 }
