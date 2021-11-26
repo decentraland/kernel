@@ -8,11 +8,14 @@ import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/se
 import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
+import { getVisibleAvatarsUserId } from 'shared/social/avatarTracker'
+
 export interface IPlayers {
   /**
    * Return the players's data
    */
   getPlayerData(opt: { userId: string }): Promise<UserData | null>
+  getConnectedPlayers(): Promise<{ userId: string }[]>
 }
 
 @registerAPI('Players')
@@ -36,5 +39,12 @@ export class Players extends ExposableAPI implements IPlayers {
       version: profile.version,
       avatar: { ...profile.avatar }
     }
+  }
+
+  @exposeMethod
+  async getConnectedPlayers(): Promise<{ userId: string }[]> {
+    return getVisibleAvatarsUserId().map((userId) => {
+      return { userId }
+    })
   }
 }

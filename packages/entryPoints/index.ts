@@ -1,5 +1,6 @@
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
+import { sdk } from '@dcl/schemas'
 import defaultLogger, { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
@@ -227,7 +228,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
       i.SetKernelConfiguration(configForRenderer)
-  
+
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
 
       i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
@@ -293,40 +294,35 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   if (options.previewMode) {
     i.SetDisableAssetBundles()
     await startPreview()
+    // tslint:disable: no-commented-out-code
     // const position = pickWorldSpawnpoint(scene)
     // i.Teleport(position)
     // teleportObservable.notifyObservers(position.position)
+    // tslint:enable: no-commented-out-code
   }
 
   return true
 }
 
 export async function startPreview() {
-  let wsScene: string | undefined = undefined
-
-  if (location.search.indexOf('WS_SCENE') !== -1) {
-    wsScene = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${document.location.host}/?scene`
-  }
-
-  getPreviewSceneId().then(async (sceneData) => {
+  void getPreviewSceneId().then(async (sceneData) => {
     if (sceneData.sceneId) {
       const { unityInterface } = await ensureUnityInterface()
       unityInterface.SetKernelConfiguration({
         debugConfig: {
-          sceneDebugPanelTargetSceneId: sceneData.sceneId!,
-          sceneLimitsWarningSceneId: sceneData.sceneId!
+          sceneDebugPanelTargetSceneId: sceneData.sceneId,
+          sceneLimitsWarningSceneId: sceneData.sceneId
         }
       })
     }
   })
 
-  function handleServerMessage(message: any) {
-    if (message.type === 'update') {
-      if (DEBUG_WS_MESSAGES) {
-        defaultLogger.info('Message received: ', message)
-      }
-
-      loadPreviewScene(wsScene)
+  function handleServerMessage(message: sdk.Messages) {
+    if (DEBUG_WS_MESSAGES) {
+      defaultLogger.info('Message received: ', message)
+    }
+    if (message.type === sdk.UPDATE || message.type === sdk.SCENE_UPDATE) {
+      void loadPreviewScene(message)
     }
   }
 
@@ -334,8 +330,10 @@ export async function startPreview() {
 
   ws.addEventListener('message', (msg) => {
     if (msg.data.startsWith('{')) {
+      // tslint:disable-next-line: no-console
       console.log('Update message from CLI', msg.data)
-      handleServerMessage(JSON.parse(msg.data))
+      const message: sdk.Messages = JSON.parse(msg.data)
+      handleServerMessage(message)
     }
   })
 }

@@ -2,7 +2,7 @@ import { EntityType, Hashing, Fetcher } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 
-import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
+import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
 
 import defaultLogger from 'shared/logger'
 import {
@@ -199,7 +199,8 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   let hasConnectedWeb3 = false
   try {
     const commsContext: CommsContext | undefined = yield select(getCommsContext)
-    if (profileType === ProfileType.LOCAL && currentId !== userId && commsContext) {
+
+    if ((PREVIEW || profileType === ProfileType.LOCAL) && currentId !== userId && commsContext) {
       const peerProfile: Profile = yield call(requestLocalProfileToPeers, commsContext, userId)
       if (peerProfile) {
         profile = ensureServerFormat(peerProfile)

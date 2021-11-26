@@ -1,4 +1,5 @@
-import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
+import { sleep } from 'atomicHelpers/sleep'
+import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import { ILand, SceneJsonData } from 'shared/types'
@@ -25,6 +26,8 @@ import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
+import { killPortableExperienceScene, spawnPortableExperience } from './portableExperiencesUtils'
+import { sdk } from '@dcl/schemas'
 
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
@@ -33,6 +36,8 @@ export const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
 declare const globalThis: { clientDebug: ClientDebug }
 
 globalThis.clientDebug = clientDebug
+
+const sceneLoading: Map<string, boolean> = new Map<string, boolean>()
 
 export function setLoadingScreenBasedOnState() {
   let state = store.getState()
@@ -179,14 +184,52 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
   }
 }
 
-export async function loadPreviewScene(ws?: string) {
-  const { sceneId, sceneBase } = await getPreviewSceneId()
+export async function loadPreviewScene(message: sdk.Messages) {
+  if (
+    message.type === sdk.SCENE_UPDATE
+    && sdk.SceneUpdate.validate(message)
+    && message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE
+  ) {
+    try {
+      const { sceneId } = message.payload
+      const url = `${rootURLPreviewMode()}/preview-wearables/${sceneId}`
+      const collection: { data: any[] } = await (await fetch(url)).json()
 
-  if (sceneId) {
-    await reloadScene(sceneId)
+      if (!!collection.data.length) {
+        const wearable = collection.data[0]
+        if (!sceneLoading.get(wearable.id)) {
+          await killPortableExperienceScene(wearable.id)
+
+          sceneLoading.set(wearable, true)
+          // This timeout is because the killPortableExperience isn't really async
+          //  and before spawn the portable experience it's neccesary that be kill
+          //  the previous scene
+          // TODO: catch the Scene.unloaded and then call the spawn.
+          await sleep(100)
+
+          await spawnPortableExperience(
+            wearable.id,
+            'main',
+            wearable.name,
+            `${wearable.baseUrl}/`,
+            wearable.data.scene,
+            wearable.thumbnail
+          )
+          sceneLoading.set(wearable, false)
+        }
+      }
+    } catch (err) {
+      defaultLogger.error(`Unable to loader the preview portable experience`, message, err)
+    }
   } else {
-    defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
-    debugger
+    const { sceneId, sceneBase } = await getPreviewSceneId()
+
+    if (sceneId) {
+      await reloadScene(sceneId)
+    } else {
+      defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
+      debugger
+    }
   }
 }
 

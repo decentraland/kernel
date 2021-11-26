@@ -108,7 +108,7 @@ export function setUpID(uuid: UUID): PeerInformation | null {
 export function receiveUserData(uuid: string, data: UserInformation) {
   const peerData = setUpID(uuid)
   if (peerData) {
-    const userData = peerData.user || (peerData.user = peerData.user || { userId: uuid })
+    const userData = peerData.user || (peerData.user = { userId: data.userId })
     const profileChanged = data.version && userData.version !== data.version
 
     if (profileChanged) {
