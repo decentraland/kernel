@@ -124,11 +124,12 @@ export class BuilderServerAPIManager {
   ): Promise<BuilderManifest | undefined> {
     try {
       // Fetch builder manifest by lands coordinates
-      const queryParams = 'manifests?' + 'creation_coords_eq=' + land
+      const endpoint = 'manifests'
+      const queryParams = endpoint + '?creation_coords_eq=' + land
       const urlToFecth = `${this.baseUrl}/${queryParams}`
 
       let params: RequestInit = {
-        headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + queryParams)
+        headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + endpoint)
       }
 
       const response = await fetch(urlToFecth, params)
