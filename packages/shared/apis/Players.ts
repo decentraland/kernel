@@ -1,5 +1,6 @@
 import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import { ExposableAPI } from './ExposableAPI'
+import { ParcelIdentity } from './ParcelIdentity'
 
 import { store } from 'shared/store/isolatedStore'
 
@@ -8,7 +9,7 @@ import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/se
 import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
-import { getVisibleAvatarsUserId } from 'shared/social/avatarTracker'
+import { getVisibleAvatarsUserId, getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
 
 export interface IPlayers {
   /**
@@ -16,6 +17,7 @@ export interface IPlayers {
    */
   getPlayerData(opt: { userId: string }): Promise<UserData | null>
   getConnectedPlayers(): Promise<{ userId: string }[]>
+  getPlayersInScene(): Promise<{ userId: string }[]>
 }
 
 @registerAPI('Players')
@@ -44,6 +46,14 @@ export class Players extends ExposableAPI implements IPlayers {
   @exposeMethod
   async getConnectedPlayers(): Promise<{ userId: string }[]> {
     return getVisibleAvatarsUserId().map((userId) => {
+      return { userId }
+    })
+  }
+
+  @exposeMethod
+  async getPlayersInScene(): Promise<{ userId: string }[]> {
+    const parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
+    return getInSceneAvatarsUserId(parcelIdentity.cid).map((userId) => {
       return { userId }
     })
   }

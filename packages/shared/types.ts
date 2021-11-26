@@ -638,5 +638,26 @@ export type TutorialInitializationMessage = {
 
 export type HeaderRequest = {
   endpoint: string
-  headers: Record<string,string>
+  headers: Record<string, string>
 }
+
+export enum AvatarRendererMessageType {
+  POSITION = 'Position',
+  REMOVED = 'Removed'
+}
+
+export type AvatarRendererBasePayload = {
+  entityId: string
+  avatarShapeId: string
+}
+
+export type AvatarRendererPositionMessage = {
+  type: AvatarRendererMessageType.POSITION
+  position: { x: number; y: number; z: number }
+} & AvatarRendererBasePayload
+
+export type AvatarRendererRemovedMessage = {
+  type: AvatarRendererMessageType.REMOVED
+} & AvatarRendererBasePayload
+
+export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
