@@ -9,6 +9,7 @@ import { AvatarMessageType } from './comms/interface/types'
 import { positionObservable } from './world/positionThings'
 import { globalObservable } from './observables'
 
+
 export type SegmentEvent = {
   name: string
   data: string

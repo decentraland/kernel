@@ -29,7 +29,9 @@
       "es2018",
       "dom",
       "esnext.asynciterable"
-    ]
+    ],
+    "types": ["@dcl/posix", "segment-analytics"],
+    "typeRoots": ["./node_modules"]
   },
   "exclude": [
     "node_modules",

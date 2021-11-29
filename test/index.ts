@@ -22,11 +22,9 @@ import './unit/positionThings.test'
 import './unit/RestrictedActions.test'
 import './unit/engine.test'
 import './unit/catalog.saga.test'
-import './unityIntegration/ecs/math/quaternion.test'
-import './unityIntegration/ecs/math/vector3.test'
 import './dao/pick-realm-algorithm'
 
-declare var mocha: any
+declare var mocha: Mocha
 declare var globalThis: any
 
 mocha.run()

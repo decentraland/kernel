@@ -1,4 +1,3 @@
-import { IEventNames } from 'decentraland-ecs'
 import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
 
 import { uuid } from 'atomicHelpers/math'
