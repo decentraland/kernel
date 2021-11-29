@@ -1,6 +1,6 @@
+import { Color4 } from '@dcl/ecs-math'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { RenderProfile } from 'shared/types'
-import { Color4 } from 'decentraland-ecs'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 
 export type MetaConfiguration = {

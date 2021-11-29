@@ -6,6 +6,7 @@ globalThis.isEditor = window.isEditor = true
 
 import { EventEmitter } from 'events'
 import future, { IFuture } from 'fp-future'
+import { Vector3 } from '@dcl/ecs-math'
 
 import { loadedSceneWorkers } from '../shared/world/parcelSceneManager'
 import { SceneJsonData, ILand, HUDElementID, BuilderConfiguration, WearableV2 } from '../shared/types'
@@ -15,7 +16,6 @@ import { initializeUnity } from '../unity-interface/initializer'
 import { loadBuilderScene, updateBuilderScene, unloadCurrentBuilderScene } from '../unity-interface/dcl'
 import defaultLogger from '../shared/logger'
 import { uuid } from 'atomicHelpers/math'
-import { Vector3 } from 'decentraland-ecs'
 import { sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { UnityParcelScene } from 'unity-interface/UnityParcelScene'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'

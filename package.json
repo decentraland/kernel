@@ -91,6 +91,7 @@
   },
   "dependencies": {
     "@dcl/catalyst-peer": "^1.0.4",
+    "@dcl/ecs-math": "^1.0.0-20211126134011.commit-b91edbb",
     "@dcl/ecs-quests": "^1.2.3-20210422200033.commit-48c967e",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
     "@dcl/schemas": "^2.2.2-20211124181718.commit-a8f6f19",

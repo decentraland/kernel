@@ -1,6 +1,6 @@
 import { Script, inject, EventSubscriber } from 'decentraland-rpc'
 
-import { Vector2 } from 'decentraland-ecs'
+import { Vector2 } from '@dcl/ecs-math'
 import { sleep } from 'atomicHelpers/sleep'
 import future, { IFuture } from 'fp-future'
 

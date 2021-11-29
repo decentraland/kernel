@@ -1,3 +1,6 @@
+import { IEventNames } from 'decentraland-ecs'
+import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
+
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { AvatarMessageType } from 'shared/comms/interface/types'
@@ -7,7 +10,6 @@ import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3, IEventNames } from 'decentraland-ecs'
 import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
