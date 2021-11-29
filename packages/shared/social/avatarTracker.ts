@@ -3,10 +3,7 @@ import { getUser } from 'shared/comms/peers'
 import { avatarMessageObservable } from 'shared/comms/peers'
 import { allScenesEvent, getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { Observable } from 'decentraland-ecs'
-import { AvatarRendererMessage, AvatarRendererMessageType, ILand } from 'shared/types'
-import { encodeParcelPosition, isWorldPositionInsideParcels, worldToGrid } from 'atomicHelpers/parcelScenePositions'
-import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
-import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJson'
+import { AvatarRendererMessage, AvatarRendererMessageType } from 'shared/types'
 
 export const avatarRendererMessageObservable = new Observable<AvatarRendererMessage>()
 
@@ -16,12 +13,12 @@ export function getVisibleAvatarsUserId(): string[] {
 
 export function getInSceneAvatarsUserId(sceneId: string): string[] {
   return Array.from(rendererAvatars.entries())
-    .filter(([userId, avatarData]) => avatarData.scene && avatarData.scene.sceneId === sceneId)
+    .filter(([userId, avatarData]) => avatarData.sceneId === sceneId)
     .map(([userId, avatarData]) => userId)
 }
 
 type RendererAvatarData = {
-  scene?: ILand
+  sceneId: string
 }
 
 const avatarConnected = 'playerConnected'
@@ -66,56 +63,34 @@ avatarMessageObservable.add((evt) => {
 avatarRendererMessageObservable.add(async (evt) => {
   const userId = evt.avatarShapeId
 
-  if (evt.type === AvatarRendererMessageType.POSITION) {
-    let avatarData: RendererAvatarData = {}
-
-    // Get avatar data from map or set a new one if doesn't exist
-    if (rendererAvatars.has(userId)) {
-      avatarData = rendererAvatars.get(userId)!
-    } else {
-      rendererAvatars.set(userId, avatarData)
-    }
-
-    // Check if avatar didn't move out of last scene
-    const prevScene = avatarData.scene
-    if (prevScene) {
-      if (isWorldPositionInsideParcels(prevScene.sceneJsonData.scene.parcels, evt.position)) {
-        return
-      }
-    }
-
-    // Get current scene
-    let currentScene: ILand | undefined
-
-    const coords = worldToGrid(evt.position)
-    const scenesId = await fetchSceneIds([encodeParcelPosition(coords)])
-
-    if (scenesId) {
-      const scenesJson = await fetchSceneJson(scenesId as string[])
-      if (scenesJson) {
-        currentScene = scenesJson[0]
-        avatarData.scene = currentScene
-      }
-    }
-
-    // Send scenes events if avatar still exists
-    if (rendererAvatars.has(userId)) {
-      if (prevScene) {
-        const sceneWorker = getSceneWorkerBySceneID(prevScene.sceneId)
+  if (evt.type === AvatarRendererMessageType.SCENE_CHANGED) {
+    // If changed to a scene not loaded on renderer side
+    if (!(evt.sceneId && evt.sceneId.length > 0)) {
+      const avatarData = rendererAvatars.get(userId)
+      if (avatarData) {
+        const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
         sceneWorker?.emit('onLeaveScene', { userId })
+        rendererAvatars.delete(userId)
       }
-
-      if (currentScene) {
-        const sceneWorker = getSceneWorkerBySceneID(currentScene.sceneId)
-        sceneWorker?.emit('onEnterScene', { userId })
-      }
+      return
     }
 
-    rendererAvatars.set(userId, avatarData)
+    const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
+    const newSceneId: string = evt.sceneId
+
+    if (avatarData?.sceneId) {
+      const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
+      sceneWorker?.emit('onLeaveScene', { userId })
+    }
+
+    const sceneWorker = getSceneWorkerBySceneID(newSceneId)
+    sceneWorker?.emit('onEnterScene', { userId })
+
+    rendererAvatars.set(userId, { sceneId: newSceneId })
   } else if (evt.type === AvatarRendererMessageType.REMOVED) {
     const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
-    if (avatarData && avatarData.scene) {
-      const sceneWorker = getSceneWorkerBySceneID(avatarData.scene.sceneId)
+    if (avatarData) {
+      const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
       sceneWorker?.emit('onLeaveScene', { userId })
       rendererAvatars.delete(userId)
     }

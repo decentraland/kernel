@@ -642,7 +642,7 @@ export type HeaderRequest = {
 }
 
 export enum AvatarRendererMessageType {
-  POSITION = 'Position',
+  SCENE_CHANGED = 'SceneChanged',
   REMOVED = 'Removed'
 }
 
@@ -652,8 +652,8 @@ export type AvatarRendererBasePayload = {
 }
 
 export type AvatarRendererPositionMessage = {
-  type: AvatarRendererMessageType.POSITION
-  position: { x: number; y: number; z: number }
+  type: AvatarRendererMessageType.SCENE_CHANGED
+  sceneId?: string
 } & AvatarRendererBasePayload
 
 export type AvatarRendererRemovedMessage = {
