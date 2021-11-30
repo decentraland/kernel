@@ -69,7 +69,7 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
-import { avatarRendererMessageObservable } from 'shared/social/avatarTracker'
+import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from 'dcl-crypto'
@@ -704,7 +704,7 @@ export class BrowserInterface {
   }
 
   public ReportAvatarState(data: AvatarRendererMessage) {
-    avatarRendererMessageObservable.notifyObservers(data)
+    setRendererAvatarState(data)
   }
 }
 

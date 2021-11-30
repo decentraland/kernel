@@ -56,14 +56,21 @@ export class Players extends ExposableAPI implements IPlayers {
   @exposeMethod
   async getPlayersInScene(): Promise<{ userId: string }[]> {
     const parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
+    const currentUserId = getCurrentUserId(store.getState())
+    const sceneParcels = parcelIdentity.land.sceneJsonData.scene.parcels
 
-    const result = getInSceneAvatarsUserId(parcelIdentity.cid).map((userId) => {
-      return { userId }
-    })
+    let isCurrentUserIncluded = false
 
-    // check also for current user, since it will appear in `getInSceneAvatarsUserId` result
-    if (isWorldPositionInsideParcels(parcelIdentity.land.sceneJsonData.scene.parcels, lastPlayerPosition)) {
-      const currentUserId = getCurrentUserId(store.getState())
+    const result = []
+    for (let userId of getInSceneAvatarsUserId(parcelIdentity.cid)) {
+      if (userId === currentUserId) {
+        isCurrentUserIncluded = true
+      }
+      result.push({ userId })
+    }
+
+    // check also for current user, since it won't appear in `getInSceneAvatarsUserId` result
+    if (!isCurrentUserIncluded && isWorldPositionInsideParcels(sceneParcels, lastPlayerPosition)) {
       if (currentUserId) {
         result.push({ userId: currentUserId })
       }
