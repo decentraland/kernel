@@ -6,6 +6,7 @@ import { injectVersions } from 'shared/rolloutVersions'
 
 export function kernelConfigForRenderer(): KernelConfigForRenderer {
   const versions = injectVersions({})
+
   return {
     comms: {
       commRadius: commConfigurations.commRadius,

@@ -408,7 +408,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'SetVoiceChatEnabledByScene', enabled ? 1 : 0)
   }
 
-  public SetKernelConfiguration(config: Partial<KernelConfigForRenderer>) {
+  public SetKernelConfiguration(config: any) {
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
   }
 

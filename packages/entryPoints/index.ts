@@ -227,7 +227,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
-      i.SetKernelConfiguration(configForRenderer)
+      i.SetKernelConfiguration( { ...configForRenderer, ...worldConfig } )
 
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
 
