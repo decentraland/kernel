@@ -23,7 +23,8 @@ import {
   FriendshipUpdateStatusMessage,
   FriendshipAction,
   WorldPosition,
-  LoadableParcelScene
+  LoadableParcelScene,
+  AvatarRendererMessage
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -68,6 +69,7 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from 'dcl-crypto'
@@ -568,7 +570,7 @@ export class BrowserInterface {
   }
 
   public FetchBalanceOfMANA() {
-    (async () => {
+    ;(async () => {
       const identity = getIdentity()
 
       if (!identity?.hasConnectedWeb3) {
@@ -699,6 +701,10 @@ export class BrowserInterface {
     } else {
       defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
     }
+  }
+
+  public ReportAvatarState(data: AvatarRendererMessage) {
+    setRendererAvatarState(data)
   }
 }
 
