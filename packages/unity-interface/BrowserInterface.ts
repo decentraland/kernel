@@ -1,4 +1,9 @@
-import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
+import {
+  Quaternion,
+  EcsMathReadOnlyQuaternion,
+  EcsMathReadOnlyVector3,
+  Vector3
+} from '@dcl/ecs-math'
 
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
@@ -130,8 +135,8 @@ export class BrowserInterface {
 
   /** Triggered when the camera moves */
   public ReportPosition(data: {
-    position: ReadOnlyVector3
-    rotation: ReadOnlyQuaternion
+    position: EcsMathReadOnlyVector3
+    rotation: EcsMathReadOnlyQuaternion
     playerHeight?: number
     immediate?: boolean
   }) {
@@ -150,7 +155,7 @@ export class BrowserInterface {
     positionObservable.notifyObservers(positionEvent)
   }
 
-  public ReportMousePosition(data: { id: string; mousePosition: ReadOnlyVector3 }) {
+  public ReportMousePosition(data: { id: string; mousePosition: EcsMathReadOnlyVector3 }) {
     positionEvent.mousePosition.set(data.mousePosition.x, data.mousePosition.y, data.mousePosition.z)
     positionObservable.notifyObservers(positionEvent)
     futures[data.id].resolve(data.mousePosition)
@@ -381,7 +386,7 @@ export class BrowserInterface {
     futures[data.id].resolve(data.encodedTexture)
   }
 
-  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: ReadOnlyVector3 }) {
+  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: EcsMathReadOnlyVector3 }) {
     futures[data.id].resolve(data.cameraTarget)
   }
 

@@ -1,4 +1,4 @@
-import { ReadOnlyVector2 } from '@dcl/ecs-math'
+import { EcsMathReadOnlyVector2 } from '@dcl/ecs-math'
 import {
   setCatalystCandidates,
   setAddedCatalystCandidates,
@@ -149,7 +149,7 @@ function* waitForCandidates() {
 
 export function* selectRealm() {
   yield call(waitForCandidates)
-  const parcel: ReadOnlyVector2 = yield parcelAvailable()
+  const parcel: EcsMathReadOnlyVector2 = yield parcelAvailable()
 
   const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
 
