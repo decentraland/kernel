@@ -14,7 +14,6 @@ import {
   UpdateUserStatusMessage,
   RenderProfile,
   BuilderConfiguration,
-  KernelConfigForRenderer,
   RealmsInfoForRenderer,
   ContentMapping,
   Profile,

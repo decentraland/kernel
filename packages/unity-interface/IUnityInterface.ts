@@ -18,7 +18,6 @@ import {
   ChatMessage,
   FriendshipUpdateStatusMessage,
   FriendsInitializationMessage,
-  KernelConfigForRenderer,
   TutorialInitializationMessage,
   Notification,
   UpdateUserStatusMessage,

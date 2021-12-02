@@ -1,7 +1,6 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from 'decentraland-ecs'
 import type { WearableId } from 'shared/catalogs/types'
-import { WorldConfig } from './meta/types'
 export { Avatar, Profile } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
