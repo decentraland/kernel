@@ -3,11 +3,15 @@ import { commConfigurations, WSS_ENABLED } from 'config'
 import { nameValidCharacterRegex, nameValidRegex } from 'shared/profiles/utils/names'
 import { getWorld } from '@dcl/schemas'
 import { injectVersions } from 'shared/rolloutVersions'
+import { store } from 'shared/store/isolatedStore'
 
-export function kernelConfigForRenderer(): KernelConfigForRenderer {
+export function kernelConfigForRenderer(): KernelConfigForRenderer & any {
   const versions = injectVersions({})
 
+  const worldConfig: any = store.getState().meta.config.world
+
   return {
+    ...worldConfig,
     comms: {
       commRadius: commConfigurations.commRadius,
       voiceChatEnabled: false

@@ -17,7 +17,7 @@ export type MetaConfiguration = {
   pickRealmAlgorithmConfig?: AlgorithmChainConfig
   bannedUsers: BannedUsers
   synapseUrl: string
-  world: WorldConfig
+  world: any
   comms: CommsConfig
   minCatalystVersion?: string
   featureFlags?: Record<string, boolean>

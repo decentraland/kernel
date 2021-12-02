@@ -17,6 +17,7 @@ import defaultLogger from 'shared/logger'
 import { store } from 'shared/store/isolatedStore'
 
 import { resolveUrl } from 'atomicHelpers/parseUrl'
+import { getWorldConfig } from 'shared/meta/selectors'
 
 declare const globalThis: { workerManager: LifecycleManager }
 
@@ -133,7 +134,7 @@ export async function initParcelSceneWorker() {
     rootUrl: fullRootUrl,
     lineOfSightRadius: LOS ? Number.parseInt(LOS, 10) : parcelLimits.visibleRadius,
     emptyScenes: ENABLE_EMPTY_SCENES && !(globalThis as any)['isRunningTests'],
-    worldConfig: state.meta.config.world
+    worldConfig: getWorldConfig(state)
   })
 
   return server

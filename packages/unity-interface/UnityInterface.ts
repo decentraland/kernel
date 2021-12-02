@@ -408,6 +408,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public SetKernelConfiguration(config: any) {
+    defaultLogger.log(`Sending kernel config: ${JSON.stringify(config)}`)
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
   }
 

@@ -28,6 +28,7 @@ import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { killPortableExperienceScene, spawnPortableExperience } from './portableExperiencesUtils'
 import { sdk } from '@dcl/schemas'
+import { ensureMetaConfigurationInitialized } from 'shared/meta'
 
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
@@ -74,6 +75,8 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   getUnityInstance().Init(gameInstance)
 
   getUnityInstance().DeactivateRendering()
+  
+  await ensureMetaConfigurationInitialized()
 
   getUnityInstance().SetKernelConfiguration(kernelConfigForRenderer())
 

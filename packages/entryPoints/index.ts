@@ -18,7 +18,7 @@ import { realmInitialized } from 'shared/dao'
 import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
 import { ensureMetaConfigurationInitialized, waitForMessageOfTheDay } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
-import { getFeatureFlags, isFeatureEnabled } from 'shared/meta/selectors'
+import { getFeatureFlags, getWorldConfig, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { startRealmsReportToRenderer } from 'unity-interface/realmsForRenderer'
 import { isWaitingTutorial } from 'shared/loading/selectors'
@@ -188,7 +188,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
 
   const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
-  const worldConfig: WorldConfig | undefined = store.getState().meta.config.world
+  const worldConfig: WorldConfig | undefined = getWorldConfig(store.getState())
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
   const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
@@ -227,7 +227,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
-      i.SetKernelConfiguration( { ...configForRenderer, ...worldConfig } )
+      
+      i.SetKernelConfiguration( configForRenderer )
 
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
 
