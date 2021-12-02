@@ -597,8 +597,8 @@ export class BrowserInterface {
     await killPortableExperienceScene(data.portableExperienceId)
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
+  // Note: This message is deprecated and should be deleted in the future.
+  //       We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
   public RequestBIWCatalogHeader() {
     const identity = getCurrentIdentity(store.getState())
     if (!identity) {
@@ -610,8 +610,8 @@ export class BrowserInterface {
     }
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      We are maintaining it for compatibility we can safely delete if we are further than 2/03/2022
+  // Note: This message is deprecated and should be deleted in the future.
+  //       We are maintaining it for compatibility we can safely delete if we are further than 2/03/2022
   public RequestHeaderForUrl(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
@@ -621,8 +621,8 @@ export class BrowserInterface {
     getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
+  // Note: This message is deprecated and should be deleted in the future.
+  //       It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
@@ -632,8 +632,8 @@ export class BrowserInterface {
     getUnityInstance().SendHeaders(data.url, headers)
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
+  // Note: This message is deprecated and should be deleted in the future.
+  //       It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
   public RequestSignedHeader(data: { method: string; url: string; metadata: Record<string, any> }) {
     const identity = getCurrentIdentity(store.getState())
 

@@ -31,6 +31,8 @@ export const getMinCatalystVersion = (store: RootMetaState): string | undefined 
 
 export const isMetaConfigurationInitiazed = (store: RootMetaState): boolean => store.meta.initialized
 
+export const getWorldConfig = (store: RootMetaState): WorldConfig => store.meta.config.world as WorldConfig
+
 export const getPois = (store: RootMetaState): Vector2Component[] => getWorldConfig(store)?.pois || []
 
 export const getCommsConfig = (store: RootMetaState): CommsConfig =>
@@ -40,8 +42,6 @@ export const getBannedUsers = (store: RootMetaState): BannedUsers => store.meta.
 
 export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmChainConfig | undefined =>
   store.meta.config.pickRealmAlgorithmConfig
-
-export const getWorldConfig = (store: RootMetaState): WorldConfig => store.meta.config.world as WorldConfig
 
 export const isMOTDInitialized = (store: RootMetaState): boolean =>
   getWorldConfig(store) ? getWorldConfig(store)?.messageOfTheDayInit || false : false

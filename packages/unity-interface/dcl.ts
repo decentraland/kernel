@@ -75,7 +75,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   getUnityInstance().Init(gameInstance)
 
   getUnityInstance().DeactivateRendering()
-  
+
   await ensureMetaConfigurationInitialized()
 
   getUnityInstance().SetKernelConfiguration(kernelConfigForRenderer())
