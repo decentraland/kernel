@@ -62,7 +62,7 @@ export async function toBuilderFromStateDefinitionFormat(
       if (componentType === 'NFTShape') {
         component.data.url = component.data.src
         if (nftCount >= 1) {
-          //This is the format that is used by builder
+          // This is the format that is used by builder
           entityName = 'nft' + (nftCount + 1)
         } else {
           entityName = 'nft'

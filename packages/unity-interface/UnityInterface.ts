@@ -14,7 +14,6 @@ import {
   UpdateUserStatusMessage,
   RenderProfile,
   BuilderConfiguration,
-  KernelConfigForRenderer,
   RealmsInfoForRenderer,
   ContentMapping,
   Profile,
@@ -408,7 +407,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'SetVoiceChatEnabledByScene', enabled ? 1 : 0)
   }
 
-  public SetKernelConfiguration(config: Partial<KernelConfigForRenderer>) {
+  public SetKernelConfiguration(config: any) {
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
   }
 
@@ -432,14 +431,14 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      We are maintaining it for backward compatibility  we can safely delete if we are further than 2/03/2022
+  // Note: This message is deprecated and should be deleted in the future.
+  //       We are maintaining it for backward compatibility  we can safely delete if we are further than 2/03/2022
   public SendBuilderCatalogHeaders(headers: Record<string, string>) {
     this.SendMessageToUnity('Main', 'BuilderInWorldCatalogHeaders', JSON.stringify(headers))
   }
 
   public SendHeaders(endpoint: string, headers: Record<string, string>) {
-    var request: HeaderRequest = {
+    let request: HeaderRequest = {
       endpoint: endpoint,
       headers: headers
     }

@@ -18,7 +18,6 @@ import {
   ChatMessage,
   FriendshipUpdateStatusMessage,
   FriendsInitializationMessage,
-  KernelConfigForRenderer,
   TutorialInitializationMessage,
   Notification,
   UpdateUserStatusMessage,
@@ -138,7 +137,7 @@ export interface IUnityInterface {
   SetUserTalking(userId: string, talking: boolean): void
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
-  SetKernelConfiguration(config: Partial<KernelConfigForRenderer>): void
+  SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
