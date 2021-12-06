@@ -1,7 +1,7 @@
 import { analizeColorPart, stripAlpha } from './analizeColorPart'
 import { isValidBodyShape } from './isValidBodyShape'
 import { Profile, Snapshots } from '../types'
-import { WearableId } from 'decentraland-ecs'
+import { WearableId } from '@dcl/legacy-ecs'
 
 export function ensureServerFormat(profile: Profile): ServerFormatProfile {
   const { avatar } = profile

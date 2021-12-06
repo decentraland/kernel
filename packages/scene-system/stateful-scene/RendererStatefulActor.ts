@@ -1,4 +1,4 @@
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import {
   AttachEntityComponentPayload,

@@ -2,7 +2,7 @@ import { Vector3 } from '@dcl/ecs-math'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { Observable } from 'mz-observable'
-import { MinimapSceneInfo, ProfileForRenderer } from 'decentraland-ecs'
+import { MinimapSceneInfo, ProfileForRenderer } from '@dcl/legacy-ecs'
 import { AirdropInfo } from '../shared/airdrops/interface'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import {

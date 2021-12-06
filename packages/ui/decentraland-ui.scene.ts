@@ -1,4 +1,4 @@
-import { executeTask } from 'decentraland-ecs'
+import { executeTask } from '@dcl/legacy-ecs'
 import { avatarMessageObservable } from './avatar/avatarSystem'
 
 declare const dcl: DecentralandInterface

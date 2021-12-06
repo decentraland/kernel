@@ -1,4 +1,4 @@
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import { SceneSourcePlacement } from 'shared/types'
 
 /**
@@ -20,11 +20,11 @@ export function getUniqueNameForGLTF(currentNames: string[], gltfName: string, a
   let nameToReturn: string = gltfName
 
   nameToReturn = removesSpecialCharacters(nameToReturn,currentNames)
-  
+
   if (amountOfTimesAppear > 1) nameToReturn = nameToReturn + amountOfTimesAppear
 
   for (let i = 0; i < currentNames.length; i++) {
-    if (currentNames[i] === nameToReturn) 
+    if (currentNames[i] === nameToReturn)
       nameToReturn = getUniqueNameForGLTF(currentNames, gltfName, amountOfTimesAppear + 1)
   }
   return nameToReturn

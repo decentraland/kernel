@@ -1,6 +1,6 @@
 import { LightweightWriter } from 'dcl-scene-writer'
-import { Vector3, Quaternion } from '@dcl/ecs-math'
-import * as ECS from 'decentraland-ecs'
+import * as ECS from '@dcl/legacy-ecs'
+
 import { SerializedSceneState, CONTENT_PATH, Asset, AssetId } from './types'
 
 export function createGameFile(state: SerializedSceneState, assets: Map<AssetId, Asset>): string {
@@ -15,9 +15,9 @@ export function createGameFile(state: SerializedSceneState, assets: Map<AssetId,
           const { position, rotation, scale } = component.value
           ecsEntity.addComponentOrReplace(
             new ECS.Transform({
-              position: new Vector3(position.x, position.y, position.z) as any,
-              rotation: new Quaternion(rotation.x, rotation.y, rotation.z, rotation.w) as any,
-              scale: new Vector3(scale.x, scale.y, scale.z) as any
+              position: new ECS.Vector3(position.x, position.y, position.z),
+              rotation: new ECS.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w),
+              scale: new ECS.Vector3(scale.x, scale.y, scale.z)
             })
           )
           break
@@ -38,7 +38,7 @@ export function createGameFile(state: SerializedSceneState, assets: Map<AssetId,
           break
       }
     }
-    writer.addEntity(entityName, ecsEntity)
+    writer.addEntity(entityName, ecsEntity as unknown as ECS.Entity)
   }
   return writer.emitCode()
 }

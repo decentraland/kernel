@@ -5,7 +5,7 @@ import { sleep } from 'atomicHelpers/sleep'
 import future, { IFuture } from 'fp-future'
 
 import type { ScriptingTransport, ILogOpts } from 'decentraland-rpc/src/common/json-rpc/types'
-import type { QueryType } from 'decentraland-ecs'
+import type { QueryType } from '@dcl/legacy-ecs'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import type {
@@ -504,7 +504,7 @@ export abstract class SceneRuntime extends Script {
       {
         const monkeyPatchDcl: any = dcl
         monkeyPatchDcl.updateEntity = function () {
-          throw new Error('The scene is using an outdated version of decentraland-ecs, please upgrade to >5.0.0')
+          throw new Error('The scene is using an outdated version of @dcl/legacy-ecs, please upgrade to >5.0.0')
         }
       }
 
