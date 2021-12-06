@@ -38,7 +38,7 @@ export function createGameFile(state: SerializedSceneState, assets: Map<AssetId,
           break
       }
     }
-    writer.addEntity(entityName, ecsEntity as unknown as ECS.Entity)
+    writer.addEntity(entityName, ecsEntity as any)
   }
   return writer.emitCode()
 }
