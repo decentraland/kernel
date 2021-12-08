@@ -5,7 +5,9 @@
     "declaration": false,
     "strictNullChecks": false,
     "lib": ["es2017", "dom"],
-    "baseUrl": "../packages"
+    "baseUrl": "../packages",
+    "types": ["mocha", "@dcl/posix", "segment-analytics"],
+    "typeRoots": ["../node_modules/"]
   },
   "exclude": ["../packages/engine"],
   "extends": "../tsconfig.json"

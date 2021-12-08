@@ -26,7 +26,7 @@ import {
   toBuilderFromStateDefinitionFormat
 } from './StorableSceneStateTranslation'
 import { uuid } from 'atomicHelpers/math'
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import { ParcelIdentity } from '../ParcelIdentity'
 import { getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { createGameFile } from './SceneStateDefinitionCodeGenerator'

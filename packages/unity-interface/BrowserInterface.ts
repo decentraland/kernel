@@ -1,3 +1,10 @@
+import {
+  Quaternion,
+  EcsMathReadOnlyQuaternion,
+  EcsMathReadOnlyVector3,
+  Vector3
+} from '@dcl/ecs-math'
+
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { AvatarMessageType } from 'shared/comms/interface/types'
@@ -7,7 +14,6 @@ import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3, IEventNames } from 'decentraland-ecs'
 import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -129,8 +135,8 @@ export class BrowserInterface {
 
   /** Triggered when the camera moves */
   public ReportPosition(data: {
-    position: ReadOnlyVector3
-    rotation: ReadOnlyQuaternion
+    position: EcsMathReadOnlyVector3
+    rotation: EcsMathReadOnlyQuaternion
     playerHeight?: number
     immediate?: boolean
   }) {
@@ -149,7 +155,7 @@ export class BrowserInterface {
     positionObservable.notifyObservers(positionEvent)
   }
 
-  public ReportMousePosition(data: { id: string; mousePosition: ReadOnlyVector3 }) {
+  public ReportMousePosition(data: { id: string; mousePosition: EcsMathReadOnlyVector3 }) {
     positionEvent.mousePosition.set(data.mousePosition.x, data.mousePosition.y, data.mousePosition.z)
     positionObservable.notifyObservers(positionEvent)
     futures[data.id].resolve(data.mousePosition)
@@ -380,7 +386,7 @@ export class BrowserInterface {
     futures[data.id].resolve(data.encodedTexture)
   }
 
-  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: ReadOnlyVector3 }) {
+  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: EcsMathReadOnlyVector3 }) {
     futures[data.id].resolve(data.cameraTarget)
   }
 

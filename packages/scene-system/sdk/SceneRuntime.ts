@@ -1,11 +1,11 @@
 import { Script, inject, EventSubscriber } from 'decentraland-rpc'
 
-import { Vector2 } from 'decentraland-ecs'
+import { Vector2 } from '@dcl/ecs-math'
 import { sleep } from 'atomicHelpers/sleep'
 import future, { IFuture } from 'fp-future'
 
 import type { ScriptingTransport, ILogOpts } from 'decentraland-rpc/src/common/json-rpc/types'
-import type { QueryType, DecentralandInterface, IEvents } from 'decentraland-ecs'
+import type { QueryType } from '@dcl/legacy-ecs'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import type {
@@ -28,6 +28,7 @@ import { generatePBObject } from './Utils'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
+
 
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
@@ -242,7 +243,7 @@ export abstract class SceneRuntime extends Script {
 
       const dcl: DecentralandInterface = {
         DEBUG: true,
-        log(...args) {
+        log(...args: any[]) {
           // tslint:disable-next-line:no-console
           that.onLog(...args)
         },
@@ -496,14 +497,14 @@ export abstract class SceneRuntime extends Script {
           that.onStartFunctions.push(cb)
         },
         error(message, data) {
-          that.onError(Object.assign(new Error(message), { data }))
+          that.onError(Object.assign(new Error(message as string), { data }))
         }
       }
 
       {
         const monkeyPatchDcl: any = dcl
         monkeyPatchDcl.updateEntity = function () {
-          throw new Error('The scene is using an outdated version of decentraland-ecs, please upgrade to >5.0.0')
+          throw new Error('The scene is using an outdated version of @dcl/legacy-ecs, please upgrade to >5.0.0')
         }
       }
 

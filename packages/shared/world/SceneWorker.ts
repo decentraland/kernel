@@ -1,10 +1,10 @@
+import { Vector3 } from '@dcl/ecs-math'
 import { future } from 'fp-future'
 import { APIOptions, ScriptingHost } from 'decentraland-rpc/lib/host'
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import { defaultLogger } from 'shared/logger'
 import { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import { EngineAPI } from 'shared/apis/EngineAPI'
-import type { IEventNames, IEvents, Vector3 } from 'decentraland-ecs'
 import { PREVIEW } from 'config'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 

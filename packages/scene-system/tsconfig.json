@@ -29,7 +29,8 @@
       {
         "name": "tslint-language-service"
       }
-    ]
+    ],
+    "types": ["@dcl/posix", "segment-analytics"]
   },
   "exclude": ["../../node_modules"]
 }

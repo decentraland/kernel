@@ -1,5 +1,4 @@
-import { engine, Entity, Observable, Transform, EventManager, ProfileForRenderer } from 'decentraland-ecs'
-import { AvatarShape } from 'decentraland-ecs'
+import { AvatarShape, engine, Entity, Observable, Transform, EventManager, ProfileForRenderer } from '@dcl/legacy-ecs'
 import {
   AvatarMessage,
   AvatarMessageType,
