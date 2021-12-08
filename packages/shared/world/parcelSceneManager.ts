@@ -217,8 +217,13 @@ export async function enableParcelSceneLoading(options: EnableParcelSceneLoading
   })
 }
 
-export function allScenesEvent(data: { eventType: string; payload: any }) {
+export type AllScenesEvents<T extends IEventNames> = {
+  eventType: T
+  payload: IEvents[T]
+}
+
+export function allScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
   for (const [_key, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType as IEventNames, data.payload)
+    scene.emit(data.eventType, data.payload)
   }
 }
