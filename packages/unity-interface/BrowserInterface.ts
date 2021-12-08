@@ -36,7 +36,8 @@ import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  allScenesEvent
+  allScenesEvent,
+  AllScenesEvents
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -129,7 +130,7 @@ export class BrowserInterface {
     }
   }
 
-  public AllScenesEvent(data: { eventType: string; payload: any }) {
+  public AllScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
     allScenesEvent(data)
   }
 
