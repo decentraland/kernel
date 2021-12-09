@@ -15,6 +15,7 @@ export class ParcelLifeCycleController extends EventEmitter {
   missingDataParcelsCount = 0
   parcelStatus = new Map<string, ParcelLifeCycleStatus>()
   currentlySightedParcels = new Set<string>()
+  
 
   constructor(config: ParcelConfigurationOptions) {
     super()
@@ -27,6 +28,21 @@ export class ParcelLifeCycleController extends EventEmitter {
     this.config.lineOfSightRadius = newRadius
 
     return this.updateLoadedParcels()
+  }
+
+  public setOnlyThisScenesOnSight(scenesInSight: Set<string>) {
+    if (!this.currentPosition) return
+    this.currentlySightedParcels.clear()
+
+    this.parcelStatus.forEach((value: ParcelLifeCycleStatus, key: string) => {
+      if (!scenesInSight.has(key)) value.setOffSight()
+    })
+
+    for (var sceneId of Array.from(scenesInSight.values())) {
+      this.parcelSighted(sceneId)
+    }
+
+    this.currentPosition = undefined
   }
 
   reportCurrentPosition(position: Vector2Component): ParcelSightSeeingReport | undefined {
@@ -45,10 +61,10 @@ export class ParcelLifeCycleController extends EventEmitter {
     if (this.currentPosition === undefined) return undefined
 
     this.isTargetPlaced = true
-    const sightedParcels = parcelsInScope(this.config.lineOfSightRadius, this.currentPosition)
+    let sightedParcels = parcelsInScope(this.config.lineOfSightRadius, this.currentPosition)
     const sightedParcelsSet = new Set<string>()
 
-    const newlySightedParcels = sightedParcels.filter((parcel) => {
+    let newlySightedParcels = sightedParcels.filter((parcel) => {
       sightedParcelsSet.add(parcel)
       return this.parcelSighted(parcel)
     })
@@ -56,11 +72,13 @@ export class ParcelLifeCycleController extends EventEmitter {
     const secureParcels = new Set(parcelsInScope(this.config.lineOfSightRadius + secureRadius, this.currentPosition))
     const currentlyPlusNewlySightedParcels = [...this.currentlySightedParcels] // this.currentlySightedParcels from t - 1 + newSightedParcels (added on this#parcelSighted)
 
-    const newlyOOSParcels = currentlyPlusNewlySightedParcels
+    let newlyOOSParcels = currentlyPlusNewlySightedParcels
       .filter((parcel) => !secureParcels.has(parcel))
       .filter((parcel) => this.switchParcelToOutOfSight(parcel))
 
     this.currentlySightedParcels = new Set(currentlyPlusNewlySightedParcels.filter(($) => secureParcels.has($)))
+
+    console.log("Parcel resuleto: He visto estas parcels " +newlySightedParcels)
 
     this.emit('Sighted', newlySightedParcels)
     this.emit('Lost sight', newlyOOSParcels)

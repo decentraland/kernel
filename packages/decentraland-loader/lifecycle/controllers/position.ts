@@ -17,6 +17,7 @@ export class PositionLifecycleController extends EventEmitter {
   private currentlySightedScenes: string[] = []
   private currentSpawnpoint?: InstancedSpawnPoint
   private currentPosition: Vector2Component | null = null
+  private isIsolatedModeRunning: boolean = false
 
   constructor(
     private downloadManager: SceneDataDownloadManager,
@@ -29,11 +30,12 @@ export class PositionLifecycleController extends EventEmitter {
 
   async reportCurrentPosition(position: Vector2Component, teleported: boolean) {
     if (
+      this.isIsolatedModeRunning ||
       !this.positionSettled ||
       (this.currentPosition &&
         this.currentPosition.x === position.x &&
         this.currentPosition.y === position.y &&
-        !teleported)
+        !teleported )
     ) {
       return
     }
@@ -69,10 +71,20 @@ export class PositionLifecycleController extends EventEmitter {
     this.checkPositionSettlement()
   }
 
+  public setSightParcels(scenesOnSight: Set<string>){
+    this.currentlySightedScenes = Array.from(scenesOnSight.values());
+  }
+
+  public setIsolatedMode(isRunning: boolean)
+  {
+    this.isIsolatedModeRunning = isRunning;
+  }
+
   public async updateSightedParcels(parcels: ParcelSightSeeingReport | undefined) {
     if (parcels === undefined) return
 
     const newlySightedScenes = await this.sceneController.reportSightedParcels(parcels.sighted, parcels.lostSight)
+    console.log("Position resuleto: He visto estas parcels " +newlySightedScenes.sighted)
     if (!this.eqSet(this.currentlySightedScenes, newlySightedScenes.sighted)) {
       this.currentlySightedScenes = newlySightedScenes.sighted
     }

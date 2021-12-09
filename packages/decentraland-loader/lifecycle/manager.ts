@@ -53,6 +53,17 @@ export class LifecycleManager extends TransportBasedServer {
     })
   }
 
+  setParcelData(sceneId: string, sceneData : ILand)
+  {
+    let theFuture = this.sceneIdToRequest.get(sceneId)
+    if (!theFuture) {
+      theFuture = future<ILand>()
+    }
+    theFuture.resolve(sceneData)
+
+    this.sceneIdToRequest.set(sceneId, theFuture)
+  }
+
   getParcelData(sceneId: string) {
     let theFuture = this.sceneIdToRequest.get(sceneId)
     if (!theFuture) {

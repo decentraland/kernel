@@ -23,7 +23,7 @@ export function ILandToLoadableParcelScene(land: ILand): EnvironmentData<Loadabl
   const mappings: ContentMapping[] = normalizeContentMappings(land.mappingsResponse.contents)
   const sceneJsons = land.mappingsResponse.contents.filter((land) => land.file === 'scene.json')
   if (!sceneJsons.length) {
-    throw new Error('Invalid scene mapping: no scene.json')
+ //   throw new Error('Invalid scene mapping: no scene.json')
   }
 
   const ret: EnvironmentData<LoadableParcelScene> = {

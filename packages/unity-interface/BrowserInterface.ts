@@ -30,7 +30,7 @@ import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  allScenesEvent, endIsolatedMode, startIsolatedMode
+  allScenesEvent, stopIsolatedMode, startIsolatedMode
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -128,8 +128,8 @@ export class BrowserInterface {
     startIsolatedMode(options)
   }
 
-  public EndIsolatedMode(options: EndIsolatedModeOptions) {
-    endIsolatedMode(options)
+  public StopIsolatedMode(options: EndIsolatedModeOptions) {
+    stopIsolatedMode(options)
   }
 
   public AllScenesEvent(data: { eventType: string; payload: any }) {
@@ -370,7 +370,7 @@ export class BrowserInterface {
         stopParcelSceneWorker(worker)
         const data = parcelScene.data.data as LoadableParcelScene
         getUnityInstance().LoadParcelScenes([data]) // Maybe unity should do it by itself?
-        setNewParcelScene(sceneId, new StatefulWorker(parcelScene))
+        setNewParcelScene(sceneId, new StatefulWorker(parcelScene,false))
         break
       }
       case 'StopStatefulMode': {

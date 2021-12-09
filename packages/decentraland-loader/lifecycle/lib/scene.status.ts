@@ -5,7 +5,7 @@ export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready'
 export class SceneLifeCycleStatus {
   status: SceneLifeCycleStatusType = 'unloaded'
 
-  constructor(public sceneDescription: ILand) {}
+  constructor(public sceneDescription: ILand | undefined) {}
 
   isAwake() {
     return this.status !== 'unloaded'

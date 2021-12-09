@@ -34,8 +34,13 @@ class StatefulWebWorkerScene extends Script {
   private sceneDefinition!: SceneStateDefinition
   private eventSubscriber!: EventSubscriber
 
-  constructor(transport: ScriptingTransport, opt?: ILogOpts) {
+  private isEmptyStatefull = false
+
+  constructor(transport: ScriptingTransport, emptyStatefull?: boolean, opt?: ILogOpts) {
     super(transport, opt)
+    if (emptyStatefull) {
+      this.isEmptyStatefull = emptyStatefull
+    }
   }
 
   async systemDidEnable(): Promise<void> {
@@ -45,19 +50,24 @@ class StatefulWebWorkerScene extends Script {
     this.eventSubscriber = new EventSubscriber(this.engine)
     this.builderActor = new BuilderStatefulActor(land, this.sceneStateStorage)
 
-    // Fetch stored scene
-    this.sceneDefinition = await this.builderActor.getInititalSceneState()
+    if (!this.isEmptyStatefull) {
+      // Fetch stored scene
+      this.sceneDefinition = await this.builderActor.getInititalSceneState()
+      await this.builderActor.sendAssetsFromScene(this.sceneDefinition)
+
+      // Send the initial state ot the renderer
+      this.sceneDefinition.sendStateTo(this.rendererActor)
+
+      this.log('Sent initial load')
+    }
+    else{
+      this.sceneDefinition = new SceneStateDefinition();
+    }
 
     // Listen to the renderer and update the local scene state
     this.rendererActor.forwardChangesTo(this.sceneDefinition)
 
-    await this.builderActor.sendAssetsFromScene(this.sceneDefinition)
-
-    // Send the initial state ot the renderer
-    this.sceneDefinition.sendStateTo(this.rendererActor)
-
     this.rendererActor.sendInitFinished()
-    this.log('Sent initial load')
 
     // Listen to scene state events
     this.listenToEvents(sceneId)
@@ -69,7 +79,13 @@ class StatefulWebWorkerScene extends Script {
       const { type, payload } = data
       if (type === 'PublishSceneState') {
         this.sceneStateStorage
-          .publishSceneState(sceneId, payload.title, payload.description, payload.screenshot, serializeSceneState(this.sceneDefinition))
+          .publishSceneState(
+            sceneId,
+            payload.title,
+            payload.description,
+            payload.screenshot,
+            serializeSceneState(this.sceneDefinition)
+          )
           .catch((error) => this.error(`Failed to store the scene's state`, error))
       }
     })
@@ -88,7 +104,12 @@ class StatefulWebWorkerScene extends Script {
       const { type, payload } = data
       if (type === 'SaveProjectInfo') {
         this.sceneStateStorage
-          .saveProjectInfo(serializeSceneState(this.sceneDefinition), payload.title, payload.description, payload.screenshot)
+          .saveProjectInfo(
+            serializeSceneState(this.sceneDefinition),
+            payload.title,
+            payload.description,
+            payload.screenshot
+          )
           .catch((error) => this.error(`Failed to save the scene's info`, error))
       }
     })
@@ -112,4 +133,4 @@ class StatefulWebWorkerScene extends Script {
 }
 
 // tslint:disable-next-line
-new StatefulWebWorkerScene(WebWorkerTransport(self))
+new StatefulWebWorkerScene(WebWorkerTransport(self), true)

@@ -10,7 +10,7 @@ const gamekitWorkerBLOB = new Blob([gamekitWorkerRaw])
 const gamekitWorkerUrl = URL.createObjectURL(gamekitWorkerBLOB)
 
 export class StatefulWorker extends SceneWorker {
-  constructor(parcelScene: ParcelSceneAPI) {
+  constructor(parcelScene: ParcelSceneAPI, isEmptyStatefull: boolean) {
     super(parcelScene, StatefulWorker.buildWebWorkerTransport(parcelScene))
 
     this.getAPIInstance(SceneStateStorageController).catch((error) =>
