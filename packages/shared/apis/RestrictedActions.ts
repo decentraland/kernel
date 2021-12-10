@@ -11,11 +11,8 @@ import {
 import { lastPlayerPosition } from '../world/positionThings'
 import { browserInterface } from '../../unity-interface/BrowserInterface'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { PermissionItem, Permissions } from './Permissions'
 
-export enum Permission {
-  ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE = 'ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE',
-  ALLOW_TO_TRIGGER_AVATAR_EMOTE = 'ALLOW_TO_TRIGGER_AVATAR_EMOTE'
-}
 
 @registerAPI('RestrictedActions')
 export class RestrictedActions extends ExposableAPI {
@@ -24,8 +21,8 @@ export class RestrictedActions extends ExposableAPI {
   @exposeMethod
   async movePlayerTo(newPosition: Vector3, cameraTarget?: Vector3): Promise<void> {
     // checks permissions
-    if (!this.hasPermission(Permission.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)) {
-      defaultLogger.error(`Permission "${Permission.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE}" is required`)
+    if (!this.hasPermission(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)) {
+      defaultLogger.error(`Permission "${PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE}" is required`)
       return
     }
 
@@ -65,8 +62,8 @@ export class RestrictedActions extends ExposableAPI {
   @exposeMethod
   async triggerEmote(emote: Emote): Promise<void> {
     // checks permissions
-    if (!this.hasPermission(Permission.ALLOW_TO_TRIGGER_AVATAR_EMOTE)) {
-      defaultLogger.error(`Permission "${Permission.ALLOW_TO_TRIGGER_AVATAR_EMOTE}" is required`)
+    if (!this.hasPermission(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)) {
+      defaultLogger.error(`Permission "${PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE}" is required`)
       return
     }
 
@@ -82,14 +79,9 @@ export class RestrictedActions extends ExposableAPI {
     return this.parcelIdentity.land.sceneJsonData
   }
 
-  private hasPermission(permission: Permission) {
-    if (this.parcelIdentity.isPortableExperience) {
-      return true
-    }
-
-    const json = this.getSceneData()
-    const list = json.requiredPermissions || []
-    return list.indexOf(permission) !== -1
+  private async hasPermission(permission: PermissionItem) {
+    const permissions: Permissions = this.options.getAPIInstance(Permissions)
+    return await permissions.hasPermission(permission)
   }
 
   private isPositionValid(position: Vector3) {

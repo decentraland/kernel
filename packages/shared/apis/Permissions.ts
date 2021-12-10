@@ -1,0 +1,39 @@
+import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
+import { ExposableAPI } from './ExposableAPI'
+import { ParcelIdentity } from './ParcelIdentity'
+
+export enum PermissionItem {
+  ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE = 'ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE',
+  ALLOW_TO_TRIGGER_AVATAR_EMOTE = 'ALLOW_TO_TRIGGER_AVATAR_EMOTE',
+  USE_WEB3_API = 'USE_WEB3_API'
+}
+
+export const defaultParcelPermissions = [PermissionItem.USE_WEB3_API]
+export const defaultPortableExperiencePermissions = [PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE]
+
+@registerAPI('Permissions')
+export class Permissions extends ExposableAPI {
+  parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
+  permissionGranted: PermissionItem[] = defaultParcelPermissions
+
+  /**
+   * Returns if it has a specific permission 
+   */
+  @exposeMethod
+  async hasPermission(test: PermissionItem): Promise<boolean> {
+
+    // Backward compatibility with parcel scene with 'requiredPermissions' in the scene.json
+    //  Only the two permissions that start with ALLOW_TO_... can be conceed without user
+    //  interaction
+    const json = this.parcelIdentity.land.sceneJsonData
+    const list = json.requiredPermissions || []
+    if (list.indexOf(test) !== -1 &&
+      (test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
+        test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)) {
+      return true
+    }
+
+    return this.permissionGranted.indexOf(test) !== -1
+  }
+
+}

@@ -9,6 +9,7 @@ import {
 import { ExposableAPI } from './ExposableAPI'
 import { RPCSendableMessage } from 'shared/types'
 import { getUserAccount, requestManager } from 'shared/ethereum/provider'
+import { PermissionItem, Permissions } from './Permissions'
 
 export interface IEthereumController {
   /**
@@ -49,26 +50,38 @@ export interface IEthereumController {
 export class EthereumController extends ExposableAPI implements IEthereumController {
   @exposeMethod
   async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
+    await this.ensureHasPermissions()
     return requirePayment(toAddress, amount, currency)
   }
 
   @exposeMethod
   async signMessage(message: MessageDict) {
+    await this.ensureHasPermissions()
     return signMessage(message)
   }
 
   @exposeMethod
   async convertMessageToObject(message: string): Promise<MessageDict> {
+    await this.ensureHasPermissions()
     return convertMessageToObject(message)
   }
 
   @exposeMethod
   async sendAsync(message: RPCSendableMessage): Promise<any> {
+    await this.ensureHasPermissions()
     return sendAsync(message)
   }
 
   @exposeMethod
   async getUserAccount(): Promise<string | undefined> {
+    await this.ensureHasPermissions()
     return getUserAccount(requestManager)
+  }
+
+  private async ensureHasPermissions() {
+    const permissions: Permissions = this.options.getAPIInstance(Permissions)
+    if (!(await permissions.hasPermission(PermissionItem.USE_WEB3_API))) {
+      throw new Error("This scene doesn't have permission to use web3 api")
+    }
   }
 }

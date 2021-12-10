@@ -2,8 +2,9 @@ import * as sinon from 'sinon'
 import { Vector3 } from '@dcl/ecs-math'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import defaultLogger from '../../packages/shared/logger'
-import { Permission, RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
+import { RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
+import { PermissionItem } from 'shared/apis/Permissions'
 
 describe('RestrictedActions tests', () => {
   afterEach(() => sinon.restore())
@@ -22,7 +23,7 @@ describe('RestrictedActions tests', () => {
 
     it('should trigger emote', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith(Permission.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
+      mockPermissionsWith(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').once().withExactArgs(emote)
 
       const module = new RestrictedActions(options)
@@ -47,7 +48,7 @@ describe('RestrictedActions tests', () => {
 
     it('should fail when player is out of scene and try to move', async () => {
       mockLastPlayerPosition(false)
-      mockPermissionsWith(Permission.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
+      mockPermissionsWith(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
 
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
 
@@ -66,7 +67,7 @@ describe('RestrictedActions tests', () => {
   describe('MovePlayerTo tests', () => {
     it('should move the player', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith(Permission.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
+      mockPermissionsWith(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
       sinon
         .mock(getUnityInstance())
         .expects('Teleport')
@@ -81,7 +82,7 @@ describe('RestrictedActions tests', () => {
 
     it('should fail when position is outside scene', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith(Permission.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
+      mockPermissionsWith(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
       sinon
         .mock(defaultLogger)
         .expects('error')
@@ -114,7 +115,7 @@ describe('RestrictedActions tests', () => {
 
     it('should fail when player is out of scene and try to move', async () => {
       mockLastPlayerPosition(false)
-      mockPermissionsWith(Permission.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
+      mockPermissionsWith(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
 
       sinon.mock(getUnityInstance()).expects('Teleport').never()
 
@@ -140,11 +141,11 @@ describe('RestrictedActions tests', () => {
     sinon.stub(lastPlayerPosition, 'z').value(position.z)
   }
 
-  function mockPermissionsWith(...permissions: Permission[]) {
+  function mockPermissionsWith(...permissions: PermissionItem[]) {
     sinon.mock(options).expects('getAPIInstance').withArgs().once().returns(buildParcelIdentity(permissions))
   }
 
-  function buildParcelIdentity(permissions: Permission[] = []) {
+  function buildParcelIdentity(permissions: PermissionItem[] = []) {
     return {
       land: {
         sceneJsonData: {
