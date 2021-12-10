@@ -39,7 +39,7 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
-function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean, exploreV2Enables: boolean) {
+function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean) {
   // The elements below, require the taskbar to be active before being activated.
 
   i.ConfigureHUDElement(
@@ -53,7 +53,6 @@ function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: bool
   i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: true })
 
   i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
-  i.ConfigureHUDElement(HUDElementID.EXPLORE_HUD, { active: !exploreV2Enables, visible: false })
   i.ConfigureHUDElement(HUDElementID.HELP_AND_SUPPORT_HUD, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: builderInWorldEnabled, visible: false })
 }
@@ -222,7 +221,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
       const VOICE_CHAT_ENABLED = true
       const BUILDER_IN_WORLD_ENABLED = identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
-      const EXPLORE_V2_ENABLED = isFeatureEnabled(store.getState(), FeatureFlags.EXPLORE_V2_ENABLED, false)
 
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
@@ -230,7 +228,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       
       i.SetKernelConfiguration( configForRenderer )
 
-      configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
+      configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED)
 
       i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
       i.ConfigureHUDElement(HUDElementID.USERS_AROUND_LIST_HUD, { active: VOICE_CHAT_ENABLED, visible: false })
@@ -256,7 +254,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     })
     .catch((e) => {
       logger.error('error on configuring taskbar & friends hud / tutorial. Trying to default to simple taskbar', e)
-      configureTaskbarDependentHUD(i, false, false, false)
+      configureTaskbarDependentHUD(i, false, false)
     })
 
   startRealmsReportToRenderer()

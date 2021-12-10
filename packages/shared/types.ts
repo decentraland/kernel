@@ -472,7 +472,10 @@ export enum HUDElementID {
   NFT_INFO_DIALOG = 16,
   TELEPORT_DIALOG = 17,
   CONTROLS_HUD = 18,
+  
+  /** @deprecated */
   EXPLORE_HUD = 19,
+  
   HELP_AND_SUPPORT_HUD = 20,
 
   /** @deprecated */
