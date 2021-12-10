@@ -110,6 +110,9 @@ TEST_SOURCE_FILES := $(wildcard test/**/*.ts)
 test/out/index.js: build-essentials $(TEST_SOURCE_FILES)
 	@$(COMPILER) ./targets/test.json
 
+jest:
+	node_modules/.bin/jest --detectOpenHandles --colors --roots "test"
+
 test: build-essentials test/out/index.js ## Run all the tests
 	$(MAKE) generate-mocks
 	@node scripts/runTestServer.js

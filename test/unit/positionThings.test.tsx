@@ -19,7 +19,6 @@ describe('pickWorldSpawnPoint unit tests', function () {
       }
     }
     const basePosition = gridToWorld(10, 10)
-
     const pick = pickWorldSpawnpoint(land)
 
     expect(JSON.stringify(pick)).to.deep.equal(JSON.stringify({

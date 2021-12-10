@@ -118,7 +118,7 @@ export const AUTO_CHANGE_REALM = location.search.includes('AUTO_CHANGE_REALM')
 
 export const LOS = ensureSingleString(qs.LOS)
 
-export const DEBUG = location.search.includes('DEBUG_MODE') || !!(global as any).mocha || PREVIEW || EDITOR
+export const DEBUG = location.search.includes('DEBUG_MODE') || !!(global as any).isRunningTests || PREVIEW || EDITOR
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
 export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
 export const DEBUG_MESSAGES = location.search.includes('DEBUG_MESSAGES')

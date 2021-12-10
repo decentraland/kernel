@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "allowJs": true,
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "declaration": false,
+    "strictNullChecks": false,
+    "lib": [
+      "es2017",
+      "dom"
+    ],
+    "baseUrl": "../packages",
+    "types": [
+      "mocha",
+      "@dcl/posix",
+      "segment-analytics"
+    ],
+    "typeRoots": [
+      "../node_modules/"
+    ],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true
+  },
+  "exclude": [
+    "../packages/engine",
+    "../node_modules"
+  ],
+  "extends": "../tsconfig.json"
+}
