@@ -9,7 +9,7 @@ export enum PermissionItem {
 }
 
 export const defaultParcelPermissions = [PermissionItem.USE_WEB3_API]
-export const defaultPortableExperiencePermissions = [PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE]
+export const defaultPortableExperiencePermissions = []
 
 @registerAPI('Permissions')
 export class Permissions extends ExposableAPI {
