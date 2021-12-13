@@ -34,7 +34,7 @@ function* initializeRenderer(action: InitializeRenderer) {
   try {
     const renderer: UnityGame = yield delegate(container)
 
-    let startTime = performance.now()
+    const startTime = performance.now()
 
     trackEvent('renderer_initializing_start', {})
 

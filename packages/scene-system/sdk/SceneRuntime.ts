@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Script, inject, EventSubscriber } from 'decentraland-rpc'
 
 import { Vector2 } from '@dcl/ecs-math'
@@ -29,7 +30,6 @@ import { generatePBObject } from './Utils'
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
 
-
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
 
@@ -54,8 +54,8 @@ function resolveMapping(mapping: string | undefined, mappingName: string, baseUr
 // NOTE(Brian): The idea is to map all string ids used by this scene to ints
 //              so we avoid sending/processing big ids like "xxxxx-xxxxx-xxxxx-xxxxx"
 //              that are used by i.e. raycasting queries.
-let idToNumberStore: Record<string, number> = {}
-let numberToIdStore: Record<number, string> = {}
+const idToNumberStore: Record<string, number> = {}
+const numberToIdStore: Record<number, string> = {}
 let idToNumberStoreCounter: number = 10 // Starting in 10, to leave room for special cases (such as the root entity)
 
 function addIdToStorage(id: string, idAsNumber: number) {
@@ -190,7 +190,7 @@ export abstract class SceneRuntime extends Script {
       if (this.isPointerEvent(event)) {
         this.allowOpenExternalUrl = true
       }
-      for (let trigger of this.onEventFunctions) {
+      for (const trigger of this.onEventFunctions) {
         trigger(event)
       }
     } catch (e) {
@@ -213,7 +213,7 @@ export abstract class SceneRuntime extends Script {
   }
 
   update(time: number) {
-    for (let trigger of this.onUpdateFunctions) {
+    for (const trigger of this.onUpdateFunctions) {
       try {
         trigger(time)
       } catch (e) {
@@ -234,6 +234,7 @@ export abstract class SceneRuntime extends Script {
         throw new Error('Received empty source.')
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       const that = this
 
       const fullData = sceneData.data as LoadableParcelScene
@@ -267,7 +268,7 @@ export abstract class SceneRuntime extends Script {
 
         openNFTDialog(assetContractAddress: string, tokenId: string, comment: string | null) {
           if (that.allowOpenExternalUrl) {
-            let payload = { assetContractAddress, tokenId, comment }
+            const payload = { assetContractAddress, tokenId, comment }
 
             if (JSON.stringify(payload).length > 49000) {
               that.onError(new Error('OpenNFT payload cannot exceed 49.000 bytes'))
@@ -402,7 +403,7 @@ export abstract class SceneRuntime extends Script {
 
             that.eventSubscriber.on(eventName, (event) => {
               if (eventName === 'raycastResponse') {
-                let idAsNumber = parseInt(event.data.queryId, 10)
+                const idAsNumber = parseInt(event.data.queryId, 10)
                 if (numberToIdStore[idAsNumber]) {
                   event.data.queryId = numberToIdStore[idAsNumber].toString()
                 }
@@ -491,6 +492,7 @@ export abstract class SceneRuntime extends Script {
           if (!module) {
             throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
           }
+          // eslint-disable-next-line prefer-spread
           return module[methodName].apply(module, args)
         },
         onStart(cb: Function) {
@@ -531,7 +533,7 @@ export abstract class SceneRuntime extends Script {
       }
 
       try {
-        await this.runCode((source as any) as string, { dcl })
+        await this.runCode(source as any as string, { dcl })
 
         let modulesNotLoaded: string[] = []
 
@@ -584,7 +586,6 @@ export abstract class SceneRuntime extends Script {
         Math.floor(e.cameraPosition.z / PARCEL_SIZE)
       )
 
-      // @ts-ignore
       if (playerPosition === undefined || this.scenePosition === undefined) {
         return
       }
@@ -626,7 +627,7 @@ export abstract class SceneRuntime extends Script {
       if (this.events.length) {
         const batch = this.events.slice()
         this.events.length = 0
-        ;((this.engine as any) as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
+        ;(this.engine as any as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
       }
     } catch (e) {
       this.onError(e)

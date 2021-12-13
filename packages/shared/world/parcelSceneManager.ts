@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import { initParcelSceneWorker } from 'decentraland-loader/lifecycle/manager'
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import {
@@ -75,7 +76,7 @@ export function loadParcelScene(
 }
 
 export function setNewParcelScene(sceneId: string, worker: SceneWorker) {
-  let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
+  const parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   if (parcelSceneWorker) {
     forceStopParcelSceneWorker(parcelSceneWorker)
@@ -104,7 +105,7 @@ function reportPendingScenes() {
   const pendingScenes = new Set<string>()
 
   let countableScenes = 0
-  for (let [sceneId, sceneWorker] of loadedSceneWorkers) {
+  for (const [sceneId, sceneWorker] of loadedSceneWorkers) {
     // avatar scene should not be counted here
     const shouldBeCounted = !sceneWorker.isPersistent()
 
@@ -223,7 +224,7 @@ export type AllScenesEvents<T extends IEventNames> = {
 }
 
 export function allScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
-  for (const [_key, scene] of loadedSceneWorkers) {
+  for (const [, scene] of loadedSceneWorkers) {
     scene.emit(data.eventType, data.payload)
   }
 }

@@ -218,8 +218,8 @@ function* reportScenes(sceneIds: string[]): any {
       let isPOI: boolean = false
 
       scene.sceneJsonData?.scene.parcels.forEach((parcel) => {
-        let xyStr = parcel.split(',')
-        let xy: Vector2Component = { x: parseInt(xyStr[0], 10), y: parseInt(xyStr[1], 10) }
+        const xyStr = parcel.split(',')
+        const xy: Vector2Component = { x: parseInt(xyStr[0], 10), y: parseInt(xyStr[1], 10) }
 
         if (pois.includes(parcel)) {
           isPOI = true

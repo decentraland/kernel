@@ -30,7 +30,6 @@ export interface StateContainerListener {
  * An actor that contains the state of the scene, but it can also generate updates to it
  */
 export abstract class StatefulActor implements StateContainer {
-
   abstract addEntity(entityId: string, components?: Component[]): void
   abstract removeEntity(entityId: string): void
   abstract setComponent(entityId: string, componentId: number, data: any): void

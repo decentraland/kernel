@@ -155,7 +155,7 @@ globalThis.DecentralandKernel = {
 
         const profile = await localProfilesRepo.get(
           address,
-          networkId == 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
+          networkId === 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
         )
 
         return { result: !!profile, profile: profile || null } as any
@@ -220,13 +220,14 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const identity = getCurrentIdentity(store.getState())!
 
       const VOICE_CHAT_ENABLED = true
-      const BUILDER_IN_WORLD_ENABLED = identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
+      const BUILDER_IN_WORLD_ENABLED =
+        identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
 
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
-      
-      i.SetKernelConfiguration( configForRenderer )
+
+      i.SetKernelConfiguration(configForRenderer)
 
       configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED)
 

@@ -8,7 +8,12 @@ import { getCurrentIdentity } from 'shared/session/selectors'
 import { setWorldContext } from 'shared/protocol/actions'
 import { waitForRealmInitialized, selectRealm } from 'shared/dao/sagas'
 import { getRealm } from 'shared/dao/selectors'
-import { CATALYST_REALMS_SCAN_SUCCESS, SetCatalystRealm, setCatalystRealm, SET_CATALYST_REALM } from 'shared/dao/actions'
+import {
+  CATALYST_REALMS_SCAN_SUCCESS,
+  SetCatalystRealm,
+  setCatalystRealm,
+  SET_CATALYST_REALM
+} from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { createLogger, createDummyLogger } from 'shared/logger'

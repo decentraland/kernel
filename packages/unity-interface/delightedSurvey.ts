@@ -19,7 +19,7 @@ export function setDelightedSurveyEnabled(enabled: boolean) {
 }
 
 function delightedSurvey() {
-  ensureRendererEnabled()
+  void ensureRendererEnabled()
     .then(() => {
       // tslint:disable-next-line:strict-type-predicates
       if (typeof globalThis === 'undefined' || typeof globalThis !== 'object') {

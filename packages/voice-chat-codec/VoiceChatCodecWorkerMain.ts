@@ -1,6 +1,7 @@
 import { ResponseTopic, RequestTopic, VoiceChatWorkerRequest } from './types'
 import defaultLogger from 'shared/logger'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const audioWorkerRaw = require('raw-loader!../../static/voice-chat-codec/worker.js')
 const audioWorkerUrl = URL.createObjectURL(new Blob([audioWorkerRaw], { type: 'application/javascript' }))
 

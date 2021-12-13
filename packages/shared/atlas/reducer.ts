@@ -1,12 +1,23 @@
 import { AnyAction } from 'redux'
 import { ILand } from 'shared/types'
-import { REPORTED_SCENES_FOR_MINIMAP, FetchDataFromSceneJsonSuccess, QuerySceneData, FetchDataFromSceneJsonFailure, ReportedScenes, QUERY_DATA_FROM_SCENE_JSON, SUCCESS_DATA_FROM_SCENE_JSON, FAILURE_DATA_FROM_SCENE_JSON, MARKET_DATA, LAST_REPORTED_POSITION, DISTRICT_DATA, ReportLastPosition, INITIALIZE_POI_TILES, InitializePoiTiles } from './actions'
-import { getSceneNameFromAtlasState, getSceneNameWithMarketAndAtlas, postProcessSceneName } from './selectors'
 import {
-  AtlasState,
-  MapSceneData,
-  MarketData
-} from './types'
+  REPORTED_SCENES_FOR_MINIMAP,
+  FetchDataFromSceneJsonSuccess,
+  QuerySceneData,
+  FetchDataFromSceneJsonFailure,
+  ReportedScenes,
+  QUERY_DATA_FROM_SCENE_JSON,
+  SUCCESS_DATA_FROM_SCENE_JSON,
+  FAILURE_DATA_FROM_SCENE_JSON,
+  MARKET_DATA,
+  LAST_REPORTED_POSITION,
+  DISTRICT_DATA,
+  ReportLastPosition,
+  INITIALIZE_POI_TILES,
+  InitializePoiTiles
+} from './actions'
+import { getSceneNameFromAtlasState, getSceneNameWithMarketAndAtlas, postProcessSceneName } from './selectors'
+import { AtlasState, MapSceneData, MarketData } from './types'
 
 const ATLAS_INITIAL_STATE: AtlasState = {
   hasMarketData: false,
@@ -97,7 +108,7 @@ function reduceFailureDataFromSceneJson(state: AtlasState, sceneIds: string[]) {
 }
 
 function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
-  const newData = landData.filter(land => state.idToScene[land.sceneId]?.requestStatus !== 'ok')
+  const newData = landData.filter((land) => state.idToScene[land.sceneId]?.requestStatus !== 'ok')
 
   if (newData.length === 0) {
     return state
@@ -109,7 +120,7 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
   for (const land of newData) {
     let mapScene: MapSceneData = { ...state.idToScene[land.sceneId] }
 
-    land.sceneJsonData.scene.parcels.forEach(x => {
+    land.sceneJsonData.scene.parcels.forEach((x) => {
       const scene = tileToScene[x]
       if (scene) {
         mapScene = {
@@ -128,7 +139,7 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
     const name = getSceneNameFromAtlasState(mapScene.sceneJsonData) ?? mapScene.name
     mapScene.name = postProcessSceneName(name)
 
-    mapScene.sceneJsonData.scene.parcels.forEach(x => {
+    mapScene.sceneJsonData.scene.parcels.forEach((x) => {
       tileToScene[x] = mapScene
     })
 
@@ -138,7 +149,7 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
   return { ...state, tileToScene, idToScene }
 }
 
-function reduceDistrictData(state: AtlasState, action: AnyAction) {
+function reduceDistrictData(state: AtlasState, _action: AnyAction) {
   return { ...state, hasDistrictData: true }
 }
 
@@ -149,14 +160,11 @@ function reduceReportedLastPositionForMinimap(state: AtlasState, payload: Report
   }
 }
 
-function reduceReportedScenesForMinimap(
-  state: AtlasState,
-  payload: ReportedScenes['payload']
-) {
+function reduceReportedScenesForMinimap(state: AtlasState, payload: ReportedScenes['payload']) {
   const tileToScene = { ...state.tileToScene }
   const idToScene = { ...state.idToScene }
 
-  payload.parcels.forEach(x => {
+  payload.parcels.forEach((x) => {
     const mapScene = tileToScene[x]
     if (mapScene) {
       mapScene.alreadyReported = true
@@ -175,7 +183,7 @@ function reduceReportedScenesForMinimap(
 function reduceMarketData(state: AtlasState, marketData: MarketData) {
   const tileToScene = { ...state.tileToScene }
 
-  Object.keys(marketData.data).forEach(key => {
+  Object.keys(marketData.data).forEach((key) => {
     const existingScene = tileToScene[key]
 
     const value = marketData.data[key]

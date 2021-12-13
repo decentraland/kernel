@@ -2,10 +2,6 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es2018",
-    "diagnostics": false,
-    "inlineSourceMap": false,
-    "inlineSources": false,
-    "sourceMap": true,
     "moduleResolution": "node",
     "stripInternal": true,
     "strictNullChecks": true,
@@ -13,12 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
-    "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
     "emitDecoratorMetadata": true,
     "noUnusedLocals": true,
-    "jsx": "react",
-    "jsxFactory": "createElement",
     "baseUrl": "./packages",
     "lib": [
       "es2018",
@@ -28,13 +20,7 @@
     "types": ["@dcl/posix", "segment-analytics"],
     "typeRoots": ["./node_modules"]
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "public"
-  ],
   "include": [
-    "src/**/*",
-    "test/**/*"
+    "packages/"
   ]
 }

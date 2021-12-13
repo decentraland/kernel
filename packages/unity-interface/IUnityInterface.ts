@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Vector3 } from '@dcl/ecs-math'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import type { UnityGame } from '@dcl/unity-renderer/src'
@@ -142,7 +143,7 @@ export interface IUnityInterface {
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
-  SendHeaders(endpoint: string,headers: Record<string, string>): void
+  SendHeaders(endpoint: string, headers: Record<string, string>): void
 
   // *********************************************************************************
   // ************** Builder in world messages **************

@@ -100,7 +100,7 @@ export class BuilderServerAPIManager {
       const queryParams = 'projects/' + projectId + '/manifest'
       const urlToFecth = `${this.baseUrl}/${queryParams}`
 
-      let params: RequestInit = {
+      const params: RequestInit = {
         headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + queryParams)
       }
 
@@ -128,7 +128,7 @@ export class BuilderServerAPIManager {
       const queryParams = endpoint + '?creation_coords_eq=' + land
       const urlToFecth = `${this.baseUrl}/${queryParams}`
 
-      let params: RequestInit = {
+      const params: RequestInit = {
         headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + endpoint)
       }
 
@@ -225,7 +225,7 @@ export class BuilderServerAPIManager {
     }
 
     // NOTE: scene metrics are calculated again in builder dapp, so for now we only fill entities count
-    let builderScene: BuilderScene = {
+    const builderScene: BuilderScene = {
       id: builderSceneId,
       entities,
       components,
@@ -295,7 +295,7 @@ export class BuilderServerAPIManager {
     const headers = BuilderServerAPIManager.authorize(identity, 'put', '/' + queryParams)
     headers['Content-Type'] = 'application/json'
 
-    let params: RequestInit = {
+    const params: RequestInit = {
       headers: headers,
       method: 'PUT',
       body: body
@@ -314,7 +314,7 @@ export class BuilderServerAPIManager {
     thumbnailData.append('thumbnail', thumbnailBlob)
     const headers = BuilderServerAPIManager.authorize(identity, 'post', '/' + queryParams)
 
-    let params: RequestInit = {
+    const params: RequestInit = {
       headers: headers,
       method: 'POST',
       body: thumbnailData
@@ -334,12 +334,12 @@ export class BuilderServerAPIManager {
   }
 
   private createEmptyDefaultBuilderScene(land: string, ethAddress: string): BuilderManifest {
-    let builderSceneId = uuid()
-    let builderProjectId = uuid()
-    let builderProject = this.createBuilderProject(builderSceneId, builderProjectId, land, [land], ethAddress)
+    const builderSceneId = uuid()
+    const builderProjectId = uuid()
+    const builderProject = this.createBuilderProject(builderSceneId, builderProjectId, land, [land], ethAddress)
     builderProject.creation_coords = land
 
-    let builderScene: BuilderScene = {
+    const builderScene: BuilderScene = {
       id: builderSceneId,
       entities: {
         '29d657c1-95cf-4e17-b424-fe252d43ced5': {
@@ -402,7 +402,7 @@ export class BuilderServerAPIManager {
         componentId: 'b5edf28e-b4e4-4a27-b0ac-84b3d77eff8e'
       }
     }
-    let builderManifest: BuilderManifest = {
+    const builderManifest: BuilderManifest = {
       version: BUILDER_MANIFEST_VERSION,
       project: builderProject,
       scene: builderScene
@@ -427,11 +427,11 @@ function getBuilderEntitiesAndComponentsFromSerializedState(scene: SerializedSce
   entities: Record<string, BuilderEntity>
   components: Record<string, BuilderComponent>
 } {
-  let entities: Record<string, BuilderEntity> = {}
-  let builderComponents: Record<string, BuilderComponent> = {}
+  const entities: Record<string, BuilderEntity> = {}
+  const builderComponents: Record<string, BuilderComponent> = {}
 
   for (const entity of scene.entities) {
-    let builderComponentsIds: string[] = []
+    const builderComponentsIds: string[] = []
 
     for (const component of entity.components) {
       const newId = uuid()
@@ -441,7 +441,7 @@ function getBuilderEntitiesAndComponentsFromSerializedState(scene: SerializedSce
         component.value.url = component.value.src
       }
 
-      let builderComponent: BuilderComponent = {
+      const builderComponent: BuilderComponent = {
         id: newId,
         type: toHumanReadableType(component.type),
         data: component.value
@@ -449,7 +449,7 @@ function getBuilderEntitiesAndComponentsFromSerializedState(scene: SerializedSce
       builderComponents[builderComponent.id] = builderComponent
     }
 
-    let builderEntity: BuilderEntity = {
+    const builderEntity: BuilderEntity = {
       id: entity.id,
       components: builderComponentsIds,
       disableGizmos: false,

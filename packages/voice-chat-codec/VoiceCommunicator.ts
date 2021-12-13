@@ -5,6 +5,7 @@ import { VOICE_CHAT_SAMPLE_RATE, OPUS_FRAME_SIZE_MS } from './constants'
 import { parse, write } from 'sdp-transform'
 import { EncodedFrame, InputWorkletRequestTopic, OutputWorkletRequestTopic } from './types'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const workletWorkerRaw = require('raw-loader!../../static/voice-chat-codec/audioWorkletProcessors.js')
 const workletWorkerUrl = URL.createObjectURL(new Blob([workletWorkerRaw], { type: 'application/javascript' }))
 
@@ -284,9 +285,10 @@ export class VoiceCommunicator {
     this.input?.workletNode.port.postMessage({ topic: topic })
   }
 
-  private createRTCLoopbackConnection(
-    currentRetryNumber: number = 0
-  ): { src: RTCPeerConnection; dst: RTCPeerConnection } {
+  private createRTCLoopbackConnection(currentRetryNumber: number = 0): {
+    src: RTCPeerConnection
+    dst: RTCPeerConnection
+  } {
     const src = new RTCPeerConnection()
     const dst = new RTCPeerConnection()
 
@@ -294,7 +296,7 @@ export class VoiceCommunicator {
 
     ;(async () => {
       // When having an error, we retry in a couple of seconds. Up to 10 retries.
-      src.onconnectionstatechange = (e) => {
+      src.onconnectionstatechange = (_e) => {
         if (
           src.connectionState === 'closed' ||
           src.connectionState === 'disconnected' ||
@@ -488,8 +490,8 @@ export class VoiceCommunicator {
     const aContext = new AudioContext(contextOptions)
     if (aContext.audioWorklet) {
       const workletInitializedPromise = aContext.audioWorklet
-      .addModule(workletWorkerUrl)
-      .catch((e) => defaultLogger.error('Error loading worklet modules: ', e))
+        .addModule(workletWorkerUrl)
+        .catch((e) => defaultLogger.error('Error loading worklet modules: ', e))
       return [aContext, workletInitializedPromise]
     } else {
       // TODO: trackEvent('error_initializing_worklet') to gain visibility about how many times is this issue happening

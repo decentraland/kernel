@@ -31,9 +31,9 @@ export async function initializeUnityEditor(
 
     ws.onerror = function (e) {
       if (firstConnect) {
-        setTimeout(function() {
-            connect();
-          }, 1000)
+        setTimeout(function () {
+          connect()
+        }, 1000)
       } else {
         logger.error('WS error!', e)
         container.innerHTML = `<h3 style='color:red'>EERRORR</h3>`

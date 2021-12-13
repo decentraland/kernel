@@ -1,7 +1,7 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { SceneLifeCycleController } from './scene'
 import { EventEmitter } from 'events'
-import {ParcelLifeCycleController, ParcelSightSeeingReport} from './parcel'
+import { ParcelLifeCycleController, ParcelSightSeeingReport } from './parcel'
 import { SceneDataDownloadManager } from './download'
 import { worldToGrid, gridToWorld } from '../../../atomicHelpers/parcelScenePositions'
 import { pickWorldSpawnpoint } from 'shared/world/positionThings'
@@ -86,10 +86,13 @@ export class PositionLifecycleController extends EventEmitter {
 
   private checkPositionSettlement() {
     if (!this.positionSettled) {
-      const settling = this.currentlySightedScenes.every($ => this.sceneController.isRenderable($))
+      const settling = this.currentlySightedScenes.every(($) => this.sceneController.isRenderable($))
 
       DEBUG &&
-        logger.info(`remaining-scenes`, this.currentlySightedScenes.filter($ => !this.sceneController.isRenderable($)))
+        logger.info(
+          `remaining-scenes`,
+          this.currentlySightedScenes.filter(($) => !this.sceneController.isRenderable($))
+        )
       if (settling) {
         this.positionSettled = settling
 

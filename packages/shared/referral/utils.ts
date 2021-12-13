@@ -2,12 +2,16 @@ import { getTLD } from 'config'
 import { trackEvent } from 'shared/analytics'
 import { ExplorerIdentity } from 'shared/session/types'
 import { defaultLogger } from 'shared/logger'
-import { saveToPersistentStorage, getFromPersistentStorage, removeFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
+import {
+  saveToPersistentStorage,
+  getFromPersistentStorage,
+  removeFromPersistentStorage
+} from '../../atomicHelpers/persistentStorage'
 
 const REFERRAL_KEY = 'dcl-referral'
 
-declare var location: any
-declare var history: any
+declare let location: any
+declare let history: any
 
 export function getReferralEndpoint() {
   switch (getTLD()) {

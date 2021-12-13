@@ -12,7 +12,7 @@ import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } 
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
 
-declare var window: any
+declare let window: any
 // TODO: Remove this when portable experiences are full-available
 window['spawnPortableExperienceScene'] = spawnPortableExperienceScene
 window['killPortableExperienceScene'] = killPortableExperienceScene
@@ -22,7 +22,7 @@ export type PortableExperienceHandle = {
   parentCid: string
 }
 
-let currentPortableExperiences: Map<string, string> = new Map()
+const currentPortableExperiences: Map<string, string> = new Map()
 
 export async function spawnPortableExperienceScene(
   sceneUrn: string,
@@ -134,7 +134,7 @@ export async function getLoadablePortableExperience(data: {
 }
 
 export async function getPortableExperiencesLoaded() {
-  let portableExperiences: any[] = []
+  const portableExperiences: any[] = []
   for (const [id, parentCid] of currentPortableExperiences) {
     portableExperiences.push({ id, parentCid })
   }

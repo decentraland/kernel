@@ -47,14 +47,8 @@ export class CommunicationArea {
   public vMax: V2
 
   constructor(center: Parcel, radius: number) {
-    this.vMin = new V2(
-      center.x - radius,
-      center.z - radius
-    )
-    this.vMax = new V2(
-      center.x + radius,
-      center.z + radius
-    )
+    this.vMin = new V2(center.x - radius, center.z - radius)
+    this.vMax = new V2(center.x + radius, center.z + radius)
   }
 
   public contains(p: Position) {

@@ -183,11 +183,10 @@ watch-cli: build-essentials ## Watch the files required for building the CLI
 lint: ## Validate correct formatting and circular dependencies
 	@node_modules/.bin/madge packages/entryPoints/index.ts --circular --warning
 	@node_modules/.bin/madge packages --orphans --extensions ts --exclude '.+\.d.ts|.+/dist\/.+'
-	@node_modules/.bin/tslint --project tsconfig.json
+	@node_modules/.bin/eslint . --ext .ts
 
 lint-fix: ## Fix bad formatting on all .ts and .tsx files
-	@node_modules/.bin/tslint --project tsconfig.json --fix
-	@node_modules/.bin/prettier --write 'packages/**/*.{ts,tsx}'
+	@node_modules/.bin/eslint . --ext .ts --fix
 
 # Development
 
