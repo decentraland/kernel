@@ -439,7 +439,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public SendHeaders(endpoint: string, headers: Record<string, string>) {
-    let request: HeaderRequest = {
+    const request: HeaderRequest = {
       endpoint: endpoint,
       headers: headers
     }

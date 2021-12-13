@@ -37,9 +37,9 @@ import {
   setNewParcelScene,
   stopParcelSceneWorker,
   allScenesEvent,
+  AllScenesEvents,
   stopIsolatedMode,
   startIsolatedMode
-  AllScenesEvents
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -141,7 +141,6 @@ export class BrowserInterface {
     stopIsolatedMode(options)
   }
 
-  public AllScenesEvent(data: { eventType: string; payload: any }) {
   public AllScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
     allScenesEvent(data)
   }
