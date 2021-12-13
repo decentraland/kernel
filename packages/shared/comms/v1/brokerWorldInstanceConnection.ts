@@ -262,7 +262,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     return this.sendMessage(reliable, message)
   }
 
-  async changeRealm(realm: Realm, url: string) {
+  async changeRealm(_realm: Realm, _url: string) {
     return
   }
 
@@ -295,7 +295,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     return {}
   }
 
-  sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void> {
+  sendVoiceMessage(_currentPosition: Position, _frame: EncodedFrame): Promise<void> {
     // Not implemented
     return Promise.resolve()
   }

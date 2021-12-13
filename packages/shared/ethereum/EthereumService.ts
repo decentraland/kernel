@@ -117,7 +117,7 @@ export async function getERC20Balance(
  */
 export async function requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
   try {
-    let fromAddress = await getUserAccount(requestManager)
+    const fromAddress = await getUserAccount(requestManager)
     if (!fromAddress) {
       throw new Error(`Not a web3 game session`)
     }

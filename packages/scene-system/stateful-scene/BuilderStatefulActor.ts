@@ -12,9 +12,9 @@ export class BuilderStatefulActor {
     return sceneState ? sceneState : new SceneStateDefinition()
   }
 
-  async sendAssetsFromScene(scene: SceneStateDefinition ): Promise<string | undefined > {
+  async sendAssetsFromScene(scene: SceneStateDefinition): Promise<string | undefined> {
     const result = await this.sceneStorage.sendAssetsToRenderer(serializeSceneState(scene))
-    return result;
+    return result
   }
 
   private async getContentLandDefinition(): Promise<SceneStateDefinition | undefined> {

@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 // Adapted from: https://github.com/felix307253927/resampler
 // Which seems was originally inspired from: https://github.com/taisel/XAudioJS/blob/master/resampler.js
 export class Resampler {
@@ -25,7 +26,7 @@ export class Resampler {
   }
 
   initialize() {
-    if (this.fromSampleRate == this.toSampleRate) {
+    if (this.fromSampleRate === this.toSampleRate) {
       // Setup resampler bypass - Resampler just returns what was passed through
       this.resampler = (buffer) => {
         return buffer
@@ -223,7 +224,7 @@ export class Resampler {
 
   resample(buffer: Float32Array) {
     this.inputBufferSize = buffer.length
-    if (this.fromSampleRate == this.toSampleRate) {
+    if (this.fromSampleRate === this.toSampleRate) {
       this.ratioWeight = 1
     } else {
       if (this.fromSampleRate < this.toSampleRate) {

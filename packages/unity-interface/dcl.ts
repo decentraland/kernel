@@ -30,6 +30,7 @@ import { killPortableExperienceScene, spawnPortableExperience } from './portable
 import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
 export const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
@@ -41,7 +42,7 @@ globalThis.clientDebug = clientDebug
 const sceneLoading: Map<string, boolean> = new Map<string, boolean>()
 
 export function setLoadingScreenBasedOnState() {
-  let state = store.getState()
+  const state = store.getState()
 
   if (!state) {
     getUnityInstance().SetLoadingScreen({
@@ -52,7 +53,7 @@ export function setLoadingScreenBasedOnState() {
     return
   }
 
-  let loading = state.loading
+  const loading = state.loading
 
   getUnityInstance().SetLoadingScreen({
     isVisible: isLoadingScreenVisible(state),
@@ -189,9 +190,9 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
 
 export async function loadPreviewScene(message: sdk.Messages) {
   if (
-    message.type === sdk.SCENE_UPDATE
-    && sdk.SceneUpdate.validate(message)
-    && message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE
+    message.type === sdk.SCENE_UPDATE &&
+    sdk.SceneUpdate.validate(message) &&
+    message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE
   ) {
     try {
       const { sceneId } = message.payload
@@ -236,7 +237,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
   }
 }
 
-export function loadBuilderScene(sceneData: ILand): UnityParcelScene | undefined {
+export function loadBuilderScene(_sceneData: ILand): UnityParcelScene | undefined {
   // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
 }
@@ -246,7 +247,7 @@ export function unloadCurrentBuilderScene() {
   throw new Error('Not implemented')
 }
 
-export function updateBuilderScene(sceneData: ILand) {
+export function updateBuilderScene(_sceneData: ILand) {
   // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
 }
@@ -262,7 +263,7 @@ teleportObservable.add((position: { x: number; y: number; text?: string }) => {
 
   function pointerLockChange() {
     const doc: any = document
-    const isLocked = (doc.pointerLockElement || doc.mozPointerLockElement || doc.webkitPointerLockElement) != null
+    const isLocked = (doc.pointerLockElement || doc.mozPointerLockElement || doc.webkitPointerLockElement) !== null
     if (isPointerLocked !== isLocked && getUnityInstance()) {
       getUnityInstance().SetCursorState(isLocked)
     }

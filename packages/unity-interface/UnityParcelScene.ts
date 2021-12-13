@@ -12,14 +12,14 @@ import { DEBUG_SCENE_LOG } from 'config'
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
     super(data)
-    let loggerPrefix = data.data.basePosition.x + ',' + data.data.basePosition.y + ': '
+    const loggerPrefix = data.data.basePosition.x + ',' + data.data.basePosition.y + ': '
     this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
   }
 
   registerWorker(worker: SceneWorker): void {
     super.registerWorker(worker)
 
-    let aux: Vector3 = new Vector3()
+    const aux: Vector3 = new Vector3()
     gridToWorld(this.data.data.basePosition.x, this.data.data.basePosition.y, aux)
     worker.setPosition(aux)
 
@@ -42,14 +42,14 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
 export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExperienceScene> {
   constructor(public data: EnvironmentData<LoadablePortableExperienceScene>) {
     super(data)
-    let loggerPrefix = data.sceneId + ': '
+    const loggerPrefix = data.sceneId + ': '
     this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
   }
 
   registerWorker(worker: SceneWorker): void {
     super.registerWorker(worker)
 
-    let aux: Vector3 = new Vector3()
+    const aux: Vector3 = new Vector3()
     gridToWorld(this.data.data.basePosition.x, this.data.data.basePosition.y, aux)
     worker.setPosition(aux)
 

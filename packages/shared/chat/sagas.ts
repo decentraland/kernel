@@ -194,7 +194,7 @@ function initChatCommands() {
         response = `Teleporting to a crowd of people in current realm...`
 
         TeleportController.goToCrowd().then(
-          ({ message, success }) => notifyStatusThroughChat(message),
+          ({ message }) => notifyStatusThroughChat(message),
           () => {
             // Do nothing. This is handled inside controller
           }
@@ -265,13 +265,14 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('players', 'Shows a list of players around you', (message) => {
+  addChatCommand('players', 'Shows a list of players around you', (_message) => {
     const users = [...peerMap.entries()]
 
     const strings = users
       .filter(([_, value]) => !!(value && value.user && value.user.userId))
       .filter(([uuid]) => userPose[uuid])
       .map(function ([uuid, value]) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
         const name = getProfile(store.getState(), value.user?.userId!)?.name ?? 'unknown'
         const pos = { x: 0, y: 0 }
         worldToGrid(userPose[uuid], pos)
@@ -288,7 +289,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('showfps', 'Show FPS counter', (message) => {
+  addChatCommand('showfps', 'Show FPS counter', (_message) => {
     fpsConfiguration.visible = !fpsConfiguration.visible
     fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
 
@@ -301,7 +302,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('getname', 'Gets your username', (message) => {
+  addChatCommand('getname', 'Gets your username', (_message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
     if (!currentUserProfile) throw new Error('profileNotInitialized')
     return {
@@ -343,7 +344,7 @@ function initChatCommands() {
     }
   )
 
-  let whisperFn = (expression: string) => {
+  const whisperFn = (expression: string) => {
     const [userName, message] = parseWhisperExpression(expression)
 
     const currentUserId = getCurrentUserId(store.getState())
@@ -393,7 +394,7 @@ function initChatCommands() {
     actionBuilder: (usersId: string[]) => { type: string; payload: { playersId: string[] } },
     actionName: 'mute' | 'block' | 'unmute' | 'unblock'
   ) {
-    let pastTense: string = actionName === 'mute' || actionName === 'unmute' ? actionName + 'd' : actionName + 'ed'
+    const pastTense: string = actionName === 'mute' || actionName === 'unmute' ? actionName + 'd' : actionName + 'ed'
     const currentUserId = getCurrentUserId(store.getState())
     if (!currentUserId) throw new Error('cannotGetCurrentUser')
 
@@ -446,7 +447,7 @@ function initChatCommands() {
     return performSocialActionOnPlayer(message, unblockPlayers, 'unblock')
   })
 
-  addChatCommand('help', 'Show a list of commands', (message) => {
+  addChatCommand('help', 'Show a list of commands', (_message) => {
     return {
       messageId: uuid(),
       messageType: ChatMessageType.SYSTEM,
@@ -464,10 +465,10 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('version', 'Shows application version', message => {
-    let versions = injectVersions({})
-    let kernelVersion = versions['@dcl/kernel'] || 'unknown'
-    let rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
+  addChatCommand('version', 'Shows application version', (_message) => {
+    const versions = injectVersions({})
+    const kernelVersion = versions['@dcl/kernel'] || 'unknown'
+    const rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
     return {
       messageId: uuid(),
       sender: 'Decentraland',
@@ -477,7 +478,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('feelinglonely', 'Show a list of crowded scenes', (message) => {
+  addChatCommand('feelinglonely', 'Show a list of crowded scenes', (_message) => {
     fetchHotScenes().then(
       ($) => {
         let body = ''

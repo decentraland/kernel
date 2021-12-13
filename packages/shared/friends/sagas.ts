@@ -335,7 +335,7 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
     status.presence === PresenceType.OFFLINE ? PresenceStatus.OFFLINE : PresenceStatus.ONLINE
 
   const domain = store.getState().friends.client?.getDomain()
-  let matches = id.match(new RegExp(`@(\\w.+):${domain}`, 'i'))
+  const matches = id.match(new RegExp(`@(\\w.+):${domain}`, 'i'))
 
   const userId = matches !== null ? matches[1] : id
 

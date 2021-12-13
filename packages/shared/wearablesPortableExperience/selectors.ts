@@ -6,8 +6,8 @@ export const getCurrentWearables = (store: RootWearablesPortableExperienceState)
 
 export const getPendingWearables = (store: RootWearablesPortableExperienceState): WearableId[] =>
   Object.entries(store.wearablesPortableExperiences.profileWearables)
-    .filter(([id, data]) => data.state === 'pending')
-    .map(([id, data]) => id)
+    .filter(([, data]) => data.state === 'pending')
+    .map(([id]) => id)
 
 export const isRunningPortableExperience = (
   store: RootWearablesPortableExperienceState,

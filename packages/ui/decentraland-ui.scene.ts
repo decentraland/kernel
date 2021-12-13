@@ -5,7 +5,7 @@ declare const dcl: DecentralandInterface
 
 // Initialize avatar profile scene
 
-executeTask(async () => {
+void executeTask(async () => {
   await Promise.all([
     dcl.loadModule('@decentraland/Identity', {}),
     dcl.loadModule('@decentraland/SocialController', {})

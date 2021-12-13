@@ -1,5 +1,5 @@
-import { AuthChain, Authenticator, AuthIdentity } from "dcl-crypto"
-import { flatFetch, FlatFetchInit } from "./flatFetch"
+import { AuthChain, Authenticator, AuthIdentity } from 'dcl-crypto'
+import { flatFetch, FlatFetchInit } from './flatFetch'
 
 const AUTH_CHAIN_HEADER_PREFIX = 'x-identity-auth-chain-'
 const AUTH_TIMESTAMP_HEADER = 'x-identity-timestamp'
@@ -29,7 +29,12 @@ export function getAuthHeaders(
   return headers
 }
 
-export function signedFetch(url: string, identity: AuthIdentity, init?: FlatFetchInit, additionalMetadata: Record<string, any> = {}) {
+export function signedFetch(
+  url: string,
+  identity: AuthIdentity,
+  init?: FlatFetchInit,
+  additionalMetadata: Record<string, any> = {}
+) {
   const path = new URL(url).pathname
 
   const actualInit = {

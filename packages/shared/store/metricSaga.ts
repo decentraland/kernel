@@ -74,7 +74,7 @@ export function* metricSaga() {
 }
 
 function toTrackingEvent(event: ExecutionLifecycleEvent, payload: any) {
-  let result = trackingEvents[event]
+  const result = trackingEvents[event]
 
   if (event === COMMS_ERROR_RETRYING) {
     return { stage: result, retries: payload }

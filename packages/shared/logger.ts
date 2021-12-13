@@ -9,19 +9,19 @@ export type ILogger = {
 
 export function createDummyLogger(): ILogger {
   return {
-    error(message: string | Error, ...args: any[]): void {
+    error(_message: string | Error, ..._args: any[]): void {
       /*nothing*/
     },
-    log(message: string, ...args: any[]): void {
+    log(_message: string, ..._args: any[]): void {
       /*nothing*/
     },
-    warn(message: string, ...args: any[]): void {
+    warn(_message: string, ..._args: any[]): void {
       /*nothing*/
     },
-    info(message: string, ...args: any[]): void {
+    info(_message: string, ..._args: any[]): void {
       /*nothing*/
     },
-    trace(message: string, ...args: any[]): void {
+    trace(_message: string, ..._args: any[]): void {
       /*nothing*/
     }
   }

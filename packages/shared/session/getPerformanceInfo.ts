@@ -1,4 +1,10 @@
-export function getPerformanceInfo(data: { samples: string; fpsIsCapped: boolean, hiccupsInThousandFrames: number; hiccupsTime: number; totalTime: number }) {
+export function getPerformanceInfo(data: {
+  samples: string
+  fpsIsCapped: boolean
+  hiccupsInThousandFrames: number
+  hiccupsTime: number
+  totalTime: number
+}) {
   const entries: number[] = []
   const length = data.samples.length
   let sum = 0
@@ -17,12 +23,12 @@ export function getPerformanceInfo(data: { samples: string; fpsIsCapped: boolean
     min: sorted[0],
     p1: sorted[Math.ceil(length * 0.01)],
     p5: sorted[Math.ceil(length * 0.05)],
-    p10: sorted[Math.ceil(length * 0.10)],
-    p20: sorted[Math.ceil(length * 0.20)],
-    p50: sorted[Math.ceil(length * 0.50)],
+    p10: sorted[Math.ceil(length * 0.1)],
+    p20: sorted[Math.ceil(length * 0.2)],
+    p50: sorted[Math.ceil(length * 0.5)],
     p75: sorted[Math.ceil(length * 0.75)],
-    p80: sorted[Math.ceil(length * 0.80)],
-    p90: sorted[Math.ceil(length * 0.90)],
+    p80: sorted[Math.ceil(length * 0.8)],
+    p90: sorted[Math.ceil(length * 0.9)],
     p95: sorted[Math.ceil(length * 0.95)],
     p99: sorted[Math.ceil(length * 0.99)],
     max: sorted[length - 1],

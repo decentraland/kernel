@@ -38,9 +38,9 @@ export class SceneStateDefinition implements StateContainer {
    * Returns a copy of the state
    */
   getState(): Map<EntityId, Map<ComponentId, ComponentData>> {
-    const newEntries: [EntityId, Map<ComponentId, ComponentData>][] = Array.from(
-      this.entities.entries()
-    ).map(([entityId, components]) => [entityId, new Map(components)])
+    const newEntries: [EntityId, Map<ComponentId, ComponentData>][] = Array.from(this.entities.entries()).map(
+      ([entityId, components]) => [entityId, new Map(components)]
+    )
     return new Map(newEntries)
   }
 }

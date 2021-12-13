@@ -6,7 +6,7 @@ import { Fetcher } from 'dcl-catalyst-commons'
 import { requestManager } from './ethereum/provider'
 import { ContractFactory, bytesToHex } from 'eth-connect'
 
-declare var window: Window & {
+declare let window: Window & {
   ethereum: any
 }
 

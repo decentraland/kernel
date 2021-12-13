@@ -59,7 +59,7 @@ export class SceneTransformTranslator {
 
     if (builderComponent.type === toHumanReadableType(CLASS_ID.TRANSFORM)) {
       componentData.position = Vector3.TransformCoordinates(componentData.position, this.stateDefinitionToBuilderMatrix)
-      let matrixRotation = Quaternion.Identity
+      const matrixRotation = Quaternion.Identity
       this.stateDefinitionToBuilderMatrix.decompose(undefined, matrixRotation, undefined)
       const componentRotation = new Quaternion(
         componentData.rotation.x,
@@ -79,7 +79,7 @@ export class SceneTransformTranslator {
 
     if (statedDefinitionComponent.componentId === CLASS_ID.TRANSFORM) {
       componentData.position = Vector3.TransformCoordinates(componentData.position, transformMatrix)
-      let matrixRotation = Quaternion.Identity
+      const matrixRotation = Quaternion.Identity
       transformMatrix.decompose(undefined, matrixRotation, undefined)
       const componentRotation = new Quaternion(
         componentData.rotation.x,

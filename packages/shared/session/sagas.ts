@@ -137,8 +137,8 @@ function* startSignUp(identity: ExplorerIdentity) {
   yield put(signUpSetIsSignUp(true))
 
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
-  let cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
-  let profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
+  const cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
+  const profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
   profile.userId = identity.address
   profile.ethAddress = identity.rawAddress
   profile.unclaimedName = '' // clean here to allow user complete in passport step
@@ -209,7 +209,7 @@ function* signIn(identity: ExplorerIdentity) {
     yield call(referUser, identity)
   }
 
-  let net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
 
   yield ensureMetaConfigurationInitialized()
 
@@ -283,7 +283,7 @@ async function getSigner(
       address,
       async signer(message: string) {
         while (true) {
-          let result = await requestManager.personal_sign(message, address, '')
+          const result = await requestManager.personal_sign(message, address, '')
           if (!result) continue
           return result
         }

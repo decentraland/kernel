@@ -68,6 +68,7 @@ import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
 import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const toBuffer = require('blob-to-buffer')
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
@@ -461,7 +462,7 @@ async function modifyAvatar(params: { url: string; userId: string; identity: Exp
 
   const newAvatar = { ...avatar }
 
-  let files = new Map<string, Buffer>()
+  const files = new Map<string, Buffer>()
 
   const snapshots = avatar.snapshots || (profile as any).snapshots
   const content = new Map()

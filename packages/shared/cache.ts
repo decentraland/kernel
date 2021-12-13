@@ -21,7 +21,7 @@ export const cache = init.then((db) => ({
     const request = store.get(id)
 
     request.onerror = (event: any) => result.reject(new Error(event.target.errorCode))
-    request.onsuccess = (event: any) => result.resolve(request.result)
+    request.onsuccess = (_event: any) => result.resolve(request.result)
 
     return result
   },
@@ -31,7 +31,7 @@ export const cache = init.then((db) => ({
     const transaction = db.transaction(OBJECT_STORE_KEY, 'readwrite')
 
     transaction.onerror = (event: any) => result.reject(new Error(event.target.errorCode))
-    transaction.oncomplete = (event: any) => result.resolve()
+    transaction.oncomplete = (_event: any) => result.resolve()
 
     const store = transaction.objectStore(OBJECT_STORE_KEY)
 
@@ -77,7 +77,7 @@ export async function retrieve(cachedKey: string) {
 export async function store(cachedKey: string, data: any) {
   try {
     const db = await cache
-    db.write((store) => {
+    void db.write((store) => {
       store.put(data, cachedKey)
     })
   } catch (e) {

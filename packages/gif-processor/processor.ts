@@ -6,6 +6,7 @@ declare const Worker: any
 // @see https://github.com/decentraland/unity-renderer/blob/bc2bf1ee0d685132c85606055e592bac038b3471/unity-renderer/Assets/Plugins/JSFunctions.jslib#L11
 declare const DCL: { GL: any }
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const gifProcessorWorkerRaw = require('raw-loader!../../static/gif-processor/worker.js')
 const gifProcessorWorkerUrl = URL.createObjectURL(new Blob([gifProcessorWorkerRaw]))
 const multipleGIFWorkers = GIF_WORKERS
@@ -86,15 +87,15 @@ export class GIFProcessor {
    *
    */
   GenerateTexture(): any {
-    let GLctx = this.gameInstance.Module.ctx
-    let texture = GLctx.createTexture()
+    const GLctx = this.gameInstance.Module.ctx
+    const texture = GLctx.createTexture()
 
     if (!texture) {
       DCL.GL.recordError(1282)
       return
     }
 
-    let id = DCL.GL.getNewId(DCL.GL.textures)
+    const id = DCL.GL.getNewId(DCL.GL.textures)
     texture.name = id
     DCL.GL.textures[id] = texture
 

@@ -1,9 +1,4 @@
-import {
-  Quaternion,
-  EcsMathReadOnlyQuaternion,
-  EcsMathReadOnlyVector3,
-  Vector3
-} from '@dcl/ecs-math'
+import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
 
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
@@ -82,7 +77,7 @@ import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from 'dcl-crypto'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
-export let futures: Record<string, IFuture<any>> = {}
+export const futures: Record<string, IFuture<any>> = {}
 
 // ** TODO - move to friends related file - moliva - 15/07/2020
 function toSocialId(userId: string) {
@@ -211,7 +206,7 @@ export class BrowserInterface {
     getUnityInstance().crashPayloadResponseObservable.notifyObservers(JSON.stringify(data))
   }
 
-  public PreloadFinished(data: { sceneId: string }) {
+  public PreloadFinished(_data: { sceneId: string }) {
     // stub. there is no code about this in unity side yet
   }
 
@@ -391,7 +386,7 @@ export class BrowserInterface {
     futures[data.id].resolve(data.cameraTarget)
   }
 
-  public UserAcceptedCollectibles(data: { id: string }) {
+  public UserAcceptedCollectibles(_data: { id: string }) {
     // Here, we should have "airdropObservable.notifyObservers(data.id)".
     // It's disabled because of security reasons.
   }
@@ -450,18 +445,18 @@ export class BrowserInterface {
   }
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
-    let { userId, action } = message
+    let { userId } = message
     let found = false
-    let state = store.getState()
+    const state = store.getState()
 
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
-    if (action === FriendshipAction.REQUESTED_TO) {
+    if (message.action === FriendshipAction.REQUESTED_TO) {
       await ensureFriendProfile(userId)
 
       if (isAddress(userId)) {
         found = hasConnectedWeb3(state, userId)
       } else {
-        let profileByName = findProfileByName(state, userId)
+        const profileByName = findProfileByName(state, userId)
         if (profileByName) {
           userId = profileByName.userId
           found = true
@@ -480,7 +475,7 @@ export class BrowserInterface {
       }
     }
 
-    if (action === FriendshipAction.REQUESTED_TO && !found) {
+    if (message.action === FriendshipAction.REQUESTED_TO && !found) {
       // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
       // tslint:disable-next-line
       getUnityInstance().FriendNotFound(userId)
@@ -488,7 +483,7 @@ export class BrowserInterface {
     }
 
     store.dispatch(updateUserData(userId.toLowerCase(), toSocialId(userId)))
-    store.dispatch(updateFriendship(action, userId.toLowerCase(), false))
+    store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
@@ -609,7 +604,7 @@ export class BrowserInterface {
   public RequestBIWCatalogHeader() {
     const identity = getCurrentIdentity(store.getState())
     if (!identity) {
-      let emptyHeader: Record<string, string> = {}
+      const emptyHeader: Record<string, string> = {}
       getUnityInstance().SendBuilderCatalogHeaders(emptyHeader)
     } else {
       const headers = BuilderServerAPIManager.authorize(identity, 'get', '/assetpacks')
@@ -645,7 +640,9 @@ export class BrowserInterface {
     const identity = getCurrentIdentity(store.getState())
 
     const headers: Record<string, string> = identity
-      ? getAuthHeaders(data.method, data.url, data.metadata, (payload) => Authenticator.signPayload(identity, data.url))
+      ? getAuthHeaders(data.method, data.url, data.metadata, (_payload) =>
+          Authenticator.signPayload(identity, data.url)
+        )
       : {}
 
     getUnityInstance().SendHeaders(data.url, headers)
@@ -719,4 +716,4 @@ function arrayCleanup<T>(array: T[] | null | undefined): T[] | undefined {
   return !array || array.length === 0 ? undefined : array
 }
 
-export let browserInterface: BrowserInterface = new BrowserInterface()
+export const browserInterface: BrowserInterface = new BrowserInterface()

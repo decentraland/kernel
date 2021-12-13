@@ -34,6 +34,7 @@ export namespace parcelLimits {
   export const halfParcelSize = parcelSize / 2 /* meters */
   export const centimeter = 0.01
 
+  // eslint-disable-next-line prefer-const
   export let visibleRadius = 4
 
   /**
@@ -141,7 +142,8 @@ export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
-export const QS_MAX_VISIBLE_PEERS = typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
+export const QS_MAX_VISIBLE_PEERS =
+  typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
 
 export const BUILDER_SERVER_URL = ensureSingleString(qs.BUILDER_SERVER_URL) ?? 'https://builder-api.decentraland.org/v1'
 
@@ -156,8 +158,8 @@ export const rootURLPreviewMode = () => {
 export const PIN_CATALYST = PREVIEW
   ? rootURLPreviewMode()
   : typeof qs.CATALYST === 'string'
-    ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
-    : undefined
+  ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
+  : undefined
 
 export const FORCE_RENDERING_STYLE = ensureSingleString(qs.FORCE_RENDERING_STYLE) as any
 

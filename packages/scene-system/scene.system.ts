@@ -68,7 +68,7 @@ class WebWorkerScene extends SceneRuntime {
 
       setTimeout(update, this.updateInterval)
 
-      let time = dt / 1000
+      const time = dt / 1000
 
       this.update(time)
     }

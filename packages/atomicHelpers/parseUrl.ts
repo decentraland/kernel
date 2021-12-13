@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const URL = require('url')
 
 export function resolveUrl(baseUrl: string, url: string): string

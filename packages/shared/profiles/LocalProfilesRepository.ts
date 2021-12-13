@@ -1,5 +1,9 @@
 import { Profile } from './types'
-import { getFromPersistentStorage, removeFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
+import {
+  getFromPersistentStorage,
+  removeFromPersistentStorage,
+  saveToPersistentStorage
+} from 'atomicHelpers/persistentStorage'
 import { ETHEREUM_NETWORK } from 'config'
 
 const LOCAL_PROFILES_KEY = 'dcl-local-profile'

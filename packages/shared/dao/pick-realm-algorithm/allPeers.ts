@@ -1,8 +1,14 @@
-import { Candidate } from "../types"
-import { AlgorithmContext, AlgorithmLink, AlgorithmLinkTypes, AllPeersScoreParameters } from "./types"
-import { usersCount, maxUsers, selectFirstByScore, defaultScoreAddons } from "./utils"
+import { Candidate } from '../types'
+import { AlgorithmContext, AlgorithmLink, AlgorithmLinkTypes, AllPeersScoreParameters } from './types'
+import { usersCount, maxUsers, selectFirstByScore, defaultScoreAddons } from './utils'
 
-export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, fillTargetPercentage, latencyDeductionsParameters, definitiveDecisionThreshold }: AllPeersScoreParameters): AlgorithmLink {
+export function allPeersScoreLink({
+  baseScore,
+  discourageFillTargetPercentage,
+  fillTargetPercentage,
+  latencyDeductionsParameters,
+  definitiveDecisionThreshold
+}: AllPeersScoreParameters): AlgorithmLink {
   function usersScore(candidate: Candidate) {
     const count = usersCount(candidate)
     const max = maxUsers(candidate)
@@ -18,7 +24,10 @@ export function allPeersScoreLink({ baseScore, discourageFillTargetPercentage, f
         // If this is the case, we are in the "downward" phase of the score
         // We calculate a segment joining the fillTargetPercentage% of users with baseScore at discourageFillTargetPercentage% maxUsers
         // In that way, when we reach discourageFillTargetPercentage% maxUsers, realms that have at least one user start to get prioritized
-        const segment = { start: { x: fillTargetPercentage * max, y: linearUsersScore(fillTargetPercentage * max) }, end: { x: discourageFillTargetPercentage * max, y: baseScore } }
+        const segment = {
+          start: { x: fillTargetPercentage * max, y: linearUsersScore(fillTargetPercentage * max) },
+          end: { x: discourageFillTargetPercentage * max, y: baseScore }
+        }
 
         const slope = (segment.end.y - segment.start.y) / (segment.end.x - segment.start.x)
 
