@@ -1,4 +1,4 @@
-import { ReadOnlyColor4 } from 'decentraland-ecs'
+import { ReadOnlyColor4 } from '@dcl/ecs-math'
 import { convertToRGBObject } from './convertToRGBObject'
 export function analizeColorPart(avatar: any, ...alternativeNames: string[]): Optional<ReadOnlyColor4, 'a'> {
   for (let name of alternativeNames) {

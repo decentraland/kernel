@@ -1,7 +1,8 @@
+import { Vector3 } from '@dcl/ecs-math'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { Observable } from 'mz-observable'
-import { Vector3, MinimapSceneInfo, ProfileForRenderer } from 'decentraland-ecs'
+import { MinimapSceneInfo, ProfileForRenderer } from '@dcl/legacy-ecs'
 import { AirdropInfo } from '../shared/airdrops/interface'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import {
@@ -18,7 +19,6 @@ import {
   ChatMessage,
   FriendshipUpdateStatusMessage,
   FriendsInitializationMessage,
-  KernelConfigForRenderer,
   TutorialInitializationMessage,
   Notification,
   UpdateUserStatusMessage,
@@ -138,12 +138,12 @@ export interface IUnityInterface {
   SetUserTalking(userId: string, talking: boolean): void
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
-  SetKernelConfiguration(config: Partial<KernelConfigForRenderer>): void
+  SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
   SendHeaders(endpoint: string,headers: Record<string, string>): void
-  
+
   // *********************************************************************************
   // ************** Builder in world messages **************
   // *********************************************************************************

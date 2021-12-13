@@ -1,5 +1,6 @@
 import { LightweightWriter } from 'dcl-scene-writer'
-import * as ECS from 'decentraland-ecs'
+import * as ECS from '@dcl/legacy-ecs'
+
 import { SerializedSceneState, CONTENT_PATH, Asset, AssetId } from './types'
 
 export function createGameFile(state: SerializedSceneState, assets: Map<AssetId, Asset>): string {
@@ -37,7 +38,7 @@ export function createGameFile(state: SerializedSceneState, assets: Map<AssetId,
           break
       }
     }
-    writer.addEntity(entityName, ecsEntity)
+    writer.addEntity(entityName, ecsEntity as any)
   }
   return writer.emitCode()
 }

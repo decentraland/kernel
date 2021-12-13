@@ -1,3 +1,10 @@
+import {
+  Quaternion,
+  EcsMathReadOnlyQuaternion,
+  EcsMathReadOnlyVector3,
+  Vector3
+} from '@dcl/ecs-math'
+
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { AvatarMessageType } from 'shared/comms/interface/types'
@@ -7,7 +14,6 @@ import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3, IEventNames } from 'decentraland-ecs'
 import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -33,6 +39,7 @@ import {
   allScenesEvent,
   stopIsolatedMode,
   startIsolatedMode
+  AllScenesEvents
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -135,13 +142,14 @@ export class BrowserInterface {
   }
 
   public AllScenesEvent(data: { eventType: string; payload: any }) {
+  public AllScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
     allScenesEvent(data)
   }
 
   /** Triggered when the camera moves */
   public ReportPosition(data: {
-    position: ReadOnlyVector3
-    rotation: ReadOnlyQuaternion
+    position: EcsMathReadOnlyVector3
+    rotation: EcsMathReadOnlyQuaternion
     playerHeight?: number
     immediate?: boolean
   }) {
@@ -160,7 +168,7 @@ export class BrowserInterface {
     positionObservable.notifyObservers(positionEvent)
   }
 
-  public ReportMousePosition(data: { id: string; mousePosition: ReadOnlyVector3 }) {
+  public ReportMousePosition(data: { id: string; mousePosition: EcsMathReadOnlyVector3 }) {
     positionEvent.mousePosition.set(data.mousePosition.x, data.mousePosition.y, data.mousePosition.z)
     positionObservable.notifyObservers(positionEvent)
     futures[data.id].resolve(data.mousePosition)
@@ -391,7 +399,7 @@ export class BrowserInterface {
     futures[data.id].resolve(data.encodedTexture)
   }
 
-  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: ReadOnlyVector3 }) {
+  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: EcsMathReadOnlyVector3 }) {
     futures[data.id].resolve(data.cameraTarget)
   }
 
@@ -608,8 +616,8 @@ export class BrowserInterface {
     await killPortableExperienceScene(data.portableExperienceId)
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
+  // Note: This message is deprecated and should be deleted in the future.
+  //       We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
   public RequestBIWCatalogHeader() {
     const identity = getCurrentIdentity(store.getState())
     if (!identity) {
@@ -621,8 +629,8 @@ export class BrowserInterface {
     }
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      We are maintaining it for compatibility we can safely delete if we are further than 2/03/2022
+  // Note: This message is deprecated and should be deleted in the future.
+  //       We are maintaining it for compatibility we can safely delete if we are further than 2/03/2022
   public RequestHeaderForUrl(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
@@ -632,8 +640,8 @@ export class BrowserInterface {
     getUnityInstance().SendBuilderCatalogHeaders(headers)
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
+  // Note: This message is deprecated and should be deleted in the future.
+  //       It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
@@ -643,8 +651,8 @@ export class BrowserInterface {
     getUnityInstance().SendHeaders(data.url, headers)
   }
 
-  //Note: This message is deprecated and should be deleted in the future.
-  //      It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
+  // Note: This message is deprecated and should be deleted in the future.
+  //       It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
   public RequestSignedHeader(data: { method: string; url: string; metadata: Record<string, any> }) {
     const identity = getCurrentIdentity(store.getState())
 

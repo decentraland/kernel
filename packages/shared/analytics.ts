@@ -1,13 +1,14 @@
 import { DEBUG_ANALYTICS } from 'config'
+import { Vector2 } from '@dcl/ecs-math'
 
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
-import { Vector2 } from 'decentraland-ecs'
 import { defaultLogger } from 'shared/logger'
 
 import { avatarMessageObservable } from './comms/peers'
 import { AvatarMessageType } from './comms/interface/types'
 import { positionObservable } from './world/positionThings'
 import { globalObservable } from './observables'
+
 
 export type SegmentEvent = {
   name: string

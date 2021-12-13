@@ -1,5 +1,6 @@
+import { Vector3 } from '@dcl/ecs-math'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
-import { Vector3, ProfileForRenderer, MinimapSceneInfo } from 'decentraland-ecs'
+import { ProfileForRenderer, MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {
@@ -14,7 +15,6 @@ import {
   UpdateUserStatusMessage,
   RenderProfile,
   BuilderConfiguration,
-  KernelConfigForRenderer,
   RealmsInfoForRenderer,
   ContentMapping,
   Profile,
@@ -408,7 +408,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'SetVoiceChatEnabledByScene', enabled ? 1 : 0)
   }
 
-  public SetKernelConfiguration(config: Partial<KernelConfigForRenderer>) {
+  public SetKernelConfiguration(config: any) {
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
   }
 
@@ -439,7 +439,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public SendHeaders(endpoint: string, headers: Record<string, string>) {
-    const request: HeaderRequest = {
+    let request: HeaderRequest = {
       endpoint: endpoint,
       headers: headers
     }

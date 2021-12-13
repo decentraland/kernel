@@ -1,5 +1,6 @@
+import { Quaternion, Matrix, Vector3 } from '@dcl/ecs-math'
 import { Component } from 'scene-system/stateful-scene/types'
-import { CLASS_ID, Matrix, Quaternion, Vector3 } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import { SceneSource, SceneSourcePlacement } from 'shared/types'
 import { BuilderComponent } from './types'
 import { toHumanReadableType } from './utils'

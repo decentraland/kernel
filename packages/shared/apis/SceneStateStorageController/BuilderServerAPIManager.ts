@@ -17,7 +17,7 @@ import {
 import { BUILDER_SERVER_URL, ETHEREUM_NETWORK } from 'config'
 import { defaultLogger } from '../../logger'
 import { getParcelSceneLimits } from 'atomicHelpers/landHelpers'
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import { toHumanReadableType, fromHumanReadableType, getLayoutFromParcels } from './utils'
 import { SceneSourcePlacement } from 'shared/types'
 

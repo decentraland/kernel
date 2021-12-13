@@ -1,5 +1,4 @@
 import './apis/index'
-import './events'
 
 import { notStarted } from './loading/types'
 import { buildStore } from './store/store'

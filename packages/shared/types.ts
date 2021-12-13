@@ -1,5 +1,5 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
-import type { QueryType } from 'decentraland-ecs'
+import type { QueryType } from '@dcl/legacy-ecs'
 import type { WearableId } from 'shared/catalogs/types'
 export { Avatar, Profile } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
@@ -472,7 +472,10 @@ export enum HUDElementID {
   NFT_INFO_DIALOG = 16,
   TELEPORT_DIALOG = 17,
   CONTROLS_HUD = 18,
+  
+  /** @deprecated */
   EXPLORE_HUD = 19,
+  
   HELP_AND_SUPPORT_HUD = 20,
 
   /** @deprecated */

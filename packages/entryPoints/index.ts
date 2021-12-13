@@ -18,7 +18,7 @@ import { realmInitialized } from 'shared/dao'
 import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
 import { ensureMetaConfigurationInitialized, waitForMessageOfTheDay } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
-import { getFeatureFlags, isFeatureEnabled } from 'shared/meta/selectors'
+import { getFeatureFlags, getWorldConfig, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { startRealmsReportToRenderer } from 'unity-interface/realmsForRenderer'
 import { isWaitingTutorial } from 'shared/loading/selectors'
@@ -39,7 +39,7 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
-function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean, exploreV2Enables: boolean) {
+function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean) {
   // The elements below, require the taskbar to be active before being activated.
 
   i.ConfigureHUDElement(
@@ -53,7 +53,6 @@ function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: bool
   i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: true })
 
   i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
-  i.ConfigureHUDElement(HUDElementID.EXPLORE_HUD, { active: !exploreV2Enables, visible: false })
   i.ConfigureHUDElement(HUDElementID.HELP_AND_SUPPORT_HUD, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: builderInWorldEnabled, visible: false })
 }
@@ -188,7 +187,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
 
   const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
-  const worldConfig: WorldConfig | undefined = store.getState().meta.config.world
+  const worldConfig: WorldConfig | undefined = getWorldConfig(store.getState())
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
   const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
@@ -222,14 +221,14 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
       const VOICE_CHAT_ENABLED = true
       const BUILDER_IN_WORLD_ENABLED = identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
-      const EXPLORE_V2_ENABLED = isFeatureEnabled(store.getState(), FeatureFlags.EXPLORE_V2_ENABLED, false)
 
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
-      i.SetKernelConfiguration(configForRenderer)
+      
+      i.SetKernelConfiguration( configForRenderer )
 
-      configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
+      configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED)
 
       i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
       i.ConfigureHUDElement(HUDElementID.USERS_AROUND_LIST_HUD, { active: VOICE_CHAT_ENABLED, visible: false })
@@ -255,7 +254,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     })
     .catch((e) => {
       logger.error('error on configuring taskbar & friends hud / tutorial. Trying to default to simple taskbar', e)
-      configureTaskbarDependentHUD(i, false, false, false)
+      configureTaskbarDependentHUD(i, false, false)
     })
 
   startRealmsReportToRenderer()

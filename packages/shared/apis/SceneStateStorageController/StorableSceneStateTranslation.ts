@@ -1,7 +1,7 @@
 import { SceneStateDefinition } from 'scene-system/stateful-scene/SceneStateDefinition'
 import { Component } from 'scene-system/stateful-scene/types'
 import { uuid } from 'atomicHelpers/math'
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import {
   BuilderAsset,
   BuilderComponent,
@@ -62,7 +62,7 @@ export async function toBuilderFromStateDefinitionFormat(
       if (componentType === 'NFTShape') {
         component.data.url = component.data.src
         if (nftCount >= 1) {
-          //This is the format that is used by builder
+          // This is the format that is used by builder
           entityName = 'nft' + (nftCount + 1)
         } else {
           entityName = 'nft'

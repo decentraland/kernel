@@ -21,6 +21,15 @@ import { StatefulWorker } from './StatefulWorker'
 import { UnityScene } from 'unity-interface/UnityScene'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 
+export type EnableParcelSceneLoadingOptions = {
+  parcelSceneClass: { new (x: EnvironmentData<LoadableParcelScene>): ParcelSceneAPI }
+  preloadScene: (parcelToLoad: ILand) => Promise<any>
+  onPositionSettled?: (spawnPoint: InstancedSpawnPoint) => void
+  onLoadParcelScenes?(x: ILand[]): void
+  onUnloadParcelScenes?(x: ILand[]): void
+  onPositionUnsettled?(): void
+}
+
 declare const globalThis: any
 
 const sceneManagerLogger = createLogger('scene-manager')
@@ -379,8 +388,13 @@ export async function enableParcelSceneLoading() {
   })
 }
 
-export function allScenesEvent(data: { eventType: string; payload: any }) {
+export type AllScenesEvents<T extends IEventNames> = {
+  eventType: T
+  payload: IEvents[T]
+}
+
+export function allScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
   for (const [_key, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType as IEventNames, data.payload)
+    scene.emit(data.eventType, data.payload)
   }
 }

@@ -1,8 +1,8 @@
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
+import { Vector3, Quaternion } from '@dcl/ecs-math'
 
 import { playerConfigurations } from 'config'
 import { SceneWorker } from './SceneWorker'
-import { Vector3, Quaternion } from 'decentraland-ecs'
 import { PositionReport, positionObservable } from './positionThings'
 import { Observer } from 'mz-observable'
 import { sceneLifeCycleObservable } from '../../decentraland-loader/lifecycle/controllers/scene'

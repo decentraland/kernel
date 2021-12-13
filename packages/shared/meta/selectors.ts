@@ -1,4 +1,4 @@
-import { BannedUsers, CommsConfig, FeatureFlag, MessageOfTheDayConfig, RootMetaState } from './types'
+import { BannedUsers, CommsConfig, FeatureFlag, MessageOfTheDayConfig, RootMetaState, WorldConfig } from './types'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
@@ -31,7 +31,9 @@ export const getMinCatalystVersion = (store: RootMetaState): string | undefined 
 
 export const isMetaConfigurationInitiazed = (store: RootMetaState): boolean => store.meta.initialized
 
-export const getPois = (store: RootMetaState): Vector2Component[] => store.meta.config.world?.pois || []
+export const getWorldConfig = (store: RootMetaState): WorldConfig => store.meta.config.world as WorldConfig
+
+export const getPois = (store: RootMetaState): Vector2Component[] => getWorldConfig(store)?.pois || []
 
 export const getCommsConfig = (store: RootMetaState): CommsConfig =>
   store.meta.config.comms ?? { maxVisiblePeers: DEFAULT_MAX_VISIBLE_PEERS }
@@ -42,9 +44,10 @@ export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmCha
   store.meta.config.pickRealmAlgorithmConfig
 
 export const isMOTDInitialized = (store: RootMetaState): boolean =>
-  store.meta.config.world ? store.meta.config.world?.messageOfTheDayInit || false : false
+  getWorldConfig(store) ? getWorldConfig(store)?.messageOfTheDayInit || false : false
+
 export const getMessageOfTheDay = (store: RootMetaState): MessageOfTheDayConfig | null =>
-  store.meta.config.world ? store.meta.config.world.messageOfTheDay || null : null
+  getWorldConfig(store) ? getWorldConfig(store).messageOfTheDay || null : null
 
 export function getFeatureFlags(store: RootMetaState): FeatureFlag {
   let featureFlag: FeatureFlag = {

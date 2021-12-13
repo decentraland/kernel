@@ -1,3 +1,5 @@
+import { Vector3 } from '@dcl/ecs-math'
+
 import { gridToWorld } from '../atomicHelpers/parcelScenePositions'
 import { DevTools } from 'shared/apis/DevTools'
 import { ParcelIdentity } from 'shared/apis/ParcelIdentity'
@@ -6,8 +8,6 @@ import { EnvironmentData, LoadableParcelScene, LoadablePortableExperienceScene }
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
-import { Vector3 } from 'decentraland-ecs'
-
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
     super(data)

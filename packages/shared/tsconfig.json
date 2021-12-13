@@ -4,7 +4,8 @@
     "baseUrl": "..",
     "strictNullChecks": true,
     "experimentalDecorators": true,
-    "strict": true
+    "strict": true,
+    "types": ["@dcl/posix", "segment-analytics"]
   },
   "extends": "../../tsconfig.json"
 }
