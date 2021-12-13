@@ -14,15 +14,17 @@ import { SceneSystemWorker } from './SceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { IEventNames, Observable } from 'decentraland-ecs'
-import { IsolatedModeOptions, EndIsolatedModeOptions, IsolatedMode } from './types'
+import { IsolatedModeOptions, IsolatedMode } from './types'
 import { UnityParcelScene } from 'unity-interface/UnityParcelScene'
 import { createLogger } from 'shared/logger'
 import { StatefulWorker } from './StatefulWorker'
 import { UnityScene } from 'unity-interface/UnityScene'
+import { Vector2Component } from 'atomicHelpers/landHelpers'
 
 declare const globalThis: any
 
 const sceneManagerLogger = createLogger('scene-manager')
+let lastPlayerPositionKnow: Vector2Component
 
 export const onLoadParcelScenesObservable = new Observable<ILand[]>()
 /**
@@ -142,42 +144,13 @@ const parcelSceneLoadingState = {
 export function startIsolatedMode(options: IsolatedModeOptions) {
   if (!parcelSceneLoadingState.lifecycleManager || !options) return
 
-  // set the state to prevent LifecycleManager to load more scenes
+  // set the isolated mode On
   parcelSceneLoadingState.isolatedModeOptions = options
-
   parcelSceneLoadingState.runningIsolatedMode = true
 
-  //We do de configurations based on the mode 
-  switch (options.mode) {
-    case IsolatedMode.BUILDER:
-      
-      parcelSceneLoadingState.isolatedModeOptions.payload.recreateScene = true
-      parcelSceneLoadingState.isolatedModeOptions.payload.land = {
-        sceneId: parcelSceneLoadingState.isolatedModeOptions.payload.sceneId,
-        baseUrl: 'https://peer-lb.decentraland.org/content/contents/',
-        baseUrlBundles: 'https://content-assets-as-bundle.decentraland.org/v22/',
-        mappingsResponse: {
-          parcel_id: parcelSceneLoadingState.isolatedModeOptions.payload.sceneId,
-          root_cid: parcelSceneLoadingState.isolatedModeOptions.payload.sceneId,
-          contents: []
-        },
-        sceneJsonData: {
-          display: {
-            title: 'test'
-          },
-          main: 'bin/game.js',
-          scene: {
-            base: '140,140',
-            parcels: ['140,140']
-          }
-        }
-      }
-      break
-  }
-
-   // put in the newSet all scenes that should remain loaded due to isolatedMode
+  // put in the newSet all scenes that should remain loaded due to isolatedMode
   const newSet = new Set<string>()
- 
+
   if (
     parcelSceneLoadingState.isolatedModeOptions.payload.sceneId &&
     parcelSceneLoadingState.isolatedModeOptions.payload.land
@@ -188,15 +161,14 @@ export function startIsolatedMode(options: IsolatedModeOptions) {
       parcelSceneLoadingState.isolatedModeOptions.payload.land
     )
 
-    //If the payload specifies it we recreate it
-    if (parcelSceneLoadingState.isolatedModeOptions.payload.recreateScene) {
-      if (
-        !newSet.has(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId) &&
-        loadedSceneWorkers.has(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId)
-      ) {
-        // destroy old scene
-        unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId)
-      }
+    //If the payload specifies that we need to recreate it, we do it
+    if (
+      parcelSceneLoadingState.isolatedModeOptions.payload.recreateScene &&
+      !newSet.has(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId) &&
+      loadedSceneWorkers.has(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId)
+    ) {
+      // destroy old scene
+      unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId)
     }
   }
 
@@ -204,34 +176,40 @@ export function startIsolatedMode(options: IsolatedModeOptions) {
   setDesiredParcelScenes(newSet)
   const scenesIds = new Set(parcelSceneLoadingState.desiredParcelScenes)
 
-  //We notify the lifecycle worker that we started isolated mode
+  // We notify the lifecycle worker that we started isolated mode
   parcelSceneLoadingState.lifecycleManager.notify('StartIsolateMode', { scenesIds: Array.from(scenesIds.values()) })
 }
 
-export function stopIsolatedMode(options: EndIsolatedModeOptions) {
-  // set the state to signal the LifecycleManager to load more scenes
-
+export function stopIsolatedMode(options: IsolatedModeOptions) {
   if (!parcelSceneLoadingState.runningIsolatedMode || !parcelSceneLoadingState.lifecycleManager) {
     return
   }
 
-  if (options.sceneId !== parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId) {
-    unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
+  // If the options don't specify to mantain the scene, we unload it
+  let unloadScene = true;
+  if (options.payload?.sceneId && options.payload.sceneId === parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId) {
+    unloadScene = false;
   }
 
+  if(unloadScene)
+    unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
+  // We deactivate the isolated mode
   parcelSceneLoadingState.runningIsolatedMode = false
   parcelSceneLoadingState.isolatedModeOptions = null
 
-  //We notify the lifecycle worker that we stopped isolated mode
-  parcelSceneLoadingState.lifecycleManager.notify('StopIsolateMode', { scenesIds: [options.sceneId] })
+  // We notify the lifecycle worker that we stopped isolated mode
+  parcelSceneLoadingState.lifecycleManager.notify('StopIsolateMode', { scenesIds: [options.payload?.sceneId] })
 
-  //We do a teleport back to the world 
-  let text = 'Going back to the world'
-  teleportObservable.notifyObservers({
-    x: 140,
-    y: 140,
-    text: text
-  })
+  //In the builder we need to go back to the world
+  if (options.mode === IsolatedMode.BUILDER) {
+    // We do a teleport to go back to the world to the last position of the player
+    let text = 'Going back to the world'
+    teleportObservable.notifyObservers({
+      x: lastPlayerPositionKnow.x,
+      y: lastPlayerPositionKnow.y,
+      text: text
+    })
+  }
 }
 
 Object.assign(globalThis, { startIsolatedMode, endIsolatedMode: stopIsolatedMode })
@@ -286,9 +264,11 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
 
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
-
     //If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
-    if (parcelSceneLoadingState.runningIsolatedMode && parcelSceneLoadingState.isolatedModeOptions?.mode == IsolatedMode.BUILDER) {
+    if (
+      parcelSceneLoadingState.runningIsolatedMode &&
+      parcelSceneLoadingState.isolatedModeOptions?.mode == IsolatedMode.BUILDER
+    ) {
       var sceneId: string = ''
       if (parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId != null) {
         sceneId = parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
@@ -300,7 +280,7 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
         baseUrl: location.origin,
         main: 'fileContentUrl',
         useFPSThrottling: false,
-        data: {},
+        data: ILandToLoadableParcelScene(parcelSceneLoadingState.isolatedModeOptions?.payload?.land),
         mappings: []
       })
 
@@ -308,8 +288,7 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
       setNewParcelScene(sceneId, parcelScene)
     } else {
       const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(parcelSceneToStart))
-      //                      ^^^^^^^^^^^^^^^^
-      // IF RUNNING IN ISOLATED MODE, START STATEFUL WORKER INSTEAD OF THIS
+
       parcelScene.data.useFPSThrottling = true
       loadParcelScene(parcelScene)
     }
@@ -329,7 +308,6 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
   })
 
   // tell the engine to load the parcel scene
-
   onLoadParcelScenesObservable.notifyObservers([parcelSceneToStart])
 
   timer = setTimeout(() => {
@@ -380,6 +358,7 @@ export async function enableParcelSceneLoading() {
   })
 
   teleportObservable.add((position: { x: number; y: number }) => {
+    lastPlayerPositionKnow = position
     if (parcelSceneLoadingState.runningIsolatedMode) return
     lifecycleManager.notify('User.setPosition', { position, teleported: true })
   })
@@ -391,6 +370,10 @@ export async function enableParcelSceneLoading() {
   parcelObservable.add((obj) => {
     // immediate reposition should only be broadcasted to others, otherwise our scene reloads
     if (obj.immediate) return
+
+    lastPlayerPositionKnow = obj.newParcel
+
+    // If we are in isolated mode we don't report the position
     if (parcelSceneLoadingState.runningIsolatedMode) return
     lifecycleManager.notify('User.setPosition', { position: obj.newParcel, teleported: false })
   })

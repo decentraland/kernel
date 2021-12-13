@@ -1,7 +1,7 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { SceneLifeCycleController } from './scene'
 import { EventEmitter } from 'events'
-import {ParcelLifeCycleController, ParcelSightSeeingReport} from './parcel'
+import { ParcelLifeCycleController, ParcelSightSeeingReport } from './parcel'
 import { SceneDataDownloadManager } from './download'
 import { worldToGrid, gridToWorld } from '../../../atomicHelpers/parcelScenePositions'
 import { pickWorldSpawnpoint } from 'shared/world/positionThings'
@@ -29,13 +29,14 @@ export class PositionLifecycleController extends EventEmitter {
   }
 
   async reportCurrentPosition(position: Vector2Component, teleported: boolean) {
+    //If we are in isolated mode we don't report the currentPosition
     if (
       this.isIsolatedModeRunning ||
       !this.positionSettled ||
       (this.currentPosition &&
         this.currentPosition.x === position.x &&
         this.currentPosition.y === position.y &&
-        !teleported )
+        !teleported)
     ) {
       return
     }
@@ -71,20 +72,18 @@ export class PositionLifecycleController extends EventEmitter {
     this.checkPositionSettlement()
   }
 
-  public setSightParcels(scenesOnSight: Set<string>){
-    this.currentlySightedScenes = Array.from(scenesOnSight.values());
+  public setSightParcels(scenesOnSight: Set<string>) {
+    this.currentlySightedScenes = Array.from(scenesOnSight.values())
   }
 
-  public setIsolatedMode(isRunning: boolean)
-  {
-    this.isIsolatedModeRunning = isRunning;
+  public setIsolatedMode(isRunning: boolean) {
+    this.isIsolatedModeRunning = isRunning
   }
 
   public async updateSightedParcels(parcels: ParcelSightSeeingReport | undefined) {
     if (parcels === undefined) return
 
     const newlySightedScenes = await this.sceneController.reportSightedParcels(parcels.sighted, parcels.lostSight)
-    console.log("Position resuleto: He visto estas parcels " +newlySightedScenes.sighted)
     if (!this.eqSet(this.currentlySightedScenes, newlySightedScenes.sighted)) {
       this.currentlySightedScenes = newlySightedScenes.sighted
     }
@@ -98,10 +97,13 @@ export class PositionLifecycleController extends EventEmitter {
 
   private checkPositionSettlement() {
     if (!this.positionSettled) {
-      const settling = this.currentlySightedScenes.every($ => this.sceneController.isRenderable($))
+      const settling = this.currentlySightedScenes.every(($) => this.sceneController.isRenderable($))
 
       DEBUG &&
-        logger.info(`remaining-scenes`, this.currentlySightedScenes.filter($ => !this.sceneController.isRenderable($)))
+        logger.info(
+          `remaining-scenes`,
+          this.currentlySightedScenes.filter(($) => !this.sceneController.isRenderable($))
+        )
       if (settling) {
         this.positionSettled = settling
 

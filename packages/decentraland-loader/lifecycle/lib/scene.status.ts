@@ -5,6 +5,7 @@ export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready'
 export class SceneLifeCycleStatus {
   status: SceneLifeCycleStatusType = 'unloaded'
 
+  //We could have a scene that is not linked to a land in the builder
   constructor(public sceneDescription: ILand | undefined) {}
 
   isAwake() {

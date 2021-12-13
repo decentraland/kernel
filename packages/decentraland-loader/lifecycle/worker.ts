@@ -58,10 +58,16 @@ let downloadManager: SceneDataDownloadManager
       })
       sceneController = new SceneLifeCycleController({ downloadManager, enabledEmpty: options.emptyScenes })
       positionController = new PositionLifecycleController(downloadManager, parcelController, sceneController)
-      parcelController.on('Sighted', (parcels: string[]) => connector.notify('Parcel.sighted', {
-         parcels }))
-      parcelController.on('Lost sight', (parcels: string[]) => connector.notify('Parcel.lostSight', { 
-        parcels }))
+      parcelController.on('Sighted', (parcels: string[]) =>
+        connector.notify('Parcel.sighted', {
+          parcels
+        })
+      )
+      parcelController.on('Lost sight', (parcels: string[]) =>
+        connector.notify('Parcel.lostSight', {
+          parcels
+        })
+      )
 
       positionController.on('Settled Position', (spawnPoint: InstancedSpawnPoint) => {
         connector.notify('Position.settled', { spawnPoint })
@@ -89,19 +95,18 @@ let downloadManager: SceneDataDownloadManager
         })
       })
 
-      connector.on('StartIsolateMode', (data:  { scenesIds: string[]}) => {
+      connector.on('StartIsolateMode', (data: { scenesIds: string[] }) => {
         const sceneSet = new Set(data.scenesIds)
-        parcelController.setOnlyThisScenesOnSight(sceneSet)
 
         positionController.setIsolatedMode(true)
         sceneController.setIsolatedMode(true)
 
+        parcelController.setOnlyThisScenesOnSight(sceneSet)
         positionController.setSightParcels(sceneSet)
         sceneController.reportIsolatedScenes(sceneSet)
       })
 
-      connector.on('StopIsolateMode', (data:  { scenesIds: string[]}) => {
-
+      connector.on('StopIsolateMode', (data: { scenesIds: string[] }) => {
         positionController.setIsolatedMode(false)
         sceneController.setIsolatedMode(false)
       })

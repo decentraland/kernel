@@ -34,7 +34,7 @@ class StatefulWebWorkerScene extends Script {
   private sceneDefinition!: SceneStateDefinition
   private eventSubscriber!: EventSubscriber
 
-  private isEmptyStatefull = false
+  private isEmptyStatefull: boolean = false
 
   constructor(transport: ScriptingTransport, emptyStatefull?: boolean, opt?: ILogOpts) {
     super(transport, opt)
@@ -50,6 +50,7 @@ class StatefulWebWorkerScene extends Script {
     this.eventSubscriber = new EventSubscriber(this.engine)
     this.builderActor = new BuilderStatefulActor(land, this.sceneStateStorage)
 
+    //If it is not empty we fetch the state
     if (!this.isEmptyStatefull) {
       // Fetch stored scene
       this.sceneDefinition = await this.builderActor.getInititalSceneState()
@@ -59,9 +60,8 @@ class StatefulWebWorkerScene extends Script {
       this.sceneDefinition.sendStateTo(this.rendererActor)
 
       this.log('Sent initial load')
-    }
-    else{
-      this.sceneDefinition = new SceneStateDefinition();
+    } else {
+      this.sceneDefinition = new SceneStateDefinition()
     }
 
     // Listen to the renderer and update the local scene state

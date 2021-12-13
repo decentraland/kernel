@@ -28,25 +28,21 @@ export class SceneLifeCycleController extends EventEmitter {
     this.enabledEmpty = opts.enabledEmpty
   }
 
-  public setIsolatedMode(isRunning: boolean)
-  {
-    this.isIsolatedModeRunning = isRunning;
+  public setIsolatedMode(isRunning: boolean) {
+    this.isIsolatedModeRunning = isRunning
   }
 
-  async reportIsolatedScenes(scenesIds: Set<string>)
-  {
-    if(!this.isIsolatedModeRunning)
-      return
-      
+  async reportIsolatedScenes(scenesIds: Set<string>) {
+    if (!this.isIsolatedModeRunning) return
+
     for (var sceneId of Array.from(scenesIds.values())) {
-      var sceneLifeCycleStatus = new SceneLifeCycleStatus(undefined);
+      var sceneLifeCycleStatus = new SceneLifeCycleStatus(undefined)
       sceneLifeCycleStatus.status = 'ready'
-      this.sceneStatus.set(sceneId,sceneLifeCycleStatus)
+      this.sceneStatus.set(sceneId, sceneLifeCycleStatus)
     }
   }
 
   async reportSightedParcels(sightedParcels: string[], lostSightParcels: string[]) {
-    console.log("Scene: He visto estas parcels " +sightedParcels)
     const sighted = await this.fetchSceneIds(sightedParcels)
     const lostSight = await this.fetchSceneIds(lostSightParcels)
 
@@ -122,9 +118,7 @@ export class SceneLifeCycleController extends EventEmitter {
   }
 
   private async startSceneLoading(sceneIds: string[]) {
-    console.log("Empezando a cargar estas: " + sceneIds)
     sceneIds.forEach(async (sceneId) => {
-      console.log('Start loading scene:'+sceneId )
       try {
         if (!this.sceneStatus.has(sceneId)) {
           const data = await this.downloadManager.resolveLandData(sceneId)
@@ -133,19 +127,11 @@ export class SceneLifeCycleController extends EventEmitter {
           }
         }
 
-        if(this.sceneStatus.get(sceneId)){
-          console.log('Status scnene:'+this.sceneStatus.get(sceneId)?.status + "  is dead: "+this.sceneStatus.get(sceneId)?.isDead() )
-        }else{
-          console.log('No status scnene:'+this.sceneStatus.get(sceneId)?.status )
-        }
-      
         if (this.sceneStatus.get(sceneId)!.isDead()) {
-          console.log('Preload scnene:'+sceneId )
           this.emit('Preload scene', sceneId)
           this.sceneStatus.get(sceneId)!.status = 'awake'
         }
       } catch (e) {
-        console.log(e)
         defaultLogger.error(`error while loading scene ${sceneId}`, e)
       }
     })

@@ -30,7 +30,9 @@ import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  allScenesEvent, stopIsolatedMode, startIsolatedMode
+  allScenesEvent,
+  stopIsolatedMode,
+  startIsolatedMode
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -73,7 +75,7 @@ import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from 'dcl-crypto'
-import { EndIsolatedModeOptions, IsolatedModeOptions } from 'shared/world/types'
+import { IsolatedModeOptions } from 'shared/world/types'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export let futures: Record<string, IFuture<any>> = {}
@@ -128,7 +130,7 @@ export class BrowserInterface {
     startIsolatedMode(options)
   }
 
-  public StopIsolatedMode(options: EndIsolatedModeOptions) {
+  public StopIsolatedMode(options: IsolatedModeOptions) {
     stopIsolatedMode(options)
   }
 
@@ -370,7 +372,7 @@ export class BrowserInterface {
         stopParcelSceneWorker(worker)
         const data = parcelScene.data.data as LoadableParcelScene
         getUnityInstance().LoadParcelScenes([data]) // Maybe unity should do it by itself?
-        setNewParcelScene(sceneId, new StatefulWorker(parcelScene,false))
+        setNewParcelScene(sceneId, new StatefulWorker(parcelScene, false))
         break
       }
       case 'StopStatefulMode': {
