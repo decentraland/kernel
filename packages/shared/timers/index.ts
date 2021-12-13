@@ -20,9 +20,9 @@ const timers = new Set<Timer>()
 function handleVisibilityChange() {
   const _timers = [...timers]
   if (isForeground()) {
-    _timers.forEach($ => $.resume())
+    _timers.forEach(($) => $.resume())
   } else {
-    _timers.forEach($ => $.pause())
+    _timers.forEach(($) => $.pause())
   }
 }
 
@@ -42,6 +42,7 @@ function isForeground() {
   return !(document as any)[hidden]
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function setForegroundTimeout(callback: Function, delay: number) {
   const timer = new Timer((self: Timer) => {
     callback()

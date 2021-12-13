@@ -213,7 +213,7 @@ function* cacheCatalystRealm(action: SetCatalystRealm) {
   yield call(saveToPersistentStorage, getLastRealmCacheKey(network), action.payload)
 }
 
-function* cacheCatalystCandidates(action: SetCatalystCandidates | SetAddedCatalystCandidates) {
+function* cacheCatalystCandidates(_action: SetCatalystCandidates | SetAddedCatalystCandidates) {
   const allCandidates = yield select(getAllCatalystCandidates)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   yield call(saveToPersistentStorage, getLastRealmCandidatesCacheKey(network), allCandidates)

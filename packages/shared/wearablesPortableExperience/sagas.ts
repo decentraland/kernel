@@ -100,7 +100,7 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
   const { wearables } = action.payload
   const fetchContentServer: string = yield select(getFetchContentServer)
 
-  for (let wearable of wearables) {
+  for (const wearable of wearables) {
     try {
       const baseUrl = wearable.baseUrl ?? fetchContentServer + '/contents/'
 
@@ -112,9 +112,10 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
       // In the deployment the content was replicated when the bodyShape selected was 'both'
       //  this add the prefix 'female/' or '/male' if they have more than one representations.
       // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
-    
-      const femaleCrop = wearableContent.filter(($) => $.key.substr(0, 7) == 'female/').length == wearableContent.length
-      const maleCrop = wearableContent.filter(($) => $.key.substr(0, 5) == 'male/').length == wearableContent.length
+
+      const femaleCrop =
+        wearableContent.filter(($) => $.key.substr(0, 7) === 'female/').length === wearableContent.length
+      const maleCrop = wearableContent.filter(($) => $.key.substr(0, 5) === 'male/').length === wearableContent.length
 
       const getFile = (key: string): string => {
         if (femaleCrop) return key.substring(7)

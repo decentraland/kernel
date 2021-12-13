@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Vector3 } from '@dcl/ecs-math'
 import { future } from 'fp-future'
 import { APIOptions, ScriptingHost } from 'decentraland-rpc/lib/host'

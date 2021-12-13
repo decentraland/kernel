@@ -18,8 +18,8 @@ import {
 import { DEBUG } from '../../config'
 import { isInsideWorldLimits } from '@dcl/schemas'
 
-declare var location: any
-declare var history: any
+declare let location: any
+declare let history: any
 
 export type PositionReport = {
   /** Camera position, world space */
@@ -166,7 +166,7 @@ function pickSpawnpoint(land: ILand): InstancedSpawnPoint | undefined {
   const { position, cameraTarget } = eligiblePoints[Math.floor(Math.random() * eligiblePoints.length)]
 
   // 4 - generate random x, y, z components when in arrays
-  let finalPosition = {
+  const finalPosition = {
     x: computeComponentValue(position.x),
     y: computeComponentValue(position.y),
     z: computeComponentValue(position.z)
@@ -179,7 +179,7 @@ function pickSpawnpoint(land: ILand): InstancedSpawnPoint | undefined {
       parseInt(sceneBaseParcelCoords[0], 10),
       parseInt(sceneBaseParcelCoords[1], 10)
     )
-    let finalWorldPosition = {
+    const finalWorldPosition = {
       x: sceneBaseParcelWorldPos.x + finalPosition.x,
       y: finalPosition.y,
       z: sceneBaseParcelWorldPos.z + finalPosition.z
@@ -236,13 +236,13 @@ export async function parcelAvailable(): Promise<EcsMathReadOnlyVector2> {
   if (lastPlayerParcel) return lastPlayerParcel
 
   return new Promise((resolve, reject) => {
-    parcelObservable.addOnce(parcel => {
+    parcelObservable.addOnce((parcel) => {
       resolve(parcel.newParcel)
     })
 
     setTimeout(() => {
       if (lastPlayerParcel) resolve(lastPlayerParcel)
-      else reject("Timed out awaiting for parcel")
+      else reject('Timed out awaiting for parcel')
     }, 60000)
   })
 }

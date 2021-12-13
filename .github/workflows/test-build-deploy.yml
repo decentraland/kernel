@@ -31,11 +31,9 @@ jobs:
 
       - name: test-ci
         run: xvfb-run --auto-servernum make test-ci
-        if: ${{ always() }}
 
       - name: lint
         run: make lint
-        if: ${{ always() }}
 
       # - name: codecov
 

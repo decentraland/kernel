@@ -5,19 +5,8 @@
   "scripts": {
     "start": "make watch",
     "build": "make build-essentials",
+    "lint": "eslint . --ext .ts --fix",
     "test": "make test-ci"
-  },
-  "prettier": {
-    "semi": false,
-    "singleQuote": true,
-    "printWidth": 120,
-    "trailingComma": "none"
-  },
-  "lint-staged": {
-    "packages/**/*.{ts,tsx}": [
-      "prettier --write 'packages/**/*.{ts,tsx}'",
-      "git add"
-    ]
   },
   "nyc": {
     "extension": [
@@ -38,6 +27,7 @@
   "devDependencies": {
     "@dcl/posix": "^1.0.3",
     "@dcl/unity-renderer": "^1.0.8874",
+    "@dcl/eslint-config": "^1.0.1-20211208155836.commit-63a2880",
     "@microsoft/api-documenter": "^7.2.2",
     "@microsoft/api-extractor": "^7.1.7",
     "@tweenjs/tween.js": "^17.2.0",
@@ -64,11 +54,9 @@
     "chai": "^4.1.2",
     "concurrently": "^4.1.2",
     "cors": "^2.8.4",
-    "dcl-tslint-config-standard": "^1.0.1",
     "express": "^4.16.3",
     "fs-extra": "^5.0.0",
     "git-rev-sync": "^1.12.0",
-    "lint-staged": "^7.0.5",
     "madge": "^4.0.1",
     "md5-file": "^4.0.0",
     "mkdirp": "^0.5.1",
@@ -76,7 +64,6 @@
     "multer": "^1.3.0",
     "node-fetch": "^2.6.1",
     "nyc": "^14.1.1",
-    "prettier": "^2.3.2",
     "query-string": "^7.0.1",
     "redux-saga-test-plan": "^4.0.0-rc.1",
     "sinon": "^6.1.3",
@@ -84,8 +71,6 @@
     "terser": "^5.2.1",
     "titere": "^2.0.3",
     "ts-protoc-gen": "^0.10.0",
-    "tslint": "^5.14.0",
-    "tslint-language-service": "^0.9.9",
     "typescript": "^4.0.2",
     "uuid": "^3.1.0",
     "web3x-codegen": "^4.0.6"

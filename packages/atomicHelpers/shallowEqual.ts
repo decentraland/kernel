@@ -5,8 +5,8 @@ export function shallowEqual(objA: any, objB: any) {
     return true
   }
 
-  let typeA = typeof objA
-  let typeB = typeof objB
+  const typeA = typeof objA
+  const typeB = typeof objB
 
   if (typeA !== typeB) return false
 

@@ -1,7 +1,7 @@
 import { parcelLimits } from 'config'
 import { Vector2Component, Vector3Component, isEqual } from './landHelpers'
 
-let auxVec3: Vector3Component = { x: 0, y: 0, z: 0 }
+const auxVec3: Vector3Component = { x: 0, y: 0, z: 0 }
 
 export interface BoundingInfo {
   maximum: Vector3Component
@@ -84,7 +84,7 @@ export function gridToParcel(base: Vector2Component, x: number, y: number, targe
 }
 
 export function decodeParcelSceneBoundaries(boundaries: string) {
-  const [base, ...parcels] = boundaries.split(/\s*;\s*/).map($ => parseParcelPosition($))
+  const [base, ...parcels] = boundaries.split(/\s*;\s*/).map(($) => parseParcelPosition($))
   return { base, parcels }
 }
 
@@ -112,7 +112,7 @@ export function parseParcelPosition(position: string) {
   const [x, y] = position
     .trim()
     .split(/\s*,\s*/)
-    .map($ => parseInt($, 10))
+    .map(($) => parseInt($, 10))
   return { x, y }
 }
 
@@ -139,11 +139,11 @@ function visitParcel(
   allParcels: Vector2Component[] = [parcel],
   visited: Vector2Component[] = []
 ): Vector2Component[] {
-  let isVisited = visited.some(visitedParcel => isEqual(visitedParcel, parcel))
+  const isVisited = visited.some((visitedParcel) => isEqual(visitedParcel, parcel))
   if (!isVisited) {
     visited.push(parcel)
-    let neighbours = getNeighbours(parcel.x, parcel.y, allParcels)
-    neighbours.forEach(neighbours => visitParcel(neighbours, allParcels, visited))
+    const neighbours = getNeighbours(parcel.x, parcel.y, allParcels)
+    neighbours.forEach((neighbours) => visitParcel(neighbours, allParcels, visited))
   }
   return visited
 }
