@@ -63,7 +63,7 @@ export class ParcelLifeCycleController extends EventEmitter {
     const sightedParcels = parcelsInScope(this.config.lineOfSightRadius, this.currentPosition)
     const sightedParcelsSet = new Set<string>()
 
-    let newlySightedParcels = sightedParcels.filter((parcel) => {
+    const newlySightedParcels = sightedParcels.filter((parcel) => {
       sightedParcelsSet.add(parcel)
       return this.parcelSighted(parcel)
     })

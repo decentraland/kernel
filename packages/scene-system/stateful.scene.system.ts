@@ -36,11 +36,10 @@ class StatefulWebWorkerScene extends Script {
 
   private isEmptyStatefull: boolean = false
 
-  constructor(transport: ScriptingTransport, emptyStatefull?: boolean, opt?: ILogOpts) {
+  constructor(transport: ScriptingTransport, emptyStatefull: boolean, opt?: ILogOpts) {
     super(transport, opt)
-    if (emptyStatefull) {
-      this.isEmptyStatefull = emptyStatefull
-    }
+
+    this.isEmptyStatefull = emptyStatefull
   }
 
   async systemDidEnable(): Promise<void> {
@@ -133,4 +132,4 @@ class StatefulWebWorkerScene extends Script {
 }
 
 // tslint:disable-next-line
-new StatefulWebWorkerScene(WebWorkerTransport(self), true)
+new StatefulWebWorkerScene(WebWorkerTransport(self),false)
