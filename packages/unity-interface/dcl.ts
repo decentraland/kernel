@@ -263,7 +263,7 @@ teleportObservable.add((position: { x: number; y: number; text?: string }) => {
 
   function pointerLockChange() {
     const doc: any = document
-    const isLocked = (doc.pointerLockElement || doc.mozPointerLockElement || doc.webkitPointerLockElement) !== null
+    const isLocked = !!(doc.pointerLockElement || doc.mozPointerLockElement || doc.webkitPointerLockElement)
     if (isPointerLocked !== isLocked && getUnityInstance()) {
       getUnityInstance().SetCursorState(isLocked)
     }
