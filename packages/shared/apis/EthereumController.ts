@@ -6,10 +6,10 @@ import {
   convertMessageToObject,
   signMessage
 } from 'shared/ethereum/EthereumService'
-import { ExposableAPI } from './ExposableAPI'
 import { RPCSendableMessage } from 'shared/types'
 import { getUserAccount, requestManager } from 'shared/ethereum/provider'
-import { PermissionItem, Permissions } from './Permissions'
+import { RestrictedExposableAPI } from './RestrictedExposableAPI'
+import { PermissionItem } from './Permissions'
 
 export interface IEthereumController {
   /**
@@ -47,41 +47,34 @@ export interface IEthereumController {
 }
 
 @registerAPI('EthereumController')
-export class EthereumController extends ExposableAPI implements IEthereumController {
+export class EthereumController extends RestrictedExposableAPI implements IEthereumController {
   @exposeMethod
   async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
-    await this.ensureHasPermissions()
+    await this.ensureHasPermissions([PermissionItem.USE_WEB3_API])
     return requirePayment(toAddress, amount, currency)
   }
 
   @exposeMethod
   async signMessage(message: MessageDict) {
-    await this.ensureHasPermissions()
+    await this.ensureHasPermissions([PermissionItem.USE_WEB3_API])
     return signMessage(message)
   }
 
   @exposeMethod
   async convertMessageToObject(message: string): Promise<MessageDict> {
-    await this.ensureHasPermissions()
+    await this.ensureHasPermissions([PermissionItem.USE_WEB3_API])
     return convertMessageToObject(message)
   }
 
   @exposeMethod
   async sendAsync(message: RPCSendableMessage): Promise<any> {
-    await this.ensureHasPermissions()
+    await this.ensureHasPermissions([PermissionItem.USE_WEB3_API])
     return sendAsync(message)
   }
 
   @exposeMethod
   async getUserAccount(): Promise<string | undefined> {
-    await this.ensureHasPermissions()
+    await this.ensureHasPermissions([PermissionItem.USE_WEB3_API])
     return getUserAccount(requestManager)
-  }
-
-  private async ensureHasPermissions() {
-    const permissions: Permissions = this.options.getAPIInstance(Permissions)
-    if (!(await permissions.hasPermission(PermissionItem.USE_WEB3_API))) {
-      throw new Error("This scene doesn't have permission to use web3 api")
-    }
   }
 }

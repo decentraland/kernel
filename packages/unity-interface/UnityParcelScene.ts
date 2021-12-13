@@ -66,9 +66,5 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
       })
       .catch((e) => this.logger.error('Error initializing system ParcelIdentity', e))
 
-    this.worker.getAPIInstance(Permissions).then((permissions) => {
-      permissions.permissionGranted = defaultPortableExperiencePermissions
-    })
-      .catch((e) => this.logger.error('Error initializing system Permissions', e))
   }
 }
