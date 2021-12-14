@@ -44,7 +44,7 @@ export const onLoadParcelScenesObservable = new Observable<ILand[]>()
  */
 export const onUnloadParcelScenesObservable = new Observable<string[]>()
 export const onPositionSettledObservable = new Observable<InstancedSpawnPoint>()
-export const onPositionUnsettledObservable = new Observable<{}>()
+export const onPositionUnsettledObservable = new Observable()
 
 export const loadedSceneWorkers = new Map<string, SceneWorker>()
 globalThis['sceneWorkers'] = loadedSceneWorkers
@@ -286,7 +286,7 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
       parcelSceneLoadingState.isolatedModeOptions?.mode === IsolatedMode.BUILDER
     ) {
       let sceneId: string = ''
-      if (parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId != null) {
+      if (parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId !== null) {
         sceneId = parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
       }
 
