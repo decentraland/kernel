@@ -6,7 +6,6 @@ import { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 import { createDummyLogger, createLogger } from 'shared/logger'
 import { EnvironmentData, LoadableParcelScene, LoadablePortableExperienceScene } from 'shared/types'
 import { SceneWorker } from 'shared/world/SceneWorker'
-import { Permissions, defaultPortableExperiencePermissions } from 'shared/apis/Permissions'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
