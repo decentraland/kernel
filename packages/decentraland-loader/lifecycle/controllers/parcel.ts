@@ -36,6 +36,8 @@ export class ParcelLifeCycleController extends EventEmitter {
     this.parcelStatus.forEach((value: ParcelLifeCycleStatus, key: string) => {
         value.setOffSight()
     })
+
+    this.currentPosition = undefined
   }
 
   reportCurrentPosition(position: Vector2Component): ParcelSightSeeingReport | undefined {
