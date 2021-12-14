@@ -20,26 +20,11 @@ export class SceneLifeCycleController extends EventEmitter {
   private futureOfPositionToSceneId = new Map<string, IFuture<SceneId | undefined>>()
   private sceneStatus = new Map<SceneId, SceneLifeCycleStatus>()
   private enabledEmpty: boolean
-  private isIsolatedModeRunning: boolean = false
 
   constructor(opts: { downloadManager: SceneDataDownloadManager; enabledEmpty: boolean }) {
     super()
     this.downloadManager = opts.downloadManager
     this.enabledEmpty = opts.enabledEmpty
-  }
-
-  public setIsolatedMode(isRunning: boolean) {
-    this.isIsolatedModeRunning = isRunning
-  }
-
-  async reportIsolatedScenes(scenesIds: Set<string>) {
-    if (!this.isIsolatedModeRunning) return
-
-    for (var sceneId of Array.from(scenesIds.values())) {
-      var sceneLifeCycleStatus = new SceneLifeCycleStatus(undefined)
-      sceneLifeCycleStatus.status = 'ready'
-      this.sceneStatus.set(sceneId, sceneLifeCycleStatus)
-    }
   }
 
   async reportSightedParcels(sightedParcels: string[], lostSightParcels: string[]) {

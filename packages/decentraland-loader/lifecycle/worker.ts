@@ -95,20 +95,8 @@ let downloadManager: SceneDataDownloadManager
         })
       })
 
-      connector.on('StartIsolateMode', (data: { scenesIds: string[] }) => {
-        const sceneSet = new Set(data.scenesIds)
-
-        positionController.setIsolatedMode(true)
-        sceneController.setIsolatedMode(true)
-
-        parcelController.setOnlyThisScenesOnSight(sceneSet)
-        positionController.setSightParcels(sceneSet)
-        sceneController.reportIsolatedScenes(sceneSet)
-      })
-
-      connector.on('StopIsolateMode', (data: { scenesIds: string[] }) => {
-        positionController.setIsolatedMode(false)
-        sceneController.setIsolatedMode(false)
+      connector.on('ResetScenes', () => {
+        parcelController.resetScenesOnSight()
       })
 
       connector.on('Scene.dataRequest', async (data: { sceneId: string }) => {

@@ -183,10 +183,9 @@ export function startIsolatedMode(options: IsolatedModeOptions) {
 
   // Refresh state of scenes
   setDesiredParcelScenes(newSet)
-  const scenesIds = new Set(parcelSceneLoadingState.desiredParcelScenes)
 
-  // We notify the lifecycle worker that we started isolated mode
-  parcelSceneLoadingState.lifecycleManager.notify('StartIsolateMode', { scenesIds: Array.from(scenesIds.values()) })
+  // We notify the lifecycle worker that the scenes are not on sight anymore
+  parcelSceneLoadingState.lifecycleManager.notify('ResetScenes', {})
 }
 
 export function stopIsolatedMode(options: IsolatedModeOptions) {
@@ -205,9 +204,6 @@ export function stopIsolatedMode(options: IsolatedModeOptions) {
   // We deactivate the isolated mode
   parcelSceneLoadingState.runningIsolatedMode = false
   parcelSceneLoadingState.isolatedModeOptions = null
-
-  // We notify the lifecycle worker that we stopped isolated mode
-  parcelSceneLoadingState.lifecycleManager.notify('StopIsolateMode', { scenesIds: [options.payload?.sceneId] })
 
   //In the builder we need to go back to the world
   if (options.mode === IsolatedMode.BUILDER) {

@@ -17,7 +17,6 @@ export class PositionLifecycleController extends EventEmitter {
   private currentlySightedScenes: string[] = []
   private currentSpawnpoint?: InstancedSpawnPoint
   private currentPosition: Vector2Component | null = null
-  private isIsolatedModeRunning: boolean = false
 
   constructor(
     private downloadManager: SceneDataDownloadManager,
@@ -31,7 +30,6 @@ export class PositionLifecycleController extends EventEmitter {
   async reportCurrentPosition(position: Vector2Component, teleported: boolean) {
     //If we are in isolated mode we don't report the currentPosition
     if (
-      this.isIsolatedModeRunning ||
       !this.positionSettled ||
       (this.currentPosition &&
         this.currentPosition.x === position.x &&
@@ -74,10 +72,6 @@ export class PositionLifecycleController extends EventEmitter {
 
   public setSightParcels(scenesOnSight: Set<string>) {
     this.currentlySightedScenes = Array.from(scenesOnSight.values())
-  }
-
-  public setIsolatedMode(isRunning: boolean) {
-    this.isIsolatedModeRunning = isRunning
   }
 
   public async updateSightedParcels(parcels: ParcelSightSeeingReport | undefined) {

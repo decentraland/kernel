@@ -29,17 +29,13 @@ export class ParcelLifeCycleController extends EventEmitter {
     return this.updateLoadedParcels()
   }
 
-  public setOnlyThisScenesOnSight(scenesInSight: Set<string>) {
+  public resetScenesOnSight() {
     if (!this.currentPosition) return
     this.currentlySightedParcels.clear()
 
     this.parcelStatus.forEach((value: ParcelLifeCycleStatus, key: string) => {
-      if (!scenesInSight.has(key)) value.setOffSight()
+        value.setOffSight()
     })
-
-    for (var sceneId of Array.from(scenesInSight.values())) {
-      this.parcelSighted(sceneId)
-    }
 
     this.currentPosition = undefined
   }
