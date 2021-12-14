@@ -31,7 +31,7 @@ export const buildStore = () => {
       ((window as any).__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || composeWithDevTools({ trace: true, traceLimit: 25 }))) ||
     compose
 
-  let enhancers: StoreEnhancer<any>[] = [applyMiddleware(...middlewares)]
+  const enhancers: StoreEnhancer<any>[] = [applyMiddleware(...middlewares)]
 
   if (DEBUG_REDUX) {
     enhancers.unshift(

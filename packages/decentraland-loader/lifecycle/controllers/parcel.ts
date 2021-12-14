@@ -87,7 +87,7 @@ export class ParcelLifeCycleController extends EventEmitter {
    * @param parcel Parcel string position
    */
   parcelSighted(parcel: string): boolean {
-    let status = this.getParcelStatus(parcel)
+    const status = this.getParcelStatus(parcel)
     if (status.isOutOfSight()) {
       this.currentlySightedParcels.add(parcel)
       status.setInSight()

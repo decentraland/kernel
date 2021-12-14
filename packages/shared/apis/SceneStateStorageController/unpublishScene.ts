@@ -17,8 +17,6 @@ import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 
-declare const globalThis: any
-
 declare type SceneDeployment = {
   sceneJson: SceneJsonData
   sceneFiles: Map<string, Buffer>

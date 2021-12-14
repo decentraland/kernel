@@ -67,7 +67,7 @@ export class EngineAPI extends ExposableAPI implements IEngineAPI {
     // stub
   }
 
-  onSubscribedEvent(fn: any): void {
+  onSubscribedEvent(_fn: any): void {
     // stub, we implement this function here to fulfill the interface of EngineAPI
   }
 }

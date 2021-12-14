@@ -55,7 +55,7 @@ function serializeTransform(transform: Transform): string {
   pbTransform.setRotation(pbRotation)
   pbTransform.setScale(pbScale)
 
-  let arrayBuffer: Uint8Array = pbTransform.serializeBinary()
+  const arrayBuffer: Uint8Array = pbTransform.serializeBinary()
   return btoa(String.fromCharCode(...arrayBuffer))
 }
 

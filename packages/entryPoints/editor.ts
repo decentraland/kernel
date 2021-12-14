@@ -1,6 +1,6 @@
 // tslint:disable:no-console
-declare var globalThis: any & { isEditor: boolean; editor: any }
-declare var window: Window & { isEditor: boolean }
+declare let globalThis: any & { isEditor: boolean; editor: any }
+declare let window: Window & { isEditor: boolean }
 
 globalThis.isEditor = window.isEditor = true
 
@@ -26,7 +26,7 @@ const initializedEngine = future<void>()
 
 let unityScene: UnityParcelScene | undefined
 let loadingEntities: string[] = []
-let builderSceneLoaded: IFuture<boolean> = future()
+const builderSceneLoaded: IFuture<boolean> = future()
 
 /**
  * Function executed by builder
@@ -110,7 +110,7 @@ function bindSceneEvents() {
     if (type === 'onEntityLoading') {
       loadingEntities.push(event.payload.entityId)
     } else if (type === 'onEntityFinishLoading') {
-      let index = loadingEntities.indexOf(event.payload.entityId)
+      const index = loadingEntities.indexOf(event.payload.entityId)
       if (index >= 0) {
         loadingEntities.splice(index, 1)
       }
@@ -136,11 +136,11 @@ function bindSceneEvents() {
     evtEmitter.emit('entityBackInScene', e)
   })
 
-  unityScene.on('builderSceneStart', (e) => {
+  unityScene.on('builderSceneStart', (_e) => {
     builderSceneLoaded.resolve(true)
   })
 
-  unityScene.on('builderSceneUnloaded', (e) => {
+  unityScene.on('builderSceneUnloaded', (_e) => {
     loadingEntities = []
   })
   unityScene.on('gizmoEvent', (e) => {
@@ -281,7 +281,7 @@ namespace editor {
     getUnityInstance().RemoveWearablesFromCatalog(wearableIds)
   }
 
-  export function takeScreenshot(mime?: string): IFuture<string> {
+  export function takeScreenshot(_mime?: string): IFuture<string> {
     const id = uuid()
     futures[id] = future()
     getUnityInstance().TakeScreenshotBuilder(id)

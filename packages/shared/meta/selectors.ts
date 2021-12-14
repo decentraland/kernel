@@ -50,7 +50,7 @@ export const getMessageOfTheDay = (store: RootMetaState): MessageOfTheDayConfig 
   getWorldConfig(store) ? getWorldConfig(store).messageOfTheDay || null : null
 
 export function getFeatureFlags(store: RootMetaState): FeatureFlag {
-  let featureFlag: FeatureFlag = {
+  const featureFlag: FeatureFlag = {
     flags: {},
     variants: {}
   }

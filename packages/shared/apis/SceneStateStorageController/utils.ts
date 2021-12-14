@@ -19,7 +19,7 @@ const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
 export function getUniqueNameForGLTF(currentNames: string[], gltfName: string, amountOfTimesAppear: number): string {
   let nameToReturn: string = gltfName
 
-  nameToReturn = removesSpecialCharacters(nameToReturn,currentNames)
+  nameToReturn = removesSpecialCharacters(nameToReturn, currentNames)
 
   if (amountOfTimesAppear > 1) nameToReturn = nameToReturn + amountOfTimesAppear
 
@@ -32,11 +32,11 @@ export function getUniqueNameForGLTF(currentNames: string[], gltfName: string, a
 
 function removesSpecialCharacters(assetName: string, takenNames: string[]) {
   const parts = assetName.match(/[A-Za-z]+/g)
-  const rawName = parts ? parts.map(part => part.toLowerCase()).join('_') : 'entity'
+  const rawName = parts ? parts.map((part) => part.toLowerCase()).join('_') : 'entity'
   let entityName = rawName
   let count = 1
   const takenNamesSet = new Set(takenNames)
-  while(takenNamesSet.has(entityName)) {
+  while (takenNamesSet.has(entityName)) {
     entityName = `${rawName}_${++count}`
   }
   return entityName

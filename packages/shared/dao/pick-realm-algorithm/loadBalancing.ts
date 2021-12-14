@@ -1,5 +1,5 @@
-import { AlgorithmLink, AlgorithmLinkTypes, AlgorithmContext } from "./types"
-import { usersCount, selectFirstBy } from "./utils"
+import { AlgorithmLink, AlgorithmLinkTypes, AlgorithmContext } from './types'
+import { usersCount, selectFirstBy } from './utils'
 
 export function loadBalancingLink(): AlgorithmLink {
   return {

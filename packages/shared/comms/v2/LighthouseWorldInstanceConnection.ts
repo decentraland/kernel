@@ -43,6 +43,7 @@ import { EncodedFrame } from 'voice-chat-codec/types'
 
 type PeerType = LayerBasedPeerType | IslandBasedPeer
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const { Peer: LayerBasedPeer } = require('decentraland-katalyst-peer')
 
 const NOOP = () => {
@@ -89,7 +90,7 @@ function ProfileRequestResponseType(action: 'request' | 'response'): PeerMessage
   }
 }
 
-declare var globalThis: any
+declare let globalThis: any
 
 export class LighthouseWorldInstanceConnection implements WorldInstanceConnection {
   stats: Stats | null = null
@@ -317,7 +318,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
 
     if (this.realm.layer) {
       // Layer based peer
-      (this.peerConfig as LayerBasedPeerConfig).statusHandler = statusHandler
+      ;(this.peerConfig as LayerBasedPeerConfig).statusHandler = statusHandler
     } else {
       // Island based peer based peer
       if (this.peerConfig.eventsHandler) {

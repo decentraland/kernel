@@ -16,8 +16,8 @@ export function getParcelSceneID(parcelScene: ParcelSceneAPI) {
   return parcelScene.data.sceneId
 }
 
-let sendBatchTime: Array<number> = []
-let sendBatchMsgs: Array<number> = []
+const sendBatchTime: Array<number> = []
+const sendBatchMsgs: Array<number> = []
 let sendBatchTimeCount: number = 0
 let sendBatchMsgCount: number = 0
 

@@ -1,5 +1,11 @@
 import { call, put, select, take, takeLatest } from 'redux-saga/effects'
-import { ETHEREUM_NETWORK, FORCE_RENDERING_STYLE, getAssetBundlesBaseUrl, getServerConfigurations, QS_MAX_VISIBLE_PEERS } from 'config'
+import {
+  ETHEREUM_NETWORK,
+  FORCE_RENDERING_STYLE,
+  getAssetBundlesBaseUrl,
+  getServerConfigurations,
+  QS_MAX_VISIBLE_PEERS
+} from 'config'
 import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized, metaUpdateMessageOfTheDay } from './actions'
 import defaultLogger from '../logger'
 import { BannedUsers, MetaConfiguration, WorldConfig } from './types'
@@ -50,9 +56,9 @@ function* waitForNetworkSelected() {
 
 function getMaxVisiblePeers(variants: Record<string, any> | undefined): number {
   if (QS_MAX_VISIBLE_PEERS !== undefined) return QS_MAX_VISIBLE_PEERS
-  const fromVariants = valueFromVariants(variants, "explorer-max_visible_peers")
+  const fromVariants = valueFromVariants(variants, 'explorer-max_visible_peers')
 
-  return typeof fromVariants === "number" ? fromVariants : DEFAULT_MAX_VISIBLE_PEERS
+  return typeof fromVariants === 'number' ? fromVariants : DEFAULT_MAX_VISIBLE_PEERS
 }
 
 function* initMeta() {

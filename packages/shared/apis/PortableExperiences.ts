@@ -36,7 +36,7 @@ export class PortableExperiences extends ExposableAPI {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
     const portableExperience: PortableExperienceHandle | undefined = await getPortableExperience(pid)
 
-    if (!!portableExperience && portableExperience.parentCid == parcelIdentity.cid) {
+    if (!!portableExperience && portableExperience.parentCid === parcelIdentity.cid) {
       return await killPortableExperienceScene(pid)
     }
     return false

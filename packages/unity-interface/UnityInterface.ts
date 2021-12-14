@@ -40,7 +40,7 @@ export let originalPixelRatio: number = 1
 function resizeCanvas(targetHeight: number) {
   // When renderer is configured with unlimited resolution,
   // the targetHeight is set to an arbitrary high value
-  let assumeUnlimitedResolution: boolean = targetHeight > 2000
+  const assumeUnlimitedResolution: boolean = targetHeight > 2000
 
   if (assumeUnlimitedResolution) {
     devicePixelRatio = originalPixelRatio
@@ -194,8 +194,8 @@ export class UnityInterface implements IUnityInterface {
     // the response comes within the CrashPayloadRequest method body.
 
     // For websocket this should take more frames, so we need promises.
-    let promise = new Promise<string>((resolve, reject) => {
-      let crashListener = this.crashPayloadResponseObservable.addOnce((payload) => {
+    const promise = new Promise<string>((resolve, reject) => {
+      const crashListener = this.crashPayloadResponseObservable.addOnce((payload) => {
         resolve(payload)
       })
 
@@ -313,7 +313,7 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
-  public TriggerAirdropDisplay(data: AirdropInfo) {
+  public TriggerAirdropDisplay(_data: AirdropInfo) {
     // Disabled for security reasons
   }
 
@@ -337,6 +337,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   public RequestTeleport(teleportData: {}) {
     this.SendMessageToUnity('HUDController', 'RequestTeleport', JSON.stringify(teleportData))
   }
@@ -456,7 +457,7 @@ export class UnityInterface implements IUnityInterface {
       return
     }
     const profilesForRenderer: ProfileForRenderer[] = []
-    for (let profile of profiles) {
+    for (const profile of profiles) {
       profilesForRenderer.push(profileToRendererFormat(profile))
     }
     this.SendMessageToUnity(
@@ -575,6 +576,7 @@ export class UnityInterface implements IUnityInterface {
     function overrideSetThrew() {
       unityModule['setThrew'] = function () {
         isError = true
+        // eslint-disable-next-line prefer-rest-params
         return originalSetThrew.apply(this, arguments)
       }
     }

@@ -5,7 +5,7 @@ import { messageReceived } from 'shared/chat/actions'
 import { getProfile } from 'shared/profiles/selectors'
 import { store } from 'shared/store/isolatedStore'
 
-let friendStatus: Record<string, PresenceStatus> = {}
+const friendStatus: Record<string, PresenceStatus> = {}
 
 export enum ChatEventType {
   MESSAGE_RECEIVED = 'MESSAGE_RECEIVED',

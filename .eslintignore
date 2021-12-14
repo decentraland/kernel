@@ -1,0 +1,10 @@
+public/
+docs/
+static/
+scripts/
+test/
+coverage/
+targets/
+*.js
+*.d.ts
+*.json

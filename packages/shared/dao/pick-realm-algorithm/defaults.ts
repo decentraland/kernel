@@ -1,4 +1,10 @@
-import { AlgorithmChainConfig, AlgorithmLinkTypes, AllPeersScoreParameters, ClosePeersScoreParameters, LargeLatencyParameters } from "./types"
+import {
+  AlgorithmChainConfig,
+  AlgorithmLinkTypes,
+  AllPeersScoreParameters,
+  ClosePeersScoreParameters,
+  LargeLatencyParameters
+} from './types'
 
 export const defaultLargeLatencyConfig: LargeLatencyParameters = {
   largeLatencyThreshold: 3500

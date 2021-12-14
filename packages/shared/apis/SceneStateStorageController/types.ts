@@ -29,7 +29,7 @@ export enum CONTENT_PATH {
   MODELS_FOLDER = 'models',
   BUNDLED_GAME_FILE = 'bin/game.js',
   SCENE_THUMBNAIL = 'thumbnail.png',
-  ASSETS = "scene-assets.json"
+  ASSETS = 'scene-assets.json'
 }
 
 export type DeploymentResult = { ok: true } | { ok: false; error: string }

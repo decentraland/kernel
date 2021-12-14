@@ -9,7 +9,7 @@ export function normalizeContentMappings(
   if (typeof mappings.length === 'number' || mappings instanceof Array) {
     ret.push(...(mappings as any))
   } else {
-    for (let key in mappings) {
+    for (const key in mappings) {
       const file = key.toLowerCase()
 
       ret.push({ file, hash: mappings[key] })

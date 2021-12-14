@@ -23,19 +23,19 @@ export class DevTools extends API implements DevToolsServer {
   async event<T extends keyof ProtocolMapping.Events>(type: T, params: ProtocolMapping.Events[T]): Promise<void> {
     switch (type) {
       case 'Runtime.consoleAPICalled': {
-        let [event] = params as ProtocolMapping.Events['Runtime.consoleAPICalled']
+        const [event] = params as ProtocolMapping.Events['Runtime.consoleAPICalled']
 
         if (DEBUG) {
           this.logs.push(event)
         }
 
-        this.logger.log('', ...event.args.map($ => ('value' in $ ? $.value : $.unserializableValue)))
+        this.logger.log('', ...event.args.map(($) => ('value' in $ ? $.value : $.unserializableValue)))
 
         break
       }
 
       case 'Runtime.exceptionThrown': {
-        let [payload] = params as ProtocolMapping.Events['Runtime.exceptionThrown']
+        const [payload] = params as ProtocolMapping.Events['Runtime.exceptionThrown']
         this.exceptions.set(payload.exceptionDetails.exceptionId, payload.exceptionDetails)
 
         if (payload.exceptionDetails.exception) {

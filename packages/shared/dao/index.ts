@@ -156,15 +156,15 @@ export function commsStatusUrl(domain: string, includeLayers: boolean = false, i
   const queryParameters: string[] = []
 
   if (includeLayers) {
-    queryParameters.push("includeLayers=true")
+    queryParameters.push('includeLayers=true')
   }
 
   if (includeUsersParcels) {
-    queryParameters.push("includeUsersParcels=true")
+    queryParameters.push('includeUsersParcels=true')
   }
 
   if (queryParameters.length > 0) {
-    url += "?" + queryParameters.join("&")
+    url += '?' + queryParameters.join('&')
   }
 
   return url
@@ -194,7 +194,11 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
         }
       }
 
-      function buildIslandsCandidate(usersCount: number, usersParcels: Parcel[] | undefined, maxUsers: number | undefined): IslandsBasedCandidate {
+      function buildIslandsCandidate(
+        usersCount: number,
+        usersParcels: Parcel[] | undefined,
+        maxUsers: number | undefined
+      ): IslandsBasedCandidate {
         return {
           ...buildBaseCandidate(),
           usersCount,

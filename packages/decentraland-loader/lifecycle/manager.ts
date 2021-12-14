@@ -24,6 +24,7 @@ declare const globalThis: { workerManager: LifecycleManager }
 /*
  * The worker is set up on the first require of this file
  */
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const lifecycleWorkerRaw = require('raw-loader!../../../static/loader/lifecycle/worker.js')
 const lifecycleWorkerUrl = URL.createObjectURL(new Blob([lifecycleWorkerRaw]))
 const worker: Worker = new (Worker as any)(lifecycleWorkerUrl, { name: 'LifecycleWorker' })
@@ -79,7 +80,7 @@ export class LifecycleManager extends TransportBasedServer {
     const futures: IFuture<string>[] = []
     const missing: string[] = []
 
-    for (let parcel of parcels) {
+    for (const parcel of parcels) {
       let theFuture = this.positionToRequest.get(parcel)
 
       if (!theFuture) {
@@ -101,7 +102,7 @@ export class LifecycleManager extends TransportBasedServer {
     if (landFuture) {
       const land = await landFuture
       const parcels = land.sceneJsonData.scene.parcels
-      for (let parcel of parcels) {
+      for (const parcel of parcels) {
         this.positionToRequest.delete(parcel)
       }
       this.notify('Scene.reload', { sceneId })
@@ -113,7 +114,7 @@ export class LifecycleManager extends TransportBasedServer {
     if (landFuture) {
       const land = await landFuture
       const parcels = land.sceneJsonData.scene.parcels
-      for (let parcel of parcels) {
+      for (const parcel of parcels) {
         this.positionToRequest.delete(parcel)
       }
       this.notify('Scene.Invalidate', { sceneId })

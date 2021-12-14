@@ -1,5 +1,34 @@
-import { PB_CreateEntity, PB_RemoveEntity, PB_UpdateEntityComponent, PB_AttachEntityComponent, PB_ComponentRemoved, PB_SetEntityParent, PB_Query, PB_RayQuery, PB_Ray, PB_Vector3, PB_ComponentCreated, PB_ComponentDisposed, PB_ComponentUpdated, PB_OpenExternalUrl, PB_OpenNFTDialog, PB_SendSceneMessage } from '../shared/proto/engineinterface_pb'
-import { CreateEntityPayload, RemoveEntityPayload, SetEntityParentPayload, ComponentRemovedPayload, ComponentCreatedPayload, QueryPayload, ComponentDisposedPayload, ComponentUpdatedPayload, OpenNFTDialogPayload, UpdateEntityComponentPayload, AttachEntityComponentPayload } from '../shared/types'
+import {
+  PB_CreateEntity,
+  PB_RemoveEntity,
+  PB_UpdateEntityComponent,
+  PB_AttachEntityComponent,
+  PB_ComponentRemoved,
+  PB_SetEntityParent,
+  PB_Query,
+  PB_RayQuery,
+  PB_Ray,
+  PB_Vector3,
+  PB_ComponentCreated,
+  PB_ComponentDisposed,
+  PB_ComponentUpdated,
+  PB_OpenExternalUrl,
+  PB_OpenNFTDialog,
+  PB_SendSceneMessage
+} from '../shared/proto/engineinterface_pb'
+import {
+  CreateEntityPayload,
+  RemoveEntityPayload,
+  SetEntityParentPayload,
+  ComponentRemovedPayload,
+  ComponentCreatedPayload,
+  QueryPayload,
+  ComponentDisposedPayload,
+  ComponentUpdatedPayload,
+  OpenNFTDialogPayload,
+  UpdateEntityComponentPayload,
+  AttachEntityComponentPayload
+} from '../shared/types'
 import { Empty } from 'google-protobuf/google/protobuf/empty_pb'
 
 export class ProtobufMessagesBridge {
@@ -22,7 +51,7 @@ export class ProtobufMessagesBridge {
   openNFTDialog: PB_OpenNFTDialog = new PB_OpenNFTDialog()
 
   encodeSceneMessage(parcelSceneId: string, method: string, payload: any, tag: string = ''): string {
-    let message: PB_SendSceneMessage = new PB_SendSceneMessage()
+    const message: PB_SendSceneMessage = new PB_SendSceneMessage()
     message.setSceneid(parcelSceneId)
     message.setTag(tag)
 
@@ -68,7 +97,7 @@ export class ProtobufMessagesBridge {
         break
     }
 
-    let arrayBuffer: Uint8Array = message.serializeBinary()
+    const arrayBuffer: Uint8Array = message.serializeBinary()
     return btoa(String.fromCharCode(...arrayBuffer))
   }
 
@@ -122,8 +151,8 @@ export class ProtobufMessagesBridge {
     this.rayQuery.setQueryid(queryPayload.payload.queryId)
     this.rayQuery.setQuerytype(queryPayload.payload.queryType)
     this.query.setQueryid(queryPayload.queryId)
-    let arrayBuffer: Uint8Array = this.rayQuery.serializeBinary()
-    let base64: string = btoa(String.fromCharCode(...arrayBuffer))
+    const arrayBuffer: Uint8Array = this.rayQuery.serializeBinary()
+    const base64: string = btoa(String.fromCharCode(...arrayBuffer))
     this.query.setPayload(base64)
     return this.query
   }

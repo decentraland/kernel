@@ -4,6 +4,7 @@ import { OPUS_BITS_PER_SECOND, OPUS_FRAME_SIZE_MS } from './constants'
 
 declare function postMessage(message: any, transferables: any[]): void
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const libopus = require('./libopus.wasm')
 
 type CodecWorklet = {
@@ -148,7 +149,7 @@ function toInt16Samples(floatSamples: Float32Array) {
 
 function toFloat32Samples(intSamples: Int16Array) {
   return Float32Array.from(intSamples, (intSample) => {
-    let floatValue = intSample >= 0 ? intSample / 32767 : intSample / 32768
+    const floatValue = intSample >= 0 ? intSample / 32767 : intSample / 32768
     return Math.fround(floatValue)
   })
 }
