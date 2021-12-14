@@ -28,7 +28,6 @@ export class PositionLifecycleController extends EventEmitter {
   }
 
   async reportCurrentPosition(position: Vector2Component, teleported: boolean) {
-    //If we are in isolated mode we don't report the currentPosition
     if (
       !this.positionSettled ||
       (this.currentPosition &&
@@ -68,10 +67,6 @@ export class PositionLifecycleController extends EventEmitter {
     await this.updateSightedParcels(parcels)
 
     this.checkPositionSettlement()
-  }
-
-  public setSightParcels(scenesOnSight: Set<string>) {
-    this.currentlySightedScenes = Array.from(scenesOnSight.values())
   }
 
   public async updateSightedParcels(parcels: ParcelSightSeeingReport | undefined) {
