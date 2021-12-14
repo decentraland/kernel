@@ -18,7 +18,7 @@ export class StatefulWorker extends SceneWorker {
     this.getAPIInstance(SceneStateStorageController).catch((error) =>
       defaultLogger.error('Failed to load the SceneStateStorageController', error)
     )
-    void this.getAPIInstance(ParcelIdentity).then((parcelIdentity) => (parcelIdentity.isEmptyScene = isEmptyStatefull))
+    void this.getAPIInstance(ParcelIdentity).then((parcelIdentity) => (parcelIdentity.isEmpty = isEmptyStatefull))
   }
 
   private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): ScriptingTransport {

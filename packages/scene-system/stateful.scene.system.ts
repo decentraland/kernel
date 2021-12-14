@@ -34,12 +34,8 @@ class StatefulWebWorkerScene extends Script {
   private sceneDefinition!: SceneStateDefinition
   private eventSubscriber!: EventSubscriber
 
-  private isEmptyStatefull: boolean = false
-
-  constructor(transport: ScriptingTransport, emptyStatefull: boolean, opt?: ILogOpts) {
+  constructor(transport: ScriptingTransport, opt?: ILogOpts) {
     super(transport, opt)
-
-    this.isEmptyStatefull = emptyStatefull
   }
 
   async systemDidEnable(): Promise<void> {
@@ -50,7 +46,7 @@ class StatefulWebWorkerScene extends Script {
     this.builderActor = new BuilderStatefulActor(land, this.sceneStateStorage)
 
     //If it is not empty we fetch the state
-    if (!this.isEmptyStatefull) {
+    if (!this.parcelIdentity.isEmpty) {
       // Fetch stored scene
       this.sceneDefinition = await this.builderActor.getInititalSceneState()
       await this.builderActor.sendAssetsFromScene(this.sceneDefinition)
@@ -132,4 +128,4 @@ class StatefulWebWorkerScene extends Script {
 }
 
 // tslint:disable-next-line
-new StatefulWebWorkerScene(WebWorkerTransport(self), false)
+new StatefulWebWorkerScene(WebWorkerTransport(self))
