@@ -13,7 +13,6 @@ import { browserInterface } from '../../unity-interface/BrowserInterface'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { PermissionItem } from './Permissions'
 
-
 @registerAPI('RestrictedActions')
 export class RestrictedActions extends RestrictedExposableAPI {
   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)

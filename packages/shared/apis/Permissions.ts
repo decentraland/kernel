@@ -17,19 +17,21 @@ export class Permissions extends ExposableAPI {
   readonly permissionGranted: PermissionItem[] = defaultParcelPermissions
 
   /**
-   * Returns if it has a specific permission 
+   * Returns if it has a specific permission
    */
   @exposeMethod
   async hasPermission(test: PermissionItem): Promise<boolean> {
-
     // Backward compatibility with parcel scene with 'requiredPermissions' in the scene.json
     //  Only the two permissions that start with ALLOW_TO_... can be conceed without user
     //  interaction
     const json = this.parcelIdentity.land.sceneJsonData
     const list = (json.requiredPermissions || []) as PermissionItem[]
-    if (list.includes(test) &&
+
+    if (
+      list.includes(test) &&
       (test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
-        test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)) {
+        test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
+    ) {
       return true
     }
 
@@ -40,7 +42,11 @@ export class Permissions extends ExposableAPI {
    */
   @exposeMethod
   async hasManyPermissions(test: PermissionItem[]): Promise<boolean> {
-    return test.filter(item => this.hasPermission(item)).length == test.length
+    for (const item of test) {
+      if (!(await this.hasPermission(item))) {
+        return false
+      }
+    }
+    return true
   }
-
 }

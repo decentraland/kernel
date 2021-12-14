@@ -4,7 +4,7 @@ import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface
 import defaultLogger from '../../packages/shared/logger'
 import { RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
-import { PermissionItem } from 'shared/apis/Permissions'
+import { PermissionItem, Permissions } from 'shared/apis/Permissions'
 
 describe('RestrictedActions tests', () => {
   afterEach(() => sinon.restore())
@@ -27,6 +27,7 @@ describe('RestrictedActions tests', () => {
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').once().withExactArgs(emote)
 
       const module = new RestrictedActions(options)
+      module.permissions = new Permissions(options)
       await module.triggerEmote({ predefined: emote })
       sinon.verify()
     })
@@ -35,14 +36,15 @@ describe('RestrictedActions tests', () => {
       mockLastPlayerPosition()
       mockPermissionsWith()
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
-      sinon
-        .mock(defaultLogger)
-        .expects('error')
-        .once()
-        .withExactArgs('Permission "ALLOW_TO_TRIGGER_AVATAR_EMOTE" is required')
 
       const module = new RestrictedActions(options)
-      await module.triggerEmote({ predefined: 'emote' })
+      module.permissions = new Permissions(options)
+      try{
+        await module.triggerEmote({ predefined: 'emote' })
+      }catch(err){
+        
+      }
+      sinon.stub(module, 'ensureHasPermissions').threw()
       sinon.verify()
     })
 
@@ -59,6 +61,7 @@ describe('RestrictedActions tests', () => {
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
       const module = new RestrictedActions(options)
+      module.permissions = new Permissions(options)
       await module.triggerEmote({ predefined: emote })
       sinon.verify()
     })
@@ -75,6 +78,7 @@ describe('RestrictedActions tests', () => {
         .withExactArgs({ position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined }, false)
 
       const module = new RestrictedActions(options)
+      module.permissions = new Permissions(options)
 
       await module.movePlayerTo(new Vector3(8, 0, 8))
       sinon.verify()
@@ -92,6 +96,7 @@ describe('RestrictedActions tests', () => {
       sinon.mock(getUnityInstance()).expects('Teleport').never()
 
       const module = new RestrictedActions(options)
+      module.permissions = new Permissions(options)
 
       await module.movePlayerTo(new Vector3(21, 0, 32))
       sinon.verify()
@@ -101,15 +106,17 @@ describe('RestrictedActions tests', () => {
       mockLastPlayerPosition()
       mockPermissionsWith()
       sinon.mock(getUnityInstance()).expects('Teleport').never()
-      sinon
-        .mock(defaultLogger)
-        .expects('error')
-        .once()
-        .withExactArgs('Permission "ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE" is required')
 
       const module = new RestrictedActions(options)
+      module.permissions = new Permissions(options)
 
-      await module.movePlayerTo(new Vector3(8, 0, 8))
+      try{
+        await module.movePlayerTo(new Vector3(8, 0, 8))
+      }catch(err){
+        
+      }
+
+      sinon.stub(module, 'ensureHasPermissions').threw()
       sinon.verify()
     })
 
@@ -126,6 +133,7 @@ describe('RestrictedActions tests', () => {
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
       const module = new RestrictedActions(options)
+      module.permissions = new Permissions(options)
 
       await module.movePlayerTo(new Vector3(8, 0, 8))
       sinon.verify()
@@ -142,7 +150,7 @@ describe('RestrictedActions tests', () => {
   }
 
   function mockPermissionsWith(...permissions: PermissionItem[]) {
-    sinon.mock(options).expects('getAPIInstance').withArgs().once().returns(buildParcelIdentity(permissions))
+    sinon.mock(options).expects('getAPIInstance').withArgs().atLeast(1).returns(buildParcelIdentity(permissions))
   }
 
   function buildParcelIdentity(permissions: PermissionItem[] = []) {

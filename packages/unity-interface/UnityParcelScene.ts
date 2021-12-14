@@ -64,6 +64,5 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
         parcelIdentity.isPortableExperience = true
       })
       .catch((e) => this.logger.error('Error initializing system ParcelIdentity', e))
-
   }
 }
