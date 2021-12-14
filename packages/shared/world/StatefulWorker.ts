@@ -4,6 +4,7 @@ import { SceneWorker } from './SceneWorker'
 import { CustomWebWorkerTransport } from './CustomWebWorkerTransport'
 import { SceneStateStorageController } from 'shared/apis/SceneStateStorageController/SceneStateStorageController'
 import { defaultLogger } from 'shared/logger'
+import { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const gamekitWorkerRaw = require('raw-loader!../../../static/systems/stateful.scene.system.js')
@@ -17,6 +18,7 @@ export class StatefulWorker extends SceneWorker {
     this.getAPIInstance(SceneStateStorageController).catch((error) =>
       defaultLogger.error('Failed to load the SceneStateStorageController', error)
     )
+    void this.getAPIInstance(ParcelIdentity).then((parcelIdentity) => (parcelIdentity.isEmptyScene = isEmptyStatefull))
   }
 
   private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): ScriptingTransport {
