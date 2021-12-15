@@ -1,8 +1,8 @@
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
+import { Vector3, Quaternion } from '@dcl/ecs-math'
 
 import { playerConfigurations } from 'config'
 import { SceneWorker } from './SceneWorker'
-import { Vector3, Quaternion } from 'decentraland-ecs'
 import { PositionReport, positionObservable } from './positionThings'
 import { Observer } from 'mz-observable'
 import { sceneLifeCycleObservable } from '../../decentraland-loader/lifecycle/controllers/scene'
@@ -13,6 +13,7 @@ import { sceneObservable } from 'shared/world/sceneState'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const gamekitWorkerRaw = require('raw-loader!../../../static/systems/scene.system.js')
 const gamekitWorkerBLOB = new Blob([gamekitWorkerRaw])
 const gamekitWorkerUrl = URL.createObjectURL(gamekitWorkerBLOB)

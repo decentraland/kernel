@@ -1,7 +1,15 @@
 /// <reference lib="dom" />
 
 import { Message } from 'google-protobuf'
-import { Category, ChatData, PositionData, ProfileData, DataHeader } from './proto/comms'
+import {
+  ProfileResponseData,
+  ProfileRequestData,
+  Category,
+  ChatData,
+  PositionData,
+  ProfileData,
+  DataHeader
+} from './proto/comms_pb'
 import {
   MessageType,
   PingMessage,
@@ -157,8 +165,36 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     }
   }
 
+  async sendProfileRequest(position: Position, userId: string, version: number | undefined) {
+    const topic = positionHash(position)
+
+    const d = new ProfileRequestData()
+    d.setCategory(Category.PROF_REQ)
+    d.setTime(Date.now())
+    d.setUserId(userId)
+    version && d.setProfileVersion('' + version)
+
+    const r = this.sendTopicIdentityMessage(true, topic, d)
+    if (this._stats) {
+      this._stats.profile.incrementSent(1, r.bytesSize)
+    }
+  }
+
+  async sendProfileResponse(currentPosition: Position, profile: Profile) {
+    const topic = positionHash(currentPosition)
+
+    const d = new ProfileResponseData()
+    d.setCategory(Category.PROF_RES)
+    d.setTime(Date.now())
+    d.setSerializedProfile(JSON.stringify(profile))
+
+    const r = this.sendTopicIdentityMessage(true, topic, d)
+    if (this._stats) {
+      this._stats.profile.incrementSent(1, r.bytesSize)
+    }
+  }
   async sendInitialMessage(userProfile: UserInformation) {
-    const topic = userProfile.userId!
+    const topic = userProfile.userId
 
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)
@@ -226,7 +262,7 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     return this.sendMessage(reliable, message)
   }
 
-  async changeRealm(realm: Realm, url: string) {
+  async changeRealm(_realm: Realm, _url: string) {
     return
   }
 
@@ -259,18 +295,8 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     return {}
   }
 
-  sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void> {
+  sendVoiceMessage(_currentPosition: Position, _frame: EncodedFrame): Promise<void> {
     // Not implemented
-    return Promise.resolve()
-  }
-
-  sendProfileRequest(position: Position, userId: string, version: number | undefined): Promise<void> {
-    // To be implemented
-    return Promise.resolve()
-  }
-
-  sendProfileResponse(currentPosition: Position, profile: Profile): Promise<void> {
-    // To be implemented
     return Promise.resolve()
   }
 
@@ -434,6 +460,29 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
                       : ProfileType.DEPLOYED
                 } // We use deployed as default because that way we can emulate the old behaviour
               })
+            break
+          }
+          case Category.PROF_REQ: {
+            const profileRequestData = ProfileRequestData.deserializeBinary(body)
+            this.profileRequestHandler(alias, {
+              type: 'profile',
+              time: profileRequestData.getTime(),
+              data: {
+                userId: profileRequestData.getUserId(),
+                version: profileRequestData.getProfileVersion()
+              }
+            })
+            break
+          }
+          case Category.PROF_RES: {
+            const profileResponseData = ProfileResponseData.deserializeBinary(body)
+            this.profileResponseHandler(alias, {
+              type: 'profile',
+              time: profileResponseData.getTime(),
+              data: {
+                profile: JSON.parse(profileResponseData.getSerializedProfile()) as Profile
+              }
+            })
             break
           }
           default: {

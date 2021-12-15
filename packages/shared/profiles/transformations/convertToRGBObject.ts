@@ -1,4 +1,4 @@
-import { ReadOnlyColor4 } from 'decentraland-ecs'
+import { ReadOnlyColor4 } from '@dcl/ecs-math'
 
 export function convertToRGBObject(colorString: any): ReadOnlyColor4 {
   if (typeof colorString !== 'string') {

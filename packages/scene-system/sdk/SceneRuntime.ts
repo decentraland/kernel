@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { Script, inject, EventSubscriber } from 'decentraland-rpc'
 
-import { Vector2 } from 'decentraland-ecs'
+import { Vector2 } from '@dcl/ecs-math'
 import { sleep } from 'atomicHelpers/sleep'
 import future, { IFuture } from 'fp-future'
 
 import type { ScriptingTransport, ILogOpts } from 'decentraland-rpc/src/common/json-rpc/types'
-import type { QueryType, DecentralandInterface, IEvents } from 'decentraland-ecs'
+import type { QueryType } from '@dcl/legacy-ecs'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import type {
@@ -53,8 +54,8 @@ function resolveMapping(mapping: string | undefined, mappingName: string, baseUr
 // NOTE(Brian): The idea is to map all string ids used by this scene to ints
 //              so we avoid sending/processing big ids like "xxxxx-xxxxx-xxxxx-xxxxx"
 //              that are used by i.e. raycasting queries.
-let idToNumberStore: Record<string, number> = {}
-let numberToIdStore: Record<number, string> = {}
+const idToNumberStore: Record<string, number> = {}
+const numberToIdStore: Record<number, string> = {}
 let idToNumberStoreCounter: number = 10 // Starting in 10, to leave room for special cases (such as the root entity)
 
 function addIdToStorage(id: string, idAsNumber: number) {
@@ -196,7 +197,7 @@ export abstract class SceneRuntime extends Script {
       if (this.isPointerEvent(event)) {
         this.allowOpenExternalUrl = true
       }
-      for (let trigger of this.onEventFunctions) {
+      for (const trigger of this.onEventFunctions) {
         trigger(event)
       }
     } catch (e) {
@@ -219,7 +220,7 @@ export abstract class SceneRuntime extends Script {
   }
 
   update(time: number) {
-    for (let trigger of this.onUpdateFunctions) {
+    for (const trigger of this.onUpdateFunctions) {
       try {
         trigger(time)
       } catch (e) {
@@ -240,6 +241,7 @@ export abstract class SceneRuntime extends Script {
         throw new Error('Received empty source.')
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       const that = this
 
       const fullData = sceneData.data as LoadableParcelScene
@@ -249,7 +251,7 @@ export abstract class SceneRuntime extends Script {
 
       const dcl: DecentralandInterface = {
         DEBUG: true,
-        log(...args) {
+        log(...args: any[]) {
           // tslint:disable-next-line:no-console
           that.onLog(...args)
         },
@@ -273,7 +275,7 @@ export abstract class SceneRuntime extends Script {
 
         openNFTDialog(assetContractAddress: string, tokenId: string, comment: string | null) {
           if (that.allowOpenExternalUrl) {
-            let payload = { assetContractAddress, tokenId, comment }
+            const payload = { assetContractAddress, tokenId, comment }
 
             if (JSON.stringify(payload).length > 49000) {
               that.onError(new Error('OpenNFT payload cannot exceed 49.000 bytes'))
@@ -408,7 +410,7 @@ export abstract class SceneRuntime extends Script {
 
             that.eventSubscriber.on(eventName, (event) => {
               if (eventName === 'raycastResponse') {
-                let idAsNumber = parseInt(event.data.queryId, 10)
+                const idAsNumber = parseInt(event.data.queryId, 10)
                 if (numberToIdStore[idAsNumber]) {
                   event.data.queryId = numberToIdStore[idAsNumber].toString()
                 }
@@ -497,20 +499,21 @@ export abstract class SceneRuntime extends Script {
           if (!module) {
             throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
           }
+          // eslint-disable-next-line prefer-spread
           return module[methodName].apply(module, args)
         },
         onStart(cb: Function) {
           that.onStartFunctions.push(cb)
         },
         error(message, data) {
-          that.onError(Object.assign(new Error(message), { data }))
+          that.onError(Object.assign(new Error(message as string), { data }))
         }
       }
 
       {
         const monkeyPatchDcl: any = dcl
         monkeyPatchDcl.updateEntity = function () {
-          throw new Error('The scene is using an outdated version of decentraland-ecs, please upgrade to >5.0.0')
+          throw new Error('The scene is using an outdated version of @dcl/legacy-ecs, please upgrade to >5.0.0')
         }
       }
 
@@ -594,7 +597,6 @@ export abstract class SceneRuntime extends Script {
         Math.floor(e.cameraPosition.z / PARCEL_SIZE)
       )
 
-      // @ts-ignore
       if (playerPosition === undefined || this.scenePosition === undefined) {
         return
       }

@@ -1,5 +1,3 @@
-declare var window: Window & { Rollbar: any }
-
 import {
   COMMS_COULD_NOT_BE_ESTABLISHED,
   fatalError,
@@ -82,7 +80,7 @@ export function ReportFatalErrorWithCommsPayload(error: Error, context: ErrorCon
 
 export function ReportFatalErrorWithUnityPayload(error: Error, context: ErrorContextTypes) {
   ReportFatalErrorWithUnityPayloadAsync(error, context)
-    .then((x) => {
+    .then((_x) => {
       //
     })
     .catch(() => {
@@ -94,7 +92,7 @@ Object.assign(globalThis, { BringDownClientAndShowError, ReportFatalErrorWithUni
 
 export async function ReportFatalErrorWithUnityPayloadAsync(error: Error, context: ErrorContextTypes) {
   try {
-    let payload = await getUnityInstance().CrashPayloadRequest()
+    const payload = await getUnityInstance().CrashPayloadRequest()
     ReportFatalError(error, context, { rendererPayload: payload })
   } catch (e) {
     ReportFatalError(error, context)

@@ -1,4 +1,5 @@
 import { expect } from 'chai'
+
 import { Entity, BoxShape, Transform, Vector3, engine } from 'decentraland-ecs'
 
 describe('Engine tests', () => {

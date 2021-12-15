@@ -1,4 +1,3 @@
-import { IEventNames, IEvents } from 'decentraland-ecs'
 import { APIOptions, exposeMethod, registerAPI } from 'decentraland-rpc/lib/host'
 import { ParcelSceneAPI } from '../../shared/world/ParcelSceneAPI'
 import { EntityAction } from '../types'
@@ -68,7 +67,7 @@ export class EngineAPI extends ExposableAPI implements IEngineAPI {
     // stub
   }
 
-  onSubscribedEvent(fn: any): void {
+  onSubscribedEvent(_fn: any): void {
     // stub, we implement this function here to fulfill the interface of EngineAPI
   }
 }

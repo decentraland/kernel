@@ -36,38 +36,38 @@ export class ClientDebug {
         defaultLogger.log(`DumpCrashPayload result:\n${payload}`)
         defaultLogger.log(`DumpCrashPayload length:${payload.length}`)
       })
-      .catch((x) => {
+      .catch((_x) => {
         defaultLogger.log(`DumpCrashPayload result: timeout`)
       })
   }
 
   public InstantiateBotsAtWorldPos(payload: {
-    amount: number,
-    xPos: number,
-    yPos: number,
-    zPos: number,
-    areaWidth: number,
+    amount: number
+    xPos: number
+    yPos: number
+    zPos: number
+    areaWidth: number
     areaDepth: number
   }) {
     this.unityInterface.SendMessageToUnity('Main', 'InstantiateBotsAtWorldPos', JSON.stringify(payload))
   }
 
   public InstantiateBotsAtCoords(payload: {
-    amount: number,
-    xCoord: number,
-    yCoord: number,
-    areaWidth: number,
+    amount: number
+    xCoord: number
+    yCoord: number
+    areaWidth: number
     areaDepth: number
   }) {
     this.unityInterface.SendMessageToUnity('Main', 'InstantiateBotsAtCoords', JSON.stringify(payload))
   }
 
   public StartBotsRandomizedMovement(payload: {
-    populationNormalizedPercentage: number,
-    waypointsUpdateTime: number,
-    xCoord: number,
-    yCoord: number,
-    areaWidth: number,
+    populationNormalizedPercentage: number
+    waypointsUpdateTime: number
+    xCoord: number
+    yCoord: number
+    areaWidth: number
     areaDepth: number
   }) {
     this.unityInterface.SendMessageToUnity('Main', 'StartBotsRandomizedMovement', JSON.stringify(payload))
@@ -86,4 +86,4 @@ export class ClientDebug {
   }
 }
 
-export let clientDebug: ClientDebug = new ClientDebug(getUnityInstance())
+export const clientDebug: ClientDebug = new ClientDebug(getUnityInstance())

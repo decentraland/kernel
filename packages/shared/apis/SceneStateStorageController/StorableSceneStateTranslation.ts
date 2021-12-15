@@ -1,7 +1,7 @@
 import { SceneStateDefinition } from 'scene-system/stateful-scene/SceneStateDefinition'
 import { Component } from 'scene-system/stateful-scene/types'
 import { uuid } from 'atomicHelpers/math'
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import {
   BuilderAsset,
   BuilderComponent,
@@ -12,7 +12,7 @@ import {
   UnityColor
 } from './types'
 import { BuilderServerAPIManager } from './BuilderServerAPIManager'
-import { toHumanReadableType, fromHumanReadableType, camelize } from './utils'
+import { toHumanReadableType, fromHumanReadableType, camelize, getUniqueNameForGLTF } from './utils'
 import { SceneTransformTranslator } from './SceneTransformTranslator'
 
 const CURRENT_SCHEMA_VERSION = 1
@@ -38,28 +38,36 @@ export async function toBuilderFromStateDefinitionFormat(
   builderApiManager: BuilderServerAPIManager,
   transfromTranslator: SceneTransformTranslator
 ): Promise<BuilderManifest> {
-  let entities: Record<string, BuilderEntity> = {}
-  let builderComponents: Record<string, BuilderComponent> = {}
+  const entities: Record<string, BuilderEntity> = {}
+  const builderComponents: Record<string, BuilderComponent> = {}
+  const gltfNames: string[] = []
+  let nftCount = 0
 
   // Iterate every entity to get the components for builder
   for (const [entityId, components] of scene.getState().entries()) {
-    let builderComponentsIds: string[] = []
+    const builderComponentsIds: string[] = []
 
     let entityName = entityId
 
     // Iterate the entity components to transform them to the builder format
     const mappedComponents = Array.from(components.entries()).map(([componentId, data]) => ({ componentId, data }))
-    for (let component of mappedComponents) {
+    for (const component of mappedComponents) {
       // We generate a new uuid for the component since there is no uuid for components in the stateful scheme
-      let newId = uuid()
+      const newId = uuid()
 
-      let componentType = toHumanReadableType(component.componentId)
+      const componentType = toHumanReadableType(component.componentId)
       builderComponentsIds.push(newId)
 
       // This is a special case where we are assinging the builder url field for NFTs
       if (componentType === 'NFTShape') {
         component.data.url = component.data.src
-        entityName = "nft"
+        if (nftCount >= 1) {
+          // This is the format that is used by builder
+          entityName = 'nft' + (nftCount + 1)
+        } else {
+          entityName = 'nft'
+          nftCount = nftCount + 1
+        }
       }
 
       // We iterate over the GLTF to find the asset.
@@ -67,12 +75,12 @@ export async function toBuilderFromStateDefinitionFormat(
       if (componentType === 'GLTFShape') {
         const assets = await builderApiManager.getAssets([component.data.assetId])
         for (const value of Object.values(assets)) {
-          entityName = camelize(value.name)
+          entityName = getUniqueNameForGLTF(gltfNames, camelize(value.name), 1)
         }
       }
 
       // we add the component to the builder format
-      let builderComponent: BuilderComponent = transfromTranslator.transformBuilderComponent({
+      const builderComponent: BuilderComponent = transfromTranslator.transformBuilderComponent({
         id: newId,
         type: componentType,
         data: component.data
@@ -81,14 +89,16 @@ export async function toBuilderFromStateDefinitionFormat(
     }
 
     // We iterate over the name of the entities to asign it in a builder format
-    for (let component of Object.values(mappedComponents)) {
+    for (const component of Object.values(mappedComponents)) {
       if (component.componentId === fromHumanReadableType('Name')) {
         component.data.builderValue = entityName
       }
     }
 
+    gltfNames.push(entityName)
+
     // we add the entity to builder format
-    let builderEntity: BuilderEntity = {
+    const builderEntity: BuilderEntity = {
       id: entityId,
       components: builderComponentsIds,
       disableGizmos: false,
@@ -111,7 +121,7 @@ export async function toBuilderFromStateDefinitionFormat(
   builderManifest.scene = sceneState
 
   // We get all the assetIds from the gltfShapes so we can fetch the corresponded asset
-  let idArray: string[] = []
+  const idArray: string[] = []
   Object.values(builderManifest.scene.components).forEach((component) => {
     if (component.type === 'GLTFShape') {
       let found = false
@@ -133,7 +143,7 @@ export async function toBuilderFromStateDefinitionFormat(
   }
 
   // We remove unused assets
-  let newRecords: Record<string, BuilderAsset> = {}
+  const newRecords: Record<string, BuilderAsset> = {}
   for (const [key, value] of Object.entries(builderManifest.scene.assets)) {
     let found = false
     Object.values(builderManifest.scene.components).forEach((component) => {
@@ -184,9 +194,9 @@ export function fromBuildertoStateDefinitionFormat(
 
   const componentMap = new Map(Object.entries(scene.components))
 
-  for (let entity of Object.values(scene.entities)) {
-    let components: Component[] = []
-    for (let componentId of entity.components.values()) {
+  for (const entity of Object.values(scene.entities)) {
+    const components: Component[] = []
+    for (const componentId of entity.components.values()) {
       if (componentMap.has(componentId)) {
         const builderComponent = componentMap.get(componentId)
         const componentData = builderComponent?.data
@@ -210,7 +220,7 @@ export function fromBuildertoStateDefinitionFormat(
           componentData.style = 0
         }
 
-        let component: Component = transfromTranslator.transformStateDefinitionComponent({
+        const component: Component = transfromTranslator.transformStateDefinitionComponent({
           componentId: fromHumanReadableType(componentMap.get(componentId)!.type),
           data: componentData
         })
@@ -221,7 +231,7 @@ export function fromBuildertoStateDefinitionFormat(
     // We need to mantain the builder name of the entity, so we create the equivalent part in biw. We do this so we can mantain the smart-item references
     let componentFound = false
 
-    for (let component of components) {
+    for (const component of components) {
       if (component.componentId === CLASS_ID.NAME) {
         componentFound = true
         component.data.value = component.data.value
@@ -241,11 +251,11 @@ function CreateStatelessNameComponent(
   builderName: string,
   transfromTranslator: SceneTransformTranslator
 ): Component {
-  let nameComponentData = {
+  const nameComponentData = {
     value: name,
     builderValue: builderName
   }
-  let nameComponent: Component = transfromTranslator.transformStateDefinitionComponent({
+  const nameComponent: Component = transfromTranslator.transformStateDefinitionComponent({
     componentId: CLASS_ID.NAME,
     data: nameComponentData
   })

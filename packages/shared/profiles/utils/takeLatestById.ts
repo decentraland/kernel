@@ -7,8 +7,8 @@ export function takeLatestById<T extends Action>(
   saga: any,
   ...args: any
 ): ForkEffect {
-  return fork(function*() {
-    let lastTasks = new Map<any, any>()
+  return fork(function* () {
+    const lastTasks = new Map<any, any>()
     while (true) {
       const action = yield take(patternOrChannel)
       const key = keyFunction(action)

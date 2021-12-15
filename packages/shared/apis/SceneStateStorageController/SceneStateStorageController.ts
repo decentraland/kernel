@@ -26,7 +26,7 @@ import {
   toBuilderFromStateDefinitionFormat
 } from './StorableSceneStateTranslation'
 import { uuid } from 'atomicHelpers/math'
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import { ParcelIdentity } from '../ParcelIdentity'
 import { getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { createGameFile } from './SceneStateDefinitionCodeGenerator'
@@ -102,7 +102,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
       const sceneState: SceneStateDefinition = deserializeSceneState(serializedSceneState)
 
       // Convert the scene state to builder scheme format
-      let builderManifest = await toBuilderFromStateDefinitionFormat(
+      const builderManifest = await toBuilderFromStateDefinitionFormat(
         sceneState,
         this.builderManifest,
         this.builderApiManager,
@@ -298,7 +298,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
         }
 
         // Create builder manifest from serialized scene
-        let builderManifest = await this.builderApiManager.builderManifestFromSerializedState(
+        const builderManifest = await this.builderApiManager.builderManifestFromSerializedState(
           uuid(),
           uuid(),
           baseParcel,
@@ -438,7 +438,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
     const deserializedSceneState: SceneStateDefinition = deserializeSceneState(sceneState)
 
     // Convert the scene state to builder scheme format
-    let builderManifest = await toBuilderFromStateDefinitionFormat(
+    const builderManifest = await toBuilderFromStateDefinitionFormat(
       deserializedSceneState,
       this.builderManifest,
       this.builderApiManager,
@@ -458,6 +458,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
 }
 setAPIName('SceneStateStorageController', SceneStateStorageController)
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const toBuffer = require('blob-to-buffer')
 export function blobToBuffer(blob: Blob): Promise<Buffer> {
   return new Promise((resolve, reject) => {

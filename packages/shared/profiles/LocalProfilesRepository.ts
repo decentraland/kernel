@@ -1,5 +1,9 @@
 import { Profile } from './types'
-import { getFromPersistentStorage, removeFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
+import {
+  getFromPersistentStorage,
+  removeFromPersistentStorage,
+  saveToPersistentStorage
+} from 'atomicHelpers/persistentStorage'
 import { ETHEREUM_NETWORK } from 'config'
 
 const LOCAL_PROFILES_KEY = 'dcl-local-profile'
@@ -15,7 +19,7 @@ export class LocalProfilesRepository {
   }
 
   async get(address: string, network: ETHEREUM_NETWORK) {
-    return await getFromPersistentStorage(this.profileKey(address, network))
+    return getFromPersistentStorage(this.profileKey(address, network))
   }
 
   private profileKey(address: string, network: ETHEREUM_NETWORK): string {

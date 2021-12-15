@@ -1,5 +1,11 @@
 import * as qs from 'query-string'
-import { Vector3, ReadOnlyVector3, ReadOnlyQuaternion, Vector2, ReadOnlyVector2 } from 'decentraland-ecs'
+import {
+  Vector3,
+  EcsMathReadOnlyVector3,
+  EcsMathReadOnlyQuaternion,
+  EcsMathReadOnlyVector2,
+  Vector2
+} from '@dcl/ecs-math'
 import { Observable } from 'mz-observable'
 import { ILand } from 'shared/types'
 import { InstancedSpawnPoint } from '../types'
@@ -12,16 +18,16 @@ import {
 import { DEBUG } from '../../config'
 import { isInsideWorldLimits } from '@dcl/schemas'
 
-declare var location: any
-declare var history: any
+declare let location: any
+declare let history: any
 
 export type PositionReport = {
   /** Camera position, world space */
-  position: ReadOnlyVector3
+  position: EcsMathReadOnlyVector3
   /** Camera rotation */
-  quaternion: ReadOnlyQuaternion
+  quaternion: EcsMathReadOnlyQuaternion
   /** Camera rotation, euler from quaternion */
-  rotation: ReadOnlyVector3
+  rotation: EcsMathReadOnlyVector3
   /** Camera height, relative to the feet of the avatar or ground */
   playerHeight: number
   /** Should this position be applied immediately */
@@ -29,9 +35,9 @@ export type PositionReport = {
 }
 export type ParcelReport = {
   /** Parcel where the user was before */
-  previousParcel?: ReadOnlyVector2
+  previousParcel?: EcsMathReadOnlyVector2
   /** Parcel where the user is now */
-  newParcel: ReadOnlyVector2
+  newParcel: EcsMathReadOnlyVector2
   /** Should this position be applied immediately */
   immediate: boolean
 }
@@ -40,7 +46,7 @@ export const positionObservable = new Observable<Readonly<PositionReport>>()
 // Called each time the user changes  parcel
 export const parcelObservable = new Observable<ParcelReport>()
 
-export const teleportObservable = new Observable<ReadOnlyVector2 & { text?: string }>()
+export const teleportObservable = new Observable<EcsMathReadOnlyVector2 & { text?: string }>()
 
 export const lastPlayerPosition = new Vector3()
 export let lastPlayerParcel: Vector2
@@ -70,7 +76,7 @@ function setLastPlayerParcel(parcel: Vector2) {
 export function initializeUrlPositionObserver() {
   let lastTime: number = performance.now()
 
-  function updateUrlPosition(newParcel: ReadOnlyVector2) {
+  function updateUrlPosition(newParcel: EcsMathReadOnlyVector2) {
     // Update position in URI every second
     if (performance.now() - lastTime > 1000) {
       replaceQueryStringPosition(newParcel.x, newParcel.y)
@@ -160,7 +166,7 @@ function pickSpawnpoint(land: ILand): InstancedSpawnPoint | undefined {
   const { position, cameraTarget } = eligiblePoints[Math.floor(Math.random() * eligiblePoints.length)]
 
   // 4 - generate random x, y, z components when in arrays
-  let finalPosition = {
+  const finalPosition = {
     x: computeComponentValue(position.x),
     y: computeComponentValue(position.y),
     z: computeComponentValue(position.z)
@@ -173,7 +179,7 @@ function pickSpawnpoint(land: ILand): InstancedSpawnPoint | undefined {
       parseInt(sceneBaseParcelCoords[0], 10),
       parseInt(sceneBaseParcelCoords[1], 10)
     )
-    let finalWorldPosition = {
+    const finalWorldPosition = {
       x: sceneBaseParcelWorldPos.x + finalPosition.x,
       y: finalPosition.y,
       z: sceneBaseParcelWorldPos.z + finalPosition.z
@@ -226,17 +232,17 @@ export function getLandBase(land: ILand): { x: number; y: number } {
   }
 }
 
-export async function parcelAvailable(): Promise<ReadOnlyVector2> {
+export async function parcelAvailable(): Promise<EcsMathReadOnlyVector2> {
   if (lastPlayerParcel) return lastPlayerParcel
 
   return new Promise((resolve, reject) => {
-    parcelObservable.addOnce(parcel => {
+    parcelObservable.addOnce((parcel) => {
       resolve(parcel.newParcel)
     })
 
     setTimeout(() => {
       if (lastPlayerParcel) resolve(lastPlayerParcel)
-      else reject("Timed out awaiting for parcel")
+      else reject('Timed out awaiting for parcel')
     }, 60000)
   })
 }

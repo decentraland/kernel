@@ -14,16 +14,14 @@ import {
   BuilderComponent,
   BuilderGround
 } from './types'
-import { ETHEREUM_NETWORK } from 'config'
+import { BUILDER_SERVER_URL, ETHEREUM_NETWORK } from 'config'
 import { defaultLogger } from '../../logger'
 import { getParcelSceneLimits } from 'atomicHelpers/landHelpers'
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import { toHumanReadableType, fromHumanReadableType, getLayoutFromParcels } from './utils'
 import { SceneSourcePlacement } from 'shared/types'
 
-export const BASE_DOWNLOAD_URL = 'https://builder-api.decentraland.org/v1/storage/contents'
-const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1/'
-export const BASE_BUILDER_SERVER_URL = 'https://builder-api.decentraland.org/v1/'
+const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1'
 export const BUILDER_MANIFEST_VERSION = 10
 
 export class BuilderServerAPIManager {
@@ -32,11 +30,7 @@ export class BuilderServerAPIManager {
   private readonly baseUrl: string
 
   constructor(network: ETHEREUM_NETWORK) {
-    if (network === ETHEREUM_NETWORK.MAINNET) {
-      this.baseUrl = BASE_BUILDER_SERVER_URL
-    } else {
-      this.baseUrl = BASE_BUILDER_SERVER_URL_ROPSTEN
-    }
+    this.baseUrl = network === ETHEREUM_NETWORK.MAINNET ? BUILDER_SERVER_URL : BASE_BUILDER_SERVER_URL_ROPSTEN
   }
 
   static authorize(identity: ExplorerIdentity, method: string = 'get', path: string = '') {
@@ -68,7 +62,7 @@ export class BuilderServerAPIManager {
     if (unknownAssets.length > 0) {
       const queryParams = 'assets?id=' + unknownAssets.join('&id=')
       try {
-        const url = `${this.baseUrl}${queryParams}`
+        const url = `${this.baseUrl}/${queryParams}`
         // Fetch unknown assets
         const response = await fetch(url)
         const { data }: { data: BuilderAsset[] } = await response.json()
@@ -104,16 +98,16 @@ export class BuilderServerAPIManager {
     try {
       // Fetch builder manifest by ID
       const queryParams = 'projects/' + projectId + '/manifest'
-      const urlToFecth = `${this.baseUrl}${queryParams}`
+      const urlToFecth = `${this.baseUrl}/${queryParams}`
 
-      let params: RequestInit = {
+      const params: RequestInit = {
         headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + queryParams)
       }
 
       const response = await fetch(urlToFecth, params)
       const data = await response.json()
 
-      const manifest: BuilderManifest = data.data
+      const manifest: BuilderManifest = data
 
       // If this manifest contains assets, we add them so we don't need to fetch them
       if (manifest) this.addAssetsFromManifest(manifest)
@@ -130,11 +124,12 @@ export class BuilderServerAPIManager {
   ): Promise<BuilderManifest | undefined> {
     try {
       // Fetch builder manifest by lands coordinates
-      const queryParams = 'manifests?' + 'creation_coords_eq=' + land
-      const urlToFecth = `${this.baseUrl}${queryParams}`
+      const endpoint = 'manifests'
+      const queryParams = endpoint + '?creation_coords_eq=' + land
+      const urlToFecth = `${this.baseUrl}/${queryParams}`
 
-      let params: RequestInit = {
-        headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + queryParams)
+      const params: RequestInit = {
+        headers: BuilderServerAPIManager.authorize(identity, 'get', '/' + endpoint)
       }
 
       const response = await fetch(urlToFecth, params)
@@ -230,7 +225,7 @@ export class BuilderServerAPIManager {
     }
 
     // NOTE: scene metrics are calculated again in builder dapp, so for now we only fill entities count
-    let builderScene: BuilderScene = {
+    const builderScene: BuilderScene = {
       id: builderSceneId,
       entities,
       components,
@@ -288,19 +283,19 @@ export class BuilderServerAPIManager {
       id: webAsset.id,
       model: webAsset.model,
       mappings: Object.entries(webAsset.contents).map(([file, hash]) => ({ file, hash })),
-      baseUrl: BASE_DOWNLOAD_URL
+      baseUrl: `${this.baseUrl}/storage/contents`
     }
   }
 
   private async setManifestOnServer(builderManifest: BuilderManifest, identity: ExplorerIdentity) {
     const queryParams = 'projects/' + builderManifest.project.id + '/manifest'
-    const urlToFecth = `${this.baseUrl}${queryParams}`
+    const urlToFecth = `${this.baseUrl}/${queryParams}`
 
     const body = JSON.stringify({ manifest: builderManifest })
     const headers = BuilderServerAPIManager.authorize(identity, 'put', '/' + queryParams)
     headers['Content-Type'] = 'application/json'
 
-    let params: RequestInit = {
+    const params: RequestInit = {
       headers: headers,
       method: 'PUT',
       body: body
@@ -313,13 +308,13 @@ export class BuilderServerAPIManager {
 
   private async setThumbnailOnServer(projectId: string, thumbnailBlob: Blob, identity: ExplorerIdentity) {
     const queryParams = 'projects/' + projectId + '/media'
-    const urlToFecth = `${this.baseUrl}${queryParams}`
+    const urlToFecth = `${this.baseUrl}/${queryParams}`
 
     const thumbnailData = new FormData()
     thumbnailData.append('thumbnail', thumbnailBlob)
     const headers = BuilderServerAPIManager.authorize(identity, 'post', '/' + queryParams)
 
-    let params: RequestInit = {
+    const params: RequestInit = {
       headers: headers,
       method: 'POST',
       body: thumbnailData
@@ -339,12 +334,12 @@ export class BuilderServerAPIManager {
   }
 
   private createEmptyDefaultBuilderScene(land: string, ethAddress: string): BuilderManifest {
-    let builderSceneId = uuid()
-    let builderProjectId = uuid()
-    let builderProject = this.createBuilderProject(builderSceneId, builderProjectId, land, [land], ethAddress)
+    const builderSceneId = uuid()
+    const builderProjectId = uuid()
+    const builderProject = this.createBuilderProject(builderSceneId, builderProjectId, land, [land], ethAddress)
     builderProject.creation_coords = land
 
-    let builderScene: BuilderScene = {
+    const builderScene: BuilderScene = {
       id: builderSceneId,
       entities: {
         '29d657c1-95cf-4e17-b424-fe252d43ced5': {
@@ -407,7 +402,7 @@ export class BuilderServerAPIManager {
         componentId: 'b5edf28e-b4e4-4a27-b0ac-84b3d77eff8e'
       }
     }
-    let builderManifest: BuilderManifest = {
+    const builderManifest: BuilderManifest = {
       version: BUILDER_MANIFEST_VERSION,
       project: builderProject,
       scene: builderScene
@@ -432,11 +427,11 @@ function getBuilderEntitiesAndComponentsFromSerializedState(scene: SerializedSce
   entities: Record<string, BuilderEntity>
   components: Record<string, BuilderComponent>
 } {
-  let entities: Record<string, BuilderEntity> = {}
-  let builderComponents: Record<string, BuilderComponent> = {}
+  const entities: Record<string, BuilderEntity> = {}
+  const builderComponents: Record<string, BuilderComponent> = {}
 
   for (const entity of scene.entities) {
-    let builderComponentsIds: string[] = []
+    const builderComponentsIds: string[] = []
 
     for (const component of entity.components) {
       const newId = uuid()
@@ -446,7 +441,7 @@ function getBuilderEntitiesAndComponentsFromSerializedState(scene: SerializedSce
         component.value.url = component.value.src
       }
 
-      let builderComponent: BuilderComponent = {
+      const builderComponent: BuilderComponent = {
         id: newId,
         type: toHumanReadableType(component.type),
         data: component.value
@@ -454,7 +449,7 @@ function getBuilderEntitiesAndComponentsFromSerializedState(scene: SerializedSce
       builderComponents[builderComponent.id] = builderComponent
     }
 
-    let builderEntity: BuilderEntity = {
+    const builderEntity: BuilderEntity = {
       id: entity.id,
       components: builderComponentsIds,
       disableGizmos: false,

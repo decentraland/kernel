@@ -1,9 +1,8 @@
-import { EntityType, Hashing } from 'dcl-catalyst-commons'
+import { EntityType, Hashing, Fetcher } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { Fetcher } from 'dcl-catalyst-commons'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 
-import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
+import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
 
 import defaultLogger from 'shared/logger'
 import {
@@ -29,7 +28,9 @@ import {
   deployProfileFailure,
   profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer
+  localProfileSentToRenderer,
+  SAVE_PROFILE_SUCCESS,
+  SaveProfileSuccess
 } from './actions'
 import { getProfile, hasConnectedWeb3 } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
@@ -61,11 +62,13 @@ import { getProfileType } from './getProfileType'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { fetchParcelsWithAccess } from './fetchLand'
-import { ParcelsWithAccess } from 'decentraland-ecs'
+import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
+import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const toBuffer = require('blob-to-buffer')
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
@@ -99,6 +102,7 @@ export function* profileSaga(): any {
   yield takeLatestByUserId(PROFILE_RANDOM, handleRandomAsSuccess)
 
   yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
+  yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
 
   yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
 
@@ -192,7 +196,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   let profile: ServerFormatProfile | null = null
   let hasConnectedWeb3 = false
   try {
-    if (profileType === ProfileType.LOCAL && currentId !== userId) {
+    if ((PREVIEW || profileType === ProfileType.LOCAL) && currentId !== userId) {
       const peerProfile: Profile = yield call(requestLocalProfileToPeers, userId)
       if (peerProfile) {
         profile = ensureServerFormat(peerProfile)
@@ -225,7 +229,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     if (profile) {
-      profile!.ethAddress = identity.rawAddress
+      profile.ethAddress = identity.rawAddress
     }
   }
 
@@ -299,7 +303,7 @@ export async function profileServerRequest(userId: string, version?: number) {
 
     let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
-    
+
     const fetcher = new Fetcher()
     const profiles = await fetcher.fetchJson(url)
 
@@ -358,6 +362,16 @@ function* sendLoadProfile(profile: Profile) {
   yield call(waitForRendererInstance)
   getUnityInstance().LoadProfile(rendererFormat)
   yield put(localProfileSentToRenderer())
+}
+
+function* submitProfileToScenes(action: SaveProfileSuccess) {
+  allScenesEvent({
+    eventType: 'profileChanged',
+    payload: {
+      ethAddress: action.payload.profile.ethAddress,
+      version: action.payload.profile.version
+    }
+  })
 }
 
 function* handleSaveAvatar(saveAvatar: SaveProfileRequest) {
@@ -448,7 +462,7 @@ async function modifyAvatar(params: { url: string; userId: string; identity: Exp
 
   const newAvatar = { ...avatar }
 
-  let files = new Map<string, Buffer>()
+  const files = new Map<string, Buffer>()
 
   const snapshots = avatar.snapshots || (profile as any).snapshots
   const content = new Map()

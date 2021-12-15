@@ -1,8 +1,9 @@
-import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
+import { sleep } from 'atomicHelpers/sleep'
+import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import { ILand, SceneJsonData } from 'shared/types'
-import { enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
+import { allScenesEvent, enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
 import {
   observeLoadingStateChange,
@@ -24,7 +25,12 @@ import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
+import defaultLogger from 'shared/logger'
+import { killPortableExperienceScene, spawnPortableExperience } from './portableExperiencesUtils'
+import { sdk } from '@dcl/schemas'
+import { ensureMetaConfigurationInitialized } from 'shared/meta'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
 export const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
@@ -33,8 +39,10 @@ declare const globalThis: { clientDebug: ClientDebug }
 
 globalThis.clientDebug = clientDebug
 
+const sceneLoading: Map<string, boolean> = new Map<string, boolean>()
+
 export function setLoadingScreenBasedOnState() {
-  let state = store.getState()
+  const state = store.getState()
 
   if (!state) {
     getUnityInstance().SetLoadingScreen({
@@ -45,7 +53,7 @@ export function setLoadingScreenBasedOnState() {
     return
   }
 
-  let loading = state.loading
+  const loading = state.loading
 
   getUnityInstance().SetLoadingScreen({
     isVisible: isLoadingScreenVisible(state),
@@ -69,6 +77,8 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   getUnityInstance().DeactivateRendering()
 
+  await ensureMetaConfigurationInitialized()
+
   getUnityInstance().SetKernelConfiguration(kernelConfigForRenderer())
 
   if (DEBUG) {
@@ -76,6 +86,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 
   if (SCENE_DEBUG_PANEL) {
+    getUnityInstance().SetKernelConfiguration({ debugConfig: { sceneDebugPanelEnabled: true } })
     getUnityInstance().SetSceneDebugPanel()
   }
 
@@ -164,63 +175,81 @@ export async function startUnitySceneWorkers() {
   store.dispatch(signalParcelLoadingStarted())
 }
 
-export async function loadPreviewScene(ws?: string) {
+export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
   const result = await fetch('/scene.json?nocache=' + Math.random())
 
   if (result.ok) {
     const scene = (await result.json()) as SceneJsonData
 
     const [sceneId] = await fetchSceneIds([scene.scene.base])
-
-    if (sceneId) {
-      await reloadScene(sceneId)
-    } else {
-      console.log(`Unable to load sceneId of ${scene.scene.base}`)
-      debugger
-    }
-
-    // let transport: undefined | ScriptingTransport = undefined
-
-    // if (ws) {
-    //   transport = WebSocketTransport(new WebSocket(ws, ['dcl-scene']))
-    // }
+    return { sceneId, sceneBase: scene.scene.base }
   } else {
     throw new Error('Could not load scene.json')
   }
 }
 
-export function loadBuilderScene(sceneData: ILand): UnityParcelScene | undefined {
+export async function loadPreviewScene(message: sdk.Messages) {
+  if (
+    message.type === sdk.SCENE_UPDATE &&
+    sdk.SceneUpdate.validate(message) &&
+    message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE
+  ) {
+    try {
+      const { sceneId } = message.payload
+      const url = `${rootURLPreviewMode()}/preview-wearables/${sceneId}`
+      const collection: { data: any[] } = await (await fetch(url)).json()
+
+      if (!!collection.data.length) {
+        const wearable = collection.data[0]
+        if (!sceneLoading.get(wearable.id)) {
+          await killPortableExperienceScene(wearable.id)
+
+          sceneLoading.set(wearable, true)
+          // This timeout is because the killPortableExperience isn't really async
+          //  and before spawn the portable experience it's neccesary that be kill
+          //  the previous scene
+          // TODO: catch the Scene.unloaded and then call the spawn.
+          await sleep(100)
+
+          await spawnPortableExperience(
+            wearable.id,
+            'main',
+            wearable.name,
+            `${wearable.baseUrl}/`,
+            wearable.data.scene,
+            wearable.thumbnail
+          )
+          sceneLoading.set(wearable, false)
+        }
+      }
+    } catch (err) {
+      defaultLogger.error(`Unable to loader the preview portable experience`, message, err)
+    }
+  } else {
+    const { sceneId, sceneBase } = await getPreviewSceneId()
+
+    if (sceneId) {
+      await reloadScene(sceneId)
+    } else {
+      defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
+      debugger
+    }
+  }
+}
+
+export function loadBuilderScene(_sceneData: ILand): UnityParcelScene | undefined {
+  // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
-  // unloadCurrentBuilderScene()
-
-  // const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(sceneData))
-
-  // const target: LoadableParcelScene = { ...ILandToLoadableParcelScene(sceneData).data }
-  // delete target.land
-
-  // getUnityInstance().LoadParcelScenes([target])
-  // return parcelScene
 }
 
 export function unloadCurrentBuilderScene() {
+  // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
-  // if (currentLoadedScene) {
-  //   getUnityInstance().DeactivateRendering()
-  //   currentLoadedScene.emit('builderSceneUnloaded', {})
-
-  //   stopParcelSceneWorker(currentLoadedScene)
-  //   getUnityInstance().SendBuilderMessage('UnloadBuilderScene', currentLoadedScene.getSceneId())
-  //   currentLoadedScene = null
-  // }
 }
 
-export function updateBuilderScene(sceneData: ILand) {
+export function updateBuilderScene(_sceneData: ILand) {
+  // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
-  // if (currentLoadedScene) {
-  //   const target: LoadableParcelScene = { ...ILandToLoadableParcelSceneUpdate(sceneData).data }
-  //   delete target.land
-  //   getUnityInstance().UpdateParcelScenes([target])
-  // }
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {
@@ -234,11 +263,17 @@ teleportObservable.add((position: { x: number; y: number; text?: string }) => {
 
   function pointerLockChange() {
     const doc: any = document
-    const isLocked = (doc.pointerLockElement || doc.mozPointerLockElement || doc.webkitPointerLockElement) != null
+    const isLocked = !!(doc.pointerLockElement || doc.mozPointerLockElement || doc.webkitPointerLockElement)
     if (isPointerLocked !== isLocked && getUnityInstance()) {
       getUnityInstance().SetCursorState(isLocked)
     }
     isPointerLocked = isLocked
+    allScenesEvent({
+      eventType: 'onPointerLock',
+      payload: {
+        locked: isPointerLocked
+      }
+    })
   }
 
   document.addEventListener('pointerlockchange', pointerLockChange, false)

@@ -1,9 +1,14 @@
-import { countParcelsCloseTo } from "../../comms/interface/utils"
-import { Parcel, Candidate } from "../types"
-import { ClosePeersScoreParameters, AlgorithmLink, AlgorithmLinkTypes, AlgorithmContext } from "./types"
-import { usersParcels, selectFirstByScore, defaultScoreAddons } from "./utils"
+import { countParcelsCloseTo } from '../../comms/interface/utils'
+import { Parcel, Candidate } from '../types'
+import { ClosePeersScoreParameters, AlgorithmLink, AlgorithmLinkTypes, AlgorithmContext } from './types'
+import { usersParcels, selectFirstByScore, defaultScoreAddons } from './utils'
 
-export function closePeersScoreLink({ closePeersDistance, baseScore, latencyDeductionsParameters, definitiveDecisionThreshold }: ClosePeersScoreParameters): AlgorithmLink {
+export function closePeersScoreLink({
+  closePeersDistance,
+  baseScore,
+  latencyDeductionsParameters,
+  definitiveDecisionThreshold
+}: ClosePeersScoreParameters): AlgorithmLink {
   function closeUsersScore(currentParcel: Parcel) {
     return (candidate: Candidate) => {
       const parcels = usersParcels(candidate)

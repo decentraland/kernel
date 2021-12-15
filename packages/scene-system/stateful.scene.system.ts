@@ -69,7 +69,13 @@ class StatefulWebWorkerScene extends Script {
       const { type, payload } = data
       if (type === 'PublishSceneState') {
         this.sceneStateStorage
-          .publishSceneState(sceneId, payload.title, payload.description, payload.screenshot, serializeSceneState(this.sceneDefinition))
+          .publishSceneState(
+            sceneId,
+            payload.title,
+            payload.description,
+            payload.screenshot,
+            serializeSceneState(this.sceneDefinition)
+          )
           .catch((error) => this.error(`Failed to store the scene's state`, error))
       }
     })
@@ -88,7 +94,12 @@ class StatefulWebWorkerScene extends Script {
       const { type, payload } = data
       if (type === 'SaveProjectInfo') {
         this.sceneStateStorage
-          .saveProjectInfo(serializeSceneState(this.sceneDefinition), payload.title, payload.description, payload.screenshot)
+          .saveProjectInfo(
+            serializeSceneState(this.sceneDefinition),
+            payload.title,
+            payload.description,
+            payload.screenshot
+          )
           .catch((error) => this.error(`Failed to save the scene's info`, error))
       }
     })

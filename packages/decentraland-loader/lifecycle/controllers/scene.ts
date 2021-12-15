@@ -156,7 +156,7 @@ export class SceneLifeCycleController extends EventEmitter {
       const pairs = await this.downloadManager.resolveSceneSceneIds(missingTiles)
 
       for (const [tile, sceneId] of pairs) {
-        let result =
+        const result =
           sceneId ??
           // empty scene!
           (this.enabledEmpty ? ('Qm' + tile + 'm').padEnd(46, '0') : undefined)

@@ -1,4 +1,4 @@
-import { Candidate, Parcel } from "../types"
+import { Candidate, Parcel } from '../types'
 
 export enum AlgorithmLinkTypes {
   LARGE_LATENCY = 'LARGE_LATENCY',
@@ -65,10 +65,10 @@ export type LoadBalancingConfig = {
 }
 
 export type AllPeersScoreConfig = {
-  type: AlgorithmLinkTypes.ALL_PEERS_SCORE,
+  type: AlgorithmLinkTypes.ALL_PEERS_SCORE
   config?: {
     /** Base score for any realm that has at least 1 user. Default: 40 */
-    baseScore?: number,
+    baseScore?: number
     /** If the realm has maxUsers, the score will rise only until the target percentage of fullness represented by this value is reached */
     fillTargetPercentage?: number
     /** If the realm has maxUsers, the score will become baseScore when this percentage is reached */
@@ -85,16 +85,26 @@ export type AllPeersScoreParameters = Required<AllPeersScoreConfig['config']> & 
   latencyDeductionsParameters: Required<LatencyDeductionsConfig>
 }
 
-export type AlgorithmLinkConfig = (LargeLatencyConfig | AllPeersScoreConfig | ClosePeersScoreConfig | LoadBalancingConfig) & { name?: string }
+export type AlgorithmLinkConfig = (
+  | LargeLatencyConfig
+  | AllPeersScoreConfig
+  | ClosePeersScoreConfig
+  | LoadBalancingConfig
+) & { name?: string }
 
 export type AlgorithmChainConfig = AlgorithmLinkConfig[]
 
 /**
  * The allCandidates attribute lists all candidates. The "picked" candidates is a sorted list of those candidates picked by all the previous links
  */
-export type AlgorithmContext = { allCandidates: Candidate[], picked: Candidate[], userParcel: Parcel, selected?: Candidate }
+export type AlgorithmContext = {
+  allCandidates: Candidate[]
+  picked: Candidate[]
+  userParcel: Parcel
+  selected?: Candidate
+}
 
 export type AlgorithmLink = {
-  name: string,
+  name: string
   pick: (context: AlgorithmContext) => AlgorithmContext
 }

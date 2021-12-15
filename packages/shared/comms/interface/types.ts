@@ -1,4 +1,4 @@
-import { ProfileForRenderer } from 'decentraland-ecs'
+import { ProfileForRenderer } from '@dcl/legacy-ecs'
 import { Profile, ProfileType } from 'shared/profiles/types'
 import { ExplorerIdentity } from 'shared/session/types'
 
@@ -93,7 +93,7 @@ export type PeerInformation = {
 }
 
 export type UserInformation = {
-  userId?: string
+  userId: string
   version?: number
   pose?: Pose
   expression?: AvatarExpression

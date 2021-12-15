@@ -1,4 +1,4 @@
-import { CLASS_ID } from 'decentraland-ecs'
+import { CLASS_ID } from '@dcl/legacy-ecs'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import {
   AttachEntityComponentPayload,
@@ -43,11 +43,11 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
         .map(({ componentId, data }) => this.mapComponentToActions(entityId, componentId, data))
         .forEach((actions) => batch.push(...actions))
     }
-    this.engine.sendBatch(batch)
+    void this.engine.sendBatch(batch)
   }
 
   removeEntity(entityId: EntityId): void {
-    this.engine.sendBatch([
+    void this.engine.sendBatch([
       {
         type: 'RemoveEntity',
         payload: { id: entityId } as RemoveEntityPayload
@@ -57,12 +57,12 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
 
   setComponent(entityId: EntityId, componentId: ComponentId, data: ComponentData): void {
     const updates = this.mapComponentToActions(entityId, componentId, data)
-    this.engine.sendBatch(updates)
+    void this.engine.sendBatch(updates)
   }
 
   removeComponent(entityId: EntityId, componentId: ComponentId): void {
     const { name } = this.getInfoAboutComponent(componentId)
-    this.engine.sendBatch([
+    void this.engine.sendBatch([
       {
         type: 'ComponentRemoved',
         tag: entityId,
@@ -75,7 +75,7 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
   }
 
   sendInitFinished() {
-    this.engine.sendBatch([
+    void this.engine.sendBatch([
       {
         type: 'InitMessagesFinished',
         tag: 'scene',

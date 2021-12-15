@@ -15,6 +15,8 @@ enum Category {
      PROFILE = 2;
      CHAT = 3;
      SCENE_MESSAGE = 4;
+     PROF_REQ = 5;
+     PROF_RES = 6;
 }
 
 message DataHeader {
@@ -39,10 +41,23 @@ message ProfileData {
     double time = 2;
     string profile_version = 3;
     enum ProfileType {
-        DEPLOYED = 0;
-        LOCAL = 1;
+        LOCAL = 0;
+        DEPLOYED = 1;
     }
     ProfileType profile_type = 4;
+}
+
+message ProfileRequestData {
+    Category category = 1;
+    double time = 2;
+    string profile_version = 3;
+    string user_id = 4;
+}
+
+message ProfileResponseData {
+    Category category = 1;
+    double time = 2;
+    string serialized_profile = 3;
 }
 
 message ChatData {

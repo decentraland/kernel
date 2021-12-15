@@ -15,7 +15,7 @@ const maxGIFDimension = 512
 let frameImageData: any = undefined
 
 {
-  let payloads: ProcessorMessage[] = new Array()
+  const payloads: ProcessorMessage[] = []
   let payloadInProcess: ProcessorMessage | null = null
   let abortController: AbortController | null
 
@@ -71,8 +71,8 @@ let frameImageData: any = undefined
       const buffer = await response.arrayBuffer()
       const parsedGif = await parseGIF(buffer)
       const decompressedFrames = decompressFrames(parsedGif, true)
-      const frameDelays = new Array()
-      const framesAsArrayBuffer = new Array()
+      const frameDelays = []
+      const framesAsArrayBuffer = []
       let hasToBeResized = false
 
       frameImageData = undefined
@@ -85,7 +85,7 @@ let frameImageData: any = undefined
 
       hasToBeResized = gifCanvas.width > maxGIFDimension || gifCanvas.height > maxGIFDimension
       if (hasToBeResized) {
-        let scalingFactor =
+        const scalingFactor =
           gifCanvas.width > gifCanvas.height ? gifCanvas.width / maxGIFDimension : gifCanvas.height / maxGIFDimension
         resizedCanvas.width = gifCanvas.width / scalingFactor
         finalWidth = resizedCanvas.width

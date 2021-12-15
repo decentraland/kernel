@@ -1,3 +1,4 @@
+import { EcsMathReadOnlyVector2 } from '@dcl/ecs-math'
 import {
   setCatalystCandidates,
   setAddedCatalystCandidates,
@@ -41,7 +42,6 @@ import {
 } from 'shared/loading/ReportFatalError'
 import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
 import { gte } from 'semver'
-import { ReadOnlyVector2 } from 'decentraland-ecs'
 import { parcelAvailable } from 'shared/world/positionThings'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
@@ -125,7 +125,7 @@ function* loadCatalystRealms() {
     throw new Error('Unable to select a realm')
   }
 
-  yield put(setCatalystRealm(realm!))
+  yield put(setCatalystRealm(realm))
 
   defaultLogger.info(`Using Catalyst configuration: `, {
     original: yield select((state) => state.dao),
@@ -149,7 +149,7 @@ function* waitForCandidates() {
 
 export function* selectRealm() {
   yield call(waitForCandidates)
-  const parcel: ReadOnlyVector2 = yield parcelAvailable()
+  const parcel: EcsMathReadOnlyVector2 = yield parcelAvailable()
 
   const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
 
@@ -213,7 +213,7 @@ function* cacheCatalystRealm(action: SetCatalystRealm) {
   yield call(saveToPersistentStorage, getLastRealmCacheKey(network), action.payload)
 }
 
-function* cacheCatalystCandidates(action: SetCatalystCandidates | SetAddedCatalystCandidates) {
+function* cacheCatalystCandidates(_action: SetCatalystCandidates | SetAddedCatalystCandidates) {
   const allCandidates = yield select(getAllCatalystCandidates)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   yield call(saveToPersistentStorage, getLastRealmCandidatesCacheKey(network), allCandidates)

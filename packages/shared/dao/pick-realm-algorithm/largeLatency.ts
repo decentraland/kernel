@@ -1,4 +1,4 @@
-import { LargeLatencyParameters, AlgorithmLink, AlgorithmLinkTypes, AlgorithmContext } from "./types"
+import { LargeLatencyParameters, AlgorithmLink, AlgorithmLinkTypes, AlgorithmContext } from './types'
 
 export function largeLatencyLink({ largeLatencyThreshold }: LargeLatencyParameters): AlgorithmLink {
   return {
@@ -8,7 +8,7 @@ export function largeLatencyLink({ largeLatencyThreshold }: LargeLatencyParamete
 
       const minElapsed = sorted[0].elapsed
 
-      context.picked = sorted.filter(it => it.elapsed - minElapsed < largeLatencyThreshold)
+      context.picked = sorted.filter((it) => it.elapsed - minElapsed < largeLatencyThreshold)
 
       if (context.picked.length === 1) {
         context.selected = context.picked[0]

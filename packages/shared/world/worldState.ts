@@ -82,6 +82,7 @@ export async function ensureRendererEnabled() {
   return new Promise<void>((resolve) => onNextRendererEnabled(resolve))
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 function onNextRendererEnabled(callback: Function) {
   const observer = renderStateObservable.add(() => {
     if (isRendererEnabled()) {

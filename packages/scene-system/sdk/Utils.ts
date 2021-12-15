@@ -1,4 +1,5 @@
-import { CLASS_ID, Transform, Vector3 } from 'decentraland-ecs'
+import { Vector3 } from '@dcl/ecs-math'
+import { CLASS_ID, Transform } from '@dcl/legacy-ecs'
 import { PB_Transform, PB_Vector3, PB_Quaternion } from '../../shared/proto/engineinterface_pb'
 
 const VECTOR3_MEMBER_CAP = 1000000 // Value measured when genesis plaza glitch triggered a physics engine breakdown
@@ -54,7 +55,7 @@ function serializeTransform(transform: Transform): string {
   pbTransform.setRotation(pbRotation)
   pbTransform.setScale(pbScale)
 
-  let arrayBuffer: Uint8Array = pbTransform.serializeBinary()
+  const arrayBuffer: Uint8Array = pbTransform.serializeBinary()
   return btoa(String.fromCharCode(...arrayBuffer))
 }
 

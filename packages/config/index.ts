@@ -34,6 +34,7 @@ export namespace parcelLimits {
   export const halfParcelSize = parcelSize / 2 /* meters */
   export const centimeter = 0.01
 
+  // eslint-disable-next-line prefer-const
   export let visibleRadius = 4
 
   /**
@@ -128,6 +129,7 @@ export const DEBUG_REDUX = location.search.includes('DEBUG_REDUX')
 export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
 export const DEBUG_PM = location.search.includes('DEBUG_PM')
 export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
+export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
 
 export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
@@ -140,7 +142,10 @@ export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
 
-export const QS_MAX_VISIBLE_PEERS = typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
+export const QS_MAX_VISIBLE_PEERS =
+  typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
+
+export const BUILDER_SERVER_URL = ensureSingleString(qs.BUILDER_SERVER_URL) ?? 'https://builder-api.decentraland.org/v1'
 
 /**
  * Get the root URL and ensure not to end with slash
@@ -153,8 +158,8 @@ export const rootURLPreviewMode = () => {
 export const PIN_CATALYST = PREVIEW
   ? rootURLPreviewMode()
   : typeof qs.CATALYST === 'string'
-    ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
-    : undefined
+  ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
+  : undefined
 
 export const FORCE_RENDERING_STYLE = ensureSingleString(qs.FORCE_RENDERING_STYLE) as any
 
@@ -214,12 +219,12 @@ export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
 }
 
 function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
-  const tld = network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
   return `https://content-assets-as-bundle.decentraland.${tld}`
 }
 
 export function getServerConfigurations(network: ETHEREUM_NETWORK) {
-  const tld = network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
   const metaConfigBaseUrl = META_CONFIG_URL || `https://config.decentraland.${tld}/explorer.json`
   const metaFeatureFlagsBaseUrl = `https://feature-flags.decentraland.${tld}/explorer.json`
@@ -242,8 +247,8 @@ function assertValue<T>(val: T | undefined | null): T {
 
 export namespace ethereumConfigurations {
   export const mainnet = {
-    wss: 'wss://mainnet.infura.io/ws/v3/074a68d50a7c4e6cb46aec204a50cbf0',
-    http: 'https://mainnet.infura.io/v3/074a68d50a7c4e6cb46aec204a50cbf0/',
+    wss: 'wss://mainnet.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa',
+    http: 'https://mainnet.infura.io/v3/f54f2e10b59647778de06d884121f8fa/',
     etherscan: 'https://etherscan.io',
     names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace',
 
@@ -254,8 +259,8 @@ export namespace ethereumConfigurations {
     MANAToken: assertValue(contractInfo.mainnet.MANAToken)
   }
   export const ropsten = {
-    wss: 'wss://ropsten.infura.io/ws/v3/074a68d50a7c4e6cb46aec204a50cbf0',
-    http: 'https://ropsten.infura.io/v3/074a68d50a7c4e6cb46aec204a50cbf0/',
+    wss: 'wss://ropsten.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa',
+    http: 'https://ropsten.infura.io/v3/f54f2e10b59647778de06d884121f8fa/',
     etherscan: 'https://ropsten.etherscan.io',
     names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten',
 

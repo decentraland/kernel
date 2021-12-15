@@ -19,17 +19,14 @@
     "noUnusedLocals": true,
     "jsx": "react",
     "jsxFactory": "createElement",
-    "plugins": [
-      {
-        "name": "tslint-language-service"
-      }
-    ],
     "baseUrl": "./packages",
     "lib": [
       "es2018",
       "dom",
       "esnext.asynciterable"
-    ]
+    ],
+    "types": ["@dcl/posix", "segment-analytics"],
+    "typeRoots": ["./node_modules"]
   },
   "exclude": [
     "node_modules",

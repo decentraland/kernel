@@ -1,5 +1,6 @@
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
+import { sdk } from '@dcl/schemas'
 import defaultLogger, { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
@@ -8,7 +9,7 @@ import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import { loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
+import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -17,7 +18,7 @@ import { realmInitialized } from 'shared/dao'
 import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
 import { ensureMetaConfigurationInitialized, waitForMessageOfTheDay } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
-import { getFeatureFlags, isFeatureEnabled } from 'shared/meta/selectors'
+import { getFeatureFlags, getWorldConfig, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { startRealmsReportToRenderer } from 'unity-interface/realmsForRenderer'
 import { isWaitingTutorial } from 'shared/loading/selectors'
@@ -38,7 +39,7 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
-function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean, exploreV2Enables: boolean) {
+function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean) {
   // The elements below, require the taskbar to be active before being activated.
 
   i.ConfigureHUDElement(
@@ -52,7 +53,6 @@ function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: bool
   i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: true })
 
   i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
-  i.ConfigureHUDElement(HUDElementID.EXPLORE_HUD, { active: !exploreV2Enables, visible: false })
   i.ConfigureHUDElement(HUDElementID.HELP_AND_SUPPORT_HUD, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: builderInWorldEnabled, visible: false })
 }
@@ -155,7 +155,7 @@ globalThis.DecentralandKernel = {
 
         const profile = await localProfilesRepo.get(
           address,
-          networkId == 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
+          networkId === 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
         )
 
         return { result: !!profile, profile: profile || null } as any
@@ -187,7 +187,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
 
   const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
-  const worldConfig: WorldConfig | undefined = store.getState().meta.config.world
+  const worldConfig: WorldConfig | undefined = getWorldConfig(store.getState())
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
   const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
@@ -205,6 +205,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.AVATAR_NAMES, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.SETTINGS_PANEL, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.EXPRESSIONS, { active: true, visible: true })
+  i.ConfigureHUDElement(HUDElementID.EMOTES, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.PLAYER_INFO_CARD, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.AIRDROPPING, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.TERMS_OF_SERVICE, { active: true, visible: true })
@@ -219,17 +220,16 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       const identity = getCurrentIdentity(store.getState())!
 
       const VOICE_CHAT_ENABLED = true
-      const BUILDER_IN_WORLD_ENABLED = identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
-      const EXPLORE_V2_ENABLED = isFeatureEnabled(store.getState(), FeatureFlags.EXPLORE_V2_ENABLED, false)
+      const BUILDER_IN_WORLD_ENABLED =
+        identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
 
       const configForRenderer = kernelConfigForRenderer()
       configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
-      configForRenderer.features.enableBuilderInWorld = BUILDER_IN_WORLD_ENABLED
-      configForRenderer.features.enableExploreV2 = EXPLORE_V2_ENABLED
       configForRenderer.network = getSelectedNetwork(store.getState())
+
       i.SetKernelConfiguration(configForRenderer)
-  
-      configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED, EXPLORE_V2_ENABLED)
+
+      configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED)
 
       i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
       i.ConfigureHUDElement(HUDElementID.USERS_AROUND_LIST_HUD, { active: VOICE_CHAT_ENABLED, visible: false })
@@ -255,7 +255,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     })
     .catch((e) => {
       logger.error('error on configuring taskbar & friends hud / tutorial. Trying to default to simple taskbar', e)
-      configureTaskbarDependentHUD(i, false, false, false)
+      configureTaskbarDependentHUD(i, false, false)
     })
 
   startRealmsReportToRenderer()
@@ -294,28 +294,35 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   if (options.previewMode) {
     i.SetDisableAssetBundles()
     await startPreview()
+    // tslint:disable: no-commented-out-code
     // const position = pickWorldSpawnpoint(scene)
     // i.Teleport(position)
     // teleportObservable.notifyObservers(position.position)
+    // tslint:enable: no-commented-out-code
   }
 
   return true
 }
 
 export async function startPreview() {
-  let wsScene: string | undefined = undefined
+  void getPreviewSceneId().then(async (sceneData) => {
+    if (sceneData.sceneId) {
+      const { unityInterface } = await ensureUnityInterface()
+      unityInterface.SetKernelConfiguration({
+        debugConfig: {
+          sceneDebugPanelTargetSceneId: sceneData.sceneId,
+          sceneLimitsWarningSceneId: sceneData.sceneId
+        }
+      })
+    }
+  })
 
-  if (location.search.indexOf('WS_SCENE') !== -1) {
-    wsScene = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${document.location.host}/?scene`
-  }
-
-  function handleServerMessage(message: any) {
-    if (message.type === 'update') {
-      if (DEBUG_WS_MESSAGES) {
-        defaultLogger.info('Message received: ', message)
-      }
-
-      loadPreviewScene(wsScene)
+  function handleServerMessage(message: sdk.Messages) {
+    if (DEBUG_WS_MESSAGES) {
+      defaultLogger.info('Message received: ', message)
+    }
+    if (message.type === sdk.UPDATE || message.type === sdk.SCENE_UPDATE) {
+      void loadPreviewScene(message)
     }
   }
 
@@ -323,8 +330,10 @@ export async function startPreview() {
 
   ws.addEventListener('message', (msg) => {
     if (msg.data.startsWith('{')) {
+      // tslint:disable-next-line: no-console
       console.log('Update message from CLI', msg.data)
-      handleServerMessage(JSON.parse(msg.data))
+      const message: sdk.Messages = JSON.parse(msg.data)
+      handleServerMessage(message)
     }
   })
 }

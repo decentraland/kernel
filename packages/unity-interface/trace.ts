@@ -3,7 +3,7 @@ import { TRACE_RENDERER } from 'config'
 import type { CommonRendererOptions } from './loader'
 
 let pendingMessagesInTrace = 0
-let currentTrace: string[] = []
+const currentTrace: string[] = []
 
 export function traceDecoratorRendererOptions(options: CommonRendererOptions): CommonRendererOptions {
   const originalOnMessage = options.onMessage
@@ -30,10 +30,11 @@ export function traceDecoratorUnityGame(game: UnityGame): UnityGame {
   return game
 }
 
-export function beginTrace(number: number) {
-  if (number > 0) {
+export function beginTrace(messagesCount: number) {
+  if (messagesCount > 0) {
     currentTrace.length = 0
-    pendingMessagesInTrace = number
+    pendingMessagesInTrace = messagesCount
+    // tslint:disable-next-line
     console.log('[TRACING] Beginning trace')
   }
 }
@@ -43,7 +44,7 @@ export function beginTrace(number: number) {
  * KR: Kernel->Renderer
  * KK: Kernel->Kernel
  */
-export function logTrace(type: string, payload: string | number, direction: 'RK' | 'KR' | 'KK') {
+export function logTrace(type: string, payload: string | number | undefined, direction: 'RK' | 'KR' | 'KK') {
   if (pendingMessagesInTrace > 0) {
     const now = performance.now().toFixed(1)
     if (direction === 'KK') {
@@ -60,10 +61,11 @@ export function logTrace(type: string, payload: string | number, direction: 'RK'
       )
     }
     pendingMessagesInTrace--
-    if (pendingMessagesInTrace % 11 == 0) {
+    if (pendingMessagesInTrace % 11 === 0) {
+      // tslint:disable-next-line
       console.log('[TRACING] Pending messages to download: ' + pendingMessagesInTrace)
     }
-    if (pendingMessagesInTrace == 0) {
+    if (pendingMessagesInTrace === 0) {
       endTrace()
     }
   }
@@ -72,8 +74,9 @@ export function logTrace(type: string, payload: string | number, direction: 'RK'
 export function endTrace() {
   pendingMessagesInTrace = 0
   const content = currentTrace.join('\n')
-  let file = new File([content], 'decentraland-trace.csv', { type: 'text/csv' })
-  let exportUrl = URL.createObjectURL(file)
+  const file = new File([content], 'decentraland-trace.csv', { type: 'text/csv' })
+  const exportUrl = URL.createObjectURL(file)
+  // tslint:disable-next-line
   console.log('[TRACING] Ending trace, downloading file: ', exportUrl, ' check your downloads folder.')
   window.location.assign(exportUrl)
   currentTrace.length = 0

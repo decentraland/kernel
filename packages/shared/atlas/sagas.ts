@@ -1,5 +1,5 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
-import { MinimapSceneInfo } from 'decentraland-ecs'
+import { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { call, fork, put, select, take, takeEvery, race, takeLatest } from 'redux-saga/effects'
 import { parcelLimits } from 'config'
 import { fetchSceneJson } from '../../decentraland-loader/lifecycle/utils/fetchSceneJson'
@@ -218,8 +218,8 @@ function* reportScenes(sceneIds: string[]): any {
       let isPOI: boolean = false
 
       scene.sceneJsonData?.scene.parcels.forEach((parcel) => {
-        let xyStr = parcel.split(',')
-        let xy: Vector2Component = { x: parseInt(xyStr[0], 10), y: parseInt(xyStr[1], 10) }
+        const xyStr = parcel.split(',')
+        const xy: Vector2Component = { x: parseInt(xyStr[0], 10), y: parseInt(xyStr[1], 10) }
 
         if (pois.includes(parcel)) {
           isPOI = true

@@ -5,10 +5,11 @@ import {
   AUTO_CHANGE_REALM,
   genericAvatarSnapshots,
   COMMS_PROFILE_TIMEOUT,
-  COMMS_SERVICE
+  COMMS_SERVICE,
+  DEBUG_KERNEL_LOG
 } from 'config'
 import { CommunicationsController } from 'shared/apis/CommunicationsController'
-import { defaultLogger } from 'shared/logger'
+import { createDummyLogger, defaultLogger } from 'shared/logger'
 import { ChatMessage as InternalChatMessage, ChatMessageType, SceneFeatureToggles } from 'shared/types'
 import { lastPlayerParcel, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { lastPlayerScene } from 'shared/world/sceneState'
@@ -53,7 +54,7 @@ import {
 } from './interface/utils'
 import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { ProfileForRenderer } from 'decentraland-ecs'
+import { ProfileForRenderer } from '@dcl/legacy-ecs'
 import { renderStateObservable, isRendererEnabled, ensureRendererEnabled } from '../world/worldState'
 import { WorldInstanceConnection } from './interface/index'
 
@@ -85,12 +86,7 @@ import {
   ErrorContext,
   ReportFatalErrorWithCommsPayload
 } from 'shared/loading/ReportFatalError'
-import {
-  NEW_LOGIN,
-  commsEstablished,
-  COMMS_COULD_NOT_BE_ESTABLISHED,
-  commsErrorRetrying
-} from 'shared/loading/types'
+import { NEW_LOGIN, commsEstablished, COMMS_COULD_NOT_BE_ESTABLISHED, commsErrorRetrying } from 'shared/loading/types'
 import { getIdentity, getStoredSession } from 'shared/session'
 import { createLogger } from '../logger'
 import { VoiceCommunicator, VoiceSpatialParams } from 'voice-chat-codec/VoiceCommunicator'
@@ -138,7 +134,7 @@ type CommsContainer = {
 
 declare const globalThis: CommsContainer
 
-const logger = createLogger('comms: ')
+const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
 
 type ProfilePromiseState = {
   promise: Promise<ProfileForRenderer | void>
@@ -165,18 +161,15 @@ export class PeerTrackingInfo {
 
   public loadProfileIfNecessary(profileVersion: number) {
     if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
-      if (!this.userInfo || !this.userInfo.userId) {
-        this.userInfo = {
-          ...(this.userInfo || {}),
-          userId: this.identity
-        }
+      if (!this.userInfo) {
+        this.userInfo = { userId: this.identity }
       }
       this.profilePromise = {
         promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
           .then((profile) => {
             const forRenderer = profileToRendererFormat(profile)
             this.lastProfileUpdate = new Date().getTime()
-            const userInfo = this.userInfo || {}
+            const userInfo = this.userInfo || ({ userId: this.identity } as UserInformation)
             userInfo.version = profile.version
             this.userInfo = userInfo
             this.profilePromise.status = 'ok'
@@ -232,7 +225,7 @@ let voiceCommunicator: VoiceCommunicator | null = null
  * Returns a list of CIDs that must receive scene messages from comms
  */
 function getParcelSceneSubscriptions(): string[] {
-  let ids: string[] = []
+  const ids: string[] = []
 
   scenesSubscribedToCommsEvents.forEach(($) => {
     ids.push($.cid)
@@ -531,28 +524,28 @@ function processProfileRequest(context: Context, fromAlias: string, message: Pac
   if (context.sendingProfileResponse) return
 
   context.sendingProfileResponse = true
-    ; (async () => {
-      const timeSinceLastProfile = Date.now() - context.lastProfileResponseTime
+  ;(async () => {
+    const timeSinceLastProfile = Date.now() - context.lastProfileResponseTime
 
-      // We don't want to send profile responses too frequently, so we delay the response to send a maximum of 1 per TIME_BETWEEN_PROFILE_RESPONSES
-      if (timeSinceLastProfile < TIME_BETWEEN_PROFILE_RESPONSES) {
-        await sleep(TIME_BETWEEN_PROFILE_RESPONSES - timeSinceLastProfile)
-      }
+    // We don't want to send profile responses too frequently, so we delay the response to send a maximum of 1 per TIME_BETWEEN_PROFILE_RESPONSES
+    if (timeSinceLastProfile < TIME_BETWEEN_PROFILE_RESPONSES) {
+      await sleep(TIME_BETWEEN_PROFILE_RESPONSES - timeSinceLastProfile)
+    }
 
-      const profile = await ProfileAsPromise(
-        myAddress,
-        message.data.version ? parseInt(message.data.version, 10) : undefined,
-        getProfileType(myIdentity)
-      )
+    const profile = await ProfileAsPromise(
+      myAddress,
+      message.data.version ? parseInt(message.data.version, 10) : undefined,
+      getProfileType(myIdentity)
+    )
 
-      if (context.currentPosition) {
-        context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
-      }
+    if (context.currentPosition) {
+      void context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
+    }
 
-      context.lastProfileResponseTime = Date.now()
-    })()
-      .finally(() => (context.sendingProfileResponse = false))
-      .catch((e) => defaultLogger.error('Error getting profile for responding request to comms', e))
+    context.lastProfileResponseTime = Date.now()
+  })()
+    .finally(() => (context.sendingProfileResponse = false))
+    .catch((e) => defaultLogger.error('Error getting profile for responding request to comms', e))
 }
 
 function processProfileResponse(context: Context, fromAlias: string, message: Package<ProfileResponse>) {
@@ -693,7 +686,7 @@ export function onPositionUpdate(context: Context, p: Position) {
     const zMin = ((commArea.vMin.z + parcelLimits.maxParcelZ) >> 2) << 2
     const zMax = ((commArea.vMax.z + parcelLimits.maxParcelZ) >> 2) << 2
 
-    let rawTopics: string[] = []
+    const rawTopics: string[] = []
     for (let x = xMin; x <= xMax; x += 4) {
       for (let z = zMin; z <= zMax; z += 4) {
         const hash = `${x >> 2}:${z >> 2}`
@@ -767,7 +760,7 @@ function collectInfo(context: Context) {
   const visiblePeers: ProcessingPeerInfo[] = []
   const commsMetaConfig = getCommsConfig(store.getState())
   const commArea = new CommunicationArea(position2parcel(context.currentPosition), commConfigurations.commRadius)
-  for (let [peerAlias, trackingInfo] of context.peerData) {
+  for (const [peerAlias, trackingInfo] of context.peerData) {
     const msSinceLastUpdate = now - trackingInfo.lastUpdate
 
     if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
@@ -801,7 +794,7 @@ function collectInfo(context: Context) {
   }
 
   if (visiblePeers.length <= commsMetaConfig.maxVisiblePeers) {
-    for (let peerInfo of visiblePeers) {
+    for (const peerInfo of visiblePeers) {
       const alias = peerInfo.alias
       receiveUserVisible(alias, true)
       receiveUserPose(alias, peerInfo.position as Pose)
@@ -899,12 +892,18 @@ async function getPeerParameters(): Promise<PeerParameters> {
   }
 
   try {
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, getIdentity()!, { responseBodyType: 'json' })
+    const identity = getIdentity()
+
+    if (!identity) {
+      throw new Error('identity is undefined')
+    }
+
+    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, identity, { responseBodyType: 'json' })
 
     if (peerParameters.ok) {
       return { ...defaultPeerParameters, ...peerParameters.json }
     } else {
-      throw new Error("Server response was not OK: " + peerParameters.status)
+      throw new Error('Server response was not OK: ' + peerParameters.status)
     }
   } catch (e) {
     defaultLogger.warn("Couldn't fetch peer parameters for comms server. Using defaults!", e)
@@ -923,6 +922,7 @@ export async function connect(userId: string) {
     }
 
     const userInfo = {
+      userId,
       ...user
     }
 
@@ -1208,7 +1208,7 @@ async function doStartCommunications(context: Context) {
 
     window.addEventListener('beforeunload', () => {
       context.positionUpdatesPaused = true
-      sendToMordor()
+      sendToMordor().catch((e) => defaultLogger.warn(e))
     })
 
     context.infoCollecterInterval = setInterval(() => {
@@ -1219,11 +1219,11 @@ async function doStartCommunications(context: Context) {
 
     if (!voiceCommunicator) {
       voiceCommunicator = new VoiceCommunicator(
-        context.userInfo.userId!,
+        context.userInfo.userId,
         {
           send(frame: EncodedFrame) {
             if (context.currentPosition) {
-              context.worldInstanceConnection?.sendVoiceMessage(context.currentPosition, frame)
+              void context.worldInstanceConnection?.sendVoiceMessage(context.currentPosition, frame)
             }
           }
         },
@@ -1242,7 +1242,7 @@ async function doStartCommunications(context: Context) {
       voiceCommunicator.addStreamRecordingListener((recording) => {
         store.dispatch(voiceRecordingUpdate(recording))
       })
-        ; (globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
+      ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
     }
   } catch (e) {
     throw new ConnectionEstablishmentError(e.message)
@@ -1295,12 +1295,12 @@ function handleFullLayer() {
 
 export function onWorldRunning(isRunning: boolean, _context: Context | null = context) {
   if (!isRunning) {
-    sendToMordor(_context)
+    sendToMordor(_context).catch((e) => defaultLogger.warn(e))
   }
 }
 
-export async function sendToMordor(_context: Context | null = context) {
-  await sendToMordorAsync().catch((e) => defaultLogger.warn(`error while sending message `, e))
+export function sendToMordor(_context: Context | null = context) {
+  return sendToMordorAsync().catch((e) => defaultLogger.warn(`error while sending message `, e))
 }
 
 async function sendToMordorAsync(_context: Context | null = context) {

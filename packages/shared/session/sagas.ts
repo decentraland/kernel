@@ -3,9 +3,9 @@ import { createIdentity } from 'eth-crypto'
 import { Account } from 'web3x/account'
 import { Authenticator } from 'dcl-crypto'
 
-import { ETHEREUM_NETWORK, PREVIEW } from 'config'
+import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK, PREVIEW } from 'config'
 
-import { createLogger } from 'shared/logger'
+import { createDummyLogger, createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
 import { getUserAccount, isSessionExpired, requestManager } from 'shared/ethereum/provider'
 import { setLocalInformationForComms } from 'shared/comms/peers'
@@ -55,7 +55,7 @@ import { disconnect, sendToMordor } from 'shared/comms'
 import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
 
 const TOS_KEY = 'tos'
-const logger = createLogger('session: ')
+const logger = DEBUG_KERNEL_LOG ? createLogger('session: ') : createDummyLogger()
 
 export function* sessionSaga(): any {
   yield takeEvery(UPDATE_TOS, updateTermOfService)
@@ -137,8 +137,8 @@ function* startSignUp(identity: ExplorerIdentity) {
   yield put(signUpSetIsSignUp(true))
 
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
-  let cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
-  let profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
+  const cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
+  const profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
   profile.userId = identity.address
   profile.ethAddress = identity.rawAddress
   profile.unclaimedName = '' // clean here to allow user complete in passport step
@@ -197,12 +197,6 @@ function* authorize(requestManager: RequestManager) {
   }
 
   return userData.identity
-  // } catch (e) {
-  // logger.error(e)
-  // ReportFatalError(e, ErrorContext.KERNEL_INIT)
-  // BringDownClientAndShowError(AUTH_ERROR_LOGGED_OUT)
-  // throw e
-  // }
 }
 
 function* signIn(identity: ExplorerIdentity) {
@@ -215,7 +209,7 @@ function* signIn(identity: ExplorerIdentity) {
     yield call(referUser, identity)
   }
 
-  let net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
 
   yield ensureMetaConfigurationInitialized()
 
@@ -289,7 +283,7 @@ async function getSigner(
       address,
       async signer(message: string) {
         while (true) {
-          let result = await requestManager.personal_sign(message, address, '')
+          const result = await requestManager.personal_sign(message, address, '')
           if (!result) continue
           return result
         }

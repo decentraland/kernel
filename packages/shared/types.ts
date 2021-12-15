@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
-import type { QueryType } from 'decentraland-ecs'
-export { Avatar, Profile, ColorString } from './profiles/types'
+import type { QueryType } from '@dcl/legacy-ecs'
+import type { WearableId } from 'shared/catalogs/types'
+export { Avatar, Profile } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
 export type MappingsResponse = {
@@ -26,6 +28,26 @@ export type UserData = {
   publicKey: string | null
   hasConnectedWeb3: boolean
   userId: string
+  version: number
+  avatar: AvatarForUserData
+}
+
+export type ColorString = string
+
+export type Snapshots = {
+  face: string
+  face256: string
+  face128: string
+  body: string
+}
+
+export type AvatarForUserData = {
+  bodyShape: WearableId
+  skinColor: ColorString
+  hairColor: ColorString
+  eyeColor: ColorString
+  wearables: WearableId[]
+  snapshots: Snapshots
 }
 
 export type MessageEntry = {
@@ -436,7 +458,10 @@ export enum HUDElementID {
   NOTIFICATION = 3,
   AVATAR_EDITOR = 4,
   SETTINGS_PANEL = 5,
+
+  /** @deprecaed */
   EXPRESSIONS = 6,
+
   PLAYER_INFO_CARD = 7,
   AIRDROPPING = 8,
   TERMS_OF_SERVICE = 9,
@@ -448,7 +473,10 @@ export enum HUDElementID {
   NFT_INFO_DIALOG = 16,
   TELEPORT_DIALOG = 17,
   CONTROLS_HUD = 18,
+
+  /** @deprecated */
   EXPLORE_HUD = 19,
+
   HELP_AND_SUPPORT_HUD = 20,
 
   /** @deprecated */
@@ -462,7 +490,8 @@ export enum HUDElementID {
   BUILDER_PROJECTS_PANEL = 28,
   SIGNUP = 29,
   LOADING_HUD = 30,
-  AVATAR_NAMES = 31
+  AVATAR_NAMES = 31,
+  EMOTES = 32
 }
 
 export type HUDConfiguration = {
@@ -575,12 +604,11 @@ export type KernelConfigForRenderer = {
     nameValidRegex: string
     nameValidCharacterRegex: string
   }
-
-  features: {
-    enableBuilderInWorld: boolean
-    enableAvatarLODs: boolean
-    enableExploreV2: boolean
-  }
+  debugConfig?: Partial<{
+    sceneDebugPanelEnabled?: boolean
+    sceneDebugPanelTargetSceneId?: string
+    sceneLimitsWarningSceneId?: string
+  }>
   gifSupported: boolean
   network: string
   validWorldRanges: Object
@@ -611,3 +639,29 @@ export type TutorialInitializationMessage = {
   fromDeepLink: boolean
   enableNewTutorialCamera: boolean
 }
+
+export type HeaderRequest = {
+  endpoint: string
+  headers: Record<string, string>
+}
+
+export enum AvatarRendererMessageType {
+  SCENE_CHANGED = 'SceneChanged',
+  REMOVED = 'Removed'
+}
+
+export type AvatarRendererBasePayload = {
+  entityId: string
+  avatarShapeId: string
+}
+
+export type AvatarRendererPositionMessage = {
+  type: AvatarRendererMessageType.SCENE_CHANGED
+  sceneId?: string
+} & AvatarRendererBasePayload
+
+export type AvatarRendererRemovedMessage = {
+  type: AvatarRendererMessageType.REMOVED
+} & AvatarRendererBasePayload
+
+export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage

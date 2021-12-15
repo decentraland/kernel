@@ -12,7 +12,7 @@ export let localProfileUUID: UUID | null = null
 /**
  * @param uuid the UUID used by the communication engine
  */
-export function setLocalInformationForComms(uuid: UUID, user: UserInformation = {}) {
+export function setLocalInformationForComms(uuid: UUID, user: UserInformation) {
   if (typeof (uuid as any) !== 'string') throw new Error('Did not receive a valid UUID')
 
   if (localProfileUUID) {
@@ -101,16 +101,16 @@ export function setUpID(uuid: UUID): PeerInformation | null {
   return peer
 }
 
-export function receiveUserData(uuid: string, data: Partial<UserInformation>) {
+export function receiveUserData(uuid: string, data: UserInformation) {
   const peerData = setUpID(uuid)
   if (peerData) {
-    const userData = peerData.user || (peerData.user = peerData.user || {})
+    const userData = peerData.user || (peerData.user = { userId: data.userId })
     const profileChanged = data.version && userData.version !== data.version
 
     if (profileChanged) {
       Object.assign(userData, data)
       ;(async () => {
-        const profile = await ProfileAsPromise(data.userId!, data.version, getProfileType(data.identity))
+        const profile = await ProfileAsPromise(data.userId, data.version, getProfileType(data.identity))
 
         if (profile) {
           avatarMessageObservable.notifyObservers({

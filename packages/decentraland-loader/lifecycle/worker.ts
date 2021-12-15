@@ -105,7 +105,7 @@ let downloadManager: SceneDataDownloadManager
       })
 
       connector.on('Scene.reload', (data: { sceneId: string }) => {
-        sceneController.reloadScene(data.sceneId)
+        void sceneController.reloadScene(data.sceneId)
       })
 
       connector.on('Scene.prefetchDone', (opt: { sceneId: string }) => {
@@ -118,7 +118,7 @@ let downloadManager: SceneDataDownloadManager
 
       connector.on('SetScenesLoadRadius', (data: NewDrawingDistanceReport) => {
         const parcels = parcelController.setLineOfSightRadius(data.distanceInParcels)
-        positionController.updateSightedParcels(parcels)
+        void positionController.updateSightedParcels(parcels)
       })
 
       connector.on('Scene.Invalidate', (data: { sceneId: string }) => {

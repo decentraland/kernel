@@ -1,6 +1,6 @@
-import type { PersistentAsyncStorage } from "@dcl/kernel-interface"
+import type { PersistentAsyncStorage } from '@dcl/kernel-interface'
 
-declare var window: any
+declare let window: any
 
 class PersistentLocalStorage implements PersistentAsyncStorage {
   storage: any
@@ -8,7 +8,7 @@ class PersistentLocalStorage implements PersistentAsyncStorage {
     if (storage) {
       this.storage = storage
     } else {
-      throw new Error("Cannot create PersistentLocalStorage without localStorage object")
+      throw new Error('Cannot create PersistentLocalStorage without localStorage object')
     }
   }
 
@@ -21,7 +21,7 @@ class PersistentLocalStorage implements PersistentAsyncStorage {
   }
 
   async keys(): Promise<string[]> {
-    let keys: string[] = []
+    const keys: string[] = []
     for (let i = 0; i < this.storage.length; i++) {
       keys.push(this.storage.key(i) as string)
     }
@@ -35,7 +35,6 @@ class PersistentLocalStorage implements PersistentAsyncStorage {
   async setItem(key: string, value: string): Promise<void> {
     this.storage.setItem(key, value)
   }
-
 }
 
 let persistentStorage: PersistentAsyncStorage | null = null
@@ -75,5 +74,5 @@ export async function getKeysFromPersistentStorage(): Promise<string[]> {
   if (!persistentStorage) {
     throw new Error('Storage not supported')
   }
-  return await persistentStorage.keys()
+  return persistentStorage.keys()
 }

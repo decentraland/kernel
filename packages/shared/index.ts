@@ -1,5 +1,4 @@
 import './apis/index'
-import './events'
 
 import { notStarted } from './loading/types'
 import { buildStore } from './store/store'
@@ -51,7 +50,6 @@ function observeIsRendererVisibleChanges(store: RootStore, cb: (visible: boolean
 
 export function initializeRendererVisibleObserver(store: RootStore) {
   observeIsRendererVisibleChanges(store, (visible: boolean) => {
-    console.log('renderer visible', visible)
     globalObservable.emit('rendererVisible', {
       visible
     })

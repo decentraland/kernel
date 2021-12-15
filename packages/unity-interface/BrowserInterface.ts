@@ -1,14 +1,14 @@
+import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
+
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { AvatarMessageType } from 'shared/comms/interface/types'
 import { avatarMessageObservable, localProfileUUID } from 'shared/comms/peers'
-import { hasConnectedWeb3 } from 'shared/profiles/selectors'
+import { findProfileByName, hasConnectedWeb3 } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { Quaternion, ReadOnlyQuaternion, ReadOnlyVector3, Vector3 } from 'decentraland-ecs'
-import { IEventNames } from 'decentraland-ecs'
 import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -24,13 +24,15 @@ import {
   FriendshipUpdateStatusMessage,
   FriendshipAction,
   WorldPosition,
-  LoadableParcelScene
+  LoadableParcelScene,
+  AvatarRendererMessage
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
   setNewParcelScene,
   stopParcelSceneWorker,
-  loadedSceneWorkers
+  allScenesEvent,
+  AllScenesEvents
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -69,9 +71,13 @@ import { renderStateObservable } from 'shared/world/worldState'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { setRendererAvatarState } from 'shared/social/avatarTracker'
+import { isAddress } from 'eth-connect'
+import { getAuthHeaders } from 'atomicHelpers/signedFetch'
+import { Authenticator } from 'dcl-crypto'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
-export let futures: Record<string, IFuture<any>> = {}
+export const futures: Record<string, IFuture<any>> = {}
 
 // ** TODO - move to friends related file - moliva - 15/07/2020
 function toSocialId(userId: string) {
@@ -97,12 +103,6 @@ type SystemInfoPayload = {
   systemMemorySize: number
 }
 
-function allScenesEvent(data: { eventType: string; payload: any }) {
-  for (const [_key, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType as IEventNames, data.payload)
-  }
-}
-
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {
   private lastBalanceOfMana: number = -1
@@ -125,14 +125,14 @@ export class BrowserInterface {
     }
   }
 
-  public AllScenesEvent(data: { eventType: string; payload: any }) {
+  public AllScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
     allScenesEvent(data)
   }
 
   /** Triggered when the camera moves */
   public ReportPosition(data: {
-    position: ReadOnlyVector3
-    rotation: ReadOnlyQuaternion
+    position: EcsMathReadOnlyVector3
+    rotation: EcsMathReadOnlyQuaternion
     playerHeight?: number
     immediate?: boolean
   }) {
@@ -151,7 +151,7 @@ export class BrowserInterface {
     positionObservable.notifyObservers(positionEvent)
   }
 
-  public ReportMousePosition(data: { id: string; mousePosition: ReadOnlyVector3 }) {
+  public ReportMousePosition(data: { id: string; mousePosition: EcsMathReadOnlyVector3 }) {
     positionEvent.mousePosition.set(data.mousePosition.x, data.mousePosition.y, data.mousePosition.z)
     positionObservable.notifyObservers(positionEvent)
     futures[data.id].resolve(data.mousePosition)
@@ -161,6 +161,15 @@ export class BrowserInterface {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
       scene.emit(data.eventType as IEventNames, data.payload)
+
+      // Keep backward compatibility with old scenes using deprecated `pointerEvent`
+      if (data.eventType === 'actionButtonEvent') {
+        const { payload } = data.payload
+        // CLICK, PRIMARY or SECONDARY
+        if (payload.buttonId >= 0 && payload.buttonId <= 2) {
+          scene.emit('pointerEvent', data.payload)
+        }
+      }
     } else {
       if (data.eventType !== 'metricsUpdate') {
         defaultLogger.error(`SceneEvent: Scene ${data.sceneId} not found`, data)
@@ -197,7 +206,7 @@ export class BrowserInterface {
     getUnityInstance().crashPayloadResponseObservable.notifyObservers(JSON.stringify(data))
   }
 
-  public PreloadFinished(data: { sceneId: string }) {
+  public PreloadFinished(_data: { sceneId: string }) {
     // stub. there is no code about this in unity side yet
   }
 
@@ -238,10 +247,7 @@ export class BrowserInterface {
   }
 
   public MotdConfirmClicked() {
-    if (hasWallet()) {
-      // TODO: no longer used
-      // TeleportController.goToNext()
-    } else {
+    if (!hasWallet()) {
       globalObservable.emit('openUrl', { url: 'https://docs.decentraland.org/get-a-wallet/' })
     }
   }
@@ -309,7 +315,7 @@ export class BrowserInterface {
   public SaveUserUnverifiedName(changes: { newUnverifiedName: string }) {
     store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
   }
-  
+
   public SaveUserDescription(changes: { description: string }) {
     store.dispatch(saveProfileRequest({ description: changes.description }))
   }
@@ -376,11 +382,11 @@ export class BrowserInterface {
     futures[data.id].resolve(data.encodedTexture)
   }
 
-  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: ReadOnlyVector3 }) {
+  public ReportBuilderCameraTarget(data: { id: string; cameraTarget: EcsMathReadOnlyVector3 }) {
     futures[data.id].resolve(data.cameraTarget)
   }
 
-  public UserAcceptedCollectibles(data: { id: string }) {
+  public UserAcceptedCollectibles(_data: { id: string }) {
     // Here, we should have "airdropObservable.notifyObservers(data.id)".
     // It's disabled because of security reasons.
   }
@@ -439,18 +445,28 @@ export class BrowserInterface {
   }
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
-    let { userId, action } = message
+    let { userId } = message
+    let found = false
+    const state = store.getState()
 
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
-    let found = false
-    if (action === FriendshipAction.REQUESTED_TO) {
+    if (message.action === FriendshipAction.REQUESTED_TO) {
       await ensureFriendProfile(userId)
-      found = hasConnectedWeb3(store.getState(), userId)
+
+      if (isAddress(userId)) {
+        found = hasConnectedWeb3(state, userId)
+      } else {
+        const profileByName = findProfileByName(state, userId)
+        if (profileByName) {
+          userId = profileByName.userId
+          found = true
+        }
+      }
     }
 
     if (!found) {
       // if user profile was not found on server -> no connected web3, check if it's a claimed name
-      const net = getSelectedNetwork(store.getState())
+      const net = getSelectedNetwork(state)
       const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
       if (address) {
         // if an address was found for the name -> set as user id & add that instead
@@ -459,7 +475,7 @@ export class BrowserInterface {
       }
     }
 
-    if (action === FriendshipAction.REQUESTED_TO && !found) {
+    if (message.action === FriendshipAction.REQUESTED_TO && !found) {
       // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
       // tslint:disable-next-line
       getUnityInstance().FriendNotFound(userId)
@@ -467,7 +483,7 @@ export class BrowserInterface {
     }
 
     store.dispatch(updateUserData(userId.toLowerCase(), toSocialId(userId)))
-    store.dispatch(updateFriendship(action, userId.toLowerCase(), false))
+    store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
@@ -568,7 +584,7 @@ export class BrowserInterface {
         this.lastBalanceOfMana = balance
         getUnityInstance().UpdateBalanceOfMANA(`${balance}`)
       }
-    })().catch((err) => console.error(err))
+    })().catch((err) => defaultLogger.error(err))
   }
 
   public SetMuteUsers(data: { usersId: string[]; mute: boolean }) {
@@ -583,10 +599,12 @@ export class BrowserInterface {
     await killPortableExperienceScene(data.portableExperienceId)
   }
 
+  // Note: This message is deprecated and should be deleted in the future.
+  //       We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
   public RequestBIWCatalogHeader() {
     const identity = getCurrentIdentity(store.getState())
     if (!identity) {
-      let emptyHeader: Record<string, string> = {}
+      const emptyHeader: Record<string, string> = {}
       getUnityInstance().SendBuilderCatalogHeaders(emptyHeader)
     } else {
       const headers = BuilderServerAPIManager.authorize(identity, 'get', '/assetpacks')
@@ -594,6 +612,8 @@ export class BrowserInterface {
     }
   }
 
+  // Note: This message is deprecated and should be deleted in the future.
+  //       We are maintaining it for compatibility we can safely delete if we are further than 2/03/2022
   public RequestHeaderForUrl(data: { method: string; url: string }) {
     const identity = getCurrentIdentity(store.getState())
 
@@ -601,6 +621,31 @@ export class BrowserInterface {
       ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
       : {}
     getUnityInstance().SendBuilderCatalogHeaders(headers)
+  }
+
+  // Note: This message is deprecated and should be deleted in the future.
+  //       It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
+  public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
+    const identity = getCurrentIdentity(store.getState())
+
+    const headers: Record<string, string> = identity
+      ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
+      : {}
+    getUnityInstance().SendHeaders(data.url, headers)
+  }
+
+  // Note: This message is deprecated and should be deleted in the future.
+  //       It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
+  public RequestSignedHeader(data: { method: string; url: string; metadata: Record<string, any> }) {
+    const identity = getCurrentIdentity(store.getState())
+
+    const headers: Record<string, string> = identity
+      ? getAuthHeaders(data.method, data.url, data.metadata, (_payload) =>
+          Authenticator.signPayload(identity, data.url)
+        )
+      : {}
+
+    getUnityInstance().SendHeaders(data.url, headers)
   }
 
   public RequestWearables(data: {
@@ -661,10 +706,14 @@ export class BrowserInterface {
       defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
     }
   }
+
+  public ReportAvatarState(data: AvatarRendererMessage) {
+    setRendererAvatarState(data)
+  }
 }
 
 function arrayCleanup<T>(array: T[] | null | undefined): T[] | undefined {
   return !array || array.length === 0 ? undefined : array
 }
 
-export let browserInterface: BrowserInterface = new BrowserInterface()
+export const browserInterface: BrowserInterface = new BrowserInterface()

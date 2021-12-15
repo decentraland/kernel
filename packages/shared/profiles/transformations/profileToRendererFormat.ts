@@ -1,5 +1,5 @@
 import { Profile } from '../types'
-import { ParcelsWithAccess, ProfileForRenderer } from 'decentraland-ecs'
+import { ParcelsWithAccess, ProfileForRenderer } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
 import { dropDeprecatedWearables } from './processServerProfile'
 import { ExplorerIdentity } from 'shared/session/types'

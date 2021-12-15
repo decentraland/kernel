@@ -25,7 +25,7 @@ export class SignedFetch extends ExposableAPI {
       sceneId: this.parcelIdentity.cid,
       parcel: this.getSceneData().scene.base,
       // THIS WILL BE DEPRECATED
-      tld: network == ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
+      tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
       network,
       isGuest,
       realm: realm ? { ...realm, layer: realm.layer ?? '' } : undefined // If the realm doesn't have layer, we send it

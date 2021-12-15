@@ -25,14 +25,15 @@ export async function initializeUnityEditor(
       if (firstConnect === false) {
         logger.error('WS closed!', e)
         container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
+        location.reload()
       }
     }
 
     ws.onerror = function (e) {
       if (firstConnect) {
-        setTimeout(function() {
-            connect();
-          }, 1000)
+        setTimeout(function () {
+          connect()
+        }, 1000)
       } else {
         logger.error('WS error!', e)
         container.innerHTML = `<h3 style='color:red'>EERRORR</h3>`
@@ -78,7 +79,7 @@ export async function initializeUnityEditor(
       container.classList.remove('dcl-loading')
       logger.info('WS open!')
       gameInstance.SendMessage('', 'Reset', '')
-      container.innerHTML = `<h3  style='color:green'>Connected</h3>`
+      container.innerHTML = `<h3 style='color:green'>Connected</h3>`
       // @see packages/shared/renderer/sagas.ts
       engineStartedFuture.resolve(gameInstance)
     }
