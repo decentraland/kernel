@@ -14,7 +14,7 @@ export const defaultPortableExperiencePermissions = []
 @registerAPI('Permissions')
 export class Permissions extends ExposableAPI {
   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-  readonly permissionGranted: PermissionItem[] = defaultParcelPermissions
+  protected permissionGranted: PermissionItem[] = defaultParcelPermissions
 
   /**
    * Returns if it has a specific permission
@@ -48,5 +48,12 @@ export class Permissions extends ExposableAPI {
       }
     }
     return true
+  }
+
+  /**
+   * Reset all permissions granted
+   */
+  resetPermissions() {
+    this.permissionGranted = []
   }
 }
