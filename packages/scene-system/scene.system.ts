@@ -41,12 +41,13 @@ class WebWorkerScene extends SceneRuntime {
     if (isWasmScene) {
       wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
     } else {
-      const quickJsWasmURL = 'https://sdk-team-cdn.decentraland.org/@dcl/wasm-quickjs-loader/branch/feat/organize-project/loader.wasm'
+      const quickJsWasmURL =
+        'https://sdk-team-cdn.decentraland.org/@dcl/wasm-quickjs-loader/branch/feat/organize-project/loader.wasm'
       const quicksJSLoaderWasm = await (await fetch(quickJsWasmURL)).arrayBuffer()
       wasmBytes = new Uint8Array(quicksJSLoaderWasm)
     }
 
-    const result = await runWasm({ wasmBytes , memoryDescriptor: { initial: 100, maximum: 500 }})
+    const result = await runWasm({ wasmBytes, memoryDescriptor: { initial: 100, maximum: 500 } })
     const rendererChannel = result.metaverseWrapper.channels.get(CHANNELS.RENDERER.KEY) as IChannel
 
     if (!isWasmScene) {
@@ -55,12 +56,10 @@ class WebWorkerScene extends SceneRuntime {
 
     rendererChannel.setDataArriveCallback((data: Uint8Array) => {
       try {
-        const msg: {method:string, params:any[]} = JSON.parse(Buffer.from(data).toString('utf8'))
-        ;(((dcl as any)[msg.method]) as Function).apply(dcl, msg.params)
-        
-      } catch(err) {
+        const msg: { method: string; params: any[] } = JSON.parse(Buffer.from(data).toString('utf8'))
+        ;(dcl as any)[msg.method].apply(dcl, msg.params)
+      } catch (err) {
         console.error(err)
-        
       }
       // console.log(`Scene->Kernel: ${data.length} bytes "${Buffer.from(data).toString('utf8')}"`)
     })
@@ -81,7 +80,6 @@ class WebWorkerScene extends SceneRuntime {
         counter = 0.0
       }
     })
-
   }
 
   async systemDidEnable() {
