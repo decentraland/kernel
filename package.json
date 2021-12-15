@@ -84,7 +84,7 @@
     "@dcl/schemas": "^2.2.2-20211124181718.commit-a8f6f19",
     "@dcl/urn-resolver": "^1.2.1",
     "@dcl/wasm-quickjs-loader": "^0.1.0",
-    "@dcl/wasm-runtime": "^0.2.1-1342343062.commit-23a18f3",
+    "@dcl/wasm-runtime": "^0.2.1-1583735517.commit-9267162",
     "@types/redux-logger": "^3.0.9",
     "bignumber.js": "^9.0.1",
     "binary-loader": "0.0.1",

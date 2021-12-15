@@ -37,22 +37,16 @@ class WebWorkerScene extends SceneRuntime {
   }
 
   async run({ sourceResponse, isWasmScene, dcl }: RunOptions): Promise<void> {
-    // const myRndMs= Math.random() * 10000 + 2000
-    // console.log(`Scene in position ${this.scenePosition} will delay ${myRndMs}ms`)
-    // await new Promise(resolve => setTimeout(resolve, myRndMs))
-
-    // debugger
-    
     let wasmBytes: Uint8Array
     if (isWasmScene) {
       wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
     } else {
-      const quicksJSLoaderWasmRequest = await fetch('http://192.168.0.16:7666/loader.wasm')
-      const quicksJSLoaderWasm = await quicksJSLoaderWasmRequest.arrayBuffer()
+      const quickJsWasmURL = 'https://sdk-team-cdn.decentraland.org/@dcl/wasm-quickjs-loader/branch/feat/organize-project/loader.wasm'
+      const quicksJSLoaderWasm = await (await fetch(quickJsWasmURL)).arrayBuffer()
       wasmBytes = new Uint8Array(quicksJSLoaderWasm)
     }
 
-    const result = await runWasm({ wasmBytes })
+    const result = await runWasm({ wasmBytes , memoryDescriptor: { initial: 100, maximum: 500 }})
     const rendererChannel = result.metaverseWrapper.channels.get(CHANNELS.RENDERER.KEY) as IChannel
 
     if (!isWasmScene) {
