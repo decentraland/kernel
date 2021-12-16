@@ -4,6 +4,7 @@ import type { ILogOpts, ScriptingTransport } from 'decentraland-rpc/lib/common/j
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import type { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
+import { Permissions } from 'shared/apis/Permissions'
 import { defaultLogger } from 'shared/logger'
 import { DevToolsAdapter } from './sdk/DevToolsAdapter'
 import { RendererStatefulActor } from './stateful-scene/RendererStatefulActor'
@@ -24,6 +25,9 @@ class StatefulWebWorkerScene extends Script {
 
   @inject('ParcelIdentity')
   parcelIdentity!: ParcelIdentity
+
+  @inject('Permissions')
+  permissions!: Permissions
 
   @inject('SceneStateStorageController')
   sceneStateStorage!: ISceneStateStorageController

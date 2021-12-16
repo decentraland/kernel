@@ -8,6 +8,7 @@ import { EnvironmentData, LoadableParcelScene, LoadablePortableExperienceScene }
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
+import { Permissions } from 'shared/apis/Permissions'
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
     super(data)
@@ -64,5 +65,12 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
         parcelIdentity.isPortableExperience = true
       })
       .catch((e) => this.logger.error('Error initializing system ParcelIdentity', e))
+
+    this.worker
+      .getAPIInstance(Permissions)
+      .then((permissions) => {
+        permissions.resetPermissions()
+      })
+      .catch((e) => this.logger.error('Error initializing system Permissions', e))
   }
 }
