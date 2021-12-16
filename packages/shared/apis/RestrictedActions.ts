@@ -20,7 +20,7 @@ export class RestrictedActions extends RestrictedExposableAPI {
   @exposeMethod
   async movePlayerTo(newPosition: Vector3, cameraTarget?: Vector3): Promise<void> {
     // checks permissions
-    await this.ensureHasPermissions([PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE])
+    await this.assertHasPermissions([PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE])
 
     const base = parseParcelPosition(this.parcelIdentity.isPortableExperience ? '0,0' : this.getSceneData().scene.base)
     const basePosition = new Vector3()
@@ -58,7 +58,7 @@ export class RestrictedActions extends RestrictedExposableAPI {
   @exposeMethod
   async triggerEmote(emote: Emote): Promise<void> {
     // checks permissions
-    await this.ensureHasPermissions([PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE])
+    await this.assertHasPermissions([PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE])
 
     if (!this.isPositionValid(lastPlayerPosition)) {
       defaultLogger.error('Error: Player is not inside of scene', lastPlayerPosition)

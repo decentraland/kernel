@@ -4,7 +4,7 @@ import { Permissions, PermissionItem } from './Permissions'
 export class RestrictedExposableAPI extends ExposableAPI {
   permissions = this.options.getAPIInstance(Permissions)
 
-  async ensureHasPermissions(permissionItems: PermissionItem[]) {
+  async assertHasPermissions(permissionItems: PermissionItem[]) {
     const testPermission = await this.permissions.hasManyPermissions(permissionItems)
 
     if (!testPermission) {

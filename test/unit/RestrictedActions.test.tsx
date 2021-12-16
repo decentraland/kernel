@@ -44,7 +44,7 @@ describe('RestrictedActions tests', () => {
       }catch(err){
         
       }
-      sinon.stub(module, 'ensureHasPermissions').threw()
+      sinon.stub(module, 'assertHasPermissions').threw()
       sinon.verify()
     })
 
@@ -116,7 +116,7 @@ describe('RestrictedActions tests', () => {
         
       }
 
-      sinon.stub(module, 'ensureHasPermissions').threw()
+      sinon.stub(module, 'assertHasPermissions').threw()
       sinon.verify()
     })
 
