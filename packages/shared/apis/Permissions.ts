@@ -24,15 +24,17 @@ export class Permissions extends ExposableAPI {
     // Backward compatibility with parcel scene with 'requiredPermissions' in the scene.json
     //  Only the two permissions that start with ALLOW_TO_... can be conceed without user
     //  interaction
-    const json = this.parcelIdentity.land.sceneJsonData
-    const list = (json.requiredPermissions || []) as PermissionItem[]
+    if (this.parcelIdentity.land) {
+      const json = this.parcelIdentity.land.sceneJsonData
+      const list = (json?.requiredPermissions || []) as PermissionItem[]
 
-    if (
-      list.includes(test) &&
-      (test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
-        test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
-    ) {
-      return true
+      if (
+        list.includes(test) &&
+        (test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
+          test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
+      ) {
+        return true
+      }
     }
 
     return this.permissionGranted.includes(test)
