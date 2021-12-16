@@ -8,12 +8,7 @@ import { getCurrentIdentity } from 'shared/session/selectors'
 import { setWorldContext } from 'shared/protocol/actions'
 import { waitForRealmInitialized, selectRealm } from 'shared/dao/sagas'
 import { getRealm } from 'shared/dao/selectors'
-import {
-  CATALYST_REALMS_SCAN_SUCCESS,
-  SetCatalystRealm,
-  setCatalystRealm,
-  SET_CATALYST_REALM
-} from 'shared/dao/actions'
+import { CATALYST_REALMS_SCAN_SUCCESS, setCatalystRealm } from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
 import { realmToString } from 'shared/dao/utils/realmToString'
 import { createLogger, createDummyLogger } from 'shared/logger'
@@ -28,10 +23,8 @@ import {
   updateVoiceRecordingStatus
 } from '.'
 import {
-  SetCommsIsland,
   SetVoiceMute,
   SetVoiceVolume,
-  SET_COMMS_ISLAND,
   SET_VOICE_CHAT_RECORDING,
   SET_VOICE_MUTE,
   SET_VOICE_VOLUME,
@@ -42,14 +35,12 @@ import {
   VOICE_RECORDING_UPDATE
 } from './actions'
 
-import { getCommsIsland, isVoiceChatRecording } from './selectors'
+import { isVoiceChatRecording } from './selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { sceneObservable } from 'shared/world/sceneState'
 import { SceneFeatureToggles } from 'shared/types'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
-import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
 const DEBUG = false
 const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
@@ -58,8 +49,6 @@ export function* commsSaga() {
   yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
   yield takeLatest(CATALYST_REALMS_SCAN_SUCCESS, changeRealm)
   yield takeEvery(FATAL_ERROR, bringDownComms)
-  yield takeLatest(SET_CATALYST_REALM, realmChanged)
-  yield takeLatest(SET_COMMS_ISLAND, islandChanged)
 }
 
 function* bringDownComms() {
@@ -146,26 +135,6 @@ function* changeRealm() {
   } else {
     DEBUG && logger.info(`Realm already set ${realmToString(currentRealm)}`)
   }
-}
-
-function* realmChanged(action: SetCatalystRealm) {
-  const realm = action.payload
-  const island: string = yield select(getCommsIsland) ?? ''
-
-  const payload = toEnvironmentRealmType(realm, island)
-  allScenesEvent({ eventType: 'onRealmChanged', payload })
-}
-
-function* islandChanged(action: SetCommsIsland) {
-  const realm: Realm = yield select(getRealm)
-  const island = action.payload.island ?? ''
-
-  if (!realm) {
-    return
-  }
-
-  const payload = toEnvironmentRealmType(realm, island)
-  allScenesEvent({ eventType: 'onRealmChanged', payload })
 }
 
 function sameRealm(realm1: Realm, realm2: Realm) {
