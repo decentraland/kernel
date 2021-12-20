@@ -205,7 +205,10 @@ export function stopIsolatedMode(options: IsolatedModeOptions) {
     unloadScene = false
   }
 
-  if (unloadScene) unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
+  if (unloadScene) {
+    unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
+    parcelSceneLoadingState.desiredParcelScenes.delete(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
+  }
   // We deactivate the isolated mode
   parcelSceneLoadingState.runningIsolatedMode = false
   parcelSceneLoadingState.isolatedModeOptions = null
