@@ -1,12 +1,5 @@
-import { AvatarMessageType } from 'shared/comms/interface/types'
-import { getUser } from 'shared/comms/peers'
-import { avatarMessageObservable } from 'shared/comms/peers'
-import { allScenesEvent, getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
+import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { AvatarRendererMessage, AvatarRendererMessageType } from 'shared/types'
-
-export function getVisibleAvatarsUserId(): string[] {
-  return Array.from(visibleAvatars.values())
-}
 
 export function* getInSceneAvatarsUserId(sceneId: string): Iterable<string> {
   for (const [userId, avatarData] of rendererAvatars) {
@@ -18,46 +11,7 @@ type RendererAvatarData = {
   sceneId: string
 }
 
-const avatarConnected = 'playerConnected'
-const avatarDisconnected = 'playerDisconnected'
-
-const visibleAvatars: Map<string, string> = new Map<string, string>()
 const rendererAvatars: Map<string, RendererAvatarData> = new Map<string, RendererAvatarData>()
-
-// Tracks avatar state from comms side.
-// Listen to which avatars are visible or removed to keep track of connected and visible players.
-avatarMessageObservable.add((evt) => {
-  if (evt.type === AvatarMessageType.USER_VISIBLE) {
-    const visible = visibleAvatars.has(evt.uuid)
-
-    if (visible !== evt.visible) {
-      const userId = getUser(evt.uuid)?.userId
-
-      if (!userId) return
-
-      allScenesEvent({
-        eventType: evt.visible ? avatarConnected : avatarDisconnected,
-        payload: { userId }
-      })
-
-      if (!evt.visible) {
-        visibleAvatars.delete(evt.uuid)
-        return
-      }
-
-      visibleAvatars.set(evt.uuid, userId)
-    }
-  } else if (evt.type === AvatarMessageType.USER_REMOVED) {
-    const userId = visibleAvatars.get(evt.uuid)
-
-    if (visibleAvatars.delete(evt.uuid) && userId) {
-      allScenesEvent({
-        eventType: avatarDisconnected,
-        payload: { userId }
-      })
-    }
-  }
-})
 
 // Tracks avatar state on the renderer side.
 // Set if avatar has change the scene it's in or removed on renderer's side.

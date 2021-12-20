@@ -24,6 +24,8 @@ import './unit/engine.test'
 import './unit/catalog.saga.test'
 import './dao/pick-realm-algorithm'
 
+import './shared/sceneEvents'
+
 declare var mocha: Mocha
 declare var globalThis: any
 

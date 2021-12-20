@@ -9,7 +9,8 @@ import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/se
 import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
-import { getVisibleAvatarsUserId, getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
+import { getVisibleAvatarsUserId } from 'shared/sceneEvents/visibleAvatars'
+import { getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
