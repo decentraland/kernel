@@ -23,4 +23,12 @@ export class ParcelIdentity extends ExposableAPI implements IParcelIdentity {
       cid: this.cid
     }
   }
+
+  /**
+   * Returns if the parcel is empty or not
+   */
+  @exposeMethod
+  async getIsEmpty(): Promise<boolean> {
+    return this.isEmpty
+  }
 }

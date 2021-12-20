@@ -45,8 +45,10 @@ class StatefulWebWorkerScene extends Script {
     this.eventSubscriber = new EventSubscriber(this.engine)
     this.builderActor = new BuilderStatefulActor(land, this.sceneStateStorage)
 
+    const isEmpty: boolean = await this.parcelIdentity.getIsEmpty()
+
     //If it is not empty we fetch the state
-    if (!this.parcelIdentity.isEmpty) {
+    if (!isEmpty) {
       // Fetch stored scene
       this.sceneDefinition = await this.builderActor.getInititalSceneState()
       await this.builderActor.sendAssetsFromScene(this.sceneDefinition)
