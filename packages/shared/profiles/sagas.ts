@@ -28,9 +28,7 @@ import {
   deployProfileFailure,
   profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer,
-  SAVE_PROFILE_SUCCESS,
-  SaveProfileSuccess
+  localProfileSentToRenderer
 } from './actions'
 import { getProfile, hasConnectedWeb3 } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
@@ -66,7 +64,6 @@ import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
-import { allScenesEvent } from 'shared/world/parcelSceneManager'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const toBuffer = require('blob-to-buffer')
@@ -74,7 +71,7 @@ const toBuffer = require('blob-to-buffer')
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
 
-const takeLatestByUserId = (patternOrChannel: any, saga: any, ...args: any) =>
+export const takeLatestByUserId = (patternOrChannel: any, saga: any, ...args: any) =>
   takeLatestById(patternOrChannel, concatenatedActionTypeUserId, saga, ...args)
 
 // This repository is for local profiles owned by this browser (without wallet)
@@ -96,16 +93,11 @@ export const localProfilesRepo = new LocalProfilesRepository()
  */
 export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
-
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
   yield takeLatestByUserId(PROFILE_SUCCESS, submitProfileToRenderer)
   yield takeLatestByUserId(PROFILE_RANDOM, handleRandomAsSuccess)
-
   yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
-  yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
-
   yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
-
   yield throttle(3000, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
 }
 
@@ -362,16 +354,6 @@ function* sendLoadProfile(profile: Profile) {
   yield call(waitForRendererInstance)
   getUnityInstance().LoadProfile(rendererFormat)
   yield put(localProfileSentToRenderer())
-}
-
-function* submitProfileToScenes(action: SaveProfileSuccess) {
-  allScenesEvent({
-    eventType: 'profileChanged',
-    payload: {
-      ethAddress: action.payload.profile.ethAddress,
-      version: action.payload.profile.version
-    }
-  })
 }
 
 function* handleSaveAvatar(saveAvatar: SaveProfileRequest) {

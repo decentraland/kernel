@@ -1,6 +1,6 @@
 import { Vector3, Quaternion } from '@dcl/ecs-math'
 import { exposeMethod, registerAPI } from 'decentraland-rpc/lib/host'
-import { ExposableAPI } from './ExposableAPI'
+import { RestrictedExposableAPI } from './RestrictedExposableAPI'
 import defaultLogger from '../logger'
 import { ParcelIdentity } from './ParcelIdentity'
 import {
@@ -11,23 +11,16 @@ import {
 import { lastPlayerPosition } from '../world/positionThings'
 import { browserInterface } from '../../unity-interface/BrowserInterface'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-
-export enum Permission {
-  ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE = 'ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE',
-  ALLOW_TO_TRIGGER_AVATAR_EMOTE = 'ALLOW_TO_TRIGGER_AVATAR_EMOTE'
-}
+import { PermissionItem } from './Permissions'
 
 @registerAPI('RestrictedActions')
-export class RestrictedActions extends ExposableAPI {
+export class RestrictedActions extends RestrictedExposableAPI {
   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
 
   @exposeMethod
   async movePlayerTo(newPosition: Vector3, cameraTarget?: Vector3): Promise<void> {
     // checks permissions
-    if (!this.hasPermission(Permission.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)) {
-      defaultLogger.error(`Permission "${Permission.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE}" is required`)
-      return
-    }
+    await this.assertHasPermissions([PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE])
 
     const base = parseParcelPosition(this.parcelIdentity.isPortableExperience ? '0,0' : this.getSceneData().scene.base)
     const basePosition = new Vector3()
@@ -65,10 +58,7 @@ export class RestrictedActions extends ExposableAPI {
   @exposeMethod
   async triggerEmote(emote: Emote): Promise<void> {
     // checks permissions
-    if (!this.hasPermission(Permission.ALLOW_TO_TRIGGER_AVATAR_EMOTE)) {
-      defaultLogger.error(`Permission "${Permission.ALLOW_TO_TRIGGER_AVATAR_EMOTE}" is required`)
-      return
-    }
+    await this.assertHasPermissions([PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE])
 
     if (!this.isPositionValid(lastPlayerPosition)) {
       defaultLogger.error('Error: Player is not inside of scene', lastPlayerPosition)
@@ -80,16 +70,6 @@ export class RestrictedActions extends ExposableAPI {
 
   private getSceneData() {
     return this.parcelIdentity.land.sceneJsonData
-  }
-
-  private hasPermission(permission: Permission) {
-    if (this.parcelIdentity.isPortableExperience) {
-      return true
-    }
-
-    const json = this.getSceneData()
-    const list = json.requiredPermissions || []
-    return list.indexOf(permission) !== -1
   }
 
   private isPositionValid(position: Vector3) {
@@ -111,7 +91,7 @@ type PredefinedEmote = string
  * RestrictedActions was previously called RestrictedActionModule, so we need to continue exposing this API for already deployed scenes.
  */
 @registerAPI('RestrictedActionModule')
-export class RestrictedActionModule extends ExposableAPI {
+export class RestrictedActionModule extends RestrictedExposableAPI {
   @exposeMethod
   movePlayerTo(newPosition: Vector3, cameraTarget?: Vector3): Promise<void> {
     return this.options.getAPIInstance(RestrictedActions).movePlayerTo(newPosition, cameraTarget)

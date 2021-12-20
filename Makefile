@@ -22,6 +22,7 @@ GIF_PROCESSOR := static/gif-processor/worker.js
 INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
 VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
 
+EMPTY_SCENES := public/empty-scenes/xmas
 
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
 	@node_modules/.bin/tsc --build scripts/tsconfig.json
@@ -45,8 +46,12 @@ static/systems/decentraland-ui.scene.js: $(SCENE_SYSTEM) packages/ui/tsconfig.js
 	@$(COMPILER) targets/engine/internal-scenes.json
 
 empty-parcels:
-	cd static/loader/empty-scenes && node generate_all.js
-
+	cd public/empty-scenes/common && node generate_all.js
+	mkdir -p static/loader/empty-scenes || true
+	rm -rf static/loader/empty-scenes/*
+	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
+	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
+	
 build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels generate-mocks ## Build the basic required files for the explorer
 # Hellmap scenes
 

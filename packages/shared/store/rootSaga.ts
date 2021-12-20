@@ -15,6 +15,7 @@ import { socialSaga } from '../social/sagas'
 import { catalogsSaga } from '../catalogs/sagas'
 import { questsSaga } from '../quests/sagas'
 import { wearablesPortableExperienceSaga } from '../wearablesPortableExperience/sagas'
+import { sceneEventsSaga } from '../sceneEvents/sagas'
 
 export function createRootSaga() {
   return function* rootSaga() {
@@ -33,6 +34,7 @@ export function createRootSaga() {
     yield fork(socialSaga)
     yield fork(questsSaga)
     yield fork(rendererSaga)
+    yield fork(sceneEventsSaga)
     yield fork(wearablesPortableExperienceSaga)
   }
 }
