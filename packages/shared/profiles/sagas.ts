@@ -297,7 +297,7 @@ export async function profileServerRequest(userId: string, version?: number) {
     if (version) url = url + `&version=${version}`
 
     const fetcher = new Fetcher()
-    const profiles = await fetcher.fetchJson(url)
+    const profiles = (await fetcher.fetchJson(url)) as any
 
     return profiles[0] || { avatars: [] }
   } catch (e: any) {
@@ -423,7 +423,7 @@ async function buildSnapshotContent(selector: string, value: string): Promise<[s
     const blob = await fetch(value).then((r) => r.blob())
 
     contentFile = await makeContentFile(name, blob)
-    hash = await Hashing.calculateHash(contentFile)
+    hash = await Hashing.calculateIPFSHash(contentFile.content)
   } else if (value.includes('://')) {
     // value is already a URL => use existing hash
     hash = value.split('/').pop()!
@@ -432,7 +432,7 @@ async function buildSnapshotContent(selector: string, value: string): Promise<[s
     const blob = base64ToBlob(value)
 
     contentFile = await makeContentFile(name, blob)
-    hash = await Hashing.calculateHash(contentFile)
+    hash = await Hashing.calculateIPFSHash(contentFile.content)
   }
 
   return [name, hash, contentFile]
@@ -473,7 +473,7 @@ async function deploy(
   contentHashes: Map<string, string>
 ) {
   // Build the client
-  const catalyst = new ContentClient(url, 'explorer-kernel-profile')
+  const catalyst = new ContentClient({ contentUrl: url })
 
   const entityWithoutNewFilesPayload = {
     type: EntityType.PROFILE,
