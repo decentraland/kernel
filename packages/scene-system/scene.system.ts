@@ -4,13 +4,8 @@ import { defaultLogger } from 'shared/logger'
 import { RunOptions, SceneRuntime } from './sdk/SceneRuntime'
 import { DevToolsAdapter } from './sdk/DevToolsAdapter'
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
+import { customEval, getES5Context } from './sdk/sandbox'
 
-import { run as runWasm } from '@dcl/wasm-runtime'
-// import { rendererAdapter } from './sdk/RendererAdapter'
-import { CHANNELS } from '@dcl/wasm-runtime/dist/io/fs'
-import { IChannel } from '@dcl/wasm-runtime/dist/io/IChannel'
-
-// const quickJsLoader = require('@dcl/wasm-quickjs-loader/dist/index.js')
 /**
  * This file starts the scene in a WebWorker context.
  */
@@ -36,50 +31,8 @@ class WebWorkerScene extends SceneRuntime {
     })
   }
 
-  async run({ sourceResponse, isWasmScene, dcl }: RunOptions): Promise<void> {
-    let wasmBytes: Uint8Array
-    if (isWasmScene) {
-      wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
-    } else {
-      const quickJsWasmURL =
-        'https://sdk-team-cdn.decentraland.org/@dcl/wasm-quickjs-loader/branch/feat/organize-project/loader.wasm'
-      const quicksJSLoaderWasm = await (await fetch(quickJsWasmURL)).arrayBuffer()
-      wasmBytes = new Uint8Array(quicksJSLoaderWasm)
-    }
-
-    const result = await runWasm({ wasmBytes, memoryDescriptor: { initial: 100, maximum: 500 } })
-    const rendererChannel = result.metaverseWrapper.channels.get(CHANNELS.RENDERER.KEY) as IChannel
-
-    if (!isWasmScene) {
-      result.metaverseWrapper.wasmFs.fs.writeFileSync('/game.js', await sourceResponse.text())
-    }
-
-    rendererChannel.setDataArriveCallback((data: Uint8Array) => {
-      try {
-        const msg: { method: string; params: any[] } = JSON.parse(Buffer.from(data).toString('utf8'))
-        ;(dcl as any)[msg.method].apply(dcl, msg.params)
-      } catch (err) {
-        console.error(err)
-      }
-      // console.log(`Scene->Kernel: ${data.length} bytes "${Buffer.from(data).toString('utf8')}"`)
-    })
-
-    await result.start()
-
-    let counter = 0.0
-    this.onUpdateFunctions.push(async (dt: number) => {
-      result.update(dt)
-      const resultOut = await result.metaverseWrapper.wasmFs.getStdOut()
-      if (resultOut) {
-        console.log(resultOut)
-        await result.metaverseWrapper.wasmFs.fs.writeFileSync('/dev/stdout', '')
-      }
-
-      counter += dt
-      if (counter > 0.2) {
-        counter = 0.0
-      }
-    })
+  async run({ sourceResponse, dcl }: RunOptions): Promise<void> {
+    await customEval(await sourceResponse.text(), getES5Context({ dcl }))
   }
 
   async systemDidEnable() {
