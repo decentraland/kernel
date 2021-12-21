@@ -14,7 +14,13 @@ export const expressionExplainer = {
   shrug: '',
   disco: '',
   dab: '',
-  headexplode: ''
+  headexplode: '',
+  dance: '',
+  snowfall: '',
+  hohoho: '',
+  crafting: '',
+  snowballhit: '',
+  snowballthrow: ''
 }
 export const validExpressions = Object.keys(expressionExplainer)
 
