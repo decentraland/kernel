@@ -105,8 +105,8 @@ export abstract class SceneRuntime extends Script {
 
   isPreview: boolean = false
 
-  private originalFetch = fetch
-  private originalWebSocket = WebSocket
+  private originalFetch: any
+  private originalWebSocket: any
 
   private allowOpenExternalUrl: boolean = false
 
@@ -547,6 +547,9 @@ export abstract class SceneRuntime extends Script {
 
         globalThis.fetch = restrictedFetch
         globalThis.WebSocket = restrictedWebSocket
+
+        this.originalFetch
+        this.originalWebSocket
 
         await this.runCode(source as any as string, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
 

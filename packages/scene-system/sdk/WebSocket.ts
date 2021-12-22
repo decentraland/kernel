@@ -13,7 +13,7 @@ export function createWebSocket(permission: Permissions) {
         }
       })
 
-      super(url, protocols)
+      super(url.toString(), protocols)
     }
   }
 }
