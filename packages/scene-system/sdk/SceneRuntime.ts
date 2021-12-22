@@ -539,11 +539,12 @@ export abstract class SceneRuntime extends Script {
 
       try {
         const { Permissions } = await this.loadAPIs(['Permissions'])
-        const restrictedWebSocket = createWebSocket(Permissions)
-        const restrictedFetch = createFetch(Permissions)
 
         this.originalFetch = fetch
         this.originalWebSocket = WebSocket
+
+        const restrictedWebSocket = createWebSocket(Permissions)
+        const restrictedFetch = createFetch(Permissions, this.originalFetch)
 
         globalThis.fetch = restrictedFetch
         globalThis.WebSocket = restrictedWebSocket
