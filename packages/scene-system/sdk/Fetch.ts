@@ -9,7 +9,7 @@ export function createFetch(permission: Permissions) {
 
     return permission.hasPermission(PermissionItem.USE_FETCH).then((result) => {
       if (!result) {
-        throw new Error("This scene doesn't have allowed to use WebSocket")
+        throw new Error("This scene doesn't have allowed to use fetch")
       }
       return fetch(resource, init)
     })
