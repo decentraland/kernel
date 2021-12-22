@@ -26,7 +26,8 @@ import type {
   OpenNFTDialogPayload
 } from 'shared/types'
 import { generatePBObject } from './Utils'
-import { PermissionItem, Permissions } from 'shared/apis/Permissions'
+import { createWebSocket } from './WebSocket'
+import { createFetch } from './Fetch'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
@@ -534,28 +535,11 @@ export abstract class SceneRuntime extends Script {
       }
 
       try {
-        const self = this
-        class RestrictedWebSocket extends WebSocket {
-          constructor(url: string | URL, protocols?: string | string[]) {
-            if (url.toString().toLowerCase().substr(0, 4) !== 'wss:') {
-              throw new Error("Can't connect to unsafe WebSocket server")
-            }
-            if (!self.loadedAPIs['Permissions']) {
-              throw new Error('Permissions module must be loaded before you try to use a restricted functionality.')
-            }
-            const permissionModule = self.loadedAPIs['Permissions'] as Permissions
-            void permissionModule.hasPermission(PermissionItem.USE_WEBSOCKET).then((result) => {
-              if (!result) {
-                this.close()
-                throw new Error("This scene doesn't have allowed to use WebSocket")
-              }
-            })
+        const { Permissions } = await this.loadAPIs(['Permissions'])
+        const restrictedWebSocket = createWebSocket(Permissions)
+        const restrictedFetch = createFetch(Permissions)
 
-            super(url, protocols)
-          }
-        }
-
-        await this.runCode(source as any as string, { dcl, WebSocket: RestrictedWebSocket })
+        await this.runCode(source as any as string, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
 
         let modulesNotLoaded: string[] = []
 
