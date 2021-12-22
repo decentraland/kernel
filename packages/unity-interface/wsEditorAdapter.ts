@@ -3,6 +3,7 @@ import future from 'fp-future'
 import { createLogger } from 'shared/logger'
 import type { CommonRendererOptions } from './loader'
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
+import { globalObservable } from 'shared/observables'
 
 const logger = createLogger('ws-adapter: ')
 
@@ -15,17 +16,27 @@ export async function initializeUnityEditor(
   const engineStartedFuture = future<UnityGame>()
 
   let firstConnect = true
+  let errorState = false
 
   const connect = () => {
     logger.info(`Connecting WS to ${webSocketUrl}`)
     container.innerHTML = `<h3>Connecting...</h3>`
     const ws = new WebSocket(webSocketUrl)
 
+    globalObservable.on('error', (error) => {
+      errorState = true
+      ws.close()
+    })
+
     ws.onclose = function (e) {
       if (firstConnect === false) {
         logger.error('WS closed!', e)
-        container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
-        location.reload()
+        if (errorState === false) {
+          location.reload()
+          container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
+        } else {
+          container.innerHTML = ``
+        }
       }
     }
 
