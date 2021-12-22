@@ -7,7 +7,7 @@ export function createFetch(permission: Permissions) {
       throw new Error("Can't make an unsafe request")
     }
 
-    return permission.hasPermission(PermissionItem.USE_WEBSOCKET).then((result) => {
+    return permission.hasPermission(PermissionItem.USE_FETCH).then((result) => {
       if (!result) {
         throw new Error("This scene doesn't have allowed to use WebSocket")
       }
