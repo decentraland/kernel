@@ -105,6 +105,9 @@ export abstract class SceneRuntime extends Script {
 
   isPreview: boolean = false
 
+  private originalFetch = fetch
+  private originalWebSocket = WebSocket
+
   private allowOpenExternalUrl: boolean = false
 
   constructor(transport: ScriptingTransport, opt?: ILogOpts) {
@@ -538,6 +541,12 @@ export abstract class SceneRuntime extends Script {
         const { Permissions } = await this.loadAPIs(['Permissions'])
         const restrictedWebSocket = createWebSocket(Permissions)
         const restrictedFetch = createFetch(Permissions)
+
+        this.originalFetch = fetch
+        this.originalWebSocket = WebSocket
+
+        globalThis.fetch = restrictedFetch
+        globalThis.WebSocket = restrictedWebSocket
 
         await this.runCode(source as any as string, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
 
