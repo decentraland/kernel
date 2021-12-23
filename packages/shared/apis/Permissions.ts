@@ -43,6 +43,17 @@ export class Permissions extends ExposableAPI {
       }
     }
 
+    // Workaround to give old default permissions, remove when
+    //  a method for grant permissions exist.
+    if (this.parcelIdentity.isPortableExperience) {
+      if (
+        test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
+        test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE
+      ) {
+        return true
+      }
+    }
+
     return this.permissionGranted.includes(test)
   }
   /**
