@@ -10,7 +10,11 @@ export enum PermissionItem {
   USE_FETCH = 'USE_FETCH'
 }
 
-export const defaultParcelPermissions = [PermissionItem.USE_WEB3_API]
+export const defaultParcelPermissions = [
+  PermissionItem.USE_WEB3_API,
+  PermissionItem.USE_FETCH,
+  PermissionItem.USE_WEBSOCKET
+]
 export const defaultPortableExperiencePermissions = []
 
 @registerAPI('Permissions')

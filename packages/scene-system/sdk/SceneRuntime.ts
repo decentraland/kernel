@@ -543,8 +543,17 @@ export abstract class SceneRuntime extends Script {
         this.originalFetch = fetch
         this.originalWebSocket = WebSocket
 
-        const restrictedWebSocket = createWebSocket(Permissions)
-        const restrictedFetch = createFetch(Permissions, this.originalFetch)
+        const restrictedWebSocket = createWebSocket({
+          permission: Permissions,
+          previewMode: this.isPreview,
+          log: dcl.log
+        })
+        const restrictedFetch = createFetch({
+          permission: Permissions,
+          originalFetch: this.originalFetch,
+          previewMode: this.isPreview,
+          log: dcl.log
+        })
 
         globalThis.fetch = restrictedFetch
         globalThis.WebSocket = restrictedWebSocket
