@@ -1,4 +1,4 @@
-import { ClientResponse, PlayerQuestDetails } from 'dcl-quests-client'
+import { ClientResponse, QuestState } from 'dcl-quests-client'
 import { call, delay, put, select, takeEvery } from 'redux-saga/effects'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { questsInitialized, questsUpdated, QUESTS_INITIALIZED, QUESTS_UPDATED } from './actions'
@@ -38,7 +38,7 @@ function* initUpdateQuestsInterval() {
 
 function* initializeQuests(): any {
   if (yield call(areQuestsEnabled)) {
-    const questsResponse: ClientResponse<PlayerQuestDetails[]> = yield questsRequest((c) => c.getQuests())
+    const questsResponse: ClientResponse<QuestState[]> = yield questsRequest((c) => c.getQuests())
     if (questsResponse.ok) {
       yield call(waitForRendererInstance)
       initQuestsLogData(questsResponse.body)
@@ -51,17 +51,17 @@ function* initializeQuests(): any {
 }
 
 function* updateQuests() {
-  const questsResponse: ClientResponse<PlayerQuestDetails[]> = yield questsRequest((c) => c.getQuests())
+  const questsResponse: ClientResponse<QuestState[]> = yield questsRequest((c) => c.getQuests())
   if (questsResponse.ok) {
     yield put(questsUpdated(questsResponse.body))
   }
 }
 
 function* updateQuestsLogData() {
-  const quests: PlayerQuestDetails[] = yield select(getQuests)
-  const previousQuests: PlayerQuestDetails[] | undefined = yield select(getPreviousQuests)
+  const quests: QuestState[] = yield select(getQuests)
+  const previousQuests: QuestState[] | undefined = yield select(getPreviousQuests)
 
-  function hasChanged(quest: PlayerQuestDetails) {
+  function hasChanged(quest: QuestState) {
     const previousQuest = previousQuests?.find((it) => it.id === quest.id)
     return !previousQuest || !deepEqual(previousQuest, quest)
   }
@@ -75,7 +75,7 @@ function* updateQuestsLogData() {
   })
 }
 
-function initQuestsLogData(quests: PlayerQuestDetails[]) {
+function initQuestsLogData(quests: QuestState[]) {
   const rendererQuests = quests.map((it) => toRendererQuest(it))
 
   getUnityInstance().InitQuestsInfo(rendererQuests)
