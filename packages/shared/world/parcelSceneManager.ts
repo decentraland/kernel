@@ -284,11 +284,6 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
       parcelSceneLoadingState.runningIsolatedMode &&
       parcelSceneLoadingState.isolatedModeOptions?.mode === IsolatedMode.BUILDER
     ) {
-      const sceneId: string =
-        parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId !== null
-          ? ''
-          : parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
-
       const scene = new UnityScene({
         sceneId: sceneId,
         name: 'title',
