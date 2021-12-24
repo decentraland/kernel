@@ -15,7 +15,7 @@ import { SceneSystemWorker } from './SceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from 'decentraland-ecs'
-import { IsolatedModeOptions, IsolatedMode } from './types'
+import { IsolatedModeOptions, IsolatedMode, StatefulWorkerOptions, ParcelSceneLoadingState } from './types'
 import { UnityParcelScene } from 'unity-interface/UnityParcelScene'
 import { createLogger } from 'shared/logger'
 import { StatefulWorker } from './StatefulWorker'
@@ -145,7 +145,7 @@ function reportPendingScenes() {
   store.dispatch(informPendingScenes(pendingScenes.size, countableScenes))
 }
 
-const parcelSceneLoadingState = {
+const parcelSceneLoadingState: ParcelSceneLoadingState = {
   isWorldLoadingEnabled: true,
   desiredParcelScenes: new Set<string>(),
   lifecycleManager: null as LifecycleManager | null,
@@ -163,24 +163,24 @@ export function startIsolatedMode(options: IsolatedModeOptions) {
   // put in the newSet all scenes that should remain loaded due to isolatedMode
   const newSet = new Set<string>()
 
-  if (
-    parcelSceneLoadingState.isolatedModeOptions.payload.sceneId &&
-    parcelSceneLoadingState.isolatedModeOptions.payload.land
-  ) {
-    newSet.add(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId)
+  // scene id to create
+  const sceneId = parcelSceneLoadingState.isolatedModeOptions.payload.sceneId
+
+  if (sceneId && parcelSceneLoadingState.isolatedModeOptions.payload.land) {
+    newSet.add(sceneId)
     parcelSceneLoadingState.lifecycleManager?.setParcelData(
-      parcelSceneLoadingState.isolatedModeOptions.payload.sceneId,
+      sceneId,
       parcelSceneLoadingState.isolatedModeOptions.payload.land
     )
 
     //If the payload specifies that we need to recreate it, we do it
     if (
       parcelSceneLoadingState.isolatedModeOptions.payload.recreateScene &&
-      !newSet.has(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId) &&
-      loadedSceneWorkers.has(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId)
+      !newSet.has(sceneId) &&
+      loadedSceneWorkers.has(sceneId)
     ) {
       // destroy old scene
-      unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions.payload.sceneId)
+      unloadParcelSceneById(sceneId)
     }
   }
 
@@ -197,13 +197,9 @@ export function stopIsolatedMode(options: IsolatedModeOptions) {
   }
 
   // If the options don't specify to mantain the scene, we unload it
-  let unloadScene = true
-  if (
-    options.payload?.sceneId &&
-    options.payload.sceneId === parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
-  ) {
-    unloadScene = false
-  }
+  const unloadScene = !(
+    options.payload?.sceneId && options.payload.sceneId === parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
+  )
 
   if (unloadScene) {
     unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
@@ -216,7 +212,7 @@ export function stopIsolatedMode(options: IsolatedModeOptions) {
   //In the builder we need to go back to the world
   if (options.mode === IsolatedMode.BUILDER) {
     // We do a teleport to go back to the world to the last position of the player
-    let text = 'Going back to the world'
+    const text = 'Going back to the world'
     teleportObservable.notifyObservers({
       x: lastPlayerPositionKnow.x,
       y: lastPlayerPositionKnow.y,
@@ -288,10 +284,10 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
       parcelSceneLoadingState.runningIsolatedMode &&
       parcelSceneLoadingState.isolatedModeOptions?.mode === IsolatedMode.BUILDER
     ) {
-      let sceneId: string = ''
-      if (parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId !== null) {
-        sceneId = parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
-      }
+      const sceneId: string =
+        parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId !== null
+          ? ''
+          : parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
 
       const scene = new UnityScene({
         sceneId: sceneId,
@@ -303,7 +299,11 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
         mappings: []
       })
 
-      const parcelScene = new StatefulWorker(scene, true)
+      const options: StatefulWorkerOptions = {
+        isEmpty: true
+      }
+
+      const parcelScene = new StatefulWorker(scene, options)
 
       setNewParcelScene(sceneId, parcelScene)
     } else {
@@ -329,6 +329,7 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
 
   // tell the engine to load the parcel scene
   onLoadParcelScenesObservable.notifyObservers([parcelSceneToStart])
+  const WORKER_TIMEOUT = 90000
 
   timer = setTimeout(() => {
     const worker = getSceneWorkerBySceneID(sceneId)
@@ -338,7 +339,7 @@ async function loadParcelSceneByIdIfMissing(sceneId: string) {
       lifecycleManager.notify('Scene.status', { sceneId, status: 'failed' })
       globalSignalSceneFail(sceneId)
     }
-  }, 90000)
+  }, WORKER_TIMEOUT)
 }
 
 export async function enableParcelSceneLoading() {
@@ -348,7 +349,6 @@ export async function enableParcelSceneLoading() {
 
   lifecycleManager.on('Scene.shouldPrefetch', async (opts: { sceneId: string }) => {
     await lifecycleManager.getParcelData(opts.sceneId)
-
     // continue with the loading
     lifecycleManager.notify('Scene.prefetchDone', opts)
   })
