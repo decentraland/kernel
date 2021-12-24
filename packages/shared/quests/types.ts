@@ -1,4 +1,4 @@
-import { PlayerQuestDetails } from 'dcl-quests-client'
+import { QuestState } from 'dcl-quests-client'
 
 export type RootQuestsState = {
   quests: QuestsState
@@ -6,6 +6,6 @@ export type RootQuestsState = {
 
 export type QuestsState = {
   initialized: boolean
-  previousQuests?: PlayerQuestDetails[]
-  quests: PlayerQuestDetails[]
+  previousQuests?: QuestState[]
+  quests: QuestState[]
 }
