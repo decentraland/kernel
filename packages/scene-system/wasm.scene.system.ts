@@ -66,12 +66,12 @@ class WebWorkerScene extends SceneRuntime {
           result
             .then((returnedObject) => {
               console.log(`Scene->Kernel: promise resolve ${msg.promiseId}`, returnedObject)
-              const response = JSON.stringify({ promiseId: msg.promiseId, resolved: true, data: returnedObject })
+              const response = JSON.stringify({ promiseId: msg.promiseId, resolved: true, data: returnedObject }) + '\0'
               rendererChannel.writeMessage(enc.encode(response))
             })
             .catch((returnedError) => {
               console.log(`Scene->Kernel: promise error ${msg.promiseId}`, returnedError)
-              const response = JSON.stringify({ promiseId: msg.promiseId, resolved: false, data: returnedError })
+              const response = JSON.stringify({ promiseId: msg.promiseId, resolved: false, data: returnedError }) + '\0'
               rendererChannel.writeMessage(enc.encode(response))
             })
         } else {
@@ -84,10 +84,14 @@ class WebWorkerScene extends SceneRuntime {
 
     await result.start()
     this.onUpdateFunctions.push((dt: number) => {
-      result.update(dt)
+      try {
+        result.update(dt)
+      } catch (err) {
+        console.error(err)
+      }
     })
     this.onEventFunctions.push((event: any) => {
-      const response = JSON.stringify({ event })
+      const response = JSON.stringify({ event }) + '\0'
       rendererChannel.writeMessage(enc.encode(response))
     })
   }
