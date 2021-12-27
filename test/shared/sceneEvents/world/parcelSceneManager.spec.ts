@@ -1,66 +1,119 @@
-import { expect } from 'chai';
-import * as parcelSceneManager from 'shared/world/parcelSceneManager';
+import sinon from 'sinon'
+import { expect } from 'chai'
+
+import * as store from 'shared/store/isolatedStore'
+import * as parcelSceneManager from 'shared/world/parcelSceneManager'
 import {
   BuilderIsolatedPayload,
   IsolatedMode,
   IsolatedModeOptions,
-} from 'shared/world/types';
-import sinon from 'sinon';
+} from 'shared/world/types'
 
 function mockLifeCycle() {
-  return {
+  const lifeCycleManager = {
     getParcelData: sinon.stub(),
     notify: sinon.stub(),
+    setParcelData: sinon.stub()
   } as any
+  parcelSceneManager.parcelSceneLoadingState.lifecycleManager = lifeCycleManager
 }
 
-function mockGetSceneWorkerBySceneID() {
-  sinon
-    .stub(parcelSceneManager, 'loadParcelSceneByIdIfMissing')
+export function mockGetSceneWorkerBySceneID() {
+  return sinon.stub(parcelSceneManager, 'loadParcelSceneByIdIfMissing').callsFake(async() => {})
+}
+const land = {
+  sceneId: 'testSceneId',
+  sceneJsonData: {},
+  baseUrl: 'baseUrl',
+  baseUrlBundles: 'string',
+  mappingsResponse: {
+    parcel_id: 'string',
+    root_cid: 'string',
+    contents: []
+  }
 }
 
-describe('parcelSceneManager', () => {
-  it('StartIsolatedMode', () => {
-     
+afterEach(() => {
+  sinon.restore()
+  parcelSceneManager.loadedSceneWorkers.clear()
+})
+
+describe('Parcel scene manager', () => {
+  it('start isolated mode without loaded scenes', () => {
+    mockLifeCycle()
     const sceneId = 'testSceneId'
-    mockGetSceneWorkerBySceneID()
-    parcelSceneManager.parcelSceneLoadingState.lifecycleManager =
-      mockLifeCycle();
-    console.log(parcelSceneManager.loadedSceneWorkers)
-    console.log(parcelSceneManager.getSceneWorkerBySceneID)
 
-    const parcels: Set<string> = new Set<string>()
-    parcels.add(sceneId)
+    // Mock load scene worker so we dont need to lead with a webWorker loading
+    parcelSceneManager.loadedSceneWorkers.set(sceneId, {} as any)
 
-    const payload: BuilderIsolatedPayload = {
-      sceneId: sceneId,
-      recreateScene: false,
-    };
-
+    const parcels: Set<string> = new Set<string>([sceneId])
     const options: IsolatedModeOptions<BuilderIsolatedPayload> = {
       mode: IsolatedMode.BUILDER,
-      payload,
-    };
-    parcelSceneManager.startIsolatedMode(options);
+      payload: {
+        sceneId: sceneId,
+        land: land as any,
+        recreateScene: false,
+      },
+    }
+    parcelSceneManager.startIsolatedMode(options)
+    expect(parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels)
+  })
 
-    expect( parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels);
-  });
+  it('start isolated mode loaded scenes', () => {
+    mockLifeCycle()
+    const sceneId = 'testSceneId'
+    const previousScenes = new Set(['old-scene'])
+    parcelSceneManager.parcelSceneLoadingState.desiredParcelScenes = previousScenes
+    // Mock load scene worker so we dont need to lead with a webWorker loading
+    parcelSceneManager.loadedSceneWorkers.set(sceneId, {} as any)
 
-  it('SetDesiredParcelScenes', () => {
-    const parcels: Set<string> = new Set<string>();
+    const parcels: Set<string> = new Set<string>([sceneId])
+    const options: IsolatedModeOptions<BuilderIsolatedPayload> = {
+      mode: IsolatedMode.BUILDER,
+      payload: {
+        sceneId: sceneId,
+        land: land as any,
+        recreateScene: false,
+      },
+    }
+    parcelSceneManager.startIsolatedMode(options)
+    expect(parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels)
+    expect(parcelSceneManager.parcelSceneLoadingState.runningIsolatedMode).to.eq(true)
+  })
+  it('stop isolated mode loaded scenes', () => {
+    mockLifeCycle()
 
-    parcelSceneManager.setDesiredParcelScenes(parcels);
+    const sceneId = 'testSceneId'
+    // Mock load scene worker so we dont need to lead with a webWorker loading
+    parcelSceneManager.loadedSceneWorkers.set(sceneId, ({ isPersistent: () => true}) as any)
+    store.setStore({ dispatch: (() => {}) } as any)
+    parcelSceneManager.setPlayerPosition({ x: 0, y: 0 })
+    const options: IsolatedModeOptions<BuilderIsolatedPayload> = {
+      mode: IsolatedMode.BUILDER,
+      payload: {
+        sceneId: sceneId,
+        land: land as any,
+        recreateScene: false,
+      },
+    }
+    parcelSceneManager.startIsolatedMode(options)
+    parcelSceneManager.stopIsolatedMode({...options, payload: { ...options.payload, sceneId: undefined } })
+    expect(parcelSceneManager.getDesiredParcelScenes()).to.eql(new Set())
+    expect(parcelSceneManager.parcelSceneLoadingState.runningIsolatedMode).to.eq(false)
+  })
 
-    expect( parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels);
+  it('Set desired parcels scene', () => {
+    const parcels: Set<string> = new Set<string>()
+    parcelSceneManager.setDesiredParcelScenes(parcels)
+    expect(parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels)
 
-    parcels.add('test');
-    parcelSceneManager.setDesiredParcelScenes(parcels);
+    parcels.add('test')
+    parcelSceneManager.setDesiredParcelScenes(parcels)
+    expect(parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels)
 
-    expect( parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels);
+    parcels.delete('test')
+    parcelSceneManager.setDesiredParcelScenes(parcels)
 
-    parcels.delete('test');
-    parcelSceneManager.setDesiredParcelScenes(parcels);
-
-    expect( parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels);
-  });
-});
+    expect(parcelSceneManager.getDesiredParcelScenes()).to.eql(parcels)
+  })
+})

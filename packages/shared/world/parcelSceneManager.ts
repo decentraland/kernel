@@ -14,7 +14,7 @@ import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
 import { SceneSystemWorker } from './SceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { Observable } from 'decentraland-ecs'
+import { Observable } from '@dcl/legacy-ecs'
 import { IsolatedModeOptions, IsolatedMode, StatefulWorkerOptions, ParcelSceneLoadingState } from './types'
 import { UnityParcelScene } from 'unity-interface/UnityParcelScene'
 import { createLogger } from 'shared/logger'
@@ -38,6 +38,10 @@ declare const globalThis: any
 const sceneManagerLogger = createLogger('scene-manager')
 let lastPlayerPositionKnow: Vector2Component
 
+export function setPlayerPosition(position: Vector2Component) {
+  lastPlayerPositionKnow = position
+}
+
 export const onLoadParcelScenesObservable = new Observable<ILand[]>()
 /**
  * Array of sceneId's
@@ -53,7 +57,6 @@ globalThis['sceneWorkers'] = loadedSceneWorkers
  * Retrieve the Scene based on it's ID, usually RootCID
  */
 export function getSceneWorkerBySceneID(sceneId: string) {
-  console.log(sceneId)
   return loadedSceneWorkers.get(sceneId)
 }
 
@@ -156,10 +159,8 @@ export const parcelSceneLoadingState: ParcelSceneLoadingState = {
 }
 
 export function startIsolatedMode(options: IsolatedModeOptions) {
-  console.log(parcelSceneLoadingState.lifecycleManager)
   if (!parcelSceneLoadingState.lifecycleManager || !options) return
 
-  console.log('logeado')
   // set the isolated mode On
   parcelSceneLoadingState.isolatedModeOptions = options
   parcelSceneLoadingState.runningIsolatedMode = true
@@ -169,7 +170,6 @@ export function startIsolatedMode(options: IsolatedModeOptions) {
 
   // scene id to create
   const sceneId = parcelSceneLoadingState.isolatedModeOptions.payload.sceneId
-
   if (sceneId && parcelSceneLoadingState.isolatedModeOptions.payload.land) {
     newSet.add(sceneId)
     parcelSceneLoadingState.lifecycleManager?.setParcelData(
@@ -230,14 +230,16 @@ Object.assign(globalThis, {
   endIsolatedMode: stopIsolatedMode
 })
 
-/** @internal
+/**
+ *  @internal
  * Returns a set of Set<SceneId>
  */
 export function getDesiredParcelScenes(): Set<string> {
   return new Set(parcelSceneLoadingState.desiredParcelScenes)
 }
 
-/** @internal
+/**
+ * @internal
  * Receives a set of Set<SceneId>
  */
 export function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
@@ -274,6 +276,9 @@ function unloadParcelSceneById(sceneId: string) {
   onUnloadParcelScenesObservable.notifyObservers([sceneId])
 }
 
+/**
+ * @internal
+ **/
 export async function loadParcelSceneByIdIfMissing(sceneId: string) {
   const lifecycleManager = parcelSceneLoadingState.lifecycleManager
 
@@ -281,7 +286,6 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
 
   const parcelSceneToStart = await lifecycleManager.getParcelData(sceneId)
 
-  console.log(getSceneWorkerBySceneID)
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
     //If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
@@ -378,7 +382,7 @@ export async function enableParcelSceneLoading() {
   })
 
   teleportObservable.add((position: { x: number; y: number }) => {
-    lastPlayerPositionKnow = position
+    setPlayerPosition(position)
     if (parcelSceneLoadingState.runningIsolatedMode) return
     lifecycleManager.notify('User.setPosition', { position, teleported: true })
   })
@@ -390,8 +394,7 @@ export async function enableParcelSceneLoading() {
   parcelObservable.add((obj) => {
     // immediate reposition should only be broadcasted to others, otherwise our scene reloads
     if (obj.immediate) return
-
-    lastPlayerPositionKnow = obj.newParcel
+    setPlayerPosition(obj.newParcel)
 
     // If we are in isolated mode we don't report the position
     if (parcelSceneLoadingState.runningIsolatedMode) return
