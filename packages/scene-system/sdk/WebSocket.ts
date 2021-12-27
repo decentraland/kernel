@@ -1,12 +1,10 @@
-import { PermissionItem, Permissions } from 'shared/apis/Permissions'
-
 export interface WebSocketClassOptions {
-  permission: Permissions
+  canUseWebsocket: boolean
   previewMode: boolean
   log: any
 }
 
-export function createWebSocket({ permission, previewMode, log }: WebSocketClassOptions) {
+export function createWebSocket({ canUseWebsocket, previewMode, log }: WebSocketClassOptions) {
   return class RestrictedWebSocket extends WebSocket {
     constructor(url: string | URL, protocols?: string | string[]) {
       if (url.toString().toLowerCase().substr(0, 4) !== 'wss:') {
@@ -16,12 +14,9 @@ export function createWebSocket({ permission, previewMode, log }: WebSocketClass
           throw new Error("Can't connect to unsafe WebSocket server")
         }
       }
-      void permission.hasPermission(PermissionItem.USE_WEBSOCKET).then((result) => {
-        if (!result) {
-          this.close()
-          throw new Error("This scene doesn't have allowed to use WebSocket")
-        }
-      })
+      if (!canUseWebsocket) {
+        throw new Error("This scene doesn't have allowed to use WebSocket")
+      }
 
       super(url.toString(), protocols)
     }

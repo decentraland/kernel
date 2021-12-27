@@ -28,6 +28,7 @@ import type {
 import { generatePBObject } from './Utils'
 import { createWebSocket } from './WebSocket'
 import { createFetch } from './Fetch'
+import { PermissionItem } from 'shared/apis/Permissions'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
@@ -539,17 +540,19 @@ export abstract class SceneRuntime extends Script {
 
       try {
         const { Permissions } = await this.loadAPIs(['Permissions'])
+        const canUseWebsocket = await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
+        const canUseFetch = await Permissions.hasPermission(PermissionItem.USE_FETCH)
 
         this.originalFetch = fetch
         this.originalWebSocket = WebSocket
 
         const restrictedWebSocket = createWebSocket({
-          permission: Permissions,
+          canUseWebsocket,
           previewMode: this.isPreview,
           log: dcl.log
         })
         const restrictedFetch = createFetch({
-          permission: Permissions,
+          canUseFetch,
           originalFetch: this.originalFetch,
           previewMode: this.isPreview,
           log: dcl.log
@@ -655,7 +658,7 @@ export abstract class SceneRuntime extends Script {
       if (this.events.length) {
         const batch = this.events.slice()
         this.events.length = 0
-        ;(this.engine as any as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
+          ; (this.engine as any as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
       }
     } catch (e) {
       this.onError(e)

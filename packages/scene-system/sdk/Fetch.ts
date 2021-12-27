@@ -1,15 +1,13 @@
-import { PermissionItem, Permissions } from 'shared/apis/Permissions'
-
 export type FetchFunction = (resource: RequestInfo, init?: RequestInit | undefined) => Promise<Response>
 
 export interface FetchOptions {
-  permission: Permissions
+  canUseFetch: boolean
   originalFetch: FetchFunction
   previewMode: boolean
   log: any
 }
 
-export function createFetch({ permission, previewMode, log, originalFetch }: FetchOptions) {
+export function createFetch({ canUseFetch, previewMode, log, originalFetch }: FetchOptions) {
   return (resource: RequestInfo, init?: RequestInit | undefined): Promise<Response> => {
     const url = resource instanceof Request ? resource.url : resource
     if (url.toLowerCase().substr(0, 8) !== 'https://') {
@@ -20,11 +18,10 @@ export function createFetch({ permission, previewMode, log, originalFetch }: Fet
       }
     }
 
-    return permission.hasPermission(PermissionItem.USE_FETCH).then((result) => {
-      if (!result) {
-        throw new Error("This scene doesn't have allowed to use fetch")
-      }
-      return originalFetch(resource, init)
-    })
+    if (!canUseFetch) {
+      throw new Error("This scene doesn't have allowed to use fetch")
+    }
+
+    return originalFetch(resource, init)
   }
 }
