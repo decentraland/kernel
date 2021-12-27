@@ -658,7 +658,7 @@ export abstract class SceneRuntime extends Script {
       if (this.events.length) {
         const batch = this.events.slice()
         this.events.length = 0
-          ; (this.engine as any as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
+        ;(this.engine as any as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
       }
     } catch (e) {
       this.onError(e)
