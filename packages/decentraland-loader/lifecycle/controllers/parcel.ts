@@ -29,6 +29,16 @@ export class ParcelLifeCycleController extends EventEmitter {
     return this.updateLoadedParcels()
   }
 
+  public resetScenesOnSight() {
+    this.currentlySightedParcels.clear()
+
+    this.parcelStatus.forEach((value: ParcelLifeCycleStatus, key: string) => {
+      value.setOffSight()
+    })
+
+    this.currentPosition = undefined
+  }
+
   reportCurrentPosition(position: Vector2Component): ParcelSightSeeingReport | undefined {
     if (this.currentPosition && this.currentPosition.x === position.x && this.currentPosition.y === position.y) {
       // same position, no news

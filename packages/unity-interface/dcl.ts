@@ -3,7 +3,15 @@ import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANE
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import { ILand, SceneJsonData } from 'shared/types'
-import { allScenesEvent, enableParcelSceneLoading, loadParcelScene } from 'shared/world/parcelSceneManager'
+import {
+  allScenesEvent,
+  enableParcelSceneLoading,
+  loadParcelScene,
+  onLoadParcelScenesObservable,
+  onPositionSettledObservable,
+  onPositionUnsettledObservable,
+  onUnloadParcelScenesObservable
+} from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
 import {
   observeLoadingStateChange,
@@ -142,36 +150,33 @@ export async function startGlobalScene(cid: string, title: string, fileContentUr
 }
 
 export async function startUnitySceneWorkers() {
-  await enableParcelSceneLoading({
-    parcelSceneClass: UnityParcelScene,
-    preloadScene: async (_land) => {
-      // TODO:
-      // 1) implement preload call
-      // 2) await for preload message or timeout
-      // 3) return
-    },
-    onLoadParcelScenes: (lands) => {
-      getUnityInstance().LoadParcelScenes(
-        lands.map(($) => {
-          const x = Object.assign({}, ILandToLoadableParcelScene($).data)
-          delete x.land
-          return x
-        })
-      )
-    },
-    onUnloadParcelScenes: (lands) => {
-      lands.forEach(($) => {
-        getUnityInstance().UnloadScene($.sceneId)
+  onLoadParcelScenesObservable.add((lands) => {
+    getUnityInstance().LoadParcelScenes(
+      lands.map(($) => {
+        const x = Object.assign({}, ILandToLoadableParcelScene($).data)
+        delete x.land
+        return x
       })
-    },
-    onPositionSettled: (spawnPoint) => {
-      getUnityInstance().Teleport(spawnPoint)
-      getUnityInstance().ActivateRendering()
-    },
-    onPositionUnsettled: () => {
-      getUnityInstance().DeactivateRendering()
-    }
+    )
   })
+
+  onUnloadParcelScenesObservable.add((lands) => {
+    lands.forEach((sceneId) => {
+      getUnityInstance().UnloadScene(sceneId)
+    })
+  })
+
+  onPositionSettledObservable.add((spawnPoint) => {
+    getUnityInstance().Teleport(spawnPoint)
+    getUnityInstance().ActivateRendering()
+  })
+
+  onPositionUnsettledObservable.add(() => {
+    getUnityInstance().DeactivateRendering()
+  })
+
+  await enableParcelSceneLoading()
+
   store.dispatch(signalParcelLoadingStarted())
 }
 

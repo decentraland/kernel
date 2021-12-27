@@ -58,8 +58,16 @@ let downloadManager: SceneDataDownloadManager
       })
       sceneController = new SceneLifeCycleController({ downloadManager, enabledEmpty: options.emptyScenes })
       positionController = new PositionLifecycleController(downloadManager, parcelController, sceneController)
-      parcelController.on('Sighted', (parcels: string[]) => connector.notify('Parcel.sighted', { parcels }))
-      parcelController.on('Lost sight', (parcels: string[]) => connector.notify('Parcel.lostSight', { parcels }))
+      parcelController.on('Sighted', (parcels: string[]) =>
+        connector.notify('Parcel.sighted', {
+          parcels
+        })
+      )
+      parcelController.on('Lost sight', (parcels: string[]) =>
+        connector.notify('Parcel.lostSight', {
+          parcels
+        })
+      )
 
       positionController.on('Settled Position', (spawnPoint: InstancedSpawnPoint) => {
         connector.notify('Position.settled', { spawnPoint })
@@ -85,6 +93,10 @@ let downloadManager: SceneDataDownloadManager
         positionController.reportCurrentPosition(opt.position, opt.teleported).catch((e) => {
           defaultLogger.error(`error while resolving new scenes around`, e)
         })
+      })
+
+      connector.on('ResetScenes', () => {
+        parcelController.resetScenesOnSight()
       })
 
       connector.on('Scene.dataRequest', async (data: { sceneId: string }) => {

@@ -11,6 +11,7 @@ export class ParcelIdentity extends ExposableAPI implements IParcelIdentity {
   land!: ILand
   cid!: string
   isPortableExperience: boolean = false
+  isEmpty: boolean = false
 
   /**
    * Returns the coordinates and the definition of a parcel
@@ -21,5 +22,13 @@ export class ParcelIdentity extends ExposableAPI implements IParcelIdentity {
       land: this.land,
       cid: this.cid
     }
+  }
+
+  /**
+   * Returns if the parcel is empty or not
+   */
+  @exposeMethod
+  async getIsEmpty(): Promise<boolean> {
+    return this.isEmpty
   }
 }
