@@ -53,6 +53,7 @@ globalThis['sceneWorkers'] = loadedSceneWorkers
  * Retrieve the Scene based on it's ID, usually RootCID
  */
 export function getSceneWorkerBySceneID(sceneId: string) {
+  console.log(sceneId)
   return loadedSceneWorkers.get(sceneId)
 }
 
@@ -145,7 +146,8 @@ function reportPendingScenes() {
   store.dispatch(informPendingScenes(pendingScenes.size, countableScenes))
 }
 
-const parcelSceneLoadingState: ParcelSceneLoadingState = {
+// @internal
+export const parcelSceneLoadingState: ParcelSceneLoadingState = {
   isWorldLoadingEnabled: true,
   desiredParcelScenes: new Set<string>(),
   lifecycleManager: null as LifecycleManager | null,
@@ -154,8 +156,10 @@ const parcelSceneLoadingState: ParcelSceneLoadingState = {
 }
 
 export function startIsolatedMode(options: IsolatedModeOptions) {
+  console.log(parcelSceneLoadingState.lifecycleManager)
   if (!parcelSceneLoadingState.lifecycleManager || !options) return
 
+  console.log('logeado')
   // set the isolated mode On
   parcelSceneLoadingState.isolatedModeOptions = options
   parcelSceneLoadingState.runningIsolatedMode = true
@@ -226,17 +230,17 @@ Object.assign(globalThis, {
   endIsolatedMode: stopIsolatedMode
 })
 
-/**
+/** @internal
  * Returns a set of Set<SceneId>
  */
-function getDesiredParcelScenes(): Set<string> {
+export function getDesiredParcelScenes(): Set<string> {
   return new Set(parcelSceneLoadingState.desiredParcelScenes)
 }
 
-/**
+/** @internal
  * Receives a set of Set<SceneId>
  */
-function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
+export function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
   const previousSet = new Set(parcelSceneLoadingState.desiredParcelScenes)
   const newSet = (parcelSceneLoadingState.desiredParcelScenes = desiredParcelScenes)
 
@@ -270,13 +274,14 @@ function unloadParcelSceneById(sceneId: string) {
   onUnloadParcelScenesObservable.notifyObservers([sceneId])
 }
 
-async function loadParcelSceneByIdIfMissing(sceneId: string) {
+export async function loadParcelSceneByIdIfMissing(sceneId: string) {
   const lifecycleManager = parcelSceneLoadingState.lifecycleManager
 
   if (!lifecycleManager) return
 
   const parcelSceneToStart = await lifecycleManager.getParcelData(sceneId)
 
+  console.log(getSceneWorkerBySceneID)
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
     //If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker

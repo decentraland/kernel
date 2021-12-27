@@ -15,11 +15,11 @@ export enum IsolatedMode {
 
 export type IsolatedModeOptions<T = any> = {
   mode: IsolatedMode
-  payload: any
+  payload: T
 }
 
 // This is the payload that the builder mode will use
-export type BuilderIsolatedModeOptions = {
+export type BuilderIsolatedPayload = {
   sceneId?: string
   land?: ILand
 
