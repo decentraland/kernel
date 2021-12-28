@@ -49,19 +49,26 @@ class StatefulWebWorkerScene extends Script {
     this.eventSubscriber = new EventSubscriber(this.engine)
     this.builderActor = new BuilderStatefulActor(land, this.sceneStateStorage)
 
-    // Fetch stored scene
-    this.sceneDefinition = await this.builderActor.getInititalSceneState()
+    const isEmpty: boolean = await this.parcelIdentity.getIsEmpty()
+
+    //If it is not empty we fetch the state
+    if (!isEmpty) {
+      // Fetch stored scene
+      this.sceneDefinition = await this.builderActor.getInititalSceneState()
+      await this.builderActor.sendAssetsFromScene(this.sceneDefinition)
+
+      // Send the initial state ot the renderer
+      this.sceneDefinition.sendStateTo(this.rendererActor)
+
+      this.log('Sent initial load')
+    } else {
+      this.sceneDefinition = new SceneStateDefinition()
+    }
 
     // Listen to the renderer and update the local scene state
     this.rendererActor.forwardChangesTo(this.sceneDefinition)
 
-    await this.builderActor.sendAssetsFromScene(this.sceneDefinition)
-
-    // Send the initial state ot the renderer
-    this.sceneDefinition.sendStateTo(this.rendererActor)
-
     this.rendererActor.sendInitFinished()
-    this.log('Sent initial load')
 
     // Listen to scene state events
     this.listenToEvents(sceneId)
