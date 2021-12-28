@@ -25,83 +25,113 @@ after(() => {
   originalWebSocket = null
 })
 
-describe('Safe fetch and WebSocket permissions', () => {
-  it('fetch', async () => {
-
-    const log = sinon.spy()
-    const logErrorPreview = sinon.spy()
-    const logErrorNotAllowed = sinon.spy()
-
-    const fetch_deployed = createFetch({
-      canUseFetch: true, log, originalFetch, previewMode: false
-    })
-    const fetch_preview = createFetch({
-      canUseFetch: true, log, originalFetch, previewMode: true
-    })
-    const not_allowed_fetch = createFetch({
-      canUseFetch: false, log, originalFetch, previewMode: false
-    })
-
-    await fetch_deployed("https://decentraland.org")
-
-    try {
-      await fetch_deployed("http://decentraland.org")
-    } catch (err) {
-      logErrorPreview(err)
-    }
-
-    await fetch_preview("http://decentraland.org")
-    await fetch_preview("https://decentraland.org")
-
-    try {
-      await not_allowed_fetch("https://decentraland.org")
-    } catch (err) {
-      logErrorNotAllowed(err)
-    }
-
-    sinon.assert.calledOnce(logErrorPreview)
-    sinon.assert.calledOnce(logErrorNotAllowed)
-    sinon.assert.calledOnce(log)
+describe('creating wrapped Fetch', () => {
+  const log = sinon.spy()
+  const logPreview = sinon.spy()
+  const wrappedProductionFetch = createFetch({
+    canUseFetch: true, log, originalFetch, previewMode: false
+  })
+  const wrappedPreviewFetch = createFetch({
+    canUseFetch: true, log: logPreview, originalFetch, previewMode: true
+  })
+  const wrappedNotAllowedFetch = createFetch({
+    canUseFetch: false, log, originalFetch, previewMode: false
   })
 
-  it('websocket ', async () => {
-    const log = sinon.spy()
-    const logErrorPreview = sinon.spy()
-    const logErrorNotAllowed = sinon.spy()
+  // *
+  // * Deployed mode test
+  // *
 
-    const deployed_WebSocket = createWebSocket({
-      canUseWebsocket: true, log, previewMode: false
-    })
-    
-    const preview_WebSocket = createWebSocket({
-      canUseWebsocket: true, log, previewMode: true
-    })
-
-    const not_allowed_WebSocket = createWebSocket({
-      canUseWebsocket: false, log, previewMode: false
-    })
-
-
-    new deployed_WebSocket("wss://decentraland.org")
-
-    try {
-      new deployed_WebSocket("ws://decentraland.org")
-    } catch (err) {
-      logErrorPreview(err)
-    }
-
-    new preview_WebSocket("ws://decentraland.org")
-    new preview_WebSocket("wss://decentraland.org")
-
-    try {
-      new not_allowed_WebSocket("wss://decentraland.org")
-    } catch (err) {
-      logErrorNotAllowed(err)
-    }
-
-    sinon.assert.calledOnce(logErrorPreview)
-    sinon.assert.calledOnce(logErrorNotAllowed)
-    sinon.assert.calledOnce(log)
+  it('should run successfully if the url is secure in deployed scenes', async () => {
+    await wrappedProductionFetch("https://decentraland.org")
   })
 
+  it('should throw an error if the url is not secure in deployed scenes', async () => {
+    const throwErrorLogger = sinon.spy()
+    try {
+      await wrappedProductionFetch("http://decentraland.org")
+    } catch (err) {
+      throwErrorLogger(err)
+    }
+    sinon.assert.calledOnce(throwErrorLogger)
+  })
+
+  // *
+  // * Preview mode test
+  // *
+
+  it('should run successfully if the url is secure in preview scenes', async () => {
+    await wrappedPreviewFetch("https://decentraland.org")
+  })
+
+  it('should log an error if the url is not secure in preview scenes', async () => {
+    sinon.assert.notCalled(logPreview)
+    await wrappedPreviewFetch("http://decentraland.org")
+    sinon.assert.calledOnce(logPreview)
+  })
+
+  // *
+  // * Not allowed fetchs mode test
+  // *
+
+  it('should throw an error because it does not have permissions', async () => {
+    const throwErrorLogger = sinon.spy()
+    try {
+      await wrappedNotAllowedFetch("https://decentraland.org")
+    } catch (err) {
+      throwErrorLogger(err)
+    }
+    sinon.assert.calledOnce(throwErrorLogger)
+  })
+
+})
+
+describe('creating wrapped WebSocket', () => {
+  const log = sinon.spy()
+  const logPreview = sinon.spy()
+  const wrappedProductionWebSocket = createWebSocket({
+    canUseWebsocket: true, log, previewMode: false
+  })
+  const wrappedPreviewWebSocket = createWebSocket({
+    canUseWebsocket: true, log: logPreview, previewMode: true
+  })
+  const wrappedNotAllowedWebSocket = createWebSocket({
+    canUseWebsocket: false, log, previewMode: false
+  })
+
+  it('should run successfully if the ws is secure in deployed scenes', async () => {
+    new wrappedProductionWebSocket("wss://decentraland.org")
+  })
+
+
+  it('should throw an error if the ws is not secure in deployed scenes', async () => {
+    const throwErrorLogger = sinon.spy()
+    try {
+      new wrappedProductionWebSocket("http://decentraland.org")
+    } catch (err) {
+      throwErrorLogger(err)
+    }
+    sinon.assert.calledOnce(throwErrorLogger)
+  })
+
+
+  it('should run successfully if the ws is secure in preview scenes', async () => {
+    new wrappedPreviewWebSocket("wss://decentraland.org")
+  })
+
+  it('should log an error if the ws is not secure in preview scenes', async () => {
+    sinon.assert.notCalled(logPreview)
+    new wrappedPreviewWebSocket("ws://decentraland.org")
+    sinon.assert.calledOnce(logPreview)
+  })
+
+  it('should throw an error because it does not have permissions', async () => {
+    const throwErrorLogger = sinon.spy()
+    try {
+      new wrappedNotAllowedWebSocket("wss://decentraland.org")
+    } catch (err) {
+      throwErrorLogger(err)
+    }
+    sinon.assert.calledOnce(throwErrorLogger)
+  })
 })
