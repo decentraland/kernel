@@ -75,4 +75,11 @@ export class Permissions extends ExposableAPI {
   resetPermissions() {
     this.permissionGranted = []
   }
+
+  /**
+   * Force permissions
+   */
+  forcePermissions(permissions: PermissionItem[]) {
+    this.permissionGranted = permissions
+  }
 }
