@@ -78,6 +78,8 @@ import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from 'dcl-crypto'
 import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
+import { deployScene } from 'shared/apis/SceneStateStorageController/utils'
+import { PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -662,6 +664,11 @@ export class BrowserInterface {
       : {}
 
     getUnityInstance().SendHeaders(data.url, headers)
+  }
+
+  public async PublishSceneState(data: PublishPayload) {
+    const result = await deployScene(data)
+    getUnityInstance().SendPublishSceneResult(result)
   }
 
   public RequestWearables(data: {

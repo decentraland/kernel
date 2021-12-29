@@ -18,7 +18,7 @@ import { BUILDER_SERVER_URL, ETHEREUM_NETWORK } from 'config'
 import { defaultLogger } from '../../logger'
 import { getParcelSceneLimits } from 'atomicHelpers/landHelpers'
 import { CLASS_ID } from '@dcl/legacy-ecs'
-import { toHumanReadableType, fromHumanReadableType, getLayoutFromParcels } from './utils'
+import { toHumanReadableType, fromHumanReadableType, getLayoutFromParcels, builderAssetToLocalAsset } from './utils'
 import { SceneSourcePlacement } from 'shared/types'
 
 const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1'
@@ -88,7 +88,9 @@ export class BuilderServerAPIManager {
 
   async getConvertedAssets(assetIds: AssetId[]): Promise<Map<AssetId, Asset>> {
     await this.getAssets(assetIds)
-    return new Map(assetIds.map((assetId) => [assetId, this.builderAssetToLocalAsset(this.assets.get(assetId)!)]))
+    return new Map(
+      assetIds.map((assetId) => [assetId, builderAssetToLocalAsset(this.assets.get(assetId)!, this.baseUrl)])
+    )
   }
 
   async getBuilderManifestFromProjectId(
@@ -275,15 +277,6 @@ export class BuilderServerAPIManager {
       cols: cols ?? layout.cols,
       created_at: today,
       updated_at: today
-    }
-  }
-
-  private builderAssetToLocalAsset(webAsset: BuilderAsset): Asset {
-    return {
-      id: webAsset.id,
-      model: webAsset.model,
-      mappings: Object.entries(webAsset.contents).map(([file, hash]) => ({ file, hash })),
-      baseUrl: `${this.baseUrl}/storage/contents`
     }
   }
 
