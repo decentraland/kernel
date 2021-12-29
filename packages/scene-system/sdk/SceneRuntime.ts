@@ -542,19 +542,21 @@ export abstract class SceneRuntime extends Script {
         const { Permissions } = await this.loadAPIs(['Permissions'])
         const canUseWebsocket = await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
         const canUseFetch = await Permissions.hasPermission(PermissionItem.USE_FETCH)
+        const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: EnvironmentAPI }
+        const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
         this.originalFetch = fetch
         this.originalWebSocket = WebSocket
 
         const restrictedWebSocket = createWebSocket({
           canUseWebsocket,
-          previewMode: this.isPreview,
+          previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log
         })
         const restrictedFetch = createFetch({
           canUseFetch,
           originalFetch: this.originalFetch,
-          previewMode: this.isPreview,
+          previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log
         })
 

@@ -6,6 +6,8 @@ import { getServerConfigurations, PREVIEW } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsIsland } from 'shared/comms/selectors'
 import { Realm } from 'shared/dao/types'
+import { isFeatureEnabled } from 'shared/meta/selectors'
+import { FeatureFlags } from 'shared/meta/types'
 
 export type EnvironmentRealm = {
   domain: string
@@ -38,6 +40,14 @@ export class EnvironmentAPI extends ExposableAPI {
   @exposeMethod
   async isPreviewMode(): Promise<boolean> {
     return PREVIEW
+  }
+
+  /**
+   * Returns if the feature flag unsafe-request is on
+   */
+  @exposeMethod
+  async areUnsafeRequestAllowed(): Promise<boolean> {
+    return isFeatureEnabled(store.getState(), FeatureFlags.UNSAFE_FETCH_AND_WEBSOCKET, false)
   }
 
   /**
