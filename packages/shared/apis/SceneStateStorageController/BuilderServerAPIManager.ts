@@ -21,7 +21,7 @@ import { CLASS_ID } from '@dcl/legacy-ecs'
 import { toHumanReadableType, fromHumanReadableType, getLayoutFromParcels, builderAssetToLocalAsset } from './utils'
 import { SceneSourcePlacement } from 'shared/types'
 
-const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1'
+export const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1'
 export const BUILDER_MANIFEST_VERSION = 10
 
 export class BuilderServerAPIManager {
