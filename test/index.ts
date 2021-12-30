@@ -26,6 +26,8 @@ import './dao/pick-realm-algorithm'
 
 import './shared/sceneEvents'
 
+import './scene-system/sdk'
+
 declare var mocha: Mocha
 declare var globalThis: any
 

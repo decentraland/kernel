@@ -76,7 +76,8 @@ export enum FeatureFlags {
   BUILDER_IN_WORLD = 'builder_in_world',
   AVATAR_LODS = 'avatar_lods',
   ASSET_BUNDLES = 'asset_bundles',
-  EXPLORE_V2_ENABLED = 'explorev2'
+  EXPLORE_V2_ENABLED = 'explorev2',
+  UNSAFE_FETCH_AND_WEBSOCKET = 'unsafe-request'
 }
 
 export type FeatureFlag = {

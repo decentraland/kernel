@@ -5,11 +5,17 @@ import { ParcelIdentity } from './ParcelIdentity'
 export enum PermissionItem {
   ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE = 'ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE',
   ALLOW_TO_TRIGGER_AVATAR_EMOTE = 'ALLOW_TO_TRIGGER_AVATAR_EMOTE',
-  USE_WEB3_API = 'USE_WEB3_API'
+  USE_WEB3_API = 'USE_WEB3_API',
+  USE_WEBSOCKET = 'USE_WEBSOCKET',
+  USE_FETCH = 'USE_FETCH'
 }
 
-export const defaultParcelPermissions = [PermissionItem.USE_WEB3_API]
-export const defaultPortableExperiencePermissions = []
+export const defaultParcelPermissions = [
+  PermissionItem.USE_WEB3_API,
+  PermissionItem.USE_FETCH,
+  PermissionItem.USE_WEBSOCKET
+]
+export const defaultPortableExperiencePermissions = [PermissionItem.USE_FETCH, PermissionItem.USE_WEBSOCKET]
 
 @registerAPI('Permissions')
 export class Permissions extends ExposableAPI {
@@ -68,5 +74,12 @@ export class Permissions extends ExposableAPI {
    */
   resetPermissions() {
     this.permissionGranted = []
+  }
+
+  /**
+   * Force permissions
+   */
+  forcePermissions(permissions: PermissionItem[]) {
+    this.permissionGranted = permissions
   }
 }
