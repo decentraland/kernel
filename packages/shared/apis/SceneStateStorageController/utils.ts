@@ -1,11 +1,11 @@
 import { CLASS_ID } from '@dcl/legacy-ecs'
 import { SceneSourcePlacement } from 'shared/types'
+import { Asset, BuilderAsset, SerializedSceneState } from './types'
 
-/**
+/*
  * We are converting from numeric ids to a more human readable format. It might make sense to change this in the future,
  * but until this feature is stable enough, it's better to store it in a way that it is easy to debug.
  */
-
 const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
   ['Transform', CLASS_ID.TRANSFORM],
   ['GLTFShape', CLASS_ID.GLTF_SHAPE],
@@ -15,6 +15,30 @@ const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
   ['VisibleOnEdit', CLASS_ID.VISIBLE_ON_EDIT],
   ['Script', CLASS_ID.SMART_ITEM]
 ])
+
+export function serializeSceneStateFromEntities(rawEntities: any): SerializedSceneState {
+  const entities = []
+  for (let i = 0; i < rawEntities.length; i++) {
+    const components = []
+    for (let z = 0; z < rawEntities[i].components.length; z++) {
+      components.push({
+        type: fromHumanReadableType(rawEntities[i].components[z].type),
+        value: rawEntities[i].components[z].value
+      })
+    }
+    entities.push({ id: rawEntities[i].id, components })
+  }
+  return { entities }
+}
+
+export function builderAssetToLocalAsset(webAsset: BuilderAsset, baseUrl: string): Asset {
+  return {
+    id: webAsset.id,
+    model: webAsset.model,
+    mappings: Object.entries(webAsset.contents).map(([file, hash]) => ({ file, hash })),
+    baseUrl: `${baseUrl}/storage/contents`
+  }
+}
 
 export function getUniqueNameForGLTF(currentNames: string[], gltfName: string, amountOfTimesAppear: number): string {
   let nameToReturn: string = gltfName

@@ -1,4 +1,5 @@
 import { ContentMapping, SceneSource } from 'shared/types'
+import { EntityId, ComponentId, ComponentData } from 'scene-system/stateful-scene/types'
 
 export type AssetId = string
 
@@ -30,6 +31,19 @@ export enum CONTENT_PATH {
   BUNDLED_GAME_FILE = 'bin/game.js',
   SCENE_THUMBNAIL = 'thumbnail.png',
   ASSETS = 'scene-assets.json'
+}
+
+export type PublishPayload = {
+  files: Record<string, string>
+  filesToDecode: Record<string, any>
+  metadata: SceneDeploymentSourceMetadata
+  pointers: string[]
+  statelessManifest: StatelessManifest
+}
+
+export type StatelessManifest = {
+  schemaVersion: number
+  entities: Map<EntityId, Map<ComponentId, ComponentData>>
 }
 
 export type DeploymentResult = { ok: true } | { ok: false; error: string }
