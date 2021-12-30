@@ -82,6 +82,7 @@ export type RunOptions = {
   sourceResponse: Response
   isWasmScene: boolean
   dcl: DecentralandInterface
+  env: any
 }
 
 export abstract class SceneRuntime extends Script {
@@ -573,7 +574,12 @@ export abstract class SceneRuntime extends Script {
         await this.run({
           sourceResponse: sourceData,
           isWasmScene,
-          dcl
+          dcl,
+          env: {
+            fetch: restrictedFetch,
+            WebSocket: restrictedFetch
+          }
+        })
 
         let modulesNotLoaded: string[] = []
 

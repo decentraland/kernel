@@ -31,8 +31,8 @@ class WebWorkerScene extends SceneRuntime {
     })
   }
 
-  async run({ sourceResponse, dcl }: RunOptions): Promise<void> {
-    await customEval(await sourceResponse.text(), getES5Context({ dcl }))
+  async run({ sourceResponse, dcl, env }: RunOptions): Promise<void> {
+    await customEval(await sourceResponse.text(), getES5Context({ dcl, ...env }))
   }
 
   async systemDidEnable() {

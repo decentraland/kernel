@@ -39,8 +39,7 @@ class WebWorkerScene extends SceneRuntime {
     if (isWasmScene) {
       wasmBytes = new Uint8Array(await sourceResponse.arrayBuffer())
     } else {
-      const quickJsWasmURL =
-        'https://sdk-team-cdn.decentraland.org/@dcl/wasm-quickjs-loader/branch/feat/organize-project/loader.wasm'
+      const quickJsWasmURL = 'http://127.0.0.1:7666/loader.wasm'
       const quicksJSLoaderWasm = await (await fetch(quickJsWasmURL)).arrayBuffer()
       wasmBytes = new Uint8Array(quicksJSLoaderWasm)
     }
