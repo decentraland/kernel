@@ -667,16 +667,16 @@ export class BrowserInterface {
   }
 
   public async PublishSceneState(data: PublishPayload) {
-    let result: DeploymentResult
+    let deploymentResult: DeploymentResult
 
     deployScene(data)
-      .then((result) => {
-        result = { ok: true }
-        getUnityInstance().SendPublishSceneResult(result)
+      .then(() => {
+        deploymentResult = { ok: true }
+        getUnityInstance().SendPublishSceneResult(deploymentResult)
       })
       .catch((error) => {
-        result = { ok: false, error: `${error}` }
-        getUnityInstance().SendPublishSceneResult(result)
+        deploymentResult = { ok: false, error: `${error}` }
+        getUnityInstance().SendPublishSceneResult(deploymentResult)
         defaultLogger.error(error)
       })
   }
