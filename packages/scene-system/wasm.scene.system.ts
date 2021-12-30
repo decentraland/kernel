@@ -54,28 +54,40 @@ class WebWorkerScene extends SceneRuntime {
 
     const enc = new TextEncoder()
 
+    const processMessage = (jsonStr: string) => {
+      const msg: { method: string; params: any[]; promiseId?: number } = JSON.parse(jsonStr)
+      const result = (dcl as any)[msg.method].apply(dcl, msg.params)
+
+      if (msg.promiseId !== 0 && result instanceof Promise) {
+        console.log(`Scene->Kernel: resolving promise ${msg.promiseId}`)
+        result
+          .then((returnedObject) => {
+            console.log(`Scene->Kernel: promise resolve ${msg.promiseId}`, returnedObject)
+            const response = JSON.stringify({ promiseId: msg.promiseId, resolved: true, data: returnedObject }) + '\0'
+            rendererChannel.writeMessage(enc.encode(response))
+          })
+          .catch((returnedError) => {
+            console.log(`Scene->Kernel: promise error ${msg.promiseId}`, returnedError)
+            const response = JSON.stringify({ promiseId: msg.promiseId, resolved: false, data: returnedError }) + '\0'
+            rendererChannel.writeMessage(enc.encode(response))
+          })
+      } else {
+        // console.log(`Scene->Kernel: call ${msg.method} with `, msg.params, ` pid:${msg.promiseId} result `, result)
+      }
+    }
+
     rendererChannel.setDataArriveCallback((data: Uint8Array) => {
       try {
-        const msg: { method: string; params: any[]; promiseId?: number } = JSON.parse(
-          Buffer.from(data).toString('utf8')
-        )
-        const result = (dcl as any)[msg.method].apply(dcl, msg.params)
-
-        if (msg.promiseId !== 0 && result instanceof Promise) {
-          console.log(`Scene->Kernel: resolving promise ${msg.promiseId}`)
-          result
-            .then((returnedObject) => {
-              console.log(`Scene->Kernel: promise resolve ${msg.promiseId}`, returnedObject)
-              const response = JSON.stringify({ promiseId: msg.promiseId, resolved: true, data: returnedObject }) + '\0'
-              rendererChannel.writeMessage(enc.encode(response))
-            })
-            .catch((returnedError) => {
-              console.log(`Scene->Kernel: promise error ${msg.promiseId}`, returnedError)
-              const response = JSON.stringify({ promiseId: msg.promiseId, resolved: false, data: returnedError }) + '\0'
-              rendererChannel.writeMessage(enc.encode(response))
-            })
-        } else {
-          console.log(`Scene->Kernel: call ${msg.method} with `, msg.params, ` pid:${msg.promiseId} result `, result)
+        const bufferView = new DataView(data.buffer)
+        let offset = 0
+        while (offset + 4 < data.length) {
+          const length = bufferView.getUint32(offset, true)
+          if (offset + length + 4 > data.length) {
+            throw new Error('Out of buffer')
+          }
+          const buffer = Buffer.from(data.subarray(offset + 4, offset + 4 + length)).toString('utf8')
+          offset += length + 4
+          processMessage(buffer)
         }
       } catch (err) {
         console.error(err, Buffer.from(data).toString('utf8'))
@@ -127,11 +139,10 @@ class WebWorkerScene extends SceneRuntime {
       const dt = now - start
       start = now
 
-      setTimeout(update, this.updateInterval)
-
       const time = dt / 1000
-
       this.update(time)
+
+      setTimeout(update, this.updateInterval)
     }
 
     update()
