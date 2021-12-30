@@ -4,7 +4,7 @@ export interface FetchOptions {
   canUseFetch: boolean
   originalFetch: FetchFunction
   previewMode: boolean
-  log: any
+  log(...a: any[]): void
 }
 
 export function createFetch({ canUseFetch, previewMode, log, originalFetch }: FetchOptions) {

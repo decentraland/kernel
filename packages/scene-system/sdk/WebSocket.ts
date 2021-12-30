@@ -1,7 +1,7 @@
 export interface WebSocketClassOptions {
   canUseWebsocket: boolean
   previewMode: boolean
-  log: any
+  log(...a: any[]): void
 }
 
 export function createWebSocket({ canUseWebsocket, previewMode, log }: WebSocketClassOptions) {

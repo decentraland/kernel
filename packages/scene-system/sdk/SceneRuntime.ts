@@ -106,8 +106,7 @@ export abstract class SceneRuntime extends Script {
 
   isPreview: boolean = false
 
-  private originalFetch: any
-  private originalWebSocket: any
+  private originalFetch!: typeof fetch
 
   private allowOpenExternalUrl: boolean = false
 
@@ -546,7 +545,6 @@ export abstract class SceneRuntime extends Script {
         const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
         this.originalFetch = fetch
-        this.originalWebSocket = WebSocket
 
         const restrictedWebSocket = createWebSocket({
           canUseWebsocket,
@@ -562,9 +560,6 @@ export abstract class SceneRuntime extends Script {
 
         globalThis.fetch = restrictedFetch
         globalThis.WebSocket = restrictedWebSocket
-
-        this.originalFetch
-        this.originalWebSocket
 
         await this.runCode(source as any as string, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
 
