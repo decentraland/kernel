@@ -23,9 +23,7 @@ export async function deployScene(payload: PublishPayload) {
     }
 
     // Decode those who need it
-    for (const fileKey in payload.filesToDecode) {
-      entityFiles.set(fileKey, Buffer.from(payload.filesToDecode[fileKey], 'base64'))
-    }
+    decodeBase64Files(payload.filesToDecode, entityFiles)
 
     // Prepare to get the assets
     const net = getSelectedNetwork(store.getState())
@@ -64,5 +62,11 @@ export async function deployScene(payload: PublishPayload) {
     await contentClient.deployEntity({ files, entityId, authChain })
   } catch (error) {
     throw error
+  }
+}
+
+export function decodeBase64Files(filesToDecode: Record<string, any>, entityFiles: Map<string, Buffer>) {
+  for (const fileKey in filesToDecode) {
+    entityFiles.set(fileKey, Buffer.from(filesToDecode[fileKey], 'base64'))
   }
 }
