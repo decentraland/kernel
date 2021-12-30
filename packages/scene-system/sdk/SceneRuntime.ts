@@ -26,6 +26,9 @@ import type {
   OpenNFTDialogPayload
 } from 'shared/types'
 import { generatePBObject } from './Utils'
+import { createWebSocket } from './WebSocket'
+import { createFetch } from './Fetch'
+import { PermissionItem } from 'shared/apis/Permissions'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
@@ -108,6 +111,8 @@ export abstract class SceneRuntime extends Script {
   parcels?: Array<{ x: number; y: number }> = []
 
   isPreview: boolean = false
+
+  private originalFetch!: typeof fetch
 
   private allowOpenExternalUrl: boolean = false
 
@@ -540,11 +545,35 @@ export abstract class SceneRuntime extends Script {
       }
 
       try {
+        const { Permissions } = await this.loadAPIs(['Permissions'])
+        const canUseWebsocket = await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
+        const canUseFetch = await Permissions.hasPermission(PermissionItem.USE_FETCH)
+        const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: EnvironmentAPI }
+        const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
+
+        this.originalFetch = fetch
+
+        const restrictedWebSocket = createWebSocket({
+          canUseWebsocket,
+          previewMode: this.isPreview || unsafeAllowed,
+          log: dcl.log
+        })
+        const restrictedFetch = createFetch({
+          canUseFetch,
+          originalFetch: this.originalFetch,
+          previewMode: this.isPreview || unsafeAllowed,
+          log: dcl.log
+        })
+
+        globalThis.fetch = restrictedFetch
+        globalThis.WebSocket = restrictedWebSocket
+
+        // await this.runCode(source as any as string, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
+
         await this.run({
           sourceResponse: sourceData,
           isWasmScene,
           dcl
-        })
 
         let modulesNotLoaded: string[] = []
 

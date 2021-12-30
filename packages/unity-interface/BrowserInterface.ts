@@ -32,7 +32,9 @@ import {
   setNewParcelScene,
   stopParcelSceneWorker,
   allScenesEvent,
-  AllScenesEvents
+  AllScenesEvents,
+  stopIsolatedMode,
+  startIsolatedMode
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -75,6 +77,9 @@ import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from 'dcl-crypto'
+import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
+import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
+import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -123,6 +128,14 @@ export class BrowserInterface {
         defaultLogger.info(`Unknown message (did you forget to add ${type} to unity-interface/dcl.ts?)`, message)
       }
     }
+  }
+
+  public StartIsolatedMode(options: IsolatedModeOptions) {
+    startIsolatedMode(options)
+  }
+
+  public StopIsolatedMode(options: IsolatedModeOptions) {
+    stopIsolatedMode(options)
   }
 
   public AllScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
@@ -363,7 +376,12 @@ export class BrowserInterface {
         stopParcelSceneWorker(worker)
         const data = parcelScene.data.data as LoadableParcelScene
         getUnityInstance().LoadParcelScenes([data]) // Maybe unity should do it by itself?
-        setNewParcelScene(sceneId, new StatefulWorker(parcelScene))
+
+        const options: StatefulWorkerOptions = {
+          isEmpty: false
+        }
+
+        setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
         break
       }
       case 'StopStatefulMode': {
@@ -646,6 +664,21 @@ export class BrowserInterface {
       : {}
 
     getUnityInstance().SendHeaders(data.url, headers)
+  }
+
+  public async PublishSceneState(data: PublishPayload) {
+    let deploymentResult: DeploymentResult
+
+    deployScene(data)
+      .then(() => {
+        deploymentResult = { ok: true }
+        getUnityInstance().SendPublishSceneResult(deploymentResult)
+      })
+      .catch((error) => {
+        deploymentResult = { ok: false, error: `${error}` }
+        getUnityInstance().SendPublishSceneResult(deploymentResult)
+        defaultLogger.error(error)
+      })
   }
 
   public RequestWearables(data: {
