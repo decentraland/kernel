@@ -1,7 +1,6 @@
 import { SerializedSceneState } from 'shared/apis/SceneStateStorageController/types'
 import { SceneStateDefinition } from './SceneStateDefinition'
 import { Component, EntityId } from './types'
-import { fromHumanReadableType } from 'shared/apis/SceneStateStorageController/utils'
 
 export function serializeSceneState(state: SceneStateDefinition): SerializedSceneState {
   const entities = []
@@ -11,21 +10,6 @@ export function serializeSceneState(state: SceneStateDefinition): SerializedScen
       components.push({ type: componentId, value: componentData })
     }
     entities.push({ id: entityId, components })
-  }
-  return { entities }
-}
-
-export function serializeSceneStateFromEntities(rawEntities: any): SerializedSceneState {
-  const entities = []
-  for (let i = 0; i < rawEntities.length; i++) {
-    const components = []
-    for (let z = 0; z < rawEntities[i].components.length; z++) {
-      components.push({
-        type: fromHumanReadableType(rawEntities[i].components[z].type),
-        value: rawEntities[i].components[z].value
-      })
-    }
-    entities.push({ id: rawEntities[i].id, components })
   }
   return { entities }
 }

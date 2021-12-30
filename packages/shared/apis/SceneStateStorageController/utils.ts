@@ -1,22 +1,11 @@
 import { CLASS_ID } from '@dcl/legacy-ecs'
-import { store } from 'shared/store/isolatedStore'
-import { getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { SceneSourcePlacement } from 'shared/types'
-import { ContentClient } from 'dcl-catalyst-client'
-import { EntityType } from 'dcl-catalyst-commons'
-import { Asset, AssetId, BuilderAsset, CONTENT_PATH, DeploymentResult, PublishPayload } from './types'
-import { Authenticator } from 'dcl-crypto'
-import { getCurrentIdentity } from 'shared/session/selectors'
-import { createGameFile } from './SceneStateDefinitionCodeGenerator'
-import { ETHEREUM_NETWORK, BUILDER_SERVER_URL } from 'config'
-import { BASE_BUILDER_SERVER_URL_ROPSTEN } from './BuilderServerAPIManager'
-import { serializeSceneStateFromEntities } from 'scene-system/stateful-scene/SceneStateDefinitionSerializer'
-import { blobToBuffer } from './SceneStateStorageController'
-/**
+import { Asset, BuilderAsset, SerializedSceneState } from './types'
+
+/*
  * We are converting from numeric ids to a more human readable format. It might make sense to change this in the future,
  * but until this feature is stable enough, it's better to store it in a way that it is easy to debug.
  */
-
 const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
   ['Transform', CLASS_ID.TRANSFORM],
   ['GLTFShape', CLASS_ID.GLTF_SHAPE],
@@ -27,65 +16,19 @@ const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
   ['Script', CLASS_ID.SMART_ITEM]
 ])
 
-export async function deployScene(payload: PublishPayload): Promise<DeploymentResult> {
-  let result: DeploymentResult
-  try {
-    // Create content client
-    const contentUrl = getFetchContentServer(store.getState())
-    const contentClient = new ContentClient(contentUrl, 'builder in-world')
-
-    // Build files
-    const entityFiles: Map<string, Buffer> = new Map()
-    for (const fileKey in payload.files) {
-      entityFiles.set(fileKey, Buffer.from(JSON.stringify(payload.files[fileKey])))
+export function serializeSceneStateFromEntities(rawEntities: any): SerializedSceneState {
+  const entities = []
+  for (let i = 0; i < rawEntities.length; i++) {
+    const components = []
+    for (let z = 0; z < rawEntities[i].components.length; z++) {
+      components.push({
+        type: fromHumanReadableType(rawEntities[i].components[z].type),
+        value: rawEntities[i].components[z].value
+      })
     }
-
-    // Decode those who need it
-    for (const fileKey in payload.filesToDecode) {
-      entityFiles.set(fileKey, await blobToBuffer(payload.filesToDecode[fileKey]))
-    }
-
-    // Prepare to get the assets
-    const net = getSelectedNetwork(store.getState())
-    const baseAssetUrl = net === ETHEREUM_NETWORK.MAINNET ? BUILDER_SERVER_URL : BASE_BUILDER_SERVER_URL_ROPSTEN
-
-    // Get the assets
-    const assetsRaw: BuilderAsset[] = payload.files[CONTENT_PATH.ASSETS] as unknown as BuilderAsset[]
-    const assets = new Map<AssetId, Asset>()
-
-    for (let i = 0; i < assetsRaw.length; i++) {
-      const convertedAsset = builderAssetToLocalAsset(assetsRaw[i], baseAssetUrl)
-      assets.set(convertedAsset.id, convertedAsset)
-    }
-
-    // Generate game file
-    const gameFile: string = createGameFile(serializeSceneStateFromEntities(payload.statelessManifest.entities), assets)
-
-    entityFiles.set(CONTENT_PATH.BUNDLED_GAME_FILE, Buffer.from(gameFile))
-
-    // Build the entity
-    const { files, entityId } = await contentClient.buildEntity({
-      type: EntityType.SCENE,
-      pointers: payload.pointers,
-      files: entityFiles,
-      metadata: payload.metadata
-    })
-
-    // Sign entity id
-    const identity = getCurrentIdentity(store.getState())
-    if (!identity) {
-      throw new Error('Identity not found when trying to deploy an entity')
-    }
-    const authChain = Authenticator.signPayload(identity, entityId)
-
-    // Deploy entity
-    await contentClient.deployEntity({ files, entityId, authChain })
-
-    result = { ok: true }
-  } catch (error) {
-    result = { ok: false, error: `${error}` }
+    entities.push({ id: rawEntities[i].id, components })
   }
-  return result
+  return { entities }
 }
 
 export function builderAssetToLocalAsset(webAsset: BuilderAsset, baseUrl: string): Asset {
