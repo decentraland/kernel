@@ -1,5 +1,5 @@
 export type FetchFunction = typeof fetch
-export type WaitForNextUpdateFunction = () => Promise<void>
+export type WaitForNextUpdateFunction = () => Promise<unknown>
 export interface FetchOptions {
   canUseFetch: boolean
   originalFetch: FetchFunction
