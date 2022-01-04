@@ -44,14 +44,9 @@ describe('creating wrapped Fetch', () => {
   const wrappedDelayFetch = createFetch({
     canUseFetch: true,
     log,
-    originalFetch: async (resource: RequestInfo, init?: RequestInit) => {
-      const response = new Response()
+    originalFetch: async (_resource: RequestInfo, _init?: RequestInit) => {
       await sleep(timePerFetchSleep)
-      return {
-        ...response, text: async () => {
-          return ''
-        }
-      }
+      return new Response()
     },
     previewMode: true
   })
