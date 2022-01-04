@@ -1,7 +1,6 @@
 import PQueue from 'p-queue/dist'
 
 export type FetchFunction = typeof fetch
-export type WaitForNextUpdateFunction = () => Promise<unknown>
 export interface FetchOptions {
   canUseFetch: boolean
   originalFetch: FetchFunction

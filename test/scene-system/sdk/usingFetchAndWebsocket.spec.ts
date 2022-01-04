@@ -102,21 +102,6 @@ describe('creating wrapped Fetch', () => {
     sinon.assert.calledOnce(throwErrorLogger)
   })
 
-  // *
-  // * Not allowed fetchs mode test
-  // *
-
-  it('should throw an error because it does not have permissions', async () => {
-    const throwErrorLogger = sinon.spy()
-    try {
-      await wrappedNotAllowedFetch("https://decentraland.org")
-    } catch (err) {
-      throwErrorLogger(err)
-    }
-    sinon.assert.calledOnce(throwErrorLogger)
-  })
-
-
   it('should execute only one fetch at the same time', async () => {
     let counter = 0
     const N = 10
