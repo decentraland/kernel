@@ -27,7 +27,7 @@ import type {
 } from 'shared/types'
 import { generatePBObject } from './Utils'
 import { createWebSocket } from './WebSocket'
-import { createFetch } from './Fetch'
+import { createConcurrentFetch, createFetch } from './Fetch'
 import { PermissionItem } from 'shared/apis/Permissions'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
@@ -551,12 +551,30 @@ export abstract class SceneRuntime extends Script {
           previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log
         })
-        const restrictedFetch = createFetch({
+        const safeFetch = createFetch({
           canUseFetch,
           originalFetch: this.originalFetch,
           previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log
         })
+
+        type Resolver = (value: unknown) => void
+        const delayedFunctions: Resolver[] = []
+        this.onUpdateFunctions.push(() => {
+          while (delayedFunctions.length > 0) {
+            const resolve = delayedFunctions.shift()
+            if (resolve) {
+              resolve(null)
+            }
+          }
+        })
+        const waitForNextUpdate = async () => {
+          const promise = new Promise((resolve) => {
+            delayedFunctions.push(resolve)
+          })
+          return promise
+        }
+        const restrictedFetch = createConcurrentFetch(safeFetch, waitForNextUpdate)
 
         globalThis.fetch = restrictedFetch
         globalThis.WebSocket = restrictedWebSocket
