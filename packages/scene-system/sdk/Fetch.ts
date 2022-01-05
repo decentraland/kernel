@@ -1,5 +1,6 @@
-export type FetchFunction = (resource: RequestInfo, init?: RequestInit | undefined) => Promise<Response>
+import PQueue from 'p-queue/dist'
 
+export type FetchFunction = typeof fetch
 export interface FetchOptions {
   canUseFetch: boolean
   originalFetch: FetchFunction
@@ -8,6 +9,7 @@ export interface FetchOptions {
 }
 
 export function createFetch({ canUseFetch, previewMode, log, originalFetch }: FetchOptions) {
+  const fifoFetch = new PQueue({ concurrency: 1 })
   return (resource: RequestInfo, init?: RequestInit | undefined): Promise<Response> => {
     const url = resource instanceof Request ? resource.url : resource
     if (url.toLowerCase().substr(0, 8) !== 'https://') {
@@ -22,6 +24,6 @@ export function createFetch({ canUseFetch, previewMode, log, originalFetch }: Fe
       throw new Error("This scene doesn't have allowed to use fetch")
     }
 
-    return originalFetch(resource, init)
+    return fifoFetch.add(() => originalFetch(resource, init))
   }
 }

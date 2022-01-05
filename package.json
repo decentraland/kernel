@@ -112,6 +112,7 @@
     "multihashing-async": "^0.8.0",
     "mz-observable": "^1.0.1",
     "oimo": "^1.0.9",
+    "p-queue": "^7.1.0",
     "redux": "^4.1.0",
     "redux-devtools-extension": "^2.13.9",
     "redux-logger": "^3.0.6",

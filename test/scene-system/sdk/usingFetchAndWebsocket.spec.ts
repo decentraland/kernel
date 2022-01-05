@@ -1,3 +1,5 @@
+import { sleep } from 'atomicHelpers/sleep'
+import { expect } from 'chai'
 import * as sinon from 'sinon'
 import { createFetch, FetchFunction } from '../../../packages/scene-system/sdk/Fetch'
 import { createWebSocket } from '../../../packages/scene-system/sdk/WebSocket'
@@ -36,6 +38,17 @@ describe('creating wrapped Fetch', () => {
   })
   const wrappedNotAllowedFetch = createFetch({
     canUseFetch: false, log, originalFetch, previewMode: false
+  })
+
+  const timePerFetchSleep = 500
+  const wrappedDelayFetch = createFetch({
+    canUseFetch: true,
+    log,
+    originalFetch: async (_resource: RequestInfo, _init?: RequestInit) => {
+      await sleep(timePerFetchSleep)
+      return new Response()
+    },
+    previewMode: true
   })
 
   // *
@@ -82,6 +95,19 @@ describe('creating wrapped Fetch', () => {
       throwErrorLogger(err)
     }
     sinon.assert.calledOnce(throwErrorLogger)
+  })
+
+  it('should execute only one fetch at the same time', async () => {
+    let counter = 0
+    const N = 10
+    for (let i = 0; i < N; i++) {
+      wrappedDelayFetch('https://test.test/').then(response => response.text()).then(() => counter++)
+    }
+
+    await sleep(timePerFetchSleep * 1.2)
+    expect(counter).to.eql(1)  
+    await sleep(timePerFetchSleep * 2)
+    expect(counter).to.eql(3)  
   })
 
 })
