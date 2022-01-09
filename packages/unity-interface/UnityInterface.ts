@@ -32,6 +32,10 @@ import { WearableV2 } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { FeatureFlag } from 'shared/meta/types'
+import { getProvider } from 'shared/session/index'
+import { uuid } from 'atomicHelpers/math'
+import future, { IFuture } from 'fp-future'
+import { futures } from './BrowserInterface'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -386,6 +390,17 @@ export class UnityInterface implements IUnityInterface {
 
   public UpdateBalanceOfMANA(balance: string) {
     this.SendMessageToUnity('HUDController', 'UpdateBalanceOfMANA', balance)
+  }
+
+  public RequestWeb3ApiUse(type: string): IFuture<boolean> {
+    defaultLogger.log('getProvider:', getProvider())
+
+    const id = uuid()
+    futures[id] = future()
+
+    this.SendMessageToUnity('HUDController', 'RequestWeb3ApiUse', JSON.stringify({ id, type, provider: 'Hello' }))
+
+    return futures[id]
   }
 
   public SetPlayerTalking(talking: boolean) {

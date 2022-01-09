@@ -10,6 +10,7 @@ import { RPCSendableMessage } from 'shared/types'
 import { getUserAccount, requestManager } from 'shared/ethereum/provider'
 import { RestrictedExposableAPI } from './RestrictedExposableAPI'
 import { PermissionItem } from './Permissions'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 export interface IEthereumController {
   /**
@@ -51,12 +52,14 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
   @exposeMethod
   async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    await getUnityInstance().RequestWeb3ApiUse('requirePayment')
     return requirePayment(toAddress, amount, currency)
   }
 
   @exposeMethod
   async signMessage(message: MessageDict) {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    await getUnityInstance().RequestWeb3ApiUse('signMessage')
     return signMessage(message)
   }
 
@@ -69,6 +72,7 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
   @exposeMethod
   async sendAsync(message: RPCSendableMessage): Promise<any> {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    await getUnityInstance().RequestWeb3ApiUse('sendAsync')
     return sendAsync(message)
   }
 
