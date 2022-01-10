@@ -17,23 +17,22 @@ import {
   getCatalystRealmCommsStatus,
   getRealm,
   getAllCatalystCandidates,
-  areCandidatesFetched,
-} from "./selectors"
-import { fetchCatalystNodesFromDAO } from "shared/web3"
-import { setCatalystRealm, setCatalystCandidates } from "./actions"
-import { deepEqual } from "atomicHelpers/deepEqual"
-import { worldToGrid } from "atomicHelpers/parcelScenePositions"
-import { lastPlayerPosition } from "shared/world/positionThings"
-import { countParcelsCloseTo, ParcelArray } from "shared/comms/interface/utils"
-import { CatalystNode } from "../types"
-import { zip } from "./utils/zip"
-import { realmToString } from "./utils/realmToString"
-import { PIN_CATALYST } from "config"
-import * as qs from "query-string"
-import { store } from "shared/store/isolatedStore"
-import { getPickRealmsAlgorithmConfig } from "shared/meta/selectors"
-import { defaultChainConfig } from "./pick-realm-algorithm/defaults"
-import { createAlgorithm } from "./pick-realm-algorithm"
+  areCandidatesFetched
+} from './selectors'
+import { fetchCatalystNodesFromDAO } from 'shared/web3'
+import { setCatalystRealm, setCatalystCandidates } from './actions'
+import { deepEqual } from 'atomicHelpers/deepEqual'
+import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
+import { lastPlayerPosition } from 'shared/world/positionThings'
+import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
+import { CatalystNode } from '../types'
+import { realmToString } from './utils/realmToString'
+import { PIN_CATALYST } from 'config'
+import * as qs from 'query-string'
+import { store } from 'shared/store/isolatedStore'
+import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
+import { defaultChainConfig } from './pick-realm-algorithm/defaults'
+import { createAlgorithm } from './pick-realm-algorithm'
 
 const DEFAULT_TIMEOUT = 5000
 
@@ -171,53 +170,57 @@ export function commsStatusUrl(domain: string, includeLayers: boolean = false, i
 }
 
 export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
-  const results: PingResult[] = await Promise.all(nodes.map((node) => ping(commsStatusUrl(node.domain, true, true))))
+  const results = (
+    await Promise.all(
+      nodes.map(async (node) => ({ domain: node.domain, ...(await ping(commsStatusUrl(node.domain, true, true))) }))
+    )
+  ).filter((realm) => (realm.result?.maxUsers ?? 0) > (realm.result?.usersCount ?? -1))
 
-  return zip(nodes, results).reduce(
-    (union: Candidate[], [{ domain }, { elapsed, result, status }]: [CatalystNode, PingResult]) => {
-      function buildBaseCandidate() {
-        return {
-          catalystName: result!.name,
-          domain,
-          status: status!,
-          elapsed: elapsed!,
-          lighthouseVersion: result!.version,
-          catalystVersion: result!.env.catalystVersion,
-        }
+
+  return results.reduce((union: Candidate[], { domain, elapsed, result, status }) => {
+    function buildBaseCandidate() {
+      return {
+        catalystName: result!.name,
+        domain,
+        status: status!,
+        elapsed: elapsed!,
+        lighthouseVersion: result!.version,
+        catalystVersion: result!.env.catalystVersion
       }
+    }
 
-      function buildLayerCandidate(layer: Layer): LayerBasedCandidate {
-        return {
-          ...buildBaseCandidate(),
-          layer,
-          type: "layer-based",
-        }
+    function buildLayerCandidate(layer: Layer): LayerBasedCandidate {
+      return {
+        ...buildBaseCandidate(),
+        layer,
+        type: 'layer-based',
+        domain
       }
+    }
 
-      function buildIslandsCandidate(
-        usersCount: number,
-        usersParcels: Parcel[] | undefined,
-        maxUsers: number | undefined
-      ): IslandsBasedCandidate {
-        return {
-          ...buildBaseCandidate(),
-          usersCount,
-          maxUsers,
-          usersParcels,
-          type: "islands-based",
-        }
+    function buildIslandsCandidate(
+      usersCount: number,
+      usersParcels: Parcel[] | undefined,
+      maxUsers: number | undefined
+    ): IslandsBasedCandidate {
+      return {
+        ...buildBaseCandidate(),
+        usersCount,
+        maxUsers,
+        usersParcels,
+        type: 'islands-based',
+        domain
       }
+    }
 
-      if (status === ServerConnectionStatus.OK) {
-        if (result!.layers) {
-          return [...union, ...result!.layers.map((layer) => buildLayerCandidate(layer))]
-        } else {
-          return [...union, buildIslandsCandidate(result!.usersCount!, result!.usersParcels, result!.maxUsers)]
-        }
-      } else return union
-    },
-    new Array<Candidate>()
-  )
+    if (status === ServerConnectionStatus.OK) {
+      if (result!.layers) {
+        return [...union, ...result!.layers.map((layer) => buildLayerCandidate(layer))]
+      } else {
+        return [...union, buildIslandsCandidate(result!.usersCount!, result!.usersParcels, result!.maxUsers)]
+      }
+    } else return union
+  }, new Array<Candidate>())
 }
 
 export function pickCatalystRealm(candidates: Candidate[], currentUserParcel: Parcel): Realm {
