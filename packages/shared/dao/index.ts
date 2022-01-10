@@ -173,9 +173,7 @@ export function commsStatusUrl(domain: string, includeLayers: boolean = false, i
 export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
   const results: PingResult[] = await Promise.all(nodes.map((node) => ping(commsStatusUrl(node.domain, true, true))))
 
-  const realmsWithCapacity = results.filter((realm) => (realm.result?.maxUsers ?? 0) > (realm.result?.usersCount ?? -1))
-
-  return zip(nodes, realmsWithCapacity).reduce(
+  return zip(nodes, results).reduce(
     (union: Candidate[], [{ domain }, { elapsed, result, status }]: [CatalystNode, PingResult]) => {
       function buildBaseCandidate() {
         return {
