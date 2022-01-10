@@ -1,4 +1,4 @@
-import defaultLogger from '../logger'
+import defaultLogger from "../logger"
 import {
   Layer,
   Realm,
@@ -9,31 +9,31 @@ import {
   HealthStatus,
   LayerBasedCandidate,
   IslandsBasedCandidate,
-  Parcel
-} from './types'
-import { Store } from 'redux'
+  Parcel,
+} from "./types"
+import { Store } from "redux"
 import {
   isRealmInitialized,
   getCatalystRealmCommsStatus,
   getRealm,
   getAllCatalystCandidates,
-  areCandidatesFetched
-} from './selectors'
-import { fetchCatalystNodesFromDAO } from 'shared/web3'
-import { setCatalystRealm, setCatalystCandidates } from './actions'
-import { deepEqual } from 'atomicHelpers/deepEqual'
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
-import { lastPlayerPosition } from 'shared/world/positionThings'
-import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
-import { CatalystNode } from '../types'
-import { zip } from './utils/zip'
-import { realmToString } from './utils/realmToString'
-import { PIN_CATALYST } from 'config'
-import * as qs from 'query-string'
-import { store } from 'shared/store/isolatedStore'
-import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
-import { defaultChainConfig } from './pick-realm-algorithm/defaults'
-import { createAlgorithm } from './pick-realm-algorithm'
+  areCandidatesFetched,
+} from "./selectors"
+import { fetchCatalystNodesFromDAO } from "shared/web3"
+import { setCatalystRealm, setCatalystCandidates } from "./actions"
+import { deepEqual } from "atomicHelpers/deepEqual"
+import { worldToGrid } from "atomicHelpers/parcelScenePositions"
+import { lastPlayerPosition } from "shared/world/positionThings"
+import { countParcelsCloseTo, ParcelArray } from "shared/comms/interface/utils"
+import { CatalystNode } from "../types"
+import { zip } from "./utils/zip"
+import { realmToString } from "./utils/realmToString"
+import { PIN_CATALYST } from "config"
+import * as qs from "query-string"
+import { store } from "shared/store/isolatedStore"
+import { getPickRealmsAlgorithmConfig } from "shared/meta/selectors"
+import { defaultChainConfig } from "./pick-realm-algorithm/defaults"
+import { createAlgorithm } from "./pick-realm-algorithm"
 
 const DEFAULT_TIMEOUT = 5000
 
@@ -55,35 +55,35 @@ export async function ping(url: string, timeoutMs: number = 5000): Promise<PingR
             const ended = new Date().getTime()
             if (http.status !== 200) {
               resolve({
-                status: ServerConnectionStatus.UNREACHABLE
+                status: ServerConnectionStatus.UNREACHABLE,
               })
             } else {
               resolve({
                 status: ServerConnectionStatus.OK,
                 elapsed: ended - started.getTime(),
-                result: JSON.parse(http.responseText)
+                result: JSON.parse(http.responseText),
               })
             }
           } catch (e) {
-            defaultLogger.error('Error fetching status of Catalyst server', e)
+            defaultLogger.error("Error fetching status of Catalyst server", e)
             resolve({})
           }
         }
       }
 
-      http.open('GET', url, true)
+      http.open("GET", url, true)
 
       try {
         http.send(null)
       } catch (exception) {
         resolve({
-          status: ServerConnectionStatus.UNREACHABLE
+          status: ServerConnectionStatus.UNREACHABLE,
         })
       }
     })
   } catch {
     return {
-      status: ServerConnectionStatus.UNREACHABLE
+      status: ServerConnectionStatus.UNREACHABLE,
     }
   }
 }
@@ -96,7 +96,7 @@ async function fetchCatalystNodes(endpoint: string | undefined) {
         const nodes = await response.json()
         return nodes.map((node: any) => ({ ...node, domain: node.address }))
       } else {
-        throw new Error('Response was not OK. Status was: ' + response.statusText)
+        throw new Error("Response was not OK. Status was: " + response.statusText)
       }
     } catch (e) {
       defaultLogger.warn(`Tried to fetch catalysts from ${endpoint} but failed. Falling back to DAO contract`, e)
@@ -109,7 +109,7 @@ async function fetchCatalystNodes(endpoint: string | undefined) {
 export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Promise<Candidate[]> {
   const nodes: CatalystNode[] = PIN_CATALYST ? [{ domain: PIN_CATALYST }] : await fetchCatalystNodes(nodesEndpoint)
   if (nodes.length === 0) {
-    throw new Error('no nodes are available in the DAO for the current network')
+    throw new Error("no nodes are available in the DAO for the current network")
   }
 
   const responses = await Promise.all(
@@ -156,15 +156,15 @@ export function commsStatusUrl(domain: string, includeLayers: boolean = false, i
   const queryParameters: string[] = []
 
   if (includeLayers) {
-    queryParameters.push('includeLayers=true')
+    queryParameters.push("includeLayers=true")
   }
 
   if (includeUsersParcels) {
-    queryParameters.push('includeUsersParcels=true')
+    queryParameters.push("includeUsersParcels=true")
   }
 
   if (queryParameters.length > 0) {
-    url += '?' + queryParameters.join('&')
+    url += "?" + queryParameters.join("&")
   }
 
   return url
@@ -182,7 +182,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
           status: status!,
           elapsed: elapsed!,
           lighthouseVersion: result!.version,
-          catalystVersion: result!.env.catalystVersion
+          catalystVersion: result!.env.catalystVersion,
         }
       }
 
@@ -190,7 +190,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
         return {
           ...buildBaseCandidate(),
           layer,
-          type: 'layer-based'
+          type: "layer-based",
         }
       }
 
@@ -204,7 +204,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
           usersCount,
           maxUsers,
           usersParcels,
-          type: 'islands-based'
+          type: "islands-based",
         }
       }
 
@@ -264,7 +264,7 @@ export async function realmInitialized(): Promise<void> {
 }
 
 export function getRealmFromString(realmString: string, candidates: Candidate[]) {
-  const parts = realmString.split('-')
+  const parts = realmString.split("-")
   if (parts.length === 2) {
     return realmForLayer(parts[0], parts[1], candidates)
   } else {
@@ -276,10 +276,10 @@ function candidateToRealm(candidate: Candidate) {
   const realm: Realm = {
     catalystName: candidate.catalystName,
     domain: candidate.domain,
-    lighthouseVersion: candidate.lighthouseVersion
+    lighthouseVersion: candidate.lighthouseVersion,
   }
 
-  if (candidate.type === 'layer-based') {
+  if (candidate.type === "layer-based") {
     realm.layer = candidate.layer.name
   }
 
@@ -288,13 +288,13 @@ function candidateToRealm(candidate: Candidate) {
 
 function realmForLayer(name: string, layer: string, candidates: Candidate[]): Realm | undefined {
   const candidate = candidates.find(
-    (it) => it?.type === 'layer-based' && it.catalystName === name && it.layer.name === layer
+    (it) => it?.type === "layer-based" && it.catalystName === name && it.layer.name === layer
   )
   return candidate ? candidateToRealm(candidate) : undefined
 }
 
 function realmFor(name: string, candidates: Candidate[]): Realm | undefined {
-  const candidate = candidates.find((it) => it?.type === 'islands-based' && it.catalystName === name)
+  const candidate = candidates.find((it) => it?.type === "islands-based" && it.catalystName === name)
   return candidate ? candidateToRealm(candidate) : undefined
 }
 
@@ -327,7 +327,7 @@ export async function changeToCrowdedRealm(): Promise<[boolean, Realm]> {
   candidates
     .filter(
       (it) =>
-        it.type === 'layer-based' &&
+        it.type === "layer-based" &&
         it.layer.usersParcels &&
         it.layer.usersParcels.length > 0 &&
         it.layer.usersCount < it.layer.maxUsers
@@ -344,7 +344,7 @@ export async function changeToCrowdedRealm(): Promise<[boolean, Realm]> {
         if (closePeople > crowdedRealm.closePeople) {
           crowdedRealm = {
             realm: candidateToRealm(candidate),
-            closePeople
+            closePeople,
           }
         }
       }
@@ -374,19 +374,19 @@ function getCandidateDomains(store: Store<RootDaoState>): Set<string> {
 export async function catalystRealmConnected(): Promise<void> {
   const status = getCatalystRealmCommsStatus(store.getState())
 
-  if (status.status === 'connected') {
+  if (status.status === "connected") {
     return Promise.resolve()
-  } else if (status.status === 'error' || status.status === 'realm-full') {
+  } else if (status.status === "error" || status.status === "realm-full") {
     return Promise.reject(status.status)
   }
 
   return new Promise((resolve, reject) => {
     const unsubscribe = store.subscribe(() => {
       const status = getCatalystRealmCommsStatus(store.getState())
-      if (status.status === 'connected') {
+      if (status.status === "connected") {
         resolve()
         unsubscribe()
-      } else if (status.status === 'error' || status.status === 'realm-full') {
+      } else if (status.status === "error" || status.status === "realm-full") {
         reject(status.status)
         unsubscribe()
       }
@@ -415,6 +415,6 @@ export function initializeUrlRealmObserver() {
 
     q.realm = realmString
 
-    history.replaceState({ realm: realmString }, '', `?${qs.stringify(q)}`)
+    history.replaceState({ realm: realmString }, "", `?${qs.stringify(q)}`)
   })
 }
