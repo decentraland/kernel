@@ -1,3 +1,5 @@
+import { Store } from 'redux'
+
 import defaultLogger from '../logger'
 import {
   Layer,
@@ -5,13 +7,11 @@ import {
   Candidate,
   RootDaoState,
   ServerConnectionStatus,
-  PingResult,
   HealthStatus,
   LayerBasedCandidate,
   IslandsBasedCandidate,
   Parcel
 } from './types'
-import { Store } from 'redux'
 import {
   isRealmInitialized,
   getCatalystRealmCommsStatus,
@@ -33,59 +33,9 @@ import { store } from 'shared/store/isolatedStore'
 import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import { createAlgorithm } from './pick-realm-algorithm'
+import { ping } from './utils/ping'
 
 const DEFAULT_TIMEOUT = 5000
-
-export async function ping(url: string, timeoutMs: number = 5000): Promise<PingResult> {
-  try {
-    return await new Promise<PingResult>((resolve) => {
-      const http = new XMLHttpRequest()
-
-      let started: Date
-
-      http.timeout = timeoutMs
-
-      http.onreadystatechange = () => {
-        if (http.readyState === XMLHttpRequest.OPENED) {
-          started = new Date()
-        }
-        if (http.readyState === XMLHttpRequest.DONE) {
-          try {
-            const ended = new Date().getTime()
-            if (http.status !== 200) {
-              resolve({
-                status: ServerConnectionStatus.UNREACHABLE
-              })
-            } else {
-              resolve({
-                status: ServerConnectionStatus.OK,
-                elapsed: ended - started.getTime(),
-                result: JSON.parse(http.responseText)
-              })
-            }
-          } catch (e) {
-            defaultLogger.error('Error fetching status of Catalyst server', e)
-            resolve({})
-          }
-        }
-      }
-
-      http.open('GET', url, true)
-
-      try {
-        http.send(null)
-      } catch (exception) {
-        resolve({
-          status: ServerConnectionStatus.UNREACHABLE
-        })
-      }
-    })
-  } catch {
-    return {
-      status: ServerConnectionStatus.UNREACHABLE
-    }
-  }
-}
 
 async function fetchCatalystNodes(endpoint: string | undefined) {
   if (endpoint) {
@@ -172,7 +122,10 @@ export function commsStatusUrl(domain: string, includeLayers: boolean = false, i
 export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
   const results = (
     await Promise.all(
-      nodes.map(async (node) => ({ domain: node.domain, ...(await ping(commsStatusUrl(node.domain, true, true))) }))
+      nodes.map(async (node) => ({
+        ...(await ping(commsStatusUrl(node.domain, true, true))),
+        domain: node.domain
+      }))
     )
   ).filter((realm) => (realm.result?.maxUsers ?? 0) > (realm.result?.usersCount ?? -1))
 

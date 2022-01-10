@@ -22,7 +22,8 @@ import './unit/positionThings.test'
 import './unit/RestrictedActions.test'
 import './unit/engine.test'
 import './unit/catalog.saga.test'
-import './dao/pick-realm-algorithm'
+
+import './dao'
 
 import './shared/sceneEvents'
 
