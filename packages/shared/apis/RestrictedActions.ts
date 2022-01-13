@@ -49,7 +49,7 @@ export class RestrictedActions extends RestrictedExposableAPI {
     // Get ahead of the position report that will be done automatically later and report
     // position right now, also marked as an immediate update (last bool in Position structure)
     browserInterface.ReportPosition({
-      position: newPosition,
+      position,
       rotation: Quaternion.Identity,
       immediate: true
     })
