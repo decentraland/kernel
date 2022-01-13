@@ -23,7 +23,7 @@ type ExplorerConfiguration = {
   configurations: Record<string, string | number | boolean>
 }
 
-enum Platform {
+export enum Platform {
   DESKTOP = 'desktop',
   BROWSER = 'browser'
 }
