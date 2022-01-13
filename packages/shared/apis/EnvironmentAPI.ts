@@ -23,7 +23,10 @@ type ExplorerConfiguration = {
   configurations: Record<string, string | number | boolean>
 }
 
-type Platform = 'desktop' | 'browser'
+enum Platform {
+  DESKTOP = 'desktop',
+  BROWSER = 'browser'
+}
 
 @registerAPI('EnvironmentAPI')
 export class EnvironmentAPI extends ExposableAPI {
@@ -50,9 +53,9 @@ export class EnvironmentAPI extends ExposableAPI {
   @exposeMethod
   async getPlatform(): Promise<Platform> {
     if (RENDERER_WS) {
-      return 'desktop'
+      return Platform.DESKTOP
     } else {
-      return 'browser'
+      return Platform.BROWSER
     }
   }
 
