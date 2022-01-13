@@ -36,6 +36,7 @@ import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
 import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { getSelectedNetwork } from 'shared/dao/selectors'
+import { clientDebug } from 'unity-interface/ClientDebug'
 
 const logger = createLogger('kernel: ')
 
@@ -314,6 +315,7 @@ export async function startPreview() {
           sceneLimitsWarningSceneId: sceneData.sceneId
         }
       })
+      clientDebug.ToggleSceneBoundingBoxes(sceneData.sceneId, false).catch((e) => defaultLogger.error(e))
     }
   })
 

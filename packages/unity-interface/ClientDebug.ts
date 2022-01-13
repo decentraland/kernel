@@ -1,6 +1,7 @@
 import { defaultLogger } from 'shared/logger'
 import { ErrorContextTypes, ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { getUnityInstance, IUnityInterface } from './IUnityInterface'
+import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 
 export class ClientDebug {
   private unityInterface: IUnityInterface
@@ -83,6 +84,24 @@ export class ClientDebug {
 
   public ClearBots() {
     this.unityInterface.SendMessageToUnity('Main', 'ClearBots')
+  }
+
+  public async ToggleSceneBoundingBoxes(scene: string, enabled: boolean) {
+    const isInputCoords = scene.match(/^-?[0-9]*([,]-?[0-9]*){1}$/)
+    let sceneId: string | undefined
+
+    if (isInputCoords) {
+      const ids = await fetchSceneIds([scene])
+      sceneId = ids[0] ?? undefined
+    } else {
+      sceneId = scene
+    }
+
+    if (sceneId) {
+      this.unityInterface.SendMessageToUnity('Main', 'ToggleSceneBoundingBoxes', JSON.stringify({ sceneId, enabled }))
+    } else {
+      throw new Error(`scene not found ${scene}`)
+    }
   }
 }
 
