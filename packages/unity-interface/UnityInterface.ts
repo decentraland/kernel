@@ -392,13 +392,17 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'UpdateBalanceOfMANA', balance)
   }
 
-  public RequestWeb3ApiUse(type: string): IFuture<boolean> {
-    defaultLogger.log('getProvider:', getProvider())
+  public RequestWeb3ApiUse(requestType: string, payload: any): IFuture<boolean> {
+    const isWalletConnect = (getProvider() as any).wc !== undefined
 
     const id = uuid()
     futures[id] = future()
 
-    this.SendMessageToUnity('HUDController', 'RequestWeb3ApiUse', JSON.stringify({ id, type, provider: 'Hello' }))
+    if (!isWalletConnect) {
+      futures[id].resolve(true)
+    } else {
+      this.SendMessageToUnity('HUDController', 'RequestWeb3ApiUse', JSON.stringify({ id, requestType, payload }))
+    }
 
     return futures[id]
   }

@@ -135,7 +135,7 @@ export interface IUnityInterface {
   SendGIFFetchFailure(id: string): void
   ConfigureTutorial(tutorialStep: number, tutorialConfig: TutorialInitializationMessage): void
   UpdateBalanceOfMANA(balance: string): void
-  RequestWeb3ApiUse(type: string): IFuture<boolean>
+  RequestWeb3ApiUse(requestType: string, payload: any): IFuture<boolean>
   SetPlayerTalking(talking: boolean): void
   ShowAvatarEditorInSignIn(): void
   SetUserTalking(userId: string, talking: boolean): void
