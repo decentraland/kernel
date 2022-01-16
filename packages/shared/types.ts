@@ -491,7 +491,8 @@ export enum HUDElementID {
   SIGNUP = 29,
   LOADING_HUD = 30,
   AVATAR_NAMES = 31,
-  EMOTES = 32
+  EMOTES = 32,
+  TRANSACTIONS = 33
 }
 
 export type HUDConfiguration = {
