@@ -2,7 +2,7 @@ import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import { ExposableAPI } from './ExposableAPI'
 import { EnvironmentData } from 'shared/types'
 import { getRealm, getSelectedNetwork } from 'shared/dao/selectors'
-import { getServerConfigurations, PREVIEW } from 'config'
+import { getServerConfigurations, PREVIEW, RENDERER_WS } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsIsland } from 'shared/comms/selectors'
 import { Realm } from 'shared/dao/types'
@@ -23,6 +23,11 @@ type ExplorerConfiguration = {
   configurations: Record<string, string | number | boolean>
 }
 
+export enum Platform {
+  DESKTOP = 'desktop',
+  BROWSER = 'browser'
+}
+
 @registerAPI('EnvironmentAPI')
 export class EnvironmentAPI extends ExposableAPI {
   data!: EnvironmentData<any>
@@ -40,6 +45,18 @@ export class EnvironmentAPI extends ExposableAPI {
   @exposeMethod
   async isPreviewMode(): Promise<boolean> {
     return PREVIEW
+  }
+
+  /**
+   * Returns what platform is running the scene
+   */
+  @exposeMethod
+  async getPlatform(): Promise<Platform> {
+    if (RENDERER_WS) {
+      return Platform.DESKTOP
+    } else {
+      return Platform.BROWSER
+    }
   }
 
   /**

@@ -80,6 +80,8 @@ export const PREVIEW: boolean = !!(globalThis as any).preview
 export const EDITOR: boolean = !!(globalThis as any).isEditor
 export const WORLD_EXPLORER = !EDITOR && !PREVIEW
 
+export const RENDERER_WS = location.search.includes('ws')
+
 export const OPEN_AVATAR_EDITOR = location.search.includes('OPEN_AVATAR_EDITOR') && WORLD_EXPLORER
 
 // Development
