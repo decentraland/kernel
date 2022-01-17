@@ -60,7 +60,7 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
       toAddress,
       amount,
       currency,
-      sceneId: this.parcelIdentity.land.sceneId
+      sceneId: this.parcelIdentity.land?.sceneId || ''
     })
     return requirePayment(toAddress, amount, currency)
   }
@@ -70,7 +70,7 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
     await getUnityInstance().RequestWeb3ApiUse('signMessage', {
       message: await messageToString(message),
-      sceneId: this.parcelIdentity.land.sceneId
+      sceneId: this.parcelIdentity.land?.sceneId || ''
     })
     return signMessage(message)
   }
@@ -86,7 +86,7 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
     await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
       message: `${message.method}(${message.params.join(',')})`,
-      sceneId: this.parcelIdentity.land.sceneId
+      sceneId: this.parcelIdentity.land?.sceneId || ''
     })
     return sendAsync(message)
   }
