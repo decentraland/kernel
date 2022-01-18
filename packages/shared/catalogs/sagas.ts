@@ -84,23 +84,13 @@ export function* handleWearablesRequest(action: WearablesRequest) {
   }
 }
 
-function lazyly<T>(creation: () => T): () => T {
-  const empty = Symbol('empty')
-  let r: T | symbol = empty
-  return () => {
-    if (r === empty) r = creation()
-    return r as T
-  }
-}
-
 function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const catalystUrl = yield select(getCatalystServer)
   const client: CatalystClient = new CatalystClient(catalystUrl, 'EXPLORER')
-  const mainnetClient = lazyly(() => new CatalystClient('https://peer-lb.decentraland.org', 'EXPLORER'))
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
 
-  const result: any[] = []
+  const result: PartialWearableV2[] = []
   if (filters.ownedByUser) {
     if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
       // The WITH_FIXED_COLLECTIONS config can only be used in zone. However, we want to be able to use prod collections for testing.
@@ -111,10 +101,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       const urnCollections = collectionIds.filter((collectionId) => collectionId.startsWith('urn'))
       if (urnCollections.length > 0) {
         const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
-        const orgWearables: PartialWearableV2[] = yield mainnetClient().fetchWearables({
-          collectionIds: urnCollections
-        })
-        result.push(...zoneWearables, ...orgWearables)
+        result.push(...zoneWearables)
       }
 
       // Fetch unpublished collections from builder server
@@ -257,7 +244,7 @@ function mapCatalystRepresentationIntoV2(representation: any): BodyShapeRepresen
   }
 }
 
-function mapCatalystWearableIntoV2(v2Wearable: any): PartialWearableV2 {
+function mapCatalystWearableIntoV2(v2Wearable: PartialWearableV2): PartialWearableV2 {
   const { id, data, rarity, i18n, thumbnail, description } = v2Wearable
   const { category, tags, hides, replaces, representations } = data
   const newRepresentations: BodyShapeRepresentationV2[] = representations.map(mapCatalystRepresentationIntoV2)
