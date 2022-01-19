@@ -23,7 +23,7 @@ export async function initializeUnityEditor(
     container.innerHTML = `<h3>Connecting...</h3>`
     const ws = new WebSocket(webSocketUrl)
 
-    globalObservable.on('error', (error) => {
+    globalObservable.on('error', (_error) => {
       errorState = true
       ws.close()
     })
