@@ -1,5 +1,5 @@
 import { action } from 'typesafe-actions'
-import { PartialWearableV2, WearableId } from '../catalogs/types'
+import { WearableWithBaseUrl, WearableId } from '../catalogs/types'
 
 export const UPDATE_WEARABLES = '[Update] Wearables'
 export const updateWearables = (wearablesToAdd: WearableId[], wearablesToRemove: WearableId[]) =>
@@ -7,11 +7,11 @@ export const updateWearables = (wearablesToAdd: WearableId[], wearablesToRemove:
 export type UpdateWearablesAction = ReturnType<typeof updateWearables>
 
 export const PROCESS_WEARABLES = '[Process] Wearables'
-export const processWearables = (wearables: PartialWearableV2[]) => action(PROCESS_WEARABLES, { wearables })
+export const processWearables = (wearables: WearableWithBaseUrl[]) => action(PROCESS_WEARABLES, { wearables })
 export type ProcessWearablesAction = ReturnType<typeof processWearables>
 
 export const START_WEARABLES_PORTABLE_EXPERENCE = '[Start] Wearable Portable Experience'
-export const startWearablesPortableExperience = (wearables: PartialWearableV2[]) =>
+export const startWearablesPortableExperience = (wearables: WearableWithBaseUrl[]) =>
   action(START_WEARABLES_PORTABLE_EXPERENCE, { wearables })
 export type StartWearablesPortableExperienceAction = ReturnType<typeof startWearablesPortableExperience>
 

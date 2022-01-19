@@ -19,7 +19,7 @@ import { defaultLogger } from '../../logger'
 import { getParcelSceneLimits } from 'atomicHelpers/landHelpers'
 import { CLASS_ID } from '@dcl/legacy-ecs'
 import { toHumanReadableType, fromHumanReadableType, getLayoutFromParcels, builderAssetToLocalAsset } from './utils'
-import { SceneSourcePlacement } from 'shared/types'
+import { Source } from '@dcl/schemas'
 
 export const BASE_BUILDER_SERVER_URL_ROPSTEN = 'https://builder-api.decentraland.io/v1'
 export const BUILDER_MANIFEST_VERSION = 10
@@ -188,7 +188,7 @@ export class BuilderServerAPIManager {
     description: string | undefined,
     ethAddress: string,
     scene: SerializedSceneState,
-    sceneLayout: SceneSourcePlacement['layout'] | undefined
+    sceneLayout: Source['layout']
   ): Promise<BuilderManifest> {
     const builderProject: BuilderProject = this.createBuilderProject(
       builderSceneId,

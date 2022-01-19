@@ -22,13 +22,7 @@ import {
   WEARABLES_REQUEST,
   WEARABLES_SUCCESS
 } from './actions'
-import {
-  WearablesRequestFilters,
-  WearableV2,
-  BodyShapeRepresentationV2,
-  PartialWearableV2,
-  UnpublishedWearable
-} from './types'
+import { WearablesRequestFilters, WearableWithBaseUrl, UnpublishedWearable } from './types'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
@@ -37,6 +31,7 @@ import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
+import { Wearable, WearableRepresentation } from '@dcl/schemas'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
@@ -65,11 +60,11 @@ export function* handleWearablesRequest(action: WearablesRequest) {
     try {
       const fetchContentServer: string = yield select(getFetchContentServer)
 
-      const response: PartialWearableV2[] = yield call(fetchWearablesFromCatalyst, filters)
+      const response: WearableWithBaseUrl[] = yield call(fetchWearablesFromCatalyst, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'
 
-      const v2Wearables: WearableV2[] = response.map((wearable) => ({
+      const v2Wearables: WearableWithBaseUrl[] = response.map((wearable) => ({
         ...wearable,
         baseUrl: wearable.baseUrl ?? fetchContentServer + '/contents/',
         baseUrlBundles: assetBundlesBaseUrl
@@ -88,9 +83,10 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const catalystUrl = yield select(getCatalystServer)
   const client: CatalystClient = new CatalystClient(catalystUrl, 'EXPLORER')
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
+  const baseUrlBundles = getAssetBundlesBaseUrl(network) + '/'
   const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
 
-  const result: PartialWearableV2[] = []
+  const result: Wearable[] = []
   if (filters.ownedByUser) {
     if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
       // The WITH_FIXED_COLLECTIONS config can only be used in zone. However, we want to be able to use prod collections for testing.
@@ -100,7 +96,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       // Fetch published collections
       const urnCollections = collectionIds.filter((collectionId) => collectionId.startsWith('urn'))
       if (urnCollections.length > 0) {
-        const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
+        const zoneWearables: Wearable[] = yield client.fetchWearables({ collectionIds: urnCollections })
         result.push(...zoneWearables)
       }
 
@@ -108,7 +104,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       const uuidCollections = collectionIds.filter((collectionId) => !collectionId.startsWith('urn'))
       const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       if (uuidCollections.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(
+        const v2Wearables: Wearable[] = yield call(
           fetchWearablesByCollectionFromBuilder,
           uuidCollections,
           filters,
@@ -131,7 +127,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       }
     }
   } else {
-    const wearables: PartialWearableV2[] = yield call(fetchWearablesByFilters, filters, client)
+    const wearables: Wearable[] = yield call(fetchWearablesByFilters, filters, client)
     result.push(...wearables)
 
     if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
@@ -140,7 +136,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       )
       const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       if (uuidCollections.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(
+        const v2Wearables: Wearable[] = yield call(
           fetchWearablesByCollectionFromBuilder,
           uuidCollections,
           filters,
@@ -152,11 +148,11 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   }
 
   if (PREVIEW) {
-    const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByCollectionFromPreviewMode, filters)
+    const v2Wearables: Wearable[] = yield call(fetchWearablesByCollectionFromPreviewMode, filters)
     result.push(...v2Wearables)
   }
 
-  return result.map(mapCatalystWearableIntoV2)
+  return result.map((w) => mapCatalystWearableIntoV2(w, baseUrlBundles))
 }
 
 function fetchOwnedWearables(ethAddress: string, client: CatalystClient) {
@@ -212,6 +208,7 @@ async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesReque
  */
 function mapUnpublishedWearableIntoCatalystWearable(wearable: UnpublishedWearable): any {
   const { id, rarity, name, thumbnail, description, data, contents: contentToHash } = wearable
+
   return {
     id,
     rarity,
@@ -231,33 +228,44 @@ function mapUnpublishedWearableIntoCatalystWearable(wearable: UnpublishedWearabl
   }
 }
 
-function mapCatalystRepresentationIntoV2(representation: any): BodyShapeRepresentationV2 {
+function mapCatalystRepresentationIntoV2(representation: WearableRepresentation): WearableRepresentation {
   const { contents, ...other } = representation
 
-  const newContents = contents.map(({ key, url }: { key: string; url: string }) => ({
-    key,
-    hash: url.substring(url.lastIndexOf('/') + 1)
-  }))
+  function mapContent(content: string | { key: string; url: string }) {
+    if (typeof content === 'string') {
+      const index = content.lastIndexOf('/')
+      return content.substring(index + 1)
+    } else {
+      return content.key
+    }
+  }
+
+  const newContents = contents.map(mapContent)
   return {
     ...other,
     contents: newContents
   }
 }
 
-function mapCatalystWearableIntoV2(v2Wearable: PartialWearableV2): PartialWearableV2 {
-  const { id, data, rarity, i18n, thumbnail, description } = v2Wearable
+function mapCatalystWearableIntoV2(v2Wearable: Wearable, baseUrlBundles: string): WearableWithBaseUrl {
+  
+  if (!Wearable.validate(v2Wearable)) {
+    console.error('Invalid wearable', v2Wearable)
+    debugger
+  }
+
+  const { id, data, rarity, thumbnail } = v2Wearable
   const { category, tags, hides, replaces, representations } = data
-  const newRepresentations: BodyShapeRepresentationV2[] = representations.map(mapCatalystRepresentationIntoV2)
+  const newRepresentations: WearableRepresentation[] = representations.map(mapCatalystRepresentationIntoV2)
   const index = thumbnail.lastIndexOf('/')
   const newThumbnail = thumbnail.substring(index + 1)
   const baseUrl = thumbnail.substring(0, index + 1)
 
   return {
+    ...v2Wearable,
     id,
     rarity,
-    i18n,
     thumbnail: newThumbnail,
-    description,
     data: {
       category,
       tags,
@@ -265,7 +273,8 @@ function mapCatalystWearableIntoV2(v2Wearable: PartialWearableV2): PartialWearab
       replaces,
       representations: newRepresentations
     },
-    baseUrl
+    baseUrl,
+    baseUrlBundles
   }
 }
 
@@ -310,6 +319,6 @@ export function informRequestFailure(error: string, context: string | undefined)
   getUnityInstance().WearablesRequestFailed(error, context)
 }
 
-export function sendWearablesCatalog(wearables: WearableV2[], context: string | undefined) {
+export function sendWearablesCatalog(wearables: WearableWithBaseUrl[], context: string | undefined) {
   getUnityInstance().AddWearablesToCatalog(wearables, context)
 }

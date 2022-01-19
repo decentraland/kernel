@@ -128,7 +128,7 @@ export async function getLoadablePortableExperience(data: {
       baseUrl: baseUrl,
       baseUrlBundles: '',
       contents: mappings,
-      icon: sceneJsonData.display?.favicon
+      icon: sceneJsonData.menuBarIcon
     }
   }
 }
@@ -160,7 +160,8 @@ export async function spawnPortableExperience(
     scene: {
       base: '0,0',
       parcels: ['0,0']
-    }
+    },
+    menuBarIcon: icon
   }
 
   const data: EnvironmentData<LoadablePortableExperienceScene> = {
@@ -174,16 +175,11 @@ export async function spawnPortableExperience(
       id: id,
       basePosition: parseParcelPosition(sceneJsonData.scene.base),
       name: sceneJsonData.display?.title ?? id,
-      parcels:
-        (sceneJsonData &&
-          sceneJsonData.scene &&
-          sceneJsonData.scene.parcels &&
-          sceneJsonData.scene.parcels.map(parseParcelPosition)) ||
-        [],
+      parcels: sceneJsonData?.scene?.parcels?.map(parseParcelPosition) || [],
       baseUrl: baseUrl,
       baseUrlBundles: '',
       contents: mappings,
-      icon: sceneJsonData.display?.favicon
+      icon: sceneJsonData.menuBarIcon
     }
   }
 

@@ -1,4 +1,4 @@
-import { ContentMapping, SceneSource } from 'shared/types'
+import { ContentMapping, SceneJsonData } from 'shared/types'
 import { EntityId, ComponentId, ComponentData } from 'scene-system/stateful-scene/types'
 
 export type AssetId = string
@@ -36,7 +36,7 @@ export enum CONTENT_PATH {
 export type PublishPayload = {
   files: Record<string, string>
   filesToDecode: Record<string, any>
-  metadata: SceneDeploymentSourceMetadata
+  metadata: SceneJsonData
   pointers: string[]
   statelessManifest: StatelessManifest
 }
@@ -126,5 +126,3 @@ export type UnityColor = {
   b: number
   a: number
 }
-
-export type SceneDeploymentSourceMetadata = SceneSource

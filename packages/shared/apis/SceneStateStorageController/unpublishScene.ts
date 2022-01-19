@@ -7,7 +7,7 @@ import { EMPTY_PARCEL_NAME } from 'shared/atlas/selectors'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { invalidateScene } from 'decentraland-loader/lifecycle/utils/invalidateScene'
-import { DeploymentResult, CONTENT_PATH, SceneDeploymentSourceMetadata } from './types'
+import { DeploymentResult, CONTENT_PATH } from './types'
 import { defaultLogger } from '../../logger'
 import { ContentMapping, SceneJsonData } from '../../types'
 import { jsonFetch } from '../../../atomicHelpers/jsonFetch'
@@ -16,6 +16,7 @@ import { getResourcesURL } from 'shared/location'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
+import { Source } from '@dcl/schemas'
 
 declare type SceneDeployment = {
   sceneJson: SceneJsonData
@@ -41,7 +42,7 @@ export async function unpublishSceneByCoords(coordinates: string): Promise<Deplo
           origin: 'builder-in-world',
           version: 1,
           isEmpty: true
-        } as SceneDeploymentSourceMetadata
+        } as Source
       }
     })
 

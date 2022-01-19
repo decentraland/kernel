@@ -1,5 +1,4 @@
 import { CLASS_ID } from '@dcl/legacy-ecs'
-import { SceneSourcePlacement } from 'shared/types'
 import { Asset, BuilderAsset, SerializedSceneState } from './types'
 
 /*
@@ -92,7 +91,7 @@ export function fromHumanReadableType(humanReadableType: string): number {
   return type
 }
 
-export function getLayoutFromParcels(parcels: string[]): SceneSourcePlacement['layout'] {
+export function getLayoutFromParcels(parcels: string[]) {
   let rows = 1
   let cols = 1
 

@@ -83,7 +83,7 @@ function* handleProcessWearables(action: ProcessWearablesAction): any {
   const { wearables } = action.payload
 
   const wearablesWithPortableExperiences = wearables.filter((w) =>
-    w.data.representations.some((r) => r.contents.some((c) => c.key.endsWith('game.js')))
+    w.data.representations.some((r) => r.contents.some((c) => c.endsWith('game.js')))
   )
 
   if (wearablesWithPortableExperiences.length > 0) {
@@ -106,16 +106,15 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
 
       // Get the wearable content containing the game.js
       const wearableContent = wearable.data.representations.filter((r) =>
-        r.contents.some((c) => c.key.endsWith('game.js'))
+        r.contents.some((c) => c.endsWith('game.js'))
       )[0].contents
 
       // In the deployment the content was replicated when the bodyShape selected was 'both'
       //  this add the prefix 'female/' or '/male' if they have more than one representations.
       // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
 
-      const femaleCrop =
-        wearableContent.filter(($) => $.key.substr(0, 7) === 'female/').length === wearableContent.length
-      const maleCrop = wearableContent.filter(($) => $.key.substr(0, 5) === 'male/').length === wearableContent.length
+      const femaleCrop = wearableContent.filter(($) => $.substr(0, 7) === 'female/').length === wearableContent.length
+      const maleCrop = wearableContent.filter(($) => $.substr(0, 5) === 'male/').length === wearableContent.length
 
       const getFile = (key: string): string => {
         if (femaleCrop) return key.substring(7)
@@ -123,13 +122,12 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
         return key
       }
 
-      const mappings = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
-      const name = wearable.i18n[0].text
+      const mappings = wearableContent.map(($) => ({ file: getFile($), hash: $ }))
+      const name = wearable.descriptions[0].text
 
-      // TODO: make sure thumbnail is added to the mappings if not there to avoid creating an url for the icon here
-      const icon = baseUrl + wearable.thumbnail
-
-      spawnPortableExperience(wearable.id, 'main', name, baseUrl, mappings, icon).catch((e) => defaultLogger.error(e))
+      spawnPortableExperience(wearable.id, 'main', name, baseUrl, mappings, wearable.menuBarIcon).catch((e) =>
+        defaultLogger.error(e)
+      )
     } catch (e) {
       defaultLogger.log(e)
     }

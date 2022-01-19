@@ -28,7 +28,7 @@ import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { WearableV2 } from 'shared/catalogs/types'
+import { WearableWithBaseUrl } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { FeatureFlag } from 'shared/meta/types'
@@ -250,7 +250,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddUserProfileToCatalog', JSON.stringify(peerProfile))
   }
 
-  public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
+  public AddWearablesToCatalog(wearables: WearableWithBaseUrl[], context?: string) {
     this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
   }
 

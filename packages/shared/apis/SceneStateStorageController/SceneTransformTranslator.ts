@@ -1,10 +1,10 @@
-import { Quaternion, Matrix, Vector3 } from '@dcl/ecs-math'
-import { Component } from 'scene-system/stateful-scene/types'
-import { CLASS_ID } from '@dcl/legacy-ecs'
-import { SceneSource, SceneSourcePlacement } from 'shared/types'
-import { BuilderComponent } from './types'
-import { toHumanReadableType } from './utils'
-import { parcelLimits } from 'config'
+import { Quaternion, Matrix, Vector3 } from "@dcl/ecs-math"
+import { Component } from "scene-system/stateful-scene/types"
+import { CLASS_ID } from "@dcl/legacy-ecs"
+import { SceneJsonData } from "shared/types"
+import { BuilderComponent } from "./types"
+import { toHumanReadableType } from "./utils"
+import { parcelLimits } from "config"
 
 /**
  * Utility class to translate the transformation that the builder dapp applies to the scene, while deploying,
@@ -15,13 +15,12 @@ export class SceneTransformTranslator {
   private builderToStateDefinitionMatrix!: Matrix
   private stateDefinitionToBuilderMatrix!: Matrix
 
-  public constructor(sceneSource?: SceneSource | undefined) {
+  public constructor(sceneSource: SceneJsonData["source"]) {
     this.setBuilderSceneTransformation(sceneSource)
   }
 
-  public setBuilderSceneTransformation(sceneSource: SceneSource | undefined) {
-    const rotation: SceneSourcePlacement['rotation'] | undefined = sceneSource?.rotation
-    const layout: SceneSourcePlacement['layout'] | undefined = sceneSource?.layout
+  public setBuilderSceneTransformation(sceneSource: SceneJsonData["source"]) {
+    const { rotation, layout } = sceneSource || {}
     const parcelSize = parcelLimits.parcelSize
 
     if (!rotation || !layout) {
@@ -34,17 +33,17 @@ export class SceneTransformTranslator {
     const sceneTranslation: Vector3 = Vector3.Zero()
 
     switch (rotation) {
-      case 'north':
+      case "north":
         sceneRotation.setEuler(0, -90, 0)
         sceneTranslation.set(layout.cols * parcelSize, 0, 0)
         break
-      case 'east':
+      case "east":
         break
-      case 'south':
+      case "south":
         sceneRotation.setEuler(0, 90, 0)
         sceneTranslation.set(0, 0, layout.rows * parcelSize)
         break
-      case 'west':
+      case "west":
         sceneRotation.setEuler(0, 180, 0)
         sceneTranslation.set(layout.rows * parcelSize, 0, layout.cols * parcelSize)
         break

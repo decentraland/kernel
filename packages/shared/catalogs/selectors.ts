@@ -1,6 +1,6 @@
-import { RootCatalogState, PartialWearableV2, WearableId } from './types'
+import { RootCatalogState, WearableWithBaseUrl, WearableId } from './types'
 
-export const getPlatformCatalog = (store: RootCatalogState): Record<WearableId, PartialWearableV2> | null =>
+export const getPlatformCatalog = (store: RootCatalogState): Record<WearableId, WearableWithBaseUrl> | null =>
   store.catalogs &&
   store.catalogs.catalogs &&
   store.catalogs.catalogs['base-avatars'] &&

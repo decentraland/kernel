@@ -13,7 +13,6 @@ import {
   BuilderManifest,
   CONTENT_PATH,
   DeploymentResult,
-  SceneDeploymentSourceMetadata,
   SerializedSceneState
 } from './types'
 import { getCurrentIdentity } from 'shared/session/selectors'
@@ -39,6 +38,7 @@ import { getLayoutFromParcels } from './utils'
 import { SceneTransformTranslator } from './SceneTransformTranslator'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
+import { SceneJsonData } from 'shared/types'
 
 export class SceneStateStorageController extends ExposableAPI implements ISceneStateStorageController {
   private parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
@@ -208,7 +208,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
               point:
                 this.parcelIdentity.land.sceneJsonData.source?.point ??
                 this.parcelIdentity.land.sceneJsonData.scene.base
-            } as SceneDeploymentSourceMetadata
+            } as SceneJsonData['source']
           }
         })
 

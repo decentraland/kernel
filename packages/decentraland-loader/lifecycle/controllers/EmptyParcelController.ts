@@ -59,8 +59,6 @@ export class EmptyParcelController {
         main: `bin/game.js`,
         tags: [],
         scene: { parcels: [coordinates], base: coordinates },
-        policy: {},
-        communications: { commServerUrl: '' }
       },
       mappingsResponse: {
         parcel_id: coordinates,

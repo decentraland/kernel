@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from '@dcl/legacy-ecs'
+import type { Scene } from '@dcl/schemas'
 import type { WearableId } from 'shared/catalogs/types'
 export { Avatar, Profile } from './profiles/types'
-export { WearableId, Wearable, WearableV2 } from './catalogs/types'
+export { WearableId, WearableWithBaseUrl as WearableV2 } from './catalogs/types'
 
 export type MappingsResponse = {
   parcel_id: string
@@ -196,68 +197,7 @@ export const TransparencyModes = {
 
 export type TransparencyModes = 0 | 1 | 2 | 3
 
-export type SceneCommunications = {
-  commServerUrl: string | null
-}
-
-export type SceneDisplay = {
-  title?: string
-  favicon?: string
-  description?: string
-  navmapThumbnail?: string
-}
-
-export type SceneParcels = {
-  base: string // base parcel
-  parcels: string[]
-}
-
-export type SceneContact = {
-  name?: string
-  email?: string
-  im?: string
-  url?: string
-}
-
-export type ScenePolicy = {
-  contentRating?: string
-  fly?: boolean
-  voiceEnabled?: boolean
-  blacklist?: string[]
-  teleportPosition?: string
-}
-
-export type SceneSource = {
-  origin?: string
-  projectId?: string
-  version?: number
-  rotation?: SceneSourcePlacement['rotation']
-  point?: SceneSourcePlacement['point']
-  layout?: SceneSourcePlacement['layout']
-  isEmpty?: boolean
-}
-
-export type SceneSourcePlacement = {
-  rotation: 'north' | 'east' | 'south' | 'west'
-  point: { x: number; y: number }
-  layout: { cols: number; rows: number }
-}
-
-/// https://github.com/decentraland/proposals/blob/master/dsp/0020.mediawiki
-export type SceneJsonData = {
-  display?: SceneDisplay
-  owner?: string
-  contact?: SceneContact
-  main: string
-  tags?: string[]
-  scene: SceneParcels
-  communications?: SceneCommunications
-  policy?: ScenePolicy
-  source?: SceneSource
-  spawnPoints?: SceneSpawnPoint[]
-  requiredPermissions?: string[] | undefined
-  featureToggles?: { [key: string]: string }
-}
+export type SceneJsonData = Scene
 
 export type SceneFeatureToggle = {
   name: string
@@ -296,17 +236,6 @@ export interface IPortableExperience {
   baseUrlBundles: string
   sceneJsonData: SceneJsonData
   mappingsResponse: MappingsResponse
-}
-
-export type SceneSpawnPoint = {
-  name?: string
-  position: {
-    x: number | number[]
-    y: number | number[]
-    z: number | number[]
-  }
-  default?: boolean
-  cameraTarget?: Vector3Component
 }
 
 export type InstancedSpawnPoint = { position: Vector3Component; cameraTarget?: Vector3Component }
