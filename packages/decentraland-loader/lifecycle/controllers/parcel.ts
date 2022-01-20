@@ -32,7 +32,7 @@ export class ParcelLifeCycleController extends EventEmitter {
   public resetScenesOnSight() {
     this.currentlySightedParcels.clear()
 
-    this.parcelStatus.forEach((value: ParcelLifeCycleStatus, key: string) => {
+    this.parcelStatus.forEach((value: ParcelLifeCycleStatus, _key: string) => {
       value.setOffSight()
     })
 
