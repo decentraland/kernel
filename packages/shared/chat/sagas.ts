@@ -21,7 +21,7 @@ import { notifyStatusThroughChat } from 'shared/comms/chat'
 import defaultLogger from 'shared/logger'
 import { catalystRealmConnected, changeRealm, changeToCrowdedRealm } from 'shared/dao'
 import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
-import { PREVIEW, SHOW_FPS_COUNTER } from 'config'
+import { SHOW_FPS_COUNTER } from 'config'
 import { AvatarMessage, AvatarMessageType } from 'shared/comms/interface/types'
 import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
 import { isFriend } from 'shared/friends/selectors'
@@ -33,7 +33,6 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { injectVersions } from 'shared/rolloutVersions'
-import { togglePreviewBoundingBox } from 'unity-interface/togglePreviewBoundingBox'
 
 interface IChatCommand {
   name: string
@@ -507,19 +506,6 @@ function initChatCommands() {
       body: 'Looking for other players...'
     }
   })
-
-  if (PREVIEW) {
-    addChatCommand('toggleBoundingBox', 'Toggle display of entities bounding boxe', (_message) => {
-      togglePreviewBoundingBox().catch((e) => defaultLogger.log(e))
-      return {
-        messageId: '',
-        messageType: ChatMessageType.SYSTEM,
-        sender: '',
-        timestamp: Date.now(),
-        body: ''
-      }
-    })
-  }
 }
 
 function parseWhisperExpression(expression: string) {
