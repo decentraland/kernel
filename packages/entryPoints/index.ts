@@ -214,7 +214,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.TELEPORT_DIALOG, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.QUESTS_PANEL, { active: questEnabled, visible: false })
   i.ConfigureHUDElement(HUDElementID.QUESTS_TRACKER, { active: questEnabled, visible: true })
-  i.ConfigureHUDElement(HUDElementID.TRANSACTIONS, { active: true, visible: true })
 
   onLoginCompleted()
     .then(() => {

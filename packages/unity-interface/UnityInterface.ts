@@ -401,7 +401,7 @@ export class UnityInterface implements IUnityInterface {
     if (!isWalletConnect) {
       futures[id].resolve(true)
     } else {
-      this.SendMessageToUnity('HUDController', 'RequestWeb3ApiUse', JSON.stringify({ id, requestType, payload }))
+      this.SendMessageToUnity('Bridges', 'RequestWeb3ApiUse', JSON.stringify({ id, requestType, payload }))
     }
 
     return futures[id]
