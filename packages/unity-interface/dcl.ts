@@ -194,13 +194,8 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
 }
 
 export async function loadPreviewScene(message: sdk.Messages) {
-  if (
-    message.type === sdk.SCENE_UPDATE &&
-    sdk.SceneUpdate.validate(message)
-  ) {
-
-    if (
-      message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE) {
+  if (message.type === sdk.SCENE_UPDATE && sdk.SceneUpdate.validate(message)) {
+    if (message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE) {
       try {
         const { sceneId } = message.payload
         const url = `${rootURLPreviewMode()}/preview-wearables/${sceneId}`
