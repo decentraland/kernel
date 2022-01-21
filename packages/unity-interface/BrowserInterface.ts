@@ -96,7 +96,9 @@ const positionEvent = {
   rotation: Vector3.Zero(),
   playerHeight: playerConfigurations.height,
   mousePosition: Vector3.Zero(),
-  immediate: false // By default the renderer lerps avatars position
+  immediate: false, // By default the renderer lerps avatars position
+  cameraQuaternion: Quaternion.Identity,
+  cameraEuler: Vector3.Zero()
 }
 
 type SystemInfoPayload = {
@@ -148,11 +150,16 @@ export class BrowserInterface {
     rotation: EcsMathReadOnlyQuaternion
     playerHeight?: number
     immediate?: boolean
+    cameraRotation?: EcsMathReadOnlyQuaternion
   }) {
     positionEvent.position.set(data.position.x, data.position.y, data.position.z)
     positionEvent.quaternion.set(data.rotation.x, data.rotation.y, data.rotation.z, data.rotation.w)
     positionEvent.rotation.copyFrom(positionEvent.quaternion.eulerAngles)
     positionEvent.playerHeight = data.playerHeight || playerConfigurations.height
+
+    const cameraQuaternion = data.cameraRotation ?? data.rotation
+    positionEvent.cameraQuaternion.set(cameraQuaternion.x, cameraQuaternion.y, cameraQuaternion.z, cameraQuaternion.w)
+    positionEvent.cameraEuler.copyFrom(positionEvent.cameraQuaternion.eulerAngles)
 
     // By default the renderer lerps avatars position
     positionEvent.immediate = false
