@@ -589,6 +589,14 @@ export class BrowserInterface {
     }
   }
 
+  public Web3UseResponse(data: { id: string; result: boolean }) {
+    if (data.result) {
+      futures[data.id].resolve(true)
+    } else {
+      futures[data.id].reject(new Error('Web3 operation rejected'))
+    }
+  }
+
   public FetchBalanceOfMANA() {
     ;(async () => {
       const identity = getIdentity()
