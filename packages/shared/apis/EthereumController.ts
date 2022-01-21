@@ -4,12 +4,15 @@ import {
   requirePayment,
   sendAsync,
   convertMessageToObject,
-  signMessage
+  signMessage,
+  messageToString
 } from 'shared/ethereum/EthereumService'
 import { RPCSendableMessage } from 'shared/types'
 import { getUserAccount, requestManager } from 'shared/ethereum/provider'
 import { RestrictedExposableAPI } from './RestrictedExposableAPI'
 import { PermissionItem } from './Permissions'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { ParcelIdentity } from './ParcelIdentity'
 
 export interface IEthereumController {
   /**
@@ -48,15 +51,27 @@ export interface IEthereumController {
 
 @registerAPI('EthereumController')
 export class EthereumController extends RestrictedExposableAPI implements IEthereumController {
+  parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
+
   @exposeMethod
   async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
+      toAddress,
+      amount,
+      currency,
+      sceneId: await this.parcelIdentity.getSceneId()
+    })
     return requirePayment(toAddress, amount, currency)
   }
 
   @exposeMethod
   async signMessage(message: MessageDict) {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    await getUnityInstance().RequestWeb3ApiUse('signMessage', {
+      message: await messageToString(message),
+      sceneId: await this.parcelIdentity.getSceneId()
+    })
     return signMessage(message)
   }
 
@@ -69,6 +84,10 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
   @exposeMethod
   async sendAsync(message: RPCSendableMessage): Promise<any> {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
+      message: `${message.method}(${message.params.join(',')})`,
+      sceneId: await this.parcelIdentity.getSceneId()
+    })
     return sendAsync(message)
   }
 
