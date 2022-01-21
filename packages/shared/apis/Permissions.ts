@@ -15,7 +15,7 @@ export const defaultParcelPermissions = [
   PermissionItem.USE_FETCH,
   PermissionItem.USE_WEBSOCKET
 ]
-export const defaultPortableExperiencePermissions = [PermissionItem.USE_FETCH, PermissionItem.USE_WEBSOCKET]
+export const defaultPortableExperiencePermissions = []
 
 @registerAPI('Permissions')
 export class Permissions extends ExposableAPI {
