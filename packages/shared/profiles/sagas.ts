@@ -300,7 +300,7 @@ export async function profileServerRequest(userId: string, version?: number) {
     const profiles = await fetcher.fetchJson(url)
 
     return profiles[0] || { avatars: [] }
-  } catch (e: any) {
+  } catch (e) {
     defaultLogger.error(e)
     return { avatars: [] }
   }

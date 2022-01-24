@@ -17,14 +17,8 @@ import { call, put, takeEvery, select, fork, take } from 'redux-saga/effects'
 import { REALM, PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization } from '../meta/sagas'
 import { Candidate, Realm, ServerConnectionStatus } from './types'
-import {
-  fetchCatalystRealms,
-  fetchCatalystStatuses,
-  pickCatalystRealm,
-  getRealmFromString,
-  ping,
-  commsStatusUrl
-} from '.'
+import { fetchCatalystRealms, fetchCatalystStatuses, pickCatalystRealm, getRealmFromString, commsStatusUrl } from '.'
+import { ping } from './utils/ping'
 import { getAddedServers, getCatalystNodesEndpoint, getMinCatalystVersion } from 'shared/meta/selectors'
 import {
   getAllCatalystCandidates,

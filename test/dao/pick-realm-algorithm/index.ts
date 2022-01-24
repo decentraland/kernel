@@ -1,5 +1,0 @@
-import './allPeers.test'
-import './largeLatency.test'
-import './closePeers.test'
-import './loadBalancing.test'
-import './index.test'
