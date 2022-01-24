@@ -9,7 +9,7 @@ import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import { loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
+import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -305,17 +305,21 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 }
 
 export async function startPreview() {
-  // void getPreviewSceneId().then(async (sceneData) => {
-  //   if (sceneData.sceneId) {
-  //     const { unityInterface } = await ensureUnityInterface()
-  //     unityInterface.SetKernelConfiguration({
-  //       debugConfig: {
-  //         sceneDebugPanelTargetSceneId: sceneData.sceneId,
-  //         sceneLimitsWarningSceneId: sceneData.sceneId
-  //       }
-  //     })
-  //   }
-  // })
+  void getPreviewSceneId()
+    .then(async (sceneData) => {
+      if (sceneData.sceneId) {
+        const { unityInterface } = await ensureUnityInterface()
+        unityInterface.SetKernelConfiguration({
+          debugConfig: {
+            sceneDebugPanelTargetSceneId: sceneData.sceneId,
+            sceneLimitsWarningSceneId: sceneData.sceneId
+          }
+        })
+      }
+    })
+    .catch((_err) => {
+      defaultLogger.info('Warning: cannot get preview scene id')
+    })
 
   function handleServerMessage(message: sdk.Messages) {
     if (DEBUG_WS_MESSAGES) {

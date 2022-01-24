@@ -228,13 +228,17 @@ export async function loadPreviewScene(message: sdk.Messages) {
         defaultLogger.error(`Unable to loader the preview portable experience`, message, err)
       }
     } else {
-      const { sceneId } = message.payload
-
-      if (sceneId) {
-        await reloadScene(sceneId)
+      if (message.payload.sceneId) {
+        await reloadScene(message.payload.sceneId)
       } else {
-        defaultLogger.log(`Unable to load sceneId of ${sceneId}`)
-        debugger
+        const { sceneId, sceneBase } = await getPreviewSceneId()
+
+        if (sceneId) {
+          await reloadScene(sceneId)
+        } else {
+          defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
+          debugger
+        }
       }
     }
   }
