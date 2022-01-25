@@ -126,10 +126,8 @@ function* handleStartWearablesPortableExperience(action: StartWearablesPortableE
       const mappings = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
       const name = wearable.i18n[0].text
 
-      const icon = wearable.menuBarIcon ? 'smartWearableIcon' : undefined
-      if (icon) {
-        mappings.push({ file: icon, hash: wearable.menuBarIcon! })
-      }
+      const icon = 'smartWearableMenuBarIcon'
+      mappings.push({ file: icon, hash: wearable.menuBarIcon ?? wearable.thumbnail })
 
       spawnPortableExperience(wearable.id, 'main', name, baseUrl, mappings, icon).catch((e) => defaultLogger.error(e))
     } catch (e) {
