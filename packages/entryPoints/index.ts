@@ -305,17 +305,21 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 }
 
 export async function startPreview() {
-  void getPreviewSceneId().then(async (sceneData) => {
-    if (sceneData.sceneId) {
-      const { unityInterface } = await ensureUnityInterface()
-      unityInterface.SetKernelConfiguration({
-        debugConfig: {
-          sceneDebugPanelTargetSceneId: sceneData.sceneId,
-          sceneLimitsWarningSceneId: sceneData.sceneId
-        }
-      })
-    }
-  })
+  void getPreviewSceneId()
+    .then(async (sceneData) => {
+      if (sceneData.sceneId) {
+        const { unityInterface } = await ensureUnityInterface()
+        unityInterface.SetKernelConfiguration({
+          debugConfig: {
+            sceneDebugPanelTargetSceneId: sceneData.sceneId,
+            sceneLimitsWarningSceneId: sceneData.sceneId
+          }
+        })
+      }
+    })
+    .catch((_err) => {
+      defaultLogger.info('Warning: cannot get preview scene id')
+    })
 
   function handleServerMessage(message: sdk.Messages) {
     if (DEBUG_WS_MESSAGES) {
