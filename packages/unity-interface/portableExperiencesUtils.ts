@@ -128,7 +128,7 @@ export async function getLoadablePortableExperience(data: {
       baseUrl: baseUrl,
       baseUrlBundles: '',
       contents: mappings,
-      icon: sceneJsonData.display?.favicon
+      icon: sceneJsonData.menuBarIcon
     }
   }
 }
@@ -156,7 +156,8 @@ export async function spawnPortableExperience(
 
   const sceneJsonData: SceneJsonData = {
     main: mappings.filter((m) => m.file.endsWith('game.js'))[0]?.hash,
-    display: { title: name, favicon: icon },
+    display: { title: name },
+    menuBarIcon: icon,
     scene: {
       base: '0,0',
       parcels: ['0,0']
@@ -183,7 +184,7 @@ export async function spawnPortableExperience(
       baseUrl: baseUrl,
       baseUrlBundles: '',
       contents: mappings,
-      icon: sceneJsonData.display?.favicon
+      icon: sceneJsonData.menuBarIcon
     }
   }
 

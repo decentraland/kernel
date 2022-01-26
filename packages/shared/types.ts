@@ -257,6 +257,7 @@ export type SceneJsonData = {
   spawnPoints?: SceneSpawnPoint[]
   requiredPermissions?: string[] | undefined
   featureToggles?: { [key: string]: string }
+  menuBarIcon?: string
 }
 
 export type SceneFeatureToggle = {
