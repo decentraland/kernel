@@ -24,14 +24,18 @@ declare let history: any
 export type PositionReport = {
   /** Camera position, world space */
   position: EcsMathReadOnlyVector3
-  /** Camera rotation */
+  /** Avatar rotation */
   quaternion: EcsMathReadOnlyQuaternion
-  /** Camera rotation, euler from quaternion */
+  /** Avatar rotation, euler from quaternion */
   rotation: EcsMathReadOnlyVector3
   /** Camera height, relative to the feet of the avatar or ground */
   playerHeight: number
   /** Should this position be applied immediately */
   immediate: boolean
+  /** Camera rotation */
+  cameraQuaternion: EcsMathReadOnlyQuaternion
+  /** Camera rotation, euler from quaternion */
+  cameraEuler: EcsMathReadOnlyVector3
 }
 export type ParcelReport = {
   /** Parcel where the user was before */

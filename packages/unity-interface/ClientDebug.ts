@@ -86,13 +86,29 @@ export class ClientDebug {
     this.unityInterface.SendMessageToUnity('Main', 'ClearBots')
   }
 
-  public async ToggleSceneColliders(scene: string, enabled: boolean) {
-    const isInputCoords = scene.match(/^-?[0-9]*([,]-?[0-9]*){1}$/)
+  public async ToggleSceneBoundingBoxes(scene: string, enabled: boolean) {
+    const isInputCoords = this.isValueACoordinate(scene)
     let sceneId: string | undefined
 
     if (isInputCoords) {
-      const ids = await fetchSceneIds([scene])
-      sceneId = ids[0] ?? undefined
+      sceneId = await this.getSceneIdFromCoordinates(scene)
+    } else {
+      sceneId = scene
+    }
+
+    if (sceneId) {
+      this.unityInterface.SendMessageToUnity('Main', 'ToggleSceneBoundingBoxes', JSON.stringify({ sceneId, enabled }))
+    } else {
+      throw new Error(`scene not found ${scene}`)
+    }
+  }
+
+  public async ToggleSceneColliders(scene: string, enabled: boolean) {
+    const isInputCoords = this.isValueACoordinate(scene)
+    let sceneId: string | undefined
+
+    if (isInputCoords) {
+      sceneId = await this.getSceneIdFromCoordinates(scene)
     } else {
       sceneId = scene
     }
@@ -102,6 +118,15 @@ export class ClientDebug {
     } else {
       throw new Error(`scene not found ${scene}`)
     }
+  }
+
+  private isValueACoordinate(value: string): boolean {
+    return value.match(/^-?[0-9]*([,]-?[0-9]*){1}$/) ? true : false
+  }
+
+  private async getSceneIdFromCoordinates(coordinates: string): Promise<string | undefined> {
+    const ids = await fetchSceneIds([coordinates])
+    return ids[0] ?? undefined
   }
 }
 

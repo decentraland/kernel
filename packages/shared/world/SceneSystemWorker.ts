@@ -103,12 +103,12 @@ export class SceneSystemWorker extends SceneWorker {
     }
 
     if (this.engineAPI && 'rotationChanged' in this.engineAPI.subscribedEvents) {
-      if (positionReport.quaternion && !this.lastSentRotation.equals(positionReport.quaternion)) {
+      if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
         this.engineAPI.sendSubscriptionEvent('rotationChanged', {
-          rotation: positionReport.rotation,
-          quaternion: positionReport.quaternion
+          rotation: positionReport.cameraEuler,
+          quaternion: positionReport.cameraQuaternion
         })
-        this.lastSentRotation.copyFrom(positionReport.quaternion)
+        this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
       }
     }
   }
