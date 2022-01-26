@@ -59,6 +59,7 @@ export type WearableV2 = {
   }
   baseUrl: string
   baseUrlBundles: string
+  menuBarIcon?: string
 }
 
 export type BodyShapeRepresentationV2 = {
