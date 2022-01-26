@@ -317,6 +317,7 @@ export async function startPreview() {
           }
         })
         clientDebug.ToggleSceneBoundingBoxes(sceneData.sceneId, false).catch((e) => defaultLogger.error(e))
+        unityInterface.SendMessageToUnity('Main', 'TogglePreviewMenu', 'true')
       }
     })
     .catch((_err) => {
