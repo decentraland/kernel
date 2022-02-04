@@ -25,7 +25,8 @@ import {
   FriendshipAction,
   WorldPosition,
   LoadableParcelScene,
-  AvatarRendererMessage
+  AvatarRendererMessage,
+  ContentMapping
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -58,7 +59,7 @@ import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
-import { killPortableExperienceScene } from './portableExperiencesUtils'
+import { killPortableExperienceScene, spawnPortableExperience } from './portableExperiencesUtils'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
@@ -626,6 +627,10 @@ export class BrowserInterface {
     } else {
       store.dispatch(unmutePlayers(data.usersId))
     }
+  }
+
+  public async SpawnPortableExperience(data: { id: string, name: string, baseUrl: string, mappings: ContentMapping[], icon?: string  }): Promise<void> {
+    await spawnPortableExperience(data.id, 'main', data.name, data.baseUrl, data.mappings,data.icon)
   }
 
   public async KillPortableExperience(data: { portableExperienceId: string }): Promise<void> {
