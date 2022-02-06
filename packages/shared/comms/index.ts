@@ -99,7 +99,7 @@ import { sleep } from 'atomicHelpers/sleep'
 import { localProfileReceived } from 'shared/profiles/actions'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { isURL } from 'atomicHelpers/isURL'
-import { PeerParameters, RootCommsState, VoicePolicy } from './types'
+import { RootCommsState, VoicePolicy } from './types'
 import { isFriend } from 'shared/friends/selectors'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import Html from 'shared/Html'
@@ -884,31 +884,12 @@ function subscribeToRealmChange(store: Store<RootState>) {
   )
 }
 
-async function getPeerParameters(): Promise<PeerParameters> {
-  const commsServer = getCommsServer(store.getState())
-
-  const defaultPeerParameters: PeerParameters = {
-    iceServers: commConfigurations.defaultIceServers
-  }
-
   try {
     const identity = getIdentity()
 
     if (!identity) {
       throw new Error('identity is undefined')
     }
-
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, identity, { responseBodyType: 'json' })
-
-    if (peerParameters.ok) {
-      return { ...defaultPeerParameters, ...peerParameters.json }
-    } else {
-      throw new Error('Server response was not OK: ' + peerParameters.status)
-    }
-  } catch (e) {
-    defaultLogger.warn("Couldn't fetch peer parameters for comms server. Using defaults!", e)
-    return defaultPeerParameters
-  }
 }
 
 let idTaken = false
@@ -931,8 +912,6 @@ export async function connect(userId: string) {
     const [version, mode] = parseCommsMode(COMMS)
 
     idTaken = false
-
-    const peerParameters = await getPeerParameters()
 
     switch (version) {
       case 'v1': {
