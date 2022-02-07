@@ -25,7 +25,8 @@ import {
   FriendshipAction,
   WorldPosition,
   LoadableParcelScene,
-  AvatarRendererMessage
+  AvatarRendererMessage,
+  ContentMapping
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -58,7 +59,7 @@ import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
-import { killPortableExperienceScene, setDisabledPortableExperiences } from './portableExperiencesUtils'
+import { killPortableExperienceScene, setDisabledPortableExperiences, spawnPortableExperience } from './portableExperiencesUtils'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
@@ -634,6 +635,10 @@ export class BrowserInterface {
 
   public async SetDisabledPortableExperiences(data: { idsToDisable: string[] }): Promise<void> {
     await setDisabledPortableExperiences(data.idsToDisable)
+  }
+
+  public async SpawnPortableExperience(data: { id: string, name: string, baseUrl: string, mappings: ContentMapping[], icon?: string  }): Promise<void> {
+    await spawnPortableExperience(data.id, 'main', data.name, data.baseUrl, data.mappings, data.icon)
   }
 
   // Note: This message is deprecated and should be deleted in the future.
