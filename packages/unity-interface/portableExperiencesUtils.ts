@@ -23,11 +23,16 @@ export type PortableExperienceHandle = {
 }
 
 const currentPortableExperiences: Map<string, string> = new Map()
+let disabledPEXList: string[] = []
 
 export async function spawnPortableExperienceScene(
   sceneUrn: string,
   parentCid: string
 ): Promise<PortableExperienceHandle> {
+  if (disabledPEXList.includes(sceneUrn)) {
+    return { pid: '', parentCid: '' }
+  }
+
   const peWorker = getSceneWorkerBySceneID(sceneUrn)
   if (peWorker) {
     throw new Error(`Portable Scene: "${sceneUrn}" is already running.`)
@@ -149,6 +154,10 @@ export async function spawnPortableExperience(
   mappings: ContentMapping[],
   icon?: string
 ): Promise<PortableExperienceHandle> {
+  if (disabledPEXList.includes(id)) {
+    return { pid: '', parentCid: '' }
+  }
+
   const peWorker = getSceneWorkerBySceneID(id)
   if (peWorker) {
     throw new Error(`Portable Scene: "${id}" is already running.`)
@@ -202,4 +211,14 @@ export async function spawnPortableExperience(
   currentPortableExperiences.set(id, parentCid)
 
   return { pid: id, parentCid: parentCid }
+}
+
+export async function setDisabledPortableExperiences(idsToDisable: string[]) {
+  idsToDisable.forEach((pexId) => {
+    if (currentPortableExperiences.has(pexId)) {
+      killPortableExperienceScene(pexId)
+    }
+  })
+
+  disabledPEXList = idsToDisable
 }
