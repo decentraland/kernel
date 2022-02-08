@@ -25,7 +25,7 @@ import {
   FriendshipAction,
   WorldPosition,
   LoadableParcelScene,
-  AvatarRendererMessage,
+  AvatarRendererMessage
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -58,10 +58,7 @@ import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
-import {
-  killPortableExperienceScene,
-  setDisabledPortableExperiences
-} from './portableExperiencesUtils'
+import { killPortableExperienceScene, setDisabledPortableExperiences } from './portableExperiencesUtils'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'

@@ -216,9 +216,9 @@ export async function spawnPortableExperience(
 }
 
 export async function setDisabledPortableExperiences(idsToDisable: string[]) {
-  idsToDisable.forEach((pexId) => {
+  idsToDisable.forEach(async (pexId) => {
     if (currentPortableExperiences.has(pexId)) {
-      killPortableExperienceScene(pexId)
+      await killPortableExperienceScene(pexId)
     }
   })
 
