@@ -11,6 +11,8 @@ import { UnityPortableExperienceScene } from './UnityParcelScene'
 import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { store } from 'shared/store/isolatedStore'
 
 declare let window: any
 // TODO: Remove this when portable experiences are full-available
@@ -217,6 +219,13 @@ export async function setDisabledPortableExperiences(idsToDisable: string[]) {
   idsToDisable.forEach((pexId) => {
     if (currentPortableExperiences.has(pexId)) {
       killPortableExperienceScene(pexId)
+    }
+  })
+
+  const profile = getCurrentUserProfile(store.getState())
+  profile?.avatar.wearables.forEach((wearableId) => {
+    if (!idsToDisable.includes(wearableId)) {
+      // TODO: SPAWN PORTABLE EXPERIENCE WITH ID = wearableId (if it is an equipped smart wearable)
     }
   })
 
