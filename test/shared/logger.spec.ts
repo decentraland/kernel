@@ -1,6 +1,7 @@
 import * as sinon from 'sinon'
 import { expect } from "chai"
 import * as wrapConsole from 'shared/logger/wrap'
+import { defaultLogger } from 'shared/logger'
 
 describe('Wrapped Logger', () => {
   wrapConsole.METHODS.forEach(method => {
@@ -51,6 +52,15 @@ describe('Wrapped Logger', () => {
         // Unity prefix
         console[method](unityPrefix + message)
         expect(spy.calledWith(unityPrefix + message)).to.equal(true)
+      })
+
+      it('should log an object correctly', () => {
+        const spy = sinon.spy(wrapConsole._console, method)
+        const prefix = '*'
+        wrapConsole.default(prefix)
+        const message = { someMessage: true }
+        defaultLogger.error(message as any)
+        expect(spy.calledWith(message)).to.equal(true)
       })
     })
   })
