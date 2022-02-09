@@ -3,8 +3,7 @@ import { PortableExperiencesState } from './types'
 import { DENY_PORTABLE_EXPERIENCES, DenyPortableExperiencesAction } from './actions'
 
 const INITIAL_STATE: PortableExperiencesState = {
-  deniedPortableExperiencesFromRenderer: [],
-  runningPortableExperiences: {}
+  deniedPortableExperiencesFromRenderer: []
 }
 
 export function portableExperienceReducer(

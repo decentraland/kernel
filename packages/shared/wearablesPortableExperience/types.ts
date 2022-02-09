@@ -1,14 +1,7 @@
 import { StorePortableExperience } from 'shared/types'
-import { WearableId } from '../../shared/catalogs/types'
-
-export type WearablesPortableExperienceData = {
-  state: 'pending' | 'processed'
-}
 
 export type WearablesPortableExperienceState = {
-  profileWearables: Record<WearableId, WearablesPortableExperienceData>
-  wearablesWithPortableExperiences: WearableId[]
-  desiredWearablePortableExperiences: Record<string, StorePortableExperience>
+  desiredWearablePortableExperiences: Record<string, StorePortableExperience | null>
 }
 
 export type RootWearablesPortableExperienceState = {

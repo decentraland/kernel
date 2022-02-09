@@ -5,26 +5,18 @@ import { getFetchContentServer } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
 import { getCurrentUserId } from 'shared/session/selectors'
-import { WearableId } from 'shared/types'
-import {
-  getCurrentWearables,
-  getDesiredWearablePortableExpriences,
-  getPendingWearables
-} from 'shared/wearablesPortableExperience/selectors'
+import { StorePortableExperience } from 'shared/types'
+import { getDesiredWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import {
   addDesiredPortableExperience,
   processWearables,
   ProcessWearablesAction,
   PROCESS_WEARABLES,
-  removeDesiredPortableExperience,
-  updateWearables,
-  UpdateWearablesAction,
-  UPDATE_WEARABLES
+  removeDesiredPortableExperience
 } from './actions'
 
 export function* wearablesPortableExperienceSaga(): any {
   yield takeLatest(PROFILE_SUCCESS, handleProfileSuccess)
-  yield takeLatest(UPDATE_WEARABLES, handleWearablesUpdate)
   yield takeEvery(WEARABLES_SUCCESS, handleWearablesSuccess)
   yield takeEvery(PROCESS_WEARABLES, handleProcessWearables)
 }
@@ -34,56 +26,56 @@ function* handleProfileSuccess(action: ProfileSuccessAction): any {
     return
   }
 
-  const profileWearables = action.payload.profile.avatar.wearables
-  const currentWearables: WearableId[] = yield select(getCurrentWearables)
-  const wearablesToAdd = profileWearables.filter((w) => !currentWearables.includes(w))
-  const wearablesToRemove = currentWearables.filter((w) => !profileWearables.includes(w))
-
-  yield put(updateWearables(wearablesToAdd, wearablesToRemove))
-}
-
-function* handleWearablesUpdate(action: UpdateWearablesAction): any {
-  const currentDesiredPortableExperiences: string[] = yield select(getDesiredWearablePortableExpriences)
-
-  const portableExperiencesToStop = action.payload.wearablesToRemove.filter((w) =>
-    currentDesiredPortableExperiences.includes(w)
+  const newProfileWearables = action.payload.profile.avatar.wearables
+  const currentDesiredPortableExperiences: Record<string, StorePortableExperience | null> = yield select(
+    getDesiredWearablePortableExpriences
   )
 
-  for (const id of portableExperiencesToStop) {
-    yield put(removeDesiredPortableExperience(id))
+  // if the PX is no-longer present in the new profile then remove it from the "desired" list
+  for (const id of Object.keys(currentDesiredPortableExperiences)) {
+    if (!newProfileWearables.includes(id)) {
+      yield put(removeDesiredPortableExperience(id))
+    }
   }
 
-  if (action.payload.wearablesToAdd.length > 0) {
-    yield put(wearablesRequest({ wearableIds: action.payload.wearablesToAdd }))
+  // create a list of wearables to load
+  const wearablesToAdd: string[] = []
+  for (const id of newProfileWearables) {
+    if (!(id in currentDesiredPortableExperiences)) {
+      yield put(addDesiredPortableExperience(id, null))
+    }
+  }
+
+  // TODO: use the catalog for this. The information is already available somewhere
+  // send the request of wearables to load
+  if (wearablesToAdd.length) {
+    yield put(wearablesRequest({ wearableIds: wearablesToAdd }))
   }
 }
 
+// update the data on the currentDesiredPortableExperiences to include fetched runtime information
+function* handleProcessWearables(action: ProcessWearablesAction) {
+  const { payload } = action
+  const currentDesiredPortableExperiences: Record<string, StorePortableExperience | null> = yield select(
+    getDesiredWearablePortableExpriences
+  )
+
+  if (payload.wearable.id in currentDesiredPortableExperiences) {
+    yield put(addDesiredPortableExperience(payload.wearable.id, payload.wearable))
+  }
+}
+
+// process all the received wearables and creates portable experiences definitions for them
 function* handleWearablesSuccess(action: WearablesSuccess): any {
-  const pendingWearables: WearableId[] = yield select(getPendingWearables)
-
-  if (pendingWearables.length === 0) {
-    return
-  }
-
   const { wearables } = action.payload
-  const wearablesToProcess = wearables.filter((w) => pendingWearables.includes(w.id))
-
-  if (wearablesToProcess.length > 0) {
-    yield put(processWearables(wearablesToProcess))
-  }
-}
-
-function* handleProcessWearables(action: ProcessWearablesAction): any {
-  const { wearables } = action.payload
-
-  const wearablesWithPortableExperiences = wearables.filter((w) =>
+  const wearablesToProcess = wearables.filter((w) =>
     w.data.representations.some((r) => r.contents.some((c) => c.key.endsWith('game.js')))
   )
 
-  if (wearablesWithPortableExperiences.length > 0) {
+  if (wearablesToProcess.length > 0) {
     const fetchContentServer: string = yield select(getFetchContentServer)
 
-    for (const wearable of wearablesWithPortableExperiences) {
+    for (const wearable of wearablesToProcess) {
       try {
         const baseUrl = wearable.baseUrl ?? fetchContentServer + '/contents/'
 
@@ -113,7 +105,7 @@ function* handleProcessWearables(action: ProcessWearablesAction): any {
         mappings.push({ file: icon, hash: wearable.menuBarIcon ?? wearable.thumbnail })
 
         yield put(
-          addDesiredPortableExperience({
+          processWearables({
             id: wearable.id,
             parentCid: 'main',
             name,

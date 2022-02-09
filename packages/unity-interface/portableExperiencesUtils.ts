@@ -126,11 +126,22 @@ export function getPortableExperiencesLoaded() {
 /**
  * Kills all portable experiences that are not present in the given list
  */
-export async function unloadExtraPortableExperiences(desiredIds: string[]) {
+export async function declareWantedPortableExperiences(pxs: StorePortableExperience[]) {
   const immutableList = new Set(currentPortableExperiences.keys())
+
+  const wantedIds = pxs.map(($) => $.id)
+
+  // kill extra ones
   for (const id of immutableList) {
-    if (!desiredIds.includes(id)) {
+    if (!wantedIds.includes(id)) {
       killPortableExperienceScene(id)
+    }
+  }
+
+  // then load all the missing scenes
+  for (const sceneData of pxs) {
+    if (!getRunningPortableExperience(sceneData.id)) {
+      spawnPortableExperience(sceneData)
     }
   }
 }

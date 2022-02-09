@@ -4,11 +4,11 @@ import {
   ADD_DESIRED_PORTABLE_EXPERIENCE,
   REMOVE_DESIRED_PORTABLE_EXPERIENCE
 } from 'shared/wearablesPortableExperience/actions'
-import { getDesiredWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
+import { getDesiredLoadableWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import {
   getRunningPortableExperience,
   spawnPortableExperience,
-  unloadExtraPortableExperiences
+  declareWantedPortableExperiences
 } from 'unity-interface/portableExperiencesUtils'
 import { DENY_PORTABLE_EXPERIENCES } from './actions'
 import { getPortableExperienceDenyList } from './selectors'
@@ -23,23 +23,15 @@ function* handlePortableExperienceChanges(): any {
   const denylist: string[] = yield select(getPortableExperienceDenyList)
 
   const allDesiredPortableExperiences: StorePortableExperience[] = [
-    // ADD HERE ALL THE SOURCES OF DIFFERENT PORTABLE EXPERIENCES
+    // ADD HERE ALL THE SOURCES OF DIFFERENT PORTABLE EXPERIENCES TO BE HANDLED BY KERNEL
     // ...(yield select(getOnboardingPortableExperiences)),
     // ...(yield select(getSceneCreatedPortableExperiences)),
     // ...(yield select(getManuallyOpenPortableExperiences)),
-    ...(yield select(getDesiredWearablePortableExpriences))
+    ...(yield select(getDesiredLoadableWearablePortableExpriences))
   ]
 
   const allFilteredPortableExperiences = allDesiredPortableExperiences.filter(($) => !denylist.includes($.id))
 
-  // first unload all the extra scenes
-  const allDesiredIds = allFilteredPortableExperiences.map(($) => $.id)
-  yield call(unloadExtraPortableExperiences, allDesiredIds)
-
-  // then load all the missing scenes
-  for (const sceneData of allFilteredPortableExperiences) {
-    if (!getRunningPortableExperience(sceneData.id)) {
-      spawnPortableExperience(sceneData)
-    }
-  }
+  // tell the controller which PXs we do want running
+  yield call(declareWantedPortableExperiences, allFilteredPortableExperiences)
 }
