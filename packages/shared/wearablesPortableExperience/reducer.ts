@@ -36,9 +36,7 @@ export function wearablesPortableExperienceReducer(
         ...state,
         desiredWearablePortableExperiences: {
           ...state.desiredWearablePortableExperiences,
-          [payload.id]: {
-            data: payload.data
-          }
+          [payload.id]: payload.data
         }
       }
     }

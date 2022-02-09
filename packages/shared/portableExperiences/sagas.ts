@@ -5,11 +5,7 @@ import {
   REMOVE_DESIRED_PORTABLE_EXPERIENCE
 } from 'shared/wearablesPortableExperience/actions'
 import { getDesiredLoadableWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
-import {
-  getRunningPortableExperience,
-  spawnPortableExperience,
-  declareWantedPortableExperiences
-} from 'unity-interface/portableExperiencesUtils'
+import { declareWantedPortableExperiences } from 'unity-interface/portableExperiencesUtils'
 import { DENY_PORTABLE_EXPERIENCES } from './actions'
 import { getPortableExperienceDenyList } from './selectors'
 
