@@ -1,3 +1,4 @@
+import { StorePortableExperience } from 'unity-interface/portableExperiencesUtils'
 import { WearableId } from '../../shared/catalogs/types'
 
 export type WearablesPortableExperienceData = {
@@ -7,6 +8,7 @@ export type WearablesPortableExperienceData = {
 export type WearablesPortableExperienceState = {
   profileWearables: Record<WearableId, WearablesPortableExperienceData>
   wearablesWithPortableExperiences: WearableId[]
+  desiredWearablePortableExperiences: Record<string, StorePortableExperience>
 }
 
 export type RootWearablesPortableExperienceState = {

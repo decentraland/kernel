@@ -213,14 +213,15 @@ export async function loadPreviewScene(message: sdk.Messages) {
             // TODO: catch the Scene.unloaded and then call the spawn.
             await sleep(100)
 
-            await spawnPortableExperience(
-              wearable.id,
-              'main',
-              wearable.name,
-              `${wearable.baseUrl}/`,
-              wearable.data.scene,
-              wearable.thumbnail
-            )
+            spawnPortableExperience({
+              id: wearable.id,
+              parentCid: 'main',
+              name: wearable.name,
+              baseUrl: `${wearable.baseUrl}/`,
+              mappings: wearable.data.scene,
+              // TODO
+              menuBarIcon: 'pending' //wearable.data.
+            })
             sceneLoading.set(wearable, false)
           }
         }

@@ -1,3 +1,4 @@
+import { StorePortableExperience } from 'unity-interface/portableExperiencesUtils'
 import { WearableId } from '../catalogs/types'
 import { RootWearablesPortableExperienceState } from './types'
 
@@ -9,7 +10,6 @@ export const getPendingWearables = (store: RootWearablesPortableExperienceState)
     .filter(([, data]) => data.state === 'pending')
     .map(([id]) => id)
 
-export const isRunningPortableExperience = (
-  store: RootWearablesPortableExperienceState,
-  wearable: WearableId
-): boolean => store.wearablesPortableExperiences.wearablesWithPortableExperiences.includes(wearable)
+export const getDesiredWearablePortableExpriences = (
+  store: RootWearablesPortableExperienceState
+): StorePortableExperience[] => Object.values(store.wearablesPortableExperiences.desiredWearablePortableExperiences)
