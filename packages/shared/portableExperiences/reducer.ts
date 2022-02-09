@@ -1,10 +1,10 @@
-import { AnyAction } from "redux"
-import { PortableExperiencesState } from "./types"
-import { DENY_PORTABLE_EXPERIENCES, DenyPortableExperiencesAction } from "./actions"
+import { AnyAction } from 'redux'
+import { PortableExperiencesState } from './types'
+import { DENY_PORTABLE_EXPERIENCES, DenyPortableExperiencesAction } from './actions'
 
 const INITIAL_STATE: PortableExperiencesState = {
   deniedPortableExperiencesFromRenderer: [],
-  runningPortableExperiences: {},
+  runningPortableExperiences: {}
 }
 
 export function portableExperienceReducer(

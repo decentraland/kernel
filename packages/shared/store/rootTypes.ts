@@ -30,5 +30,4 @@ export type RootState = RootAtlasState &
   RootPortableExperiencesState &
   RootWearablesPortableExperienceState
 
-
 export type RootStore = Store<RootState>

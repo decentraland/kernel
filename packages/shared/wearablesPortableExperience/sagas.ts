@@ -49,7 +49,7 @@ function* handleWearablesUpdate(action: UpdateWearablesAction): any {
     currentDesiredPortableExperiences.includes(w)
   )
 
-  for (let id of portableExperiencesToStop) {
+  for (const id of portableExperiencesToStop) {
     yield put(removeDesiredPortableExperience(id))
   }
 

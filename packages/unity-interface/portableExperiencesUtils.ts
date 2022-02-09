@@ -34,7 +34,7 @@ export async function UNSAFE_spawnPortableExperienceSceneFromBucket(
   return internalSpawnPortableExperience(data, parentCid)
 }
 
-export async function killPortableExperienceScene(sceneUrn: string): Promise<boolean> {
+export function killPortableExperienceScene(sceneUrn: string) {
   const peWorker = getSceneWorkerBySceneID(sceneUrn)
   if (peWorker) {
     forceStopParcelSceneWorker(peWorker)
