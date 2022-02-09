@@ -156,7 +156,16 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     result.push(...v2Wearables)
   }
 
-  return result.map(mapCatalystWearableIntoV2)
+  return result
+    .map((wearable) => {
+      try {
+        return mapCatalystWearableIntoV2(wearable)
+      } catch (err) {
+        defaultLogger.log(`There was an error with wearable ${wearable.id}.`, err)
+        return undefined
+      }
+    })
+    .filter((wearable) => !!wearable)
 }
 
 function fetchOwnedWearables(ethAddress: string, client: CatalystClient) {
