@@ -3,7 +3,8 @@ import {
   EnvironmentData,
   LoadablePortableExperienceScene,
   MappingsResponse,
-  SceneJsonData
+  SceneJsonData,
+  StorePortableExperience
 } from '../shared/types'
 import { getSceneNameFromJsonData } from '../shared/selectors'
 import { parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
@@ -11,25 +12,6 @@ import { UnityPortableExperienceScene } from './UnityParcelScene'
 import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
-
-/**
- * Holds all the information needed to start a portable experience.
- */
-export type StorePortableExperience = {
-  /** Id of the scene of the portable experience. Usually the EntityID or URN */
-  id: string
-  /** Id of the parent scene that spawned this portable experience */
-  parentCid: string
-  /** Name of the portable experience */
-  name: string
-  /** Base URL used to resolve the content assets */
-  baseUrl: string
-  /** ContentMappings of the assets of the portable experience  */
-  mappings: ContentMapping[]
-
-  /** Name of the ContentMapping used for the icon */
-  menuBarIcon: string
-}
 
 declare let window: any
 // TODO: Remove this when portable experiences are full-available
@@ -135,6 +117,10 @@ export async function getLoadablePortableExperience(data: {
       icon: sceneJsonData.menuBarIcon
     }
   }
+}
+
+export function getPortableExperiencesLoaded() {
+  return new Set(currentPortableExperiences.values())
 }
 
 /**

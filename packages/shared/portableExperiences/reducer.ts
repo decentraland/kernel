@@ -1,5 +1,5 @@
 import { AnyAction } from "redux"
-import { RootPortableExperiencesState, PortableExperiencesState, StorePortableExperience } from "./types"
+import { PortableExperiencesState } from "./types"
 import { DENY_PORTABLE_EXPERIENCES, DenyPortableExperiencesAction } from "./actions"
 
 const INITIAL_STATE: PortableExperiencesState = {

@@ -1,15 +1,20 @@
 import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import {
-  spawnPortableExperienceScene,
-  getPortableExperience,
+  UNSAFE_spawnPortableExperienceSceneFromBucket,
   PortableExperienceHandle,
   killPortableExperienceScene,
-  getPortableExperiencesLoaded
-} from 'unity-interface/portableExperiencesUtils'
+  getPortableExperiencesLoaded,
+  getRunningPortableExperience
+} from '../../unity-interface/portableExperiencesUtils'
 import { ExposableAPI } from './ExposableAPI'
 import { ParcelIdentity } from './ParcelIdentity'
 
 type PortableExperienceUrn = string
+
+type LoadedPortableExperiences = {
+  pid: string
+  parentCid: string
+}
 
 @registerAPI('PortableExperiences')
 export class PortableExperiences extends ExposableAPI {
@@ -22,7 +27,7 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async spawn(pid: PortableExperienceUrn): Promise<PortableExperienceHandle> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    return await spawnPortableExperienceScene(pid, parcelIdentity.cid)
+    return await UNSAFE_spawnPortableExperienceSceneFromBucket(pid, parcelIdentity.cid)
   }
 
   /**
@@ -34,7 +39,7 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async kill(pid: PortableExperienceUrn): Promise<boolean> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    const portableExperience: PortableExperienceHandle | undefined = await getPortableExperience(pid)
+    const portableExperience = getRunningPortableExperience(pid)
 
     if (!!portableExperience && portableExperience.parentCid === parcelIdentity.cid) {
       return await killPortableExperienceScene(pid)
@@ -59,7 +64,8 @@ export class PortableExperiences extends ExposableAPI {
    * Returns current portable experiences loaded with ids and parentCid
    */
   @exposeMethod
-  async getPortableExperiencesLoaded() {
-    return await getPortableExperiencesLoaded()
+  async getPortableExperiencesLoaded(): Promise<LoadedPortableExperiences[]> {
+    const loaded = getPortableExperiencesLoaded()
+    return Array.from(loaded).map(($) => ({ pid: $.data.sceneId, parentCid: $.parentCid }))
   }
 }

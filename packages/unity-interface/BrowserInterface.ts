@@ -58,7 +58,7 @@ import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
-import { killPortableExperienceScene, setDisabledPortableExperiences } from './portableExperiencesUtils'
+import { killPortableExperienceScene } from './portableExperiencesUtils'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
@@ -80,6 +80,7 @@ import { Authenticator } from 'dcl-crypto'
 import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
 import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
+import { denyPortableExperiences } from 'shared/portableExperiences/actions'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -633,7 +634,7 @@ export class BrowserInterface {
   }
 
   public async SetDisabledPortableExperiences(data: { idsToDisable: string[] }): Promise<void> {
-    await setDisabledPortableExperiences(data.idsToDisable)
+    store.dispatch(denyPortableExperiences(data.idsToDisable))
   }
 
   // Note: This message is deprecated and should be deleted in the future.

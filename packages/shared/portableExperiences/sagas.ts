@@ -1,4 +1,5 @@
 import { call, select, takeEvery } from 'redux-saga/effects'
+import { StorePortableExperience } from 'shared/types'
 import {
   ADD_DESIRED_PORTABLE_EXPERIENCE,
   REMOVE_DESIRED_PORTABLE_EXPERIENCE
@@ -7,7 +8,6 @@ import { getDesiredWearablePortableExpriences } from 'shared/wearablesPortableEx
 import {
   getRunningPortableExperience,
   spawnPortableExperience,
-  StorePortableExperience,
   unloadExtraPortableExperiences
 } from 'unity-interface/portableExperiencesUtils'
 import { DENY_PORTABLE_EXPERIENCES } from './actions'

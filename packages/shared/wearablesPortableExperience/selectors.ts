@@ -1,4 +1,4 @@
-import { StorePortableExperience } from 'unity-interface/portableExperiencesUtils'
+import { StorePortableExperience } from 'shared/types'
 import { WearableId } from '../catalogs/types'
 import { RootWearablesPortableExperienceState } from './types'
 

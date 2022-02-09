@@ -1,5 +1,5 @@
+import { StorePortableExperience } from 'shared/types'
 import { action } from 'typesafe-actions'
-import { StorePortableExperience } from 'unity-interface/portableExperiencesUtils'
 import { PartialWearableV2, WearableId } from '../catalogs/types'
 
 export const UPDATE_WEARABLES = '[Update] Wearables'
