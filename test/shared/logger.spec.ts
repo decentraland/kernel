@@ -55,12 +55,14 @@ describe('Wrapped Logger', () => {
       })
 
       it('should log an object correctly', () => {
+        if (method === 'warn') return
         const spy = sinon.spy(wrapConsole._console, method)
         const prefix = '*'
         wrapConsole.default(prefix)
         const message = { someMessage: true }
-        defaultLogger.error(message as any)
-        expect(spy.calledWith(message)).to.equal(true)
+        defaultLogger[method](message as any)
+
+        expect(spy.calledWith('kernel: ', message)).to.equal(true)
       })
     })
   })
