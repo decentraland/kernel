@@ -132,6 +132,7 @@ export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
 export const DEBUG_PM = location.search.includes('DEBUG_PM')
 export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
 export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
+export const DEBUG_PREFIX = ensureSingleString(qs.DEBUG_PREFIX)
 
 export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
