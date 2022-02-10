@@ -10,15 +10,15 @@ export const _console = Object.assign({}, console)
 export default function wrap(prefix: string) {
   function logger(method: Method) {
     return function log(...args: any[]): void {
+      const [logPrefix] = args
       function matchPrefix() {
-        const [data] = args
         if (prefix === '*' || !prefix) {
           return true
         }
         const prefixes = prefix.split(',')
 
-        if (typeof data === 'string') {
-          return prefixes.find((p) => data.startsWith(p))
+        if (typeof logPrefix === 'string') {
+          return prefixes.find((p) => logPrefix.startsWith(p))
         }
 
         return false

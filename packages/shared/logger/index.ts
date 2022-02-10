@@ -26,31 +26,31 @@ export function createDummyLogger(): ILogger {
     }
   }
 }
-
-export function createLogger(prefix: string): ILogger {
-  const kernelPrefix = `kernel:${prefix} `
+export const KERNEL = 'kernel'
+export function createLogger(prefix: string, subPrefix: string = ''): ILogger {
+  const kernelPrefix = `${KERNEL}:${prefix} `
   return {
     error(message: string | Error, ...args: any[]): void {
       if (typeof message === 'object' && message.stack) {
-        console.error(kernelPrefix, message, ...args, message.stack)
+        console.error(kernelPrefix, subPrefix, message, ...args, message.stack)
       } else {
-        console.error(kernelPrefix, message, ...args)
+        console.error(kernelPrefix, subPrefix, message, ...args)
       }
     },
     log(message: string, ...args: any[]): void {
       if (args && args[0] && args[0].startsWith && args[0].startsWith('The entity is already in the engine.')) {
         return
       }
-      console.log(kernelPrefix, message, ...args)
+      console.log(kernelPrefix, subPrefix, message, ...args)
     },
     warn(message: string, ...args: any[]): void {
-      console.log(kernelPrefix, message, ...args)
+      console.log(kernelPrefix, subPrefix, message, ...args)
     },
     info(message: string, ...args: any[]): void {
-      console.info(kernelPrefix, message, ...args)
+      console.info(kernelPrefix, subPrefix, message, ...args)
     },
     trace(message: string, ...args: any[]): void {
-      console.trace(kernelPrefix, message, ...args)
+      console.trace(kernelPrefix, subPrefix, message, ...args)
     }
   }
 }

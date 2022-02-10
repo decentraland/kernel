@@ -29,7 +29,7 @@ export class UnityScene<T> implements ParcelSceneAPI {
   initFinished: boolean = false
 
   constructor(public data: EnvironmentData<T>) {
-    this.logger = DEBUG_SCENE_LOG ? createLogger(getParcelSceneID(this) + ': ') : createDummyLogger()
+    this.logger = DEBUG_SCENE_LOG ? createLogger('unityScene: ' + getParcelSceneID(this) + ': ') : createDummyLogger()
 
     const startLoadingTime = performance.now()
 
