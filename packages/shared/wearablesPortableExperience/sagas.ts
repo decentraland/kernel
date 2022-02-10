@@ -42,6 +42,7 @@ function* handleProfileSuccess(action: ProfileSuccessAction): any {
   const wearablesToAdd: string[] = []
   for (const id of newProfileWearables) {
     if (!(id in currentDesiredPortableExperiences)) {
+      wearablesToAdd.push(id)
       yield put(addDesiredPortableExperience(id, null))
     }
   }
