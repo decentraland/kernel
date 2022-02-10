@@ -60,7 +60,7 @@ function* handleProcessWearables(action: ProcessWearablesAction) {
     getDesiredWearablePortableExpriences
   )
 
-  if (!(payload.wearable.id in currentDesiredPortableExperiences)) {
+  if (payload.wearable.id in currentDesiredPortableExperiences) {
     yield put(addDesiredPortableExperience(payload.wearable.id, payload.wearable))
   }
 }
