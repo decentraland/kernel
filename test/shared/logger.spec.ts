@@ -62,7 +62,7 @@ describe('Wrapped Logger', () => {
         const message = { someMessage: true }
         defaultLogger[method](message as any)
 
-        expect(spy.calledWith('kernel: ', message)).to.equal(true)
+        expect(spy.calledWith('kernel: ', '', message)).to.equal(true)
       })
     })
   })
