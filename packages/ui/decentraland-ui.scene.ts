@@ -3,7 +3,7 @@ import { avatarMessageObservable } from './avatar/avatarSystem'
 
 declare const dcl: DecentralandInterface
 
-// Initialize avatar profile scene trigger build
+// Initialize avatar profile scene
 
 void executeTask(async () => {
   await Promise.all([
