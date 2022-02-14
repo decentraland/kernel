@@ -7,7 +7,11 @@ import {
 import { getDesiredLoadableWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import { declareWantedPortableExperiences } from 'unity-interface/portableExperiencesUtils'
 import { DENY_PORTABLE_EXPERIENCES } from './actions'
-import { getPortableExperienceDenyList } from './selectors'
+import {
+  getDebugPortableExperiences,
+  getPortableExperienceDenyList,
+  getPortableExperiencesCreatedByScenes
+} from './selectors'
 
 export function* portableExperienceSaga(): any {
   yield takeEvery(REMOVE_DESIRED_PORTABLE_EXPERIENCE, handlePortableExperienceChanges)
@@ -18,16 +22,31 @@ export function* portableExperienceSaga(): any {
 function* handlePortableExperienceChanges(): any {
   const denylist: string[] = yield select(getPortableExperienceDenyList)
 
-  const allDesiredPortableExperiences: StorePortableExperience[] = [
-    // ADD HERE ALL THE SOURCES OF DIFFERENT PORTABLE EXPERIENCES TO BE HANDLED BY KERNEL
-    // ...(yield select(getOnboardingPortableExperiences)),
-    // ...(yield select(getSceneCreatedPortableExperiences)),
-    // ...(yield select(getManuallyOpenPortableExperiences)),
-    ...(yield select(getDesiredLoadableWearablePortableExpriences))
-  ]
+  const allDesiredPortableExperiences: StorePortableExperience[] = dedup(
+    [
+      // ADD HERE ALL THE SOURCES OF DIFFERENT PORTABLE EXPERIENCES TO BE HANDLED BY KERNEL
+      // ...(yield select(getOnboardingPortableExperiences)),
+      // ...(yield select(getSceneCreatedPortableExperiences)),
+      // ...(yield select(getManuallyOpenPortableExperiences)),
+      ...(yield select(getDebugPortableExperiences)),
+      ...(yield select(getPortableExperiencesCreatedByScenes)),
+      ...(yield select(getDesiredLoadableWearablePortableExpriences))
+    ],
+    (x) => x.id
+  )
 
   const allFilteredPortableExperiences = allDesiredPortableExperiences.filter(($) => !denylist.includes($.id))
 
   // tell the controller which PXs we do want running
   yield call(declareWantedPortableExperiences, allFilteredPortableExperiences)
+}
+
+function dedup<T>(array: T[], filter: (param: T) => any): T[] {
+  const map = new Map<any, T>()
+  for (const elem of array) {
+    const key = filter(elem)
+    if (map.has(key)) continue
+    map.set(key, elem)
+  }
+  return Array.from(map.values())
 }

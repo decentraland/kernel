@@ -34,9 +34,9 @@ import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
-import { killPortableExperienceScene, spawnPortableExperience } from './portableExperiencesUtils'
 import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
+import { addDebugPortableExperience, removeDebugPortableExperience } from 'shared/portableExperiences/actions'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -204,7 +204,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
         if (!!collection.data.length) {
           const wearable = collection.data[0]
           if (!sceneLoading.get(wearable.id)) {
-            await killPortableExperienceScene(wearable.id)
+            store.dispatch(removeDebugPortableExperience(wearable.id))
 
             sceneLoading.set(wearable, true)
             // This timeout is because the killPortableExperience isn't really async
@@ -213,15 +213,18 @@ export async function loadPreviewScene(message: sdk.Messages) {
             // TODO: catch the Scene.unloaded and then call the spawn.
             await sleep(100)
 
-            spawnPortableExperience({
-              id: wearable.id,
-              parentCid: 'main',
-              name: wearable.name,
-              baseUrl: `${wearable.baseUrl}/`,
-              mappings: wearable.data.scene,
-              // TODO
-              menuBarIcon: 'pending' //wearable.data.
-            })
+            store.dispatch(
+              addDebugPortableExperience({
+                id: wearable.id,
+                parentCid: 'main',
+                name: wearable.name,
+                baseUrl: `${wearable.baseUrl}/`,
+                mappings: wearable.data.scene,
+                // TODO
+                menuBarIcon: 'pending' //wearable.data.
+              })
+            )
+
             sceneLoading.set(wearable, false)
           }
         }

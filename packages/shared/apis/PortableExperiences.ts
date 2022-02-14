@@ -1,13 +1,14 @@
 import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import {
-  UNSAFE_spawnPortableExperienceSceneFromBucket,
+  spawnDebugPortableExperienceSceneFromUrn,
   PortableExperienceHandle,
-  killPortableExperienceScene,
   getPortableExperiencesLoaded,
   getRunningPortableExperience
 } from '../../unity-interface/portableExperiencesUtils'
 import { ExposableAPI } from './ExposableAPI'
 import { ParcelIdentity } from './ParcelIdentity'
+import { store } from '../../shared/store/isolatedStore'
+import { removeDebugPortableExperience } from '../../shared/portableExperiences/actions'
 
 type PortableExperienceUrn = string
 
@@ -27,7 +28,7 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async spawn(pid: PortableExperienceUrn): Promise<PortableExperienceHandle> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    return await UNSAFE_spawnPortableExperienceSceneFromBucket(pid, parcelIdentity.cid)
+    return await spawnDebugPortableExperienceSceneFromUrn(pid, parcelIdentity.cid)
   }
 
   /**
@@ -42,7 +43,7 @@ export class PortableExperiences extends ExposableAPI {
     const portableExperience = getRunningPortableExperience(pid)
 
     if (!!portableExperience && portableExperience.parentCid === parcelIdentity.cid) {
-      return await killPortableExperienceScene(pid)
+      store.dispatch(removeDebugPortableExperience(pid))
     }
     return false
   }
@@ -55,8 +56,8 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async exit(): Promise<boolean> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-
-    return await killPortableExperienceScene(parcelIdentity.cid)
+    store.dispatch(removeDebugPortableExperience(parcelIdentity.cid))
+    return true
   }
 
   /**
