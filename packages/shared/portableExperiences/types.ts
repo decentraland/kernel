@@ -1,4 +1,4 @@
-import { StorePortableExperience } from "shared/types"
+import { StorePortableExperience } from 'shared/types'
 
 export type PortableExperiencesState = {
   /** List of denied portable experiences from renderer */

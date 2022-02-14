@@ -628,7 +628,7 @@ export class BrowserInterface {
     }
   }
 
-  public async KillPortableExperience(data: { portableExperienceId: string }): Promise<void> {
+  public async KillPortableExperience(_data: { portableExperienceId: string }): Promise<void> {
     throw new Error('KillPortableExperience is illegal, use SetDisabledPortableExperiences instead')
   }
 
