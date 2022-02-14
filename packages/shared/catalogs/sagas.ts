@@ -27,10 +27,14 @@ import {
   WearableV2,
   BodyShapeRepresentationV2,
   PartialWearableV2,
-  UnpublishedWearable
+  UnpublishedWearable,
+  OwnedWearablesWithDefinition
 } from './types'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
+
+import { jsonFetch } from 'atomicHelpers/jsonFetch'
+import { CatalystClient } from 'dcl-catalyst-client'
+
 import { fetchJson } from 'dcl-catalyst-commons'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
@@ -86,6 +90,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 
 function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const catalystUrl = yield select(getCatalystServer)
+  console.log(123, catalystUrl)
   const client: CatalystClient = new CatalystClient(catalystUrl, 'EXPLORER')
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
@@ -100,7 +105,10 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       // Fetch published collections
       const urnCollections = collectionIds.filter((collectionId) => collectionId.startsWith('urn'))
       if (urnCollections.length > 0) {
-        const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
+        const zoneWearables: PartialWearableV2[] = yield jsonFetch(
+          `${catalystUrl}/lambdas/collections/wearables?collectionId=${urnCollections}`
+        )
+        // const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
         result.push(...zoneWearables)
       }
 
@@ -120,7 +128,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       const ownedWearables: OwnedWearablesWithDefinition[] = yield call(
         fetchOwnedWearables,
         filters.ownedByUser,
-        client
+        catalystUrl
       )
       for (const { amount, definition } of ownedWearables) {
         if (definition) {
@@ -131,7 +139,15 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       }
     }
   } else {
-    const wearables: PartialWearableV2[] = yield call(fetchWearablesByFilters, filters, client)
+    // Should I migrate the whole query logic to avoid the dependency?
+    // See logic here splitValuesIntoManyQueries -> /kernel/node_modules/dcl-catalyst-client/dist/utils/Helper.js
+
+    const wearables: PartialWearableV2[] = yield call(
+      fetchWearablesByFilters,
+      filters,
+      client
+      //catalystUrl
+    )
     result.push(...wearables)
 
     if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
@@ -159,8 +175,8 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   return result.map(mapCatalystWearableIntoV2)
 }
 
-function fetchOwnedWearables(ethAddress: string, client: CatalystClient) {
-  return client.fetchOwnedWearables(ethAddress, true)
+function fetchOwnedWearables(ethAddress: string, catalystUrl: string) {
+  return jsonFetch(`${catalystUrl}/lambdas/collections/wearables-by-owner/${ethAddress}`)
 }
 
 async function fetchWearablesByFilters(filters: WearablesRequestFilters, client: CatalystClient) {

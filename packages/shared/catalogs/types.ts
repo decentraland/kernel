@@ -110,3 +110,9 @@ export type WearablesRequestFilters = {
   wearableIds?: WearableId[]
   collectionIds?: string[]
 }
+
+export type OwnedWearablesWithDefinition = {
+  urn: string
+  amount: number
+  definition: any
+}
