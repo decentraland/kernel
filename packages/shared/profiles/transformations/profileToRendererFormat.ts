@@ -1,5 +1,5 @@
-import { Profile } from '../types'
-import { ParcelsWithAccess, ProfileForRenderer } from '@dcl/legacy-ecs'
+import { Profile, ProfileForRenderer } from '../types'
+import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
 import { dropDeprecatedWearables } from './processServerProfile'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -31,20 +31,8 @@ export function profileToRendererFormat(
 }
 
 // Ensure all snapshots are URLs
-function prepareSnapshots({
-  face,
-  face256,
-  face128,
-  body
-}: {
-  face: string
+function prepareSnapshots({ face256, body }: { face256: string; body: string }): {
   face256: string
-  face128: string
-  body: string
-}): {
-  face: string
-  face256: string
-  face128: string
   body: string
 } {
   function prepare(value: string) {
@@ -53,5 +41,5 @@ function prepareSnapshots({
     if (value === '' || isURL(value) || value.startsWith('/images')) return value
     else return 'data:text/plain;base64,' + value
   }
-  return { face: prepare(face), face128: prepare(face128), face256: prepare(face256), body: prepare(body) }
+  return { face256: prepare(face256), body: prepare(body) }
 }

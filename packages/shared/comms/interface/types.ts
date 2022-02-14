@@ -1,5 +1,4 @@
-import { ProfileForRenderer } from '@dcl/legacy-ecs'
-import { Profile, ProfileType } from 'shared/profiles/types'
+import { Profile, ProfileType, ProfileForRenderer } from 'shared/profiles/types'
 import { ExplorerIdentity } from 'shared/session/types'
 
 export enum AvatarMessageType {
