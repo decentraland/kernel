@@ -48,6 +48,8 @@ function prepareSnapshots({
   body: string
 } {
   function prepare(value: string) {
+    // TODO: review when removing face128 and face
+    if (value === null || value === undefined) return '/images/image_not_found.png'
     if (value === '' || isURL(value) || value.startsWith('/images')) return value
     else return 'data:text/plain;base64,' + value
   }
