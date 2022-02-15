@@ -37,6 +37,7 @@ import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
+import { trackEvent } from 'shared/analytics'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
@@ -161,6 +162,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       try {
         return mapCatalystWearableIntoV2(wearable)
       } catch (err) {
+        trackEvent('fetchWearablesFromCatalyst_failed', { wearableId: wearable.id })
         defaultLogger.log(`There was an error with wearable ${wearable.id}.`, err)
         return undefined
       }
