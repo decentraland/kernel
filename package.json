@@ -88,7 +88,7 @@
     "blob-to-buffer": "^1.2.8",
     "body-scroll-lock": "^2.5.10",
     "cids": "^0.7.3",
-    "dcl-catalyst-client": "^5.0.3",
+    "dcl-catalyst-client": "^10.0.1",
     "dcl-crypto": "^2.3.0",
     "dcl-quests-client": "^2.10.0",
     "dcl-scene-writer": "^1.1.2",
