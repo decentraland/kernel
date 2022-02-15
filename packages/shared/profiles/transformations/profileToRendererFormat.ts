@@ -34,6 +34,8 @@ export function profileToRendererFormat(
 function prepareSnapshots({ face256, body }: { face256: string; body: string }): {
   face256: string
   body: string
+  face?: string
+  face128?: string
 } {
   function prepare(value: string) {
     // TODO: review when removing face128 and face
@@ -41,5 +43,6 @@ function prepareSnapshots({ face256, body }: { face256: string; body: string }):
     if (value === '' || isURL(value) || value.startsWith('/images')) return value
     else return 'data:text/plain;base64,' + value
   }
-  return { face256: prepare(face256), body: prepare(body) }
+  const face = prepare(face256)
+  return { face, face128: face, face256: face, body: prepare(body) }
 }

@@ -6,6 +6,7 @@ import { store } from 'shared/store/isolatedStore'
 
 import { UserData } from 'shared/types'
 import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/selectors'
+import { Avatar } from 'shared/profiles/types'
 import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
@@ -22,6 +23,17 @@ export interface IPlayers {
   getPlayerData(opt: { userId: string }): Promise<UserData | null>
   getConnectedPlayers(): Promise<{ userId: string }[]>
   getPlayersInScene(): Promise<{ userId: string }[]>
+}
+
+function backwardsCompatibilityAvatar(avatar: Avatar) {
+  return {
+    ...avatar,
+    snapshots: {
+      ...avatar.snapshots,
+      face: avatar.snapshots.face256,
+      face128: avatar.snapshots.face256
+    }
+  }
 }
 
 @registerAPI('Players')
@@ -43,7 +55,7 @@ export class Players extends ExposableAPI implements IPlayers {
       hasConnectedWeb3: hasConnectedWeb3,
       userId: userId,
       version: profile.version,
-      avatar: { ...profile.avatar }
+      avatar: backwardsCompatibilityAvatar(profile.avatar)
     }
   }
 
