@@ -35,9 +35,7 @@ export type UserData = {
 export type ColorString = string
 
 export type Snapshots = {
-  face: string
   face256: string
-  face128: string
   body: string
 }
 

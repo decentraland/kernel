@@ -1,4 +1,4 @@
-import { AvatarShape, engine, Entity, Observable, Transform, EventManager, ProfileForRenderer } from '@dcl/legacy-ecs'
+import { AvatarShape, engine, Entity, Observable, Transform, EventManager } from '@dcl/legacy-ecs'
 import {
   AvatarMessage,
   AvatarMessageType,
@@ -12,7 +12,7 @@ import {
   UserRemovedMessage,
   UUID
 } from 'shared/comms/interface/types'
-
+import { ProfileForRenderer } from 'shared/profiles/types'
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 const avatarMap = new Map<string, AvatarEntity>()

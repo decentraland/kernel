@@ -1,9 +1,10 @@
-import { Profile } from '../types'
-import { ParcelsWithAccess, ProfileForRenderer } from '@dcl/legacy-ecs'
+import { Profile, ProfileForRenderer } from '../types'
+import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
 import { dropDeprecatedWearables } from './processServerProfile'
 import { ExplorerIdentity } from 'shared/session/types'
 import { isURL } from 'atomicHelpers/isURL'
+import { trackEvent } from '../../analytics'
 
 const profileDefaults = {
   tutorialStep: 0
@@ -14,10 +15,11 @@ export function profileToRendererFormat(
   options?: { identity?: ExplorerIdentity; parcels?: ParcelsWithAccess }
 ): ProfileForRenderer {
   const { snapshots, ...rendererAvatar } = profile.avatar
+
   return {
     ...profileDefaults,
     ...profile,
-    snapshots: prepareSnapshots(snapshots),
+    snapshots: prepareSnapshots(snapshots, profile.userId),
     hasConnectedWeb3: options?.identity ? options.identity.hasConnectedWeb3 : false,
     avatar: {
       ...rendererAvatar,
@@ -31,25 +33,27 @@ export function profileToRendererFormat(
 }
 
 // Ensure all snapshots are URLs
-function prepareSnapshots({
-  face,
-  face256,
-  face128,
-  body
-}: {
-  face: string
+function prepareSnapshots(
+  { face256, body }: { face256: string; body: string },
+  userId: string
+): {
   face256: string
-  face128: string
   body: string
-}): {
-  face: string
-  face256: string
-  face128: string
-  body: string
+  face?: string
+  face128?: string
 } {
   function prepare(value: string) {
-    if (value === '' || isURL(value) || value.startsWith('/images')) return value
-    else return 'data:text/plain;base64,' + value
+    if (value === null || value === undefined) {
+      trackEvent('SNAPSHOT_IMAGE_NOT_FOUND', { userId })
+      return '/images/image_not_found.png'
+    }
+    if (value === '' || isURL(value) || value.startsWith('/images')) {
+      return value
+    }
+
+    return 'data:text/plain;base64,' + value
   }
-  return { face: prepare(face), face128: prepare(face128), face256: prepare(face256), body: prepare(body) }
+
+  const face = prepare(face256)
+  return { face, face128: face, face256: face, body: prepare(body) }
 }

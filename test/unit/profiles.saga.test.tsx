@@ -62,7 +62,7 @@ describe('fetchProfile behavior', () => {
   })
 
   it.skip('generates scaled face snapshots', () => {
-    const profileWithNoSnapshots = { avatar: { snapshots: { face: 'http://fake.url/contents/facehash' } } }
+    const profileWithNoSnapshots = { avatar: { snapshots: { face256: 'http://fake.url/contents/facehash/256' } } }
     const profile1 = { ...profileWithNoSnapshots, ethAddress: 'eth1' }
     return expectSaga(handleFetchProfile, profileRequest('user|1'))
       .provide([
@@ -79,8 +79,8 @@ describe('fetchProfile behavior', () => {
         expect(lastPut.type).to.eq(PROFILE_SUCCESS)
 
         const { face, face128, face256 } = lastPut.payload.profile.avatar.snapshots
-        expect(face).to.eq('http://fake.url/contents/facehash')
-        expect(face128).to.eq('http://fake/resizeurl/facehash/128')
+        expect(face).to.eq(undefined)
+        expect(face128).to.eq(undefined)
         expect(face256).to.eq('http://fake/resizeurl/facehash/256')
       })
   })
@@ -113,7 +113,7 @@ describe('fetchProfile behavior', () => {
 
   it.skip('falls back when resize not working in current server', () => {
     const profileWithCorruptedSnapshots = {
-      avatar: { snapshots: { face: 'http://fake.url/contents/facehash' } }
+      avatar: { snapshots: { face256: 'http://fake.url/contents/facehash' } }
     }
     const profile1 = { ...profileWithCorruptedSnapshots, ethAddress: 'eth1' }
     return expectSaga(handleFetchProfile, profileRequest('user|1'))

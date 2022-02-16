@@ -8,6 +8,7 @@ import {
   COMMS_SERVICE,
   DEBUG_KERNEL_LOG
 } from 'config'
+import { ProfileForRenderer } from 'shared/profiles/types'
 import { CommunicationsController } from 'shared/apis/CommunicationsController'
 import { createDummyLogger, defaultLogger } from 'shared/logger'
 import { ChatMessage as InternalChatMessage, ChatMessageType, SceneFeatureToggles } from 'shared/types'
@@ -54,7 +55,6 @@ import {
 } from './interface/utils'
 import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { ProfileForRenderer } from '@dcl/legacy-ecs'
 import { renderStateObservable, isRendererEnabled, ensureRendererEnabled } from '../world/worldState'
 import { WorldInstanceConnection } from './interface/index'
 
