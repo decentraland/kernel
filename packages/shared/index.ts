@@ -9,7 +9,7 @@ import { globalObservable } from './observables'
 import { isRendererVisible } from './loading/selectors'
 import { RootStore } from './store/rootTypes'
 import { initializeSessionObserver } from './session/sagas'
-import { hookAnalyticsObservables } from './analytics'
+import { hookAnalyticsObservables } from './analytics/hook-observable'
 
 declare const globalThis: { globalStore: RootStore }
 

@@ -7,5 +7,6 @@
     "strict": true,
     "types": ["@dcl/posix", "segment-analytics"]
   },
+  "include": ["*.ts"],
   "extends": "../../tsconfig.json"
 }
