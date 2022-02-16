@@ -21,6 +21,7 @@ import { createLogger } from 'shared/logger'
 import { StatefulWorker } from './StatefulWorker'
 import { UnityScene } from 'unity-interface/UnityScene'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
+import { PositionTrackEvents } from 'shared/analytics/types'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -377,9 +378,12 @@ export async function enableParcelSceneLoading() {
     onPositionUnsettledObservable.notifyObservers({})
   })
 
-  lifecycleManager.on('Event.track', (event: { name: string; data: any }) => {
-    trackEvent(event.name, event.data)
-  })
+  lifecycleManager.on(
+    'Event.track',
+    <T extends keyof PositionTrackEvents>(event: { name: T; data: PositionTrackEvents[T] }) => {
+      trackEvent(event.name, event.data)
+    }
+  )
 
   teleportObservable.add((position: { x: number; y: number }) => {
     setPlayerPosition(position)

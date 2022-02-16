@@ -7,11 +7,11 @@ import { worldToGrid, gridToWorld } from '../../../atomicHelpers/parcelScenePosi
 import { pickWorldSpawnpoint } from 'shared/world/positionThings'
 import { InstancedSpawnPoint } from 'shared/types'
 import { createLogger } from 'shared/logger'
+import { PositionTrackEvents } from 'shared/analytics/types'
 
 const DEBUG = false
 
 const logger = createLogger('position: ')
-
 export class PositionLifecycleController extends EventEmitter {
   private positionSettled: boolean = true
   private currentlySightedScenes: string[] = []
@@ -102,7 +102,7 @@ export class PositionLifecycleController extends EventEmitter {
     }
   }
 
-  private trackEvent(name: string, data: any) {
+  private trackEvent<K extends keyof PositionTrackEvents>(name: K, data: PositionTrackEvents[K]) {
     this.emit('Tracking Event', { name, data })
   }
 }

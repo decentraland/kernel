@@ -13,15 +13,16 @@ const TRACEABLE_AVATAR_EVENTS = [
   AvatarMessageType.USER_UNMUTED,
   AvatarMessageType.USER_BLOCKED,
   AvatarMessageType.USER_UNBLOCKED
-]
+] as const
 
 export function hookAnalyticsObservables() {
   avatarMessageObservable.add(({ type, ...data }) => {
-    if (!TRACEABLE_AVATAR_EVENTS.includes(type)) {
+    const event = TRACEABLE_AVATAR_EVENTS.find((a) => a === type)
+    if (!event) {
       return
     }
 
-    trackEvent(type, data)
+    trackEvent(event, data)
   })
 
   let lastTime: number = performance.now()
