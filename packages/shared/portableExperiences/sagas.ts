@@ -6,7 +6,7 @@ import {
 } from 'shared/wearablesPortableExperience/actions'
 import { getDesiredLoadableWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import { declareWantedPortableExperiences } from 'unity-interface/portableExperiencesUtils'
-import { DENY_PORTABLE_EXPERIENCES } from './actions'
+import { ADD_DEBUG_PX, DENY_PORTABLE_EXPERIENCES, REMOVE_DEBUG_PX } from './actions'
 import {
   getDebugPortableExperiences,
   getPortableExperienceDenyList,
@@ -17,6 +17,8 @@ export function* portableExperienceSaga(): any {
   yield takeEvery(REMOVE_DESIRED_PORTABLE_EXPERIENCE, handlePortableExperienceChanges)
   yield takeEvery(ADD_DESIRED_PORTABLE_EXPERIENCE, handlePortableExperienceChanges)
   yield takeEvery(DENY_PORTABLE_EXPERIENCES, handlePortableExperienceChanges)
+  yield takeEvery(ADD_DEBUG_PX, handlePortableExperienceChanges)
+  yield takeEvery(REMOVE_DEBUG_PX, handlePortableExperienceChanges)
 }
 
 function* handlePortableExperienceChanges(): any {
