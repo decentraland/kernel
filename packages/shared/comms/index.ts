@@ -99,7 +99,7 @@ import { sleep } from 'atomicHelpers/sleep'
 import { localProfileReceived } from 'shared/profiles/actions'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { isURL } from 'atomicHelpers/isURL'
-import { PeerParameters, RootCommsState, VoicePolicy } from './types'
+import { RootCommsState, VoicePolicy } from './types'
 import { isFriend } from 'shared/friends/selectors'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import Html from 'shared/Html'
@@ -107,7 +107,6 @@ import { isFeatureToggleEnabled } from 'shared/selectors'
 import * as qs from 'query-string'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { BannedUsers } from 'shared/meta/types'
-import { signedFetch } from 'atomicHelpers/signedFetch'
 
 export type CommsVersion = 'v1' | 'v2'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -884,33 +883,6 @@ function subscribeToRealmChange(store: Store<RootState>) {
   )
 }
 
-async function getPeerParameters(): Promise<PeerParameters> {
-  const commsServer = getCommsServer(store.getState())
-
-  const defaultPeerParameters: PeerParameters = {
-    iceServers: commConfigurations.defaultIceServers
-  }
-
-  try {
-    const identity = getIdentity()
-
-    if (!identity) {
-      throw new Error('identity is undefined')
-    }
-
-    const peerParameters = await signedFetch(`${commsServer}/peer-parameters`, identity, { responseBodyType: 'json' })
-
-    if (peerParameters.ok) {
-      return { ...defaultPeerParameters, ...peerParameters.json }
-    } else {
-      throw new Error('Server response was not OK: ' + peerParameters.status)
-    }
-  } catch (e) {
-    defaultLogger.warn("Couldn't fetch peer parameters for comms server. Using defaults!", e)
-    return defaultPeerParameters
-  }
-}
-
 let idTaken = false
 
 export async function connect(userId: string) {
@@ -931,8 +903,6 @@ export async function connect(userId: string) {
     const [version, mode] = parseCommsMode(COMMS)
 
     idTaken = false
-
-    const peerParameters = await getPeerParameters()
 
     switch (version) {
       case 'v1': {
@@ -982,7 +952,7 @@ export async function connect(userId: string) {
 
         const peerConfig: LighthouseConnectionConfig = {
           connectionConfig: {
-            iceServers: peerParameters.iceServers
+            iceServers: commConfigurations.defaultIceServers
           },
           authHandler: async (msg: string) => {
             try {
