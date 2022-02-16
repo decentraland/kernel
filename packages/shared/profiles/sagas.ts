@@ -515,9 +515,9 @@ function randomBetween(min: number, max: number) {
 export async function generateRandomUserProfile(userId: string): Promise<Profile> {
   const _number = randomBetween(1, 160)
 
-  let profile: any | undefined = undefined
+  let profile: Profile | undefined = undefined
   try {
-    const profiles: { avatars: object[] } = await profileServerRequest(`default${_number}`)
+    const profiles: { avatars: Profile[] } = await profileServerRequest(`default${_number}`)
     if (profiles.avatars.length !== 0) {
       profile = profiles.avatars[0]
     }
@@ -526,9 +526,10 @@ export async function generateRandomUserProfile(userId: string): Promise<Profile
   }
 
   if (!profile) {
-    profile = backupProfile(getFetchContentServer(store.getState()), userId)
+    profile = backupProfile(getFetchContentServer(store.getState()), userId) as any as Profile
   }
-  profile.avatar.snapshots.face256 = profile.avatar.snapshots.face256 ?? profile.avatar.snapshots.face
+
+  profile.avatar.snapshots.face256 = profile.avatar.snapshots.face256 ?? (profile.avatar.snapshots as any).face
   profile.unclaimedName = createFakeName()
   profile.hasClaimedName = false
   profile.tutorialStep = 0
