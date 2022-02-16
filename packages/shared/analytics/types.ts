@@ -1,4 +1,3 @@
-import { AvatarMessageType } from '../comms/interface/types'
 import { ErrorContextTypes } from '../loading/ReportFatalError'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
 
@@ -8,12 +7,12 @@ export type PositionTrackEvents = {
 
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
-  [AvatarMessageType.ADD_FRIEND]: Record<string, unknown>
-  [AvatarMessageType.SET_LOCAL_UUID]: { uuid: string }
-  [AvatarMessageType.USER_MUTED]: { uuid: string }
-  [AvatarMessageType.USER_UNMUTED]: { uuid: string }
-  [AvatarMessageType.USER_BLOCKED]: { uuid: string }
-  [AvatarMessageType.USER_UNBLOCKED]: { uuid: string }
+  ['ADD_FRIEND']: Record<string, unknown>
+  ['SET_LOCAL_UUID']: { uuid: string }
+  ['USER_MUTED']: { uuid: string }
+  ['USER_UNMUTED']: { uuid: string }
+  ['USER_BLOCKED']: { uuid: string }
+  ['USER_UNBLOCKED']: { uuid: string }
   ['Chat message received']: { length: number }
   ['Send chat message']: { length: number; messageId: string }
   ['Comms Status v2']: Record<string, any>
