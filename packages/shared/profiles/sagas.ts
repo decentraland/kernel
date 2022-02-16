@@ -133,10 +133,9 @@ function* initialProfileLoad() {
     }
   }
 
-  const isFace128Resized = yield select(isResizeServiceUrl, profile.avatar.snapshots?.face128)
   const isFace256Resized = yield select(isResizeServiceUrl, profile.avatar.snapshots?.face256)
 
-  if (isFace128Resized || isFace256Resized) {
+  if (isFace256Resized) {
     // setting dirty profile, as at least one of the face images are taken from a local blob
     profileDirty = true
   }
@@ -329,8 +328,7 @@ function* submitProfileToRenderer(action: ProfileSuccessAction): any {
     // set face variants if missing before sending profile to renderer
     profile.avatar.snapshots = {
       ...snapshots,
-      face128: snapshots.face128 || snapshots.face,
-      face256: snapshots.face256 || snapshots.face
+      face256: snapshots.face256
     }
   }
 
@@ -530,7 +528,7 @@ export async function generateRandomUserProfile(userId: string): Promise<Profile
   if (!profile) {
     profile = backupProfile(getFetchContentServer(store.getState()), userId)
   }
-
+  profile.avatar.face256 = profile.avatar.face256 ?? profile.avatar.face
   profile.unclaimedName = createFakeName()
   profile.hasClaimedName = false
   profile.tutorialStep = 0

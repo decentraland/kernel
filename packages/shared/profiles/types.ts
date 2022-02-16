@@ -1,3 +1,4 @@
+import { ReadOnlyColor4 } from '@dcl/legacy-ecs'
 import { WearableId } from 'shared/catalogs/types'
 
 export interface Profile {
@@ -26,10 +27,41 @@ export interface Avatar {
 }
 
 export type Snapshots = {
-  face: string
   face256: string
-  face128: string
   body: string
+}
+
+type AvatarForRenderer = {
+  bodyShape: WearableId
+  skinColor: ReadOnlyColor4
+  hairColor: ReadOnlyColor4
+  eyeColor: ReadOnlyColor4
+  wearables: WearableId[]
+}
+
+enum LandRole {
+  OWNER = 'owner',
+  OPERATOR = 'operator'
+}
+
+type ParcelsWithAccess = Array<{
+  x: number
+  y: number
+  role: LandRole
+}>
+
+export type ProfileForRenderer = {
+  userId: string
+  name: string
+  description: string
+  email: string
+  avatar: AvatarForRenderer
+  snapshots: Snapshots
+  version: number
+  hasConnectedWeb3: boolean
+  updatedAt?: number
+  createdAt?: number
+  parcelsWithAccess?: ParcelsWithAccess
 }
 
 export type ColorString = string

@@ -229,7 +229,9 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
   const metaConfigBaseUrl = META_CONFIG_URL || `https://config.decentraland.${tld}/explorer.json`
-  const metaFeatureFlagsBaseUrl = `https://feature-flags.decentraland.${tld}/explorer.json`
+  const metaFeatureFlagsBaseUrl = PREVIEW
+    ? `${rootURLPreviewMode()}/feature-flags/explorer.json`
+    : `https://feature-flags.decentraland.${tld}/explorer.json`
 
   const questsUrl =
     ensureSingleString(qs.QUESTS_SERVER_URL) ?? `https://quests-api.decentraland.${network ? 'org' : 'io'}`
@@ -277,10 +279,8 @@ export namespace ethereumConfigurations {
 export const isRunningTest: boolean = (global as any)['isRunningTests'] === true
 
 export const genericAvatarSnapshots: Record<string, string> = {
-  face: '/images/avatar_snapshot_default.png',
   body: '/images/image_not_found.png',
-  face256: '/images/avatar_snapshot_default256.png',
-  face128: '/images/avatar_snapshot_default128.png'
+  face256: '/images/avatar_snapshot_default256.png'
 }
 
 export function getCatalystNodesDefaultURL() {

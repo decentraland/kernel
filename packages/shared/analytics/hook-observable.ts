@@ -1,29 +1,10 @@
-import { DEBUG_ANALYTICS } from 'config'
 import { Vector2 } from '@dcl/ecs-math'
 
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
-import { defaultLogger } from 'shared/logger'
-
-import { avatarMessageObservable } from './comms/peers'
-import { AvatarMessageType } from './comms/interface/types'
-import { positionObservable } from './world/positionThings'
-import { globalObservable } from './observables'
-
-export type SegmentEvent = {
-  name: string
-  data: string
-}
-
-export function trackEvent(eventName: string, eventData: Record<string, any>) {
-  if (DEBUG_ANALYTICS) {
-    defaultLogger.info(`Tracking event "${eventName}": `, eventData)
-  }
-
-  globalObservable.emit('trackingEvent', {
-    eventName,
-    eventData
-  })
-}
+import { worldToGrid } from '../../atomicHelpers/parcelScenePositions'
+import { avatarMessageObservable } from '../comms/peers'
+import { AvatarMessageType } from '../comms/interface/types'
+import { positionObservable } from '../world/positionThings'
+import { trackEvent } from '.'
 
 const TRACEABLE_AVATAR_EVENTS = [
   AvatarMessageType.ADD_FRIEND,
@@ -32,15 +13,16 @@ const TRACEABLE_AVATAR_EVENTS = [
   AvatarMessageType.USER_UNMUTED,
   AvatarMessageType.USER_BLOCKED,
   AvatarMessageType.USER_UNBLOCKED
-]
+] as const
 
 export function hookAnalyticsObservables() {
   avatarMessageObservable.add(({ type, ...data }) => {
-    if (!TRACEABLE_AVATAR_EVENTS.includes(type)) {
+    const event = TRACEABLE_AVATAR_EVENTS.find((a) => a === type)
+    if (!event) {
       return
     }
 
-    trackEvent(type, data)
+    trackEvent(event, data)
   })
 
   let lastTime: number = performance.now()

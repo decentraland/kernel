@@ -102,6 +102,8 @@ const positionEvent = {
   cameraEuler: Vector3.Zero()
 }
 
+type UnityEvent = any
+
 type SystemInfoPayload = {
   graphicsDeviceName: string
   graphicsDeviceVersion: string
@@ -239,7 +241,7 @@ export class BrowserInterface {
       }
     }
 
-    trackEvent(data.name, { context: properties.context || 'unity-event', ...properties })
+    trackEvent(data.name as UnityEvent, { context: properties.context || 'unity-event', ...properties })
   }
 
   public TriggerExpression(data: { id: string; timestamp: number }) {
@@ -303,16 +305,9 @@ export class BrowserInterface {
     store.dispatch(saveProfileRequest({ interests: Array.from(unique) }))
   }
 
-  public SaveUserAvatar(changes: {
-    face: string
-    face128: string
-    face256: string
-    body: string
-    avatar: Avatar
-    isSignUpFlow?: boolean
-  }) {
-    const { face, face128, face256, body, avatar } = changes
-    const update = { avatar: { ...avatar, snapshots: { face, face128, face256, body } } }
+  public SaveUserAvatar(changes: { face256: string; body: string; avatar: Avatar; isSignUpFlow?: boolean }) {
+    const { face256, body, avatar } = changes
+    const update = { avatar: { ...avatar, snapshots: { face256, body } } }
     if (!changes.isSignUpFlow) {
       store.dispatch(saveProfileRequest(update))
     } else {
