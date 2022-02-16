@@ -528,7 +528,7 @@ export async function generateRandomUserProfile(userId: string): Promise<Profile
   if (!profile) {
     profile = backupProfile(getFetchContentServer(store.getState()), userId)
   }
-
+  profile.avatar.face256 = profile.avatar.face256 ?? profile.avatar.face
   profile.unclaimedName = createFakeName()
   profile.hasClaimedName = false
   profile.tutorialStep = 0
