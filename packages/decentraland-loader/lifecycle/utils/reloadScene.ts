@@ -6,7 +6,7 @@ export async function reloadScene(sceneId: string) {
   return server.reloadScene(sceneId)
 }
 
-export async function invalidateAllScenes() {
+export function invalidateAllScenes() {
   const server = getServer()
   if (!server) return
   return server.invalidateAllScenes()
