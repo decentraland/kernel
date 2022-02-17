@@ -682,7 +682,7 @@ export class BrowserInterface {
     deployScene(data)
       .then(() => {
         deploymentResult = { ok: true }
-        invalidateAllScenes()
+        await invalidateAllScenes()
         getUnityInstance().SendPublishSceneResult(deploymentResult)
       })
       .catch((error) => {
