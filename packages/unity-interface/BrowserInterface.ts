@@ -57,7 +57,7 @@ import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatR
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
-import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
+import { reloadScene, invalidateAllScenes } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { killPortableExperienceScene } from './portableExperiencesUtils'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
@@ -687,6 +687,7 @@ export class BrowserInterface {
     deployScene(data)
       .then(() => {
         deploymentResult = { ok: true }
+        invalidateAllScenes()
         getUnityInstance().SendPublishSceneResult(deploymentResult)
       })
       .catch((error) => {
