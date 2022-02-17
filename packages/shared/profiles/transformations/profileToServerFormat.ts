@@ -15,7 +15,7 @@ export function ensureServerFormat(profile: Profile): ServerFormatProfile {
   if (invalidWearables) {
     throw new Error('Invalid Wearables array! Received: ' + JSON.stringify(avatar))
   }
-  if (!avatar.snapshots || !avatar.snapshots.face || !avatar.snapshots.body) {
+  if (!avatar.snapshots || !avatar.snapshots.face256 || !avatar.snapshots.body) {
     throw new Error('Invalid snapshot data:' + JSON.stringify(avatar.snapshots))
   }
   if (!avatar.bodyShape || !isValidBodyShape(avatar.bodyShape)) {
