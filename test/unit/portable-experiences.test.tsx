@@ -146,7 +146,7 @@ describe('Portable experiences sagas test', () => {
 
 
     // add debug px
-    it('add the debug px', () => expectSaga(portableExperienceSaga)
+    it('add the debug px, the desired PX should contain it', () => expectSaga(portableExperienceSaga)
       .withReducer(reducers)
       .withState(state({
         portableExperiences: {
@@ -170,7 +170,7 @@ describe('Portable experiences sagas test', () => {
       .run())
 
     // deny list it
-    it('add it to the denylist', () => expectSaga(portableExperienceSaga)
+    it('add it to the denylist, now the desired PX should be an empty list', () => expectSaga(portableExperienceSaga)
       .withReducer(reducers)
       .withState(state({
         portableExperiences: {
@@ -197,7 +197,7 @@ describe('Portable experiences sagas test', () => {
 
 
     // remove from deny list
-    it('remove it from the denylist', () => expectSaga(portableExperienceSaga)
+    it('remove it from the denylist, the desired PX should include the allowed PX', () => expectSaga(portableExperienceSaga)
       .withReducer(reducers)
       .withState(state({
         portableExperiences: {
