@@ -131,6 +131,12 @@ export async function declareWantedPortableExperiences(pxs: StorePortableExperie
     }
   }
 
+  // This timeout is because the killPortableExperience isn't really async
+  //  and before spawn the portable experience it's neccesary that be kill
+  //  the previous scene
+  // TODO: catch the Scene.unloaded and then call the spawn.
+  await new Promise((resolve) => setTimeout(resolve, 100))
+
   // then load all the missing scenes
   for (const sceneData of pxs) {
     if (!getRunningPortableExperience(sceneData.id)) {

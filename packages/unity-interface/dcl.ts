@@ -36,7 +36,7 @@ import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
-import { addDebugPortableExperience, removeDebugPortableExperience } from 'shared/portableExperiences/actions'
+import { denyPortableExperiences } from 'shared/portableExperiences/actions'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -204,27 +204,22 @@ export async function loadPreviewScene(message: sdk.Messages) {
         if (!!collection.data.length) {
           const wearable = collection.data[0]
           if (!sceneLoading.get(wearable.id)) {
-            store.dispatch(removeDebugPortableExperience(wearable.id))
+            const denylist: string[] = [...store.getState().portableExperiences.deniedPortableExperiencesFromRenderer]
 
+            if (denylist.find((id) => id === wearable.id)) {
+              return
+            }
+
+            store.dispatch(denyPortableExperiences([...denylist, wearable.id]))
             sceneLoading.set(wearable, true)
+
             // This timeout is because the killPortableExperience isn't really async
             //  and before spawn the portable experience it's neccesary that be kill
             //  the previous scene
             // TODO: catch the Scene.unloaded and then call the spawn.
             await sleep(100)
 
-            store.dispatch(
-              addDebugPortableExperience({
-                id: wearable.id,
-                parentCid: 'main',
-                name: wearable.name,
-                baseUrl: `${wearable.baseUrl}/`,
-                mappings: wearable.data.scene,
-                // TODO
-                menuBarIcon: 'pending' //wearable.data.
-              })
-            )
-
+            store.dispatch(denyPortableExperiences(denylist))
             sceneLoading.set(wearable, false)
           }
         }

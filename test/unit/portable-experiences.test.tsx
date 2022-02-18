@@ -186,10 +186,8 @@ describe('Portable experiences sagas test', () => {
       .call(declareWantedPortableExperiences, [])
       .hasFinalState(state({
         portableExperiences: {
-          deniedPortableExperiencesFromRenderer: [px.id],
-          debugPortableExperiencesList: {
-            [px.id]: px,
-          },
+          deniedPortableExperiencesFromRenderer: [],
+          debugPortableExperiencesList: {},
           portableExperiencesCreatedByScenesList: {}
         }
       }))

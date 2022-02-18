@@ -28,8 +28,29 @@ export function portableExperienceReducer(
 
   switch (action.type) {
     case DENY_PORTABLE_EXPERIENCES: {
+      // If the player denies a PX by scene or debug, it'll be removed from the list
+      //   of experiences and there is no way to respawn again.
+      // So it's neccesary to remove from that list directly and filter the denies PXs
+      // Renderer knows about smart wearable, so this is not neccesary for those
+
       const { payload } = action as DenyPortableExperiencesAction
-      return { ...state, deniedPortableExperiencesFromRenderer: payload.urnList }
+
+      const debugPxUrnList = Object.keys(state.debugPortableExperiencesList)
+      const debugPxToRemoveList = debugPxUrnList.filter((debugPxUrn) => payload.urnList.includes(debugPxUrn))
+
+      // The final deny list shouldn't have debug px
+      const newDenylist = payload.urnList.filter((item) => !debugPxUrnList.includes(item))
+      const newState = {
+        ...state,
+        debugPortableExperiencesList: { ...state.debugPortableExperiencesList },
+        deniedPortableExperiencesFromRenderer: newDenylist
+      }
+
+      for (const debugPxUrn of debugPxToRemoveList) {
+        delete newState.debugPortableExperiencesList[debugPxUrn]
+      }
+
+      return newState
     }
     case ADD_DEBUG_PX: {
       const { payload } = action as AddDebugPortableExperienceAction
