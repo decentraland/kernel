@@ -1,7 +1,6 @@
 import defaultLogger from 'shared/logger'
 import { parseGIF, decompressFrames } from 'gifuct-js'
 import { ProcessorMessage, WorkerMessageData } from './types'
-import { Frame, ParsedFrameWithoutPatch, ParsedGif } from 'gifuct-js/index'
 
 declare const self: any
 
@@ -70,13 +69,13 @@ let frameImageData: any = undefined
       abortController = null
 
       const buffer = await response.arrayBuffer()
-      const parsedGif: ParsedGif = await parseGIF(buffer)
-      const decompressedFrames: ParsedFrameWithoutPatch[] = decompressFrames(parsedGif, false)
+      const parsedGif = await parseGIF(buffer)
+      const decompressedFrames = decompressFrames(parsedGif, false)
       const frameDelays = []
       const framesAsArrayBuffer = []
 
       let hasToBeResized = false
-      const hasTransparency = (parsedGif.frames as Frame[])[0]?.gce?.extras?.transparentColorGiven
+      const hasTransparency = parsedGif.frames[0]?.gce?.extras?.transparentColorGiven
 
       frameImageData = undefined
 
@@ -126,7 +125,7 @@ let frameImageData: any = undefined
   }
 
   function GenerateFinalImageData(
-    frame: ParsedFrameWithoutPatch,
+    frame: any,
     hasToBeResized: boolean,
     hasTransparency?: boolean
   ): ImageData | undefined {
@@ -172,7 +171,7 @@ let frameImageData: any = undefined
   }
 }
 
-const generatePatch = (image: ParsedFrameWithoutPatch, withTransparency: boolean) => {
+const generatePatch = (image: any, withTransparency: boolean) => {
   const totalPixels = image.pixels.length
   const patchData = new Uint8ClampedArray(totalPixels * 4)
   for (let i = 0; i < totalPixels; i++) {
