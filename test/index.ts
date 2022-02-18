@@ -22,6 +22,7 @@ import './unit/positionThings.test'
 import './unit/RestrictedActions.test'
 import './unit/engine.test'
 import './unit/catalog.saga.test'
+import './unit/portable-experiences.test'
 
 import './dao'
 

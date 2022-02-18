@@ -50,7 +50,6 @@ function killPortableExperienceScene(sceneUrn: string) {
   if (peWorker) {
     forceStopParcelSceneWorker(peWorker)
     currentPortableExperiences.delete(sceneUrn)
-    store.dispatch(removeDebugPortableExperience(sceneUrn))
     getUnityInstance().UnloadScene(sceneUrn)
   }
 }
