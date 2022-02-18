@@ -44,6 +44,7 @@ export class PortableExperiences extends ExposableAPI {
 
     if (!!portableExperience && portableExperience.parentCid === parcelIdentity.cid) {
       store.dispatch(removeDebugPortableExperience(pid))
+      return true
     }
     return false
   }
