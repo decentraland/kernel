@@ -1,6 +1,7 @@
 import defaultLogger from 'shared/logger'
 import { parseGIF, decompressFrames } from 'gifuct-js'
 import { ProcessorMessage, WorkerMessageData } from './types'
+import { Frame, ParsedFrameWithoutPatch, ParsedGif } from 'gifuct-js/index'
 
 declare const self: any
 
@@ -69,11 +70,13 @@ let frameImageData: any = undefined
       abortController = null
 
       const buffer = await response.arrayBuffer()
-      const parsedGif = await parseGIF(buffer)
-      const decompressedFrames = decompressFrames(parsedGif, true)
+      const parsedGif: ParsedGif = await parseGIF(buffer)
+      const decompressedFrames: ParsedFrameWithoutPatch[] = decompressFrames(parsedGif, false)
       const frameDelays = []
       const framesAsArrayBuffer = []
+
       let hasToBeResized = false
+      const hasTransparency = (parsedGif.frames as Frame[])[0]?.gce?.extras?.transparentColorGiven
 
       frameImageData = undefined
 
@@ -97,7 +100,7 @@ let frameImageData: any = undefined
       for (const key in decompressedFrames) {
         frameDelays.push(decompressedFrames[key].delay)
 
-        const processedImageData = GenerateFinalImageData(decompressedFrames[key], hasToBeResized)
+        const processedImageData = GenerateFinalImageData(decompressedFrames[key], hasToBeResized, hasTransparency)
         if (processedImageData) framesAsArrayBuffer.push(processedImageData.data.buffer)
       }
 
@@ -122,7 +125,11 @@ let frameImageData: any = undefined
     }
   }
 
-  function GenerateFinalImageData(frame: any, hasToBeResized: boolean): ImageData | undefined {
+  function GenerateFinalImageData(
+    frame: ParsedFrameWithoutPatch,
+    hasToBeResized: boolean,
+    hasTransparency?: boolean
+  ): ImageData | undefined {
     if (!frameImageData || frame.dims.width !== frameImageData.width || frame.dims.height !== frameImageData.height) {
       gifPatchCanvas.width = frame.dims.width
       gifPatchCanvas.height = frame.dims.height
@@ -131,7 +138,8 @@ let frameImageData: any = undefined
     }
 
     if (frameImageData) {
-      frameImageData.data.set(frame.patch)
+      const transparencyEnabled = hasTransparency ?? false
+      frameImageData.data.set(generatePatch(frame, transparencyEnabled))
       gifPatchCanvasCtx?.putImageData(frameImageData, 0, 0)
 
       // We have to flip it vertically or it's rendered upside down
@@ -162,4 +170,20 @@ let frameImageData: any = undefined
 
     return finalImageData
   }
+}
+
+const generatePatch = (image: ParsedFrameWithoutPatch, withTransparency: boolean) => {
+  const totalPixels = image.pixels.length
+  const patchData = new Uint8ClampedArray(totalPixels * 4)
+  for (let i = 0; i < totalPixels; i++) {
+    const pos = i * 4
+    const colorIndex = image.pixels[i]
+    const color = image.colorTable[colorIndex] || [0, 0, 0]
+    patchData[pos] = color[0]
+    patchData[pos + 1] = color[1]
+    patchData[pos + 2] = color[2]
+    patchData[pos + 3] = withTransparency ? (colorIndex !== image.transparentIndex ? 255 : 0) : 255
+  }
+
+  return patchData
 }
