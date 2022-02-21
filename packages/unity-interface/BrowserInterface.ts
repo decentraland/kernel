@@ -79,7 +79,7 @@ import { Authenticator } from 'dcl-crypto'
 import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
 import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
-import { denyPortableExperiences } from 'shared/portableExperiences/actions'
+import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -373,7 +373,6 @@ export class BrowserInterface {
       case 'StartStatefulMode': {
         const { sceneId } = payload
         const worker = getSceneWorkerBySceneID(sceneId)!
-        getUnityInstance().UnloadScene(sceneId) // Maybe unity should do it by itself?
         const parcelScene = worker.getParcelScene()
         stopParcelSceneWorker(worker)
         const data = parcelScene.data.data as LoadableParcelScene
@@ -623,8 +622,8 @@ export class BrowserInterface {
     }
   }
 
-  public async KillPortableExperience(_data: { portableExperienceId: string }): Promise<void> {
-    throw new Error('KillPortableExperience is illegal, use SetDisabledPortableExperiences instead')
+  public async KillPortableExperience(data: { portableExperienceId: string }): Promise<void> {
+    store.dispatch(removeScenePortableExperience(data.portableExperienceId))
   }
 
   public async SetDisabledPortableExperiences(data: { idsToDisable: string[] }): Promise<void> {

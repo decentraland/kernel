@@ -3,15 +3,16 @@ import { PortableExperiencesState } from './types'
 import {
   DENY_PORTABLE_EXPERIENCES,
   DenyPortableExperiencesAction,
-  ADD_DEBUG_PX,
-  AddDebugPortableExperienceAction,
-  REMOVE_DEBUG_PX,
-  RemoveDebugPortableExperienceAction
+  AddScenePortableExperienceAction,
+  RemoveScenePortableExperienceAction,
+  ADD_SCENE_PX,
+  REMOVE_SCENE_PX,
+  RELOAD_SCENE_PX,
+  ReloadScenePortableExperienceAction
 } from './actions'
 
 const INITIAL_STATE: PortableExperiencesState = {
   deniedPortableExperiencesFromRenderer: [],
-  debugPortableExperiencesList: {},
   portableExperiencesCreatedByScenesList: {}
 }
 
@@ -31,17 +32,33 @@ export function portableExperienceReducer(
       const { payload } = action as DenyPortableExperiencesAction
       return { ...state, deniedPortableExperiencesFromRenderer: payload.urnList }
     }
-    case ADD_DEBUG_PX: {
-      const { payload } = action as AddDebugPortableExperienceAction
+    case ADD_SCENE_PX: {
+      const { payload } = action as AddScenePortableExperienceAction
       return {
         ...state,
-        debugPortableExperiencesList: { ...state.debugPortableExperiencesList, [payload.data.id]: payload.data }
+        portableExperiencesCreatedByScenesList: {
+          ...state.portableExperiencesCreatedByScenesList,
+          [payload.data.id]: payload.data
+        }
       }
     }
-    case REMOVE_DEBUG_PX: {
-      const { payload } = action as RemoveDebugPortableExperienceAction
-      const newState = { ...state, debugPortableExperiencesList: { ...state.debugPortableExperiencesList } }
-      delete newState.debugPortableExperiencesList[payload.urn]
+    case RELOAD_SCENE_PX: {
+      const { payload } = action as ReloadScenePortableExperienceAction
+      return {
+        ...state,
+        portableExperiencesCreatedByScenesList: {
+          ...state.portableExperiencesCreatedByScenesList,
+          [payload.data.id]: payload.data
+        }
+      }
+    }
+    case REMOVE_SCENE_PX: {
+      const { payload } = action as RemoveScenePortableExperienceAction
+      const newState = {
+        ...state,
+        portableExperiencesCreatedByScenesList: { ...state.portableExperiencesCreatedByScenesList }
+      }
+      delete newState.portableExperiencesCreatedByScenesList[payload.urn]
       return newState
     }
   }

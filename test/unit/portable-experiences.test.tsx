@@ -2,16 +2,15 @@ import { expectSaga } from 'redux-saga-test-plan'
 import { call, select } from 'redux-saga/effects'
 
 import { portableExperienceSaga } from '../../packages/shared/portableExperiences/sagas'
-import { addDebugPortableExperience, denyPortableExperiences } from 'shared/portableExperiences/actions'
+import { addScenePortableExperience, denyPortableExperiences, updateEnginePortableExperiences, removeScenePortableExperience, reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { StorePortableExperience } from 'shared/types'
-import { getDebugPortableExperiences, getPortableExperienceDenyList, getPortableExperiencesCreatedByScenes } from 'shared/portableExperiences/selectors'
-import { getDesiredLoadableWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
+import { getDesiredPortableExperiences } from 'shared/portableExperiences/selectors'
 import { declareWantedPortableExperiences } from 'unity-interface/portableExperiencesUtils'
 import { RootPortableExperiencesState } from 'shared/portableExperiences/types'
 import { reducers } from 'shared/store/rootReducer'
+import { expect } from 'chai'
 
 describe('Portable experiences sagas test', () => {
-
   const createStorePX = (urn: string): StorePortableExperience => ({
     id: urn,
     baseUrl: '',
@@ -22,52 +21,83 @@ describe('Portable experiences sagas test', () => {
   })
 
   it('empty scenario', () => {
-    const action = addDebugPortableExperience(createStorePX('urn'))
+    const action = addScenePortableExperience(createStorePX('urn'))
 
     return expectSaga(portableExperienceSaga)
       .provide([
-        [select(getPortableExperienceDenyList), []],
-        [select(getDebugPortableExperiences), []],
-        [select(getPortableExperiencesCreatedByScenes), []],
-        [select(getDesiredLoadableWearablePortableExpriences), []],
+        [select(getDesiredPortableExperiences), []],
         [call(declareWantedPortableExperiences, []), []]
       ])
       .dispatch(action)
+      .put(updateEnginePortableExperiences([]))
       .run()
   })
 
   it('returning one PX in debug', () => {
     const px = createStorePX('urn')
-    const action = addDebugPortableExperience(px)
+    const action = addScenePortableExperience(px)
 
     return expectSaga(portableExperienceSaga)
       .provide([
-        [select(getPortableExperienceDenyList), []],
-        [select(getDebugPortableExperiences), [px]],
-        [select(getPortableExperiencesCreatedByScenes), []],
-        [select(getDesiredLoadableWearablePortableExpriences), []],
+        [select(getDesiredPortableExperiences), [px]],
         [call(declareWantedPortableExperiences, [px]), []]
       ])
       .dispatch(action)
+      .put(updateEnginePortableExperiences([px]))
+      .run()
+  })
+
+  it('reload PX', () => {
+    const px = createStorePX('urn')
+    const action = reloadScenePortableExperience(px)
+
+    return expectSaga(portableExperienceSaga)
+      .provide([
+        [select(getDesiredPortableExperiences), [px]],
+        [call(declareWantedPortableExperiences, []), []],
+        [call(declareWantedPortableExperiences, [px]), []]
+      ])
+      .dispatch(action)
+      .call(declareWantedPortableExperiences, [])
+      .call(declareWantedPortableExperiences, [px])
+      .run()
+  })
+
+  it('updateEnginePortableExperiences triggers a change in the engine (debounced)', () => {
+    const px = createStorePX('urn')
+
+    return expectSaga(portableExperienceSaga)
+      .provide([
+        [call(declareWantedPortableExperiences, [px]), []]
+      ])
+      .dispatch(updateEnginePortableExperiences([])) // this one should not be triggered
+      .dispatch(updateEnginePortableExperiences([px]))
+      .not.call(declareWantedPortableExperiences, [])
+      .call(declareWantedPortableExperiences, [px])
       .run()
   })
 
   it('returning a PX multiple times should dedup the px', () => {
-    const px1 = createStorePX('urn')
-    const px2 = createStorePX('urn')
-    const action = addDebugPortableExperience(px1)
+    const px1 = createStorePX('urnA')
+    const px2 = createStorePX('urnA')
+    const px3 = createStorePX('urnB')
 
-    return expectSaga(portableExperienceSaga)
-      .provide([
-        [select(getPortableExperienceDenyList), []],
-        [select(getDebugPortableExperiences), [px1, px2]],
-        [select(getPortableExperiencesCreatedByScenes), [px1, px2]],
-        [select(getDesiredLoadableWearablePortableExpriences), [px1]],
-        [call(declareWantedPortableExperiences, [px1]), []]
-      ])
-      .call(declareWantedPortableExperiences, [px1])
-      .dispatch(action)
-      .run()
+    const ret = getDesiredPortableExperiences({
+      portableExperiences: {
+        portableExperiencesCreatedByScenesList: {
+          urnA: px1,
+          urnB: px3
+        },
+        deniedPortableExperiencesFromRenderer: [],
+      },
+      wearablesPortableExperiences: {
+        desiredWearablePortableExperiences: {
+          urnA: px2
+        }
+      }
+    })
+
+    expect(ret).to.deep.eq([px1, px3])
   })
 
   function state(theState: RootPortableExperiencesState): RootPortableExperiencesState {
@@ -85,11 +115,10 @@ describe('Portable experiences sagas test', () => {
         .withState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: ['urn-denied'],
-            debugPortableExperiencesList: {
+            portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
             },
-            portableExperiencesCreatedByScenesList: {}
           }
         }))
         .provide([[call(declareWantedPortableExperiences, [pxOld, pxDenied]), []]])
@@ -98,13 +127,13 @@ describe('Portable experiences sagas test', () => {
         .hasFinalState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: [],
-            debugPortableExperiencesList: {
+            portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
             },
-            portableExperiencesCreatedByScenesList: {}
           }
         }))
+        .put(updateEnginePortableExperiences([pxOld, pxDenied]))
         .run()
     })
 
@@ -117,25 +146,50 @@ describe('Portable experiences sagas test', () => {
         .withState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: ['urn-denied'],
-            debugPortableExperiencesList: {
+            portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld
             },
-            portableExperiencesCreatedByScenesList: {}
           }
         }))
         .provide([[call(declareWantedPortableExperiences, [pxOld]), []]])
-        .dispatch(addDebugPortableExperience(pxDenied))
+        .dispatch(addScenePortableExperience(pxDenied))
         .call(declareWantedPortableExperiences, [pxOld])
         .hasFinalState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: ['urn-denied'],
-            debugPortableExperiencesList: {
+            portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
             },
-            portableExperiencesCreatedByScenesList: {}
           }
         }))
+        .put(updateEnginePortableExperiences([pxOld]))
+        .run()
+    })
+
+    it('removing a scene-created PX should remove it from the final list', () => {
+      const pxOld = createStorePX('urn-old')
+
+      return expectSaga(portableExperienceSaga)
+        .withReducer(reducers)
+        .withState(state({
+          portableExperiences: {
+            deniedPortableExperiencesFromRenderer: [],
+            portableExperiencesCreatedByScenesList: {
+              [pxOld.id]: pxOld
+            },
+          }
+        }))
+        .provide([[call(declareWantedPortableExperiences, []), []]])
+        .dispatch(removeScenePortableExperience(pxOld.id))
+        .call(declareWantedPortableExperiences, [])
+        .hasFinalState(state({
+          portableExperiences: {
+            deniedPortableExperiencesFromRenderer: [],
+            portableExperiencesCreatedByScenesList: {},
+          }
+        }))
+        .put(updateEnginePortableExperiences([]))
         .run()
     })
   })
@@ -144,29 +198,27 @@ describe('Portable experiences sagas test', () => {
   describe('santi use case', async () => {
     const px = createStorePX('urn:decentraland:off-chain:static-portable-experiences:radio')
 
-
     // add debug px
     it('add the debug px, the desired PX should contain it', () => expectSaga(portableExperienceSaga)
       .withReducer(reducers)
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
-          debugPortableExperiencesList: {},
-          portableExperiencesCreatedByScenesList: {}
+          portableExperiencesCreatedByScenesList: {},
         }
       }))
       .provide([[call(declareWantedPortableExperiences, [px]), []]])
-      .dispatch(addDebugPortableExperience(px))
+      .dispatch(addScenePortableExperience(px))
       .call(declareWantedPortableExperiences, [px])
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
-          debugPortableExperiencesList: {
+          portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
-          portableExperiencesCreatedByScenesList: {}
         }
       }))
+      .put(updateEnginePortableExperiences([px]))
       .run())
 
     // deny list it
@@ -175,10 +227,9 @@ describe('Portable experiences sagas test', () => {
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
-          debugPortableExperiencesList: {
+          portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
-          portableExperiencesCreatedByScenesList: {}
         }
       }))
       .provide([[call(declareWantedPortableExperiences, []), []]])
@@ -187,12 +238,12 @@ describe('Portable experiences sagas test', () => {
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [px.id],
-          debugPortableExperiencesList: {
+          portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
-          portableExperiencesCreatedByScenesList: {}
         }
       }))
+      .put(updateEnginePortableExperiences([]))
       .run())
 
 
@@ -202,10 +253,9 @@ describe('Portable experiences sagas test', () => {
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [px.id],
-          debugPortableExperiencesList: {
+          portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
-          portableExperiencesCreatedByScenesList: {}
         }
       }))
       .provide([[call(declareWantedPortableExperiences, [px]), []]])
@@ -214,12 +264,12 @@ describe('Portable experiences sagas test', () => {
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
-          debugPortableExperiencesList: {
+          portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
-          portableExperiencesCreatedByScenesList: {}
         }
       }))
+      .put(updateEnginePortableExperiences([px]))
       .run())
   })
 })

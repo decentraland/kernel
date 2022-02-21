@@ -13,12 +13,13 @@ import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } 
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
 import { store } from 'shared/store/isolatedStore'
-import { addDebugPortableExperience, removeDebugPortableExperience } from 'shared/portableExperiences/actions'
+import { addScenePortableExperience, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 
 declare let window: any
+
 // TODO: Remove this when portable experiences are full-available
-window['spawnDebugPortableExperienceSceneFromUrn'] = spawnDebugPortableExperienceSceneFromUrn
-window['killDebugPortableExperience'] = killDebugPortableExperience
+window['spawnScenePortableExperienceSceneFromUrn'] = spawnScenePortableExperienceSceneFromUrn
+window['killScenePortableExperience'] = killScenePortableExperience
 
 export type PortableExperienceHandle = {
   pid: string
@@ -27,13 +28,13 @@ export type PortableExperienceHandle = {
 
 const currentPortableExperiences: Map<string, UnityPortableExperienceScene> = new Map()
 
-export async function spawnDebugPortableExperienceSceneFromUrn(
+export async function spawnScenePortableExperienceSceneFromUrn(
   sceneUrn: string,
   parentCid: string
 ): Promise<PortableExperienceHandle> {
   const data = await getPortableExperienceFromUrn(sceneUrn)
 
-  store.dispatch(addDebugPortableExperience(data))
+  store.dispatch(addScenePortableExperience(data))
 
   return {
     parentCid,
@@ -41,17 +42,8 @@ export async function spawnDebugPortableExperienceSceneFromUrn(
   }
 }
 
-export function killDebugPortableExperience(urn: string) {
-  store.dispatch(removeDebugPortableExperience(urn))
-}
-
-function killPortableExperienceScene(sceneUrn: string) {
-  const peWorker = getSceneWorkerBySceneID(sceneUrn)
-  if (peWorker) {
-    forceStopParcelSceneWorker(peWorker)
-    currentPortableExperiences.delete(sceneUrn)
-    getUnityInstance().UnloadScene(sceneUrn)
-  }
+export function killScenePortableExperience(urn: string) {
+  store.dispatch(removeScenePortableExperience(urn))
 }
 
 export function getRunningPortableExperience(sceneId: string): UnityPortableExperienceScene | undefined {
@@ -125,9 +117,13 @@ export async function declareWantedPortableExperiences(pxs: StorePortableExperie
   const wantedIds = pxs.map(($) => $.id)
 
   // kill extra ones
-  for (const id of immutableList) {
-    if (!wantedIds.includes(id)) {
-      killPortableExperienceScene(id)
+  for (const sceneUrn of immutableList) {
+    if (!wantedIds.includes(sceneUrn)) {
+      const scene = currentPortableExperiences.get(sceneUrn)
+      if (scene) {
+        currentPortableExperiences.delete(sceneUrn)
+        forceStopParcelSceneWorker(scene.worker)
+      }
     }
   }
 
@@ -140,9 +136,7 @@ export async function declareWantedPortableExperiences(pxs: StorePortableExperie
 }
 
 function spawnPortableExperience(spawnData: StorePortableExperience): PortableExperienceHandle {
-  const peWorker = getSceneWorkerBySceneID(spawnData.id)
-
-  if (peWorker) {
+  if (currentPortableExperiences.has(spawnData.id) || getSceneWorkerBySceneID(spawnData.id)) {
     throw new Error(`Portable Experience: "${spawnData.id}" is already running.`)
   }
 
@@ -169,17 +163,7 @@ function spawnPortableExperience(spawnData: StorePortableExperience): PortableEx
     }
   }
 
-  return internalSpawnPortableExperience(data, spawnData.parentCid)
-}
-
-function internalSpawnPortableExperience(data: EnvironmentData<LoadablePortableExperienceScene>, parentCid: string) {
-  const peWorker = getSceneWorkerBySceneID(data.sceneId)
-
-  if (peWorker) {
-    throw new Error(`Portable Experience: "${data.sceneId}" is already running.`)
-  }
-
-  const scene = new UnityPortableExperienceScene(data, parentCid)
+  const scene = new UnityPortableExperienceScene(data, spawnData.parentCid)
   currentPortableExperiences.set(scene.data.sceneId, scene)
   loadParcelScene(scene, undefined, true)
   getUnityInstance().CreateGlobalScene({
@@ -191,5 +175,5 @@ function internalSpawnPortableExperience(data: EnvironmentData<LoadablePortableE
     isPortableExperience: true
   })
 
-  return { pid: scene.data.sceneId, parentCid: parentCid }
+  return { pid: scene.data.sceneId, parentCid: spawnData.parentCid }
 }
