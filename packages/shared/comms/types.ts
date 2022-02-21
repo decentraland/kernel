@@ -26,7 +26,3 @@ export interface RTCIceServer {
   urls: string | string[]
   username?: string
 }
-
-export type PeerParameters = {
-  iceServers: RTCIceServer[]
-}

@@ -80,6 +80,7 @@ import { Authenticator } from 'dcl-crypto'
 import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
 import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
+import { setDecentralandTime } from 'shared/apis/EnvironmentAPI'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -100,6 +101,8 @@ const positionEvent = {
   cameraQuaternion: Quaternion.Identity,
   cameraEuler: Vector3.Zero()
 }
+
+type UnityEvent = any
 
 type SystemInfoPayload = {
   graphicsDeviceName: string
@@ -238,7 +241,7 @@ export class BrowserInterface {
       }
     }
 
-    trackEvent(data.name, { context: properties.context || 'unity-event', ...properties })
+    trackEvent(data.name as UnityEvent, { context: properties.context || 'unity-event', ...properties })
   }
 
   public TriggerExpression(data: { id: string; timestamp: number }) {
@@ -750,6 +753,10 @@ export class BrowserInterface {
 
   public ReportAvatarState(data: AvatarRendererMessage) {
     setRendererAvatarState(data)
+  }
+
+  public ReportDecentralandTime(data: any) {
+    setDecentralandTime(data)
   }
 }
 
