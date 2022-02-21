@@ -25,7 +25,7 @@ import './unit/catalog.saga.test'
 
 import './dao'
 
-import './shared/sceneEvents'
+import './shared'
 
 import './scene-system/sdk'
 
