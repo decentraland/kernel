@@ -28,6 +28,16 @@ export enum Platform {
   BROWSER = 'browser'
 }
 
+type DecentralandTimeData = {
+  timeNormalizationFactor: number
+  cycleTime: number
+  isPaused: number
+  time: number
+  receivedAt: number
+}
+
+let decentralandTimeData: DecentralandTimeData
+
 @registerAPI('EnvironmentAPI')
 export class EnvironmentAPI extends ExposableAPI {
   data!: EnvironmentData<any>
@@ -94,6 +104,32 @@ export class EnvironmentAPI extends ExposableAPI {
       }
     }
   }
+
+  /**
+   * Returns Decentraland's time
+   */
+  @exposeMethod
+  async getDecentralandTime(): Promise<{ seconds: number }> {
+    let time = decentralandTimeData.time
+
+    // if time is not paused we calculate the current time to avoid
+    // constantly receiving messages from the renderer
+    if (!decentralandTimeData.isPaused) {
+      const offsetMsecs = Date.now() - decentralandTimeData.receivedAt
+      const offsetSecs = offsetMsecs / 1000
+      const offsetInDecentralandUnits = offsetSecs / decentralandTimeData.timeNormalizationFactor
+      time += offsetInDecentralandUnits
+
+      if (time >= decentralandTimeData.cycleTime) {
+        time = 0.01
+      }
+    }
+
+    //convert time to seconds
+    time = time * 3600
+
+    return { seconds: time }
+  }
 }
 
 export function toEnvironmentRealmType(realm: Realm, island: string): EnvironmentRealm {
@@ -105,4 +141,9 @@ export function toEnvironmentRealmType(realm: Realm, island: string): Environmen
     serverName,
     displayName: `${serverName}-${island}`
   }
+}
+
+export function setDecentralandTime(data: DecentralandTimeData) {
+  decentralandTimeData = data
+  decentralandTimeData.receivedAt = Date.now()
 }
