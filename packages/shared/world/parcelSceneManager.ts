@@ -63,11 +63,11 @@ export function getSceneWorkerBySceneID(sceneId: string) {
 /** Stops non-persistent scenes (i.e UI scene) */
 export function stopParcelSceneWorker(worker: SceneWorker) {
   if (worker && !worker.isPersistent()) {
-    forceStopParcelSceneWorker(worker)
+    forceStopSceneWorker(worker)
   }
 }
 
-export function forceStopParcelSceneWorker(worker: SceneWorker) {
+export function forceStopSceneWorker(worker: SceneWorker) {
   const sceneId = worker.getSceneId()
   worker.dispose()
   loadedSceneWorkers.delete(sceneId)
@@ -104,7 +104,7 @@ export function setNewParcelScene(sceneId: string, worker: SceneWorker) {
   if (worker === parcelSceneWorker) return
 
   if (parcelSceneWorker) {
-    forceStopParcelSceneWorker(parcelSceneWorker)
+    forceStopSceneWorker(parcelSceneWorker)
   }
 
   loadedSceneWorkers.set(sceneId, worker)

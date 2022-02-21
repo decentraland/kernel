@@ -9,7 +9,7 @@ import {
 import { getSceneNameFromJsonData } from '../shared/selectors'
 import { parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
 import { UnityPortableExperienceScene } from './UnityParcelScene'
-import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
+import { forceStopSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
 import { store } from 'shared/store/isolatedStore'
@@ -119,10 +119,10 @@ export async function declareWantedPortableExperiences(pxs: StorePortableExperie
   // kill extra ones
   for (const sceneUrn of immutableList) {
     if (!wantedIds.includes(sceneUrn)) {
-      const scene = currentPortableExperiences.get(sceneUrn)
+      const scene = getRunningPortableExperience(sceneUrn)
       if (scene) {
         currentPortableExperiences.delete(sceneUrn)
-        forceStopParcelSceneWorker(scene.worker)
+        forceStopSceneWorker(scene.worker)
       }
     }
   }
