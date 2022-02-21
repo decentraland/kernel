@@ -37,7 +37,9 @@ function* handlePortableExperienceChanges(): any {
 function* reloadPortableExperienceChanges(action: ReloadScenePortableExperienceAction): any {
   const allDesiredPortableExperiences: StorePortableExperience[] = yield select(getDesiredPortableExperiences)
 
-  const filteredDesiredPortableExperiences = allDesiredPortableExperiences.filter(($) => $.id !== action.payload.data.id)
+  const filteredDesiredPortableExperiences = allDesiredPortableExperiences.filter(
+    ($) => $.id !== action.payload.data.id
+  )
 
   // unload the filtered PX
   yield call(declareWantedPortableExperiences, filteredDesiredPortableExperiences)
