@@ -1,5 +1,6 @@
 import './apis/index'
 
+import { DEBUG_PREFIX } from 'config'
 import { notStarted } from './loading/types'
 import { buildStore } from './store/store'
 import { initializeUrlPositionObserver } from './world/positionThings'
@@ -10,10 +11,13 @@ import { isRendererVisible } from './loading/selectors'
 import { RootStore } from './store/rootTypes'
 import { initializeSessionObserver } from './session/sagas'
 import { hookAnalyticsObservables } from './analytics/hook-observable'
+import wrapConsoleLogger from './logger/wrap'
 
 declare const globalThis: { globalStore: RootStore }
 
 export function initShared() {
+  wrapConsoleLogger(DEBUG_PREFIX || '')
+
   if (globalThis.globalStore) {
     return
   }

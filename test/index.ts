@@ -26,7 +26,7 @@ import './unit/portable-experiences.test'
 
 import './dao'
 
-import './shared/sceneEvents'
+import './shared'
 
 import './scene-system/sdk'
 

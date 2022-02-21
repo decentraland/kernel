@@ -12,7 +12,7 @@ import { defaultPortableExperiencePermissions, Permissions } from 'shared/apis/P
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
     super(data)
-    const loggerPrefix = data.data.basePosition.x + ',' + data.data.basePosition.y + ': '
+    const loggerPrefix = `scene: [${data.data.basePosition.x}, ${data.data.basePosition.y}]`
     this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
   }
 
@@ -42,7 +42,7 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
 export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExperienceScene> {
   constructor(public data: EnvironmentData<LoadablePortableExperienceScene>, public readonly parentCid: string) {
     super(data)
-    const loggerPrefix = data.sceneId + ': '
+    const loggerPrefix = `px: [${data.sceneId}] `
     this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
   }
 

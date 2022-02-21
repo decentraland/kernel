@@ -1,5 +1,6 @@
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { TRACE_RENDERER } from 'config'
+import defaultLogger from '../shared/logger'
 import type { CommonRendererOptions } from './loader'
 
 let pendingMessagesInTrace = 0
@@ -35,7 +36,7 @@ export function beginTrace(messagesCount: number) {
     currentTrace.length = 0
     pendingMessagesInTrace = messagesCount
     // tslint:disable-next-line
-    console.log('[TRACING] Beginning trace')
+    defaultLogger.log('[TRACING] Beginning trace')
   }
 }
 
@@ -63,7 +64,7 @@ export function logTrace(type: string, payload: string | number | undefined, dir
     pendingMessagesInTrace--
     if (pendingMessagesInTrace % 11 === 0) {
       // tslint:disable-next-line
-      console.log('[TRACING] Pending messages to download: ' + pendingMessagesInTrace)
+      defaultLogger.log('[TRACING] Pending messages to download: ' + pendingMessagesInTrace)
     }
     if (pendingMessagesInTrace === 0) {
       endTrace()
@@ -77,7 +78,7 @@ export function endTrace() {
   const file = new File([content], 'decentraland-trace.csv', { type: 'text/csv' })
   const exportUrl = URL.createObjectURL(file)
   // tslint:disable-next-line
-  console.log('[TRACING] Ending trace, downloading file: ', exportUrl, ' check your downloads folder.')
+  defaultLogger.log('[TRACING] Ending trace, downloading file: ', exportUrl, ' check your downloads folder.')
   window.location.assign(exportUrl)
   currentTrace.length = 0
 }
