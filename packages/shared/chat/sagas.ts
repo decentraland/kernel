@@ -289,7 +289,7 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('debug', 'Show FPS counter', (_message) => {
+  addChatCommand('debug', 'Show debug panel', (_message) => {
     fpsConfiguration.visible = !fpsConfiguration.visible
     fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
 
