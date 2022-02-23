@@ -292,6 +292,11 @@ function initChatCommands() {
   addChatCommand('debug', 'Show debug panel', (_message) => {
     fpsConfiguration.visible = !fpsConfiguration.visible
     fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
+    const versions = injectVersions({})
+    const kernelVersion = versions['@dcl/kernel'] || 'unknown'
+    const rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
+
+    getUnityInstance().SetLocalDCLVersion(`\nKernel: ${kernelVersion}\nRenderer: ${rendererVersion}`)
 
     return {
       messageId: uuid(),

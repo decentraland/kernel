@@ -98,6 +98,7 @@ export interface IUnityInterface {
   /** @deprecated send it with the kernelConfigForRenderer instead. */
   SetSceneDebugPanel(): void
   ShowFPSPanel(): void
+  SetLocalDCLVersion(version: string): void
   HideFPSPanel(): void
   SetEngineDebugPanel(): void
   SetDisableAssetBundles(): void
