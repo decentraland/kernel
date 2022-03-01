@@ -43,8 +43,14 @@ const whitelist = [
   'eth_getCode'
 ]
 
+const requireSign = ['eth_sendTransaction', 'eth_signTypedData_v4']
+
 function isWhitelistedRPC(msg: RPCSendableMessage) {
   return msg.method && whitelist.includes(msg.method)
+}
+
+export function rpcRequireSign(msg: RPCSendableMessage) {
+  return msg.method && requireSign.includes(msg.method)
 }
 
 export async function sendAsync(message: RPCSendableMessage): Promise<any> {
