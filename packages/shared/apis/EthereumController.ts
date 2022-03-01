@@ -5,7 +5,8 @@ import {
   sendAsync,
   convertMessageToObject,
   signMessage,
-  messageToString
+  messageToString,
+  rpcRequireSign
 } from 'shared/ethereum/EthereumService'
 import { RPCSendableMessage } from 'shared/types'
 import { getUserAccount, requestManager } from 'shared/ethereum/provider'
@@ -84,10 +85,12 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
   @exposeMethod
   async sendAsync(message: RPCSendableMessage): Promise<any> {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
-    await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
-      message: `${message.method}(${message.params.join(',')})`,
-      sceneId: await this.parcelIdentity.getSceneId()
-    })
+    if (rpcRequireSign(message)) {
+      await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
+        message: `${message.method}(${message.params.join(',')})`,
+        sceneId: await this.parcelIdentity.getSceneId()
+      })
+    }
     return sendAsync(message)
   }
 
