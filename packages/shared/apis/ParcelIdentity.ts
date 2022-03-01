@@ -31,12 +31,4 @@ export class ParcelIdentity extends ExposableAPI implements IParcelIdentity {
   async getIsEmpty(): Promise<boolean> {
     return this.isEmpty
   }
-
-  /**
-   * Returns the scene id
-   */
-  @exposeMethod
-  async getSceneId(): Promise<string> {
-    return this.land?.sceneId || this.cid || ''
-  }
 }

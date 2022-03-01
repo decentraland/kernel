@@ -27,7 +27,6 @@ import {
 } from '../shared/types'
 import { ProfileForRenderer } from 'shared/profiles/types'
 import { FeatureFlag } from 'shared/meta/types'
-import { IFuture } from 'fp-future'
 
 export type RealmInfo = {
   serverName: string
@@ -136,7 +135,6 @@ export interface IUnityInterface {
   SendGIFFetchFailure(id: string): void
   ConfigureTutorial(tutorialStep: number, tutorialConfig: TutorialInitializationMessage): void
   UpdateBalanceOfMANA(balance: string): void
-  RequestWeb3ApiUse(requestType: string, payload: any): IFuture<boolean>
   SetPlayerTalking(talking: boolean): void
   ShowAvatarEditorInSignIn(): void
   SetUserTalking(userId: string, talking: boolean): void
