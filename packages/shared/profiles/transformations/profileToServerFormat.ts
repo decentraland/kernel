@@ -3,6 +3,8 @@ import { isValidBodyShape } from './isValidBodyShape'
 import { Profile, Snapshots } from '../types'
 import { WearableId } from '@dcl/legacy-ecs'
 
+type LegacySnapshot = Snapshots & { face?: string }
+
 export function ensureServerFormat(profile: Profile): ServerFormatProfile {
   const { avatar } = profile
   const eyes = stripAlpha(analizeColorPart(avatar, 'eyeColor', 'eyes'))
@@ -12,9 +14,16 @@ export function ensureServerFormat(profile: Profile): ServerFormatProfile {
     !avatar.wearables ||
     !Array.isArray(avatar.wearables) ||
     !avatar.wearables.reduce((prev: boolean, next: any) => prev && typeof next === 'string', true)
+
   if (invalidWearables) {
     throw new Error('Invalid Wearables array! Received: ' + JSON.stringify(avatar))
   }
+
+  // Race condition for old profiles
+  if ((avatar.snapshots as LegacySnapshot)?.face && !avatar.snapshots.face256) {
+    avatar.snapshots.face256 = (avatar.snapshots as LegacySnapshot).face!
+  }
+
   if (!avatar.snapshots || !avatar.snapshots.face256 || !avatar.snapshots.body) {
     throw new Error('Invalid snapshot data:' + JSON.stringify(avatar.snapshots))
   }
