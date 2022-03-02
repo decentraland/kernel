@@ -21,7 +21,7 @@ describe('Fetch Wrapped for scenes' , () => {
     canUseFetch: false, log, originalFetch, previewMode: false
   })
 
-  const timePerFetchSleep = 500
+  const timePerFetchSleep = 100
   const wrappedDelayFetch = createFetch({
     canUseFetch: true,
     log,
@@ -89,9 +89,8 @@ describe('Fetch Wrapped for scenes' , () => {
     let counter = 0
     const N = 10
     for (let i = 0; i < N; i++) {
-      wrappedDelayFetch('https://test.test/').then(response => response.text()).then(() => counter++)
+      wrappedDelayFetch('https://test.test/').then(() => counter++)
     }
-
     await sleep(timePerFetchSleep * 1.2)
     expect(counter).to.eql(1)
     await sleep(timePerFetchSleep * 2)
@@ -114,7 +113,7 @@ describe('Fetch Wrapped for scenes' , () => {
     let error: Error = null
     let counter = 0
     await Promise.all([
-      wrappedDelayFetch('https://test.test/', {}, { timeout: 100 }).catch(err => {
+      wrappedDelayFetch('https://test.test/', {}, { timeout: 5 }).catch(err => {
         error = err
         counter++
       }),
