@@ -103,7 +103,7 @@ function generateFinalImageData(
     frame.disposalType !== FrameDisposalMethod.RESTORE_TO_BACKGROUND_COLOR &&
     frame.disposalType !== FrameDisposalMethod.RESTORE_TO_PREVIOUS
   ) {
-    setPrevFrameCanvas(finalImageData!)
+    setPrevFrameImage(finalImageData!)
   }
 
   // reset all transformation done to the canvas
@@ -139,7 +139,7 @@ function setComposedFrameCanvas(image: CanvasImageSource, frame: ParsedFrame): I
   return composedFrameCtx.getImageData(0, 0, composedFrameCanvas.width, composedFrameCanvas.height)
 }
 
-function setPrevFrameCanvas(imageData: ImageData) {
+function setPrevFrameImage(imageData: ImageData) {
   prevFrameImageData = imageData
 }
 
