@@ -110,7 +110,7 @@ describe('Fetch Wrapped for scenes' , () => {
     expect(error.name).to.eql('AbortError')
   })
 
-  it.only('should abort fetch if reaches the timeout opt', async () => {
+  it('should abort fetch if reaches the timeout opt', async () => {
     let error: Error = null
     let counter = 0
     await Promise.all([
