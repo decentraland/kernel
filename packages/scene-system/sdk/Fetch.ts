@@ -30,13 +30,11 @@ export function createFetch({ canUseFetch, previewMode, log, originalFetch }: Fe
 
     async function fetchRequest() {
       const abortController = new AbortController()
-      const signal = abortController.signal
-      const TIMEOUT_LIMIT = 5000
+      const TIMEOUT_LIMIT = 30000
       const timeout = setTimeout(() => {
         abortController.abort()
       }, opts?.timeout || TIMEOUT_LIMIT)
-
-      const response = await originalFetch(resource, Object.assign({ signal, init }))
+      const response = await originalFetch(resource, { signal: abortController.signal, ...init })
       clearTimeout(timeout)
       return response
     }

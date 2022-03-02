@@ -1,33 +1,14 @@
-import { sleep } from 'atomicHelpers/sleep'
 import { expect } from 'chai'
 import * as sinon from 'sinon'
-import { createFetch, FetchFunction } from '../../../packages/scene-system/sdk/Fetch'
-import { createWebSocket } from '../../../packages/scene-system/sdk/WebSocket'
+
+import { sleep } from 'atomicHelpers/sleep'
+import { createFetch, FetchFunction } from 'scene-system/sdk/Fetch'
 
 const originalFetch: FetchFunction = async (resource: RequestInfo, init?: RequestInit) => {
   return new Response()
 }
 
-class FakeWebSocket {
-  constructor(url: string | URL, protocols?: string | string[]) {
-
-  }
-}
-
-let originalWebSocket;
-
-before(() => {
-  originalWebSocket = WebSocket
-  // @ts-ignore
-  globalThis.WebSocket = FakeWebSocket
-})
-
-after(() => {
-  globalThis.WebSocket = originalWebSocket
-  originalWebSocket = null
-})
-
-describe('creating wrapped Fetch', () => {
+describe('Fetch Wrapped for scenes' , () => {
   const log = sinon.spy()
   const logPreview = sinon.spy()
   const wrappedProductionFetch = createFetch({
@@ -44,9 +25,16 @@ describe('creating wrapped Fetch', () => {
   const wrappedDelayFetch = createFetch({
     canUseFetch: true,
     log,
-    originalFetch: async (_resource: RequestInfo, _init?: RequestInit) => {
+    originalFetch: async (_resource: RequestInfo, init?: RequestInit) => {
       await sleep(timePerFetchSleep)
-      return new Response()
+
+      if (init.signal?.aborted) {
+        const a = new Error('Abort')
+        a.name = 'AbortError'
+        throw a
+      }
+
+      return new Response('Done', init)
     },
     previewMode: true
   })
@@ -105,59 +93,34 @@ describe('creating wrapped Fetch', () => {
     }
 
     await sleep(timePerFetchSleep * 1.2)
-    expect(counter).to.eql(1)  
+    expect(counter).to.eql(1)
     await sleep(timePerFetchSleep * 2)
-    expect(counter).to.eql(3)  
+    expect(counter).to.eql(3)
   })
 
-})
+  it('should abort fetch if reaches the timeout opt', async () => {
+    let error: Error = null
 
-describe('creating wrapped WebSocket', () => {
-  const log = sinon.spy()
-  const logPreview = sinon.spy()
-  const wrappedProductionWebSocket = createWebSocket({
-    canUseWebsocket: true, log, previewMode: false
-  })
-  const wrappedPreviewWebSocket = createWebSocket({
-    canUseWebsocket: true, log: logPreview, previewMode: true
-  })
-  const wrappedNotAllowedWebSocket = createWebSocket({
-    canUseWebsocket: false, log, previewMode: false
-  })
-
-  it('should run successfully if the ws is secure in deployed scenes', async () => {
-    new wrappedProductionWebSocket("wss://decentraland.org")
-  })
-
-
-  it('should throw an error if the ws is not secure in deployed scenes', async () => {
-    const throwErrorLogger = sinon.spy()
     try {
-      new wrappedProductionWebSocket("http://decentraland.org")
+      await wrappedDelayFetch('https://test.test/', {}, { timeout: 10 })
     } catch (err) {
-      throwErrorLogger(err)
+      console.log(err)
+      error = err
     }
-    sinon.assert.calledOnce(throwErrorLogger)
+    expect(error.name).to.eql('AbortError')
   })
 
-
-  it('should run successfully if the ws is secure in preview scenes', async () => {
-    new wrappedPreviewWebSocket("wss://decentraland.org")
-  })
-
-  it('should log an error if the ws is not secure in preview scenes', async () => {
-    sinon.assert.notCalled(logPreview)
-    new wrappedPreviewWebSocket("ws://decentraland.org")
-    sinon.assert.calledOnce(logPreview)
-  })
-
-  it('should throw an error because it does not have permissions', async () => {
-    const throwErrorLogger = sinon.spy()
-    try {
-      new wrappedNotAllowedWebSocket("wss://decentraland.org")
-    } catch (err) {
-      throwErrorLogger(err)
-    }
-    sinon.assert.calledOnce(throwErrorLogger)
+  it.only('should abort fetch if reaches the timeout opt', async () => {
+    let error: Error = null
+    let counter = 0
+    await Promise.all([
+      wrappedDelayFetch('https://test.test/', {}, { timeout: 100 }).catch(err => {
+        error = err
+        counter++
+      }),
+      wrappedDelayFetch('https://test.test/', {}).then(() => counter++)
+    ])
+    expect(error.name).to.eql('AbortError')
+    expect(counter).to.eql(2)
   })
 })
