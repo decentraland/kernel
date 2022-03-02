@@ -1,6 +1,6 @@
 import { EventDispatcher } from 'decentraland-rpc/lib/common/core/EventDispatcher'
 import { WSS_ENABLED, FORCE_SEND_MESSAGE, DEBUG_MESSAGES_QUEUE_PERF, DEBUG_SCENE_LOG } from 'config'
-import { createDummyLogger, createLogger, ILogger } from 'shared/logger'
+import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
 import { EntityAction, EnvironmentData } from 'shared/types'
 import { ParcelSceneAPI } from 'shared/world/ParcelSceneAPI'
 import { SceneWorker } from 'shared/world/SceneWorker'
@@ -29,7 +29,7 @@ export class UnityScene<T> implements ParcelSceneAPI {
   initFinished: boolean = false
 
   constructor(public data: EnvironmentData<T>) {
-    this.logger = DEBUG_SCENE_LOG ? createLogger(getParcelSceneID(this) + ': ') : createDummyLogger()
+    this.logger = DEBUG_SCENE_LOG ? createLogger('unityScene: ' + getParcelSceneID(this) + ': ') : createDummyLogger()
 
     const startLoadingTime = performance.now()
 
@@ -64,8 +64,7 @@ export class UnityScene<T> implements ParcelSceneAPI {
         sendBatchMsgCount -= sendBatchMsgs.splice(0, 1)[0]
       }
 
-      // tslint:disable-next-line:no-console
-      console.log(`sendBatch time total for msgs ${sendBatchMsgCount} calls: ${sendBatchTimeCount}ms ... `)
+      defaultLogger.log(`sendBatch time total for msgs ${sendBatchMsgCount} calls: ${sendBatchTimeCount}ms ... `)
     }
   }
 
