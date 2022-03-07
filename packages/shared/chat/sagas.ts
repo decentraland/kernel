@@ -285,7 +285,7 @@ function initChatCommands() {
       messageType: ChatMessageType.SYSTEM,
       sender: 'Decentraland',
       timestamp: Date.now(),
-      body: strings ? 'Players around you:\n${strings}' : 'No other players are near to your location'
+      body: strings ? `Players around you:\n ${strings}` : 'No other players are near to your location'
     }
   })
 
