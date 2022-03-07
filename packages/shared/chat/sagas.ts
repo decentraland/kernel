@@ -457,7 +457,7 @@ function initChatCommands() {
   })
 
   addChatCommand('version', 'Shows application version', (_message) => {
-  let [kernelVersion, rendererVersion] = getVersions()
+  const [kernelVersion, rendererVersion] = getVersions()
     return {
       messageId: uuid(),
       sender: 'Decentraland',
@@ -500,7 +500,7 @@ function initChatCommands() {
 function getDebugPanelMessage() {
   fpsConfiguration.visible = !fpsConfiguration.visible
   fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
-  let [kernelVersion, rendererVersion] = getVersions()
+  const [kernelVersion, rendererVersion] = getVersions()
   getUnityInstance().SetLocalDCLVersion(`\nKernel: ${kernelVersion}\nRenderer: ${rendererVersion}`)
 
   return {
