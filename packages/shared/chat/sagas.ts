@@ -285,13 +285,13 @@ function initChatCommands() {
       messageType: ChatMessageType.SYSTEM,
       sender: 'Decentraland',
       timestamp: Date.now(),
-      body: strings ? `Players around you:\n ${strings}` : 'No other players are near to your location'
+      body: strings ? `Players around you:\n${strings}` : 'No other players are near to your location'
     }
   })
 
   addChatCommand('debug', 'Show debug panel', (_message) => getDebugPanelMessage())
 
-  addChatCommand('showfps', 'Show fps panel', (_message) => getDebugPanelMessage())
+  addChatCommand('showfps', 'Show fps panel (deprecated in favor of /debug)', (_message) => getDebugPanelMessage())
 
   addChatCommand('getname', 'Gets your username', (_message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
