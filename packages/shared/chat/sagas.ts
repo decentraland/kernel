@@ -457,7 +457,7 @@ function initChatCommands() {
   })
 
   addChatCommand('version', 'Shows application version', (_message) => {
-  const [kernelVersion, rendererVersion] = getVersions()
+    const [kernelVersion, rendererVersion] = getVersions()
     return {
       messageId: uuid(),
       sender: 'Decentraland',
