@@ -8,7 +8,12 @@ import { EnvironmentData, LoadableParcelScene, LoadablePortableExperienceScene }
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
-import { defaultPortableExperiencePermissions, PermissionItem, Permissions } from 'shared/apis/Permissions'
+import {
+  defaultPortableExperiencePermissions,
+  ensurePermissionItemArray,
+  PermissionItem,
+  Permissions
+} from 'shared/apis/Permissions'
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
     super(data)
@@ -69,15 +74,12 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
     this.worker
       .getAPIInstance(Permissions)
       .then((permissions) => {
-        if (this.data.data.requiredPermissions) {
-          const permissionSet = new Set<PermissionItem>([
-            ...this.data.data.requiredPermissions,
-            ...defaultPortableExperiencePermissions
-          ])
-          permissions.forcePermissions(Array.from(permissionSet))
-        } else {
-          permissions.forcePermissions(defaultPortableExperiencePermissions)
-        }
+        const sceneRequiredPermissions = ensurePermissionItemArray(this.data.data.requiredPermissions)
+        const permissionSet = new Set<PermissionItem>([
+          ...sceneRequiredPermissions,
+          ...defaultPortableExperiencePermissions
+        ])
+        permissions.forcePermissions(Array.from(permissionSet))
       })
       .catch((e) => this.logger.error('Error initializing system Permissions', e))
   }

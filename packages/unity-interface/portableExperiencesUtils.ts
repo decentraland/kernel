@@ -11,7 +11,6 @@ import { UnityPortableExperienceScene } from './UnityParcelScene'
 import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
-import { ensurePermissionItemArray } from 'shared/apis/Permissions'
 
 declare let window: any
 // TODO: Remove this when portable experiences are full-available
@@ -130,7 +129,7 @@ export async function getLoadablePortableExperience(data: {
       baseUrlBundles: '',
       contents: mappings,
       icon: sceneJsonData.menuBarIcon,
-      requiredPermissions: ensurePermissionItemArray(sceneJsonData.requiredPermissions)
+      requiredPermissions: sceneJsonData.requiredPermissions
     }
   }
 }
@@ -199,7 +198,7 @@ export async function spawnPortableExperience(
       baseUrlBundles: '',
       contents: mappings,
       icon: sceneJsonData.menuBarIcon,
-      requiredPermissions: ensurePermissionItemArray(requiredPermissions)
+      requiredPermissions: requiredPermissions
     }
   }
 
