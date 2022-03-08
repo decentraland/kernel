@@ -11,6 +11,7 @@ import { UnityPortableExperienceScene } from './UnityParcelScene'
 import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
+import { ensurePermissionItemArray } from 'shared/apis/Permissions'
 
 declare let window: any
 // TODO: Remove this when portable experiences are full-available
@@ -128,7 +129,8 @@ export async function getLoadablePortableExperience(data: {
       baseUrl: baseUrl,
       baseUrlBundles: '',
       contents: mappings,
-      icon: sceneJsonData.menuBarIcon
+      icon: sceneJsonData.menuBarIcon,
+      requiredPermissions: ensurePermissionItemArray(sceneJsonData.requiredPermissions)
     }
   }
 }
@@ -152,6 +154,18 @@ export async function spawnPortableExperience(
   const peWorker = getSceneWorkerBySceneID(id)
   if (peWorker) {
     throw new Error(`Portable Scene: "${id}" is already running.`)
+  }
+
+  let requiredPermissions: any = []
+  const sceneJsonFile = mappings.find((m) => m.file === 'scene.json')
+  if (sceneJsonFile) {
+    try {
+      const sceneJsonUrl = new URL(sceneJsonFile.hash, baseUrl)
+      const sceneJson = await (await fetch(sceneJsonUrl.toString())).json()
+      requiredPermissions = sceneJson?.requiredPermissions
+    } catch (err) {
+      console.error(`Couldn't fetch scene json from PE ${id}`)
+    }
   }
 
   const sceneJsonData: SceneJsonData = {
@@ -184,7 +198,8 @@ export async function spawnPortableExperience(
       baseUrl: baseUrl,
       baseUrlBundles: '',
       contents: mappings,
-      icon: sceneJsonData.menuBarIcon
+      icon: sceneJsonData.menuBarIcon,
+      requiredPermissions: ensurePermissionItemArray(requiredPermissions)
     }
   }
 

@@ -2,6 +2,7 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from '@dcl/legacy-ecs'
 import type { WearableId } from 'shared/catalogs/types'
+import { PermissionItem } from './apis/Permissions'
 export { Avatar, Profile } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
@@ -161,6 +162,7 @@ export type LoadablePortableExperienceScene = {
   baseUrlBundles: string
   land?: IPortableExperience
   icon?: string
+  requiredPermissions?: PermissionItem[]
 }
 
 export const BillboardModes = {

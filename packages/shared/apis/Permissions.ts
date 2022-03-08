@@ -17,6 +17,19 @@ export const defaultParcelPermissions = [
 ]
 export const defaultPortableExperiencePermissions = []
 
+export function ensurePermissionItemArray(arr: any): PermissionItem[] {
+  if (!Array.isArray(arr)) {
+    return []
+  }
+  const ret: PermissionItem[] = []
+  for (const permission of arr) {
+    if (Object.values(PermissionItem).includes(permission)) {
+      ret.push(permission)
+    }
+  }
+  return ret
+}
+
 @registerAPI('Permissions')
 export class Permissions extends ExposableAPI {
   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
