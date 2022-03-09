@@ -204,6 +204,7 @@ watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files requ
 			"$(COMPILER) targets/scenes/basic-scenes.json --watch" \
 			"$(COMPILER) targets/entryPoints/index.json --watch" \
 			"$(COMPILER) targets/test.json --watch" \
+			"$(COMPILER) targets/engine/gif-processor.json --watch" \
 			"node ./scripts/runPathSimulator.js" \
 			"node ./scripts/runTestServer.js --keep-open"
 
