@@ -2,7 +2,6 @@
 
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
-BUILD_ECS = $(NODE) --max-old-space-size=4096 node_modules/.bin/build-ecs
 CONCURRENTLY = node_modules/.bin/concurrently
 CWD = $(shell pwd)
 
@@ -51,50 +50,10 @@ empty-parcels:
 	rm -rf static/loader/empty-scenes/*
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
-	
-build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels generate-mocks ## Build the basic required files for the explorer
-# Hellmap scenes
 
-HELLMAP_SOURCE_FILES := $(wildcard public/hell-map/*/game.ts)
-HELLMAP_GAMEJS_FILES := $(subst .ts,.js,$(HELLMAP_SOURCE_FILES))
-
-public/hell-map/%/game.js: $(SCENE_SYSTEM) public/hell-map/%/game.ts
-	@$(COMPILER) targets/scenes/hell-map.json
-
-# Test scenes
-
-TEST_SCENES_SOURCE_FILES := $(wildcard public/test-scenes/*/game.ts)
-TEST_SCENES_GAMEJS_FILES := $(subst .ts,.js,$(TEST_SCENES_SOURCE_FILES))
-
-public/test-scenes/%/game.js: $(SCENE_SYSTEM) public/test-scenes/%/game.ts
-	@$(COMPILER) targets/scenes/test-scenes.json
-
-TEST_ECS_SCENE_SOURCES := $(wildcard public/ecs-scenes/*/game.ts)
-TEST_ECS_SCENE_GAMEJS_FILES := $(subst .ts,.js,$(TEST_ECS_SCENE_SOURCES))
-
-watch-only-test-scenes:
-	@$(COMPILER) targets/scenes/test-scenes.json --watch
-
-# ECS scenes
-
-ECS_LIBRARY := public/ecs-scenes/-200.-30-libraries/node_modules/eth-wrapper/eth-wrapper.js
-
-public/ecs-scenes/-200.-30-libraries/node_modules/eth-wrapper/eth-wrapper.js: public/ecs-scenes/-200.-30-libraries/node_modules/eth-wrapper/eth-wrapper.ts $(BUILD_ECS)
-	$(BUILD_ECS) -p public/ecs-scenes/-200.-30-libraries/node_modules/eth-wrapper
-
-public/ecs-scenes/%/game.js: $(ECS_LIBRARY) $(SCENE_SYSTEM) public/ecs-scenes/%/game.ts
-	@node scripts/buildECSprojects.js
-
-# All scenes together
-
-ecs-scenes: $(TEST_ECS_SCENE_GAMEJS_FILES)
-	$(MAKE) generate-mocks
-
-test-scenes: $(TEST_SCENES_GAMEJS_FILES) $(HELLMAP_GAMEJS_FILES) $(TEST_ECS_SCENE_GAMEJS_FILES) ## Build the test scenes
-	$(MAKE) generate-mocks
+build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
 # Entry points
-
 static/%.js: build-essentials packages/entryPoints/%.ts
 	@$(COMPILER) $(word 2,$^)
 
@@ -116,7 +75,6 @@ test/out/index.js: build-essentials $(TEST_SOURCE_FILES)
 	@$(COMPILER) ./targets/test.json
 
 test: build-essentials test/out/index.js ## Run all the tests
-	$(MAKE) generate-mocks
 	@node scripts/runTestServer.js
 
 test-docker: ## Run all the tests using a docker container
@@ -146,19 +104,6 @@ generate-images: ## Generate the screenshots to run the visual diff validation t
 		-e GENERATE_NEW_IMAGES=true \
 		circleci/node:10-browsers \
 			make test
-
-public/local-ipfs/mappings:
-	@rm -rf ./public/local-ipfs
-	@node ./scripts/createMockJson.js
-
-generate-mocks: ./scripts/createMockJson.js public/local-ipfs/mappings ## Build a fake "IPFS" index of all the test scene mappings
-	@rm -rf ./public/local-ipfs
-	@node ./scripts/createMockJson.js
-
-PARCEL_SCENE_JSONS := $(wildcard public/test-scenes/*/scene.json)
-ECS_SCENE_JSONS := $(wildcard public/ecs-scenes/*/scene.json)
-HELLMAP_SCENE_JSONS := $(wildcard public/hell-map/*/scene.json)
-SCENE_JSONS := $(PARCEL_SCENE_JSONS) $(ECS_SCENE_JSONS) $(HELLMAP_SCENE_JSONS)
 
 # CLI
 
@@ -223,4 +168,4 @@ update-renderer:  ## Update the renderer
 .DEFAULT_GOAL := help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
-	@echo "\nYou probably want to run 'make watch' or 'make test-scenes watch' to build all the test scenes and run the local comms server."
+	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
