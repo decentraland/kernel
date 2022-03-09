@@ -1,14 +1,10 @@
-import { AnyAction } from 'redux'
 import { PortableExperiencesState } from './types'
 import {
   DENY_PORTABLE_EXPERIENCES,
-  DenyPortableExperiencesAction,
-  AddScenePortableExperienceAction,
-  RemoveScenePortableExperienceAction,
   ADD_SCENE_PX,
   REMOVE_SCENE_PX,
   RELOAD_SCENE_PX,
-  ReloadScenePortableExperienceAction
+  PortableExperienceActions
 } from './actions'
 
 const INITIAL_STATE: PortableExperiencesState = {
@@ -18,7 +14,7 @@ const INITIAL_STATE: PortableExperiencesState = {
 
 export function portableExperienceReducer(
   state?: PortableExperiencesState,
-  action?: AnyAction
+  action?: PortableExperienceActions
 ): PortableExperiencesState {
   if (!state) {
     return INITIAL_STATE
@@ -29,11 +25,11 @@ export function portableExperienceReducer(
 
   switch (action.type) {
     case DENY_PORTABLE_EXPERIENCES: {
-      const { payload } = action as DenyPortableExperiencesAction
+      const { payload } = action
       return { ...state, deniedPortableExperiencesFromRenderer: payload.urnList }
     }
     case ADD_SCENE_PX: {
-      const { payload } = action as AddScenePortableExperienceAction
+      const { payload } = action
       return {
         ...state,
         portableExperiencesCreatedByScenesList: {
@@ -43,7 +39,7 @@ export function portableExperienceReducer(
       }
     }
     case RELOAD_SCENE_PX: {
-      const { payload } = action as ReloadScenePortableExperienceAction
+      const { payload } = action
       return {
         ...state,
         portableExperiencesCreatedByScenesList: {
@@ -53,7 +49,7 @@ export function portableExperienceReducer(
       }
     }
     case REMOVE_SCENE_PX: {
-      const { payload } = action as RemoveScenePortableExperienceAction
+      const { payload } = action
       const newState = {
         ...state,
         portableExperiencesCreatedByScenesList: { ...state.portableExperiencesCreatedByScenesList }

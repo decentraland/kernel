@@ -21,3 +21,10 @@ export type ReloadScenePortableExperienceAction = ReturnType<typeof reloadSceneP
 export const REMOVE_SCENE_PX = '[PX] RemoveScenePx'
 export const removeScenePortableExperience = (urn: string) => action(REMOVE_SCENE_PX, { urn })
 export type RemoveScenePortableExperienceAction = ReturnType<typeof removeScenePortableExperience>
+
+export type PortableExperienceActions =
+  | UpdateEnginePortableExperiencesAction
+  | DenyPortableExperiencesAction
+  | AddScenePortableExperienceAction
+  | ReloadScenePortableExperienceAction
+  | RemoveScenePortableExperienceAction

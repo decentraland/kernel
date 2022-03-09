@@ -28,13 +28,13 @@ export function* portableExperienceSaga(): any {
 }
 
 // every time the desired portable experiences change, the action `updateEnginePortableExperiences` should be dispatched
-function* handlePortableExperienceChanges(): any {
+function* handlePortableExperienceChanges() {
   const desiredPortableExperiences = yield select(getDesiredPortableExperiences)
   yield put(updateEnginePortableExperiences(desiredPortableExperiences))
 }
 
 // reload portable experience
-function* reloadPortableExperienceChanges(action: ReloadScenePortableExperienceAction): any {
+function* reloadPortableExperienceChanges(action: ReloadScenePortableExperienceAction) {
   const allDesiredPortableExperiences: StorePortableExperience[] = yield select(getDesiredPortableExperiences)
 
   const filteredDesiredPortableExperiences = allDesiredPortableExperiences.filter(
@@ -48,6 +48,6 @@ function* reloadPortableExperienceChanges(action: ReloadScenePortableExperienceA
 }
 
 // tell the controller which PXs we do want running
-function* handlePortableExperienceChangesEffect(action: UpdateEnginePortableExperiencesAction): any {
+function* handlePortableExperienceChangesEffect(action: UpdateEnginePortableExperiencesAction) {
   yield call(declareWantedPortableExperiences, action.payload.desiredPortableExperiences)
 }
