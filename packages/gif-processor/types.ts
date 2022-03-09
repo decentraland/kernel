@@ -34,3 +34,10 @@ export type ProcessorMessageData = {
 }
 
 export type ProcessorMessageType = 'FETCH' | 'CANCEL'
+
+export type GifData = {
+  width: number
+  height: number
+  frameDelays: number[]
+  imagesData: ArrayBufferLike[]
+}
