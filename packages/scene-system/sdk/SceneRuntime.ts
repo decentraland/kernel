@@ -230,9 +230,11 @@ export abstract class SceneRuntime extends Script {
   async getPermissions() {
     try {
       const { Permissions } = (await this.loadAPIs(['Permissions'])) as { Permissions: Permissions }
-      const canUseWebsocket = await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
-      const canUseFetch = await Permissions.hasPermission(PermissionItem.USE_FETCH)
-      const canOpenExternalLink = await Permissions.hasPermission(PermissionItem.OPEN_EXTERNAL_LINK)
+      const [canUseWebsocket, canUseFetch, canOpenExternalLink] = await Promise.all([
+        Permissions.hasPermission(PermissionItem.USE_WEBSOCKET),
+        Permissions.hasPermission(PermissionItem.USE_FETCH),
+        Permissions.hasPermission(PermissionItem.OPEN_EXTERNAL_LINK)
+      ])
       return { canUseWebsocket, canUseFetch, canOpenExternalLink }
     } catch (err) {
       return { canUseWebsocket: false, canUseFetch: false, canOpenExternalLink: false }
