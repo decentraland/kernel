@@ -10,7 +10,6 @@ import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
 import {
   defaultPortableExperiencePermissions,
-  ensurePermissionItemArray,
   PermissionItem,
   Permissions
 } from 'shared/apis/Permissions'
@@ -73,12 +72,19 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
 
     this.worker
       .getAPIInstance(Permissions)
-      .then((permissions) => {
-        const sceneRequiredPermissions = ensurePermissionItemArray(this.data.data.requiredPermissions)
-        const permissionSet = new Set<PermissionItem>([
-          ...sceneRequiredPermissions,
-          ...defaultPortableExperiencePermissions
-        ])
+      .then(async (permissions) => {
+        const permissionArray: PermissionItem[] = [...defaultPortableExperiencePermissions]
+        const sceneJsonFile = this.data.mappings.find((m) => m.file.startsWith('scene.json'))?.hash
+
+        if (sceneJsonFile) {
+          const sceneJson = await (await fetch(new URL(sceneJsonFile, this.data.baseUrl).toString())).json()
+          permissionArray.push(
+            ...Object.values(PermissionItem).filter((permission) => sceneJson.requiredPermissions?.includes(permission))
+          )
+        }
+
+        // Delete duplicated
+        const permissionSet = new Set<PermissionItem>(permissionArray)
         permissions.forcePermissions(Array.from(permissionSet))
       })
       .catch((e) => this.logger.error('Error initializing system Permissions', e))

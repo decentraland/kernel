@@ -161,7 +161,6 @@ export type LoadablePortableExperienceScene = {
   baseUrlBundles: string
   land?: IPortableExperience
   icon?: string
-  requiredPermissions?: string[]
 }
 
 export const BillboardModes = {
