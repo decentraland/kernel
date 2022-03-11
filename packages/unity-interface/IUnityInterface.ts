@@ -92,7 +92,6 @@ export interface IUnityInterface {
   /** Tells the engine which scenes to load */
 
   LoadParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
-  UpdateParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
   UnloadScene(sceneId: string): void
   SendSceneMessage(messages: string): void
   /** @deprecated send it with the kernelConfigForRenderer instead. */

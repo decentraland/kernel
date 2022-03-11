@@ -1,15 +1,21 @@
 import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import {
-  spawnPortableExperienceScene,
-  getPortableExperience,
+  spawnScenePortableExperienceSceneFromUrn,
   PortableExperienceHandle,
-  killPortableExperienceScene,
-  getPortableExperiencesLoaded
-} from 'unity-interface/portableExperiencesUtils'
+  getPortableExperiencesLoaded,
+  getRunningPortableExperience
+} from '../../unity-interface/portableExperiencesUtils'
 import { ExposableAPI } from './ExposableAPI'
 import { ParcelIdentity } from './ParcelIdentity'
+import { store } from '../../shared/store/isolatedStore'
+import { removeScenePortableExperience } from '../../shared/portableExperiences/actions'
 
 type PortableExperienceUrn = string
+
+type LoadedPortableExperiences = {
+  pid: string
+  parentCid: string
+}
 
 @registerAPI('PortableExperiences')
 export class PortableExperiences extends ExposableAPI {
@@ -22,7 +28,7 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async spawn(pid: PortableExperienceUrn): Promise<PortableExperienceHandle> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    return await spawnPortableExperienceScene(pid, parcelIdentity.cid)
+    return await spawnScenePortableExperienceSceneFromUrn(pid, parcelIdentity.cid)
   }
 
   /**
@@ -34,10 +40,11 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async kill(pid: PortableExperienceUrn): Promise<boolean> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-    const portableExperience: PortableExperienceHandle | undefined = await getPortableExperience(pid)
+    const portableExperience = getRunningPortableExperience(pid)
 
     if (!!portableExperience && portableExperience.parentCid === parcelIdentity.cid) {
-      return await killPortableExperienceScene(pid)
+      store.dispatch(removeScenePortableExperience(pid))
+      return true
     }
     return false
   }
@@ -50,8 +57,8 @@ export class PortableExperiences extends ExposableAPI {
   @exposeMethod
   async exit(): Promise<boolean> {
     const parcelIdentity: ParcelIdentity = this.options.getAPIInstance(ParcelIdentity)
-
-    return await killPortableExperienceScene(parcelIdentity.cid)
+    store.dispatch(removeScenePortableExperience(parcelIdentity.cid))
+    return true
   }
 
   /**
@@ -59,7 +66,8 @@ export class PortableExperiences extends ExposableAPI {
    * Returns current portable experiences loaded with ids and parentCid
    */
   @exposeMethod
-  async getPortableExperiencesLoaded() {
-    return await getPortableExperiencesLoaded()
+  async getPortableExperiencesLoaded(): Promise<LoadedPortableExperiences[]> {
+    const loaded = getPortableExperiencesLoaded()
+    return Array.from(loaded).map(($) => ({ pid: $.data.sceneId, parentCid: $.parentCid }))
   }
 }
