@@ -8,11 +8,7 @@ import { EnvironmentData, LoadableParcelScene, LoadablePortableExperienceScene }
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
-import {
-  defaultPortableExperiencePermissions,
-  PermissionItem,
-  Permissions
-} from 'shared/apis/Permissions'
+import { defaultPortableExperiencePermissions, PermissionItem, Permissions } from 'shared/apis/Permissions'
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
     super(data)
