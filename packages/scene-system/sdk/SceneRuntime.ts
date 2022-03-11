@@ -28,7 +28,7 @@ import type {
 import { generatePBObject } from './Utils'
 import { createWebSocket } from './WebSocket'
 import { createFetch } from './Fetch'
-import { PermissionItem } from 'shared/apis/Permissions'
+import { PermissionItem, Permissions } from 'shared/apis/Permissions'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
@@ -227,6 +227,18 @@ export abstract class SceneRuntime extends Script {
     this.sendBatch()
   }
 
+  async getPermissions() {
+    try {
+      const { Permissions } = (await this.loadAPIs(['Permissions'])) as { Permissions: Permissions }
+      const canUseWebsocket = await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
+      const canUseFetch = await Permissions.hasPermission(PermissionItem.USE_FETCH)
+      const canOpenExternalLink = await Permissions.hasPermission(PermissionItem.OPEN_EXTERNAL_LINK)
+      return { canUseWebsocket, canUseFetch, canOpenExternalLink }
+    } catch (err) {
+      return { canUseWebsocket: false, canUseFetch: false, canOpenExternalLink: false }
+    }
+  }
+
   async systemDidEnable() {
     this.eventSubscriber = new EventSubscriber(this.engine as any)
 
@@ -245,6 +257,8 @@ export abstract class SceneRuntime extends Script {
 
       const loadingModules: Record<string, IFuture<void>> = {}
 
+      const permissions = await this.getPermissions()
+
       const dcl: DecentralandInterface = {
         DEBUG: true,
         log(...args: any[]) {
@@ -259,11 +273,15 @@ export abstract class SceneRuntime extends Script {
           }
 
           if (that.allowOpenExternalUrl) {
-            that.events.push({
-              type: 'OpenExternalUrl',
-              tag: '',
-              payload: url
-            })
+            if (permissions.canOpenExternalLink) {
+              that.events.push({
+                type: 'OpenExternalUrl',
+                tag: '',
+                payload: url
+              })
+            } else {
+              this.error(`This scene can not open external link because it doesn't have permission.`)
+            }
           } else {
             this.error('openExternalUrl can only be used inside a pointerEvent')
           }
@@ -536,21 +554,18 @@ export abstract class SceneRuntime extends Script {
       }
 
       try {
-        const { Permissions } = await this.loadAPIs(['Permissions'])
-        const canUseWebsocket = await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
-        const canUseFetch = await Permissions.hasPermission(PermissionItem.USE_FETCH)
         const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: EnvironmentAPI }
         const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
         const originalFetch = fetch
 
         const restrictedWebSocket = createWebSocket({
-          canUseWebsocket,
+          canUseWebsocket: permissions.canUseWebsocket,
           previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log
         })
         const restrictedFetch = createFetch({
-          canUseFetch,
+          canUseFetch: permissions.canUseFetch,
           originalFetch: originalFetch,
           previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log

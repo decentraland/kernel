@@ -7,13 +7,15 @@ export enum PermissionItem {
   ALLOW_TO_TRIGGER_AVATAR_EMOTE = 'ALLOW_TO_TRIGGER_AVATAR_EMOTE',
   USE_WEB3_API = 'USE_WEB3_API',
   USE_WEBSOCKET = 'USE_WEBSOCKET',
-  USE_FETCH = 'USE_FETCH'
+  USE_FETCH = 'USE_FETCH',
+  OPEN_EXTERNAL_LINK = 'OPEN_EXTERNAL_LINK'
 }
 
 export const defaultParcelPermissions = [
   PermissionItem.USE_WEB3_API,
   PermissionItem.USE_FETCH,
-  PermissionItem.USE_WEBSOCKET
+  PermissionItem.USE_WEBSOCKET,
+  PermissionItem.OPEN_EXTERNAL_LINK
 ]
 export const defaultPortableExperiencePermissions = []
 
