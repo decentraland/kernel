@@ -1,20 +1,14 @@
 import { AnyAction } from 'redux'
-import { WearablesPortableExperienceData, WearablesPortableExperienceState } from './types'
+import { WearablesPortableExperienceState } from './types'
 import {
-  UPDATE_WEARABLES,
-  UpdateWearablesAction,
-  STOP_WEARABLES_PORTABLE_EXPERENCE,
-  StopWearablesPortableExperienceAction,
-  START_WEARABLES_PORTABLE_EXPERENCE,
-  StartWearablesPortableExperienceAction,
-  PROCESS_WEARABLES,
-  ProcessWearablesAction
+  ADD_DESIRED_PORTABLE_EXPERIENCE,
+  AddDesiredPortableExperienceAction,
+  REMOVE_DESIRED_PORTABLE_EXPERIENCE,
+  RemoveDesiredPortableExperienceAction
 } from './actions'
-import { WearableId } from 'shared/catalogs/types'
 
 const INITIAL_STATE: WearablesPortableExperienceState = {
-  profileWearables: {},
-  wearablesWithPortableExperiences: []
+  desiredWearablePortableExperiences: {}
 }
 
 export function wearablesPortableExperienceReducer(
@@ -29,45 +23,22 @@ export function wearablesPortableExperienceReducer(
   }
 
   switch (action.type) {
-    case UPDATE_WEARABLES: {
-      const { payload } = action as UpdateWearablesAction
+    case REMOVE_DESIRED_PORTABLE_EXPERIENCE: {
+      const { payload } = action as RemoveDesiredPortableExperienceAction
 
-      // remove wearables
-      let profileWearables: Record<WearableId, WearablesPortableExperienceData> = Object.keys(state.profileWearables)
-        .filter((w) => !payload.wearablesToRemove.includes(w))
-        .reduce((acc, k) => ({ ...acc, [k]: state.profileWearables[k] }), {})
-
-      // add wearables
-      profileWearables = payload.wearablesToAdd.reduce(
-        (acc, k) => ({ ...acc, [k]: { state: 'pending' } }),
-        profileWearables
-      )
-
-      return { ...state, profileWearables }
+      const desiredWearablePortableExperiences = { ...state.desiredWearablePortableExperiences }
+      delete desiredWearablePortableExperiences[payload.id]
+      return { ...state, desiredWearablePortableExperiences }
     }
-    case PROCESS_WEARABLES: {
-      const { payload } = action as ProcessWearablesAction
-      const profileWearables = state.profileWearables
-      payload.wearables.forEach((w) => {
-        if (profileWearables[w.id]) {
-          profileWearables[w.id].state = 'processed'
+    case ADD_DESIRED_PORTABLE_EXPERIENCE: {
+      const { payload } = action as AddDesiredPortableExperienceAction
+      return {
+        ...state,
+        desiredWearablePortableExperiences: {
+          ...state.desiredWearablePortableExperiences,
+          [payload.id]: payload.data
         }
-      })
-      return { ...state, profileWearables }
-    }
-    case STOP_WEARABLES_PORTABLE_EXPERENCE: {
-      const { payload } = action as StopWearablesPortableExperienceAction
-      const wearablesWithPortableExperiences = state.wearablesWithPortableExperiences.filter(
-        (w) => !payload.wearables.includes(w)
-      )
-      return { ...state, wearablesWithPortableExperiences }
-    }
-    case START_WEARABLES_PORTABLE_EXPERENCE: {
-      const { payload } = action as StartWearablesPortableExperienceAction
-      const wearablesWithPortableExperiences = state.wearablesWithPortableExperiences.concat(
-        payload.wearables.map((w) => w.id)
-      )
-      return { ...state, wearablesWithPortableExperiences }
+      }
     }
   }
 

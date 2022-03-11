@@ -40,7 +40,7 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
 }
 
 export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExperienceScene> {
-  constructor(public data: EnvironmentData<LoadablePortableExperienceScene>) {
+  constructor(public data: EnvironmentData<LoadablePortableExperienceScene>, public readonly parentCid: string) {
     super(data)
     const loggerPrefix = `px: [${data.sceneId}] `
     this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
