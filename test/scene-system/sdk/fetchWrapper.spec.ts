@@ -101,7 +101,7 @@ describe('Fetch Wrapped for scenes' , () => {
     let error: Error = null
 
     try {
-      await wrappedDelayFetch('https://test.test/', {}, { timeout: 10 })
+      await wrappedDelayFetch('https://test.test/', { timeout: 10 })
     } catch (err) {
       console.log(err)
       error = err
@@ -113,7 +113,7 @@ describe('Fetch Wrapped for scenes' , () => {
     let error: Error = null
     let counter = 0
     await Promise.all([
-      wrappedDelayFetch('https://test.test/', {}, { timeout: 5 }).catch(err => {
+      wrappedDelayFetch('https://test.test/', { timeout: 5 }).catch(err => {
         error = err
         counter++
       }),

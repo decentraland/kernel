@@ -3,68 +3,54 @@ import {
   EnvironmentData,
   LoadablePortableExperienceScene,
   MappingsResponse,
-  SceneJsonData
+  SceneJsonData,
+  StorePortableExperience
 } from '../shared/types'
 import { getSceneNameFromJsonData } from '../shared/selectors'
 import { parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
 import { UnityPortableExperienceScene } from './UnityParcelScene'
-import { forceStopParcelSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
+import { forceStopSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
+import { store } from 'shared/store/isolatedStore'
+import { addScenePortableExperience, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 
 declare let window: any
+
 // TODO: Remove this when portable experiences are full-available
-window['spawnPortableExperienceScene'] = spawnPortableExperienceScene
-window['killPortableExperienceScene'] = killPortableExperienceScene
+window['spawnScenePortableExperienceSceneFromUrn'] = spawnScenePortableExperienceSceneFromUrn
+window['killScenePortableExperience'] = killScenePortableExperience
 
 export type PortableExperienceHandle = {
   pid: string
   parentCid: string
 }
 
-const currentPortableExperiences: Map<string, string> = new Map()
+const currentPortableExperiences: Map<string, UnityPortableExperienceScene> = new Map()
 
-export async function spawnPortableExperienceScene(
+export async function spawnScenePortableExperienceSceneFromUrn(
   sceneUrn: string,
   parentCid: string
 ): Promise<PortableExperienceHandle> {
-  const peWorker = getSceneWorkerBySceneID(sceneUrn)
-  if (peWorker) {
-    throw new Error(`Portable Scene: "${sceneUrn}" is already running.`)
-  }
-  const scene = new UnityPortableExperienceScene(await getPortableExperienceFromS3Bucket(sceneUrn))
-  loadParcelScene(scene, undefined, true)
-  getUnityInstance().CreateGlobalScene({
-    id: sceneUrn,
-    name: scene.data.name,
-    baseUrl: scene.data.baseUrl,
-    contents: scene.data.data.contents,
-    icon: scene.data.data.icon,
-    isPortableExperience: true
-  })
-  currentPortableExperiences.set(sceneUrn, parentCid)
+  const data = await getPortableExperienceFromUrn(sceneUrn)
 
-  return { pid: sceneUrn, parentCid: parentCid }
-}
+  store.dispatch(addScenePortableExperience(data))
 
-export async function killPortableExperienceScene(sceneUrn: string): Promise<boolean> {
-  const peWorker = getSceneWorkerBySceneID(sceneUrn)
-  if (peWorker) {
-    forceStopParcelSceneWorker(peWorker)
-    currentPortableExperiences.delete(sceneUrn)
-    getUnityInstance().UnloadScene(sceneUrn)
-    return true
-  } else {
-    return false
+  return {
+    parentCid,
+    pid: data.id
   }
 }
 
-export async function getPortableExperience(pid: string): Promise<PortableExperienceHandle | undefined> {
-  const parentCid = currentPortableExperiences.get(pid)
-  return parentCid ? { pid, parentCid } : undefined
+export function killScenePortableExperience(urn: string) {
+  store.dispatch(removeScenePortableExperience(urn))
 }
 
-export async function getPortableExperienceFromS3Bucket(sceneUrn: string) {
+export function getRunningPortableExperience(sceneId: string): UnityPortableExperienceScene | undefined {
+  return currentPortableExperiences.get(sceneId)
+}
+
+async function getPortableExperienceFromUrn(sceneUrn: string): Promise<StorePortableExperience> {
   const mappingsUrl = await resolveUrlFromUrn(sceneUrn)
   if (mappingsUrl === null) {
     throw new Error(`Could not resolve mappings for scene: ${sceneUrn}`)
@@ -95,125 +81,99 @@ export async function getPortableExperienceFromS3Bucket(sceneUrn: string) {
   }
 }
 
-export async function getLoadablePortableExperience(data: {
+function getLoadablePortableExperience(data: {
   sceneUrn: string
   baseUrl: string
   mappings: ContentMapping[]
   sceneJsonData: SceneJsonData
-}): Promise<EnvironmentData<LoadablePortableExperienceScene>> {
+}): StorePortableExperience {
   const { sceneUrn, baseUrl, mappings, sceneJsonData } = data
 
   const sceneJsons = mappings.filter((land) => land.file === 'scene.json')
   if (!sceneJsons.length) {
     throw new Error('Invalid scene mapping: no scene.json')
   }
-  // TODO: obtain sceneId from Content Server
+
   return {
-    sceneId: sceneUrn,
-    baseUrl: baseUrl,
+    id: sceneUrn,
     name: getSceneNameFromJsonData(sceneJsonData),
-    main: sceneJsonData.main,
-    useFPSThrottling: false,
-    mappings,
-    data: {
-      id: sceneUrn,
-      basePosition: parseParcelPosition(sceneJsonData.scene.base),
-      name: getSceneNameFromJsonData(sceneJsonData),
-      parcels:
-        (sceneJsonData &&
-          sceneJsonData.scene &&
-          sceneJsonData.scene.parcels &&
-          sceneJsonData.scene.parcels.map(parseParcelPosition)) ||
-        [],
-      baseUrl: baseUrl,
-      baseUrlBundles: '',
-      contents: mappings,
-      icon: sceneJsonData.menuBarIcon,
-      requiredPermissions: sceneJsonData.requiredPermissions
+    baseUrl: baseUrl,
+    mappings: data.mappings,
+    menuBarIcon: sceneJsonData.menuBarIcon || '',
+    parentCid: 'main'
+  }
+}
+
+export function getPortableExperiencesLoaded() {
+  return new Set(currentPortableExperiences.values())
+}
+
+/**
+ * Kills all portable experiences that are not present in the given list
+ */
+export async function declareWantedPortableExperiences(pxs: StorePortableExperience[]) {
+  const immutableList = new Set(currentPortableExperiences.keys())
+
+  const wantedIds = pxs.map(($) => $.id)
+
+  // kill extra ones
+  for (const sceneUrn of immutableList) {
+    if (!wantedIds.includes(sceneUrn)) {
+      const scene = getRunningPortableExperience(sceneUrn)
+      if (scene) {
+        currentPortableExperiences.delete(sceneUrn)
+        forceStopSceneWorker(scene.worker)
+      }
+    }
+  }
+
+  // then load all the missing scenes
+  for (const sceneData of pxs) {
+    if (!getRunningPortableExperience(sceneData.id)) {
+      spawnPortableExperience(sceneData)
     }
   }
 }
 
-export async function getPortableExperiencesLoaded() {
-  const portableExperiences: any[] = []
-  for (const [id, parentCid] of currentPortableExperiences) {
-    portableExperiences.push({ id, parentCid })
-  }
-  return { portableExperiences: portableExperiences }
-}
-
-export async function spawnPortableExperience(
-  id: string,
-  parentCid: string,
-  name: string,
-  baseUrl: string,
-  mappings: ContentMapping[],
-  icon?: string
-): Promise<PortableExperienceHandle> {
-  const peWorker = getSceneWorkerBySceneID(id)
-  if (peWorker) {
-    throw new Error(`Portable Scene: "${id}" is already running.`)
+function spawnPortableExperience(spawnData: StorePortableExperience): PortableExperienceHandle {
+  if (currentPortableExperiences.has(spawnData.id) || getSceneWorkerBySceneID(spawnData.id)) {
+    throw new Error(`Portable Experience: "${spawnData.id}" is already running.`)
   }
 
-  let requiredPermissions: any = []
-  const sceneJsonFile = mappings.find((m) => m.file === 'scene.json')
-  if (sceneJsonFile) {
-    try {
-      const sceneJsonUrl = new URL(sceneJsonFile.hash, baseUrl)
-      const sceneJson = await (await fetch(sceneJsonUrl.toString())).json()
-      requiredPermissions = sceneJson?.requiredPermissions
-    } catch (err) {
-      console.error(`Couldn't fetch scene json from PE ${id}`)
-    }
-  }
+  const mainFile = spawnData.mappings.filter((m) => m.file.endsWith('game.js'))[0]?.hash
 
-  const sceneJsonData: SceneJsonData = {
-    main: mappings.filter((m) => m.file.endsWith('game.js'))[0]?.hash,
-    display: { title: name },
-    menuBarIcon: icon,
-    scene: {
-      base: '0,0',
-      parcels: ['0,0']
-    }
-  }
+  const ZERO_ZERO = parseParcelPosition('0,0')
 
   const data: EnvironmentData<LoadablePortableExperienceScene> = {
-    sceneId: id,
-    baseUrl: baseUrl,
-    name: sceneJsonData.display?.title ?? id,
-    main: sceneJsonData.main,
+    sceneId: spawnData.id,
+    baseUrl: spawnData.baseUrl,
+    name: spawnData.name ?? spawnData.id,
+    main: mainFile,
     useFPSThrottling: false,
-    mappings,
+    mappings: spawnData.mappings,
     data: {
-      id: id,
-      basePosition: parseParcelPosition(sceneJsonData.scene.base),
-      name: sceneJsonData.display?.title ?? id,
-      parcels:
-        (sceneJsonData &&
-          sceneJsonData.scene &&
-          sceneJsonData.scene.parcels &&
-          sceneJsonData.scene.parcels.map(parseParcelPosition)) ||
-        [],
-      baseUrl: baseUrl,
+      id: spawnData.id,
+      basePosition: ZERO_ZERO,
+      name: spawnData.name ?? spawnData.id,
+      parcels: [ZERO_ZERO],
+      baseUrl: spawnData.baseUrl,
       baseUrlBundles: '',
-      contents: mappings,
-      icon: sceneJsonData.menuBarIcon,
-      requiredPermissions: requiredPermissions
+      contents: spawnData.mappings,
+      icon: spawnData.menuBarIcon
     }
   }
 
-  const scene = new UnityPortableExperienceScene(data)
+  const scene = new UnityPortableExperienceScene(data, spawnData.parentCid)
+  currentPortableExperiences.set(scene.data.sceneId, scene)
   loadParcelScene(scene, undefined, true)
-
   getUnityInstance().CreateGlobalScene({
-    id: id,
+    id: scene.data.sceneId,
     name: scene.data.name,
     baseUrl: scene.data.baseUrl,
     contents: scene.data.data.contents,
     icon: scene.data.data.icon,
     isPortableExperience: true
   })
-  currentPortableExperiences.set(id, parentCid)
 
-  return { pid: id, parentCid: parentCid }
+  return { pid: scene.data.sceneId, parentCid: spawnData.parentCid }
 }

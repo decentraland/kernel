@@ -158,13 +158,6 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LoadParcelScenes', JSON.stringify(parcelsToLoad[0]))
   }
 
-  public UpdateParcelScenes(parcelsToLoad: LoadableParcelScene[]) {
-    if (parcelsToLoad.length > 1) {
-      throw new Error('Only one scene at a time!')
-    }
-    this.SendMessageToUnity('Main', 'UpdateParcelScenes', JSON.stringify(parcelsToLoad[0]))
-  }
-
   public UnloadScene(sceneId: string) {
     this.SendMessageToUnity('Main', 'UnloadScene', sceneId)
   }
