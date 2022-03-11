@@ -183,6 +183,16 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
 }
 
 export async function loadPreviewScene(message: sdk.Messages) {
+  async function oldReload() {
+    const { sceneId, sceneBase } = await getPreviewSceneId()
+    if (sceneId) {
+      await reloadScene(sceneId)
+    } else {
+      defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
+      debugger
+    }
+  }
+
   if (message.type === sdk.SCENE_UPDATE && sdk.SceneUpdate.validate(message)) {
     if (message.payload.sceneType === sdk.ProjectType.PORTABLE_EXPERIENCE) {
       try {
@@ -211,16 +221,14 @@ export async function loadPreviewScene(message: sdk.Messages) {
       if (message.payload.sceneId) {
         await reloadScene(message.payload.sceneId)
       } else {
-        const { sceneId, sceneBase } = await getPreviewSceneId()
-
-        if (sceneId) {
-          await reloadScene(sceneId)
-        } else {
-          defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
-          debugger
-        }
+        await oldReload()
       }
     }
+  } else if (message.type === 'update') {
+    defaultLogger.log(`Please update your CLI version to 3.9.0 or more.`, { message })
+    await oldReload()
+  } else {
+    defaultLogger.log(`Unable to process message in loadPreviewScene`, { message })
   }
 }
 
