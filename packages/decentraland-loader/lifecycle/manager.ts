@@ -109,8 +109,8 @@ export class LifecycleManager extends TransportBasedServer {
   }
 
   async invalidateAllScenes() {
-    for (const entry of Array.from(this.sceneIdToRequest.entries())) {
-      await this.invalidateScene(entry[0])
+    for (const sceneId of this.sceneIdToRequest.keys()) {
+      await this.invalidateScene(sceneId)
     }
   }
 
