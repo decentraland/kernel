@@ -1,9 +1,9 @@
-import { EntityType, Hashing, Fetcher } from 'dcl-catalyst-commons'
+import { EntityType, Fetcher } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
+import { hashV1 } from '@dcl/hashing'
 
 import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
-
 import defaultLogger from 'shared/logger'
 import {
   PROFILE_REQUEST,
@@ -296,7 +296,7 @@ export async function profileServerRequest(userId: string, version?: number) {
     if (version) url = url + `&version=${version}`
 
     const fetcher = new Fetcher()
-    const profiles = await fetcher.fetchJson(url)
+    const profiles: any = await fetcher.fetchJson(url)
 
     return profiles[0] || { avatars: [] }
   } catch (e) {
@@ -421,7 +421,7 @@ async function buildSnapshotContent(selector: string, value: string): Promise<[s
     const blob = await fetch(value).then((r) => r.blob())
 
     contentFile = await makeContentFile(name, blob)
-    hash = await Hashing.calculateHash(contentFile)
+    hash = await hashV1(contentFile.content)
   } else if (value.includes('://')) {
     // value is already a URL => use existing hash
     hash = value.split('/').pop()!
@@ -430,7 +430,7 @@ async function buildSnapshotContent(selector: string, value: string): Promise<[s
     const blob = base64ToBlob(value)
 
     contentFile = await makeContentFile(name, blob)
-    hash = await Hashing.calculateHash(contentFile)
+    hash = await hashV1(contentFile.content)
   }
 
   return [name, hash, contentFile]
@@ -471,7 +471,7 @@ async function deploy(
   contentHashes: Map<string, string>
 ) {
   // Build the client
-  const catalyst = new ContentClient(url, 'explorer-kernel-profile')
+  const catalyst = new ContentClient({ contentUrl: url })
 
   const entityWithoutNewFilesPayload = {
     type: EntityType.PROFILE,

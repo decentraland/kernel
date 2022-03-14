@@ -87,7 +87,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 
 function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const catalystUrl = yield select(getCatalystServer)
-  const client: CatalystClient = new CatalystClient(catalystUrl, 'EXPLORER')
+  const client: CatalystClient = new CatalystClient({ catalystUrl })
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
 
@@ -191,9 +191,9 @@ async function fetchWearablesByCollectionFromBuilder(
 
     const path = `collections/${collectionUuid}/items`
     const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
-    const collection: { data: UnpublishedWearable[] } = await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
+    const collection: { data: UnpublishedWearable[] } = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
       headers
-    })
+    })) as any
     const v2Wearables = collection.data.map((wearable) => mapUnpublishedWearableIntoCatalystWearable(wearable))
     result.push(...v2Wearables)
   }
