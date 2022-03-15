@@ -182,10 +182,6 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'ShowFPSPanel')
   }
 
-  public SetLocalDCLVersion(version: string) {
-    this.SendMessageToUnity('Main', 'SetLocalDCLVersion', version)
-  }
-
   public HideFPSPanel() {
     this.SendMessageToUnity('Main', 'HideFPSPanel')
   }

@@ -500,8 +500,6 @@ function initChatCommands() {
 function getDebugPanelMessage() {
   fpsConfiguration.visible = !fpsConfiguration.visible
   fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
-  const [kernelVersion, rendererVersion] = getVersions()
-  getUnityInstance().SetLocalDCLVersion(`\nKernel: ${kernelVersion}\nRenderer: ${rendererVersion}`)
 
   return {
     messageId: uuid(),
