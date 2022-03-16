@@ -37,6 +37,7 @@ import { getProvider } from 'shared/session/index'
 import { uuid } from 'atomicHelpers/math'
 import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
+import { trackEvent } from 'shared/analytics'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -316,6 +317,15 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddMessageToChatWindow(message: ChatMessage) {
+    try {
+      message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
+    } catch (err) {
+      defaultLogger.error(err)
+    }
+    if (message.body.length > 1000) {
+      trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
+      return
+    }
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
