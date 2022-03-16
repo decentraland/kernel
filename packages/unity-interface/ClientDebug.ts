@@ -2,6 +2,11 @@ import { defaultLogger } from 'shared/logger'
 import { ErrorContextTypes, ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { getUnityInstance, IUnityInterface } from './IUnityInterface'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJson'
+import { SceneJsonData } from 'shared/types'
+import { SpawnPoint } from '@dcl/schemas'
+import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+import { Vector3 } from '@dcl/ecs-math'
 
 export class ClientDebug {
   private unityInterface: IUnityInterface
@@ -87,15 +92,8 @@ export class ClientDebug {
   }
 
   public async ToggleSceneBoundingBoxes(scene: string, enabled: boolean) {
-    const isInputCoords = scene.match(/^-?[0-9]*([,]-?[0-9]*){1}$/)
-    let sceneId: string | undefined
-
-    if (isInputCoords) {
-      const ids = await fetchSceneIds([scene])
-      sceneId = ids[0] ?? undefined
-    } else {
-      sceneId = scene
-    }
+    const isInputCoords = isValueACoordinate(scene)
+    const sceneId: string | undefined = isInputCoords ? await getSceneIdFromCoordinates(scene) : scene
 
     if (sceneId) {
       this.unityInterface.SendMessageToUnity('Main', 'ToggleSceneBoundingBoxes', JSON.stringify({ sceneId, enabled }))
@@ -103,6 +101,79 @@ export class ClientDebug {
       throw new Error(`scene not found ${scene}`)
     }
   }
+
+  public async ToggleSceneSpawnPoints(scene: string, enabled?: boolean, sceneJsonData?: SceneJsonData) {
+    const isInputCoords = isValueACoordinate(scene)
+    const sceneId: string | undefined = isInputCoords ? await getSceneIdFromCoordinates(scene) : scene
+
+    if (!sceneId) {
+      throw new Error(`scene not found ${scene}`)
+    }
+
+    let sceneJson = sceneJsonData
+
+    // if `sceneJsonData` is not in the arguments we fetch the json data
+    if (!sceneJson) {
+      const fetchJson = await fetchSceneJson([sceneId])
+      const fetchedJson = fetchJson[0] ?? undefined
+
+      if (!fetchedJson) {
+        throw new Error(`scene json not found ${scene}`)
+      }
+      sceneJson = fetchedJson.sceneJsonData
+    }
+
+    // get base parcel world position to always handle positions in world context
+    const base = parseParcelPosition(sceneJson.scene.base)
+    const basePosition = new Vector3()
+    gridToWorld(base.x, base.y, basePosition)
+
+    const spawnPoints: SpawnPoint[] = []
+
+    // if no spawnpoint set in scene json, we create the default one (0,0,0)
+    if (!sceneJson.spawnPoints) {
+      spawnPoints.push({
+        name: 'undefined',
+        position: { x: [basePosition.x], y: [basePosition.y], z: [basePosition.z] },
+        default: true
+      })
+    } else {
+      const convertPositionComponent = (value: number | number[], sceneWorldPosition: number): number[] => {
+        if (Array.isArray(value)) {
+          return value.map((v) => sceneWorldPosition + v)
+        }
+        return [sceneWorldPosition + value]
+      }
+
+      // convert vector3 to world position and always use type `number[]` for spawnpoint position
+      for (const spawnPoint of sceneJson.spawnPoints) {
+        spawnPoints.push({
+          ...spawnPoint,
+          position: {
+            x: convertPositionComponent(spawnPoint.position.x, basePosition.x),
+            y: convertPositionComponent(spawnPoint.position.y, basePosition.y),
+            z: convertPositionComponent(spawnPoint.position.z, basePosition.z)
+          },
+          cameraTarget: spawnPoint.cameraTarget ? basePosition.add(spawnPoint.cameraTarget) : undefined
+        })
+      }
+    }
+
+    this.unityInterface.SendMessageToUnity(
+      'Main',
+      'ToggleSceneSpawnPoints',
+      JSON.stringify({ sceneId, enabled, spawnPoints })
+    )
+  }
+}
+
+function isValueACoordinate(value: string): boolean {
+  return value.match(/^-?[0-9]*([,]-?[0-9]*){1}$/) ? true : false
+}
+
+async function getSceneIdFromCoordinates(coordinates: string): Promise<string | undefined> {
+  const ids = await fetchSceneIds([coordinates])
+  return ids[0] ?? undefined
 }
 
 export const clientDebug: ClientDebug = new ClientDebug(getUnityInstance())
