@@ -49,6 +49,17 @@ export const isMOTDInitialized = (store: RootMetaState): boolean =>
 export const getMessageOfTheDay = (store: RootMetaState): MessageOfTheDayConfig | null =>
   getWorldConfig(store) ? getWorldConfig(store).messageOfTheDay || null : null
 
+/**
+ * Returns the variant content of a feature flag
+ */
+export function getVariantContent(store: RootMetaState, featureName: string): string | undefined {
+  const ff = getFeatureFlags(store)
+  if (ff.variants[featureName] && ff.variants[featureName].payload) {
+    return ff.variants[featureName].payload?.value
+  }
+  return undefined
+}
+
 export function getFeatureFlags(store: RootMetaState): FeatureFlag {
   const featureFlag: FeatureFlag = {
     flags: {},

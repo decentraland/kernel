@@ -22,6 +22,7 @@ import { StatefulWorker } from './StatefulWorker'
 import { UnityScene } from 'unity-interface/UnityScene'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { PositionTrackEvents } from 'shared/analytics/types'
+import { getVariantContent } from 'shared/meta/selectors'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -35,6 +36,32 @@ export type EnableParcelSceneLoadingOptions = {
 }
 
 declare const globalThis: any
+
+const PARCEL_DENY_LISTED_FEATURE_FLAG = 'parcel-denylist'
+export function isParcelDenyListed(coordinates: string[]) {
+  const denylist = getVariantContent(store.getState(), PARCEL_DENY_LISTED_FEATURE_FLAG)
+
+  const setOfCoordinates = new Set(coordinates)
+
+  if (denylist) {
+    return denylist.split(/[\s\r\n]+/gm).some(($) => setOfCoordinates.has($.trim()))
+  }
+
+  return false
+}
+
+export function generateBannedILand(land: ILand): ILand {
+  return {
+    sceneId: land.sceneId,
+    baseUrl: land.baseUrl,
+    baseUrlBundles: land.baseUrlBundles,
+    sceneJsonData: land.sceneJsonData,
+    mappingsResponse: {
+      ...land.mappingsResponse,
+      contents: []
+    }
+  }
+}
 
 const sceneManagerLogger = createLogger('scene-manager')
 let lastPlayerPositionKnow: Vector2Component
@@ -226,11 +253,6 @@ export function stopIsolatedMode(options: IsolatedModeOptions) {
   }
 }
 
-Object.assign(globalThis, {
-  startIsolatedMode,
-  endIsolatedMode: stopIsolatedMode
-})
-
 /**
  *  @internal
  * Returns a set of Set<SceneId>
@@ -311,7 +333,9 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
 
       worker = new StatefulWorker(scene, options)
     } else {
-      const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(parcelSceneToStart))
+      const denyListed = isParcelDenyListed(parcelSceneToStart.sceneJsonData.scene.parcels)
+      const iland = denyListed ? generateBannedILand(parcelSceneToStart) : parcelSceneToStart
+      const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(iland))
 
       parcelScene.data.useFPSThrottling = true
       worker = loadParcelScene(parcelScene)
