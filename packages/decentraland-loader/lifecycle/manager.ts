@@ -97,16 +97,11 @@ export class LifecycleManager extends TransportBasedServer {
   }
 
   async reloadSceneByCoords(coords: string) {
-    lookupLoop: for (const entry of this.sceneIdToRequest.entries()) {
-      const landFuture = entry[1]
-      const land = await landFuture
-      const parcels = land.sceneJsonData.scene.parcels
-      for (const parcel of parcels) {
-        if (parcel === coords) {
-          void this.reloadScene(entry[0])
-          break lookupLoop
-        }
-      }
+    if(this.positionToRequest.get(coords) === undefined) await this.getSceneIds([coords])[0]
+
+    const sceneId = await this.positionToRequest.get(coords)
+    if(sceneId) {
+      await this.reloadScene(sceneId)
     }
   }
 
