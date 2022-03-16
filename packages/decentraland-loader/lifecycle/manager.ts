@@ -96,6 +96,20 @@ export class LifecycleManager extends TransportBasedServer {
     return futures
   }
 
+  async reloadSceneByCoords(coords: string) {
+    lookupLoop: for (const entry of this.sceneIdToRequest.entries()) {
+      const landFuture = entry[1]
+      const land = await landFuture
+      const parcels = land.sceneJsonData.scene.parcels
+      for (const parcel of parcels) {
+        if (parcel === coords) {
+          void this.reloadScene(entry[0])
+          break lookupLoop
+        }
+      }
+    }
+  }
+
   async reloadScene(sceneId: string) {
     const landFuture = this.sceneIdToRequest.get(sceneId)
     if (landFuture) {
