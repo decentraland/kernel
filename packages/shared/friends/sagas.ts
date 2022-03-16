@@ -54,6 +54,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { trackEvent } from 'shared/analytics'
 
 const DEBUG = DEBUG_PM
 
@@ -465,6 +466,15 @@ function parseUserId(socialId: string) {
 
 function addNewChatMessage(chatMessage: ChatMessage) {
   DEBUG && logger.info(`getUnityInstance().AddMessageToChatWindow`, chatMessage)
+  try {
+    chatMessage.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
+  } catch (err) {
+    logger.error(err)
+  }
+  if (chatMessage.body.length > 1000) {
+    trackEvent('long_chat_message_ignored', { message: chatMessage.body, sender: chatMessage.sender })
+    return
+  }
   getUnityInstance().AddMessageToChatWindow(chatMessage)
 }
 
