@@ -58,7 +58,6 @@ import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene, invalidateAllScenes, reloadSceneByCoords } from 'decentraland-loader/lifecycle/utils/reloadScene'
-import { killPortableExperienceScene } from './portableExperiencesUtils'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
@@ -80,6 +79,8 @@ import { Authenticator } from 'dcl-crypto'
 import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
 import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
+import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
+import { setDecentralandTime } from 'shared/apis/EnvironmentAPI'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -373,7 +374,6 @@ export class BrowserInterface {
       case 'StartStatefulMode': {
         const { sceneId } = payload
         const worker = getSceneWorkerBySceneID(sceneId)!
-        getUnityInstance().UnloadScene(sceneId) // Maybe unity should do it by itself?
         const parcelScene = worker.getParcelScene()
         stopParcelSceneWorker(worker)
         const data = parcelScene.data.data as LoadableParcelScene
@@ -624,7 +624,11 @@ export class BrowserInterface {
   }
 
   public async KillPortableExperience(data: { portableExperienceId: string }): Promise<void> {
-    await killPortableExperienceScene(data.portableExperienceId)
+    store.dispatch(removeScenePortableExperience(data.portableExperienceId))
+  }
+
+  public async SetDisabledPortableExperiences(data: { idsToDisable: string[] }): Promise<void> {
+    store.dispatch(denyPortableExperiences(data.idsToDisable))
   }
 
   // Note: This message is deprecated and should be deleted in the future.
@@ -754,6 +758,10 @@ export class BrowserInterface {
 
   public ReportAvatarState(data: AvatarRendererMessage) {
     setRendererAvatarState(data)
+  }
+
+  public ReportDecentralandTime(data: any) {
+    setDecentralandTime(data)
   }
 }
 

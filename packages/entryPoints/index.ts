@@ -338,7 +338,7 @@ export async function startPreview() {
   ws.addEventListener('message', (msg) => {
     if (msg.data.startsWith('{')) {
       // tslint:disable-next-line: no-console
-      console.log('Update message from CLI', msg.data)
+      defaultLogger.log('Update message from CLI', msg.data)
       const message: sdk.Messages = JSON.parse(msg.data)
       handleServerMessage(message)
     }

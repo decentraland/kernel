@@ -13,6 +13,7 @@ import { commsReducer } from '../comms/reducer'
 import { friendsReducer } from '../friends/reducer'
 import { sessionReducer } from '../session/reducer'
 import { questsReducer } from '../quests/reducer'
+import { portableExperienceReducer } from '../portableExperiences/reducer'
 import { wearablesPortableExperienceReducer } from '../wearablesPortableExperience/reducer'
 
 export const reducers = combineReducers({
@@ -29,5 +30,6 @@ export const reducers = combineReducers({
   comms: commsReducer,
   meta: metaReducer,
   quests: questsReducer,
-  wearablesPortableExperiences: wearablesPortableExperienceReducer
+  wearablesPortableExperiences: wearablesPortableExperienceReducer,
+  portableExperiences: portableExperienceReducer
 })

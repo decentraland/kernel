@@ -26,6 +26,7 @@ export type TrackEvents = PositionTrackEvents & {
   ['motd_failed']: Record<string, unknown> // {}
   ['TermsOfServiceResponse']: { sceneId: string; accepted: boolean; dontShowAgain: boolean }
   ['error_fatal']: { context: ErrorContextTypes; message: string; stack: string; saga_stack?: string }
+  ['long_chat_message_ignored']: { message: string; sender?: string }
 
   // Performance
   ['scene_loading_failed']: {

@@ -22,10 +22,11 @@ import './unit/positionThings.test'
 import './unit/RestrictedActions.test'
 import './unit/engine.test'
 import './unit/catalog.saga.test'
+import './unit/portable-experiences.test'
 
 import './dao'
 
-import './shared/sceneEvents'
+import './shared'
 
 import './scene-system/sdk'
 

@@ -1,6 +1,6 @@
 import { EventDispatcher } from 'decentraland-rpc/lib/common/core/EventDispatcher'
 import { WSS_ENABLED, FORCE_SEND_MESSAGE, DEBUG_MESSAGES_QUEUE_PERF, DEBUG_SCENE_LOG } from 'config'
-import { createDummyLogger, createLogger, ILogger } from 'shared/logger'
+import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
 import { EntityAction, EnvironmentData } from 'shared/types'
 import { ParcelSceneAPI } from 'shared/world/ParcelSceneAPI'
 import { SceneWorker } from 'shared/world/SceneWorker'
@@ -8,13 +8,6 @@ import { getUnityInstance } from './IUnityInterface'
 import { protobufMsgBridge } from './protobufMessagesBridge'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { trackEvent } from 'shared/analytics'
-
-/**
- * Returns the id of the scene, usually the RootCID
- */
-export function getParcelSceneID(parcelScene: ParcelSceneAPI) {
-  return parcelScene.data.sceneId
-}
 
 const sendBatchTime: Array<number> = []
 const sendBatchMsgs: Array<number> = []
@@ -29,16 +22,20 @@ export class UnityScene<T> implements ParcelSceneAPI {
   initFinished: boolean = false
 
   constructor(public data: EnvironmentData<T>) {
-    this.logger = DEBUG_SCENE_LOG ? createLogger(getParcelSceneID(this) + ': ') : createDummyLogger()
+    this.logger = DEBUG_SCENE_LOG ? createLogger('unityScene: ' + this.getSceneId() + ': ') : createDummyLogger()
 
     const startLoadingTime = performance.now()
 
     this.eventDispatcher.once('sceneStart', () => {
       trackEvent('scene_start_event', {
-        scene_id: getParcelSceneID(this),
+        scene_id: this.getSceneId(),
         time_since_creation: performance.now() - startLoadingTime
       })
     })
+  }
+
+  getSceneId(): string {
+    return this.data.sceneId
   }
 
   sendBatch(actions: EntityAction[]): void {
@@ -64,13 +61,12 @@ export class UnityScene<T> implements ParcelSceneAPI {
         sendBatchMsgCount -= sendBatchMsgs.splice(0, 1)[0]
       }
 
-      // tslint:disable-next-line:no-console
-      console.log(`sendBatch time total for msgs ${sendBatchMsgCount} calls: ${sendBatchTimeCount}ms ... `)
+      defaultLogger.log(`sendBatch time total for msgs ${sendBatchMsgCount} calls: ${sendBatchTimeCount}ms ... `)
     }
   }
 
   sendBatchWss(actions: EntityAction[]): void {
-    const sceneId = getParcelSceneID(this)
+    const sceneId = this.getSceneId()
     let messages = ''
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
@@ -91,7 +87,7 @@ export class UnityScene<T> implements ParcelSceneAPI {
   }
 
   sendBatchNative(actions: EntityAction[]): void {
-    const sceneId = getParcelSceneID(this)
+    const sceneId = this.getSceneId()
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
       nativeMsgBridge.SendNativeMessage(sceneId, action)
@@ -100,10 +96,6 @@ export class UnityScene<T> implements ParcelSceneAPI {
 
   registerWorker(worker: SceneWorker): void {
     this.worker = worker
-  }
-
-  dispose(): void {
-    // TODO: do we need to release some resource after releasing a scene worker?
   }
 
   on<T extends IEventNames>(event: T, cb: (event: IEvents[T]) => void): void {
