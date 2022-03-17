@@ -97,7 +97,7 @@ export class LifecycleManager extends TransportBasedServer {
   }
 
   async reloadSceneByCoords(coords: string[]) {
-    for(const coord of coords) {
+    for (const coord of coords) {
       if (this.positionToRequest.get(coord) !== undefined) {
         const sceneId = await this.positionToRequest.get(coord)
         if (sceneId) {
@@ -106,8 +106,8 @@ export class LifecycleManager extends TransportBasedServer {
         }
         this.positionToRequest.delete(coord)
 
-        await this.notify('Scene.Invalidate', {sceneId})
-        await this.notify('Scene.InvalidateByCoords', {coords})
+        await this.notify('Scene.Invalidate', { sceneId })
+        await this.notify('Scene.InvalidateByCoords', { coords })
       }
 
       await this.getSceneIds([coord])[0]
