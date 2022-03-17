@@ -687,7 +687,7 @@ export class BrowserInterface {
       .then(() => {
         deploymentResult = { ok: true }
         if (data.reloadSingleScene) void reloadSceneByCoords(data.pointers[0])
-        else void invalidateAllScenes()
+        else void invalidateAllScenes(data.pointers[0])
         getUnityInstance().SendPublishSceneResult(deploymentResult)
       })
       .catch((error) => {

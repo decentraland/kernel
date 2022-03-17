@@ -12,8 +12,8 @@ export async function reloadSceneByCoords(coords: string) {
   return server.reloadSceneByCoords(coords)
 }
 
-export function invalidateAllScenes() {
+export function invalidateAllScenes(coordsToInvalidate: string) {
   const server = getServer()
   if (!server) return
-  return server.invalidateAllScenes()
+  return server.invalidateAllScenes(coordsToInvalidate)
 }
