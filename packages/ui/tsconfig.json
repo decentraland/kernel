@@ -25,7 +25,7 @@
     "outDir": "../../static/systems",
     "lib": ["es2017", "webworker"],
     "baseUrl": "..",
-    "types": ["@dcl/posix", "segment-analytics"],
+    "types": ["@dcl/posix", "segment-analytics"]
   },
   "exclude": ["../../node_modules"]
 }

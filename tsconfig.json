@@ -26,7 +26,7 @@
       "dom",
       "esnext.asynciterable"
     ],
-    "types": ["@dcl/posix", "segment-analytics", "@types/offscreencanvas"],
+    "types": ["@dcl/posix", "segment-analytics", "offscreencanvas"],
     "typeRoots": ["./node_modules"]
   },
   "exclude": [

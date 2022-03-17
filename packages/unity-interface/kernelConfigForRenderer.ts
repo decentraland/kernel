@@ -22,7 +22,9 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer & any {
     },
     debugConfig: undefined,
     gifSupported:
-      typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
+      typeof (window as any).OffscreenCanvas !== 'undefined' &&
+      typeof (window as any).OffscreenCanvasRenderingContext2D === 'function' &&
+      !WSS_ENABLED,
     network: 'mainnet',
     validWorldRanges: getWorld().validWorldRanges,
     kernelVersion: versions['@dcl/kernel'] || 'unknown-kernel-version',
