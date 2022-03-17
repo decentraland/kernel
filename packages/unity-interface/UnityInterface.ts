@@ -319,7 +319,7 @@ export class UnityInterface implements IUnityInterface {
   public AddMessageToChatWindow(message: ChatMessage) {
     try {
       message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
-    } catch (err) {
+    } catch (err: any) {
       defaultLogger.error(err)
     }
     if (message.body.length > 1000) {
