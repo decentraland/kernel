@@ -686,8 +686,14 @@ export class BrowserInterface {
     deployScene(data)
       .then(() => {
         deploymentResult = { ok: true }
-        if (data.reloadSingleScene) void reloadSceneByCoords(data.pointers[0])
-        else void invalidateAllScenes(data.pointers[0])
+        if (data.reloadSingleScene) {
+          const promise = reloadSceneByCoords(data.pointers[0])
+          promise.catch((error) => defaultLogger.error(`error reloading the scene by coords: ${data.pointers[0]} ${error}`))
+        }
+        else {
+          const promise = invalidateAllScenes(data.pointers[0])
+          promise?.catch((error) => defaultLogger.error(`error invalidating all the scenes: ${error}`))
+        }
         getUnityInstance().SendPublishSceneResult(deploymentResult)
       })
       .catch((error) => {
