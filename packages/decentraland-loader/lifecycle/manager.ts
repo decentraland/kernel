@@ -112,7 +112,7 @@ export class LifecycleManager extends TransportBasedServer {
     await this.getSceneIds([coords])[0]
     const newSceneId = await this.positionToRequest.get(coords)
     if (newSceneId) {
-      this.getParcelData(newSceneId)
+      await this.getParcelData(newSceneId)
       await this.reloadScene(newSceneId)
     }
   }
@@ -133,8 +133,7 @@ export class LifecycleManager extends TransportBasedServer {
     for (const sceneId of this.sceneIdToRequest.keys()) {
       await this.invalidateScene(sceneId)
     }
-    if(coordsToInvalidate)
-      this.notify('Scene.InvalidateByCoords', { coords:coordsToInvalidate })
+    if (coordsToInvalidate) this.notify('Scene.InvalidateByCoords', { coords: coordsToInvalidate })
   }
 
   async invalidateScene(sceneId: string) {
