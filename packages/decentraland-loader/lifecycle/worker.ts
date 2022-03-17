@@ -136,6 +136,10 @@ let downloadManager: SceneDataDownloadManager
       connector.on('Scene.Invalidate', (data: { sceneId: string }) => {
         sceneController.invalidate(data.sceneId)
       })
+
+      connector.on('Scene.InvalidateByCoords', (data: { coords: string }) => {
+        downloadManager.invalidateParcels([data.coords])
+      })
     }
   )
 }

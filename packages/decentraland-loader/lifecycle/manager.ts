@@ -97,11 +97,23 @@ export class LifecycleManager extends TransportBasedServer {
   }
 
   async reloadSceneByCoords(coords: string) {
-    if (this.positionToRequest.get(coords) === undefined) await this.getSceneIds([coords])[0]
+    if(this.positionToRequest.get(coords) !== undefined) {
+      const sceneId = await this.positionToRequest.get(coords)
+      if (sceneId) {
+        await this.reloadScene(sceneId)
+        this.sceneIdToRequest.delete(sceneId)
+      }
+      this.positionToRequest.delete(coords)
 
-    const sceneId = await this.positionToRequest.get(coords)
-    if (sceneId) {
-      await this.reloadScene(sceneId)
+      await this.notify('Scene.Invalidate', { sceneId })
+      await this.notify('Scene.InvalidateByCoords', { coords })
+    }
+
+    await this.getSceneIds([coords])[0]
+    const newSceneId = await this.positionToRequest.get(coords)
+    if (newSceneId) {
+      this.getParcelData(newSceneId)
+      await this.reloadScene(newSceneId)
     }
   }
 
