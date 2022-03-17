@@ -42,7 +42,7 @@ function delightedSurvey() {
 
         try {
           delighted.survey(payload)
-        } catch (error) {
+        } catch (error: any) {
           defaultLogger.error('Delighted error: ' + error.message, error)
         }
       }

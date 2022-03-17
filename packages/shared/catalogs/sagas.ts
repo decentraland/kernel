@@ -77,7 +77,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
       }))
 
       yield put(wearablesSuccess(v2Wearables, context))
-    } catch (error) {
+    } catch (error: any) {
       yield put(wearablesFailure(context, error.message))
     }
   } else {
@@ -86,7 +86,7 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 }
 
 function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
-  const catalystUrl = yield select(getCatalystServer)
+  const catalystUrl: string = yield select(getCatalystServer)
   const client: CatalystClient = new CatalystClient({ catalystUrl })
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
@@ -183,7 +183,7 @@ async function fetchWearablesByCollectionFromBuilder(
   filters: WearablesRequestFilters | undefined,
   identity: ExplorerIdentity
 ) {
-  const result = []
+  const result: WearableV2[] = []
   for (const collectionUuid of uuidCollections) {
     if (filters?.collectionIds && !filters.collectionIds.includes(collectionUuid)) {
       continue
@@ -203,7 +203,7 @@ async function fetchWearablesByCollectionFromBuilder(
   return result
 }
 async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesRequestFilters | undefined) {
-  const result = []
+  const result: WearableV2[] = []
   try {
     const url = `${rootURLPreviewMode()}/preview-wearables`
     const collection: { data: any[] } = await (await fetch(url)).json()

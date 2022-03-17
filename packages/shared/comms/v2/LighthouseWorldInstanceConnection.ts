@@ -129,7 +129,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
         await (this.peer as LayerBasedPeerType).setLayer(this.realm.layer)
       }
       this.statusHandler({ status: 'connected', connectedPeers: this.connectedPeersCount() })
-    } catch (e) {
+    } catch (e: any) {
       defaultLogger.error('Error while connecting to layer', e)
       this.statusHandler({
         status: e.responseJson && e.responseJson.status === 'layer_is_full' ? 'realm-full' : 'error',
@@ -275,7 +275,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   private async sendData(topic: string, messageData: MessageData, type: PeerMessageType) {
     try {
       await this.peer.sendMessage(topic, createCommsMessage(messageData).serializeBinary(), type)
-    } catch (e) {
+    } catch (e: any) {
       const message = e.message
       if (typeof message === 'string' && message.startsWith('cannot send a message in a room not joined')) {
         // We can ignore this error. This is usually just a problem of eventual consistency.
@@ -406,7 +406,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
           break
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       logger.error(`Error processing received message from ${sender}. Topic: ${room}`, e)
     }
   }

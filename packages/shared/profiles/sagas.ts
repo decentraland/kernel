@@ -108,11 +108,11 @@ function* initialProfileLoad() {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const userId = identity.address
 
-  let profile = undefined
+  let profile: Profile
 
   try {
     profile = yield ProfileAsPromise(userId, undefined, getProfileType(identity))
-  } catch (e) {
+  } catch (e: any) {
     ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId: userId })
     BringDownClientAndShowError(UNEXPECTED_ERROR)
     throw e
@@ -122,7 +122,7 @@ function* initialProfileLoad() {
 
   if (!profile.hasClaimedName) {
     const net: keyof typeof ethereumConfigurations = yield select(getCurrentNetwork)
-    const names = yield fetchOwnedENS(ethereumConfigurations[net].names, userId)
+    const names: string[] = yield fetchOwnedENS(ethereumConfigurations[net].names, userId)
 
     // patch profile to re-add missing name
     profile = { ...profile, name: names[0], hasClaimedName: true }
@@ -133,7 +133,7 @@ function* initialProfileLoad() {
     }
   }
 
-  const isFace256Resized = yield select(isResizeServiceUrl, profile.avatar.snapshots?.face256)
+  const isFace256Resized: boolean = yield select(isResizeServiceUrl, profile.avatar.snapshots?.face256)
 
   if (isFace256Resized) {
     // setting dirty profile, as at least one of the face images are taken from a local blob
@@ -172,7 +172,7 @@ export function* doesProfileExist(userId: string): any {
     const profiles: { avatars: object[] } = yield profileServerRequest(userId)
 
     return profiles.avatars.length > 0
-  } catch (error) {
+  } catch (error: any) {
     if (error.message !== 'Profile not found') {
       defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
     }
@@ -261,7 +261,7 @@ function* populateFaceIfNecessary(profile: any, resolution: string) {
       let faceUrl = `${resizeServiceUrl}/${path}`
 
       // head to resize url in the current catalyst before populating
-      let response = yield call(fetch, faceUrl, { method: 'HEAD' })
+      let response: Response = yield call(fetch, faceUrl, { method: 'HEAD' })
       if (!response.ok) {
         // if resize service is not available for this image, try with fallback server
         const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -299,7 +299,7 @@ export async function profileServerRequest(userId: string, version?: number) {
     const profiles: any = await fetcher.fetchJson(url)
 
     return profiles[0] || { avatars: [] }
-  } catch (e) {
+  } catch (e: any) {
     defaultLogger.error(e)
     return { avatars: [] }
   }
@@ -313,8 +313,8 @@ function* handleRandomAsSuccess(action: ProfileRandomAction): any {
 function* handleLocalProfile(action: LocalProfileReceived) {
   const { userId, profile } = action.payload
 
-  const existingProfile = yield select(getProfile, userId)
-  const connectedWeb3 = yield select(hasConnectedWeb3, userId)
+  const existingProfile: Profile = yield select(getProfile, userId)
+  const connectedWeb3: boolean = yield select(hasConnectedWeb3, userId)
 
   if (!existingProfile || existingProfile.version < profile.version) {
     yield put(profileSuccess(userId, profile, connectedWeb3))

@@ -22,7 +22,7 @@ export async function questsRequest<T>(
   try {
     const client = await questsClient()
     return await request(client)
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, status: 0, body: { status: 'unknown error', message: e.message } }
   }
 }

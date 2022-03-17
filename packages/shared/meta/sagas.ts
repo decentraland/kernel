@@ -41,7 +41,8 @@ function pickRealmAlgorithmConfigFromVariants(
 }
 
 export function* waitForMetaConfigurationInitialization() {
-  if (!(yield select(isMetaConfigurationInitiazed))) {
+  const configInitialized: boolean = yield select(isMetaConfigurationInitiazed)
+  if (!configInitialized) {
     yield take(META_CONFIGURATION_INITIALIZED)
   }
 }
@@ -104,7 +105,7 @@ function* fetchMessageOfTheDay() {
   const userId: string | undefined = yield select(getCurrentUserId)
   if (userId) {
     const url = `https://dclcms.club/api/notifications?address=${userId}`
-    const result = yield call(async () => {
+    const result: Response = yield call(async () => {
       try {
         const response = await fetch(url)
         const data = await response.json()

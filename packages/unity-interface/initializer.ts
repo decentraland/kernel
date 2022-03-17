@@ -29,7 +29,7 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
     let parsedJson = null
     try {
       parsedJson = JSON.parse(jsonEncodedMessage)
-    } catch (e) {
+    } catch (e: any) {
       // we log the whole message to gain visibility
       defaultLogger.error(e.message + ' messageFromEngine: ' + type + ' ' + jsonEncodedMessage)
       throw e

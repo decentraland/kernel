@@ -351,7 +351,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public UpdateHotScenesList(info: HotSceneInfo[]) {
-    const chunks = []
+    const chunks: any[] = []
 
     while (info.length) {
       chunks.push(info.splice(0, MINIMAP_CHUNK_SIZE))

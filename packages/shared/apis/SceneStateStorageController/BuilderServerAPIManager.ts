@@ -50,7 +50,7 @@ export class BuilderServerAPIManager {
     if (assets) {
       try {
         assets.forEach((asset) => this.assets.set(asset.id, asset))
-      } catch (e) {
+      } catch (e: any) {
         defaultLogger.error(e)
       }
     }
@@ -67,7 +67,7 @@ export class BuilderServerAPIManager {
         const response = await fetch(url)
         const { data }: { data: BuilderAsset[] } = await response.json()
         data.map((builderAsset) => builderAsset).forEach((asset) => this.assets.set(asset.id, asset))
-      } catch (e) {
+      } catch (e: any) {
         defaultLogger.error(e)
       }
     }
@@ -114,7 +114,7 @@ export class BuilderServerAPIManager {
       // If this manifest contains assets, we add them so we don't need to fetch them
       if (manifest) this.addAssetsFromManifest(manifest)
       return manifest
-    } catch (e) {
+    } catch (e: any) {
       defaultLogger.error(e)
       return undefined
     }
@@ -146,7 +146,7 @@ export class BuilderServerAPIManager {
       if (manifest) this.addAssetsFromManifest(manifest)
 
       return manifest
-    } catch (e) {
+    } catch (e: any) {
       defaultLogger.error(e)
       return undefined
     }
@@ -156,7 +156,7 @@ export class BuilderServerAPIManager {
     try {
       builderManifest.project.updated_at = new Date().toISOString()
       await this.setManifestOnServer(builderManifest, identity)
-    } catch (e) {
+    } catch (e: any) {
       defaultLogger.error(e)
     }
   }
@@ -164,7 +164,7 @@ export class BuilderServerAPIManager {
   async updateProjectThumbnail(projectId: string, thumbnailBlob: Blob, identity: ExplorerIdentity) {
     try {
       await this.setThumbnailOnServer(projectId, thumbnailBlob, identity)
-    } catch (e) {
+    } catch (e: any) {
       defaultLogger.error(e)
     }
   }
@@ -173,7 +173,7 @@ export class BuilderServerAPIManager {
     const builderManifest = this.createEmptyDefaultBuilderScene(coordinates, identity.rawAddress)
     try {
       await this.setManifestOnServer(builderManifest, identity)
-    } catch (e) {
+    } catch (e: any) {
       defaultLogger.error(e)
     }
     return builderManifest

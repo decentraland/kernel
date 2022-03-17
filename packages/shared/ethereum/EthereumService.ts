@@ -162,7 +162,7 @@ export async function requirePayment(toAddress: string, amount: number, currency
       })
     }
     return result
-  } catch (err) {
+  } catch (err: any) {
     defaultLogger.error('Error in EthereumController#requirePayment', err)
     throw new Error(err)
   }
@@ -204,7 +204,7 @@ export async function signMessage(messageDict: MessageDict) {
   try {
     const signature = await requestManager.personal_sign(hexEncodedMessage, signerAccount, '')
     return { message: messageToSign, hexEncodedMessage, signature }
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(err)
   }
 }

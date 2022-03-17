@@ -4,7 +4,8 @@
     "baseUrl": "..",
     "experimentalDecorators": true,
     "strict": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "types": ["@types/offscreencanvas"]
   },
   "extends": "../../tsconfig.json"
 }

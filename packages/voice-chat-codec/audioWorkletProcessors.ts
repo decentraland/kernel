@@ -13,6 +13,8 @@ declare var AudioWorkletProcessor: {
   new (options?: AudioWorkletNodeOptions): AudioWorkletProcessor
 }
 
+type AudioParamDescriptor = Record<string, Float32Array>
+
 declare function registerProcessor(
   name: string,
   processorCtor: (new (options?: AudioWorkletNodeOptions) => AudioWorkletProcessor) & {
