@@ -77,5 +77,4 @@ class WebWorkerScene extends SceneRuntime {
   }
 }
 
-// tslint:disable-next-line
 new WebWorkerScene(WebWorkerTransport(self))

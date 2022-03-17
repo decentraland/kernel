@@ -248,7 +248,6 @@ export abstract class SceneRuntime extends Script {
       const dcl: DecentralandInterface = {
         DEBUG: true,
         log(...args: any[]) {
-          // tslint:disable-next-line:no-console
           that.onLog(...args)
         },
 

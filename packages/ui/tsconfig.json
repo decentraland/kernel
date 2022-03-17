@@ -26,11 +26,6 @@
     "lib": ["es2017", "webworker"],
     "baseUrl": "..",
     "types": ["@dcl/posix", "segment-analytics"],
-    "plugins": [
-      {
-        "name": "tslint-language-service"
-      }
-    ]
   },
   "exclude": ["../../node_modules"]
 }

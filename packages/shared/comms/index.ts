@@ -238,7 +238,6 @@ let audioRequestPending = false
 function requestMediaDevice() {
   if (!audioRequestPending) {
     audioRequestPending = true
-    // tslint:disable-next-line
     navigator.mediaDevices
       .getUserMedia({
         audio: {

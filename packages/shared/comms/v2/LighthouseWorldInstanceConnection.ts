@@ -165,7 +165,6 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   analyticsData() {
     return {
       // This should work for any of both peer library types. Once we stop using both, we can remove the type cast
-      // tslint:disable-next-line
       stats: buildCatalystPeerStatsData(this.peer as any)
     }
   }

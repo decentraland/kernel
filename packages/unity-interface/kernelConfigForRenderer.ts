@@ -22,7 +22,6 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer & any {
     },
     debugConfig: undefined,
     gifSupported:
-      // tslint:disable-next-line
       typeof OffscreenCanvas !== 'undefined' && typeof OffscreenCanvasRenderingContext2D === 'function' && !WSS_ENABLED,
     network: 'mainnet',
     validWorldRanges: getWorld().validWorldRanges,

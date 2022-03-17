@@ -1,4 +1,3 @@
-// tslint:disable:no-console
 declare let globalThis: any & { isEditor: boolean; editor: any }
 declare let window: Window & { isEditor: boolean }
 
