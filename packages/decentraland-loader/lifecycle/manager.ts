@@ -96,24 +96,26 @@ export class LifecycleManager extends TransportBasedServer {
     return futures
   }
 
-  async reloadSceneByCoords(coords: string) {
-    if (this.positionToRequest.get(coords) !== undefined) {
-      const sceneId = await this.positionToRequest.get(coords)
-      if (sceneId) {
-        await this.reloadScene(sceneId)
-        this.sceneIdToRequest.delete(sceneId)
+  async reloadSceneByCoords(coords: string[]) {
+    for(const coord of coords) {
+      if (this.positionToRequest.get(coord) !== undefined) {
+        const sceneId = await this.positionToRequest.get(coord)
+        if (sceneId) {
+          await this.reloadScene(sceneId)
+          this.sceneIdToRequest.delete(sceneId)
+        }
+        this.positionToRequest.delete(coord)
+
+        await this.notify('Scene.Invalidate', {sceneId})
+        await this.notify('Scene.InvalidateByCoords', {coords})
       }
-      this.positionToRequest.delete(coords)
 
-      await this.notify('Scene.Invalidate', { sceneId })
-      await this.notify('Scene.InvalidateByCoords', { coords })
-    }
-
-    await this.getSceneIds([coords])[0]
-    const newSceneId = await this.positionToRequest.get(coords)
-    if (newSceneId) {
-      await this.getParcelData(newSceneId)
-      await this.reloadScene(newSceneId)
+      await this.getSceneIds([coord])[0]
+      const newSceneId = await this.positionToRequest.get(coord)
+      if (newSceneId) {
+        await this.getParcelData(newSceneId)
+        await this.reloadScene(newSceneId)
+      }
     }
   }
 
@@ -129,7 +131,7 @@ export class LifecycleManager extends TransportBasedServer {
     }
   }
 
-  async invalidateAllScenes(coordsToInvalidate: string | undefined) {
+  async invalidateAllScenes(coordsToInvalidate: string[] | undefined) {
     for (const sceneId of this.sceneIdToRequest.keys()) {
       await this.invalidateScene(sceneId)
     }
