@@ -256,7 +256,7 @@ function mapCatalystRepresentationIntoV2(representation: any): BodyShapeRepresen
 }
 
 function mapCatalystWearableIntoV2(v2Wearable: PartialWearableV2): PartialWearableV2 {
-  const { id, data, rarity, i18n, thumbnail, description } = v2Wearable
+  const { id, data, rarity, i18n, thumbnail, description, emoteDataV0 } = v2Wearable
   const { category, tags, hides, replaces, representations } = data
   const newRepresentations: BodyShapeRepresentationV2[] = representations.map(mapCatalystRepresentationIntoV2)
   const index = thumbnail.lastIndexOf('/')
@@ -276,7 +276,8 @@ function mapCatalystWearableIntoV2(v2Wearable: PartialWearableV2): PartialWearab
       replaces,
       representations: newRepresentations
     },
-    baseUrl
+    baseUrl,
+    emoteDataV0
   }
 }
 
