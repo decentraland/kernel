@@ -106,8 +106,6 @@ export abstract class SceneRuntime extends Script {
 
   isPreview: boolean = false
 
-  private originalFetch!: typeof fetch
-
   private allowOpenExternalUrl: boolean = false
 
   constructor(transport: ScriptingTransport, opt?: ILogOpts) {
@@ -544,7 +542,7 @@ export abstract class SceneRuntime extends Script {
         const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: EnvironmentAPI }
         const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
-        this.originalFetch = fetch
+        const originalFetch = fetch
 
         const restrictedWebSocket = createWebSocket({
           canUseWebsocket,
@@ -553,7 +551,7 @@ export abstract class SceneRuntime extends Script {
         })
         const restrictedFetch = createFetch({
           canUseFetch,
-          originalFetch: this.originalFetch,
+          originalFetch: originalFetch,
           previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log
         })
@@ -561,7 +559,7 @@ export abstract class SceneRuntime extends Script {
         globalThis.fetch = restrictedFetch
         globalThis.WebSocket = restrictedWebSocket
 
-        await this.runCode(source as any as string, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
+        await this.runCode(source, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
 
         let modulesNotLoaded: string[] = []
 

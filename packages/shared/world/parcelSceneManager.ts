@@ -22,6 +22,7 @@ import { StatefulWorker } from './StatefulWorker'
 import { UnityScene } from 'unity-interface/UnityScene'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { PositionTrackEvents } from 'shared/analytics/types'
+import { getVariantContent } from 'shared/meta/selectors'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -36,6 +37,32 @@ export type EnableParcelSceneLoadingOptions = {
 
 declare const globalThis: any
 
+const PARCEL_DENY_LISTED_FEATURE_FLAG = 'parcel-denylist'
+export function isParcelDenyListed(coordinates: string[]) {
+  const denylist = getVariantContent(store.getState(), PARCEL_DENY_LISTED_FEATURE_FLAG)
+
+  const setOfCoordinates = new Set(coordinates)
+
+  if (denylist) {
+    return denylist.split(/[\s\r\n]+/gm).some(($) => setOfCoordinates.has($.trim()))
+  }
+
+  return false
+}
+
+export function generateBannedILand(land: ILand): ILand {
+  return {
+    sceneId: land.sceneId,
+    baseUrl: land.baseUrl,
+    baseUrlBundles: land.baseUrlBundles,
+    sceneJsonData: land.sceneJsonData,
+    mappingsResponse: {
+      ...land.mappingsResponse,
+      contents: []
+    }
+  }
+}
+
 const sceneManagerLogger = createLogger('scene-manager')
 let lastPlayerPositionKnow: Vector2Component
 
@@ -47,7 +74,6 @@ export const onLoadParcelScenesObservable = new Observable<ILand[]>()
 /**
  * Array of sceneId's
  */
-export const onUnloadParcelScenesObservable = new Observable<string[]>()
 export const onPositionSettledObservable = new Observable<InstancedSpawnPoint>()
 export const onPositionUnsettledObservable = new Observable()
 
@@ -61,33 +87,29 @@ export function getSceneWorkerBySceneID(sceneId: string) {
   return loadedSceneWorkers.get(sceneId)
 }
 
-/**
- * Returns the id of the scene, usually the RootCID
- */
-export function getParcelSceneID(parcelScene: ParcelSceneAPI) {
-  return parcelScene.data.sceneId
-}
-
 /** Stops non-persistent scenes (i.e UI scene) */
 export function stopParcelSceneWorker(worker: SceneWorker) {
   if (worker && !worker.isPersistent()) {
-    forceStopParcelSceneWorker(worker)
+    forceStopSceneWorker(worker)
   }
 }
 
-export function forceStopParcelSceneWorker(worker: SceneWorker) {
+export function forceStopSceneWorker(worker: SceneWorker) {
   const sceneId = worker.getSceneId()
   worker.dispose()
   loadedSceneWorkers.delete(sceneId)
   reportPendingScenes()
 }
 
+/**
+ * Creates a worker for the ParcelSceneAPI
+ */
 export function loadParcelScene(
   parcelScene: ParcelSceneAPI,
   transport?: ScriptingTransport,
   persistent: boolean = false
 ) {
-  const sceneId = getParcelSceneID(parcelScene)
+  const sceneId = parcelScene.getSceneId()
 
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
@@ -100,11 +122,16 @@ export function loadParcelScene(
   return parcelSceneWorker
 }
 
+/**
+ * idempotent
+ */
 export function setNewParcelScene(sceneId: string, worker: SceneWorker) {
   const parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
+  if (worker === parcelSceneWorker) return
+
   if (parcelSceneWorker) {
-    forceStopParcelSceneWorker(parcelSceneWorker)
+    forceStopSceneWorker(parcelSceneWorker)
   }
 
   loadedSceneWorkers.set(sceneId, worker)
@@ -226,11 +253,6 @@ export function stopIsolatedMode(options: IsolatedModeOptions) {
   }
 }
 
-Object.assign(globalThis, {
-  startIsolatedMode,
-  endIsolatedMode: stopIsolatedMode
-})
-
 /**
  *  @internal
  * Returns a set of Set<SceneId>
@@ -274,7 +296,6 @@ function unloadParcelSceneById(sceneId: string) {
     status: 'unloaded'
   })
   stopParcelSceneWorker(worker)
-  onUnloadParcelScenesObservable.notifyObservers([sceneId])
 }
 
 /**
@@ -289,7 +310,9 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
 
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
-    //If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
+    let worker: SceneWorker
+
+    // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
     if (
       parcelSceneLoadingState.runningIsolatedMode &&
       parcelSceneLoadingState.isolatedModeOptions?.mode === IsolatedMode.BUILDER
@@ -308,15 +331,17 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
         isEmpty: true
       }
 
-      const parcelScene = new StatefulWorker(scene, options)
-
-      setNewParcelScene(sceneId, parcelScene)
+      worker = new StatefulWorker(scene, options)
     } else {
-      const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(parcelSceneToStart))
+      const denyListed = isParcelDenyListed(parcelSceneToStart.sceneJsonData.scene.parcels)
+      const iland = denyListed ? generateBannedILand(parcelSceneToStart) : parcelSceneToStart
+      const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(iland))
 
       parcelScene.data.useFPSThrottling = true
-      loadParcelScene(parcelScene)
+      worker = loadParcelScene(parcelScene)
     }
+
+    setNewParcelScene(sceneId, worker)
   }
 
   let timer: ReturnType<typeof setTimeout>

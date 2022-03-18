@@ -664,3 +664,22 @@ export type AvatarRendererRemovedMessage = {
 } & AvatarRendererBasePayload
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
+
+/**
+ * Holds all the information needed to start a portable experience.
+ */
+export type StorePortableExperience = {
+  /** Id of the scene of the portable experience. Usually the EntityID or URN */
+  id: string
+  /** Id of the parent scene that spawned this portable experience */
+  parentCid: string
+  /** Name of the portable experience */
+  name: string
+  /** Base URL used to resolve the content assets */
+  baseUrl: string
+  /** ContentMappings of the assets of the portable experience  */
+  mappings: ContentMapping[]
+
+  /** Name of the ContentMapping used for the icon */
+  menuBarIcon: string
+}
