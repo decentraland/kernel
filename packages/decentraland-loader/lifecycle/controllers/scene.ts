@@ -76,7 +76,7 @@ export class SceneLifeCycleController extends EventEmitter {
     this.emit('Scene status', { sceneId, status })
   }
 
-  isSceneRunning(sceneId: string): boolean{
+  isSceneRunning(sceneId: string): boolean {
     const lifeCycleStatus = this.sceneStatus.get(sceneId)
     if (!lifeCycleStatus) {
       return false
