@@ -15,11 +15,11 @@ const HUMAN_READABLE_TO_ID: Map<string, number> = new Map([
   ['VisibleOnEdit', CLASS_ID.VISIBLE_ON_EDIT],
   ['Script', CLASS_ID.SMART_ITEM]
 ])
-
+type Component = { type: number; value: any }
 export function serializeSceneStateFromEntities(rawEntities: any): SerializedSceneState {
-  const entities = []
+  const entities: { id: string; components: Component[] }[] = []
   for (let i = 0; i < rawEntities.length; i++) {
-    const components = []
+    const components: Component[] = []
     for (let z = 0; z < rawEntities[i].components.length; z++) {
       components.push({
         type: fromHumanReadableType(rawEntities[i].components[z].type),

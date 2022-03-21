@@ -21,7 +21,6 @@ export function setDelightedSurveyEnabled(enabled: boolean) {
 function delightedSurvey() {
   void ensureRendererEnabled()
     .then(() => {
-      // tslint:disable-next-line:strict-type-predicates
       if (typeof globalThis === 'undefined' || typeof globalThis !== 'object') {
         return
       }
@@ -42,7 +41,7 @@ function delightedSurvey() {
 
         try {
           delighted.survey(payload)
-        } catch (error) {
+        } catch (error: any) {
           defaultLogger.error('Delighted error: ' + error.message, error)
         }
       }

@@ -74,7 +74,7 @@ export class Players extends ExposableAPI implements IPlayers {
 
     let isCurrentUserIncluded = false
 
-    const result = []
+    const result: { userId: string }[] = []
     for (const userId of getInSceneAvatarsUserId(parcelIdentity.cid)) {
       if (userId === currentUserId) {
         isCurrentUserIncluded = true

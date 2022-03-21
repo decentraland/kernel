@@ -132,7 +132,7 @@ function getStack(error?: any) {
   } else {
     try {
       throw new Error((error && error.message) || error || '<nullish error>')
-    } catch (e) {
+    } catch (e: any) {
       return e.stack || '' + error
     }
   }

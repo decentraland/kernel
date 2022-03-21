@@ -27,8 +27,8 @@ function* areQuestsEnabled() {
 
 function* initUpdateQuestsInterval() {
   yield takeEvery(QUESTS_UPDATED, updateQuestsLogData)
-
-  if (yield call(areQuestsEnabled)) {
+  const questEnabled: boolean = yield call(areQuestsEnabled)
+  if (questEnabled) {
     while (true) {
       yield delay(QUESTS_REFRESH_INTERVAL)
       yield updateQuests()

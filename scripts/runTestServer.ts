@@ -1,5 +1,3 @@
-// tslint:disable:no-console
-
 import { resolve } from 'path'
 // a import fetch = require('node-fetch')
 import express = require('express')

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// tslint:disable:no-console
 
 import path = require('path')
 import { readFileSync, writeFileSync } from 'fs-extra'
@@ -43,12 +42,10 @@ async function injectDependencies(folder: string, dependencies: string[], devDep
   }
 }
 
-// tslint:disable-next-line:semicolon
 ;(async function () {
   // Update versions in package.json
   await injectDependencies('static', ['@dcl/unity-renderer'], true)
 })().catch((e) => {
-  // tslint:disable-next-line:no-console
   console.error(e)
   process.exit(1)
 })

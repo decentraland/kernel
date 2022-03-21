@@ -1,4 +1,3 @@
-// tslint:disable-next-line:whitespace
 type DevToolsServer = import('../../shared/apis/DevTools').DevToolsServer
 import { Protocol } from 'devtools-protocol'
 
@@ -90,6 +89,5 @@ export class DevToolsAdapter {
 
   // onCommand(string, any) to receive commands
 
-  // tslint:disable-next-line:no-console
   private catchHandler = (...args: any[]) => console.log(...args)
 }

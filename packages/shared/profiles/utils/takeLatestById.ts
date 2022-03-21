@@ -6,18 +6,19 @@ export function takeLatestById<T extends Action>(
   keyFunction: (action: T) => string,
   saga: any,
   ...args: any
-): ForkEffect {
+): ForkEffect<any> {
   return fork(function* () {
     const lastTasks = new Map<any, any>()
     while (true) {
-      const action = yield take(patternOrChannel)
+      const action: any = yield take(patternOrChannel)
       const key = keyFunction(action)
       const task = lastTasks.get(key)
       if (task) {
         lastTasks.delete(key)
         yield cancel(task) // cancel is no-op if the task has already terminated
       }
-      lastTasks.set(key, yield fork(saga, ...args.concat(action)))
+      const forked = yield fork<any>(saga, ...args.concat(action))
+      lastTasks.set(key, forked)
     }
   })
 }

@@ -54,7 +54,7 @@ test: ensure Tayne retains clothing
    * `refactor` refactoring production code, eg. renaming a variable
    * `test` adding missing tests, refactoring tests; no production code change
    * `chore` updating build tasks etc; no production code change
-   
+
 # Merge commits
 
 Avoid `Merge branch 'a' into 'master'` commit messages. Rebase when possible
@@ -62,7 +62,5 @@ Avoid `Merge branch 'a' into 'master'` commit messages. Rebase when possible
 # Code style
 
 Every commit should be linted using the command `npm run lint:fix`
-
-For TSLint refer to: https://github.com/decentraland/standards/blob/master/standards/tslint-configuration.md
 
 For TypeScript (and react specific) guidelines refer to https://github.com/decentraland/standards/blob/master/standards/react-redux.md

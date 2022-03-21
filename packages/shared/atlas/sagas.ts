@@ -47,6 +47,7 @@ import { store } from 'shared/store/isolatedStore'
 import { realmInitialized } from 'shared/dao'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { MarketData } from 'shared/atlas/types'
 
 const tiles = {
   id: 'tiles',
@@ -77,9 +78,11 @@ function* loadMarketplace(config: MarketplaceConfig) {
 
     const cached: CachedMarketplaceTiles | undefined = yield retrieve(cachedKey)
 
-    let data
+    let data: MarketData | string | undefined
     if (cached) {
-      const currentEtag = yield call(() => fetch(config.url, { method: 'HEAD' }).then((e) => e.headers.get('etag')))
+      const currentEtag: string = yield call(() =>
+        fetch(config.url, { method: 'HEAD' }).then((e) => e.headers.get('etag'))
+      )
 
       if (cached.version === currentEtag) {
         data = cached.data
@@ -90,8 +93,8 @@ function* loadMarketplace(config: MarketplaceConfig) {
       // no cached data or cached does not correspond
       const response: Response = yield call(() => fetch(config.url))
       const etag = response.headers.get('etag')
-
-      data = yield call(() => response.json())
+      const resp: MarketData = yield call(() => response.json())
+      data = resp
 
       if (etag) {
         // if we get an etag from the response => cache both etag & data
@@ -99,8 +102,8 @@ function* loadMarketplace(config: MarketplaceConfig) {
       }
     }
 
-    yield put(config.build(data))
-  } catch (e) {
+    yield put(config.build(data as any))
+  } catch (e: any) {
     defaultLogger.error(e)
   }
 }
@@ -188,7 +191,7 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   yield put(querySceneData(sceneIds))
 
   for (const id of sceneIds) {
-    const shouldFetch = yield select(shouldLoadSceneJsonData, id)
+    const shouldFetch: boolean = yield select(shouldLoadSceneJsonData, id)
     if (shouldFetch) {
       yield race({
         success: take(SUCCESS_DATA_FROM_SCENE_JSON),

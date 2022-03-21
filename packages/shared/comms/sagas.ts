@@ -41,6 +41,7 @@ import { sceneObservable } from 'shared/world/sceneState'
 import { SceneFeatureToggles } from 'shared/types'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { ExplorerIdentity } from '../session/types'
 
 const DEBUG = false
 const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
@@ -80,7 +81,7 @@ function* userAuthentified() {
 
   yield call(waitForRealmInitialized)
 
-  const identity = yield select(getCurrentIdentity)
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
 
   yield takeEvery(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
@@ -98,7 +99,7 @@ function* userAuthentified() {
 }
 
 function* updateVoiceChatRecordingStatus() {
-  const recording = yield select(isVoiceChatRecording)
+  const recording: boolean = yield select(isVoiceChatRecording)
   updateVoiceRecordingStatus(recording)
 }
 
@@ -127,7 +128,7 @@ function* changeRealm() {
     return
   }
 
-  const otherRealm = yield call(selectRealm)
+  const otherRealm: Realm = yield call(selectRealm)
 
   if (!sameRealm(currentRealm, otherRealm)) {
     logger.info(`Changing realm from ${realmToString(currentRealm)} to ${realmToString(otherRealm)}`)
