@@ -35,7 +35,7 @@ import {
   AllScenesEvents,
   stopIsolatedMode,
   startIsolatedMode,
-  reloadSceneByCoords
+  invalidateScenesAtCoords
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -58,7 +58,7 @@ import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatR
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
-import { reloadScene, invalidateAllScenes } from 'decentraland-loader/lifecycle/utils/reloadScene'
+import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
@@ -688,12 +688,12 @@ export class BrowserInterface {
       .then(() => {
         deploymentResult = { ok: true }
         if (data.reloadSingleScene) {
-          const promise = reloadSceneByCoords(data.pointers)
+          const promise = invalidateScenesAtCoords(data.pointers)
           promise.catch((error) =>
             defaultLogger.error(`error reloading the scene by coords: ${data.pointers} ${error}`)
           )
         } else {
-          const promise = invalidateAllScenes(data.pointers)
+          const promise = invalidateScenesAtCoords(data.pointers, false)
           promise?.catch((error) => defaultLogger.error(`error invalidating all the scenes: ${error}`))
         }
         getUnityInstance().SendPublishSceneResult(deploymentResult)

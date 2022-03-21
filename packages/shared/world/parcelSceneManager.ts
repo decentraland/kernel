@@ -198,7 +198,7 @@ async function isEmptyParcel(coord: string) : Promise<boolean>{
   return false
 }
 
-export async function reloadSceneByCoords(coords: string[])
+export async function invalidateScenesAtCoords(coords: string[], reloadScenes: boolean = true)
 {
   if (!parcelSceneLoadingState.lifecycleManager) return
 
@@ -208,7 +208,7 @@ export async function reloadSceneByCoords(coords: string[])
     const isEmpty = await isEmptyParcel(coord)
     if(isEmpty) {
       const emptySceneId = "Qm"+coord + "m0000000000000000000000000000000000000"
-      removeDesiredParcel(emptySceneId)
+      if(reloadScenes) removeDesiredParcel(emptySceneId)
       coordsToLoad.push(coord)
       await parcelSceneLoadingState.lifecycleManager.invalidateScene(emptySceneId)
     }
@@ -220,7 +220,7 @@ export async function reloadSceneByCoords(coords: string[])
     const sceneId = await sceneIdPromise
     if (!sceneId) continue
 
-    removeDesiredParcel(sceneId)
+    if(reloadScenes) removeDesiredParcel(sceneId)
 
     const land = await parcelSceneLoadingState.lifecycleManager.sceneIdToRequest.get(sceneId)
     const coordsOfScene = land?.sceneJsonData.scene.parcels
@@ -231,13 +231,14 @@ export async function reloadSceneByCoords(coords: string[])
     parcelSceneLoadingState.lifecycleManager.invalidateScene(sceneId)
   }
 
+  // We invalidate all the coords that has changed
   parcelSceneLoadingState.lifecycleManager.invalidateCoords(coordsToLoad)
   const sceneIdsToLoad = parcelSceneLoadingState.lifecycleManager.getSceneIds(coordsToLoad)
   for (const sceneIdPromise of sceneIdsToLoad) {
     const sceneId = await sceneIdPromise
     if (!sceneId) continue
 
-    addDesiredParcel(sceneId)
+    if(reloadScenes) addDesiredParcel(sceneId)
   }
 }
 
