@@ -238,7 +238,7 @@ export async function invalidateScenesAtCoords(coords: string[], reloadScenes: b
     if (!sceneId) continue
 
     if (reloadScenes) {
-      parcelSceneLoadingState.lifecycleManager.notify('Scene.reload', sceneId)
+      parcelSceneLoadingState.lifecycleManager.notify('Scene.reload', { sceneId })
     }
   }
 }
