@@ -76,6 +76,14 @@ export class SceneLifeCycleController extends EventEmitter {
     this.emit('Scene status', { sceneId, status })
   }
 
+  isSceneRunning(sceneId: string): boolean{
+    const lifeCycleStatus = this.sceneStatus.get(sceneId)
+    if (!lifeCycleStatus) {
+      return false
+    }
+    return lifeCycleStatus.isReady()
+  }
+
   invalidate(sceneId: string) {
     const parcels = this.sceneStatus.get(sceneId)?.sceneDescription?.sceneJsonData?.scene?.parcels
     if (parcels) {

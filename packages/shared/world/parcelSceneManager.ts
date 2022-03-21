@@ -237,7 +237,9 @@ export async function invalidateScenesAtCoords(coords: string[], reloadScenes: b
     const sceneId = await sceneIdPromise
     if (!sceneId) continue
 
-    if (reloadScenes) addDesiredParcel(sceneId)
+    if (reloadScenes) {
+      parcelSceneLoadingState.lifecycleManager.notify('Scene.reload', sceneId)
+    }
   }
 }
 
