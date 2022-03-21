@@ -115,15 +115,15 @@ export class LifecycleManager extends TransportBasedServer {
     if (coordsToInvalidate) this.notify('Scene.InvalidateByCoords', { coords: coordsToInvalidate })
   }
 
-  invalidateCoords(coords: string[]){
-    for (const coord of coords){
+  invalidateCoords(coords: string[]) {
+    for (const coord of coords) {
       this.positionToRequest.delete(coord)
     }
     this.notify('Scene.InvalidateByCoords', { coords })
   }
 
   async invalidateScene(sceneId: string) {
-      this.notify('Scene.Invalidate', { sceneId })
+    this.notify('Scene.Invalidate', { sceneId })
   }
 
   async invalidateSceneAndCoords(sceneId: string) {
