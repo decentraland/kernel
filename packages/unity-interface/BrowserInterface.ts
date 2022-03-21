@@ -34,7 +34,8 @@ import {
   allScenesEvent,
   AllScenesEvents,
   stopIsolatedMode,
-  startIsolatedMode
+  startIsolatedMode,
+  reloadSceneByCoords
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -57,7 +58,7 @@ import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatR
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
-import { reloadScene, invalidateAllScenes, reloadSceneByCoords } from 'decentraland-loader/lifecycle/utils/reloadScene'
+import { reloadScene, invalidateAllScenes } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'

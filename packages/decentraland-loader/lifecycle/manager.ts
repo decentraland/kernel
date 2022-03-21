@@ -96,29 +96,6 @@ export class LifecycleManager extends TransportBasedServer {
     return futures
   }
 
-  async reloadSceneByCoords(coords: string[]) {
-    for (const coord of coords) {
-      if (this.positionToRequest.get(coord) !== undefined) {
-        const sceneId = await this.positionToRequest.get(coord)
-        if (sceneId) {
-          await this.reloadScene(sceneId)
-          this.sceneIdToRequest.delete(sceneId)
-        }
-        this.positionToRequest.delete(coord)
-
-        await this.notify('Scene.Invalidate', { sceneId })
-        await this.notify('Scene.InvalidateByCoords', { coords })
-      }
-
-      await this.getSceneIds([coord])[0]
-      const newSceneId = await this.positionToRequest.get(coord)
-      if (newSceneId) {
-        await this.getParcelData(newSceneId)
-        await this.reloadScene(newSceneId)
-      }
-    }
-  }
-
   async reloadScene(sceneId: string) {
     const landFuture = this.sceneIdToRequest.get(sceneId)
     if (landFuture) {
@@ -133,12 +110,23 @@ export class LifecycleManager extends TransportBasedServer {
 
   async invalidateAllScenes(coordsToInvalidate: string[] | undefined) {
     for (const sceneId of this.sceneIdToRequest.keys()) {
-      await this.invalidateScene(sceneId)
+      await this.invalidateSceneAndCoords(sceneId)
     }
     if (coordsToInvalidate) this.notify('Scene.InvalidateByCoords', { coords: coordsToInvalidate })
   }
 
+  invalidateCoords(coords: string[]){
+    for (const coord of coords){
+      this.positionToRequest.delete(coord)
+    }
+    this.notify('Scene.InvalidateByCoords', { coords })
+  }
+
   async invalidateScene(sceneId: string) {
+      this.notify('Scene.Invalidate', { sceneId })
+  }
+
+  async invalidateSceneAndCoords(sceneId: string) {
     const landFuture = this.sceneIdToRequest.get(sceneId)
     if (landFuture) {
       const land = await landFuture
