@@ -33,6 +33,8 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { injectVersions } from 'shared/rolloutVersions'
+import { isFeatureEnabled } from "shared/meta/selectors";
+import { FeatureFlags } from "shared/meta/types";
 
 interface IChatCommand {
   name: string
@@ -325,12 +327,16 @@ function initChatCommands() {
 
       getUnityInstance().TriggerSelfUserExpression(expression)
 
+      let body = ''
+      if(isFeatureEnabled(store.getState(), FeatureFlags.EMOTES_CUSTOMIZATION, false))
+        body = '[WARNING] This command will be deprecated soon, take a look at our brand new emotes wheel by pressing B!'
+
       return {
         messageId: uuid(),
         messageType: ChatMessageType.SYSTEM,
         sender: 'Decentraland',
         timestamp: Date.now(),
-        body: ''
+        body
       }
     }
   )

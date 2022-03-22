@@ -77,7 +77,8 @@ export enum FeatureFlags {
   AVATAR_LODS = 'avatar_lods',
   ASSET_BUNDLES = 'asset_bundles',
   EXPLORE_V2_ENABLED = 'explorev2',
-  UNSAFE_FETCH_AND_WEBSOCKET = 'unsafe-request'
+  UNSAFE_FETCH_AND_WEBSOCKET = 'unsafe-request',
+  EMOTES_CUSTOMIZATION = 'emotes_customization'
 }
 
 export type FeatureFlag = {
