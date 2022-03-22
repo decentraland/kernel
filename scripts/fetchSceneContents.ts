@@ -19,7 +19,7 @@ const outputRoot = process.env.OUTPUT_DIR ?? 'public/downloaded-scenes'
 
 const maxDownloads = parseInt(process.env.MAX_DOWNLOADS ?? '50')
 
-const client = new CatalystClient(contentServerUrl, 'sceneContentsFetcher')
+const client = new CatalystClient({ catalystUrl: contentServerUrl })
 
 if (!sceneId && !parcel) {
   console.log(

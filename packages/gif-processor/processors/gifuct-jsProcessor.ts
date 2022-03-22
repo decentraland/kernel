@@ -129,7 +129,7 @@ function setFrameCanvas(frame: ParsedFrame): ImageData | undefined {
   return frameImageData
 }
 
-function setComposedFrameCanvas(image: CanvasImageSource, frame: ParsedFrame): ImageData | undefined {
+function setComposedFrameCanvas(image: CanvasImageSource | OffscreenCanvas, frame: ParsedFrame): ImageData | undefined {
   if (!composedFrameCtx) {
     return undefined
   }

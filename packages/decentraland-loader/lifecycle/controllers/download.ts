@@ -38,7 +38,7 @@ export class SceneDataDownloadManager {
     }
   ) {
     this.emptyParcelController = new EmptyParcelController(options)
-    this.catalyst = new CatalystClient(options.catalystServer, 'EXPLORER')
+    this.catalyst = new CatalystClient({ catalystUrl: options.catalystServer })
   }
 
   async resolveSceneSceneIds(tiles: string[]): Promise<TileIdPair[]> {

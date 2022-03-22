@@ -34,5 +34,4 @@ export namespace avatarMock {
   }
 }
 
-// tslint:disable-next-line:semicolon
 ;(globalThis as any)['avatarMock'] = avatarMock

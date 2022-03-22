@@ -1,4 +1,3 @@
-// tslint:disable:no-console
 import fs = require('fs-extra')
 import path = require('path')
 

@@ -142,7 +142,6 @@ export async function requirePayment(toAddress: string, amount: number, currency
       const supportedTokens: Record<string, string> = {} // a TODO: getNetworkConfigurations(network).paymentTokens
 
       if (currency in supportedTokens === false) {
-        // tslint:disable:no-console
         console.warn(`WARNING! Using a non-supported coin. Skipping operation! Please use one of the next coins 'ETH'`)
         return false
       }
@@ -162,7 +161,7 @@ export async function requirePayment(toAddress: string, amount: number, currency
       })
     }
     return result
-  } catch (err) {
+  } catch (err: any) {
     defaultLogger.error('Error in EthereumController#requirePayment', err)
     throw new Error(err)
   }
@@ -204,7 +203,7 @@ export async function signMessage(messageDict: MessageDict) {
   try {
     const signature = await requestManager.personal_sign(hexEncodedMessage, signerAccount, '')
     return { message: messageToSign, hexEncodedMessage, signature }
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(err)
   }
 }
