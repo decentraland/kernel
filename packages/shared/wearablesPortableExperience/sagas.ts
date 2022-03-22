@@ -115,7 +115,7 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
             menuBarIcon: icon // TODO review
           })
         )
-      } catch (e) {
+      } catch (e: any) {
         defaultLogger.log(e)
       }
     }

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-// tslint:disable:no-console
-
 import { exec } from 'child_process'
 import fetch from 'node-fetch'
 import semver = require('semver')

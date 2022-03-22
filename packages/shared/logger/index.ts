@@ -1,4 +1,3 @@
-// tslint:disable:no-console
 export type ILogger = {
   error(message: string | Error, ...args: any[]): void
   log(message: string, ...args: any[]): void

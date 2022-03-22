@@ -60,6 +60,11 @@ export type WearableV2 = {
   baseUrl: string
   baseUrlBundles: string
   menuBarIcon?: string
+  emoteDataV0?: EmoteDataV0
+}
+
+export type EmoteDataV0 = {
+  loop: boolean
 }
 
 export type BodyShapeRepresentationV2 = {

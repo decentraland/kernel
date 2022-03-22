@@ -18,7 +18,7 @@ export async function getUserAccount(
     }
 
     return returnChecksum ? accounts[0] : accounts[0].toLowerCase()
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`Could not access eth_accounts: "${error.message}"`)
   }
 }

@@ -1,4 +1,3 @@
-// tslint:disable:no-console
 declare let globalThis: any & { isEditor: boolean; editor: any }
 declare let window: Window & { isEditor: boolean }
 
@@ -170,7 +169,7 @@ namespace editor {
       getUnityInstance().ConfigureHUDElement(HUDElementID.TELEPORT_DIALOG, { active: true, visible: false })
 
       initializedEngine.resolve()
-    } catch (err) {
+    } catch (err: any) {
       defaultLogger.error('Error loading Unity', err)
       initializedEngine.reject(err)
       throw err

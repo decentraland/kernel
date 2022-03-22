@@ -133,5 +133,4 @@ class StatefulWebWorkerScene extends Script {
   }
 }
 
-// tslint:disable-next-line
 new StatefulWebWorkerScene(WebWorkerTransport(self))

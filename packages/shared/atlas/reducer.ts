@@ -73,7 +73,7 @@ function reduceInitializePoiTiles(state: AtlasState, action: InitializePoiTiles)
 }
 
 function reduceFetchDataFromSceneJson(state: AtlasState, sceneIds: string[]) {
-  const newScenes = []
+  const newScenes: string[] = []
   for (const sceneId of sceneIds) {
     if (!state.idToScene[sceneId] || state.idToScene[sceneId].requestStatus !== 'ok') {
       newScenes.push(sceneId)

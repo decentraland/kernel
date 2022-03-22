@@ -26,7 +26,8 @@ import {
   ChatMessageType,
   FriendshipAction,
   PresenceStatus,
-  HUDElementID
+  HUDElementID,
+  Profile
 } from 'shared/types'
 import { getRealm, getUpdateProfileServer } from 'shared/dao/selectors'
 import { Realm } from 'shared/dao/types'
@@ -76,7 +77,7 @@ export function* friendsSaga() {
 }
 
 function* initializeFriendsSaga() {
-  const identity = yield select(getCurrentIdentity)
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
 
   if (identity.hasConnectedWeb3) {
     yield call(waitForRealmInitialized)
@@ -297,7 +298,7 @@ function* initializeFriends(client: SocialAPI) {
 
   const profileIds = Object.values(socialInfo).map((socialData) => socialData.userId)
 
-  const profiles = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
+  const profiles: Profile[] = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
   DEBUG && logger.info(`profiles`, profiles)
 
   for (const userId of profileIds) {
@@ -618,7 +619,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
   } catch (e) {
     if (e instanceof UnknownUsersError) {
-      const profile = yield ensureFriendProfile(userId)
+      const profile: Profile = yield ensureFriendProfile(userId)
       const id = profile?.name ? profile.name : `with address '${userId}'`
       showErrorNotification(`User ${id} must log in at least once before befriending them`)
     }
@@ -698,7 +699,7 @@ function toSocialData(socialIds: string[]) {
 function* fetchTimeFromCatalystServer() {
   try {
     const contentServer = getUpdateProfileServer(store.getState())
-    const response = yield fetch(`${contentServer}/status`)
+    const response: Response = yield fetch(`${contentServer}/status`)
     if (response.ok) {
       const { currentTime } = yield response.json()
       return currentTime
