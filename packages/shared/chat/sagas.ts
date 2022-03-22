@@ -329,7 +329,8 @@ function initChatCommands() {
 
       let body = ''
       if (isFeatureEnabled(store.getState(), FeatureFlags.EMOTES_CUSTOMIZATION, false))
-        body = '[WARNING] This command will be deprecated soon, take a look at our brand new emotes wheel by pressing B!'
+        body =
+          '[WARNING] This command will be deprecated soon, take a look at our brand new emotes wheel by pressing B!'
 
       return {
         messageId: uuid(),
