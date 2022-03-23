@@ -18,7 +18,9 @@ import {
   buildCatalystPeerStatsData,
   PeerConfig,
   PacketCallback,
-  PeerStatus, PeerMessageType, PeerMessageTypes
+  PeerStatus,
+  PeerMessageType,
+  PeerMessageTypes
 } from '@dcl/catalyst-peer'
 import {
   ChatData,

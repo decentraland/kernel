@@ -147,7 +147,8 @@ export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.get('ASSET_BUNDLES_DOM
 export const QS_MAX_VISIBLE_PEERS =
   typeof qs.get('MAX_VISIBLE_PEERS') === 'string' ? parseInt(qs.get('MAX_VISIBLE_PEERS')!, 10) : undefined
 
-export const BUILDER_SERVER_URL = ensureSingleString(qs.get('BUILDER_SERVER_URL')) ?? 'https://builder-api.decentraland.org/v1'
+export const BUILDER_SERVER_URL =
+  ensureSingleString(qs.get('BUILDER_SERVER_URL')) ?? 'https://builder-api.decentraland.org/v1'
 
 /**
  * Get the root URL and ensure not to end with slash
@@ -209,7 +210,8 @@ export function getTLD() {
   return 'org'
 }
 
-export const WITH_FIXED_COLLECTIONS = (qs.get('WITH_COLLECTIONS') && ensureSingleString(qs.get('WITH_COLLECTIONS'))) || ''
+export const WITH_FIXED_COLLECTIONS =
+  (qs.get('WITH_COLLECTIONS') && ensureSingleString(qs.get('WITH_COLLECTIONS'))) || ''
 export const ENABLE_EMPTY_SCENES = !location.search.includes('DISABLE_EMPTY_SCENES')
 export const ENABLE_TEST_SCENES = location.search.includes('ENABLE_TEST_SCENES')
 
