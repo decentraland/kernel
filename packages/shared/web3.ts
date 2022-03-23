@@ -313,7 +313,7 @@ export async function fetchCatalystNodesFromDAO(): Promise<CatalystNode[]> {
 
     nodes.push(node)
   }
-
+debugger
   return nodes
 }
 

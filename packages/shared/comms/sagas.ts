@@ -139,5 +139,5 @@ function* changeRealm() {
 }
 
 function sameRealm(realm1: Realm, realm2: Realm) {
-  return realm1.catalystName === realm2.catalystName && realm1.layer === realm2.layer
+  return realm1.catalystName === realm2.catalystName
 }

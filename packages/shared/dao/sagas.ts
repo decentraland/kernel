@@ -111,7 +111,6 @@ function* loadCatalystRealms() {
     realm = {
       domain: rootURLPreviewMode(),
       catalystName: 'localhost',
-      layer: 'stub',
       lighthouseVersion: '0.1'
     }
   }
@@ -166,9 +165,13 @@ function getConfiguredRealm(candidates: Candidate[]) {
 
 function* filterCandidatesByCatalystVersion(candidates: Candidate[]) {
   const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
-  return minCatalystVersion
+  const filteredCandidates = minCatalystVersion
     ? candidates.filter(({ catalystVersion }) => gte(catalystVersion, minCatalystVersion))
     : candidates
+
+  debugger
+
+  return filteredCandidates
 }
 
 function* initializeCatalystCandidates() {
@@ -194,13 +197,14 @@ function* initializeCatalystCandidates() {
 }
 
 function* checkValidRealm(realm: Realm) {
-  const realmHasValues = realm && realm.domain && realm.catalystName && realm.layer
+  const realmHasValues = realm && realm.domain && realm.catalystName
   if (!realmHasValues) {
     return false
   }
   const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
   const pingResult: PingResult = yield ping(commsStatusUrl(realm.domain))
   const catalystVersion = pingResult.result?.env.catalystVersion ?? '0.0.0'
+  debugger
   return (
     pingResult.status === ServerConnectionStatus.OK && (!minCatalystVersion || gte(catalystVersion, minCatalystVersion))
   )
