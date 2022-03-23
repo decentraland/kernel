@@ -168,9 +168,6 @@ function* filterCandidatesByCatalystVersion(candidates: Candidate[]) {
   const filteredCandidates = minCatalystVersion
     ? candidates.filter(({ catalystVersion }) => gte(catalystVersion, minCatalystVersion))
     : candidates
-
-  debugger
-
   return filteredCandidates
 }
 
