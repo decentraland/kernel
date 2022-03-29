@@ -1,3 +1,5 @@
+import { fetchWithTimeout, Opts } from 'scene-system/sdk/Fetch'
+
 export type FlatFetchResponse = {
   ok: boolean
   status: number
@@ -9,10 +11,10 @@ export type FlatFetchResponse = {
 
 export type BodyType = 'json' | 'text'
 
-export type FlatFetchInit = RequestInit & { responseBodyType?: BodyType }
+export type FlatFetchInit = RequestInit & { responseBodyType?: BodyType } & Opts
 
 export async function flatFetch(url: string, init?: FlatFetchInit): Promise<FlatFetchResponse> {
-  const response = await fetch(url, init)
+  const response = await fetchWithTimeout(fetch, url, init)
 
   const responseBodyType = init?.responseBodyType || 'text'
 

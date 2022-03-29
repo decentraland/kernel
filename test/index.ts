@@ -11,6 +11,7 @@ import './atomicHelpers/landHelpers.test'
 import './atomicHelpers/vectorHelpers.test'
 import './atomicHelpers/OrderedRingBuffer.test'
 import './atomicHelpers/SortedLimitedQueue.test'
+import './atomicHelpers/signedFetch.test'
 
 /* UNIT */
 import './unit/ethereum.test'

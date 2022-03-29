@@ -10,7 +10,7 @@ export interface FetchOptions {
   log(...a: any[]): void
 }
 
-type Opts = {
+export type Opts = {
   timeout: number
 }
 
@@ -33,16 +33,20 @@ export function createFetch({ canUseFetch, previewMode, log, originalFetch }: Fe
       return Promise.reject(new Error('This scene is not allowed to use fetch.'))
     }
 
-    async function fetchRequest() {
-      const abortController = new AbortController()
-      const timeout = setTimeout(() => {
-        abortController.abort()
-      }, init?.timeout || TIMEOUT_LIMIT)
-      const response = await originalFetch(resource, { signal: abortController.signal, ...init })
-      clearTimeout(timeout)
-      return response
-    }
-
-    return fifoFetch.add(fetchRequest)
+    return fifoFetch.add(() => fetchWithTimeout(originalFetch, resource, init))
   }
+}
+
+export async function fetchWithTimeout(
+  fetch: FetchFunction,
+  resource: RequestInfo,
+  init?: RequestInit & Partial<Opts>
+) {
+  const abortController = new AbortController()
+  const timeout = setTimeout(() => {
+    abortController.abort()
+  }, init?.timeout || TIMEOUT_LIMIT)
+  const response = await fetch(resource, { signal: abortController.signal, ...init })
+  clearTimeout(timeout)
+  return response
 }
