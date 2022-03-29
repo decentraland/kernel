@@ -1,5 +1,4 @@
 import * as contractInfo from '@dcl/urn-resolver/dist/contracts'
-import * as queryString from 'query-string'
 import { getWorld } from '@dcl/schemas'
 import { store } from 'shared/store/isolatedStore'
 
@@ -88,9 +87,9 @@ export const OPEN_AVATAR_EDITOR = location.search.includes('OPEN_AVATAR_EDITOR')
 export const ENV_OVERRIDE = location.search.includes('ENV')
 export const GIF_WORKERS = location.search.includes('GIF_WORKERS')
 
-const qs = queryString.parse(location.search)
+const qs = new URLSearchParams(location.search)
 
-function ensureQueryStringUrl(value: string | string[] | null): string | null {
+function ensureQueryStringUrl(value: string | null): string | null {
   if (!value) return null
   if (typeof value === 'string') return addHttpsIfNoProtocolIsSet(value)
   return addHttpsIfNoProtocolIsSet(value[0])
@@ -103,23 +102,23 @@ function ensureSingleString(value: string | string[] | null): string | null {
 
 // Comms
 export const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
-export const COMMS = USE_LOCAL_COMMS ? 'v1-local' : qs.COMMS ? ensureSingleString(qs.COMMS)! : 'v2-p2p' // by default
+export const COMMS = USE_LOCAL_COMMS ? 'v1-local' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2-p2p' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
 
-export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.UPDATE_CONTENT_SERVICE)
-export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.FETCH_CONTENT_SERVICE)
-export const COMMS_SERVICE = ensureSingleString(qs.COMMS_SERVICE)
-export const RESIZE_SERVICE = ensureSingleString(qs.RESIZE_SERVICE)
-export const HOTSCENES_SERVICE = ensureSingleString(qs.HOTSCENES_SERVICE)
-export const POI_SERVICE = ensureSingleString(qs.POI_SERVICE)
-export const REALM = ensureSingleString(qs.realm)
-export const PREFERED_ISLAND = ensureSingleString(qs.island)
+export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
+export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('FETCH_CONTENT_SERVICE'))
+export const COMMS_SERVICE = ensureSingleString(qs.get('COMMS_SERVICE'))
+export const RESIZE_SERVICE = ensureSingleString(qs.get('RESIZE_SERVICE'))
+export const HOTSCENES_SERVICE = ensureSingleString(qs.get('HOTSCENES_SERVICE'))
+export const POI_SERVICE = ensureSingleString(qs.get('POI_SERVICE'))
+export const REALM = ensureSingleString(qs.get('realm'))
+export const PREFERED_ISLAND = ensureSingleString(qs.get('island'))
 
-export const TRACE_RENDERER = ensureSingleString(qs.TRACE_RENDERER)
+export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
 
 export const AUTO_CHANGE_REALM = location.search.includes('AUTO_CHANGE_REALM')
 
-export const LOS = ensureSingleString(qs.LOS)
+export const LOS = ensureSingleString(qs.get('LOS'))
 
 export const DEBUG = location.search.includes('DEBUG_MODE') || !!(global as any).mocha || PREVIEW || EDITOR
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
@@ -132,7 +131,7 @@ export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
 export const DEBUG_PM = location.search.includes('DEBUG_PM')
 export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
 export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
-export const DEBUG_PREFIX = ensureSingleString(qs.DEBUG_PREFIX)
+export const DEBUG_PREFIX = ensureSingleString(qs.get('DEBUG_PREFIX'))
 
 export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
@@ -140,15 +139,16 @@ export const ENGINE_DEBUG_PANEL = location.search.includes('ENGINE_DEBUG_PANEL')
 export const SCENE_DEBUG_PANEL = location.search.includes('SCENE_DEBUG_PANEL') && !ENGINE_DEBUG_PANEL
 export const SHOW_FPS_COUNTER = location.search.includes('SHOW_FPS_COUNTER') || DEBUG
 export const HAS_INITIAL_POSITION_MARK = location.search.includes('position')
-export const WSS_ENABLED = !!ensureSingleString(qs.ws)
+export const WSS_ENABLED = !!ensureSingleString(qs.get('ws'))
 export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 
-export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.ASSET_BUNDLES_DOMAIN)
+export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.get('ASSET_BUNDLES_DOMAIN'))
 
 export const QS_MAX_VISIBLE_PEERS =
-  typeof qs.MAX_VISIBLE_PEERS === 'string' ? parseInt(qs.MAX_VISIBLE_PEERS, 10) : undefined
+  typeof qs.get('MAX_VISIBLE_PEERS') === 'string' ? parseInt(qs.get('MAX_VISIBLE_PEERS')!, 10) : undefined
 
-export const BUILDER_SERVER_URL = ensureSingleString(qs.BUILDER_SERVER_URL) ?? 'https://builder-api.decentraland.org/v1'
+export const BUILDER_SERVER_URL =
+  ensureSingleString(qs.get('BUILDER_SERVER_URL')) ?? 'https://builder-api.decentraland.org/v1'
 
 /**
  * Get the root URL and ensure not to end with slash
@@ -160,13 +160,13 @@ export const rootURLPreviewMode = () => {
 
 export const PIN_CATALYST = PREVIEW
   ? rootURLPreviewMode()
-  : typeof qs.CATALYST === 'string'
-  ? addHttpsIfNoProtocolIsSet(qs.CATALYST)
+  : typeof qs.get('CATALYST') === 'string'
+  ? addHttpsIfNoProtocolIsSet(qs.get('CATALYST')!)
   : undefined
 
-export const FORCE_RENDERING_STYLE = ensureSingleString(qs.FORCE_RENDERING_STYLE) as any
+export const FORCE_RENDERING_STYLE = ensureSingleString(qs.get('FORCE_RENDERING_STYLE')) as any
 
-const META_CONFIG_URL = ensureSingleString(qs.META_CONFIG_URL)
+const META_CONFIG_URL = ensureSingleString(qs.get('META_CONFIG_URL'))
 
 export namespace commConfigurations {
   export const debug = true
@@ -177,7 +177,7 @@ export namespace commConfigurations {
   export const peerTtlMs = 60000
 
   export const autoChangeRealmInterval =
-    typeof qs.AUTO_CHANGE_INTERVAL === 'string' ? parseInt(qs.AUTO_CHANGE_INTERVAL, 10) * 1000 : 40000
+    typeof qs.get('AUTO_CHANGE_INTERVAL') === 'string' ? parseInt(qs.get('AUTO_CHANGE_INTERVAL')!, 10) * 1000 : 40000
 
   export const defaultIceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -210,7 +210,8 @@ export function getTLD() {
   return 'org'
 }
 
-export const WITH_FIXED_COLLECTIONS = (qs.WITH_COLLECTIONS && ensureSingleString(qs.WITH_COLLECTIONS)) || ''
+export const WITH_FIXED_COLLECTIONS =
+  (qs.get('WITH_COLLECTIONS') && ensureSingleString(qs.get('WITH_COLLECTIONS'))) || ''
 export const ENABLE_EMPTY_SCENES = !location.search.includes('DISABLE_EMPTY_SCENES')
 export const ENABLE_TEST_SCENES = location.search.includes('ENABLE_TEST_SCENES')
 
@@ -235,7 +236,7 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
     : `https://feature-flags.decentraland.${tld}/explorer.json`
 
   const questsUrl =
-    ensureSingleString(qs.QUESTS_SERVER_URL) ?? `https://quests-api.decentraland.${network ? 'org' : 'io'}`
+    ensureSingleString(qs.get('QUESTS_SERVER_URL')) ?? `https://quests-api.decentraland.${network ? 'org' : 'io'}`
 
   return {
     explorerConfiguration: `${metaConfigBaseUrl}?t=${new Date().getTime()}`,

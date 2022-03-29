@@ -13,16 +13,15 @@ import {
 } from '../interface/types'
 import { Position, positionHash } from '../interface/utils'
 import defaultLogger, { createLogger } from 'shared/logger'
-import { PeerMessageTypes, PeerMessageType } from 'decentraland-katalyst-peer/src/messageTypes'
-import { Peer as LayerBasedPeerType, PeerConfig as LayerBasedPeerConfig } from 'decentraland-katalyst-peer'
 import {
   Peer as IslandBasedPeer,
   buildCatalystPeerStatsData,
   PeerConfig,
   PacketCallback,
-  PeerStatus
+  PeerStatus,
+  PeerMessageType,
+  PeerMessageTypes
 } from '@dcl/catalyst-peer'
-import { Room } from 'decentraland-katalyst-peer/src/types'
 import {
   ChatData,
   CommsMessage,
@@ -41,10 +40,7 @@ import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 
-type PeerType = LayerBasedPeerType | IslandBasedPeer
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { Peer: LayerBasedPeer } = require('decentraland-katalyst-peer')
+type PeerType = IslandBasedPeer
 
 const NOOP = () => {
   // do nothing
@@ -125,9 +121,6 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   async connectPeer() {
     try {
       await this.peer.awaitConnectionEstablished(60000)
-      if (this.realm.layer) {
-        await (this.peer as LayerBasedPeerType).setLayer(this.realm.layer)
-      }
       this.statusHandler({ status: 'connected', connectedPeers: this.connectedPeersCount() })
     } catch (e: any) {
       defaultLogger.error('Error while connecting to layer', e)
@@ -250,8 +243,8 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   private async syncRoomsWithPeer() {
     const currentRooms = [...this.peer.currentRooms]
 
-    function isSameRoom(roomId: string, roomIdOrObject: string | Room) {
-      return roomIdOrObject === roomId || (typeof roomIdOrObject !== 'string' && roomIdOrObject.id === roomId)
+    function isSameRoom(roomId: string, roomIdOrObject: string) {
+      return roomIdOrObject === roomId
     }
 
     const joining = this.rooms.map((room) => {
@@ -263,7 +256,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     })
     const leaving = currentRooms.map((current) => {
       if (!this.rooms.some((room) => isSameRoom(room, current))) {
-        return this.peer.leaveRoom(typeof current === 'string' ? current : current.id)
+        return this.peer.leaveRoom(current)
       } else {
         return Promise.resolve()
       }
@@ -315,26 +308,19 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     const statusHandler = (status: PeerStatus): void =>
       this.statusHandler({ status, connectedPeers: this.connectedPeersCount() })
 
-    if (this.realm.layer) {
-      // Layer based peer
-      ;(this.peerConfig as LayerBasedPeerConfig).statusHandler = statusHandler
+    // Island based peer based peer
+    if (this.peerConfig.eventsHandler) {
+      this.peerConfig.eventsHandler.statusHandler = statusHandler
     } else {
-      // Island based peer based peer
-      if (this.peerConfig.eventsHandler) {
-        this.peerConfig.eventsHandler.statusHandler = statusHandler
-      } else {
-        this.peerConfig.eventsHandler = {
-          statusHandler
-        }
+      this.peerConfig.eventsHandler = {
+        statusHandler
       }
     }
 
     // We require a version greater than 0.1 to not send an ID
     const idToUse = compareVersions('0.1', this.realm.lighthouseVersion) === -1 ? undefined : this.peerId
 
-    return this.realm.layer
-      ? new LayerBasedPeer(this.lighthouseUrl, idToUse, this.peerCallback, this.peerConfig)
-      : new IslandBasedPeer(this.lighthouseUrl, idToUse, this.peerCallback, this.peerConfig)
+    return new IslandBasedPeer(this.lighthouseUrl, idToUse, this.peerCallback, this.peerConfig)
   }
 
   private async cleanUpPeer() {

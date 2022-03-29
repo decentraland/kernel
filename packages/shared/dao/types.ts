@@ -33,11 +33,6 @@ type BaseCandidate = {
   catalystVersion: string
 }
 
-export type LayerBasedCandidate = {
-  type: 'layer-based'
-  layer: Layer
-} & BaseCandidate
-
 export type IslandsBasedCandidate = {
   type: 'islands-based'
   usersCount: number
@@ -45,7 +40,7 @@ export type IslandsBasedCandidate = {
   maxUsers?: number
 } & BaseCandidate
 
-export type Candidate = LayerBasedCandidate | IslandsBasedCandidate
+export type Candidate = IslandsBasedCandidate
 
 export type Parcel = [number, number]
 
@@ -59,7 +54,6 @@ export type LayerUserInfo = {
 export type Realm = {
   domain: string
   catalystName: string
-  layer?: string
   lighthouseVersion: string
 }
 
