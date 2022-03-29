@@ -81,6 +81,7 @@ import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeploy
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/EnvironmentAPI'
+import { setCameraMode } from 'shared/sceneEvents/actions'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -143,6 +144,14 @@ export class BrowserInterface {
   }
 
   public AllScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
+    // Handle `cameraModeChanged` through `sceneEvents` sagas to avoid any race condition
+    // since event is sent only on change and scene might no be subscribed the event yet
+    if (data.eventType === 'cameraModeChanged') {
+      const cameraMode = (data.payload as IEvents['cameraModeChanged']).cameraMode
+      store.dispatch(setCameraMode(cameraMode))
+      return
+    }
+
     allScenesEvent(data)
   }
 
@@ -182,6 +191,14 @@ export class BrowserInterface {
   public SceneEvent(data: { sceneId: string; eventType: string; payload: any }) {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
+      // Handle `cameraModeChanged` through `sceneEvents` sagas to avoid any race condition
+      // since event is sent only on change and scene might no be subscribed the event yet
+      if (data.eventType === 'cameraModeChanged') {
+        const cameraMode = (data.payload as IEvents['cameraModeChanged']).cameraMode
+        store.dispatch(setCameraMode(cameraMode, data.sceneId))
+        return
+      }
+
       scene.emit(data.eventType as IEventNames, data.payload)
 
       // Keep backward compatibility with old scenes using deprecated `pointerEvent`

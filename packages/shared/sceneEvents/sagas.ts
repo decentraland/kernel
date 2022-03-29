@@ -1,4 +1,5 @@
 import { call, select, takeLatest } from 'redux-saga/effects'
+import { SceneSystemWorker } from 'shared/world/SceneSystemWorker'
 import { toEnvironmentRealmType } from '../apis/EnvironmentAPI'
 import { SetCommsIsland, SET_COMMS_ISLAND } from '../comms/actions'
 import { getCommsIsland } from '../comms/selectors'
@@ -7,12 +8,14 @@ import { getRealm } from '../dao/selectors'
 import { Realm } from '../dao/types'
 import { SaveProfileSuccess, SAVE_PROFILE_SUCCESS } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
-import { allScenesEvent } from '../world/parcelSceneManager'
+import { allScenesEvent, loadedSceneWorkers } from '../world/parcelSceneManager'
+import { SetCameraMode, SET_CAMERA_MODE } from './actions'
 
 export function* sceneEventsSaga() {
   yield takeLatest(SET_CATALYST_REALM, realmChanged)
   yield takeLatest(SET_COMMS_ISLAND, islandChanged)
   yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
+  yield takeLatest(SET_CAMERA_MODE, setCameraMode)
 }
 
 function* realmChanged(action: SetCatalystRealm) {
@@ -43,4 +46,13 @@ function* submitProfileToScenes(action: SaveProfileSuccess) {
       version: action.payload.profile.version
     }
   })
+}
+
+function* setCameraMode(action: SetCameraMode) {
+  const { cameraMode, sceneId } = action.payload
+  const scenes = sceneId ? [loadedSceneWorkers.get(sceneId)] : loadedSceneWorkers.values()
+  for (const worker of scenes) {
+    const sceneSystemWorker = worker as SceneSystemWorker
+    sceneSystemWorker?.setCameraMode(cameraMode)
+  }
 }

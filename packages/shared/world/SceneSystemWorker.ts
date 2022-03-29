@@ -24,6 +24,10 @@ export class SceneSystemWorker extends SceneWorker {
   private position!: Vector3
   private readonly lastSentPosition = new Vector3(0, 0, 0)
   private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
+
+  private lastCameraMode?: IEvents['cameraModeChanged']['cameraMode'] = undefined
+  private cameraModeSent: boolean = false
+
   private positionObserver: Observer<any> | null = null
   private sceneLifeCycleObserver: Observer<any> | null = null
   private renderStateObserver: Observer<any> | null = null
@@ -65,6 +69,18 @@ export class SceneSystemWorker extends SceneWorker {
 
   hasSceneStarted(): boolean {
     return this.sceneStarted
+  }
+
+  setCameraMode(cameraMode?: IEvents['cameraModeChanged']['cameraMode']) {
+    if (this.engineAPI && 'cameraModeChanged' in this.engineAPI.subscribedEvents) {
+      if (cameraMode !== undefined && (this.lastCameraMode !== cameraMode || !this.cameraModeSent)) {
+        this.engineAPI.sendSubscriptionEvent('cameraModeChanged', {
+          cameraMode
+        })
+        this.cameraModeSent = true
+      }
+    }
+    this.lastCameraMode = cameraMode
   }
 
   protected childDispose() {
@@ -116,6 +132,9 @@ export class SceneSystemWorker extends SceneWorker {
   private subscribeToPositionEvents() {
     this.positionObserver = positionObservable.add((obj) => {
       this.sendUserViewMatrix(obj)
+      if (!this.cameraModeSent) {
+        this.setCameraMode(this.lastCameraMode)
+      }
     })
   }
 
