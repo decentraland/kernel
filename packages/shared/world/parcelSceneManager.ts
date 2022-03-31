@@ -3,7 +3,7 @@ import { initParcelSceneWorker, LifecycleManager } from 'decentraland-loader/lif
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import {
   sceneLifeCycleObservable,
-  renderDistanceObservable
+  renderDistanceObservable, getEmptySceneId
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from '../analytics'
 import { informPendingScenes, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
@@ -190,9 +190,8 @@ async function isEmptyParcel(coord: string): Promise<boolean> {
   if (!parcelSceneLoadingState.lifecycleManager) return false
 
   for (const record of parcelSceneLoadingState.lifecycleManager.sceneIdToRequest) {
-    const stringToCheck = coord + 'm0000000000000000000000000000000000000'
     const land = await record[1]
-    if (land.sceneJsonData.scene.base === coord && record[0].includes(stringToCheck)) return true
+    if (land.sceneJsonData.scene.base === coord && record[0] == getEmptySceneId(coord)) return true
   }
 
   return false
@@ -206,7 +205,7 @@ export async function invalidateScenesAtCoords(coords: string[], reloadScenes: b
   for (const coord of coords) {
     const isEmpty = await isEmptyParcel(coord)
     if (isEmpty) {
-      const emptySceneId = 'Qm' + coord + 'm0000000000000000000000000000000000000'
+      const emptySceneId = getEmptySceneId(coord)
       if (reloadScenes) removeDesiredParcel(emptySceneId)
       coordsToLoad.push(coord)
       await parcelSceneLoadingState.lifecycleManager.invalidateScene(emptySceneId)
@@ -431,16 +430,20 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
 
 function removeDesiredParcel(sceneId: string) {
   const desiredScenes = getDesiredParcelScenes()
-  if (!desiredScenes.has(sceneId)) return
+  if (!hasDesiredParcelScenes(sceneId)) return
   desiredScenes.delete(sceneId)
   setDesiredParcelScenes(desiredScenes)
 }
 
 function addDesiredParcel(sceneId: string) {
   const desiredScenes = getDesiredParcelScenes()
-  if (desiredScenes.has(sceneId)) return
+  if (hasDesiredParcelScenes(sceneId)) return
   desiredScenes.add(sceneId)
   setDesiredParcelScenes(desiredScenes)
+}
+
+function hasDesiredParcelScenes(sceneId: string): boolean {
+  return parcelSceneLoadingState.desiredParcelScenes.has(sceneId)
 }
 
 export async function enableParcelSceneLoading() {

@@ -5,3 +5,9 @@ export async function invalidateScene(sceneId: string) {
   if (!server) return
   return server.invalidateSceneAndCoords(sceneId)
 }
+
+export function invalidateScenesByCoords(coordsToInvalidate: string[]) {
+  const server = getServer()
+  if (!server) return
+  return server.invalidateAllScenes(coordsToInvalidate)
+}

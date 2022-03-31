@@ -167,7 +167,7 @@ export class SceneLifeCycleController extends EventEmitter {
         const result =
           sceneId ??
           // empty scene!
-          (this.enabledEmpty ? ('Qm' + tile + 'm').padEnd(46, '0') : undefined)
+          (this.enabledEmpty ? getEmptySceneId(tile) : undefined)
 
         this.futureOfPositionToSceneId.get(tile)!.resolve(result)
 
@@ -177,4 +177,9 @@ export class SceneLifeCycleController extends EventEmitter {
 
     return Promise.all(futures)
   }
+
+}
+
+export function getEmptySceneId(coord: string): string{
+  return ('Qm' + coord + 'm').padEnd(46, '0')
 }
