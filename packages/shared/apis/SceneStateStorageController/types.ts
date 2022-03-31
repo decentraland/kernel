@@ -39,6 +39,7 @@ export type PublishPayload = {
   metadata: SceneDeploymentSourceMetadata
   pointers: string[]
   statelessManifest: StatelessManifest
+  reloadSingleScene: boolean
 }
 
 export type StatelessManifest = {

@@ -34,7 +34,8 @@ import {
   allScenesEvent,
   AllScenesEvents,
   stopIsolatedMode,
-  startIsolatedMode
+  startIsolatedMode,
+  invalidateScenesAtCoords
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -684,6 +685,15 @@ export class BrowserInterface {
     deployScene(data)
       .then(() => {
         deploymentResult = { ok: true }
+        if (data.reloadSingleScene) {
+          const promise = invalidateScenesAtCoords(data.pointers)
+          promise.catch((error) =>
+            defaultLogger.error(`error reloading the scene by coords: ${data.pointers} ${error}`)
+          )
+        } else {
+          const promise = invalidateScenesAtCoords(data.pointers, false)
+          promise?.catch((error) => defaultLogger.error(`error invalidating all the scenes: ${error}`))
+        }
         getUnityInstance().SendPublishSceneResult(deploymentResult)
       })
       .catch((error) => {
