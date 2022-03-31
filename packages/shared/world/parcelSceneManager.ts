@@ -3,7 +3,8 @@ import { initParcelSceneWorker, LifecycleManager } from 'decentraland-loader/lif
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import {
   sceneLifeCycleObservable,
-  renderDistanceObservable, getEmptySceneId
+  renderDistanceObservable,
+  getEmptySceneId
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from '../analytics'
 import { informPendingScenes, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
@@ -191,7 +192,7 @@ async function isEmptyParcel(coord: string): Promise<boolean> {
 
   for (const record of parcelSceneLoadingState.lifecycleManager.sceneIdToRequest) {
     const land = await record[1]
-    if (land.sceneJsonData.scene.base === coord && record[0] == getEmptySceneId(coord)) return true
+    if (land.sceneJsonData.scene.base === coord && record[0] === getEmptySceneId(coord)) return true
   }
 
   return false

@@ -177,9 +177,8 @@ export class SceneLifeCycleController extends EventEmitter {
 
     return Promise.all(futures)
   }
-
 }
 
-export function getEmptySceneId(coord: string): string{
+export function getEmptySceneId(coord: string): string {
   return ('Qm' + coord + 'm').padEnd(46, '0')
 }
