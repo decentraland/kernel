@@ -2,15 +2,15 @@ import { Candidate } from '../types'
 import { AlgorithmContext, LatencyDeductionsParameters } from './types'
 
 export function usersCount(candidate: Candidate) {
-  return candidate.type === 'layer-based' ? candidate.layer.usersCount : candidate.usersCount
+  return candidate.usersCount
 }
 
 export function maxUsers(candidate: Candidate) {
-  return candidate.type === 'layer-based' ? candidate.layer.maxUsers : candidate.maxUsers
+  return candidate.maxUsers
 }
 
 export function usersParcels(candidate: Candidate) {
-  return candidate.type === 'layer-based' ? candidate.layer.usersParcels : candidate.usersParcels
+  return candidate.usersParcels
 }
 
 export function memoizedScores(scoreFunction: (c: Candidate) => number) {

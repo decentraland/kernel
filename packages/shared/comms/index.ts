@@ -909,7 +909,7 @@ export async function connect(userId: string) {
 
         switch (mode) {
           case 'local': {
-            let location = document.location.toString()
+            let location = window.location.toString()
             if (location.indexOf('#') > -1) {
               location = location.substring(0, location.indexOf('#')) // drop fragment identifier
             }
@@ -946,7 +946,6 @@ export async function connect(userId: string) {
         if (COMMS_SERVICE) {
           // For now, we assume that if we provided a hardcoded url for comms it will be island based
           realm = { ...realm!, lighthouseVersion: '1.0.0' }
-          delete realm.layer
         }
 
         const peerConfig: LighthouseConnectionConfig = {
@@ -1255,9 +1254,7 @@ function handleFullLayer() {
 
   const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
 
-  notifyStatusThroughChat(
-    `Joining realm ${otherRealm.catalystName}-${otherRealm.layer} since the previously requested was full`
-  )
+  notifyStatusThroughChat(`Joining realm ${otherRealm.catalystName} since the previously requested was full`)
 
   store.dispatch(setCatalystRealm(otherRealm))
 }

@@ -4,7 +4,7 @@ import { observeRealmChange } from '../shared/dao'
 import { Realm } from '../shared/dao/types'
 import { getUnityInstance } from './IUnityInterface'
 import defaultLogger from '../shared/logger'
-import { store } from 'shared/store/isolatedStore'
+import { store } from '../shared/store/isolatedStore'
 
 const REPORT_INTERVAL = 2 * 60 * 1000
 
@@ -55,7 +55,7 @@ function convertCurrentRealmType(realm: Realm): CurrentRealmInfoForRenderer {
   const contentServerUrl = getFetchContentServer(store.getState())
   return {
     serverName: realm.catalystName,
-    layer: realm.layer ?? '',
+    layer: '',
     domain: realm.domain,
     contentServerUrl: contentServerUrl
   }
