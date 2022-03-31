@@ -35,7 +35,6 @@ export function beginTrace(messagesCount: number) {
   if (messagesCount > 0) {
     currentTrace.length = 0
     pendingMessagesInTrace = messagesCount
-    // tslint:disable-next-line
     defaultLogger.log('[TRACING] Beginning trace')
   }
 }
@@ -63,7 +62,6 @@ export function logTrace(type: string, payload: string | number | undefined, dir
     }
     pendingMessagesInTrace--
     if (pendingMessagesInTrace % 11 === 0) {
-      // tslint:disable-next-line
       defaultLogger.log('[TRACING] Pending messages to download: ' + pendingMessagesInTrace)
     }
     if (pendingMessagesInTrace === 0) {
@@ -77,7 +75,6 @@ export function endTrace() {
   const content = currentTrace.join('\n')
   const file = new File([content], 'decentraland-trace.csv', { type: 'text/csv' })
   const exportUrl = URL.createObjectURL(file)
-  // tslint:disable-next-line
   defaultLogger.log('[TRACING] Ending trace, downloading file: ', exportUrl, ' check your downloads folder.')
   window.location.assign(exportUrl)
   currentTrace.length = 0

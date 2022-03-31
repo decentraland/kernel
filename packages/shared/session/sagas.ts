@@ -98,7 +98,7 @@ function* authenticate(action: AuthenticateAction) {
 
   try {
     identity = yield authorize(requestManager)
-  } catch (e) {
+  } catch (e: any) {
     if (('' + (e.message || e.toString())).includes('User denied message signature')) {
       yield put(signUpCancel())
       return
@@ -183,7 +183,7 @@ function* authorize(requestManager: RequestManager) {
           userData.identity.rawAddress = address
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       logger.error(e)
       // do nothing
     }

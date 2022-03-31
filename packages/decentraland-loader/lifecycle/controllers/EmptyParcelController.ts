@@ -24,9 +24,7 @@ export class EmptyParcelController {
       rootUrl = rootURLPreviewMode() + '/'
     }
 
-    /* tslint:disable */
     this.baseUrl = `${rootUrl}loader/empty-scenes/`
-    /* tslint:enable */
   }
 
   resolveEmptyParcels() {

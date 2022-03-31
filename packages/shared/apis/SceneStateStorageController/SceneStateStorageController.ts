@@ -390,7 +390,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
 
   private getContentClient(): ContentClient {
     const contentUrl = getFetchContentServer(store.getState())
-    return new ContentClient(contentUrl, 'builder in-world')
+    return new ContentClient({ contentUrl })
   }
 
   private getAllAssets(state: SerializedSceneState): Promise<Map<AssetId, Asset>> {

@@ -41,5 +41,4 @@ class CliScene extends SceneRuntime {
   }
 }
 
-// tslint:disable-next-line
 new CliScene(WebWorkerTransport(globalObject))

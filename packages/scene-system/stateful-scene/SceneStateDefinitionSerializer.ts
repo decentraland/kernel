@@ -2,10 +2,11 @@ import { SerializedSceneState } from 'shared/apis/SceneStateStorageController/ty
 import { SceneStateDefinition } from './SceneStateDefinition'
 import { Component, EntityId } from './types'
 
+type SceneComponent = { type: number; value: any }
 export function serializeSceneState(state: SceneStateDefinition): SerializedSceneState {
-  const entities = []
+  const entities: { id: string; components: SceneComponent[] }[] = []
   for (const [entityId, entityComponents] of state.getState().entries()) {
-    const components = []
+    const components: SceneComponent[] = []
     for (const [componentId, componentData] of entityComponents.entries()) {
       components.push({ type: componentId, value: componentData })
     }

@@ -11,7 +11,6 @@ export async function questsClient() {
   const servers = getServerConfigurations(net)
   return new QuestsClient({
     baseUrl: servers.questsUrl,
-    // tslint:disable-next-line:no-unnecessary-type-assertion There seems to be a bug with tslint here
     authChainProvider: (payload) => Authenticator.signPayload(identity!, payload)
   })
 }
@@ -22,7 +21,7 @@ export async function questsRequest<T>(
   try {
     const client = await questsClient()
     return await request(client)
-  } catch (e) {
+  } catch (e: any) {
     return { ok: false, status: 0, body: { status: 'unknown error', message: e.message } }
   }
 }

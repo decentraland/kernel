@@ -127,7 +127,6 @@ export class BrowserInterface {
    */
   public handleUnityMessage(type: string, message: any) {
     if (type in this) {
-      // tslint:disable-next-line:semicolon
       ;(this as any)[type](message)
     } else {
       if (DEBUG) {
@@ -498,7 +497,6 @@ export class BrowserInterface {
 
     if (message.action === FriendshipAction.REQUESTED_TO && !found) {
       // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
-      // tslint:disable-next-line
       getUnityInstance().FriendNotFound(userId)
       return
     }

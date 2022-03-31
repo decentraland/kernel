@@ -1,7 +1,7 @@
 export function base64ToBlob(base64: string, type: string = 'image/jpeg'): Blob {
   const sliceSize = 1024
   const byteChars = globalThis.atob(base64)
-  const byteArrays = []
+  const byteArrays: Uint8Array[] = []
   let len = byteChars.length
 
   for (let offset = 0; offset < len; offset += sliceSize) {

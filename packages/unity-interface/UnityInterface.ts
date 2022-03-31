@@ -319,7 +319,7 @@ export class UnityInterface implements IUnityInterface {
   public AddMessageToChatWindow(message: ChatMessage) {
     try {
       message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
-    } catch (err) {
+    } catch (err: any) {
       defaultLogger.error(err)
     }
     if (message.body.length > 1000) {
@@ -351,7 +351,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public UpdateHotScenesList(info: HotSceneInfo[]) {
-    const chunks = []
+    const chunks: any[] = []
 
     while (info.length) {
       chunks.push(info.splice(0, MINIMAP_CHUNK_SIZE))

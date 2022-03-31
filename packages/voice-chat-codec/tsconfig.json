@@ -25,12 +25,7 @@
       "dom",
       "webworker"
     ],
-    "baseUrl": "..",
-    "plugins": [
-      {
-        "name": "tslint-language-service"
-      }
-    ]
+    "baseUrl": ".."
   },
   "exclude": [
     "../../node_modules"

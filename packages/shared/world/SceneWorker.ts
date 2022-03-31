@@ -107,7 +107,6 @@ export abstract class SceneWorker {
 
       // These errors should be handled in development time
       if (PREVIEW) {
-        // tslint:disable-next-line
         eval('debu' + 'gger')
       }
 
