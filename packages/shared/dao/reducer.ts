@@ -66,16 +66,7 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
       return {
         ...state,
         candidates: state.candidates.map((it) => {
-          if (
-            it &&
-            it.type === 'layer-based' &&
-            it.catalystName === action.payload.catalystName &&
-            it.layer.name === action.payload.layer
-          ) {
-            return { ...it, layer: { ...it.layer, usersCount: it.layer.maxUsers } }
-          } else {
-            return it
-          }
+          return it
         })
       }
     case MARK_CATALYST_REALM_CONNECTION_ERROR:

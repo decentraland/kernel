@@ -235,7 +235,7 @@ export class VoiceCommunicator {
 
     try {
       this.input = await this.createInputFor(stream, this.contextWithInitPromise)
-    } catch (e) {
+    } catch (e: any) {
       // If this fails, then it most likely it is because the sample rate of the stream is incompatible with the context's, so we create a special context for recording
       if (e.message.includes('sample-rate is currently not supported')) {
         const recordingContext = this.createContext()

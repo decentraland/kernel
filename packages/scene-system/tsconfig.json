@@ -25,11 +25,6 @@
     "outDir": "../../static/systems",
     "lib": ["es2017", "webworker"],
     "baseUrl": "..",
-    "plugins": [
-      {
-        "name": "tslint-language-service"
-      }
-    ],
     "types": ["@dcl/posix", "segment-analytics"]
   },
   "exclude": ["../../node_modules"]

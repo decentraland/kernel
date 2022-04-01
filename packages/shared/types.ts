@@ -572,7 +572,7 @@ export enum PresenceStatus {
 }
 
 type Realm = {
-  layer: string
+  layer?: string
   serverName: string
 }
 

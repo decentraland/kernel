@@ -1,4 +1,3 @@
-// tslint:disable:no-console
 import express = require('express')
 import WebSocket = require('ws')
 import http = require('http')

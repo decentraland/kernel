@@ -64,7 +64,7 @@ export async function initializeUnityEditor(
         } else {
           logger.error('Unexpected message: ', m)
         }
-      } catch (e) {
+      } catch (e: any) {
         logger.error(e)
       }
     }

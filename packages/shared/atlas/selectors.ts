@@ -8,7 +8,7 @@ export function shouldLoadSceneJsonData(state: RootAtlasState, sceneId: string) 
   return !state.atlas.idToScene.hasOwnProperty(sceneId) || state.atlas.idToScene[sceneId].requestStatus !== 'ok'
 }
 
-export function isMarketDataInitialized(state: RootAtlasState) {
+export function isMarketDataInitialized(state: RootAtlasState): boolean {
   return state.atlas.hasMarketData
 }
 

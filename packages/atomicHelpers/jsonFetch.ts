@@ -24,7 +24,7 @@ export async function jsonFetch(url: string): Promise<any> {
       } else {
         try {
           futureCache.resolve(await $.json())
-        } catch (e) {
+        } catch (e: any) {
           console['error']('Error parsing json: ' + url, $)
           futureCache.reject(e)
         }

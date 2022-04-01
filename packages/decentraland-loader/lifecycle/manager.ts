@@ -108,7 +108,25 @@ export class LifecycleManager extends TransportBasedServer {
     }
   }
 
+  async invalidateAllScenes(coordsToInvalidate: string[] | undefined) {
+    for (const sceneId of this.sceneIdToRequest.keys()) {
+      await this.invalidateSceneAndCoords(sceneId)
+    }
+    if (coordsToInvalidate) this.notify('Parcel.Invalidate', { coords: coordsToInvalidate })
+  }
+
+  invalidateCoords(coords: string[]) {
+    for (const coord of coords) {
+      this.positionToRequest.delete(coord)
+    }
+    this.notify('Parcel.Invalidate', { coords })
+  }
+
   async invalidateScene(sceneId: string) {
+    this.notify('Scene.Invalidate', { sceneId })
+  }
+
+  async invalidateSceneAndCoords(sceneId: string) {
     const landFuture = this.sceneIdToRequest.get(sceneId)
     if (landFuture) {
       const land = await landFuture

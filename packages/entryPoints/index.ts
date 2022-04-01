@@ -295,11 +295,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   if (options.previewMode) {
     i.SetDisableAssetBundles()
     await startPreview()
-    // tslint:disable: no-commented-out-code
-    // const position = pickWorldSpawnpoint(scene)
-    // i.Teleport(position)
-    // teleportObservable.notifyObservers(position.position)
-    // tslint:enable: no-commented-out-code
   }
 
   return true
@@ -338,7 +333,6 @@ export async function startPreview() {
 
   ws.addEventListener('message', (msg) => {
     if (msg.data.startsWith('{')) {
-      // tslint:disable-next-line: no-console
       defaultLogger.log('Update message from CLI', msg.data)
       const message: sdk.Messages = JSON.parse(msg.data)
       handleServerMessage(message)

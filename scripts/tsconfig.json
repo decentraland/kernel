@@ -16,11 +16,6 @@
     "noUnusedLocals": true,
     "jsx": "react",
     "jsxFactory": "h",
-    "plugins": [
-      {
-        "name": "tslint-language-service"
-      }
-    ],
     "lib": ["es2017", "dom"]
   },
   "exclude": ["../node_modules"]

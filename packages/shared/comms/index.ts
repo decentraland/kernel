@@ -238,7 +238,6 @@ let audioRequestPending = false
 function requestMediaDevice() {
   if (!audioRequestPending) {
     audioRequestPending = true
-    // tslint:disable-next-line
     navigator.mediaDevices
       .getUserMedia({
         audio: {
@@ -910,7 +909,7 @@ export async function connect(userId: string) {
 
         switch (mode) {
           case 'local': {
-            let location = document.location.toString()
+            let location = window.location.toString()
             if (location.indexOf('#') > -1) {
               location = location.substring(0, location.indexOf('#')) // drop fragment identifier
             }
@@ -947,7 +946,6 @@ export async function connect(userId: string) {
         if (COMMS_SERVICE) {
           // For now, we assume that if we provided a hardcoded url for comms it will be island based
           realm = { ...realm!, lighthouseVersion: '1.0.0' }
-          delete realm.layer
         }
 
         const peerConfig: LighthouseConnectionConfig = {
@@ -957,7 +955,7 @@ export async function connect(userId: string) {
           authHandler: async (msg: string) => {
             try {
               return Authenticator.signPayload(getIdentity() as AuthIdentity, msg)
-            } catch (e) {
+            } catch (e: any) {
               defaultLogger.info(`error while trying to sign message from lighthouse '${msg}'`)
             }
             // if any error occurs
@@ -1055,7 +1053,7 @@ export async function connect(userId: string) {
       })
 
     return context
-  } catch (e) {
+  } catch (e: any) {
     defaultLogger.error(e)
     throw new ConnectionEstablishmentError(e.message)
   }
@@ -1070,7 +1068,7 @@ export async function startCommunications(context: Context) {
       await doStartCommunications(context)
 
       break
-    } catch (e) {
+    } catch (e: any) {
       if (e instanceof ConnectionEstablishmentError) {
         if (i >= maxAttemps) {
           // max number of attemps reached => rethrow error
@@ -1099,7 +1097,7 @@ async function doStartCommunications(context: Context) {
         await connection.connectPeer()
         store.dispatch(commsEstablished())
       }
-    } catch (e) {
+    } catch (e: any) {
       // Do nothing if layer is full. This will be handled by status handler
       if (!(e.responseJson && e.responseJson.status === 'layer_is_full')) {
         throw e
@@ -1214,7 +1212,7 @@ async function doStartCommunications(context: Context) {
       })
       ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
     }
-  } catch (e) {
+  } catch (e: any) {
     throw new ConnectionEstablishmentError(e.message)
   }
 }
@@ -1256,9 +1254,7 @@ function handleFullLayer() {
 
   const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
 
-  notifyStatusThroughChat(
-    `Joining realm ${otherRealm.catalystName}-${otherRealm.layer} since the previously requested was full`
-  )
+  notifyStatusThroughChat(`Joining realm ${otherRealm.catalystName} since the previously requested was full`)
 
   store.dispatch(setCatalystRealm(otherRealm))
 }
