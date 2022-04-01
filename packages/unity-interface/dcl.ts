@@ -197,6 +197,9 @@ export async function loadPreviewScene(message: sdk.Messages) {
 
   async function doReload(sceneId: string) {
     await reloadScene(sceneId)
+
+    // We get scene json here to use hot-reload to update displayed spawnpoints
+    // since the ILand info is not currently changing on hot-reload
     getPreviewSceneJson()
       .then((sceneJson) => clientDebug.ToggleSceneSpawnPoints(sceneId, undefined, sceneJson))
       .catch((e) => defaultLogger.error(e))
