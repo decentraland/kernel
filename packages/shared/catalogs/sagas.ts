@@ -298,24 +298,26 @@ export function* handleWearablesFailure(action: WearablesFailure) {
 }
 
 function areFiltersValid(filters: WearablesRequestFilters) {
-  let filtersSet = 0
-  let ok = true
-  if (filters.collectionIds) {
-    filtersSet += 1
-    if (filters.collectionIds.some((id) => id !== BASE_AVATARS_COLLECTION_ID)) {
-      ok = false
-    }
-  }
+  return true
 
-  if (filters.ownedByUser) {
-    filtersSet += 1
-  }
-
-  if (filters.wearableIds) {
-    filtersSet += 1
-  }
-
-  return filtersSet === 1 && ok
+  // let filtersSet = 0
+  // let ok = true
+  // if (filters.collectionIds) {
+  //   filtersSet += 1
+  //   if (filters.collectionIds.some((id) => id !== BASE_AVATARS_COLLECTION_ID)) {
+  //     ok = false
+  //   }
+  // }
+  //
+  // if (filters.ownedByUser) {
+  //   filtersSet += 1
+  // }
+  //
+  // if (filters.wearableIds) {
+  //   filtersSet += 1
+  // }
+  //
+  // return filtersSet === 1 && ok
 }
 
 export function informRequestFailure(error: string, context: string | undefined) {
