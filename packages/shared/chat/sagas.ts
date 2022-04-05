@@ -289,18 +289,9 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('showfps', 'Show FPS counter', (_message) => {
-    fpsConfiguration.visible = !fpsConfiguration.visible
-    fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
+  addChatCommand('debug', 'Show debug panel', (_message) => getDebugPanelMessage())
 
-    return {
-      messageId: uuid(),
-      sender: 'Decentraland',
-      messageType: ChatMessageType.SYSTEM,
-      timestamp: Date.now(),
-      body: 'Toggling FPS counter'
-    }
-  })
+  addChatCommand('showfps', 'Show fps panel (deprecated in favor of /debug)', (_message) => getDebugPanelMessage())
 
   addChatCommand('getname', 'Gets your username', (_message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
@@ -466,9 +457,7 @@ function initChatCommands() {
   })
 
   addChatCommand('version', 'Shows application version', (_message) => {
-    const versions = injectVersions({})
-    const kernelVersion = versions['@dcl/kernel'] || 'unknown'
-    const rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
+    const [kernelVersion, rendererVersion] = getVersions()
     return {
       messageId: uuid(),
       sender: 'Decentraland',
@@ -506,6 +495,26 @@ function initChatCommands() {
       body: 'Looking for other players...'
     }
   })
+}
+
+function getDebugPanelMessage() {
+  fpsConfiguration.visible = !fpsConfiguration.visible
+  fpsConfiguration.visible ? getUnityInstance().ShowFPSPanel() : getUnityInstance().HideFPSPanel()
+
+  return {
+    messageId: uuid(),
+    sender: 'Decentraland',
+    messageType: ChatMessageType.SYSTEM,
+    timestamp: Date.now(),
+    body: 'Toggling FPS counter'
+  }
+}
+
+function getVersions() {
+  const versions = injectVersions({})
+  const kernelVersion = versions['@dcl/kernel'] || 'unknown'
+  const rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
+  return [kernelVersion, rendererVersion]
 }
 
 function parseWhisperExpression(expression: string) {

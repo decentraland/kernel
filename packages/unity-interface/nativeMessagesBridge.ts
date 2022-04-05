@@ -79,7 +79,6 @@ export class NativeMessagesBridge {
     this.unityModule = gameInstance.Module
 
     if (!this.unityModule) {
-      // tslint:disable-next-line:no-console
       console.error('Unity module not found! Are you in WSS mode?')
       return
     }

@@ -127,6 +127,10 @@
           return `https://renderer-artifacts.decentraland.org/branch/${qs.get('renderer-branch')}`
         }
 
+        if (qs.has('renderer-version')) {
+          return `https://cdn.decentraland.org/@dcl/unity-renderer/${qs.get('renderer-version')}`
+        }
+
         return new URL('@/artifacts/unity-renderer', location.toString()).toString()
       }
 

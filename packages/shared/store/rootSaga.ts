@@ -14,6 +14,7 @@ import { commsSaga } from '../comms/sagas'
 import { socialSaga } from '../social/sagas'
 import { catalogsSaga } from '../catalogs/sagas'
 import { questsSaga } from '../quests/sagas'
+import { portableExperienceSaga } from '../portableExperiences/sagas'
 import { wearablesPortableExperienceSaga } from '../wearablesPortableExperience/sagas'
 import { sceneEventsSaga } from '../sceneEvents/sagas'
 
@@ -35,6 +36,7 @@ export function createRootSaga() {
     yield fork(questsSaga)
     yield fork(rendererSaga)
     yield fork(sceneEventsSaga)
+    yield fork(portableExperienceSaga)
     yield fork(wearablesPortableExperienceSaga)
   }
 }

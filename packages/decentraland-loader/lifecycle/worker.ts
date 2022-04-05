@@ -117,7 +117,7 @@ let downloadManager: SceneDataDownloadManager
       })
 
       connector.on('Scene.reload', (data: { sceneId: string }) => {
-        void sceneController.reloadScene(data.sceneId)
+        if (sceneController.isSceneRunning(data.sceneId)) void sceneController.reloadScene(data.sceneId)
       })
 
       connector.on('Scene.prefetchDone', (opt: { sceneId: string }) => {
@@ -135,6 +135,10 @@ let downloadManager: SceneDataDownloadManager
 
       connector.on('Scene.Invalidate', (data: { sceneId: string }) => {
         sceneController.invalidate(data.sceneId)
+      })
+
+      connector.on('Parcel.Invalidate', (data: { coords: string[] }) => {
+        downloadManager.invalidateParcels(data.coords)
       })
     }
   )

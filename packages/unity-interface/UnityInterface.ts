@@ -37,6 +37,7 @@ import { getProvider } from 'shared/session/index'
 import { uuid } from 'atomicHelpers/math'
 import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
+import { trackEvent } from 'shared/analytics'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -156,13 +157,6 @@ export class UnityInterface implements IUnityInterface {
     }
 
     this.SendMessageToUnity('Main', 'LoadParcelScenes', JSON.stringify(parcelsToLoad[0]))
-  }
-
-  public UpdateParcelScenes(parcelsToLoad: LoadableParcelScene[]) {
-    if (parcelsToLoad.length > 1) {
-      throw new Error('Only one scene at a time!')
-    }
-    this.SendMessageToUnity('Main', 'UpdateParcelScenes', JSON.stringify(parcelsToLoad[0]))
   }
 
   public UnloadScene(sceneId: string) {
@@ -323,6 +317,15 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddMessageToChatWindow(message: ChatMessage) {
+    try {
+      message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
+    } catch (err: any) {
+      defaultLogger.error(err)
+    }
+    if (message.body.length > 1000) {
+      trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
+      return
+    }
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
@@ -348,7 +351,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public UpdateHotScenesList(info: HotSceneInfo[]) {
-    const chunks = []
+    const chunks: any[] = []
 
     while (info.length) {
       chunks.push(info.splice(0, MINIMAP_CHUNK_SIZE))

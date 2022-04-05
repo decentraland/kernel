@@ -14,7 +14,7 @@ export async function deployScene(payload: PublishPayload) {
   try {
     // Create content client
     const contentUrl = getFetchContentServer(store.getState())
-    const contentClient = new ContentClient(contentUrl, 'builder in-world')
+    const contentClient = new ContentClient({ contentUrl })
 
     // Build files
     const entityFiles: Map<string, Buffer> = new Map()

@@ -16,7 +16,7 @@ import {
 import { call, put, takeEvery, select, fork, take } from 'redux-saga/effects'
 import { REALM, PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization } from '../meta/sagas'
-import { Candidate, Realm, ServerConnectionStatus } from './types'
+import { Candidate, PingResult, Realm, ServerConnectionStatus } from './types'
 import { fetchCatalystRealms, fetchCatalystStatuses, pickCatalystRealm, getRealmFromString, commsStatusUrl } from '.'
 import { ping } from './utils/ping'
 import { getAddedServers, getCatalystNodesEndpoint, getMinCatalystVersion } from 'shared/meta/selectors'
@@ -86,7 +86,8 @@ function* loadCatalystRealms() {
         configuredRealm = cachedRealm
       }
 
-      if (configuredRealm && (yield call(checkValidRealm, configuredRealm))) {
+      const validRealm: boolean = yield call(checkValidRealm, configuredRealm)
+      if (configuredRealm && validRealm) {
         realm = configuredRealm
 
         yield fork(initializeCatalystCandidates)
@@ -97,7 +98,7 @@ function* loadCatalystRealms() {
     if (!realm) {
       try {
         yield call(initializeCatalystCandidates)
-      } catch (e) {
+      } catch (e: any) {
         ReportFatalErrorWithCatalystPayload(e, ErrorContext.KERNEL_INIT)
         BringDownClientAndShowError(CATALYST_COULD_NOT_LOAD)
         throw e
@@ -110,7 +111,6 @@ function* loadCatalystRealms() {
     realm = {
       domain: rootURLPreviewMode(),
       catalystName: 'localhost',
-      layer: 'stub',
       lighthouseVersion: '0.1'
     }
   }
@@ -121,11 +121,14 @@ function* loadCatalystRealms() {
 
   yield put(setCatalystRealm(realm))
 
+  const dao: string = yield select((state) => state.dao)
+  const fetchContentServer: string = yield select(getFetchContentServer)
+  const updateContentServer: string = yield select(getUpdateProfileServer)
   defaultLogger.info(`Using Catalyst configuration: `, {
-    original: yield select((state) => state.dao),
+    original: dao,
     calculated: {
-      fetchContentServer: yield select(getFetchContentServer),
-      updateContentServer: yield select(getUpdateProfileServer)
+      fetchContentServer,
+      updateContentServer
     }
   })
 }
@@ -147,7 +150,7 @@ export function* selectRealm() {
 
   const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
 
-  let realm = yield call(getConfiguredRealm, allCandidates)
+  let realm: string = yield call(getConfiguredRealm, allCandidates)
   if (!realm) {
     realm = yield call(pickCatalystRealm, allCandidates, [parcel.x, parcel.y])
   }
@@ -162,9 +165,10 @@ function getConfiguredRealm(candidates: Candidate[]) {
 
 function* filterCandidatesByCatalystVersion(candidates: Candidate[]) {
   const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
-  return minCatalystVersion
+  const filteredCandidates = minCatalystVersion
     ? candidates.filter(({ catalystVersion }) => gte(catalystVersion, minCatalystVersion))
     : candidates
+  return filteredCandidates
 }
 
 function* initializeCatalystCandidates() {
@@ -182,7 +186,7 @@ function* initializeCatalystCandidates() {
     fetchCatalystStatuses,
     added.map((url) => ({ domain: url }))
   )
-  const filteredAddedCandidates = yield call(filterCandidatesByCatalystVersion, addedCandidates)
+  const filteredAddedCandidates: Candidate[] = yield call(filterCandidatesByCatalystVersion, addedCandidates)
 
   yield put(setAddedCatalystCandidates(filteredAddedCandidates))
 
@@ -190,13 +194,14 @@ function* initializeCatalystCandidates() {
 }
 
 function* checkValidRealm(realm: Realm) {
-  const realmHasValues = realm && realm.domain && realm.catalystName && realm.layer
+  const realmHasValues = realm && realm.domain && realm.catalystName
   if (!realmHasValues) {
     return false
   }
-  const minCatalystVersion = yield select(getMinCatalystVersion)
-  const pingResult = yield ping(commsStatusUrl(realm.domain))
+  const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
+  const pingResult: PingResult = yield ping(commsStatusUrl(realm.domain))
   const catalystVersion = pingResult.result?.env.catalystVersion ?? '0.0.0'
+  debugger
   return (
     pingResult.status === ServerConnectionStatus.OK && (!minCatalystVersion || gte(catalystVersion, minCatalystVersion))
   )
@@ -208,7 +213,7 @@ function* cacheCatalystRealm(action: SetCatalystRealm) {
 }
 
 function* cacheCatalystCandidates(_action: SetCatalystCandidates | SetAddedCatalystCandidates) {
-  const allCandidates = yield select(getAllCatalystCandidates)
+  const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   yield call(saveToPersistentStorage, getLastRealmCandidatesCacheKey(network), allCandidates)
 }

@@ -106,8 +106,6 @@ export abstract class SceneRuntime extends Script {
 
   isPreview: boolean = false
 
-  private originalFetch!: typeof fetch
-
   private allowOpenExternalUrl: boolean = false
 
   constructor(transport: ScriptingTransport, opt?: ILogOpts) {
@@ -198,7 +196,7 @@ export abstract class SceneRuntime extends Script {
       for (const trigger of this.onEventFunctions) {
         trigger(event)
       }
-    } catch (e) {
+    } catch (e: any) {
       this.onError(e)
     }
     this.allowOpenExternalUrl = false
@@ -221,7 +219,7 @@ export abstract class SceneRuntime extends Script {
     for (const trigger of this.onUpdateFunctions) {
       try {
         trigger(time)
-      } catch (e) {
+      } catch (e: any) {
         this.onError(e)
       }
     }
@@ -250,7 +248,6 @@ export abstract class SceneRuntime extends Script {
       const dcl: DecentralandInterface = {
         DEBUG: true,
         log(...args: any[]) {
-          // tslint:disable-next-line:no-console
           that.onLog(...args)
         },
 
@@ -473,7 +470,7 @@ export abstract class SceneRuntime extends Script {
 
               try {
                 methods = await proxy._getExposedMethods()
-              } catch (e) {
+              } catch (e: any) {
                 throw Object.assign(new Error(`Error getting the methods of ${moduleToLoad}: ` + e.message), {
                   original: e
                 })
@@ -523,7 +520,7 @@ export abstract class SceneRuntime extends Script {
         this.onStartFunctions.forEach(($) => {
           try {
             $()
-          } catch (e) {
+          } catch (e: any) {
             this.onError(e)
           }
         })
@@ -544,7 +541,7 @@ export abstract class SceneRuntime extends Script {
         const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: EnvironmentAPI }
         const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
-        this.originalFetch = fetch
+        const originalFetch = fetch
 
         const restrictedWebSocket = createWebSocket({
           canUseWebsocket,
@@ -553,7 +550,7 @@ export abstract class SceneRuntime extends Script {
         })
         const restrictedFetch = createFetch({
           canUseFetch,
-          originalFetch: this.originalFetch,
+          originalFetch: originalFetch,
           previewMode: this.isPreview || unsafeAllowed,
           log: dcl.log
         })
@@ -561,7 +558,7 @@ export abstract class SceneRuntime extends Script {
         globalThis.fetch = restrictedFetch
         globalThis.WebSocket = restrictedWebSocket
 
-        await this.runCode(source as any as string, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
+        await this.runCode(source, { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch })
 
         let modulesNotLoaded: string[] = []
 
@@ -583,14 +580,14 @@ export abstract class SceneRuntime extends Script {
           const engine: IEngineAPI = this.engine as any
           engine.startSignal().catch((e: Error) => this.onError(e))
         })
-      } catch (e) {
+      } catch (e: any) {
         that.onError(e)
 
         this.events.push(this.initMessagesFinished())
       }
 
       this.sendBatch()
-    } catch (e) {
+    } catch (e: any) {
       this.onError(e)
       // unload should be triggered here
     } finally {
@@ -657,7 +654,7 @@ export abstract class SceneRuntime extends Script {
         this.events.length = 0
         ;(this.engine as any as IEngineAPI).sendBatch(batch).catch((e: Error) => this.onError(e))
       }
-    } catch (e) {
+    } catch (e: any) {
       this.onError(e)
     }
   }

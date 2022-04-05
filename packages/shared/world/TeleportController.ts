@@ -9,7 +9,6 @@ import defaultLogger from 'shared/logger'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
 import { getCommsServer, getRealm } from 'shared/dao/selectors'
-import { LayerUserInfo } from 'shared/dao/types'
 import { store } from 'shared/store/isolatedStore'
 
 export const CAMPAIGN_PARCEL_SEQUENCE = [
@@ -138,18 +137,10 @@ async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
   const commsUrl = getCommsServer(store.getState())
 
   if (realm && commsUrl) {
-    if (realm.layer) {
-      const layerUsersResponse = await fetch(`${commsUrl}/layers/${realm.layer}/users`)
-      if (layerUsersResponse.ok) {
-        const layerUsers: LayerUserInfo[] = await layerUsersResponse.json()
-        return layerUsers.filter((it) => it.parcel).map((it) => it.parcel!)
-      }
-    } else {
-      const commsStatusResponse = await fetch(`${commsUrl}/status?includeUsersParcels=true`)
-      if (commsStatusResponse.ok) {
-        const layerUsers = await commsStatusResponse.json()
-        return layerUsers.usersParcels
-      }
+    const commsStatusResponse = await fetch(`${commsUrl}/status?includeUsersParcels=true`)
+    if (commsStatusResponse.ok) {
+      const layerUsers = await commsStatusResponse.json()
+      return layerUsers.usersParcels
     }
   }
 

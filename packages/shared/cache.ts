@@ -8,7 +8,6 @@ const OBJECT_STORE_KEY = 'object-store'
 
 export const init = future<IDBDatabase>()
 
-// tslint:disable-next-line
 export const cache = init.then((db) => ({
   read: (id: string): Promise<any> => {
     const result = future<any>()

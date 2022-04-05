@@ -64,7 +64,7 @@ export class UserActionModule extends ExposableAPI implements IUserActionModule 
           finish_at: json.data[0].finish_at
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       defaultLogger.error(e)
     }
 

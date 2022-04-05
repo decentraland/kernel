@@ -8,6 +8,7 @@ import { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import { EngineAPI } from 'shared/apis/EngineAPI'
 import { PREVIEW } from 'config'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -80,9 +81,10 @@ export abstract class SceneWorker {
           this.ready |= SceneWorkerReadyState.SYSTEM_DISPOSED
         })
 
-      this.parcelScene.dispose()
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
+
+    getUnityInstance().UnloadScene(this.getSceneId())
   }
 
   protected abstract childDispose(): void
@@ -105,7 +107,6 @@ export abstract class SceneWorker {
 
       // These errors should be handled in development time
       if (PREVIEW) {
-        // tslint:disable-next-line
         eval('debu' + 'gger')
       }
 

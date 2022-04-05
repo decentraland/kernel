@@ -1,5 +1,3 @@
-// tslint:disable:no-console
-
 import { resolve } from 'path'
 // a import fetch = require('node-fetch')
 import express = require('express')
@@ -216,7 +214,7 @@ function checkDiff(imageAPath: string, imageBPath: string, threshold: number, di
   app.use('/@/artifacts/unity-renderer', express.static(path.dirname(require.resolve('@dcl/unity-renderer'))))
 
   app.use('/default-profile', express.static(resolve(__dirname, '../static/default-profile')))
-  app.use('/@', express.static(path.dirname(require.resolve('decentraland-ecs'))))
+  // app.use('/@', express.static(path.dirname(require.resolve('decentraland-ecs'))))
 
   app.use(
     '/preview.html',
@@ -236,87 +234,8 @@ function checkDiff(imageAPath: string, imageBPath: string, threshold: number, di
     })
   )
 
-  function getAllParcelIdsBetween(coords: { pointer: string[] }) {
-    return Array.isArray(coords.pointer) ? coords.pointer : [coords.pointer] // if a single value is given, we should wrap it in an array
-  }
-
-  function readAllJsonFiles(filenames: string[]) {
-    return Promise.all(
-      filenames.map((value) => {
-        return new Promise((res, reject) => {
-          return fs.readFile(value, (err, data) => {
-            if (err) {
-              return res(null)
-            }
-            return res(JSON.parse(data.toString()))
-          })
-        })
-      })
-    )
-  }
-
-  const sceneEndpoint = async (req, res) => {
-    const coords = getAllParcelIdsBetween(req.query)
-    const fileData = await readAllJsonFiles(
-      coords.map((coord) => resolve(__dirname, path.join('..', 'public', 'local-ipfs', 'scene_mapping', coord)))
-    )
-    const length = coords.length
-    const parcelData = []
-    for (let i = 0; i < length; i++) {
-      if (!fileData[i]) continue
-      parcelData.push(fileData[i])
-    }
-    const cids = parcelData.map((p) => p.root_cid)
-    const sceneData: any[] = await readAllJsonFiles(
-      cids.map((_) => resolve(__dirname, path.join('..', 'public', 'local-ipfs', 'parcel_info', _)))
-    )
-    const result = await Promise.all(
-      sceneData.map(async (data) => {
-        const sceneJsonHash = data.contents.filter(($) => $.file === 'scene.json')[0].hash
-        const download: any[] = await readAllJsonFiles([
-          resolve(__dirname, path.join('..', 'public', 'local-ipfs', 'contents', sceneJsonHash))
-        ])
-        const metadata = download[0]
-        return {
-          id: data.root_cid,
-          type: 'scene',
-          timestamp: Date.now(),
-          pointers: metadata.scene.parcels,
-          content: data.contents,
-          metadata
-        }
-      })
-    )
-    const response = res.json(result)
-    return response
-  }
-  app.use('/scenes', sceneEndpoint)
-  app.use('/local-ipfs/scenes', sceneEndpoint)
-  app.use('/local-ipfs/content/entities/scene', sceneEndpoint)
-
-  const parcelInfoEndpoint = async (req, res) => {
-    const cids = req.query.cids.split(',') as string[]
-    const fileData = await readAllJsonFiles(
-      cids.map((_) => resolve(__dirname, path.join('..', 'public', 'local-ipfs', 'parcel_info', _)))
-    )
-    return res.json({
-      data: fileData
-        .filter(($) => !!$)
-        .map(($: any) => ({
-          root_cid: $.root_cid,
-          publisher: $.publisher,
-          content: $
-        }))
-    })
-  }
-  app.use('/local-ipfs/parcel_info', parcelInfoEndpoint)
-  app.use('/parcel_info', parcelInfoEndpoint)
-
   app.use('/test', express.static(resolve(__dirname, '../test')))
   app.use('/node_modules', express.static(resolve(__dirname, '../node_modules')))
-  app.use('/test-scenes', express.static(path.resolve(__dirname, '../public/test-scenes')))
-  app.use('/ecs-scenes', express.static(path.resolve(__dirname, '../public/ecs-scenes')))
-  app.use('/local-ipfs', express.static(path.resolve(__dirname, '../public/local-ipfs')))
 
   app.use(express.static(path.resolve(__dirname, '..', 'static')))
 
