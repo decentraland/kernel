@@ -708,12 +708,14 @@ export class BrowserInterface {
       ownedByUser: string | null
       wearableIds?: string[] | null
       collectionIds?: string[] | null
+      thirdPartyId?: string | null
     }
     context?: string
   }) {
     const { filters, context } = data
     const newFilters: WearablesRequestFilters = {
       ownedByUser: filters.ownedByUser ?? undefined,
+      thirdPartyId: filters.thirdPartyId ?? undefined,
       wearableIds: arrayCleanup(filters.wearableIds),
       collectionIds: arrayCleanup(filters.collectionIds)
     }
