@@ -102,7 +102,8 @@ function ensureSingleString(value: string | string[] | null): string | null {
 
 // Comms
 export const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
-export const COMMS = !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1-local' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2-p2p' // by default
+export const COMMS =
+  !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1-local' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2-p2p' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
 
 export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
