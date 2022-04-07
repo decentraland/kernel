@@ -1034,7 +1034,7 @@ export async function connect(userId: string) {
         break
       }
       case 'v3': {
-        const commsUrl = mode == 'local' ? 'ws://0.0.0.0:5000/ws' : 'wss://explorer-bff.decentraland.io/ws'
+        const commsUrl = mode === 'local' ? 'ws://0.0.0.0:5000/ws' : 'wss://explorer-bff.decentraland.io/ws'
 
         const url = new URL(commsUrl)
         const qs = new URLSearchParams({
