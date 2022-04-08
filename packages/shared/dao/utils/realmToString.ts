@@ -1,5 +1,17 @@
-export function realmToString(realm: ({ catalystName: string } | { serverName: string }) & { layer?: string }) {
-  const name = 'catalystName' in realm ? realm.catalystName : realm.serverName
+import { Realm } from '../types'
 
-  return realm.layer ? `${name}-${realm.layer}` : name
+export function realmToString(realm: Realm) {
+  return realm.protocol + ':' + realm.domain
+}
+
+export function parseRealmString(realmString: string): Realm | undefined {
+  if (realmString.includes(':')) {
+    const parts = realmString.split(':')
+    return {
+      protocol: parts[0],
+      serverName: parts[1],
+      domain: parts[1]
+    }
+  }
+  return undefined
 }

@@ -112,12 +112,9 @@ export const COMMS_SERVICE = ensureSingleString(qs.get('COMMS_SERVICE'))
 export const RESIZE_SERVICE = ensureSingleString(qs.get('RESIZE_SERVICE'))
 export const HOTSCENES_SERVICE = ensureSingleString(qs.get('HOTSCENES_SERVICE'))
 export const POI_SERVICE = ensureSingleString(qs.get('POI_SERVICE'))
-export const REALM = ensureSingleString(qs.get('realm'))
 export const PREFERED_ISLAND = ensureSingleString(qs.get('island'))
 
 export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
-
-export const AUTO_CHANGE_REALM = location.search.includes('AUTO_CHANGE_REALM')
 
 export const LOS = ensureSingleString(qs.get('LOS'))
 

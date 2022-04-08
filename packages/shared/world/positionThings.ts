@@ -1,4 +1,3 @@
-import * as qs from 'query-string'
 import {
   Vector3,
   EcsMathReadOnlyVector3,
@@ -53,10 +52,12 @@ export const parcelObservable = new Observable<ParcelReport>()
 export const teleportObservable = new Observable<EcsMathReadOnlyVector2 & { text?: string }>()
 
 export const lastPlayerPosition = new Vector3()
+export let lastPlayerPositionReport: Readonly<PositionReport> | null = null
 export let lastPlayerParcel: Vector2
 
 positionObservable.add((event) => {
   lastPlayerPosition.copyFrom(event.position)
+  lastPlayerPositionReport = event
 })
 
 // Listen to position changes, and notify if the parcel changed
@@ -94,10 +95,10 @@ export function initializeUrlPositionObserver() {
 
   if (lastPlayerPosition.equalsToFloats(0, 0, 0)) {
     // LOAD INITIAL POSITION IF SET TO ZERO
-    const query = qs.parse(location.search)
-
-    if (typeof query.position === 'string') {
-      const [xString, yString] = query.position.split(',')
+    const query = new URLSearchParams(location.search)
+    const position = query.get('position')
+    if (typeof position === 'string') {
+      const [xString, yString] = position.split(',')
       let x = parseFloat(xString)
       let y = parseFloat(yString)
 
@@ -122,10 +123,11 @@ export function initializeUrlPositionObserver() {
 
 function replaceQueryStringPosition(x: any, y: any) {
   const currentPosition = `${x | 0},${y | 0}`
-  const q = qs.parse(location.search)
-  q.position = currentPosition
 
-  history.replaceState({ position: currentPosition }, 'position', `?${qs.stringify(q)}`)
+  const q = new URLSearchParams(location.search)
+  q.set('position', currentPosition)
+
+  history.replaceState({ position: currentPosition }, 'position', `?${q.toString()}`)
 }
 
 /**

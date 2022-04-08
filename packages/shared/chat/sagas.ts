@@ -241,10 +241,10 @@ function initChatCommands() {
       const realm = changeRealm(realmString)
 
       if (realm) {
-        response = `Changing to Realm ${realmToString(realm)}...`
+        response = `Changing to Realm ${realm.serverName}...`
         // TODO: This status should be shown in the chat window
         catalystRealmConnected().then(
-          () => notifyStatusThroughChat(`Changed realm successfuly. Welcome to the realm ${realmToString(realm)}!`),
+          () => notifyStatusThroughChat(`Changed realm successfuly. Welcome to the realm ${realm.serverName}!`),
           (e) => {
             const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
             notifyStatusThroughChat('Could not join realm.' + cause)
@@ -476,7 +476,7 @@ function initChatCommands() {
           body += `${count} ${count > 1 ? 'users' : 'user'} @ ${
             sceneInfo.name.length < 20 ? sceneInfo.name : sceneInfo.name.substring(0, 20) + '...'
           } ${sceneInfo.baseCoords.x},${sceneInfo.baseCoords.y} ${sceneInfo.realms.reduce(
-            (a, b) => a + `\n\t realm: ${realmToString(b)} users: ${b.usersCount}`,
+            (a, b) => a + `\n\t realm: ${b.serverName} users: ${b.usersCount}`,
             ''
           )}\n`
         })

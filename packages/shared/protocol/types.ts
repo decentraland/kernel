@@ -1,5 +1,10 @@
-import { Context } from '../comms'
+import { CommsContext } from '../comms/context'
+
+export type RootProtocolState = {
+  protocol: ProtocolState
+}
 
 export type ProtocolState = {
-  context: Context | undefined
+  context: CommsContext | undefined
+  prevContext: CommsContext | undefined
 }

@@ -54,7 +54,7 @@ function reportToRenderer(info: Partial<RealmsInfoForRenderer>) {
 function convertCurrentRealmType(realm: Realm): CurrentRealmInfoForRenderer {
   const contentServerUrl = getFetchContentServer(store.getState())
   return {
-    serverName: realm.catalystName,
+    serverName: realm.serverName,
     layer: '',
     domain: realm.domain,
     contentServerUrl: contentServerUrl

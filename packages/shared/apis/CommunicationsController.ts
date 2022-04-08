@@ -1,14 +1,12 @@
+// tslint:disable:prefer-function-over-method
 import { registerAPI, exposeMethod, APIOptions } from 'decentraland-rpc/lib/host'
 
-import {
-  sendParcelSceneCommsMessage,
-  subscribeParcelSceneToCommsMessages,
-  unsubscribeParcelSceneToCommsMessages
-} from 'shared/comms'
+import { subscribeParcelSceneToCommsMessages, unsubscribeParcelSceneToCommsMessages } from 'shared/comms/handlers'
 import { ExposableAPI } from 'shared/apis/ExposableAPI'
 import { EngineAPI } from 'shared/apis/EngineAPI'
 import { ParcelIdentity } from './ParcelIdentity'
 import { PeerInformation } from 'shared/comms/interface/types'
+import { sendParcelSceneCommsMessage } from 'shared/comms'
 
 @registerAPI('CommunicationsController')
 export class CommunicationsController extends ExposableAPI {

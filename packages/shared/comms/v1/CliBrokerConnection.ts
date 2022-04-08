@@ -1,73 +1,49 @@
 import { future, IFuture } from 'fp-future'
 
-import { MessageType, CoordinatorMessage, WelcomeMessage, ConnectMessage } from '../comms/v1/proto/broker'
-import { Stats } from './debug'
-import { IBrokerConnection, BrokerMessage, SocketReadyState } from '../comms/v1/IBrokerConnection'
+import { MessageType, CoordinatorMessage, WelcomeMessage, ConnectMessage } from './proto/broker'
+import { Stats } from '../debug'
+import { TransportMessage, IBrokerTransport } from './IBrokerTransport'
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
 
-export class CliBrokerConnection implements IBrokerConnection {
+export class CliBrokerConnection implements IBrokerTransport {
   public alias: number | null = null
 
   public stats: Stats | null = null
 
   public logger: ILogger = createLogger('Broker: ')
 
-  public onMessageObservable = new Observable<BrokerMessage>()
+  public onMessageObservable = new Observable<TransportMessage>()
 
   private connected = future<void>()
 
-  get isAuthenticated() {
-    return !!this.alias
-  }
-
-  get isConnected(): IFuture<void> {
+  get connectedPromise(): IFuture<void> {
     return this.connected
-  }
-
-  get hasUnreliableChannel() {
-    return (this.ws && this.ws.readyState === WebSocket.OPEN) || false
-  }
-
-  get hasReliableChannel() {
-    return (this.ws && this.ws.readyState === WebSocket.OPEN) || false
   }
 
   private ws: WebSocket | null = null
 
-  constructor(public url: string) {
-    this.connectWS()
+  constructor(public url: string) {}
+
+  async connect(): Promise<void> {
+    if (!this.ws) {
+      this.connectWS()
+    }
+
+    await this.connected
   }
 
-  printDebugInformation(): void {
-    if (this.ws && this.ws.readyState === SocketReadyState.OPEN) {
-      const state = (this.alias ? 'authenticated' : 'not authenticated') + ` my alias is ${this.alias}`
-      this.logger.log(state)
-    } else {
-      this.logger.log(`non active coordinator connection to ${this.url}`)
-    }
-  }
-
-  sendReliable(data: Uint8Array) {
-    if (!this.hasReliableChannel) {
-      throw new Error('trying to message using null reliable channel')
-    }
+  send(data: Uint8Array, _reliable: boolean) {
     this.sendCoordinatorMessage(data)
   }
 
-  sendUnreliable(data: Uint8Array) {
-    if (!this.hasUnreliableChannel) {
-      throw new Error('trying to message using null unreliable channel')
-    }
-    this.sendCoordinatorMessage(data)
-  }
-
-  close() {
+  async disconnect() {
     if (this.ws) {
       this.ws.onmessage = null
       this.ws.onerror = null
       this.ws.onclose = null
       this.ws.close()
+      this.ws = null
     }
   }
 
@@ -130,7 +106,7 @@ export class CliBrokerConnection implements IBrokerConnection {
   }
 
   private sendCoordinatorMessage = (msg: Uint8Array) => {
-    if (!this.ws || this.ws.readyState !== SocketReadyState.OPEN) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       throw new Error('try to send answer to a non ready ws')
     }
 

@@ -1,6 +1,10 @@
-import { ProtocolState } from './types'
-import { Context } from '../comms'
+import { RootProtocolState } from './types'
+import { CommsContext } from '../comms/context'
 
-export function getCommsContext(state: { protocol: ProtocolState }): Context | undefined {
+export function getCommsContext(state: RootProtocolState): CommsContext | undefined {
   return state.protocol.context
+}
+
+export function getPrevCommsContext(state: RootProtocolState): CommsContext | undefined {
+  return state.protocol.prevContext
 }

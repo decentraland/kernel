@@ -1,400 +1,64 @@
-import {
-  commConfigurations,
-  parcelLimits,
-  COMMS,
-  AUTO_CHANGE_REALM,
-  genericAvatarSnapshots,
-  COMMS_PROFILE_TIMEOUT,
-  COMMS_SERVICE,
-  DEBUG_KERNEL_LOG
-} from 'config'
-import { ProfileForRenderer } from 'shared/profiles/types'
-import { CommunicationsController } from 'shared/apis/CommunicationsController'
-import { createDummyLogger, defaultLogger } from 'shared/logger'
-import { ChatMessage as InternalChatMessage, ChatMessageType, SceneFeatureToggles } from 'shared/types'
-import { lastPlayerParcel, positionObservable, PositionReport } from 'shared/world/positionThings'
-import { lastPlayerScene } from 'shared/world/sceneState'
-import { ProfileAsPromise } from '../profiles/ProfileAsPromise'
+import { commConfigurations, COMMS } from 'config'
+import { lastPlayerParcel } from 'shared/world/positionThings'
 import { notifyStatusThroughChat } from './chat'
-import { CliBrokerConnection } from './CliBrokerConnection'
-import { Stats } from './debug'
-import { IBrokerConnection } from '../comms/v1/IBrokerConnection'
-import {
-  getCurrentPeer,
-  getPeer,
-  getUser,
-  localProfileUUID,
-  receiveUserData,
-  receiveUserPose,
-  receiveUserVisible,
-  removeById,
-  avatarMessageObservable,
-  receiveUserTalking
-} from './peers'
-import {
-  Pose,
-  UserInformation,
-  Package,
-  ChatMessage,
-  ProfileVersion,
-  BusMessage,
-  AvatarMessageType,
-  ConnectionEstablishmentError,
-  UnknownCommsModeError,
-  VoiceFragment,
-  ProfileRequest,
-  ProfileResponse
-} from './interface/types'
-import {
-  CommunicationArea,
-  Position,
-  position2parcel,
-  sameParcel,
-  squareDistance,
-  rotateUsingQuaternion
-} from './interface/utils'
+import { CliBrokerConnection } from './v1/CliBrokerConnection'
+import { IBrokerTransport } from './v1/IBrokerTransport'
+import { getCurrentPeer, localProfileUUID, receiveUserData } from './peers'
+import { UserInformation, ConnectionEstablishmentError, UnknownCommsModeError } from './interface/types'
 import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
-import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { renderStateObservable, isRendererEnabled, ensureRendererEnabled } from '../world/worldState'
+import { ensureRendererEnabled } from '../world/worldState'
 import { WorldInstanceConnection } from './interface/index'
-
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
-
 import { Authenticator, AuthIdentity } from 'dcl-crypto'
 import { getCommsServer, getRealm, getAllCatalystCandidates } from '../dao/selectors'
-import { Realm } from 'shared/dao/types'
 import { Store } from 'redux'
-import { RootState } from 'shared/store/rootTypes'
 import { store } from 'shared/store/isolatedStore'
-import {
-  setCatalystRealmCommsStatus,
-  setCatalystRealm,
-  markCatalystRealmFull,
-  markCatalystRealmConnectionError
-} from 'shared/dao/actions'
-import { observeRealmChange, pickCatalystRealm, changeToCrowdedRealm } from 'shared/dao'
-import { getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
-import { Profile, ProfileType, Snapshots } from 'shared/profiles/types'
+import { setCatalystRealmCommsStatus, setCatalystRealm, markCatalystRealmConnectionError } from 'shared/dao/actions'
+import { pickCatalystRealm } from 'shared/dao'
 import { realmToString } from '../dao/utils/realmToString'
-import { trackEvent } from 'shared/analytics'
-import { messageReceived } from '../chat/actions'
-import { arrayEquals } from 'atomicHelpers/arrayEquals'
-import { getBannedUsers, getCommsConfig } from 'shared/meta/selectors'
+import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
 import {
   BringDownClientAndShowError,
   ErrorContext,
   ReportFatalErrorWithCommsPayload
 } from 'shared/loading/ReportFatalError'
-import { NEW_LOGIN, commsEstablished, COMMS_COULD_NOT_BE_ESTABLISHED, commsErrorRetrying } from 'shared/loading/types'
+import { NEW_LOGIN, COMMS_COULD_NOT_BE_ESTABLISHED, commsEstablished } from 'shared/loading/types'
 import { getIdentity, getStoredSession } from 'shared/session'
-import { createLogger } from '../logger'
-import { VoiceCommunicator, VoiceSpatialParams } from 'voice-chat-codec/VoiceCommunicator'
-import { setCommsIsland, voicePlayingUpdate, voiceRecordingUpdate } from './actions'
-import { getCommsIsland, getPreferedIsland, getVoicePolicy, isVoiceChatRecording } from './selectors'
-import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
-import future, { IFuture } from 'fp-future'
-import { getProfileType } from 'shared/profiles/getProfileType'
-import { sleep } from 'atomicHelpers/sleep'
-import { localProfileReceived } from 'shared/profiles/actions'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { isURL } from 'atomicHelpers/isURL'
-import { RootCommsState, VoicePolicy } from './types'
-import { isFriend } from 'shared/friends/selectors'
-import { EncodedFrame } from 'voice-chat-codec/types'
-import Html from 'shared/Html'
-import { isFeatureToggleEnabled } from 'shared/selectors'
-import * as qs from 'query-string'
+import { setCommsIsland } from './actions'
+import { getCommsIsland, getPreferedIsland } from './selectors'
+import { RootCommsState } from './types'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
-import { BannedUsers } from 'shared/meta/types'
+import { commsLogger, CommsContext } from './context'
+import { bindHandlersToCommsContext } from './handlers'
+import { initVoiceCommunicator } from './voice-over-comms'
+import { getCurrentIdentity } from 'shared/session/selectors'
+import { getCommsContext } from 'shared/protocol/selectors'
+import { setWorldContext } from 'shared/protocol/actions'
+import { Realm } from 'shared/dao/types'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
 export type CommsV1Mode = 'local' | 'remote'
 export type CommsV2Mode = 'p2p' | 'server'
 
-type Timestamp = number
-type PeerAlias = string
-
-export const MORDOR_POSITION: Position = [
-  1000 * parcelLimits.parcelSize,
-  1000,
-  1000 * parcelLimits.parcelSize,
-  0,
-  0,
-  0,
-  0,
-  true
-]
-
-type CommsContainer = {
-  printCommsInformation: () => void
-}
-
-declare const globalThis: CommsContainer
-
-const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
-
-type ProfilePromiseState = {
-  promise: Promise<ProfileForRenderer | void>
-  version: number | null
-  status: 'ok' | 'loading' | 'error'
-}
-export class PeerTrackingInfo {
-  public position: Position | null = null
-  public identity: string | null = null
-  public userInfo: UserInformation | null = null
-  public lastPositionUpdate: Timestamp = 0
-  public lastProfileUpdate: Timestamp = 0
-  public lastUpdate: Timestamp = 0
-  public receivedPublicChatMessages = new Set<string>()
-  public talking = false
-
-  profilePromise: ProfilePromiseState = {
-    promise: Promise.resolve(),
-    version: null,
-    status: 'loading'
-  }
-
-  profileType?: ProfileType
-
-  public loadProfileIfNecessary(profileVersion: number) {
-    if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
-      if (!this.userInfo) {
-        this.userInfo = { userId: this.identity }
-      }
-      this.profilePromise = {
-        promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
-          .then((profile) => {
-            const forRenderer = profileToRendererFormat(profile)
-            this.lastProfileUpdate = new Date().getTime()
-            const userInfo = this.userInfo || ({ userId: this.identity } as UserInformation)
-            userInfo.version = profile.version
-            this.userInfo = userInfo
-            this.profilePromise.status = 'ok'
-            return forRenderer
-          })
-          .catch((error) => {
-            this.profilePromise.status = 'error'
-            defaultLogger.error('Error fetching profile!', error)
-          }),
-        version: profileVersion,
-        status: 'loading'
-      }
-    }
-  }
-}
-
-export class Context {
-  public readonly stats: Stats = new Stats(this)
-  public commRadius: number
-
-  public peerData = new Map<PeerAlias, PeerTrackingInfo>()
-  public userInfo: UserInformation
-
-  public currentPosition: Position | null = null
-
-  public worldInstanceConnection: WorldInstanceConnection | null = null
-
-  profileInterval?: ReturnType<typeof setInterval>
-  positionObserver: any
-  worldRunningObserver: any
-  infoCollecterInterval?: ReturnType<typeof setInterval>
-  analyticsInterval?: ReturnType<typeof setInterval>
-
-  timeToChangeRealm: number = Date.now() + commConfigurations.autoChangeRealmInterval
-
-  lastProfileResponseTime: number = 0
-  sendingProfileResponse: boolean = false
-
-  positionUpdatesPaused: boolean = false
-
-  constructor(userInfo: UserInformation) {
-    this.userInfo = userInfo
-
-    this.commRadius = commConfigurations.commRadius
-  }
-}
-
-let context: Context | null = null
-const scenesSubscribedToCommsEvents = new Set<CommunicationsController>()
-let voiceCommunicator: VoiceCommunicator | null = null
-
-/**
- * Returns a list of CIDs that must receive scene messages from comms
- */
-function getParcelSceneSubscriptions(): string[] {
-  const ids: string[] = []
-
-  scenesSubscribedToCommsEvents.forEach(($) => {
-    ids.push($.cid)
-  })
-
-  return ids
-}
-
-let audioRequestPending = false
-
-function requestMediaDevice() {
-  if (!audioRequestPending) {
-    audioRequestPending = true
-    navigator.mediaDevices
-      .getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: VOICE_CHAT_SAMPLE_RATE,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          advanced: [{ echoCancellation: true }, { autoGainControl: true }, { noiseSuppression: true }] as any
-        },
-        video: false
-      })
-      .then(async (a) => {
-        await voiceCommunicator!.setInputStream(a)
-        if (isVoiceChatRecording(store.getState())) {
-          voiceCommunicator!.start()
-        } else {
-          voiceCommunicator!.pause()
-        }
-      })
-      .catch((e) => {
-        defaultLogger.log('Error requesting audio: ', e)
-      })
-      .finally(() => {
-        audioRequestPending = false
-      })
-  }
-}
-
-export function updateVoiceRecordingStatus(recording: boolean) {
-  if (!voiceCommunicator) {
-    return
-  }
-
-  if (!isVoiceChatAllowedByCurrentScene()) {
-    voiceCommunicator.pause()
-    return
-  }
-
-  if (!recording) {
-    voiceCommunicator.pause()
-    return
-  }
-
-  if (!voiceCommunicator.hasInput()) {
-    requestMediaDevice()
-  } else {
-    voiceCommunicator.start()
-  }
-}
-
-export function updatePeerVoicePlaying(userId: string, playing: boolean) {
-  if (context) {
-    for (const peerInfo of context.peerData.values()) {
-      if (peerInfo.identity === userId) {
-        peerInfo.talking = playing
-        break
-      }
-    }
-  }
-  getUnityInstance().SetUserTalking(userId, playing)
-}
-
-export function updateVoiceCommunicatorVolume(volume: number) {
-  if (voiceCommunicator) {
-    voiceCommunicator.setVolume(volume)
-  }
-}
-
-export function updateVoiceCommunicatorMute(mute: boolean) {
-  if (voiceCommunicator) {
-    voiceCommunicator.setMute(mute)
-  }
-}
-
 export function sendPublicChatMessage(messageId: string, text: string) {
-  if (context && context.currentPosition && context.worldInstanceConnection) {
-    context.worldInstanceConnection
-      .sendChatMessage(context.currentPosition, messageId, text)
-      .catch((e) => defaultLogger.warn(`error while sending message `, e))
+  const commsContext = getCommsContext(store.getState())
+
+  if (commsContext && commsContext.currentPosition && commsContext.worldInstanceConnection) {
+    commsContext.worldInstanceConnection
+      .sendChatMessage(commsContext.currentPosition, messageId, text)
+      .catch((e) => commsLogger.warn(`error while sending message `, e))
   }
 }
 
 export function sendParcelSceneCommsMessage(cid: string, message: string) {
-  if (context && context.currentPosition && context.worldInstanceConnection) {
-    context.worldInstanceConnection
+  const commsContext = getCommsContext(store.getState())
+
+  if (commsContext && commsContext.currentPosition && commsContext.worldInstanceConnection) {
+    commsContext.worldInstanceConnection
       .sendParcelSceneCommsMessage(cid, message)
-      .catch((e) => defaultLogger.warn(`error while sending message `, e))
-  }
-}
-
-export function subscribeParcelSceneToCommsMessages(controller: CommunicationsController) {
-  scenesSubscribedToCommsEvents.add(controller)
-}
-
-export function unsubscribeParcelSceneToCommsMessages(controller: CommunicationsController) {
-  scenesSubscribedToCommsEvents.delete(controller)
-}
-
-const pendingProfileRequests: Record<string, IFuture<Profile | null>[]> = {}
-
-export async function requestLocalProfileToPeers(userId: string, version?: number): Promise<Profile | null> {
-  if (context && context.worldInstanceConnection && context.currentPosition) {
-    if (!pendingProfileRequests[userId]) {
-      pendingProfileRequests[userId] = []
-    }
-
-    const thisFuture = future<Profile | null>()
-
-    pendingProfileRequests[userId].push(thisFuture)
-
-    await context.worldInstanceConnection.sendProfileRequest(context.currentPosition, userId, version)
-
-    setTimeout(function () {
-      if (thisFuture.isPending) {
-        // We resolve with a null profile. This will fallback to a random profile
-        thisFuture.resolve(null)
-        const pendingRequests = pendingProfileRequests[userId]
-        if (pendingRequests && pendingRequests.includes(thisFuture)) {
-          pendingRequests.splice(pendingRequests.indexOf(thisFuture), 1)
-        }
-      }
-    }, COMMS_PROFILE_TIMEOUT)
-
-    return thisFuture
-  } else {
-    // We resolve with a null profile. This will fallback to a random profile
-    return Promise.resolve(null)
-  }
-}
-
-async function changeConnectionRealm(realm: Realm, url: string) {
-  defaultLogger.log('Changing connection realm to ', JSON.stringify(realm), { url })
-  if (context && context.worldInstanceConnection) {
-    context.positionUpdatesPaused = true
-    try {
-      removeAllPeers(context)
-      await sendToMordorAsync()
-      await context.worldInstanceConnection.changeRealm(realm, url)
-    } finally {
-      context.positionUpdatesPaused = false
-    }
-  }
-}
-
-// TODO: Change ChatData to the new class once it is added to the .proto
-export function processParcelSceneCommsMessage(context: Context, fromAlias: string, message: Package<ChatMessage>) {
-  const { id: cid, text } = message.data
-
-  const peer = getPeer(fromAlias)
-
-  if (peer) {
-    scenesSubscribedToCommsEvents.forEach(($) => {
-      if ($.cid === cid) {
-        $.receiveCommsMessage(text, peer)
-      }
-    })
+      .catch((e) => commsLogger.warn(`error while sending message `, e))
   }
 }
 
@@ -409,462 +73,13 @@ export function updateCommsUser(changes: Partial<UserInformation>) {
   receiveUserData(localProfileUUID, peer.user)
 
   const user = peer.user
-  if (context) {
-    if (user) {
-      context.userInfo = user
+
+  if (user) {
+    const commsContext = getCommsContext(store.getState())
+
+    if (commsContext) {
+      commsContext.userInfo = user
     }
-  }
-}
-
-function ensurePeerTrackingInfo(context: Context, alias: string): PeerTrackingInfo {
-  let peerTrackingInfo = context.peerData.get(alias)
-
-  if (!peerTrackingInfo) {
-    peerTrackingInfo = new PeerTrackingInfo()
-    context.peerData.set(alias, peerTrackingInfo)
-  }
-  return peerTrackingInfo
-}
-
-function processChatMessage(context: Context, fromAlias: string, message: Package<ChatMessage>) {
-  const msgId = message.data.id
-  const profile = getCurrentUserProfile(store.getState())
-
-  const peerTrackingInfo = ensurePeerTrackingInfo(context, fromAlias)
-  if (!peerTrackingInfo.receivedPublicChatMessages.has(msgId)) {
-    const text = message.data.text
-    peerTrackingInfo.receivedPublicChatMessages.add(msgId)
-
-    const user = getUser(fromAlias)
-    if (user) {
-      if (text.startsWith('␐')) {
-        const [id, timestamp] = text.split(' ')
-        avatarMessageObservable.notifyObservers({
-          type: AvatarMessageType.USER_EXPRESSION,
-          uuid: fromAlias,
-          expressionId: id.slice(1),
-          timestamp: parseInt(timestamp, 10)
-        })
-      } else {
-        if (profile && user.userId && !isBlockedOrBanned(profile, getBannedUsers(store.getState()), user.userId)) {
-          const messageEntry: InternalChatMessage = {
-            messageType: ChatMessageType.PUBLIC,
-            messageId: msgId,
-            sender: user.userId || 'unknown',
-            body: text,
-            timestamp: Date.now()
-          }
-          store.dispatch(messageReceived(messageEntry))
-        }
-      }
-    }
-  }
-}
-
-function processVoiceFragment(context: Context, fromAlias: string, message: Package<VoiceFragment>) {
-  const profile = getCurrentUserProfile(store.getState())
-
-  const peerTrackingInfo = ensurePeerTrackingInfo(context, fromAlias)
-
-  if (peerTrackingInfo) {
-    if (
-      profile &&
-      peerTrackingInfo.identity &&
-      peerTrackingInfo.position &&
-      shouldPlayVoice(profile, peerTrackingInfo.identity)
-    ) {
-      voiceCommunicator
-        ?.playEncodedAudio(peerTrackingInfo.identity, getSpatialParamsFor(peerTrackingInfo.position), message.data)
-        .catch((e) => defaultLogger.error('Error playing encoded audio!', e))
-    }
-  }
-}
-
-function shouldPlayVoice(profile: Profile, voiceUserId: string) {
-  const myAddress = getIdentity()?.address
-  return (
-    isVoiceAllowedByPolicy(profile, voiceUserId) &&
-    !isBlockedOrBanned(profile, getBannedUsers(store.getState()), voiceUserId) &&
-    !isMuted(profile, voiceUserId) &&
-    !hasBlockedMe(myAddress, voiceUserId) &&
-    isVoiceChatAllowedByCurrentScene()
-  )
-}
-
-function isVoiceAllowedByPolicy(profile: Profile, voiceUserId: string): boolean {
-  const policy = getVoicePolicy(store.getState())
-
-  switch (policy) {
-    case VoicePolicy.ALLOW_FRIENDS_ONLY:
-      return isFriend(store.getState(), voiceUserId)
-    case VoicePolicy.ALLOW_VERIFIED_ONLY:
-      const theirProfile = getProfile(store.getState(), voiceUserId)
-      return !!theirProfile?.hasClaimedName
-    default:
-      return true
-  }
-}
-
-function isVoiceChatAllowedByCurrentScene() {
-  return isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, lastPlayerScene?.sceneJsonData)
-}
-
-const TIME_BETWEEN_PROFILE_RESPONSES = 1000
-
-function processProfileRequest(context: Context, fromAlias: string, message: Package<ProfileRequest>) {
-  const myIdentity = getIdentity()
-  const myAddress = myIdentity?.address
-
-  // We only send profile responses for our own address
-  if (message.data.userId !== myAddress) return
-
-  // If we are already sending a profile response, we don't want to schedule another
-  if (context.sendingProfileResponse) return
-
-  context.sendingProfileResponse = true
-  ;(async () => {
-    const timeSinceLastProfile = Date.now() - context.lastProfileResponseTime
-
-    // We don't want to send profile responses too frequently, so we delay the response to send a maximum of 1 per TIME_BETWEEN_PROFILE_RESPONSES
-    if (timeSinceLastProfile < TIME_BETWEEN_PROFILE_RESPONSES) {
-      await sleep(TIME_BETWEEN_PROFILE_RESPONSES - timeSinceLastProfile)
-    }
-
-    const profile = await ProfileAsPromise(
-      myAddress,
-      message.data.version ? parseInt(message.data.version, 10) : undefined,
-      getProfileType(myIdentity)
-    )
-
-    if (context.currentPosition) {
-      void context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
-    }
-
-    context.lastProfileResponseTime = Date.now()
-  })()
-    .finally(() => (context.sendingProfileResponse = false))
-    .catch((e) => defaultLogger.error('Error getting profile for responding request to comms', e))
-}
-
-function processProfileResponse(context: Context, fromAlias: string, message: Package<ProfileResponse>) {
-  const peerTrackingInfo = ensurePeerTrackingInfo(context, fromAlias)
-
-  const profile = message.data.profile
-
-  if (peerTrackingInfo.identity !== profile.userId) return
-
-  if (pendingProfileRequests[profile.userId] && pendingProfileRequests[profile.userId].length > 0) {
-    pendingProfileRequests[profile.userId].forEach((it) => it.resolve(profile))
-    delete pendingProfileRequests[profile.userId]
-  } else {
-    // If we received an unexpected profile, maybe the profile saga can use this preemptively
-    store.dispatch(localProfileReceived(profile.userId, profile))
-  }
-}
-
-function isBlockedOrBanned(profile: Profile, bannedUsers: BannedUsers, userId: string): boolean {
-  return isBlocked(profile, userId) || isBannedFromChat(bannedUsers, userId)
-}
-
-function isBannedFromChat(bannedUsers: BannedUsers, userId: string): boolean {
-  const bannedUser = bannedUsers[userId]
-  return bannedUser && bannedUser.some((it) => it.type === 'VOICE_CHAT_AND_CHAT' && it.expiration > Date.now())
-}
-
-function isBlocked(profile: Profile, userId: string): boolean {
-  return !!profile.blocked && profile.blocked.includes(userId)
-}
-
-function isMuted(profile: Profile, userId: string): boolean {
-  return !!profile.muted && profile.muted.includes(userId)
-}
-
-function hasBlockedMe(myAddress: string | undefined, theirAddress: string): boolean {
-  const profile = getProfile(store.getState(), theirAddress)
-
-  return !!profile && !!myAddress && isBlocked(profile, myAddress)
-}
-
-export function processProfileMessage(
-  context: Context,
-  fromAlias: string,
-  peerIdentity: string,
-  message: Package<ProfileVersion>
-) {
-  const msgTimestamp = message.time
-
-  const peerTrackingInfo = ensurePeerTrackingInfo(context, fromAlias)
-
-  if (msgTimestamp > peerTrackingInfo.lastProfileUpdate) {
-    peerTrackingInfo.lastProfileUpdate = msgTimestamp
-    peerTrackingInfo.identity = peerIdentity
-    peerTrackingInfo.lastUpdate = Date.now()
-    peerTrackingInfo.profileType = message.data.type
-
-    if (ensureTrackingUniqueAndLatest(context, fromAlias, peerIdentity, msgTimestamp)) {
-      const profileVersion = message.data.version
-      peerTrackingInfo.loadProfileIfNecessary(profileVersion ? parseInt(profileVersion, 10) : 0)
-    }
-  }
-}
-
-/**
- * Ensures that there is only one peer tracking info for this identity.
- * Returns true if this is the latest update and the one that remains
- */
-function ensureTrackingUniqueAndLatest(
-  context: Context,
-  fromAlias: string,
-  peerIdentity: string,
-  thisUpdateTimestamp: Timestamp
-) {
-  let currentLastProfileAlias = fromAlias
-  let currentLastProfileUpdate = thisUpdateTimestamp
-
-  context.peerData.forEach((info, key) => {
-    if (info.identity === peerIdentity) {
-      if (info.lastProfileUpdate < currentLastProfileUpdate) {
-        removePeer(context, key)
-      } else if (info.lastProfileUpdate > currentLastProfileUpdate) {
-        removePeer(context, currentLastProfileAlias)
-        currentLastProfileAlias = key
-        currentLastProfileUpdate = info.lastProfileUpdate
-      }
-    }
-  })
-
-  return currentLastProfileAlias === fromAlias
-}
-
-export function processPositionMessage(context: Context, fromAlias: string, message: Package<Position>) {
-  const msgTimestamp = message.time
-
-  const peerTrackingInfo = ensurePeerTrackingInfo(context, fromAlias)
-
-  const immediateReposition = message.data[7]
-  if (immediateReposition || msgTimestamp > peerTrackingInfo.lastPositionUpdate) {
-    const p = message.data
-
-    peerTrackingInfo.position = p
-    peerTrackingInfo.lastPositionUpdate = msgTimestamp
-    peerTrackingInfo.lastUpdate = Date.now()
-  }
-}
-
-type ProcessingPeerInfo = {
-  alias: PeerAlias
-  userInfo: UserInformation
-  squareDistance: number
-  position: Position
-  talking: boolean
-}
-
-let currentParcelTopics = ''
-let previousTopics = ''
-
-let lastNetworkUpdatePosition = new Date().getTime()
-let lastPositionSent: Position | undefined
-
-export function onPositionUpdate(context: Context, p: Position) {
-  const worldConnection = context.worldInstanceConnection
-
-  if (!worldConnection || !worldConnection.isAuthenticated) {
-    return
-  }
-
-  const oldParcel = context.currentPosition ? position2parcel(context.currentPosition) : null
-  const newParcel = position2parcel(p)
-  const immediateReposition = p[7]
-
-  if (!sameParcel(oldParcel, newParcel)) {
-    const commArea = new CommunicationArea(newParcel, context.commRadius)
-
-    const xMin = ((commArea.vMin.x + parcelLimits.maxParcelX) >> 2) << 2
-    const xMax = ((commArea.vMax.x + parcelLimits.maxParcelX) >> 2) << 2
-    const zMin = ((commArea.vMin.z + parcelLimits.maxParcelZ) >> 2) << 2
-    const zMax = ((commArea.vMax.z + parcelLimits.maxParcelZ) >> 2) << 2
-
-    const rawTopics: string[] = []
-    for (let x = xMin; x <= xMax; x += 4) {
-      for (let z = zMin; z <= zMax; z += 4) {
-        const hash = `${x >> 2}:${z >> 2}`
-        if (!rawTopics.includes(hash)) {
-          rawTopics.push(hash)
-        }
-      }
-    }
-    currentParcelTopics = rawTopics.join(' ')
-    if (context.currentPosition && !context.positionUpdatesPaused) {
-      worldConnection
-        .sendParcelUpdateMessage(context.currentPosition, p)
-        .catch((e) => defaultLogger.warn(`error while sending message `, e))
-    }
-  }
-
-  if (!immediateReposition) {
-    // Otherwise the topics get lost on an immediate reposition...
-    const parcelSceneSubscriptions = getParcelSceneSubscriptions()
-    const parcelSceneCommsTopics = parcelSceneSubscriptions.join(' ')
-
-    const topics =
-      (context.userInfo.userId ? context.userInfo.userId + ' ' : '') +
-      currentParcelTopics +
-      (parcelSceneCommsTopics.length ? ' ' + parcelSceneCommsTopics : '')
-
-    if (topics !== previousTopics) {
-      worldConnection
-        .updateSubscriptions(topics.split(' '))
-        .catch((e) => defaultLogger.warn(`error while updating subscriptions`, e))
-      previousTopics = topics
-    }
-  }
-
-  context.currentPosition = p
-
-  voiceCommunicator?.setListenerSpatialParams(getSpatialParamsFor(context.currentPosition))
-
-  const now = Date.now()
-  const elapsed = now - lastNetworkUpdatePosition
-
-  // We only send the same position message as a ping if we have not sent positions in the last 5 seconds
-  if (!immediateReposition && arrayEquals(p, lastPositionSent) && elapsed < 5000) {
-    return
-  }
-
-  if ((immediateReposition || elapsed > 100) && !context.positionUpdatesPaused) {
-    lastPositionSent = p
-    lastNetworkUpdatePosition = now
-    worldConnection.sendPositionMessage(p).catch((e) => defaultLogger.warn(`error while sending message `, e))
-  }
-}
-
-function getSpatialParamsFor(position: Position): VoiceSpatialParams {
-  return {
-    position: position.slice(0, 3) as [number, number, number],
-    orientation: rotateUsingQuaternion(position, 0, 0, -1)
-  }
-}
-
-function collectInfo(context: Context) {
-  if (context.stats) {
-    context.stats.collectInfoDuration.start()
-  }
-
-  if (!context.currentPosition) {
-    return
-  }
-
-  const now = Date.now()
-  const visiblePeers: ProcessingPeerInfo[] = []
-  const commsMetaConfig = getCommsConfig(store.getState())
-  const commArea = new CommunicationArea(position2parcel(context.currentPosition), commConfigurations.commRadius)
-  for (const [peerAlias, trackingInfo] of context.peerData) {
-    const msSinceLastUpdate = now - trackingInfo.lastUpdate
-
-    if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
-      removePeer(context, peerAlias)
-
-      continue
-    }
-
-    if (trackingInfo.identity === getIdentity()?.address) {
-      // If we are tracking a peer that is ourselves, we remove it
-      removePeer(context, peerAlias)
-      continue
-    }
-
-    if (!trackingInfo.position || !trackingInfo.userInfo) {
-      continue
-    }
-
-    if (!commArea.contains(trackingInfo.position)) {
-      receiveUserVisible(peerAlias, false)
-      continue
-    }
-
-    visiblePeers.push({
-      position: trackingInfo.position,
-      userInfo: trackingInfo.userInfo,
-      squareDistance: squareDistance(context.currentPosition, trackingInfo.position),
-      alias: peerAlias,
-      talking: trackingInfo.talking
-    })
-  }
-
-  if (visiblePeers.length <= commsMetaConfig.maxVisiblePeers) {
-    for (const peerInfo of visiblePeers) {
-      const alias = peerInfo.alias
-      receiveUserVisible(alias, true)
-      receiveUserPose(alias, peerInfo.position as Pose)
-      receiveUserData(alias, peerInfo.userInfo)
-      receiveUserTalking(alias, peerInfo.talking)
-    }
-  } else {
-    const sortedBySqDistanceVisiblePeers = visiblePeers.sort((p1, p2) => p1.squareDistance - p2.squareDistance)
-    for (let i = 0; i < sortedBySqDistanceVisiblePeers.length; ++i) {
-      const peer = sortedBySqDistanceVisiblePeers[i]
-      const alias = peer.alias
-
-      if (i < commsMetaConfig.maxVisiblePeers) {
-        receiveUserVisible(alias, true)
-        receiveUserPose(alias, peer.position as Pose)
-        receiveUserData(alias, peer.userInfo)
-        receiveUserTalking(alias, peer.talking)
-      } else {
-        receiveUserVisible(alias, false)
-      }
-    }
-  }
-
-  checkAutochangeRealm(visiblePeers, context, now)
-
-  if (context.stats) {
-    context.stats.visiblePeerIds = visiblePeers.map((it) => it.alias)
-    context.stats.trackingPeersCount = context.peerData.size
-    context.stats.collectInfoDuration.stop()
-  }
-}
-
-function checkAutochangeRealm(visiblePeers: ProcessingPeerInfo[], context: Context, now: number) {
-  if (AUTO_CHANGE_REALM) {
-    if (visiblePeers.length > 0) {
-      context.timeToChangeRealm = now + commConfigurations.autoChangeRealmInterval
-    } else if (now > context.timeToChangeRealm) {
-      context.timeToChangeRealm = now + commConfigurations.autoChangeRealmInterval
-      defaultLogger.log('Changing to crowded realm because there is no people around')
-      changeToCrowdedRealm().then(
-        ([changed, realm]) => {
-          if (changed) {
-            defaultLogger.log('Successfully changed to realm', realm)
-          } else {
-            defaultLogger.log('No crowded realm found')
-          }
-        },
-        (error) => defaultLogger.warn('Error trying to change realm', error)
-      )
-    }
-  }
-}
-
-function removeMissingPeers(context: Context, newPeers: MinPeerData[]) {
-  for (const alias of context.peerData.keys()) {
-    if (!newPeers.some((x) => x.id === alias)) {
-      removePeer(context, alias)
-    }
-  }
-}
-
-function removeAllPeers(context: Context) {
-  for (const alias of context.peerData.keys()) {
-    removePeer(context, alias)
-  }
-}
-
-function removePeer(context: Context, peerAlias: string) {
-  context.peerData.delete(peerAlias)
-  removeById(peerAlias)
-  if (context.stats) {
-    context.stats.onPeerRemoved(peerAlias)
   }
 }
 
@@ -873,43 +88,48 @@ function parseCommsMode(modeString: string) {
   return segments as [CommsVersion, CommsMode]
 }
 
-const NOOP = () => {
-  // do nothing
-}
-function subscribeToRealmChange(store: Store<RootState>) {
-  observeRealmChange(store, (previousRealm, currentRealm) =>
-    changeConnectionRealm(currentRealm, getCommsServer(store.getState())).then(NOOP, defaultLogger.error)
-  )
-}
+export async function connect(realm: Realm): Promise<void> {
+  const realmString = realmToString(realm)
+  const q = new URLSearchParams(window.location.search)
+  q.set('realm', realmString)
+  history.replaceState({ realm: realmString }, '', `?${q.toString()}`)
 
-let idTaken = false
-
-export async function connect(userId: string) {
+  commsLogger.log('Connecting to realm', realm)
   try {
-    const user = await getStoredSession(userId)
+    const identity = getCurrentIdentity(store.getState())
+
+    if (!identity) {
+      return
+    }
+
+    const user = await getStoredSession(identity.address)
 
     if (!user) {
-      return undefined
+      return
     }
 
     const userInfo = {
-      userId,
+      userId: identity.address,
       ...user
     }
 
+    const commsContext = new CommsContext(userInfo)
+
+    initVoiceCommunicator(user.identity.address)
+
     let connection: WorldInstanceConnection
 
-    const [version, mode] = parseCommsMode(COMMS)
-
-    idTaken = false
+    const DEFAULT_PROTOCOL = 'v2-p2p'
+    const protocol = realm?.protocol ?? DEFAULT_PROTOCOL
+    const [version, mode] = parseCommsMode(protocol)
 
     switch (version) {
       case 'v1': {
-        let commsBroker: IBrokerConnection
+        let commsBroker: IBrokerTransport
 
         switch (mode) {
           case 'local': {
-            let location = window.location.toString()
+            let location = document.location.toString()
             if (location.indexOf('#') > -1) {
               location = location.substring(0, location.indexOf('#')) // drop fragment identifier
             }
@@ -917,36 +137,32 @@ export async function connect(userId: string) {
 
             const url = new URL(commsUrl)
             const qs = new URLSearchParams({
-              identity: btoa(userId)
+              identity: btoa(user.identity.address)
             })
             url.search = qs.toString()
 
-            defaultLogger.log('Using WebSocket comms: ' + url.href)
+            commsLogger.log('Using WebSocket comms: ' + url.href)
             commsBroker = new CliBrokerConnection(url.href)
             break
           }
+          // 1 case 'remote': {
+          // 1  const qs = new URLSearchParams(document.location.search)
+          // 1  const nats = qs.get('nats') || 'wss://nats.decentraland.io'
+          // 1  commsBroker = new NatsBrokerConnection(nats)
+          // 1  break
+          // 1 }
           default: {
             throw new UnknownCommsModeError(`unrecognized mode for comms v1 "${mode}"`)
           }
         }
 
-        const instance = new BrokerWorldInstanceConnection(commsBroker)
-        await instance.isConnected
-        store.dispatch(commsEstablished())
-
-        connection = instance
+        connection = new BrokerWorldInstanceConnection(commsBroker)
         break
       }
       case 'v2': {
         await ensureMetaConfigurationInitialized()
         const lighthouseUrl = getCommsServer(store.getState())
-        let realm = getRealm(store.getState())
         const commsConfig = getCommsConfig(store.getState())
-
-        if (COMMS_SERVICE) {
-          // For now, we assume that if we provided a hardcoded url for comms it will be island based
-          realm = { ...realm!, lighthouseVersion: '1.0.0' }
-        }
 
         const peerConfig: LighthouseConnectionConfig = {
           connectionConfig: {
@@ -955,8 +171,8 @@ export async function connect(userId: string) {
           authHandler: async (msg: string) => {
             try {
               return Authenticator.signPayload(getIdentity() as AuthIdentity, msg)
-            } catch (e: any) {
-              defaultLogger.info(`error while trying to sign message from lighthouse '${msg}'`)
+            } catch (e) {
+              commsLogger.info(`error while trying to sign message from lighthouse '${msg}'`)
             }
             // if any error occurs
             return getIdentity()
@@ -966,8 +182,8 @@ export async function connect(userId: string) {
           maxConnections: commsConfig.maxConnections ?? 6,
           positionConfig: {
             selfPosition: () => {
-              if (context && context.currentPosition) {
-                return context.currentPosition.slice(0, 3) as Position3D
+              if (commsContext.currentPosition) {
+                return commsContext.currentPosition.slice(0, 3) as Position3D
               }
             },
             maxConnectionDistance: 4,
@@ -977,21 +193,10 @@ export async function connect(userId: string) {
           eventsHandler: {
             onIslandChange: (island: string | undefined, peers: MinPeerData[]) => {
               store.dispatch(setCommsIsland(island))
-
-              if (!context) {
-                logger.warn('no context was found to remove the peers')
-                return
-              }
-
-              removeMissingPeers(context, peers)
+              commsContext.removeMissingPeers(peers)
             },
             onPeerLeftIsland: (peerId: string) => {
-              if (!context) {
-                logger.warn('no context was found to remove the peer')
-                return
-              }
-
-              removePeer(context, peerId)
+              commsContext.removePeer(peerId)
             }
           },
           preferedIslandId: getPreferedIsland(store.getState())
@@ -1004,32 +209,25 @@ export async function connect(userId: string) {
           }
         }
 
-        defaultLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
+        commsLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
 
-        connection = new LighthouseWorldInstanceConnection(
-          getIdentity()?.address as string,
-          realm!,
-          lighthouseUrl,
-          peerConfig,
-          (status) => {
-            store.dispatch(setCatalystRealmCommsStatus(status))
-            switch (status.status) {
-              case 'realm-full': {
-                handleFullLayer()
-                break
-              }
-              case 'reconnection-error': {
-                handleReconnectionError()
-                break
-              }
-              case 'id-taken': {
-                idTaken = true
-                handleIdTaken()
-                break
-              }
+        connection = new LighthouseWorldInstanceConnection(lighthouseUrl, peerConfig, (status) => {
+          store.dispatch(setCatalystRealmCommsStatus(status))
+          switch (status.status) {
+            case 'realm-full': {
+              handleFullLayer()
+              break
+            }
+            case 'reconnection-error': {
+              handleReconnectionError()
+              break
+            }
+            case 'id-taken': {
+              handleIdTaken()
+              break
             }
           }
-        )
+        })
 
         break
       }
@@ -1038,18 +236,15 @@ export async function connect(userId: string) {
 
         const url = new URL(commsUrl)
         const qs = new URLSearchParams({
-          identity: btoa(userId)
+          identity: btoa(user.identity.address)
         })
         url.search = qs.toString()
 
-        defaultLogger.log('Using WebSocket comms: ' + url.href)
+        commsLogger.log('Using WebSocket comms: ' + url.href)
         const commsBroker = new CliBrokerConnection(url.href)
 
-        const instance = new BrokerWorldInstanceConnection(commsBroker)
-        await instance.isConnected
-        store.dispatch(commsEstablished())
+        connection = new BrokerWorldInstanceConnection(commsBroker)
 
-        connection = instance
         break
       }
       default: {
@@ -1057,181 +252,21 @@ export async function connect(userId: string) {
       }
     }
 
-    subscribeToRealmChange(store)
+    store.dispatch(setWorldContext(commsContext))
+    await ensureRendererEnabled()
+    await commsContext.connect(connection)
+    await bindHandlersToCommsContext(commsContext)
 
-    context = new Context(userInfo)
-    context.worldInstanceConnection = connection
-
-    ensureRendererEnabled()
-      .then(() => startCommunications(context!))
-      .catch((e) => {
-        disconnect()
-        defaultLogger.error(`error while trying to establish communications `, e)
-        ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
-        BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
-      })
-
-    return context
+    store.dispatch(commsEstablished())
   } catch (e: any) {
-    defaultLogger.error(e)
-    throw new ConnectionEstablishmentError(e.message)
-  }
-}
+    commsLogger.error(`Error while trying to establish communications`)
+    commsLogger.error(e)
 
-export async function startCommunications(context: Context) {
-  const maxAttemps = 5
-  for (let i = 1; ; ++i) {
-    try {
-      if (idTaken) break
-      logger.info(`Attempt number ${i}...`)
-      await doStartCommunications(context)
+    ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
+    BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
 
-      break
-    } catch (e: any) {
-      if (e instanceof ConnectionEstablishmentError) {
-        if (i >= maxAttemps) {
-          // max number of attemps reached => rethrow error
-          logger.info(`Max number of attemps reached (${maxAttemps}), unsuccessful connection`)
-          throw e
-        } else {
-          // max number of attempts not reached => continue with loop
-          store.dispatch(commsErrorRetrying(i))
-        }
-      } else {
-        // not a comms issue per se => rethrow error
-        logger.error(`error while trying to establish communications `, e)
-        disconnect()
-        const realm = getRealm(store.getState())
-        store.dispatch(markCatalystRealmConnectionError(realm!))
-      }
-    }
-  }
-}
+    store.dispatch(setWorldContext(undefined))
 
-async function doStartCommunications(context: Context) {
-  const connection = context.worldInstanceConnection!
-  try {
-    try {
-      if (connection instanceof LighthouseWorldInstanceConnection) {
-        await connection.connectPeer()
-        store.dispatch(commsEstablished())
-      }
-    } catch (e: any) {
-      // Do nothing if layer is full. This will be handled by status handler
-      if (!(e.responseJson && e.responseJson.status === 'layer_is_full')) {
-        throw e
-      }
-    }
-
-    connection.positionHandler = (alias: string, data: Package<Position>) => {
-      processPositionMessage(context, alias, data)
-    }
-    connection.profileHandler = (alias: string, identity: string, data: Package<ProfileVersion>) => {
-      processProfileMessage(context, alias, identity, data)
-    }
-    connection.chatHandler = (alias: string, data: Package<ChatMessage>) => {
-      processChatMessage(context, alias, data)
-    }
-    connection.sceneMessageHandler = (alias: string, data: Package<BusMessage>) => {
-      processParcelSceneCommsMessage(context, alias, data)
-    }
-    connection.voiceHandler = (alias: string, data: Package<VoiceFragment>) => {
-      processVoiceFragment(context, alias, data)
-    }
-    connection.profileRequestHandler = (alias: string, data: Package<ProfileRequest>) => {
-      processProfileRequest(context, alias, data)
-    }
-    connection.profileResponseHandler = (alias: string, data: Package<ProfileResponse>) => {
-      processProfileResponse(context, alias, data)
-    }
-
-    if (commConfigurations.debug) {
-      connection.stats = context.stats
-    }
-
-    context.profileInterval = setInterval(() => {
-      if (context && context.currentPosition && context.worldInstanceConnection) {
-        context.worldInstanceConnection
-          .sendProfileMessage(context.currentPosition, context.userInfo)
-          .catch((e) => defaultLogger.warn(`error while sending message `, e))
-      }
-    }, 1000)
-
-    if (commConfigurations.sendAnalytics) {
-      context.analyticsInterval = setInterval(() => {
-        const connectionAnalytics = connection.analyticsData()
-        // We slice the ids in order to reduce the potential event size. Eventually, we should slice all comms ids
-        connectionAnalytics.trackedPeers = context?.peerData.keys()
-          ? [...context?.peerData.keys()].map((it) => it.slice(-6))
-          : []
-        connectionAnalytics.visiblePeers = context?.stats.visiblePeerIds.map((it) => it.slice(-6))
-
-        if (connectionAnalytics) {
-          trackEvent('Comms Status v2', connectionAnalytics)
-        }
-      }, 60000) // Once per minute
-    }
-
-    context.worldRunningObserver = renderStateObservable.add(() => {
-      onWorldRunning(isRendererEnabled())
-    })
-
-    context.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-      const p = [
-        obj.position.x,
-        obj.position.y - obj.playerHeight,
-        obj.position.z,
-        obj.quaternion.x,
-        obj.quaternion.y,
-        obj.quaternion.z,
-        obj.quaternion.w,
-        obj.immediate
-      ] as Position
-
-      if (context && isRendererEnabled()) {
-        onPositionUpdate(context, p)
-      }
-    })
-
-    window.addEventListener('beforeunload', () => {
-      context.positionUpdatesPaused = true
-      sendToMordor().catch((e) => defaultLogger.warn(e))
-    })
-
-    context.infoCollecterInterval = setInterval(() => {
-      if (context) {
-        collectInfo(context)
-      }
-    }, 100)
-
-    if (!voiceCommunicator) {
-      voiceCommunicator = new VoiceCommunicator(
-        context.userInfo.userId,
-        {
-          send(frame: EncodedFrame) {
-            if (context.currentPosition) {
-              void context.worldInstanceConnection?.sendVoiceMessage(context.currentPosition, frame)
-            }
-          }
-        },
-
-        {
-          initialListenerParams: context.currentPosition ? getSpatialParamsFor(context.currentPosition) : undefined,
-          panningModel: commConfigurations.voiceChatUseHRTF ? 'HRTF' : 'equalpower',
-          loopbackAudioElement: Html.loopbackAudioElement()
-        }
-      )
-
-      voiceCommunicator.addStreamPlayingListener((userId, playing) => {
-        store.dispatch(voicePlayingUpdate(userId, playing))
-      })
-
-      voiceCommunicator.addStreamRecordingListener((recording) => {
-        store.dispatch(voiceRecordingUpdate(recording))
-      })
-      ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
-    }
-  } catch (e: any) {
     throw new ConnectionEstablishmentError(e.message)
   }
 }
@@ -1257,88 +292,25 @@ function handleReconnectionError() {
 }
 
 function handleIdTaken() {
-  disconnect()
+  store.dispatch(setWorldContext(undefined))
   ReportFatalErrorWithCommsPayload(new Error(`Handle Id already taken`), ErrorContext.COMMS_INIT)
   BringDownClientAndShowError(NEW_LOGIN)
 }
 
 function handleFullLayer() {
-  const realm = getRealm(store.getState())
+  // const realm = getRealm(store.getState())
 
-  if (realm) {
-    store.dispatch(markCatalystRealmFull(realm))
-  }
+  // if (realm) {
+  //   store.dispatch(markCatalystRealmFull(realm))
+  // }
 
   const candidates = getAllCatalystCandidates(store.getState())
 
   const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
 
-  notifyStatusThroughChat(`Joining realm ${otherRealm.catalystName} since the previously requested was full`)
+  notifyStatusThroughChat(`Joining realm ${otherRealm.serverName} since the previously requested was full`)
 
   store.dispatch(setCatalystRealm(otherRealm))
-}
-
-export function onWorldRunning(isRunning: boolean, _context: Context | null = context) {
-  if (!isRunning) {
-    sendToMordor(_context).catch((e) => defaultLogger.warn(e))
-  }
-}
-
-export function sendToMordor(_context: Context | null = context) {
-  return sendToMordorAsync().catch((e) => defaultLogger.warn(`error while sending message `, e))
-}
-
-async function sendToMordorAsync(_context: Context | null = context) {
-  if (_context && _context.worldInstanceConnection && _context.currentPosition) {
-    await _context.worldInstanceConnection.sendParcelUpdateMessage(_context.currentPosition, MORDOR_POSITION)
-  }
-}
-
-export function disconnect() {
-  if (context) {
-    if (context.profileInterval) {
-      clearInterval(context.profileInterval)
-    }
-    if (context.infoCollecterInterval) {
-      clearInterval(context.infoCollecterInterval)
-    }
-    if (context.analyticsInterval) {
-      clearInterval(context.analyticsInterval)
-    }
-    if (context.positionObserver) {
-      positionObservable.remove(context.positionObserver)
-    }
-    if (context.worldRunningObserver) {
-      renderStateObservable.remove(context.worldRunningObserver)
-    }
-    if (context.worldInstanceConnection) {
-      context.worldInstanceConnection.close()
-    }
-  }
-}
-
-globalThis.printCommsInformation = function () {
-  if (context) {
-    defaultLogger.log('Communication topics: ' + previousTopics)
-    context.stats.printDebugInformation()
-  }
-}
-
-function stripSnapshots(profile: Profile): Profile {
-  const newSnapshots: Record<string, string> = {}
-  const currentSnapshots: Record<string, string> = profile.avatar.snapshots
-  Object.keys(currentSnapshots).forEach((snapshotKey) => {
-    const snapshot = currentSnapshots[snapshotKey]
-
-    newSnapshots[snapshotKey] =
-      snapshot.startsWith('/') || snapshot.startsWith('./') || isURL(snapshot)
-        ? snapshot
-        : genericAvatarSnapshots[snapshotKey]
-  })
-  return {
-    ...profile,
-    avatar: { ...profile.avatar, snapshots: newSnapshots as Snapshots }
-  }
 }
 
 function observeIslandChange(
@@ -1358,14 +330,14 @@ function observeIslandChange(
 
 export function initializeUrlIslandObserver() {
   observeIslandChange(store, (_previousIsland, currentIsland) => {
-    const q = qs.parse(location.search)
+    const q = new URLSearchParams(location.search)
 
     if (currentIsland) {
-      q.island = currentIsland
+      q.set('island', currentIsland)
     } else {
-      delete q.island
+      q.delete('island')
     }
 
-    history.replaceState({ island: currentIsland }, '', `?${qs.stringify(q)}`)
+    history.replaceState({ island: currentIsland }, '', `?${q.toString()}`)
   })
 }

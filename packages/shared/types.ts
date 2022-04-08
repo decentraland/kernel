@@ -2,6 +2,7 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from '@dcl/legacy-ecs'
 import type { WearableId } from 'shared/catalogs/types'
+import { Snapshots } from '@dcl/schemas'
 export { Avatar, Profile } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
@@ -33,11 +34,6 @@ export type UserData = {
 }
 
 export type ColorString = string
-
-export type Snapshots = {
-  face256: string
-  body: string
-}
 
 export type AvatarForUserData = {
   bodyShape: WearableId
@@ -514,8 +510,6 @@ export type GraphResponse = {
   }[]
 }
 
-export type AnalyticsContainer = { analytics: SegmentAnalytics.AnalyticsJS }
-
 export enum ChatMessageType {
   NONE,
   PUBLIC,
@@ -572,7 +566,6 @@ export enum PresenceStatus {
 }
 
 type Realm = {
-  layer?: string
   serverName: string
 }
 

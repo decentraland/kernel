@@ -1,5 +1,5 @@
 import { put, select, takeLatest } from 'redux-saga/effects'
-import { Context } from '../comms'
+import { CommsContext } from '../comms/context'
 import { defaultLogger } from '../logger'
 import { DEPLOY_PROFILE_SUCCESS, PROFILE_SAVED_NOT_DEPLOYED } from '../profiles/actions'
 import { announceProfile, AnnounceProfileAction, ANNOUNCE_PROFILE } from './actions'
@@ -19,7 +19,7 @@ export function* announceNewAvatar(action: { type: string; payload: { userId: st
 }
 
 export function* handleAnnounceProfile(action: AnnounceProfileAction) {
-  const context = (yield select(getCommsContext)) as Context | undefined
+  const context = (yield select(getCommsContext)) as CommsContext | undefined
   if (context === undefined) {
     defaultLogger.warn('Announce profile is impossible (no connection found)')
     return

@@ -70,7 +70,6 @@ import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController
 import { areCandidatesFetched, getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
-import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { setRendererAvatarState } from 'shared/social/avatarTracker'
@@ -521,12 +520,10 @@ export class BrowserInterface {
   public async JumpIn(data: WorldPosition) {
     const {
       gridPosition: { x, y },
-      realm: { serverName, layer }
+      realm: { serverName }
     } = data
 
-    const realmString = realmToString({ serverName, layer })
-
-    notifyStatusThroughChat(`Jumping to ${realmString} at ${x},${y}...`)
+    notifyStatusThroughChat(`Jumping to ${serverName} at ${x},${y}...`)
 
     const future = candidatesFetched()
 
@@ -536,12 +533,12 @@ export class BrowserInterface {
 
     await future
 
-    const realm = changeRealm(realmString)
+    const realm = changeRealm(serverName)
 
     if (realm) {
       catalystRealmConnected().then(
         () => {
-          const successMessage = `Jumped to ${x},${y} in realm ${realmString}!`
+          const successMessage = `Jumped to ${x},${y} in realm ${serverName}!`
           notifyStatusThroughChat(successMessage)
           getUnityInstance().ConnectionToRealmSuccess(data)
           TeleportController.goTo(x, y, successMessage)
@@ -554,7 +551,7 @@ export class BrowserInterface {
         }
       )
     } else {
-      notifyStatusThroughChat(`Couldn't find realm ${realmString}.`)
+      notifyStatusThroughChat(`Couldn't find realm ${serverName}.`)
       getUnityInstance().ConnectionToRealmFailed(data)
     }
   }
@@ -599,7 +596,7 @@ export class BrowserInterface {
   }
 
   public FetchBalanceOfMANA() {
-    ;(async () => {
+    const fn = async () => {
       const identity = getIdentity()
 
       if (!identity?.hasConnectedWeb3) {
@@ -611,7 +608,9 @@ export class BrowserInterface {
         this.lastBalanceOfMana = balance
         getUnityInstance().UpdateBalanceOfMANA(`${balance}`)
       }
-    })().catch((err) => defaultLogger.error(err))
+    }
+
+    fn().catch((err) => defaultLogger.error(err))
   }
 
   public SetMuteUsers(data: { usersId: string[]; mute: boolean }) {

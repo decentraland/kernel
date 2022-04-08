@@ -10,30 +10,29 @@ import {
   ProfileRequest
 } from './types'
 import { Stats } from '../debug'
-import { Realm } from 'shared/dao/types'
 import { Profile } from 'shared/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 
-export interface WorldInstanceConnection {
+export type CommsEvents = {
+}
+
+export interface WorldInstanceConnection { // extends Emitter<CommsEvents> {
   stats: Stats | null
 
   // handlers
-  sceneMessageHandler: (alias: string, data: Package<BusMessage>) => void
-  chatHandler: (alias: string, data: Package<ChatMessage>) => void
-  profileHandler: (alias: string, identity: string, data: Package<ProfileVersion>) => void
-  positionHandler: (alias: string, data: Package<Position>) => void
-  voiceHandler: (alias: string, data: Package<VoiceFragment>) => void
-  profileResponseHandler: (alias: string, data: Package<ProfileResponse>) => void
-  profileRequestHandler: (alias: string, data: Package<ProfileRequest>) => void
-
-  readonly isAuthenticated: boolean
+  sceneMessageHandler: (data: Package<BusMessage>) => void
+  chatHandler: (data: Package<ChatMessage>) => void
+  profileHandler: (data: Package<ProfileVersion>) => void
+  positionHandler: (data: Package<Position>) => void
+  voiceHandler: (data: Package<VoiceFragment>) => void
+  profileResponseHandler: (data: Package<ProfileResponse>) => void
+  profileRequestHandler: (data: Package<ProfileRequest>) => void
 
   // TODO - review metrics API - moliva - 19/12/2019
   readonly ping: number
-  printDebugInformation(): void
   analyticsData(): Record<string, any>
 
-  close(): void
+  disconnect(): Promise<void>
 
   sendInitialMessage(userInfo: UserInformation): Promise<void>
   sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>
@@ -45,9 +44,7 @@ export interface WorldInstanceConnection {
   sendChatMessage(currentPosition: Position, messageId: string, text: string): Promise<void>
   sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void>
 
-  updateSubscriptions(topics: string[]): Promise<void>
+  setTopics(topics: string[]): Promise<void>
 
-  changeRealm(realm: Realm, url: string): Promise<void>
-
-  connectPeer(): Promise<void>
+  connect(): Promise<boolean>
 }

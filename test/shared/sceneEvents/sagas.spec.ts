@@ -1,6 +1,7 @@
 import { expectSaga } from 'redux-saga-test-plan'
 // import * as matchers from 'redux-saga-test-plan/matchers'
 import { select } from 'redux-saga/effects'
+import { Realm } from 'shared/dao/types'
 import { setCommsIsland } from '../../../packages/shared/comms/actions'
 
 import { getCommsIsland } from '../../../packages/shared/comms/selectors'
@@ -11,17 +12,17 @@ import { sceneEventsSaga } from '../../../packages/shared/sceneEvents/sagas'
 import { Profile } from '../../../packages/shared/types'
 import { allScenesEvent } from '../../../packages/shared/world/parcelSceneManager'
 
-const realm = {
+const realm: Realm = {
+  protocol: 'v2-p2p',
   domain: 'realm-domain',
-  catalystName: 'catalyst-name',
-  lighthouseVersion: 'string',
+  serverName: 'catalyst-name',
 }
 const toRealmType = (island: string) => ({
   domain: realm.domain,
   layer: island,
   room: island,
-  serverName: realm.catalystName,
-  displayName: `${realm.catalystName}-${island}`,
+  serverName: realm.serverName,
+  displayName: `${realm.serverName}-${island}`,
 })
 
 describe('when the realm change: SET_CATALYST_REALM', () => {

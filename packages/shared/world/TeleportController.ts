@@ -136,13 +136,15 @@ async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
   const realm = getRealm(store.getState())
   const commsUrl = getCommsServer(store.getState())
 
-  if (realm && commsUrl) {
-    const commsStatusResponse = await fetch(`${commsUrl}/status?includeUsersParcels=true`)
-    if (commsStatusResponse.ok) {
-      const layerUsers = await commsStatusResponse.json()
-      return layerUsers.usersParcels
+  try {
+    if (realm && commsUrl) {
+      const commsStatusResponse = await fetch(`${commsUrl}/status?includeUsersParcels=true`)
+      if (commsStatusResponse.ok) {
+        const layerUsers = await commsStatusResponse.json()
+        return layerUsers.usersParcels
+      }
     }
-  }
+  } catch {}
 
   return []
 }

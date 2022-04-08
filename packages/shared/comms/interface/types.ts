@@ -1,4 +1,5 @@
-import { Profile, ProfileType, ProfileForRenderer } from 'shared/profiles/types'
+import { ProfileForRenderer } from '@dcl/legacy-ecs'
+import { Profile, ProfileType } from 'shared/profiles/types'
 import { ExplorerIdentity } from 'shared/session/types'
 
 export enum AvatarMessageType {
@@ -115,6 +116,7 @@ export type PackageType = 'profile' | 'chat' | 'position' | 'voice' | 'profileRe
 
 export type Package<T> = {
   type: PackageType
+  sender: string
   time: number
   data: T
 }

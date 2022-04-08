@@ -3,7 +3,6 @@ import {
   SET_CATALYST_REALM,
   SET_CATALYST_CANDIDATES,
   SET_CATALYST_REALM_COMMS_STATUS,
-  MARK_CATALYST_REALM_FULL,
   SET_ADDED_CATALYST_CANDIDATES,
   MARK_CATALYST_REALM_CONNECTION_ERROR,
   SELECT_NETWORK,
@@ -61,13 +60,6 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
       return {
         ...state,
         commsStatus: action.payload ? action.payload : { status: 'initial', connectedPeers: 0 }
-      }
-    case MARK_CATALYST_REALM_FULL:
-      return {
-        ...state,
-        candidates: state.candidates.map((it) => {
-          return it
-        })
       }
     case MARK_CATALYST_REALM_CONNECTION_ERROR:
       return {

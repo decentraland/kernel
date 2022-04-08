@@ -1,5 +1,6 @@
+import { ProfileForRenderer } from '@dcl/legacy-ecs'
 import { action } from 'typesafe-actions'
-import { Profile, ProfileType, ProfileForRenderer } from './types'
+import { Profile, ProfileType } from './types'
 
 // Profile fetching
 

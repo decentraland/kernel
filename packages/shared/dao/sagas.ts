@@ -14,7 +14,7 @@ import {
   setCatalystRealm
 } from './actions'
 import { call, put, takeEvery, select, fork, take } from 'redux-saga/effects'
-import { REALM, PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
+import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization } from '../meta/sagas'
 import { Candidate, PingResult, Realm, ServerConnectionStatus } from './types'
 import { fetchCatalystRealms, fetchCatalystStatuses, pickCatalystRealm, getRealmFromString, commsStatusUrl } from '.'
@@ -51,6 +51,11 @@ export function* daoSaga(): any {
   yield takeEvery([SET_CATALYST_CANDIDATES, SET_ADDED_CATALYST_CANDIDATES], cacheCatalystCandidates)
 }
 
+function qsRealm() {
+  const qs = new URLSearchParams(document.location.search)
+  return qs.get('realm')
+}
+
 /**
  * This method will try to load the candidates as well as the selected realm.
  *
@@ -78,7 +83,7 @@ function* loadCatalystRealms() {
       ) ?? []
 
       let configuredRealm: Realm
-      if (REALM) {
+      if (qsRealm()) {
         // if a realm is configured, then try to initialize it from cached candidates
         configuredRealm = yield call(getConfiguredRealm, cachedCandidates)
       } else {
@@ -109,9 +114,9 @@ function* loadCatalystRealms() {
   } else {
     yield initLocalCatalyst()
     realm = {
+      protocol: 'v1',
       domain: rootURLPreviewMode(),
-      catalystName: 'localhost',
-      lighthouseVersion: '0.1'
+      serverName: 'localhost',
     }
   }
 
@@ -158,8 +163,9 @@ export function* selectRealm() {
 }
 
 function getConfiguredRealm(candidates: Candidate[]) {
-  if (REALM) {
-    return getRealmFromString(REALM, candidates)
+  const realm = qsRealm()
+  if (realm) {
+    return getRealmFromString(realm, candidates)
   }
 }
 
@@ -194,14 +200,13 @@ function* initializeCatalystCandidates() {
 }
 
 function* checkValidRealm(realm: Realm) {
-  const realmHasValues = realm && realm.domain && realm.catalystName
+  const realmHasValues = realm && realm.domain && realm.serverName
   if (!realmHasValues) {
     return false
   }
   const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
   const pingResult: PingResult = yield ping(commsStatusUrl(realm.domain))
   const catalystVersion = pingResult.result?.env.catalystVersion ?? '0.0.0'
-  debugger
   return (
     pingResult.status === ServerConnectionStatus.OK && (!minCatalystVersion || gte(catalystVersion, minCatalystVersion))
   )

@@ -424,7 +424,7 @@ function* initializeStatusUpdateInterval(client: SocialAPI) {
     const updateStatus = {
       realm: {
         layer: '',
-        serverName: realm.catalystName
+        serverName: realm.serverName
       },
       position,
       presence: PresenceType.ONLINE

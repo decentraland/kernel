@@ -25,6 +25,7 @@ export type CatalystStatus = {
 }
 
 type BaseCandidate = {
+  protocol: string
   domain: string
   catalystName: string
   elapsed: number
@@ -33,14 +34,12 @@ type BaseCandidate = {
   catalystVersion: string
 }
 
-export type IslandsBasedCandidate = {
+export type Candidate = {
   type: 'islands-based'
   usersCount: number
   usersParcels?: Parcel[]
   maxUsers?: number
 } & BaseCandidate
-
-export type Candidate = IslandsBasedCandidate
 
 export type Parcel = [number, number]
 
@@ -52,9 +51,9 @@ export type LayerUserInfo = {
 }
 
 export type Realm = {
+  protocol: string
   domain: string
-  catalystName: string
-  lighthouseVersion: string
+  serverName: string
 }
 
 export type DaoState = {
@@ -87,6 +86,7 @@ export type CommsState =
   | 'realm-full'
   | 'reconnection-error'
   | 'id-taken'
+  | 'disconnecting'
 
 export type CommsStatus = {
   status: CommsState

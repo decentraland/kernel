@@ -1,16 +1,7 @@
 import { Store } from 'redux'
 
 import defaultLogger from '../logger'
-import {
-  Realm,
-  Candidate,
-  RootDaoState,
-  ServerConnectionStatus,
-  HealthStatus,
-  IslandsBasedCandidate,
-  Parcel,
-  PingResult
-} from './types'
+import { Realm, RootDaoState, ServerConnectionStatus, HealthStatus, Candidate, Parcel, PingResult } from './types'
 import {
   isRealmInitialized,
   getCatalystRealmCommsStatus,
@@ -22,14 +13,13 @@ import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { setCatalystRealm, setCatalystCandidates } from './actions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { CatalystNode } from '../types'
-import { realmToString } from './utils/realmToString'
 import { PIN_CATALYST } from 'config'
-import * as qs from 'query-string'
 import { store } from 'shared/store/isolatedStore'
 import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import { createAlgorithm } from './pick-realm-algorithm'
 import { ping } from './utils/ping'
+import { parseRealmString } from './utils/realmToString'
 
 const DEFAULT_TIMEOUT = 5000
 
@@ -126,29 +116,23 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
   ).filter((realm: PingResult & { domain: string }) => (realm.result?.maxUsers ?? 0) > (realm.result?.usersCount ?? -1))
 
   return results.reduce((union: Candidate[], { domain, elapsed, result, status }) => {
-    function buildBaseCandidate() {
+    function buildIslandsCandidate(
+      usersCount: number,
+      usersParcels: Parcel[] | undefined,
+      maxUsers: number | undefined
+    ): Candidate {
       return {
+        type: 'islands-based',
+        protocol: 'v2-p2p',
         catalystName: result!.name,
         domain,
         status: status!,
         elapsed: elapsed!,
         lighthouseVersion: result!.version,
-        catalystVersion: result!.env.catalystVersion
-      }
-    }
-
-    function buildIslandsCandidate(
-      usersCount: number,
-      usersParcels: Parcel[] | undefined,
-      maxUsers: number | undefined
-    ): IslandsBasedCandidate {
-      return {
-        ...buildBaseCandidate(),
+        catalystVersion: result!.env.catalystVersion,
         usersCount,
         maxUsers,
-        usersParcels,
-        type: 'islands-based',
-        domain
+        usersParcels
       }
     }
 
@@ -201,23 +185,26 @@ export async function realmInitialized(): Promise<void> {
   })
 }
 
-export function getRealmFromString(realmString: string, candidates: Candidate[]) {
+export function getRealmFromString(realmString: string, candidates: Candidate[]): Realm | undefined {
+  const r = parseRealmString(realmString)
+  if (r) return r
+
   const parts = realmString.split('-')
   return realmFor(parts[0], candidates)
 }
 
 function candidateToRealm(candidate: Candidate) {
   const realm: Realm = {
-    catalystName: candidate.catalystName,
-    domain: candidate.domain,
-    lighthouseVersion: candidate.lighthouseVersion
+    protocol: candidate.protocol,
+    serverName: candidate.catalystName,
+    domain: candidate.domain
   }
 
   return realm
 }
 
 function realmFor(name: string, candidates: Candidate[]): Realm | undefined {
-  const candidate = candidates.find((it) => it?.type === 'islands-based' && it.catalystName === name)
+  const candidate = candidates.find((it) => it.catalystName === name)
   return candidate ? candidateToRealm(candidate) : undefined
 }
 
@@ -324,16 +311,5 @@ export function observeRealmChange(
     if (currentRealm && !deepEqual(previousRealm, currentRealm)) {
       onRealmChange(previousRealm, currentRealm)
     }
-  })
-}
-
-export function initializeUrlRealmObserver() {
-  observeRealmChange(store, (previousRealm, currentRealm) => {
-    const q = qs.parse(location.search)
-    const realmString = realmToString(currentRealm)
-
-    q.realm = realmString
-
-    history.replaceState({ realm: realmString }, '', `?${qs.stringify(q)}`)
   })
 }

@@ -51,7 +51,6 @@ import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork } from 'shared/
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
-import { requestLocalProfileToPeers, updateCommsUser } from 'shared/comms'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { base64ToBlob } from 'atomicHelpers/base64ToBlob'
@@ -64,6 +63,10 @@ import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
+import { getCommsContext } from 'shared/protocol/selectors'
+import { updateCommsUser } from 'shared/comms'
+import { CommsContext } from 'shared/comms/context'
+import { requestLocalProfileToPeers } from 'shared/comms/handlers'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const toBuffer = require('blob-to-buffer')
@@ -187,8 +190,10 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   let profile: ServerFormatProfile | null = null
   let hasConnectedWeb3 = false
   try {
-    if ((PREVIEW || profileType === ProfileType.LOCAL) && currentId !== userId) {
-      const peerProfile: Profile = yield call(requestLocalProfileToPeers, userId)
+    const commsContext: CommsContext | undefined = yield select(getCommsContext)
+
+    if ((PREVIEW || profileType === ProfileType.LOCAL) && currentId !== userId && commsContext) {
+      const peerProfile: Profile = yield call(requestLocalProfileToPeers, commsContext, userId)
       if (peerProfile) {
         profile = ensureServerFormat(peerProfile)
         profile.hasClaimedName = false // for now, comms profiles can't have claimed names

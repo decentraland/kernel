@@ -1,30 +1,28 @@
 import { put, takeEvery, select, call, takeLatest } from 'redux-saga/effects'
 
-import { EDITOR, DEBUG_KERNEL_LOG } from 'config'
+import { EDITOR } from 'config'
 
 import { establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getCurrentIdentity } from 'shared/session/selectors'
-import { setWorldContext } from 'shared/protocol/actions'
 import { waitForRealmInitialized, selectRealm } from 'shared/dao/sagas'
 import { getRealm } from 'shared/dao/selectors'
-import { CATALYST_REALMS_SCAN_SUCCESS, setCatalystRealm } from 'shared/dao/actions'
+import {
+  CATALYST_REALMS_SCAN_SUCCESS,
+  SetCatalystRealm,
+  setCatalystRealm,
+  SET_CATALYST_REALM
+} from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
 import { realmToString } from 'shared/dao/utils/realmToString'
-import { createLogger, createDummyLogger } from 'shared/logger'
+
+import { CommsContext, commsLogger } from './context'
+import { connect } from '.'
 
 import {
-  connect,
-  Context,
-  disconnect,
-  updatePeerVoicePlaying,
-  updateVoiceCommunicatorMute,
-  updateVoiceCommunicatorVolume,
-  updateVoiceRecordingStatus
-} from '.'
-import {
+  SetCommsIsland,
   SetVoiceMute,
   SetVoiceVolume,
+  SET_COMMS_ISLAND,
   SET_VOICE_CHAT_RECORDING,
   SET_VOICE_MUTE,
   SET_VOICE_VOLUME,
@@ -35,25 +33,54 @@ import {
   VOICE_RECORDING_UPDATE
 } from './actions'
 
-import { isVoiceChatRecording } from './selectors'
+import { getCommsIsland, isVoiceChatAllowedByCurrentScene, isVoiceChatRecording } from './selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { sceneObservable } from 'shared/world/sceneState'
 import { SceneFeatureToggles } from 'shared/types'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { ExplorerIdentity } from '../session/types'
-
-const DEBUG = false
-const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
+import { setVoiceCommunicatorInputStream, voiceCommunicator } from './voice-over-comms'
+import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
+import { getCommsContext, getPrevCommsContext } from 'shared/protocol/selectors'
+import { BEFORE_UNLOAD, setWorldContext, SET_WORLD_CONTEXT } from 'shared/protocol/actions'
+import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
+import { allScenesEvent } from 'shared/world/parcelSceneManager'
+import { deepEqual } from 'atomicHelpers/deepEqual'
 
 export function* commsSaga() {
   yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
   yield takeLatest(CATALYST_REALMS_SCAN_SUCCESS, changeRealm)
-  yield takeEvery(FATAL_ERROR, bringDownComms)
+
+  yield takeEvery(FATAL_ERROR, function* () {
+    // set null context on fatal error
+    yield put(setWorldContext(undefined))
+  })
+
+  yield takeEvery(SET_WORLD_CONTEXT, handleNewCommsContext)
+
+  yield takeEvery(BEFORE_UNLOAD, function* () {
+    // this would disconnect the comms context
+    yield put(setWorldContext(undefined))
+  })
+
+  // 1 yield takeEvery(FATAL_ERROR, bringDownComms)
+
+  yield takeLatest(SET_CATALYST_REALM, realmChanged)
+  yield takeLatest(SET_COMMS_ISLAND, islandChanged)
 }
 
-function* bringDownComms() {
-  disconnect()
+async function disconnectContext(context: CommsContext) {
+  await context.disconnect()
+}
+
+function* handleNewCommsContext() {
+  const oldContext = (yield select(getPrevCommsContext)) as CommsContext | undefined
+  const newContext = (yield select(getCommsContext)) as CommsContext | undefined
+
+  if (oldContext && oldContext !== newContext) {
+    // disconnect previous context
+    yield call(disconnectContext, oldContext)
+  }
 }
 
 function* listenToWhetherSceneSupportsVoiceChat() {
@@ -68,7 +95,7 @@ function* listenToWhetherSceneSupportsVoiceChat() {
       getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
       if (!nowEnabled) {
         // We want to stop any potential recordings when a user enters a new scene
-        updateVoiceRecordingStatus(false)
+        updateVoiceRecordingStatus(false).catch(commsLogger.error)
       }
     }
   })
@@ -81,8 +108,6 @@ function* userAuthentified() {
 
   yield call(waitForRealmInitialized)
 
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-
   yield takeEvery(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlaying)
@@ -92,27 +117,54 @@ function* userAuthentified() {
   yield listenToWhetherSceneSupportsVoiceChat()
 
   yield put(establishingComms())
-  const context: Context | undefined = yield call(connect, identity.address)
-  if (context !== undefined) {
-    yield put(setWorldContext(context))
+
+  const realm = yield select(getRealm)
+  debugger
+  if(realm) {
+  yield call(connect, realm)
+
   }
+
+  // Perdón gonza
+  let currentRealm: Realm | undefined
+  yield takeEvery(SET_CATALYST_REALM, function*() {
+    const previousRealm = currentRealm
+    currentRealm = yield select(getRealm)
+    if (currentRealm && !deepEqual(previousRealm, currentRealm)) {
+      yield call(connect, currentRealm)
+    }
+  })
 }
 
 function* updateVoiceChatRecordingStatus() {
-  const recording: boolean = yield select(isVoiceChatRecording)
-  updateVoiceRecordingStatus(recording)
+  const recording = yield select(isVoiceChatRecording)
+  yield call(updateVoiceRecordingStatus, recording)
 }
 
 function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
-  updatePeerVoicePlaying(action.payload.userId, action.payload.playing)
+  const { userId, playing } = action.payload
+  const commsContext: CommsContext | undefined = yield select(getCommsContext)
+  if (commsContext) {
+    for (const peerInfo of commsContext.peerData.values()) {
+      if (peerInfo.identity === userId) {
+        peerInfo.talking = playing
+        break
+      }
+    }
+  }
+  getUnityInstance().SetUserTalking(userId, playing)
 }
 
 function* updateVoiceChatVolume(action: SetVoiceVolume) {
-  updateVoiceCommunicatorVolume(action.payload.volume)
+  if (voiceCommunicator) {
+    voiceCommunicator.setVolume(action.payload.volume)
+  }
 }
 
 function* updateVoiceChatMute(action: SetVoiceMute) {
-  updateVoiceCommunicatorMute(action.payload.mute)
+  if (voiceCommunicator) {
+    voiceCommunicator.setMute(action.payload.mute)
+  }
 }
 
 function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
@@ -122,22 +174,96 @@ function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
 
 function* changeRealm() {
   const currentRealm: ReturnType<typeof getRealm> = yield select(getRealm)
+
   if (!currentRealm) {
-    DEBUG && logger.info(`No realm set, wait for actual DAO initialization`)
+    commsLogger.info(`No realm set, wait for actual DAO initialization`)
     // if not realm is set => wait for actual dao initialization
     return
   }
 
-  const otherRealm: Realm = yield call(selectRealm)
+  const otherRealm = yield call(selectRealm)
 
   if (!sameRealm(currentRealm, otherRealm)) {
-    logger.info(`Changing realm from ${realmToString(currentRealm)} to ${realmToString(otherRealm)}`)
+    commsLogger.info(`Changing realm from ${realmToString(currentRealm)} to ${realmToString(otherRealm)}`)
     yield put(setCatalystRealm(otherRealm))
   } else {
-    DEBUG && logger.info(`Realm already set ${realmToString(currentRealm)}`)
+    commsLogger.info(`Realm already set ${realmToString(currentRealm)}`)
   }
 }
 
+function* realmChanged(action: SetCatalystRealm) {
+  const realm = action.payload
+  const island: string = yield select(getCommsIsland) ?? ''
+
+  const payload = toEnvironmentRealmType(realm, island)
+  allScenesEvent({ eventType: 'onRealmChanged', payload })
+}
+
+function* islandChanged(action: SetCommsIsland) {
+  const realm: Realm = yield select(getRealm)
+  const island = action.payload.island ?? ''
+
+  if (!realm) {
+    return
+  }
+
+  const payload = toEnvironmentRealmType(realm, island)
+  allScenesEvent({ eventType: 'onRealmChanged', payload })
+}
+
 function sameRealm(realm1: Realm, realm2: Realm) {
-  return realm1.catalystName === realm2.catalystName
+  return realm1.serverName === realm2.serverName && realm2.domain === realm2.domain
+}
+
+let audioRequestPending = false
+
+async function requestMediaDevice() {
+  // TODO: Push redux action to inform the user to ACCEPT the microphone usage
+
+  if (!audioRequestPending) {
+    audioRequestPending = true
+
+    try {
+      // tslint:disable-next-line
+      const media = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: VOICE_CHAT_SAMPLE_RATE,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          advanced: [{ echoCancellation: true }, { autoGainControl: true }, { noiseSuppression: true }] as any
+        },
+        video: false
+      })
+
+      await setVoiceCommunicatorInputStream(media)
+    } catch (e: any) {
+      commsLogger.log('Error requesting audio: ', e)
+    } finally {
+      audioRequestPending = false
+    }
+  }
+}
+
+async function updateVoiceRecordingStatus(recording: boolean) {
+  if (!voiceCommunicator) {
+    return
+  }
+
+  if (!isVoiceChatAllowedByCurrentScene()) {
+    voiceCommunicator.pause()
+    return
+  }
+
+  if (!recording) {
+    voiceCommunicator.pause()
+    return
+  }
+
+  if (!voiceCommunicator.hasInput()) {
+    await requestMediaDevice()
+  } else {
+    voiceCommunicator.start()
+  }
 }

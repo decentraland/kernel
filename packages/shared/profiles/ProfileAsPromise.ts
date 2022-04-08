@@ -21,7 +21,7 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
   if (existingProfile && existingProfileWithCorrectVersion && status === 'ok') {
     return Promise.resolve(existingProfile)
   }
-  return new Promise((resolve, reject) => {
+  return new Promise<Profile>((resolve, reject) => {
     let pending = true
     const unsubscribe = store.subscribe(() => {
       const [status, data] = getProfileStatusAndData(store.getState(), userId)
