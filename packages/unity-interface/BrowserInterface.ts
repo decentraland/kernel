@@ -769,6 +769,26 @@ export class BrowserInterface {
   public ReportDecentralandTime(data: any) {
     setDecentralandTime(data)
   }
+
+  public ReportLog(data: { type: string; message: string }) {
+    switch (data.type) {
+      case 'trace':
+        defaultLogger.trace(data.message)
+        break
+      case 'info':
+        defaultLogger.info(data.message)
+        break
+      case 'warn':
+        defaultLogger.warn(data.message)
+        break
+      case 'error':
+        defaultLogger.error(data.message)
+        break
+      default:
+        defaultLogger.log(data.message)
+        break
+    }
+  }
 }
 
 function arrayCleanup<T>(array: T[] | null | undefined): T[] | undefined {
