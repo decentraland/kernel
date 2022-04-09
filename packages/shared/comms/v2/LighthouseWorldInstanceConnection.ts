@@ -1,21 +1,10 @@
-import { WorldInstanceConnection } from '../interface/index'
+import { CommsEvents, RoomConnection } from '../interface/index'
 import { Stats } from '../debug'
-import {
-  Package,
-  BusMessage,
-  ChatMessage,
-  ProfileVersion,
-  UserInformation,
-  PackageType,
-  VoiceFragment,
-  ProfileResponse,
-  ProfileRequest
-} from '../interface/types'
+import { Package, UserInformation } from '../interface/types'
 import { Position, positionHash } from '../interface/utils'
 import defaultLogger, { createLogger } from 'shared/logger'
 import {
   Peer as IslandBasedPeer,
-  buildCatalystPeerStatsData,
   PeerConfig,
   PacketCallback,
   PeerStatus,
@@ -38,12 +27,9 @@ import { getProfileType } from 'shared/profiles/getProfileType'
 import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
+import mitt from 'mitt'
 
 type PeerType = IslandBasedPeer
-
-const NOOP = () => {
-  // do nothing
-}
 
 const logger = createLogger('Lighthouse: ')
 
@@ -87,18 +73,12 @@ function ProfileRequestResponseType(action: 'request' | 'response'): PeerMessage
 
 declare let globalThis: any
 
-export class LighthouseWorldInstanceConnection implements WorldInstanceConnection {
+export class LighthouseWorldInstanceConnection implements RoomConnection {
   stats: Stats | null = null
 
-  sceneMessageHandler: (data: Package<BusMessage>) => void = NOOP
-  chatHandler: (data: Package<ChatMessage>) => void = NOOP
-  profileHandler: (data: Package<ProfileVersion>) => void = NOOP
-  positionHandler: (data: Package<Position>) => void = NOOP
-  voiceHandler: (data: Package<VoiceFragment>) => void = NOOP
-  profileResponseHandler: (data: Package<ProfileResponse>) => void = NOOP
-  profileRequestHandler: (data: Package<ProfileRequest>) => void = NOOP
-
   ping: number = -1
+
+  events = mitt<CommsEvents>()
 
   private peer: PeerType
 
@@ -135,13 +115,6 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   disconnect() {
     this.disposed = true
     return this.cleanUpPeer()
-  }
-
-  analyticsData() {
-    return {
-      // This should work for any of both peer library types. Once we stop using both, we can remove the type cast
-      stats: buildCatalystPeerStatsData(this.peer as any)
-    }
   }
 
   async sendInitialMessage(userInfo: UserInformation) {
@@ -311,29 +284,34 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
       const commsMessage = CommsMessage.deserializeBinary(payload)
       switch (commsMessage.getDataCase()) {
         case CommsMessage.DataCase.CHAT_DATA:
-          this.chatHandler(createPackage(sender, commsMessage, 'chat', mapToPackageChat(commsMessage.getChatData()!)))
+          this.events.emit(
+            'chatMessage',
+            createPackage(sender, commsMessage, mapToPackageChat(commsMessage.getChatData()!))
+          )
           break
         case CommsMessage.DataCase.POSITION_DATA:
           const positionMessage = mapToPositionMessage(commsMessage.getPositionData()!)
           this.peer.setPeerPosition(sender, positionMessage.slice(0, 3) as [number, number, number])
-          this.positionHandler(createPackage(sender, commsMessage, 'position', positionMessage))
+          this.events.emit('position', createPackage(sender, commsMessage, positionMessage))
           break
         case CommsMessage.DataCase.SCENE_DATA:
-          this.sceneMessageHandler(
-            createPackage(sender, commsMessage, 'chat', mapToPackageScene(commsMessage.getSceneData()!))
+          this.events.emit(
+            'sceneMessageBus',
+            createPackage(sender, commsMessage, mapToPackageScene(commsMessage.getSceneData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_DATA:
-          this.profileHandler(
-            createPackage(sender, commsMessage, 'profile', mapToPackageProfile(commsMessage.getProfileData()!))
+          this.events.emit(
+            'profileMessage',
+            createPackage(sender, commsMessage, mapToPackageProfile(commsMessage.getProfileData()!))
           )
           break
         case CommsMessage.DataCase.VOICE_DATA:
-          this.voiceHandler(
+          this.events.emit(
+            'voiceMessage',
             createPackage(
               sender,
               commsMessage,
-              'voice',
               mapToPackageVoice(
                 commsMessage.getVoiceData()!.getEncodedSamples_asU8(),
                 commsMessage.getVoiceData()!.getIndex(),
@@ -343,23 +321,15 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
           )
           break
         case CommsMessage.DataCase.PROFILE_REQUEST_DATA:
-          this.profileRequestHandler(
-            createPackage(
-              sender,
-              commsMessage,
-              'profileRequest',
-              mapToPackageProfileRequest(commsMessage.getProfileRequestData()!)
-            )
+          this.events.emit(
+            'profileRequest',
+            createPackage(sender, commsMessage, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_RESPONSE_DATA:
-          this.profileResponseHandler(
-            createPackage(
-              sender,
-              commsMessage,
-              'profileResponse',
-              mapToPackageProfileResponse(commsMessage.getProfileResponseData()!)
-            )
+          this.events.emit(
+            'profileResponse',
+            createPackage(sender, commsMessage, mapToPackageProfileResponse(commsMessage.getProfileResponseData()!))
           )
           break
         default: {
@@ -373,11 +343,10 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   }
 }
 
-function createPackage<T>(sender: string, commsMessage: CommsMessage, type: PackageType, data: T): Package<T> {
+function createPackage<T>(sender: string, commsMessage: CommsMessage, data: T): Package<T> {
   return {
     sender,
     time: commsMessage.getTime(),
-    type,
     data
   }
 }

@@ -13,12 +13,12 @@ import { Profile } from '../../../packages/shared/types'
 import { allScenesEvent } from '../../../packages/shared/world/parcelSceneManager'
 
 const realm: Realm = {
-  protocol: 'v2-p2p',
-  domain: 'realm-domain',
+  protocol: 'v2',
+  hostname: 'realm-domain',
   serverName: 'catalyst-name',
 }
 const toRealmType = (island: string) => ({
-  domain: realm.domain,
+  domain: realm.hostname,
   layer: island,
   room: island,
   serverName: realm.serverName,

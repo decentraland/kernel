@@ -22,46 +22,28 @@ import {
   TopicIdentityFWMessage
 } from './proto/broker'
 import { Position, positionHash } from '../../comms/interface/utils'
-import {
-  UserInformation,
-  Package,
-  ChatMessage,
-  ProfileVersion,
-  BusMessage,
-  VoiceFragment,
-  ProfileResponse,
-  ProfileRequest
-} from '../../comms/interface/types'
+import { UserInformation } from '../../comms/interface/types'
 import { IBrokerTransport, TransportMessage } from './IBrokerTransport'
 import { Stats } from '../../comms/debug'
 import { createLogger } from 'shared/logger'
 
-import { WorldInstanceConnection } from '../../comms/interface/index'
+import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import { getProfileType } from 'shared/profiles/getProfileType'
 import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
+import mitt from 'mitt'
 
 class SendResult {
   constructor(public bytesSize: number) {}
 }
 
-const NOOP = () => {
-  // do nothing
-}
-
-export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
+export class BrokerWorldInstanceConnection implements RoomConnection {
   aliases: Record<number, string> = {}
 
-  positionHandler: (positionData: Package<Position>) => void = NOOP
-  profileHandler: (profileData: Package<ProfileVersion>) => void = NOOP
-  chatHandler: (chatData: Package<ChatMessage>) => void = NOOP
-  sceneMessageHandler: (chatData: Package<BusMessage>) => void = NOOP
-  voiceHandler: (data: Package<VoiceFragment>) => void = NOOP
-  profileResponseHandler: (data: Package<ProfileResponse>) => void = NOOP
-  profileRequestHandler: (data: Package<ProfileRequest>) => void = NOOP
-
   ping: number = -1
+
+  events = mitt<CommsEvents>()
 
   fatalErrorSent = false
 
@@ -263,10 +245,6 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
     await this.broker.disconnect()
   }
 
-  analyticsData() {
-    return {}
-  }
-
   sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void> {
     // Not implemented
     return Promise.resolve()
@@ -327,22 +305,20 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
               this._stats.onPositionMessage(alias, positionData)
             }
 
-            this.positionHandler &&
-              this.positionHandler({
-                sender: alias,
-                type: 'position',
-                time: positionData.getTime(),
-                data: [
-                  positionData.getPositionX(),
-                  positionData.getPositionY(),
-                  positionData.getPositionZ(),
-                  positionData.getRotationX(),
-                  positionData.getRotationY(),
-                  positionData.getRotationZ(),
-                  positionData.getRotationW(),
-                  false
-                ]
-              })
+            this.events.emit('position', {
+              sender: alias,
+              time: positionData.getTime(),
+              data: [
+                positionData.getPositionX(),
+                positionData.getPositionY(),
+                positionData.getPositionZ(),
+                positionData.getRotationX(),
+                positionData.getRotationY(),
+                positionData.getRotationZ(),
+                positionData.getRotationW(),
+                false
+              ]
+            })
             break
           }
           case Category.CHAT: {
@@ -353,16 +329,14 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
               this._stats.chat.incrementRecv(msgSize)
             }
 
-            this.chatHandler &&
-              this.chatHandler({
-                sender: alias,
-                type: 'chat',
-                time: chatData.getTime(),
-                data: {
-                  id: chatData.getMessageId(),
-                  text: chatData.getText()
-                }
-              })
+            this.events.emit('chatMessage', {
+              sender: alias,
+              time: chatData.getTime(),
+              data: {
+                id: chatData.getMessageId(),
+                text: chatData.getText()
+              }
+            })
             break
           }
           case Category.SCENE_MESSAGE: {
@@ -373,13 +347,11 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
               this._stats.sceneComms.incrementRecv(msgSize)
             }
 
-            this.sceneMessageHandler &&
-              this.sceneMessageHandler({
-                sender: alias,
-                type: 'chat',
-                time: chatData.getTime(),
-                data: { id: chatData.getMessageId(), text: chatData.getText() }
-              })
+            this.events.emit('chatMessage', {
+              sender: alias,
+              time: chatData.getTime(),
+              data: { id: chatData.getMessageId(), text: chatData.getText() }
+            })
             break
           }
           default: {
@@ -422,27 +394,24 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
               this._stats.dispatchTopicDuration.stop()
               this._stats.profile.incrementRecv(msgSize)
             }
-            this.profileHandler &&
-              this.profileHandler({
-                sender: alias,
-                type: 'profile',
-                time: profileData.getTime(),
-                data: {
-                  user: userId,
-                  version: profileData.getProfileVersion(),
-                  type:
-                    profileData.getProfileType() === ProfileData.ProfileType.LOCAL
-                      ? ProfileType.LOCAL
-                      : ProfileType.DEPLOYED
-                } // We use deployed as default because that way we can emulate the old behaviour
-              })
+            this.events.emit('profileMessage', {
+              sender: alias,
+              time: profileData.getTime(),
+              data: {
+                user: userId,
+                version: profileData.getProfileVersion(),
+                type:
+                  profileData.getProfileType() === ProfileData.ProfileType.LOCAL
+                    ? ProfileType.LOCAL
+                    : ProfileType.DEPLOYED
+              } // We use deployed as default because that way we can emulate the old behaviour
+            })
             break
           }
           case Category.PROF_REQ: {
             const profileRequestData = ProfileRequestData.deserializeBinary(body)
-            this.profileRequestHandler({
+            this.events.emit('profileRequest', {
               sender: alias,
-              type: 'profile',
               time: profileRequestData.getTime(),
               data: {
                 userId: profileRequestData.getUserId(),
@@ -453,9 +422,8 @@ export class BrokerWorldInstanceConnection implements WorldInstanceConnection {
           }
           case Category.PROF_RES: {
             const profileResponseData = ProfileResponseData.deserializeBinary(body)
-            this.profileResponseHandler({
+            this.events.emit('profileResponse', {
               sender: alias,
-              type: 'profile',
               time: profileResponseData.getTime(),
               data: {
                 profile: JSON.parse(profileResponseData.getSerializedProfile()) as Profile

@@ -42,27 +42,27 @@ export function unsubscribeParcelSceneToCommsMessages(controller: Communications
 export async function bindHandlersToCommsContext(context: CommsContext) {
   const connection = context.worldInstanceConnection!
 
-  connection.positionHandler = (data: Package<Position>) => {
+  connection.events.on('position', (data: Package<Position>) => {
     processPositionMessage(context, data)
-  }
-  connection.profileHandler = (data: Package<ProfileVersion>) => {
+  })
+  connection.events.on('profileMessage', (data: Package<ProfileVersion>) => {
     processProfileMessage(context, data)
-  }
-  connection.chatHandler = (data: Package<ChatMessage>) => {
+  })
+  connection.events.on('chatMessage', (data: Package<ChatMessage>) => {
     processChatMessage(context, data)
-  }
-  connection.sceneMessageHandler = (data: Package<BusMessage>) => {
+  })
+  connection.events.on('sceneMessageBus', (data: Package<BusMessage>) => {
     processParcelSceneCommsMessage(data)
-  }
-  connection.profileRequestHandler = (data: Package<ProfileRequest>) => {
+  })
+  connection.events.on('profileRequest', (data: Package<ProfileRequest>) => {
     processProfileRequest(context, data)
-  }
-  connection.profileResponseHandler = (data: Package<ProfileResponse>) => {
+  })
+  connection.events.on('profileResponse', (data: Package<ProfileResponse>) => {
     processProfileResponse(context, data)
-  }
-  connection.voiceHandler = (data: Package<VoiceFragment>) => {
+  })
+  connection.events.on('voiceMessage', (data: Package<VoiceFragment>) => {
     processVoiceFragment(context, data)
-  }
+  })
 }
 
 const pendingProfileRequests: Record<string, IFuture<Profile | null>[]> = {}

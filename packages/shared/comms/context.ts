@@ -19,7 +19,7 @@ import {
   squareDistance
 } from './interface/utils'
 import { isRendererEnabled, renderStateObservable } from '../world/worldState'
-import { WorldInstanceConnection } from './interface/index'
+import { RoomConnection } from './interface/index'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
@@ -30,10 +30,7 @@ import { setListenerSpatialParams } from './voice-over-comms'
 import { scenesSubscribedToCommsEvents } from './handlers'
 import { arrayEquals } from 'atomicHelpers/arrayEquals'
 import { commsErrorRetrying } from 'shared/loading/types'
-import { trackEvent } from 'shared/analytics'
 import { sleep } from 'atomicHelpers/sleep'
-import { getRealm } from 'shared/dao/selectors'
-import { markCatalystRealmConnectionError } from 'shared/dao/actions'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -71,7 +68,7 @@ export class CommsContext {
 
   public currentPosition: Position | null = null
 
-  public worldInstanceConnection: WorldInstanceConnection | null = null
+  public worldInstanceConnection: RoomConnection | null = null
 
   timeToChangeRealm: number = Date.now() + commConfigurations.autoChangeRealmInterval
   lastProfileResponseTime: number = 0
@@ -97,7 +94,7 @@ export class CommsContext {
     this.commRadius = commConfigurations.commRadius
   }
 
-  async connect(connection: WorldInstanceConnection) {
+  async connect(connection: RoomConnection) {
     this.worldInstanceConnection = connection
 
     this.idTaken = false
@@ -129,8 +126,6 @@ export class CommsContext {
     if (this.worldRunningObserver) {
       renderStateObservable.remove(this.worldRunningObserver)
     }
-
-
   }
 
   /**
@@ -244,6 +239,7 @@ export class CommsContext {
 
     this.currentPosition = p
 
+    // set voicechat position params
     setListenerSpatialParams(this)
 
     const now = Date.now()
@@ -295,23 +291,6 @@ export class CommsContext {
     if (lastPlayerPositionReport) {
       this.onPositionUpdate(positionReportToCommsPosition(lastPlayerPositionReport))
     }
-
-    if (commConfigurations.sendAnalytics) {
-      this.analyticsInterval = setInterval(() => {
-        if (!this.worldInstanceConnection) return
-
-        const connectionAnalytics = this.worldInstanceConnection.analyticsData()
-        // We slice the ids in order to reduce the potential event size. Eventually, we should slice all comms ids
-        connectionAnalytics.trackedPeers = this?.peerData.keys()
-          ? [...this.peerData.keys()].map((it) => it.slice(-6))
-          : []
-        connectionAnalytics.visiblePeers = this?.stats.visiblePeerIds.map((it) => it.slice(-6))
-
-        if (connectionAnalytics) {
-          trackEvent('Comms Status v2', connectionAnalytics)
-        }
-      }, 60000) // Once per minute
-    }
   }
 
   private async connectWithRetries() {
@@ -338,10 +317,7 @@ export class CommsContext {
         } else {
           // not a comms issue per se => rethrow error
           commsLogger.error(`error while trying to establish communications `, e)
-          const realm = getRealm(store.getState())
-          if (realm) {
-            store.dispatch(markCatalystRealmConnectionError(realm))
-          }
+          throw e
         }
       }
     }

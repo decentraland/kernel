@@ -1,38 +1,46 @@
 import { Position } from './utils'
 import {
   UserInformation,
-  Package,
   ChatMessage,
   ProfileVersion,
   BusMessage,
   VoiceFragment,
   ProfileResponse,
-  ProfileRequest
+  ProfileRequest,
+  Package
 } from './types'
 import { Stats } from '../debug'
 import { Profile } from 'shared/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
+import { Emitter } from 'mitt'
 
 export type CommsEvents = {
+  initialMessage: Package<UserInformation>
+  sceneMessageBus: Package<BusMessage>
+  chatMessage: Package<ChatMessage>
+  profileMessage: Package<ProfileVersion>
+  position: Package<Position>
+  voiceMessage: Package<VoiceFragment>
+
+  // move the following to GlobalMessages+RPC instead of RoomConnection
+  profileResponse: Package<ProfileResponse>
+  profileRequest: Package<ProfileRequest>
+
+  DISCONNECTION: {}
 }
 
-export interface WorldInstanceConnection { // extends Emitter<CommsEvents> {
+export interface RoomConnection {
+  // this operation is non-reversible
+  disconnect(): Promise<void>
+  // @once
+  connect(): Promise<boolean>
+
   stats: Stats | null
 
-  // handlers
-  sceneMessageHandler: (data: Package<BusMessage>) => void
-  chatHandler: (data: Package<ChatMessage>) => void
-  profileHandler: (data: Package<ProfileVersion>) => void
-  positionHandler: (data: Package<Position>) => void
-  voiceHandler: (data: Package<VoiceFragment>) => void
-  profileResponseHandler: (data: Package<ProfileResponse>) => void
-  profileRequestHandler: (data: Package<ProfileRequest>) => void
+  events: Emitter<CommsEvents>
 
   // TODO - review metrics API - moliva - 19/12/2019
   readonly ping: number
-  analyticsData(): Record<string, any>
-
-  disconnect(): Promise<void>
 
   sendInitialMessage(userInfo: UserInformation): Promise<void>
   sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>
@@ -45,6 +53,4 @@ export interface WorldInstanceConnection { // extends Emitter<CommsEvents> {
   sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void>
 
   setTopics(topics: string[]): Promise<void>
-
-  connect(): Promise<boolean>
 }

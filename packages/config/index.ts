@@ -101,9 +101,9 @@ function ensureSingleString(value: string | string[] | null): string | null {
 }
 
 // Comms
-export const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
+const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
 export const COMMS =
-  !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1-local' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2-p2p' // by default
+  !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
 
 export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
@@ -211,7 +211,6 @@ export function getTLD() {
 export const WITH_FIXED_COLLECTIONS =
   (qs.get('WITH_COLLECTIONS') && ensureSingleString(qs.get('WITH_COLLECTIONS'))) || ''
 export const ENABLE_EMPTY_SCENES = !location.search.includes('DISABLE_EMPTY_SCENES')
-export const ENABLE_TEST_SCENES = location.search.includes('ENABLE_TEST_SCENES')
 
 export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
   const state = store.getState()
@@ -284,7 +283,7 @@ export const genericAvatarSnapshots: Record<string, string> = {
 }
 
 export function getCatalystNodesDefaultURL() {
-  return `https://peer-lb.decentraland.${getTLD()}/lambdas/contracts/servers`
+  return `https://peer.decentraland.${getTLD()}/lambdas/contracts/servers`
 }
 
 function addHttpsIfNoProtocolIsSet(domain: string): string

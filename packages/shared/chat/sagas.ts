@@ -28,7 +28,7 @@ import { isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
-import { realmToString } from 'shared/dao/utils/realmToString'
+import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
@@ -226,7 +226,9 @@ function initChatCommands() {
       changeToCrowdedRealm().then(
         ([changed, realm]) => {
           if (changed) {
-            notifyStatusThroughChat(`Found a crowded realm to join. Welcome to the realm ${realmToString(realm)}!`)
+            notifyStatusThroughChat(
+              `Found a crowded realm to join. Welcome to the realm ${realmToConnectionString(realm)}!`
+            )
           } else {
             notifyStatusThroughChat(`Already on most crowded realm for location. Nothing changed.`)
           }
@@ -238,22 +240,24 @@ function initChatCommands() {
         }
       )
     } else {
-      const realm = changeRealm(realmString)
-
-      if (realm) {
-        response = `Changing to Realm ${realm.serverName}...`
-        // TODO: This status should be shown in the chat window
-        catalystRealmConnected().then(
-          () => notifyStatusThroughChat(`Changed realm successfuly. Welcome to the realm ${realm.serverName}!`),
-          (e) => {
-            const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-            notifyStatusThroughChat('Could not join realm.' + cause)
-            defaultLogger.error('Error joining realm', e)
-          }
-        )
-      } else {
-        response = `Couldn't find realm ${realmString}`
-      }
+      changeRealm(realmString).then((realm) => {
+        if (realm) {
+          response = `Changing to Realm ${realm.serverName}...`
+          return catalystRealmConnected().then(
+            () =>
+              notifyStatusThroughChat(
+                `Changed realm successfuly. Welcome to the realm ${realmToConnectionString(realm)}!`
+              ),
+            (e) => {
+              const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
+              notifyStatusThroughChat('Could not join realm.' + cause)
+              defaultLogger.error('Error joining realm', e)
+            }
+          )
+        } else {
+          notifyStatusThroughChat(`Couldn't find realm ${realmString}`)
+        }
+      })
     }
 
     return {

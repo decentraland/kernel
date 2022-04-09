@@ -1,14 +1,14 @@
+import { ETHEREUM_NETWORK } from 'config'
 import { AnyAction } from 'redux'
 import {
   SET_CATALYST_REALM,
   SET_CATALYST_CANDIDATES,
   SET_CATALYST_REALM_COMMS_STATUS,
   SET_ADDED_CATALYST_CANDIDATES,
-  MARK_CATALYST_REALM_CONNECTION_ERROR,
   SELECT_NETWORK,
   SelectNetworkAction
 } from './actions'
-import { DaoState, Realm, ServerConnectionStatus } from './types'
+import { DaoState, Realm } from './types'
 
 export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
   if (!state) {
@@ -53,7 +53,7 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
     case SET_CATALYST_REALM:
       return {
         ...state,
-        ...realmProperties(action.payload),
+        ...realmProperties(action.payload, state.network),
         initialized: true
       }
     case SET_CATALYST_REALM_COMMS_STATUS:
@@ -61,36 +61,33 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
         ...state,
         commsStatus: action.payload ? action.payload : { status: 'initial', connectedPeers: 0 }
       }
-    case MARK_CATALYST_REALM_CONNECTION_ERROR:
-      return {
-        ...state,
-        candidates: state.candidates.map((it) => {
-          if (it && it.catalystName === action.payload.catalystName) {
-            return {
-              ...it,
-              status: ServerConnectionStatus.UNREACHABLE,
-              elapsed: Number.MAX_SAFE_INTEGER
-            }
-          } else {
-            return it
-          }
-        })
-      }
   }
   return state
 }
 
-function realmProperties(realm: Realm): Partial<DaoState> {
-  const domain = realm.domain
-  return {
-    fetchContentServer: domain + '/content',
-    catalystServer: domain,
-    updateContentServer: domain + '/content',
-    commsServer: domain + '/comms',
-    resizeService: domain + '/lambdas/images',
-    hotScenesService: domain + '/lambdas/explore/hot-scenes',
-    poiService: domain + '/lambdas/contracts/pois',
-    exploreRealmsService: domain + '/lambdas/explore/realms',
-    realm
+function realmProperties(realm: Realm, network: ETHEREUM_NETWORK | null): Partial<DaoState> {
+  const domain = realm.hostname
+
+  function lighthouseBasedPartial(domain: string) {
+    return {
+      fetchContentServer: domain + '/content',
+      catalystServer: domain,
+      updateContentServer: domain + '/content',
+      commsServer: domain + '/comms',
+      resizeService: domain + '/lambdas/images',
+      hotScenesService: domain + '/lambdas/explore/hot-scenes',
+      poiService: domain + '/lambdas/contracts/pois',
+      exploreRealmsService: domain + '/lambdas/explore/realms',
+      realm
+    }
+  }
+
+  // this condition exists until the BFF is finished and the "services" become interfaces
+  if (realm.protocol == 'v1' || realm.protocol == 'v2') {
+    return lighthouseBasedPartial(domain)
+  } else if (network == ETHEREUM_NETWORK.ROPSTEN) {
+    return lighthouseBasedPartial('https://peer.decentraland.zone')
+  } else {
+    return lighthouseBasedPartial('https://peer.decentraland.org')
   }
 }

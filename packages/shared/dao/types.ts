@@ -25,6 +25,7 @@ export type CatalystStatus = {
 }
 
 type BaseCandidate = {
+  // connectionString: string
   protocol: string
   domain: string
   catalystName: string
@@ -52,7 +53,7 @@ export type LayerUserInfo = {
 
 export type Realm = {
   protocol: string
-  domain: string
+  hostname: string
   serverName: string
 }
 

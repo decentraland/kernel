@@ -1,4 +1,4 @@
-import { EntityType, Fetcher } from 'dcl-catalyst-commons'
+import { EntityType } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
@@ -293,15 +293,16 @@ export async function profileServerRequest(userId: string, version?: number) {
   const catalystUrl = getCatalystServer(state)
 
   try {
-    // TODO: We should use catalyst client here. But it cannot be updated to use version in profiles request because
-    // the latest version is not compatible with kernel build.
-    // This should be changed once this issue is solved: https://github.com/decentraland/catalyst-client/issues/109
-
     let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
 
-    const fetcher = new Fetcher()
-    const profiles: any = await fetcher.fetchJson(url)
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`Invalid response from ${url}`)
+    }
+
+    const profiles = await response.json()
 
     return profiles[0] || { avatars: [] }
   } catch (e: any) {

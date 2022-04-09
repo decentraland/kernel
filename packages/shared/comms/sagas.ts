@@ -13,7 +13,7 @@ import {
   SET_CATALYST_REALM
 } from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
-import { realmToString } from 'shared/dao/utils/realmToString'
+import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 
 import { CommsContext, commsLogger } from './context'
 import { connect } from '.'
@@ -114,20 +114,19 @@ function* userAuthentified() {
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecording)
   yield takeEvery(SET_VOICE_VOLUME, updateVoiceChatVolume)
   yield takeEvery(SET_VOICE_MUTE, updateVoiceChatMute)
+
   yield listenToWhetherSceneSupportsVoiceChat()
 
   yield put(establishingComms())
 
-  const realm = yield select(getRealm)
-  debugger
-  if(realm) {
-  yield call(connect, realm)
+  let currentRealm: Realm | undefined = yield select(getRealm)
 
+  if (currentRealm) {
+    yield call(connect, currentRealm)
   }
 
   // Perdón gonza
-  let currentRealm: Realm | undefined
-  yield takeEvery(SET_CATALYST_REALM, function*() {
+  yield takeEvery(SET_CATALYST_REALM, function* () {
     const previousRealm = currentRealm
     currentRealm = yield select(getRealm)
     if (currentRealm && !deepEqual(previousRealm, currentRealm)) {
@@ -184,10 +183,12 @@ function* changeRealm() {
   const otherRealm = yield call(selectRealm)
 
   if (!sameRealm(currentRealm, otherRealm)) {
-    commsLogger.info(`Changing realm from ${realmToString(currentRealm)} to ${realmToString(otherRealm)}`)
+    commsLogger.info(
+      `Changing realm from ${realmToConnectionString(currentRealm)} to ${realmToConnectionString(otherRealm)}`
+    )
     yield put(setCatalystRealm(otherRealm))
   } else {
-    commsLogger.info(`Realm already set ${realmToString(currentRealm)}`)
+    commsLogger.info(`Realm already set ${realmToConnectionString(currentRealm)}`)
   }
 }
 
@@ -212,7 +213,7 @@ function* islandChanged(action: SetCommsIsland) {
 }
 
 function sameRealm(realm1: Realm, realm2: Realm) {
-  return realm1.serverName === realm2.serverName && realm2.domain === realm2.domain
+  return realm1.serverName === realm2.serverName && realm2.hostname === realm2.hostname
 }
 
 let audioRequestPending = false

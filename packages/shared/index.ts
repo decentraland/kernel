@@ -12,6 +12,7 @@ import { initializeSessionObserver } from './session/sagas'
 import { hookAnalyticsObservables } from './analytics/hook-observable'
 import wrapConsoleLogger from './logger/wrap'
 import { beforeUnloadAction } from './protocol/actions'
+import { initVoiceCommunicator } from './comms/voice-over-comms'
 
 declare const globalThis: { globalStore: RootStore }
 
@@ -33,6 +34,7 @@ export function initShared() {
   initializeUrlIslandObserver()
   initializeRendererVisibleObserver(store)
   initializeSessionObserver()
+  initVoiceCommunicator()
   hookAnalyticsObservables()
 
   if (typeof (window as any) !== 'undefined') {
@@ -57,7 +59,7 @@ function observeIsRendererVisibleChanges(store: RootStore, cb: (visible: boolean
   })
 }
 
-export function initializeRendererVisibleObserver(store: RootStore) {
+function initializeRendererVisibleObserver(store: RootStore) {
   observeIsRendererVisibleChanges(store, (visible: boolean) => {
     globalObservable.emit('rendererVisible', {
       visible

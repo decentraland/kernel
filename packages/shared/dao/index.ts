@@ -19,7 +19,8 @@ import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import { createAlgorithm } from './pick-realm-algorithm'
 import { ping } from './utils/ping'
-import { parseRealmString } from './utils/realmToString'
+import { candidateToRealm, resolveCommsConnectionString } from './utils/realmToString'
+import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 
 const DEFAULT_TIMEOUT = 5000
 
@@ -29,7 +30,9 @@ async function fetchCatalystNodes(endpoint: string | undefined) {
       const response = await fetch(endpoint)
       if (response.ok) {
         const nodes = await response.json()
-        return nodes.map((node: any) => ({ ...node, domain: node.address }))
+        if (nodes.length) {
+          return nodes.map((node: any) => ({ ...node, domain: node.address }))
+        }
       } else {
         throw new Error('Response was not OK. Status was: ' + response.statusText)
       }
@@ -65,6 +68,10 @@ async function fetchPeerHealthStatus(node: CatalystNode) {
       abortController.abort()
     }, DEFAULT_TIMEOUT)
 
+    function peerHealthStatusUrl(domain: string) {
+      return `${domain}/lambdas/health`
+    }
+
     const response = await fetch(peerHealthStatusUrl(node.domain), { signal })
 
     if (!response.ok) return {}
@@ -84,10 +91,6 @@ export function isPeerHealthy(peerStatus: Record<string, HealthStatus>) {
       return peerStatus[server] !== HealthStatus.HEALTHY
     })
   )
-}
-
-export function peerHealthStatusUrl(domain: string) {
-  return `${domain}/lambdas/health`
 }
 
 export function commsStatusUrl(domain: string, includeUsersParcels: boolean = false) {
@@ -123,7 +126,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
     ): Candidate {
       return {
         type: 'islands-based',
-        protocol: 'v2-p2p',
+        protocol: 'v2',
         catalystName: result!.name,
         domain,
         status: status!,
@@ -142,7 +145,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
   }, new Array<Candidate>())
 }
 
-export function pickCatalystRealm(candidates: Candidate[], currentUserParcel: Parcel): Realm {
+export async function pickCatalystRealm(candidates: Candidate[]): Promise<Realm> {
   let config = getPickRealmsAlgorithmConfig(store.getState())
 
   if (!config || config.length === 0) {
@@ -151,7 +154,10 @@ export function pickCatalystRealm(candidates: Candidate[], currentUserParcel: Pa
 
   const algorithm = createAlgorithm(config)
 
-  return candidateToRealm(algorithm.pickCandidate(candidates, currentUserParcel))
+  const qs = new URLSearchParams(globalThis.location.search)
+  const currentUserParcel = parseParcelPosition(qs.get('position') || '0,0')
+
+  return candidateToRealm(algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y]))
 }
 
 export async function candidatesFetched(): Promise<void> {
@@ -185,33 +191,10 @@ export async function realmInitialized(): Promise<void> {
   })
 }
 
-export function getRealmFromString(realmString: string, candidates: Candidate[]): Realm | undefined {
-  const r = parseRealmString(realmString)
-  if (r) return r
-
-  const parts = realmString.split('-')
-  return realmFor(parts[0], candidates)
-}
-
-function candidateToRealm(candidate: Candidate) {
-  const realm: Realm = {
-    protocol: candidate.protocol,
-    serverName: candidate.catalystName,
-    domain: candidate.domain
-  }
-
-  return realm
-}
-
-function realmFor(name: string, candidates: Candidate[]): Realm | undefined {
-  const candidate = candidates.find((it) => it.catalystName === name)
-  return candidate ? candidateToRealm(candidate) : undefined
-}
-
-export function changeRealm(realmString: string) {
+export async function changeRealm(realmString: string) {
   const candidates = getAllCatalystCandidates(store.getState())
 
-  const realm = getRealmFromString(realmString, candidates)
+  const realm = await resolveCommsConnectionString(realmString, candidates)
 
   if (realm) {
     store.dispatch(setCatalystRealm(realm))

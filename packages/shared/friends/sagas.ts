@@ -29,7 +29,7 @@ import {
   HUDElementID,
   Profile
 } from 'shared/types'
-import { getRealm, getUpdateProfileServer } from 'shared/dao/selectors'
+import { getRealm } from 'shared/dao/selectors'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition, positionObservable } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
@@ -103,17 +103,9 @@ function* initializeFriendsSaga() {
 
 function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdentity) {
   const { address: ethAddress } = identity
-  let timestamp: number
+  const timestamp: number = Date.now()
 
-  // Try to fetch time from the catalyst server
-  timestamp = yield fetchTimeFromCatalystServer()
-
-  // If that fails, fall back to local time
-  if (!timestamp) {
-    logger.warn(`Failed to fetch global time. Will fall back to local time`)
-    timestamp = Date.now()
-  }
-
+  // TODO: the "timestamp" should be a message also signed by a catalyst.
   const messageToSign = `${timestamp}`
 
   const authChain = Authenticator.signPayload(identity, messageToSign)
@@ -694,17 +686,4 @@ function toSocialData(socialIds: string[]) {
       socialId
     }))
     .filter(({ userId }) => !!userId) as SocialData[]
-}
-
-function* fetchTimeFromCatalystServer() {
-  try {
-    const contentServer = getUpdateProfileServer(store.getState())
-    const response: Response = yield fetch(`${contentServer}/status`)
-    if (response.ok) {
-      const { currentTime } = yield response.json()
-      return currentTime
-    }
-  } catch (e) {
-    logger.warn(`Failed to fetch time from catalyst server`, e)
-  }
 }

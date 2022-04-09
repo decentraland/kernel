@@ -133,13 +133,13 @@ export class EnvironmentAPI extends ExposableAPI {
 }
 
 export function toEnvironmentRealmType(realm: Realm, island: string): EnvironmentRealm {
-  const { domain, serverName } = realm
+  const { hostname: domain, serverName } = realm
   return {
     domain,
     layer: island,
     room: island,
     serverName,
-    displayName: `${serverName}-${island}`
+    displayName: serverName
   }
 }
 

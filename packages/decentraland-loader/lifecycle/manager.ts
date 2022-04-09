@@ -9,14 +9,13 @@ import { WebWorkerTransport } from 'decentraland-rpc/lib/common/transports/WebWo
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { getResourcesURL } from 'shared/location'
 
-import { parcelLimits, ENABLE_EMPTY_SCENES, LOS, getAssetBundlesBaseUrl, ENABLE_TEST_SCENES } from 'config'
+import { parcelLimits, ENABLE_EMPTY_SCENES, LOS, getAssetBundlesBaseUrl } from 'config'
 
 import { ILand } from 'shared/types'
 import { getFetchContentServer, getCatalystServer, getSelectedNetwork } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { store } from 'shared/store/isolatedStore'
 
-import { resolveUrl } from 'atomicHelpers/parseUrl'
 import { getWorldConfig } from 'shared/meta/selectors'
 
 declare const globalThis: { workerManager: LifecycleManager }
@@ -154,11 +153,10 @@ export async function initParcelSceneWorker() {
   const state = store.getState()
 
   const fullRootUrl = getResourcesURL('.')
-  const localServer = resolveUrl(`${location.protocol}//${location.hostname}:${8080}`, '/local-ipfs')
 
   server.notify('Lifecycle.initialize', {
-    contentServer: ENABLE_TEST_SCENES ? localServer : getFetchContentServer(state),
-    catalystServer: ENABLE_TEST_SCENES ? localServer : getCatalystServer(state),
+    contentServer: getFetchContentServer(state),
+    catalystServer: getCatalystServer(state),
     contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
     rootUrl: fullRootUrl,
     lineOfSightRadius: LOS ? Number.parseInt(LOS, 10) : parcelLimits.visibleRadius,

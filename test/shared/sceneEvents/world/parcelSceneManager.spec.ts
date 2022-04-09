@@ -87,7 +87,7 @@ describe('Parcel scene manager', () => {
     // Mock load scene worker so we dont need to lead with a webWorker loading
     parcelSceneManager.loadedSceneWorkers.set(sceneId, ({ isPersistent: () => true}) as any)
     store.setStore({ dispatch: (() => {}) } as any)
-    parcelSceneManager.setPlayerPosition({ x: 0, y: 0 })
+    parcelSceneManager.setBuilderLastKnownPlayerPosition({ x: 0, y: 0 })
     const options: IsolatedModeOptions<BuilderIsolatedPayload> = {
       mode: IsolatedMode.BUILDER,
       payload: {

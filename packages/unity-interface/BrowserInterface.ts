@@ -533,7 +533,7 @@ export class BrowserInterface {
 
     await future
 
-    const realm = changeRealm(serverName)
+    const realm = await changeRealm(serverName)
 
     if (realm) {
       catalystRealmConnected().then(

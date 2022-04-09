@@ -1,4 +1,5 @@
 import { ETHEREUM_NETWORK } from 'config'
+import { CommsContext } from 'shared/comms/context'
 import { action } from 'typesafe-actions'
 import { Realm, Candidate, CommsStatus } from './types'
 
@@ -26,10 +27,6 @@ export const SET_CATALYST_REALM_COMMS_STATUS = 'Set Catalyst Realm Comms Status'
 export const setCatalystRealmCommsStatus = (status: CommsStatus) => action(SET_CATALYST_REALM_COMMS_STATUS, status)
 export type SetCatalystRealmCommsStatus = ReturnType<typeof setCatalystRealmCommsStatus>
 
-export const MARK_CATALYST_REALM_CONNECTION_ERROR = 'Mark Catalyst Realm Connection Error'
-export const markCatalystRealmConnectionError = (realm: Realm) => action(MARK_CATALYST_REALM_CONNECTION_ERROR, realm)
-export type MarkCatalystRealmConnectionError = ReturnType<typeof markCatalystRealmConnectionError>
-
 export const CATALYST_REALMS_SCAN_REQUESTED = '[Request] Catalyst Realms scan'
 export const catalystRealmsScanRequested = () => action(CATALYST_REALMS_SCAN_REQUESTED)
 export type CatalystRealmsScanRequested = ReturnType<typeof catalystRealmsScanRequested>
@@ -37,3 +34,7 @@ export type CatalystRealmsScanRequested = ReturnType<typeof catalystRealmsScanRe
 export const CATALYST_REALMS_SCAN_SUCCESS = '[Success] Catalyst Realms scan'
 export const catalystRealmsScanSuccess = () => action(CATALYST_REALMS_SCAN_SUCCESS)
 export type CatalystRealmsScanSuccess = ReturnType<typeof catalystRealmsScanSuccess>
+
+export const HANDLE_COMMS_DISCONNECTION = 'Context disconnected'
+export const handleCommsDisconnection = (context: CommsContext) => action(HANDLE_COMMS_DISCONNECTION, { context })
+export type HandleCommsDisconnection = ReturnType<typeof handleCommsDisconnection>

@@ -56,7 +56,7 @@ function convertCurrentRealmType(realm: Realm): CurrentRealmInfoForRenderer {
   return {
     serverName: realm.serverName,
     layer: '',
-    domain: realm.domain,
+    domain: realm.hostname,
     contentServerUrl: contentServerUrl
   }
 }

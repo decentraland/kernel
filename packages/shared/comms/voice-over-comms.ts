@@ -15,37 +15,36 @@ import { getCommsContext } from 'shared/protocol/selectors'
 export let voiceCommunicator: VoiceCommunicator | null = null
 
 const logger = createLogger('VoiceCommunicator: ')
+declare var globalThis: any
 
 export function processVoiceFragment(context: CommsContext, message: Package<VoiceFragment>) {
   const profile = getCurrentUserProfile(store.getState())
 
   const peerTrackingInfo = context.ensurePeerTrackingInfo(message.sender)
 
-  if (peerTrackingInfo) {
-    if (
-      profile &&
-      peerTrackingInfo.identity &&
-      peerTrackingInfo.position &&
-      shouldPlayVoice(profile, peerTrackingInfo.identity)
-    ) {
-      voiceCommunicator
-        ?.playEncodedAudio(peerTrackingInfo.identity, getSpatialParamsFor(peerTrackingInfo.position), message.data)
-        .catch((e) => logger.error('Error playing encoded audio!', e))
-    }
+  if (
+    voiceCommunicator &&
+    profile &&
+    peerTrackingInfo.identity &&
+    peerTrackingInfo.position &&
+    shouldPlayVoice(profile, peerTrackingInfo.identity)
+  ) {
+    voiceCommunicator
+      .playEncodedAudio(peerTrackingInfo.identity, getSpatialParamsFor(peerTrackingInfo.position), message.data)
+      .catch((e) => logger.error('Error playing encoded audio!', e))
   }
 }
 
 export function setListenerSpatialParams(context: CommsContext) {
-  if (context.currentPosition) {
-    voiceCommunicator?.setListenerSpatialParams(getSpatialParamsFor(context.currentPosition))
+  if (context.currentPosition && voiceCommunicator) {
+    voiceCommunicator.setListenerSpatialParams(getSpatialParamsFor(context.currentPosition))
   }
 }
 
-export function initVoiceCommunicator(userId: string) {
+export function initVoiceCommunicator() {
   if (!voiceCommunicator) {
-    commsLogger.info('Initializing VoiceCommunicator with userId ' + userId)
+    commsLogger.info('Initializing VoiceCommunicator with userId')
     voiceCommunicator = new VoiceCommunicator(
-      userId,
       {
         send(frame: EncodedFrame) {
           const commsContext = getCommsContext(store.getState())
@@ -71,7 +70,8 @@ export function initVoiceCommunicator(userId: string) {
     voiceCommunicator.addStreamRecordingListener((recording) => {
       store.dispatch(voiceRecordingUpdate(recording))
     })
-    ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
+
+    globalThis.__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
   }
 }
 

@@ -1,21 +1,19 @@
 import { commConfigurations, COMMS } from 'config'
-import { lastPlayerParcel } from 'shared/world/positionThings'
 import { notifyStatusThroughChat } from './chat'
 import { CliBrokerConnection } from './v1/CliBrokerConnection'
-import { IBrokerTransport } from './v1/IBrokerTransport'
 import { getCurrentPeer, localProfileUUID, receiveUserData } from './peers'
-import { UserInformation, ConnectionEstablishmentError, UnknownCommsModeError } from './interface/types'
+import { UserInformation, ConnectionEstablishmentError } from './interface/types'
 import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
 import { ensureRendererEnabled } from '../world/worldState'
-import { WorldInstanceConnection } from './interface/index'
+import { RoomConnection } from './interface/index'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
 import { Authenticator, AuthIdentity } from 'dcl-crypto'
-import { getCommsServer, getRealm, getAllCatalystCandidates } from '../dao/selectors'
+import { getCommsServer, getAllCatalystCandidates } from '../dao/selectors'
 import { Store } from 'redux'
 import { store } from 'shared/store/isolatedStore'
-import { setCatalystRealmCommsStatus, setCatalystRealm, markCatalystRealmConnectionError } from 'shared/dao/actions'
+import { setCatalystRealmCommsStatus, setCatalystRealm, handleCommsDisconnection } from 'shared/dao/actions'
 import { pickCatalystRealm } from 'shared/dao'
-import { realmToString } from '../dao/utils/realmToString'
+import { realmToConnectionString } from '../dao/utils/realmToString'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
 import {
@@ -31,7 +29,6 @@ import { RootCommsState } from './types'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { commsLogger, CommsContext } from './context'
 import { bindHandlersToCommsContext } from './handlers'
-import { initVoiceCommunicator } from './voice-over-comms'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from 'shared/protocol/selectors'
 import { setWorldContext } from 'shared/protocol/actions'
@@ -83,84 +80,68 @@ export function updateCommsUser(changes: Partial<UserInformation>) {
   }
 }
 
-function parseCommsMode(modeString: string) {
-  const segments = modeString.split('-')
-  return segments as [CommsVersion, CommsMode]
-}
-
 export async function connect(realm: Realm): Promise<void> {
-  const realmString = realmToString(realm)
+  const realmString = realmToConnectionString(realm)
   const q = new URLSearchParams(window.location.search)
   q.set('realm', realmString)
   history.replaceState({ realm: realmString }, '', `?${q.toString()}`)
 
   commsLogger.log('Connecting to realm', realm)
+
+  if (!realm) {
+    debugger
+    throw new Error('No realm was found')
+  }
+
   try {
     const identity = getCurrentIdentity(store.getState())
 
     if (!identity) {
+      commsLogger.error("Can't connect to comms because there is no identity")
       return
     }
 
     const user = await getStoredSession(identity.address)
 
     if (!user) {
+      commsLogger.error("Can't connect to comms because there is no storedSession")
       return
     }
 
-    const userInfo = {
+    const userInfo: UserInformation = {
       userId: identity.address,
       ...user
     }
 
     const commsContext = new CommsContext(userInfo)
 
-    initVoiceCommunicator(user.identity.address)
+    let connection: RoomConnection
 
-    let connection: WorldInstanceConnection
+    const DEFAULT_PROTOCOL = 'v2'
+    const protocol = realm.protocol ?? DEFAULT_PROTOCOL
 
-    const DEFAULT_PROTOCOL = 'v2-p2p'
-    const protocol = realm?.protocol ?? DEFAULT_PROTOCOL
-    const [version, mode] = parseCommsMode(protocol)
-
-    switch (version) {
+    switch (protocol) {
       case 'v1': {
-        let commsBroker: IBrokerTransport
-
-        switch (mode) {
-          case 'local': {
-            let location = document.location.toString()
-            if (location.indexOf('#') > -1) {
-              location = location.substring(0, location.indexOf('#')) // drop fragment identifier
-            }
-            const commsUrl = location.replace(/^http/, 'ws') // change protocol to ws
-
-            const url = new URL(commsUrl)
-            const qs = new URLSearchParams({
-              identity: btoa(user.identity.address)
-            })
-            url.search = qs.toString()
-
-            commsLogger.log('Using WebSocket comms: ' + url.href)
-            commsBroker = new CliBrokerConnection(url.href)
-            break
-          }
-          // 1 case 'remote': {
-          // 1  const qs = new URLSearchParams(document.location.search)
-          // 1  const nats = qs.get('nats') || 'wss://nats.decentraland.io'
-          // 1  commsBroker = new NatsBrokerConnection(nats)
-          // 1  break
-          // 1 }
-          default: {
-            throw new UnknownCommsModeError(`unrecognized mode for comms v1 "${mode}"`)
-          }
+        let location = document.location.toString()
+        if (location.indexOf('#') > -1) {
+          location = location.substring(0, location.indexOf('#')) // drop fragment identifier
         }
+        const commsUrl = location.replace(/^http/, 'ws') // change protocol to ws
 
-        connection = new BrokerWorldInstanceConnection(commsBroker)
+        const url = new URL(commsUrl)
+        const qs = new URLSearchParams({
+          identity: btoa(user.identity.address)
+        })
+        url.search = qs.toString()
+
+        commsLogger.log('Using WebSocket comms: ' + url.href)
+
+        connection = new BrokerWorldInstanceConnection(new CliBrokerConnection(url.href))
         break
       }
       case 'v2': {
         await ensureMetaConfigurationInitialized()
+
         const lighthouseUrl = getCommsServer(store.getState())
         const commsConfig = getCommsConfig(store.getState())
 
@@ -215,15 +196,15 @@ export async function connect(realm: Realm): Promise<void> {
           store.dispatch(setCatalystRealmCommsStatus(status))
           switch (status.status) {
             case 'realm-full': {
-              handleFullLayer()
+              handleFullLayer(commsContext)
               break
             }
             case 'reconnection-error': {
-              handleReconnectionError()
+              store.dispatch(handleCommsDisconnection(commsContext))
               break
             }
             case 'id-taken': {
-              handleIdTaken()
+              handleIdTaken(commsContext)
               break
             }
           }
@@ -232,18 +213,43 @@ export async function connect(realm: Realm): Promise<void> {
         break
       }
       case 'v3': {
-        const commsUrl = mode == 'local' ? 'ws://0.0.0.0:5000/ws' : 'wss://explorer-bff.decentraland.io/ws'
+        // TODO: all of this is temporary
+        function normalizeUrl(url: string) {
+          return url.replace(/^:\/\//, window.location.protocol + '//')
+        }
 
-        const url = new URL(commsUrl)
+        function httpToWs(url: string) {
+          return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+        }
+
+        function securedRemote(hostname: string) {
+          if (hostname == 'localhost' || hostname.match(/\d+\.\d+\.\d+\.\d+/)) {
+            return `://${hostname}`
+          }
+          return `https://${realm.hostname}`
+        }
+
+        const commsUrl =
+          realm.hostname == 'local'
+            ? 'ws://0.0.0.0:5000/ws'
+            : realm.hostname == 'remote'
+            ? 'wss://explorer-bff.decentraland.io/ws'
+            : securedRemote(realm.hostname)
+
+        const url = new URL(normalizeUrl(commsUrl))
         const qs = new URLSearchParams({
           identity: btoa(user.identity.address)
         })
         url.search = qs.toString()
 
-        commsLogger.log('Using WebSocket comms: ' + url.href)
-        const commsBroker = new CliBrokerConnection(url.href)
+        const finalUrl = httpToWs(url.toString())
+
+        commsLogger.log('Using WebSocket comms: ' + finalUrl)
+        const commsBroker = new CliBrokerConnection(finalUrl)
 
         connection = new BrokerWorldInstanceConnection(commsBroker)
+
+        connection.events.on('DISCONNECTION', () => handleReconnectionError(commsContext))
 
         break
       }
@@ -254,7 +260,12 @@ export async function connect(realm: Realm): Promise<void> {
 
     store.dispatch(setWorldContext(commsContext))
     await ensureRendererEnabled()
-    await commsContext.connect(connection)
+    try {
+      await commsContext.connect(connection)
+    } catch (e: any) {
+      handleReconnectionError(commsContext)
+      throw e
+    }
     await bindHandlersToCommsContext(commsContext)
 
     store.dispatch(commsEstablished())
@@ -271,42 +282,22 @@ export async function connect(realm: Realm): Promise<void> {
   }
 }
 
-function handleReconnectionError() {
-  const realm = getRealm(store.getState())
-
-  if (realm) {
-    store.dispatch(markCatalystRealmConnectionError(realm))
-  }
-
-  const candidates = getAllCatalystCandidates(store.getState())
-
-  const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
-
-  const notificationMessage = realm
-    ? `Lost connection to ${realmToString(realm)}, joining realm ${realmToString(otherRealm)} instead`
-    : `Joining realm ${realmToString(otherRealm)}`
-
-  notifyStatusThroughChat(notificationMessage)
-
-  store.dispatch(setCatalystRealm(otherRealm))
+function handleReconnectionError(context: CommsContext) {
+  store.dispatch(handleCommsDisconnection(context))
 }
 
-function handleIdTaken() {
-  store.dispatch(setWorldContext(undefined))
+function handleIdTaken(context: CommsContext) {
+  store.dispatch(handleCommsDisconnection(context))
   ReportFatalErrorWithCommsPayload(new Error(`Handle Id already taken`), ErrorContext.COMMS_INIT)
   BringDownClientAndShowError(NEW_LOGIN)
 }
 
-function handleFullLayer() {
-  // const realm = getRealm(store.getState())
-
-  // if (realm) {
-  //   store.dispatch(markCatalystRealmFull(realm))
-  // }
+async function handleFullLayer(context: CommsContext) {
+  store.dispatch(handleCommsDisconnection(context))
 
   const candidates = getAllCatalystCandidates(store.getState())
 
-  const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
+  const otherRealm = await pickCatalystRealm(candidates)
 
   notifyStatusThroughChat(`Joining realm ${otherRealm.serverName} since the previously requested was full`)
 

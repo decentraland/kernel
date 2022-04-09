@@ -53,7 +53,6 @@ export const teleportObservable = new Observable<EcsMathReadOnlyVector2 & { text
 
 export const lastPlayerPosition = new Vector3()
 export let lastPlayerPositionReport: Readonly<PositionReport> | null = null
-export let lastPlayerParcel: Vector2
 
 positionObservable.add((event) => {
   lastPlayerPosition.copyFrom(event.position)
@@ -61,6 +60,7 @@ positionObservable.add((event) => {
 })
 
 // Listen to position changes, and notify if the parcel changed
+let lastPlayerParcel: Vector2
 positionObservable.add(({ position, immediate }) => {
   const parcel = Vector2.Zero()
   worldToGrid(position, parcel)
@@ -236,19 +236,4 @@ export function getLandBase(land: ILand): { x: number; y: number } {
   } else {
     return parseParcelPosition(land.mappingsResponse.parcel_id)
   }
-}
-
-export async function parcelAvailable(): Promise<EcsMathReadOnlyVector2> {
-  if (lastPlayerParcel) return lastPlayerParcel
-
-  return new Promise((resolve, reject) => {
-    parcelObservable.addOnce((parcel) => {
-      resolve(parcel.newParcel)
-    })
-
-    setTimeout(() => {
-      if (lastPlayerParcel) resolve(lastPlayerParcel)
-      else reject('Timed out awaiting for parcel')
-    }, 60000)
-  })
 }

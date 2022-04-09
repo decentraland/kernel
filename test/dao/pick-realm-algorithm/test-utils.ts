@@ -11,7 +11,7 @@ export function circularSlice<T>(count: number, source: T[]): T[] {
 export function buildCandidate(params: Partial<Candidate>): Candidate {
   const usersCount = params.usersCount ? params.usersCount : 10
   return {
-    protocol: 'v2-p2p',
+    protocol: 'v2',
     type: "islands-based",
     catalystName: "test",
     catalystVersion: "1.0.0",

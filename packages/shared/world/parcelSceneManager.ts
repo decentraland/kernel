@@ -67,7 +67,7 @@ export function generateBannedILand(land: ILand): ILand {
 const sceneManagerLogger = createLogger('scene-manager')
 let lastPlayerPositionKnow: Vector2Component
 
-export function setPlayerPosition(position: Vector2Component) {
+export function setBuilderLastKnownPlayerPosition(position: Vector2Component) {
   lastPlayerPositionKnow = position
 }
 
@@ -482,7 +482,7 @@ export async function enableParcelSceneLoading() {
   )
 
   teleportObservable.add((position: { x: number; y: number }) => {
-    setPlayerPosition(position)
+    setBuilderLastKnownPlayerPosition(position)
     if (parcelSceneLoadingState.runningIsolatedMode) return
     lifecycleManager.notify('User.setPosition', { position, teleported: true })
   })
@@ -494,7 +494,7 @@ export async function enableParcelSceneLoading() {
   parcelObservable.add((obj) => {
     // immediate reposition should only be broadcasted to others, otherwise our scene reloads
     if (obj.immediate) return
-    setPlayerPosition(obj.newParcel)
+    setBuilderLastKnownPlayerPosition(obj.newParcel)
 
     // If we are in isolated mode we don't report the position
     if (parcelSceneLoadingState.runningIsolatedMode) return

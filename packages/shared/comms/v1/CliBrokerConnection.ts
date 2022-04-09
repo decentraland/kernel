@@ -14,6 +14,7 @@ export class CliBrokerConnection implements IBrokerTransport {
   public logger: ILogger = createLogger('Broker: ')
 
   public onMessageObservable = new Observable<TransportMessage>()
+  public onDisconnect = new Observable<void>()
 
   private connected = future<void>()
 
@@ -44,6 +45,7 @@ export class CliBrokerConnection implements IBrokerTransport {
       this.ws.onclose = null
       this.ws.close()
       this.ws = null
+      this.onDisconnect.notifyObservers()
     }
   }
 
@@ -75,8 +77,7 @@ export class CliBrokerConnection implements IBrokerTransport {
         connectMessage.setType(MessageType.CONNECT)
         connectMessage.setToAlias(0)
         connectMessage.setFromAlias(this.alias)
-        this.sendCoordinatorMessage(connectMessage.serializeBinary())
-
+        this.ws!.send(connectMessage.serializeBinary())
         this.connected.resolve()
 
         break
@@ -105,12 +106,12 @@ export class CliBrokerConnection implements IBrokerTransport {
     }
   }
 
-  private sendCoordinatorMessage = (msg: Uint8Array) => {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      throw new Error('try to send answer to a non ready ws')
-    }
+  private sendCoordinatorMessage(msg: Uint8Array) {
+    if (!this.ws) throw new Error('This transport is closed')
 
-    this.ws.send(msg)
+    this.connected.then(() => {
+      if (this.ws) this.ws.send(msg)
+    })
   }
 
   private connectWS() {
@@ -124,7 +125,11 @@ export class CliBrokerConnection implements IBrokerTransport {
 
     this.ws.onerror = (event) => {
       this.logger.error('socket error', event)
-      this.ws = null
+      this.disconnect().catch(console.error)
+    }
+
+    this.ws.onclose = () => {
+      this.disconnect().catch(console.error)
     }
 
     this.ws.onmessage = (event) => {

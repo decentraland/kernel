@@ -1,4 +1,3 @@
-import { EcsMathReadOnlyVector2 } from '@dcl/ecs-math'
 import {
   setCatalystCandidates,
   setAddedCatalystCandidates,
@@ -8,21 +7,23 @@ import {
   SET_ADDED_CATALYST_CANDIDATES,
   SetCatalystCandidates,
   SetAddedCatalystCandidates,
-  catalystRealmsScanSuccess,
   catalystRealmsScanRequested,
   SELECT_NETWORK,
-  setCatalystRealm
+  setCatalystRealm,
+  HANDLE_COMMS_DISCONNECTION,
+  HandleCommsDisconnection,
 } from './actions'
-import { call, put, takeEvery, select, fork, take } from 'redux-saga/effects'
+import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization } from '../meta/sagas'
 import { Candidate, PingResult, Realm, ServerConnectionStatus } from './types'
-import { fetchCatalystRealms, fetchCatalystStatuses, pickCatalystRealm, getRealmFromString, commsStatusUrl } from '.'
+import { fetchCatalystRealms, fetchCatalystStatuses, pickCatalystRealm, commsStatusUrl } from '.'
 import { ping } from './utils/ping'
 import { getAddedServers, getCatalystNodesEndpoint, getMinCatalystVersion } from 'shared/meta/selectors'
 import {
   getAllCatalystCandidates,
   getFetchContentServer,
+  getRealm,
   getSelectedNetwork,
   getUpdateProfileServer,
   isRealmInitialized
@@ -36,7 +37,9 @@ import {
 } from 'shared/loading/ReportFatalError'
 import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
 import { gte } from 'semver'
-import { parcelAvailable } from 'shared/world/positionThings'
+import { realmToConnectionString, resolveCommsConnectionString } from './utils/realmToString'
+import { commsLogger } from 'shared/comms/context'
+import { notifyStatusThroughChat } from 'shared/comms/chat'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
   return 'last_realm_' + network
@@ -49,6 +52,22 @@ export function* daoSaga(): any {
   yield takeEvery(SELECT_NETWORK, loadCatalystRealms)
   yield takeEvery(SET_CATALYST_REALM, cacheCatalystRealm)
   yield takeEvery([SET_CATALYST_CANDIDATES, SET_ADDED_CATALYST_CANDIDATES], cacheCatalystCandidates)
+  yield takeEvery(HANDLE_COMMS_DISCONNECTION, handleCommsDisconnection)
+}
+
+function* handleCommsDisconnection(action: HandleCommsDisconnection) {
+  const realm = yield select(getRealm)
+
+  if (realm) {
+    notifyStatusThroughChat(`Lost connection to ${realmToConnectionString(realm)}`)
+  }
+
+  const candidates = yield select(getAllCatalystCandidates)
+  const otherRealm = yield call(pickCatalystRealm, candidates)
+
+  notifyStatusThroughChat(`Joining realm ${realmToConnectionString(otherRealm)}`)
+
+  yield put(setCatalystRealm(otherRealm))
 }
 
 function qsRealm() {
@@ -71,52 +90,27 @@ function* loadCatalystRealms() {
   let realm: Realm | undefined
 
   if (!PREVIEW) {
-    const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-
-    const cachedRealm: Realm | undefined = yield call(getFromPersistentStorage, getLastRealmCacheKey(network))
-
-    // check for cached realms if any
-    if (cachedRealm && (!PIN_CATALYST || cachedRealm.domain === PIN_CATALYST)) {
-      const cachedCandidates: Candidate[] = yield call(
-        getFromPersistentStorage,
-        getLastRealmCandidatesCacheKey(network)
-      ) ?? []
-
-      let configuredRealm: Realm
-      if (qsRealm()) {
-        // if a realm is configured, then try to initialize it from cached candidates
-        configuredRealm = yield call(getConfiguredRealm, cachedCandidates)
-      } else {
-        // in case there are no cached candidates or the realm was not configured in the URL -> use last cached realm
-        configuredRealm = cachedRealm
-      }
-
-      const validRealm: boolean = yield call(checkValidRealm, configuredRealm)
-      if (configuredRealm && validRealm) {
-        realm = configuredRealm
-
-        yield fork(initializeCatalystCandidates)
-      }
+    // load candidates if necessary
+    const candidates: Candidate[] = yield select(getAllCatalystCandidates)
+    if (candidates.length == 0) {
+      yield call(initializeCatalystCandidates)
     }
 
-    // if no realm was selected, then do the whole initialization dance
-    if (!realm) {
-      try {
-        yield call(initializeCatalystCandidates)
-      } catch (e: any) {
-        ReportFatalErrorWithCatalystPayload(e, ErrorContext.KERNEL_INIT)
-        BringDownClientAndShowError(CATALYST_COULD_NOT_LOAD)
-        throw e
-      }
-
+    try {
       realm = yield call(selectRealm)
+
+      // if no realm was selected, then do the whole initialization dance
+    } catch (e: any) {
+      ReportFatalErrorWithCatalystPayload(e, ErrorContext.KERNEL_INIT)
+      BringDownClientAndShowError(CATALYST_COULD_NOT_LOAD)
+      throw e
     }
   } else {
     yield initLocalCatalyst()
     realm = {
       protocol: 'v1',
-      domain: rootURLPreviewMode(),
-      serverName: 'localhost',
+      hostname: rootURLPreviewMode(),
+      serverName: 'localhost'
     }
   }
 
@@ -151,21 +145,34 @@ function* waitForCandidates() {
 
 export function* selectRealm() {
   yield call(waitForCandidates)
-  const parcel: EcsMathReadOnlyVector2 = yield parcelAvailable()
+  const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
 
   const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
+  const cachedCandidates: Candidate[] = yield call(getFromPersistentStorage, getLastRealmCandidatesCacheKey(network)) ??
+    []
 
-  let realm: string = yield call(getConfiguredRealm, allCandidates)
-  if (!realm) {
-    realm = yield call(pickCatalystRealm, allCandidates, [parcel.x, parcel.y])
-  }
+  const realm: Realm | undefined =
+    // 1st priority: query param (dao candidates & cached)
+    (yield call(getConfiguredRealm, [...allCandidates, ...cachedCandidates])) ||
+    // 2nd priority: cached in local storage
+    (yield call(getFromPersistentStorage, getLastRealmCacheKey(network))) ||
+    // 3rd priority: fetch catalysts and select one using the load balancing
+    (yield call(pickCatalystRealm, allCandidates))
+
   return realm
 }
 
-function getConfiguredRealm(candidates: Candidate[]) {
-  const realm = qsRealm()
-  if (realm) {
-    return getRealmFromString(realm, candidates)
+// Gets a realm from the query parameters (if present)
+function* getConfiguredRealm(candidates: Candidate[]) {
+  const realmName = qsRealm()
+  if (realmName) {
+    const realm = yield call(resolveCommsConnectionString, realmName, candidates)
+    const isValid: boolean = realm && (yield call(checkValidRealm, realm))
+    if (isValid) {
+      return realm
+    } else {
+      commsLogger.warn(`Provided realm is not valid: ${realmName}`)
+    }
   }
 }
 
@@ -195,17 +202,15 @@ function* initializeCatalystCandidates() {
   const filteredAddedCandidates: Candidate[] = yield call(filterCandidatesByCatalystVersion, addedCandidates)
 
   yield put(setAddedCatalystCandidates(filteredAddedCandidates))
-
-  yield put(catalystRealmsScanSuccess())
 }
 
 function* checkValidRealm(realm: Realm) {
-  const realmHasValues = realm && realm.domain && realm.serverName
+  const realmHasValues = realm && realm.hostname && realm.serverName
   if (!realmHasValues) {
     return false
   }
   const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
-  const pingResult: PingResult = yield ping(commsStatusUrl(realm.domain))
+  const pingResult: PingResult = yield ping(commsStatusUrl(realm.hostname))
   const catalystVersion = pingResult.result?.env.catalystVersion ?? '0.0.0'
   return (
     pingResult.status === ServerConnectionStatus.OK && (!minCatalystVersion || gte(catalystVersion, minCatalystVersion))

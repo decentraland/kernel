@@ -26,7 +26,7 @@ const NODES = [{
 }]
 
 const EXPECTED: Candidate = {
-  protocol: 'v2-p2p',
+  protocol: 'v2',
   catalystName: "loki",
   catalystVersion: "3.0.2",
   domain: "peer.decentraland.org",
