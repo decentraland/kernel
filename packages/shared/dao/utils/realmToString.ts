@@ -1,7 +1,7 @@
 import { Candidate, Realm } from '../types'
 
 export function realmToConnectionString(realm: Realm) {
-  if (realm.protocol == 'v2' && realm.serverName != realm.hostname && realm.serverName.match(/^[a-z]+$/i)) {
+  if (realm.protocol === 'v2' && realm.serverName !== realm.hostname && realm.serverName.match(/^[a-z]+$/i)) {
     return realm.serverName
   }
 
@@ -14,7 +14,7 @@ export async function resolveCommsConnectionString(
 ): Promise<Realm | undefined> {
   // is it a DAO realm?
   for (const candidate of candidates) {
-    if (candidate.catalystName == realmString) {
+    if (candidate.catalystName === realmString) {
       return candidateToRealm(candidate)
     }
   }
@@ -28,7 +28,10 @@ export async function resolveCommsConnectionString(
     if (!secondPart) return undefined
 
     for (const candidate of candidates) {
-      if (protocol == candidate.protocol && (candidate.catalystName == secondPart || candidate.domain == secondPart)) {
+      if (
+        protocol === candidate.protocol &&
+        (candidate.catalystName === secondPart || candidate.domain === secondPart)
+      ) {
         return candidateToRealm(candidate)
       }
     }

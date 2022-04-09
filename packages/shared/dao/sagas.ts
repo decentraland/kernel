@@ -11,7 +11,7 @@ import {
   SELECT_NETWORK,
   setCatalystRealm,
   HANDLE_COMMS_DISCONNECTION,
-  HandleCommsDisconnection,
+  HandleCommsDisconnection
 } from './actions'
 import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
@@ -38,8 +38,10 @@ import {
 import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
 import { gte } from 'semver'
 import { realmToConnectionString, resolveCommsConnectionString } from './utils/realmToString'
-import { commsLogger } from 'shared/comms/context'
+import { CommsContext, commsLogger } from 'shared/comms/context'
 import { notifyStatusThroughChat } from 'shared/comms/chat'
+import { getCommsContext } from 'shared/protocol/selectors'
+import { setWorldContext } from 'shared/protocol/actions'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
   return 'last_realm_' + network
@@ -62,12 +64,23 @@ function* handleCommsDisconnection(action: HandleCommsDisconnection) {
     notifyStatusThroughChat(`Lost connection to ${realmToConnectionString(realm)}`)
   }
 
+  const context: CommsContext = yield select(getCommsContext)
+
+  if (context && context === action.payload.context) {
+    // this also disconnects the context.
+    yield put(setWorldContext(undefined))
+  }
+
   const candidates = yield select(getAllCatalystCandidates)
   const otherRealm = yield call(pickCatalystRealm, candidates)
 
-  notifyStatusThroughChat(`Joining realm ${realmToConnectionString(otherRealm)}`)
+  if (otherRealm) {
+    notifyStatusThroughChat(`Joining realm ${realmToConnectionString(otherRealm)}.`)
 
-  yield put(setCatalystRealm(otherRealm))
+    yield put(setCatalystRealm(otherRealm))
+  } else {
+    notifyStatusThroughChat(`Could not find a suitable realm to connect to. :(`)
+  }
 }
 
 function qsRealm() {
@@ -92,7 +105,8 @@ function* loadCatalystRealms() {
   if (!PREVIEW) {
     // load candidates if necessary
     const candidates: Candidate[] = yield select(getAllCatalystCandidates)
-    if (candidates.length == 0) {
+
+    if (candidates.length === 0) {
       yield call(initializeCatalystCandidates)
     }
 

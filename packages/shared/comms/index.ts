@@ -196,7 +196,7 @@ export async function connect(realm: Realm): Promise<void> {
           store.dispatch(setCatalystRealmCommsStatus(status))
           switch (status.status) {
             case 'realm-full': {
-              handleFullLayer(commsContext)
+              handleFullLayer(commsContext).catch(commsLogger.error)
               break
             }
             case 'reconnection-error': {
@@ -223,16 +223,16 @@ export async function connect(realm: Realm): Promise<void> {
         }
 
         function securedRemote(hostname: string) {
-          if (hostname == 'localhost' || hostname.match(/\d+\.\d+\.\d+\.\d+/)) {
+          if (hostname === 'localhost' || hostname.match(/\d+\.\d+\.\d+\.\d+/)) {
             return `://${hostname}`
           }
           return `https://${realm.hostname}`
         }
 
         const commsUrl =
-          realm.hostname == 'local'
+          realm.hostname === 'local'
             ? 'ws://0.0.0.0:5000/ws'
-            : realm.hostname == 'remote'
+            : realm.hostname === 'remote'
             ? 'wss://explorer-bff.decentraland.io/ws'
             : securedRemote(realm.hostname)
 

@@ -245,7 +245,7 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
     await this.broker.disconnect()
   }
 
-  sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void> {
+  sendVoiceMessage(_currentPosition: Position, _frame: EncodedFrame): Promise<void> {
     // Not implemented
     return Promise.resolve()
   }

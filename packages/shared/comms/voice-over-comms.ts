@@ -15,7 +15,7 @@ import { getCommsContext } from 'shared/protocol/selectors'
 export let voiceCommunicator: VoiceCommunicator | null = null
 
 const logger = createLogger('VoiceCommunicator: ')
-declare var globalThis: any
+declare let globalThis: any
 
 export function processVoiceFragment(context: CommsContext, message: Package<VoiceFragment>) {
   const profile = getCurrentUserProfile(store.getState())

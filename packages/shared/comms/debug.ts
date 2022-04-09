@@ -154,7 +154,7 @@ export class Stats {
     defaultLogger.info('-------')
   }
 
-  public onPositionMessage(fromAlias: string, data: PositionData) {
+  public onPositionMessage(fromAlias: string, _data: PositionData) {
     let stats = this.peers.get(fromAlias)
 
     if (!stats) {

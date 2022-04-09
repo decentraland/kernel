@@ -240,24 +240,31 @@ function initChatCommands() {
         }
       )
     } else {
-      changeRealm(realmString).then((realm) => {
-        if (realm) {
-          response = `Changing to Realm ${realm.serverName}...`
-          return catalystRealmConnected().then(
-            () =>
-              notifyStatusThroughChat(
-                `Changed realm successfuly. Welcome to the realm ${realmToConnectionString(realm)}!`
-              ),
-            (e) => {
-              const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-              notifyStatusThroughChat('Could not join realm.' + cause)
-              defaultLogger.error('Error joining realm', e)
-            }
-          )
-        } else {
-          notifyStatusThroughChat(`Couldn't find realm ${realmString}`)
+      changeRealm(realmString).then(
+        (realm) => {
+          if (realm) {
+            response = `Changing to Realm ${realm.serverName}...`
+            return catalystRealmConnected().then(
+              () =>
+                notifyStatusThroughChat(
+                  `Changed realm successfuly. Welcome to the realm ${realmToConnectionString(realm)}!`
+                ),
+              (e) => {
+                const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
+                notifyStatusThroughChat('Could not join realm.' + cause)
+                defaultLogger.error('Error joining realm', e)
+              }
+            )
+          } else {
+            notifyStatusThroughChat(`Couldn't find realm ${realmString}`)
+          }
+        },
+        (e) => {
+          const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
+          notifyStatusThroughChat('Could not join realm.' + cause)
+          defaultLogger.error(`Error joining crowded realm ${realmString}`, e)
         }
-      })
+      )
     }
 
     return {

@@ -109,9 +109,11 @@ export class CliBrokerConnection implements IBrokerTransport {
   private sendCoordinatorMessage(msg: Uint8Array) {
     if (!this.ws) throw new Error('This transport is closed')
 
-    this.connected.then(() => {
-      if (this.ws) this.ws.send(msg)
-    })
+    this.connected
+      .then(() => {
+        if (this.ws) this.ws.send(msg)
+      })
+      .catch(console.error)
   }
 
   private connectWS() {

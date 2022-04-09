@@ -194,8 +194,8 @@ function processProfileRequest(context: CommsContext, message: Package<ProfileRe
       getProfileType(myIdentity)
     )
 
-    if (context.currentPosition) {
-      context.worldInstanceConnection?.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
+    if (context.currentPosition && context.worldInstanceConnection) {
+      await context.worldInstanceConnection.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
     }
 
     context.lastProfileResponseTime = Date.now()

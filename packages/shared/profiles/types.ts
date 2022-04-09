@@ -30,7 +30,6 @@ export type Snapshots = {
   body: string
 }
 
-
 export type ColorString = string
 
 export type ProfileStatus = 'ok' | 'error' | 'loading'

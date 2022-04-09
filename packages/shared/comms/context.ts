@@ -202,7 +202,7 @@ export class CommsContext {
       const zMin = ((commArea.vMin.z + parcelLimits.maxParcelZ) >> 2) << 2
       const zMax = ((commArea.vMax.z + parcelLimits.maxParcelZ) >> 2) << 2
 
-      let rawTopics: string[] = []
+      const rawTopics: string[] = []
       for (let x = xMin; x <= xMax; x += 4) {
         for (let z = zMin; z <= zMax; z += 4) {
           const hash = `${x >> 2}:${z >> 2}`
@@ -344,7 +344,7 @@ export class CommsContext {
     const visiblePeers: ProcessingPeerInfo[] = []
     const commsMetaConfig = getCommsConfig(store.getState())
     const commArea = new CommunicationArea(position2parcel(this.currentPosition), commConfigurations.commRadius)
-    for (let [peerAlias, trackingInfo] of this.peerData) {
+    for (const [peerAlias, trackingInfo] of this.peerData) {
       const msSinceLastUpdate = now - trackingInfo.lastUpdate
 
       if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
@@ -378,7 +378,7 @@ export class CommsContext {
     }
 
     if (visiblePeers.length <= commsMetaConfig.maxVisiblePeers) {
-      for (let peerInfo of visiblePeers) {
+      for (const peerInfo of visiblePeers) {
         const alias = peerInfo.alias
         receiveUserVisible(alias, true)
         receiveUserPose(alias, peerInfo.position as Pose)
@@ -414,7 +414,7 @@ export class CommsContext {
  * Returns a list of CIDs that must receive scene messages from comms
  */
 function getParcelSceneSubscriptions(): string[] {
-  let ids: string[] = []
+  const ids: string[] = []
 
   scenesSubscribedToCommsEvents.forEach(($) => {
     ids.push($.cid)

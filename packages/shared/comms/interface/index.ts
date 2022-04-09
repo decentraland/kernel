@@ -26,7 +26,7 @@ export type CommsEvents = {
   profileResponse: Package<ProfileResponse>
   profileRequest: Package<ProfileRequest>
 
-  DISCONNECTION: {}
+  DISCONNECTION: any
 }
 
 export interface RoomConnection {

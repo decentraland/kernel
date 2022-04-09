@@ -34,10 +34,7 @@ export function profileToRendererFormat(
 }
 
 // Ensure all snapshots are URLs
-function prepareSnapshots(
-  { face256, body }: Snapshots,
-  userId: string
-): ProfileForRenderer['snapshots'] {
+function prepareSnapshots({ face256, body }: Snapshots, userId: string): ProfileForRenderer['snapshots'] {
   function prepare(value: string) {
     if (value === null || value === undefined) {
       trackEvent('SNAPSHOT_IMAGE_NOT_FOUND', { userId })
