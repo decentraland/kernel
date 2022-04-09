@@ -253,6 +253,25 @@ export async function connect(realm: Realm): Promise<void> {
 
         break
       }
+      case 'v3': {
+        const commsUrl = mode === 'local' ? 'ws://0.0.0.0:5000/ws' : 'wss://explorer-bff.decentraland.io/ws'
+
+        const url = new URL(commsUrl)
+        const qs = new URLSearchParams({
+          identity: btoa(userId)
+        })
+        url.search = qs.toString()
+
+        defaultLogger.log('Using WebSocket comms: ' + url.href)
+        const commsBroker = new CliBrokerConnection(url.href)
+
+        const instance = new BrokerWorldInstanceConnection(commsBroker)
+        await instance.isConnected
+        store.dispatch(commsEstablished())
+
+        connection = instance
+        break
+      }
       default: {
         throw new Error(`unrecognized comms mode "${COMMS}"`)
       }
