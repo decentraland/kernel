@@ -1,4 +1,4 @@
-import { CommsContext } from '../comms/context'
+import type { CommsContext } from '../comms/context'
 
 export type RootProtocolState = {
   protocol: ProtocolState

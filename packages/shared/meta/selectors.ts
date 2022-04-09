@@ -1,5 +1,5 @@
-import { BannedUsers, CommsConfig, FeatureFlag, MessageOfTheDayConfig, RootMetaState, WorldConfig } from './types'
-import { Vector2Component } from 'atomicHelpers/landHelpers'
+import type { BannedUsers, CommsConfig, FeatureFlag, MessageOfTheDayConfig, RootMetaState, WorldConfig } from './types'
+import type { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 

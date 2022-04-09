@@ -1,4 +1,3 @@
-// tslint:disable:prefer-function-over-method
 import { registerAPI, exposeMethod, APIOptions } from 'decentraland-rpc/lib/host'
 
 import { subscribeParcelSceneToCommsMessages, unsubscribeParcelSceneToCommsMessages } from 'shared/comms/handlers'

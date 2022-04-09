@@ -1,5 +1,5 @@
 import { genericAvatarSnapshots, COMMS_PROFILE_TIMEOUT } from 'config'
-import { CommunicationsController } from 'shared/apis/CommunicationsController'
+import type { CommunicationsController } from 'shared/apis/CommunicationsController'
 import { ChatMessage as InternalChatMessage, ChatMessageType } from 'shared/types'
 import { ProfileAsPromise } from '../profiles/ProfileAsPromise'
 import { getPeer, getUser, avatarMessageObservable } from './peers'
@@ -25,7 +25,7 @@ import { getProfileType } from 'shared/profiles/getProfileType'
 import { sleep } from 'atomicHelpers/sleep'
 import { localProfileReceived } from 'shared/profiles/actions'
 import { isURL } from 'atomicHelpers/isURL'
-import { CommsContext, commsLogger } from './context'
+import type { CommsContext } from './context'
 import { processVoiceFragment } from './voice-over-comms'
 import future, { IFuture } from 'fp-future'
 
@@ -201,7 +201,7 @@ function processProfileRequest(context: CommsContext, message: Package<ProfileRe
     context.lastProfileResponseTime = Date.now()
   })()
     .finally(() => (context.sendingProfileResponse = false))
-    .catch((e) => commsLogger.error('Error getting profile for responding request to comms', e))
+    .catch((e) => console.error('Error getting profile for responding request to comms', e))
 }
 
 function processProfileResponse(context: CommsContext, message: Package<ProfileResponse>) {

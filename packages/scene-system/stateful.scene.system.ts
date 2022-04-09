@@ -10,7 +10,7 @@ import { DevToolsAdapter } from './sdk/DevToolsAdapter'
 import { RendererStatefulActor } from './stateful-scene/RendererStatefulActor'
 import { BuilderStatefulActor } from './stateful-scene/BuilderStatefulActor'
 import { serializeSceneState } from './stateful-scene/SceneStateDefinitionSerializer'
-import { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
+import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import { SceneStateDefinition } from './stateful-scene/SceneStateDefinition'
 
 class StatefulWebWorkerScene extends Script {
