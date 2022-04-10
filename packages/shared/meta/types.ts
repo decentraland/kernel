@@ -1,4 +1,3 @@
-import { Color4 } from '@dcl/ecs-math'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { RenderProfile } from 'shared/types'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
@@ -34,23 +33,7 @@ export type Ban = {
 export type WorldConfig = {
   pois: Vector2Component[]
   renderProfile?: RenderProfile
-  messageOfTheDay?: MessageOfTheDayConfig | null
-  messageOfTheDayInit?: boolean
   enableNewTutorialCamera?: boolean
-}
-
-export type MessageOfTheDayConfig = {
-  background_banner: string
-  endUnixTimestamp?: number
-  title: string
-  body: string
-  buttons: {
-    caption: string
-    action?: string
-    // NOTE(Brian): The button actions will be global chat's actions,
-    // for instance `/goto 0,0`, or 'Close' that will just close the MOTD.
-    tint?: Color4
-  }[]
 }
 
 export type MetaState = {

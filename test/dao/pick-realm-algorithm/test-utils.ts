@@ -14,7 +14,6 @@ export function buildCandidate(params: Partial<Candidate>): Candidate {
     protocol: 'v2',
     type: "islands-based",
     catalystName: "test",
-    catalystVersion: "1.0.0",
     domain: "foo.bar",
     elapsed: 200,
     lighthouseVersion: "1.0.0",

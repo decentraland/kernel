@@ -10,7 +10,7 @@ import { getCommsServer } from '../dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
-import { getIdentity, getStoredSession } from 'shared/session'
+import { getIdentity } from 'shared/session'
 import { setCommsIsland } from './actions'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { commsLogger, CommsContext } from './context'
@@ -78,15 +78,9 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
     throw new Error("Can't connect to comms because there is no identity")
   }
 
-  const user = await getStoredSession(identity.address)
-
-  if (!user) {
-    throw new Error("Can't connect to comms because there is no storedSession")
-  }
-
   const userInfo: UserInformation = {
     userId: identity.address,
-    ...user
+    identity
   }
 
   const commsContext = new CommsContext(realm, userInfo)
@@ -106,7 +100,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
 
       const url = new URL(commsUrl)
       const qs = new URLSearchParams({
-        identity: btoa(user.identity.address)
+        identity: btoa(identity.address)
       })
       url.search = qs.toString()
 
@@ -207,7 +201,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
 
       const url = new URL(normalizeUrl(commsUrl))
       const qs = new URLSearchParams({
-        identity: btoa(user.identity.address)
+        identity: btoa(identity.address)
       })
       url.search = qs.toString()
 

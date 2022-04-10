@@ -19,8 +19,8 @@ export const SIGNUP = '[SESSION] SignUp'
 export const signUp = () => action(SIGNUP)
 
 export const USER_AUTHENTIFIED = '[Success] User authentified'
-export const userAuthentified = (identity: ExplorerIdentity, network: ETHEREUM_NETWORK) =>
-  action(USER_AUTHENTIFIED, { identity, network })
+export const userAuthentified = (identity: ExplorerIdentity, network: ETHEREUM_NETWORK, isGuest: boolean) =>
+  action(USER_AUTHENTIFIED, { identity, network, isGuest })
 export type UserAuthentified = ReturnType<typeof userAuthentified>
 
 export const LOGOUT = '[Request] Logout'

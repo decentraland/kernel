@@ -19,9 +19,6 @@ export type CatalystStatus = {
   usersCount?: number
   maxUsers?: number
   usersParcels?: Parcel[]
-  env: {
-    catalystVersion: string
-  }
 }
 
 type BaseCandidate = {
@@ -32,7 +29,6 @@ type BaseCandidate = {
   elapsed: number
   status: ServerConnectionStatus
   lighthouseVersion: string
-  catalystVersion: string
 }
 
 export type Candidate = {
@@ -68,7 +64,6 @@ export type DaoState = {
   exploreRealmsService: string
   poiService: string
   candidates: Candidate[]
-  addedCandidates: Candidate[]
 }
 
 export type RootDaoState = {

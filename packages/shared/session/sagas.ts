@@ -34,7 +34,8 @@ import {
   AuthenticateAction,
   signUpCancel,
   signupForm,
-  USER_AUTHENTIFIED
+  USER_AUTHENTIFIED,
+  UserAuthentified
 } from './actions'
 import {
   fetchProfileLocally,
@@ -72,6 +73,11 @@ export function* sessionSaga(): any {
   yield takeLatest(SIGNUP_CANCEL, cancelSignUp)
   yield takeLatest(AUTHENTICATE, authenticate)
   yield takeLatest(AWAITING_USER_SIGNATURE, signaturePrompt)
+  yield takeEvery(USER_AUTHENTIFIED, function* (action: UserAuthentified) {
+    yield call(saveSession, action.payload.identity, action.payload.isGuest)
+    yield put(triggerReconnectRealm())
+    logger.log(`User ${action.payload.identity.address} logged in isGuest=` + action.payload.isGuest)
+  })
 
   yield call(initialize)
   yield call(initializeReferral)
@@ -124,14 +130,12 @@ function* authenticate(action: AuthenticateAction) {
   yield put(selectNetwork(net))
   registerProviderNetChanges()
 
-  yield put(userAuthentified(identity, net))
-
-  yield put(triggerReconnectRealm())
+  const isGuest: boolean = yield select(getIsGuestLogin)
+  yield put(userAuthentified(identity, net, isGuest))
 
   yield call(waitForRealmInitialized)
 
   const profileExists: boolean = yield call(doesProfileExist, identity.address)
-  const isGuest: boolean = yield select(getIsGuestLogin)
   const profileLocally: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
   const isGuestWithProfileLocal: boolean = isGuest && profileLocally !== null
 
@@ -224,11 +228,6 @@ function* authorize(requestManager: RequestManager) {
 }
 
 function* signIn(identity: ExplorerIdentity) {
-  logger.log(`User ${identity.address} logged in`)
-
-  const isGuest: boolean = yield select(getIsGuestLogin)
-  yield call(saveSession, identity, isGuest)
-
   if (identity.hasConnectedWeb3) {
     yield call(referUser, identity)
   }

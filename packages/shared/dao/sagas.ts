@@ -1,10 +1,7 @@
 import {
   setCatalystCandidates,
-  setAddedCatalystCandidates,
   SET_CATALYST_CANDIDATES,
-  SET_ADDED_CATALYST_CANDIDATES,
   SetCatalystCandidates,
-  SetAddedCatalystCandidates,
   catalystRealmsScanRequested,
   TRIGGER_RECONNECT_REALM
 } from './actions'
@@ -46,6 +43,7 @@ import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { waitForExplorerIdentity } from 'shared/session/sagas'
 import { store } from 'shared/store/isolatedStore'
+import { CatalystNode } from 'shared/types'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
   return 'last_realm_' + network
@@ -57,10 +55,11 @@ function getLastRealmCandidatesCacheKey(network: ETHEREUM_NETWORK) {
 export function* daoSaga(): any {
   yield takeEvery(TRIGGER_RECONNECT_REALM, selectAndReconnectRealm)
   yield takeEvery(SET_WORLD_CONTEXT, cacheCatalystRealm)
-  yield takeEvery([SET_CATALYST_CANDIDATES, SET_ADDED_CATALYST_CANDIDATES], cacheCatalystCandidates)
+  yield takeEvery(SET_CATALYST_CANDIDATES, cacheCatalystCandidates)
 }
 
-function* pickCatalystRealm(candidates: Candidate[]) {
+function* pickCatalystRealm() {
+  const candidates: Candidate[] = yield select(getAllCatalystCandidates)
   let config: AlgorithmChainConfig | undefined = yield select(getPickRealmsAlgorithmConfig)
 
   if (!config || config.length === 0) {
@@ -72,7 +71,9 @@ function* pickCatalystRealm(candidates: Candidate[]) {
   const qs = new URLSearchParams(globalThis.location.search)
   const currentUserParcel = parseParcelPosition(qs.get('position') || '0,0')
 
-  yield call(candidateToRealm, algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y]))
+  const realm = yield call(candidateToRealm, algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y]))
+
+  return realm
 }
 
 function qsRealm() {
@@ -121,12 +122,11 @@ function* selectAndReconnectRealm() {
 
 function* initLocalCatalyst() {
   yield put(setCatalystCandidates([]))
-  yield put(setAddedCatalystCandidates([]))
 }
 
 function* waitForCandidates() {
   while ((yield select(getAllCatalystCandidates)).length === 0) {
-    yield take(SET_ADDED_CATALYST_CANDIDATES)
+    yield take(SET_CATALYST_CANDIDATES)
   }
 }
 
@@ -151,7 +151,7 @@ function* selectRealm() {
     // 2nd priority: cached in local storage
     (yield call(getRealmFromLocalStorage, network)) ||
     // 3rd priority: fetch catalysts and select one using the load balancing
-    (yield call(pickCatalystRealm, allCandidates))
+    (yield call(pickCatalystRealm))
 
   if (!realm) debugger
 
@@ -190,17 +190,13 @@ function* initializeCatalystCandidates() {
   yield put(catalystRealmsScanRequested())
 
   const catalystsNodesEndpointURL: string | undefined = yield select(getCatalystNodesEndpoint)
-  const candidates: Candidate[] = yield call(fetchCatalystRealms, catalystsNodesEndpointURL)
+
+  const nodes: CatalystNode[] = yield call(fetchCatalystRealms, catalystsNodesEndpointURL)
+  const added: string[] = PIN_CATALYST ? [] : yield select(getAddedServers)
+
+  const candidates: Candidate[] = yield call(fetchCatalystStatuses, added.map((url) => ({ domain: url })).concat(nodes))
 
   yield put(setCatalystCandidates(candidates))
-
-  const added: string[] = PIN_CATALYST ? [] : yield select(getAddedServers)
-  const addedCandidates: Candidate[] = yield call(
-    fetchCatalystStatuses,
-    added.map((url) => ({ domain: url }))
-  )
-
-  yield put(setAddedCatalystCandidates(addedCandidates))
 }
 
 async function checkValidRealm(realm: Realm) {
@@ -215,9 +211,34 @@ async function checkValidRealm(realm: Realm) {
 
     if (pingResult.status === ServerConnectionStatus.UNREACHABLE) return false
 
-    return !minCatalystVersion || gte(pingResult.result?.env.catalystVersion ?? '0.0.0', minCatalystVersion)
+    return !minCatalystVersion || gte(pingResult.result?.version ?? '0.0.0', minCatalystVersion)
   }
   return true
+}
+
+export async function fetchPeerHealthStatus(node: CatalystNode) {
+  const abortController = new AbortController()
+
+  const signal = abortController.signal
+  try {
+    setTimeout(() => {
+      abortController.abort()
+    }, 5000)
+
+    function peerHealthStatusUrl(domain: string) {
+      return `${domain}/lambdas/health`
+    }
+
+    const response = await fetch(peerHealthStatusUrl(node.domain), { signal })
+
+    if (!response.ok) return {}
+
+    const json = await response.json()
+
+    return json
+  } catch {
+    return {}
+  }
 }
 
 function* cacheCatalystRealm() {
@@ -242,7 +263,7 @@ function* cacheCatalystRealm() {
   })
 }
 
-function* cacheCatalystCandidates(_action: SetCatalystCandidates | SetAddedCatalystCandidates) {
+function* cacheCatalystCandidates(_action: SetCatalystCandidates) {
   const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   yield call(saveToPersistentStorage, getLastRealmCandidatesCacheKey(network), allCandidates)

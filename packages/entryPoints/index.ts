@@ -16,7 +16,7 @@ import { foregroundChangeObservable, isForeground } from 'shared/world/worldStat
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { realmInitialized } from 'shared/dao'
 import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
-import { ensureMetaConfigurationInitialized, waitForMessageOfTheDay } from 'shared/meta'
+import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
 import { getFeatureFlags, getWorldConfig, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
@@ -116,8 +116,6 @@ globalThis.DecentralandKernel = {
 
     // initInternal must be called asynchronously, _after_ returning
     async function initInternal() {
-      runCompatibilityChecks()
-
       // Initializes the Session Saga
       store.dispatch(initSession())
 
@@ -162,16 +160,6 @@ globalThis.DecentralandKernel = {
         return { result: !!profile, profile: profile || null } as any
       }
     }
-  }
-}
-
-function runCompatibilityChecks() {
-  const qs = new URLSearchParams(document.location.search)
-
-  if (qs.has('NO_ASSET_BUNDLES')) {
-    throw new Error(
-      'NO_ASSET_BUNDLES option was deprecated, it is now a FeatureFlag, use DISABLE_ASSET_BUNDLES or ENABLE_ASSET_BUNDLES instead'
-    )
   }
 }
 
@@ -275,18 +263,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   foregroundChangeObservable.add(reportForeground)
   reportForeground()
-
-  waitForMessageOfTheDay()
-    .then((messageOfTheDay) => {
-      i.ConfigureHUDElement(
-        HUDElementID.MESSAGE_OF_THE_DAY,
-        { active: !!messageOfTheDay, visible: false },
-        messageOfTheDay
-      )
-    })
-    .catch(() => {
-      /*noop*/
-    })
 
   await startUnitySceneWorkers()
 

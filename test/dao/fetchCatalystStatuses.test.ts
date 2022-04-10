@@ -11,9 +11,6 @@ const pingResult = (maxUsers?: number): PingResult => ({
   result: {
     name: 'loki',
     version: '1.0.0',
-    env: {
-      catalystVersion: '3.0.2'
-    },
     usersCount: 59,
     maxUsers: maxUsers || 1000,
   }
@@ -28,7 +25,6 @@ const NODES = [{
 const EXPECTED: Candidate = {
   protocol: 'v2',
   catalystName: "loki",
-  catalystVersion: "3.0.2",
   domain: "peer.decentraland.org",
   elapsed: 309,
   lighthouseVersion: "1.0.0",

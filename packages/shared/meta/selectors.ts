@@ -1,4 +1,4 @@
-import type { BannedUsers, CommsConfig, FeatureFlag, MessageOfTheDayConfig, RootMetaState, WorldConfig } from './types'
+import type { BannedUsers, CommsConfig, FeatureFlag, RootMetaState, WorldConfig } from './types'
 import type { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
@@ -42,12 +42,6 @@ export const getBannedUsers = (store: RootMetaState): BannedUsers => store.meta.
 
 export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmChainConfig | undefined =>
   store.meta.config.pickRealmAlgorithmConfig
-
-export const isMOTDInitialized = (store: RootMetaState): boolean =>
-  getWorldConfig(store) ? getWorldConfig(store)?.messageOfTheDayInit || false : false
-
-export const getMessageOfTheDay = (store: RootMetaState): MessageOfTheDayConfig | null =>
-  getWorldConfig(store) ? getWorldConfig(store).messageOfTheDay || null : null
 
 /**
  * Returns the variant content of a feature flag

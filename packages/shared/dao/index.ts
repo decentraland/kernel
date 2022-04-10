@@ -1,10 +1,8 @@
-import { Store } from 'redux'
 
 import defaultLogger from '../logger'
-import { Realm, RootDaoState, ServerConnectionStatus, HealthStatus, Candidate, Parcel, PingResult } from './types'
+import { Realm, ServerConnectionStatus, HealthStatus, Candidate } from './types'
 import { getAllCatalystCandidates, areCandidatesFetched } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
-import { setCatalystCandidates } from './actions'
 import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
@@ -13,8 +11,6 @@ import { resolveCommsConnectionString } from './utils/realmToString'
 import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
 import { connectComms } from 'shared/comms'
 import { setWorldContext } from 'shared/comms/actions'
-
-const DEFAULT_TIMEOUT = 5000
 
 async function fetchCatalystNodes(endpoint: string | undefined) {
   if (endpoint) {
@@ -36,44 +32,12 @@ async function fetchCatalystNodes(endpoint: string | undefined) {
   return fetchCatalystNodesFromDAO()
 }
 
-export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Promise<Candidate[]> {
+export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Promise<CatalystNode[]> {
   const nodes: CatalystNode[] = PIN_CATALYST ? [{ domain: PIN_CATALYST }] : await fetchCatalystNodes(nodesEndpoint)
   if (nodes.length === 0) {
     throw new Error('no nodes are available in the DAO for the current network')
   }
-
-  const responses = await Promise.all(
-    nodes.map(async (node) => ({ ...node, health: await fetchPeerHealthStatus(node) }))
-  )
-
-  const healthyNodes = responses.filter((node: CatalystNode & { health: any }) => isPeerHealthy(node.health))
-
-  return fetchCatalystStatuses(healthyNodes)
-}
-
-async function fetchPeerHealthStatus(node: CatalystNode) {
-  const abortController = new AbortController()
-
-  const signal = abortController.signal
-  try {
-    setTimeout(() => {
-      abortController.abort()
-    }, DEFAULT_TIMEOUT)
-
-    function peerHealthStatusUrl(domain: string) {
-      return `${domain}/lambdas/health`
-    }
-
-    const response = await fetch(peerHealthStatusUrl(node.domain), { signal })
-
-    if (!response.ok) return {}
-
-    const json = await response.json()
-
-    return json
-  } catch {
-    return {}
-  }
+  return nodes
 }
 
 export function isPeerHealthy(peerStatus: Record<string, HealthStatus>) {
@@ -100,41 +64,36 @@ export function commsStatusUrl(domain: string, includeUsersParcels: boolean = fa
   return url
 }
 
-export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
-  const results: Array<PingResult & { domain: string }> = (
-    await Promise.all(
-      nodes.map(async (node) => ({
-        ...(await ping(commsStatusUrl(node.domain, true))),
-        domain: node.domain
-      }))
-    )
-  ).filter((realm: PingResult & { domain: string }) => (realm.result?.maxUsers ?? 0) > (realm.result?.usersCount ?? -1))
+export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promise<Candidate[]> {
+  const results: Candidate[] = []
 
-  return results.reduce((union: Candidate[], { domain, elapsed, result, status }) => {
-    function buildIslandsCandidate(
-      usersCount: number,
-      usersParcels: Parcel[] | undefined,
-      maxUsers: number | undefined
-    ): Candidate {
-      return {
-        type: 'islands-based',
-        protocol: 'v2',
-        catalystName: result!.name,
-        domain,
-        status: status!,
-        elapsed: elapsed!,
-        lighthouseVersion: result!.version,
-        catalystVersion: result!.env.catalystVersion,
-        usersCount,
-        maxUsers,
-        usersParcels
+  await Promise.all(
+    nodes.map(async (node) => {
+      const response = await ping(commsStatusUrl(node.domain, true))
+      const result = response.result
+
+      if (result && response.status == ServerConnectionStatus.OK) {
+        if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
+          results.push({
+            type: 'islands-based',
+            protocol: 'v2',
+            catalystName: result.name,
+            domain: node.domain,
+            status: response.status,
+            elapsed: response.elapsed!,
+            lighthouseVersion: result.version,
+            usersCount: result.usersCount ?? 0,
+            maxUsers: result.usersCount ?? -1,
+            usersParcels: result.usersParcels
+          })
+        }
       }
-    }
+    })
+  )
 
-    if (status === ServerConnectionStatus.OK) {
-      return [...union, buildIslandsCandidate(result!.usersCount!, result!.usersParcels, result!.maxUsers)]
-    } else return union
-  }, new Array<Candidate>())
+  if (!results.length) debugger
+
+  return results
 }
 
 export async function candidatesFetched(): Promise<void> {
@@ -196,15 +155,3 @@ export async function changeRealmObject(realm: Realm, forceChange: boolean = fal
 }
 
 ;(globalThis as any).changeRealm = changeRealm
-
-export async function refreshCandidatesStatuses() {
-  const candidates = await fetchCatalystStatuses(Array.from(getCandidateDomains(store)).map((it) => ({ domain: it })))
-
-  store.dispatch(setCatalystCandidates(candidates))
-
-  return candidates
-}
-
-function getCandidateDomains(store: Store<RootDaoState>): Set<string> {
-  return new Set(getAllCatalystCandidates(store.getState()).map((it) => it.domain))
-}
