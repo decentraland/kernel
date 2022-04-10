@@ -278,7 +278,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     return this.peer.dispose()
   }
 
-  private peerCallback: PacketCallback = (sender, room, payload, packet) => {
+  private peerCallback: PacketCallback = (sender, room, payload, _packet) => {
     if (this.disposed) return
     try {
       const commsMessage = CommsMessage.deserializeBinary(payload)

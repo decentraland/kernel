@@ -215,7 +215,7 @@ function initChatCommands() {
 
   addChatCommand('changerealm', 'Changes communications realms', (message) => {
     const realmString = message.trim()
-    let response = ''
+    const response = ''
 
     changeRealm(realmString).catch((e) => {
       notifyStatusThroughChat('changerealm: Could not join realm.')

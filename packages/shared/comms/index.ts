@@ -173,12 +173,12 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
         commsLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
 
         connection = new LighthouseWorldInstanceConnection(lighthouseUrl, peerConfig, (status) => {
-          commsLogger.log('Lighthouse status: ', lighthouseUrl)
+          commsLogger.log('Lighthouse status: ', status)
           switch (status.status) {
             case 'realm-full':
             case 'reconnection-error':
             case 'id-taken':
-              connection.disconnect()
+              connection.disconnect().catch(commsLogger.error)
               break
           }
         })

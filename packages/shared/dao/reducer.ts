@@ -1,12 +1,7 @@
 import { ETHEREUM_NETWORK } from 'config'
 import { AnyAction } from 'redux'
 import { SetWorldContextAction, SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import {
-  SET_CATALYST_CANDIDATES,
-  SET_ADDED_CATALYST_CANDIDATES,
-  SELECT_NETWORK,
-  SelectNetworkAction
-} from './actions'
+import { SET_CATALYST_CANDIDATES, SET_ADDED_CATALYST_CANDIDATES, SELECT_NETWORK, SelectNetworkAction } from './actions'
 import { DaoState, Realm } from './types'
 
 export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {

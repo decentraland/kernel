@@ -16,7 +16,7 @@ const INITIAL_COMMS: CommsState = {
   initialized: false,
   voiceChatRecording: false,
   voicePolicy: VoicePolicy.ALLOW_ALL,
-  context: undefined,
+  context: undefined
 }
 
 export function commsReducer(state?: CommsState, action?: AnyAction): CommsState {

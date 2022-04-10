@@ -200,7 +200,7 @@ function* initializeCatalystCandidates() {
 }
 
 function* checkValidRealm(realm: Realm) {
-  if (realm.protocol == 'v2') {
+  if (realm.protocol === 'v2') {
     const realmHasValues = realm && realm.hostname
     if (!realmHasValues) {
       return false

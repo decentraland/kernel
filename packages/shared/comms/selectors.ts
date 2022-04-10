@@ -80,6 +80,8 @@ export function hasBlockedMe(myAddress: string | undefined, theirAddress: string
 
 export function sameRealm(realm1: Realm, realm2: Realm) {
   return (
-    realm1.protocol == realm2.protocol && realm1.hostname === realm2.hostname && realm1.serverName === realm2.serverName
+    realm1.protocol === realm2.protocol &&
+    realm1.hostname === realm2.hostname &&
+    realm1.serverName === realm2.serverName
   )
 }

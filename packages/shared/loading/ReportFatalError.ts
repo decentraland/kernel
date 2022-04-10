@@ -102,6 +102,8 @@ export async function ReportFatalErrorWithUnityPayloadAsync(error: Error, contex
 export function ReportFatalError(error: Error, context: ErrorContextTypes, payload: Record<string, any> = {}) {
   let sagaStack: string | undefined = payload['sagaStack']
 
+  debugger
+
   if (sagaStack) {
     // first stringify
     sagaStack = '' + sagaStack

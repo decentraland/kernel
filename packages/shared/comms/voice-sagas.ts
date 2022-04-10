@@ -1,17 +1,33 @@
-import { call, select, takeEvery, takeLatest } from "redux-saga/effects"
-import { waitForRendererInstance } from "shared/renderer/sagas"
-import { isFeatureToggleEnabled } from "shared/selectors"
-import { SceneFeatureToggles } from "shared/types"
-import { sceneObservable } from "shared/world/sceneState"
-import { getUnityInstance } from "unity-interface/IUnityInterface"
-import { VOICE_CHAT_SAMPLE_RATE } from "voice-chat-codec/constants"
-import { VoiceCommunicator } from "voice-chat-codec/VoiceCommunicator"
-import { VoicePlayingUpdate, SetVoiceVolume, SetVoiceMute, SET_VOICE_CHAT_RECORDING, SET_VOICE_MUTE, SET_VOICE_VOLUME, TOGGLE_VOICE_CHAT_RECORDING, VoiceRecordingUpdate, VOICE_PLAYING_UPDATE, VOICE_RECORDING_UPDATE } from "./actions"
-import { CommsContext, commsLogger } from "./context"
-import { isVoiceChatRecording, getVoiceCommunicator, isVoiceChatAllowedByCurrentScene, getCommsContext } from "./selectors"
-import { initVoiceCommunicator } from "./voice-over-comms"
+import { call, select, takeEvery, takeLatest } from 'redux-saga/effects'
+import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { isFeatureToggleEnabled } from 'shared/selectors'
+import { SceneFeatureToggles } from 'shared/types'
+import { sceneObservable } from 'shared/world/sceneState'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
+import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
+import {
+  VoicePlayingUpdate,
+  SetVoiceVolume,
+  SetVoiceMute,
+  SET_VOICE_CHAT_RECORDING,
+  SET_VOICE_MUTE,
+  SET_VOICE_VOLUME,
+  TOGGLE_VOICE_CHAT_RECORDING,
+  VoiceRecordingUpdate,
+  VOICE_PLAYING_UPDATE,
+  VOICE_RECORDING_UPDATE
+} from './actions'
+import { CommsContext, commsLogger } from './context'
+import {
+  isVoiceChatRecording,
+  getVoiceCommunicator,
+  isVoiceChatAllowedByCurrentScene,
+  getCommsContext
+} from './selectors'
+import { initVoiceCommunicator } from './voice-over-comms'
 
-export function * voiceSaga() {
+export function* voiceSaga() {
   yield call(initVoiceCommunicator)
 
   yield call(listenToWhetherSceneSupportsVoiceChat)
@@ -22,10 +38,7 @@ export function * voiceSaga() {
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecording)
   yield takeEvery(SET_VOICE_VOLUME, updateVoiceChatVolume)
   yield takeEvery(SET_VOICE_MUTE, updateVoiceChatMute)
-
 }
-
-
 
 function* listenToWhetherSceneSupportsVoiceChat() {
   sceneObservable.add(({ newScene }) => {
@@ -36,7 +49,6 @@ function* listenToWhetherSceneSupportsVoiceChat() {
     getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
   })
 }
-
 
 function* updateVoiceChatRecordingStatus() {
   const recording = yield select(isVoiceChatRecording)
@@ -61,7 +73,6 @@ function* requestUserMedia() {
   }
 }
 
-
 function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
   const { userId, playing } = action.payload
   const commsContext: CommsContext | undefined = yield select(getCommsContext)
@@ -75,7 +86,6 @@ function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
   }
   getUnityInstance().SetUserTalking(userId, playing)
 }
-
 
 function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
   yield call(waitForRendererInstance)
