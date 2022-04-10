@@ -71,7 +71,10 @@ function* pickCatalystRealm() {
   const qs = new URLSearchParams(globalThis.location.search)
   const currentUserParcel = parseParcelPosition(qs.get('position') || '0,0')
 
-  const realm = yield call(candidateToRealm, algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y]))
+  const realm = yield call(
+    candidateToRealm,
+    algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y])
+  )
 
   return realm
 }
@@ -167,7 +170,7 @@ async function getRealmFromLocalStorage(network: ETHEREUM_NETWORK) {
       return realm
     }
   } catch {
-    saveToPersistentStorage(key, null)
+    await saveToPersistentStorage(key, null)
   }
 }
 

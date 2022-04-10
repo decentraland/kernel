@@ -135,7 +135,7 @@ async function fetchMetaConfiguration(network: ETHEREUM_NETWORK) {
       },
       bannedUsers: {},
       synapseUrl:
-        network == ETHEREUM_NETWORK.MAINNET ? 'https://synapse.decentraland.org' : 'https://synapse.decentraland.io',
+        network === ETHEREUM_NETWORK.MAINNET ? 'https://synapse.decentraland.org' : 'https://synapse.decentraland.io',
       world: {
         pois: []
       },

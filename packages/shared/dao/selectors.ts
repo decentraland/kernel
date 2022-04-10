@@ -82,7 +82,6 @@ export const getCatalystCandidates = (store: RootDaoState) => store.dao.candidat
 
 export const getAllCatalystCandidates = (store: RootDaoState) => getCatalystCandidates(store).filter((it) => !!it)
 
-
 export const getHotScenesService = (store: RootDaoState) => {
   if (HOTSCENES_SERVICE) {
     return HOTSCENES_SERVICE

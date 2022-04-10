@@ -71,7 +71,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promis
       const response = await ping(commsStatusUrl(node.domain, true))
       const result = response.result
 
-      if (result && response.status == ServerConnectionStatus.OK) {
+      if (result && response.status === ServerConnectionStatus.OK) {
         if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
           results.push({
             type: 'islands-based',
