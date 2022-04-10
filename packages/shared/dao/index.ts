@@ -1,7 +1,6 @@
-
 import defaultLogger from '../logger'
 import { Realm, ServerConnectionStatus, HealthStatus, Candidate } from './types'
-import { getAllCatalystCandidates, areCandidatesFetched } from './selectors'
+import { getAllCatalystCandidates } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
@@ -91,25 +90,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promis
     })
   )
 
-  if (!results.length) debugger
-
   return results
-}
-
-export async function candidatesFetched(): Promise<void> {
-  if (areCandidatesFetched(store.getState())) {
-    return
-  }
-
-  return new Promise((resolve) => {
-    const unsubscribe = store.subscribe(() => {
-      const fetched = areCandidatesFetched(store.getState())
-      if (fetched) {
-        unsubscribe()
-        return resolve()
-      }
-    })
-  })
 }
 
 export async function realmInitialized(): Promise<void> {

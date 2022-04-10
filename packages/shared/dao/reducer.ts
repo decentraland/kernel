@@ -8,7 +8,6 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
   if (!state) {
     return {
       network: null,
-      candidatesFetched: false,
       fetchContentServer: '',
       catalystServer: '',
       updateContentServer: '',
@@ -31,7 +30,6 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
     case SET_CATALYST_CANDIDATES:
       return {
         ...state,
-        candidatesFetched: true,
         candidates: action.payload
       }
     case SET_WORLD_CONTEXT:

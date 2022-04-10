@@ -41,7 +41,7 @@ import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
 import { updateFriendship, updateUserData } from 'shared/friends/actions'
-import { candidatesFetched, changeRealm } from 'shared/dao'
+import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
 import { updateStatusMessage } from 'shared/loading/actions'
@@ -67,7 +67,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
 import { unpublishSceneByCoords } from 'shared/apis/SceneStateStorageController/unpublishScene'
 import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
-import { areCandidatesFetched, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
 import { store } from 'shared/store/isolatedStore'
@@ -524,14 +524,6 @@ export class BrowserInterface {
     } = data
 
     notifyStatusThroughChat(`Jumping to ${serverName} at ${x},${y}...`)
-
-    const future = candidatesFetched()
-
-    if (!areCandidatesFetched(store.getState())) {
-      notifyStatusThroughChat(`Waiting while realms are initialized, this may take a while...`)
-    }
-
-    await future
 
     changeRealm(serverName).then(
       () => {

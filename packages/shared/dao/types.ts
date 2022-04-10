@@ -55,7 +55,6 @@ export type Realm = {
 
 export type DaoState = {
   network: ETHEREUM_NETWORK | null
-  candidatesFetched: boolean
   fetchContentServer: string
   catalystServer: string
   updateContentServer: string
