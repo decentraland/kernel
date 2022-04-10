@@ -75,7 +75,7 @@ export function* initVoiceCommunicator() {
     store.dispatch(voiceRecordingUpdate(recording))
   })
 
-  globalThis.__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
+  ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
 
   yield put(setVoiceCommunicator(voiceCommunicator))
 }

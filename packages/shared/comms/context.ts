@@ -199,8 +199,8 @@ export class CommsContext {
 
       const xMin = ((commArea.vMin.x + parcelLimits.maxParcelX) >> 2) << 2
       const xMax = ((commArea.vMax.x + parcelLimits.maxParcelX) >> 2) << 2
-      const zMin = ((commArea.vMin.z + parcelLimits.maxParcelZ) >> 2) << 2
-      const zMax = ((commArea.vMax.z + parcelLimits.maxParcelZ) >> 2) << 2
+      const zMin = ((commArea.vMin.y + parcelLimits.maxParcelZ) >> 2) << 2
+      const zMax = ((commArea.vMax.y + parcelLimits.maxParcelZ) >> 2) << 2
 
       const rawTopics: string[] = []
       for (let x = xMin; x <= xMax; x += 4) {

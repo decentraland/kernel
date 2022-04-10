@@ -5,6 +5,7 @@ import { COMMS_ESTABLISHED } from 'shared/loading/types'
 import { CommsState, VoicePolicy } from './types'
 import { INIT_VOICE_COMMUNICATOR, SET_COMMS_ISLAND, SET_VOICE_CHAT_RECORDING, SET_VOICE_POLICY, TOGGLE_VOICE_CHAT_RECORDING } from './actions'
 import { PREFERED_ISLAND } from 'config'
+import { SET_CATALYST_REALM } from 'shared/dao/actions'
 
 const INITIAL_COMMS = {
   initialized: false,
@@ -34,6 +35,8 @@ export function commsReducer(state?: CommsState, action?: AnyAction): CommsState
       return { ...state, voicePolicy: action.payload.voicePolicy }
     case SET_COMMS_ISLAND:
       return { ...state, island: action.payload.island }
+    case SET_CATALYST_REALM:
+      return { ...state, island: undefined }
     default:
       return state
   }

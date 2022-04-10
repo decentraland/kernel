@@ -24,13 +24,11 @@ export class CliBrokerConnection implements IBrokerTransport {
 
   private ws: WebSocket | null = null
 
-  constructor(public url: string) {}
+  constructor(public url: string) {
+    this.connectWS()
+  }
 
   async connect(): Promise<void> {
-    if (!this.ws) {
-      this.connectWS()
-    }
-
     await this.connected
   }
 
@@ -117,12 +115,15 @@ export class CliBrokerConnection implements IBrokerTransport {
   }
 
   private connectWS() {
+    if(this.ws && this.ws.readyState == this.ws.OPEN) return
+
     if (this.ws) {
       this.ws.close()
       this.ws = null
     }
 
     this.ws = new WebSocket(this.url, 'comms')
+    this.connected = future()
     this.ws.binaryType = 'arraybuffer'
 
     this.ws.onerror = (event) => {

@@ -219,7 +219,7 @@ function* initializeCatalystCandidates() {
 }
 
 function* checkValidRealm(realm: Realm) {
-  const realmHasValues = realm && realm.hostname && realm.serverName
+  const realmHasValues = realm && realm.hostname
   if (!realmHasValues) {
     return false
   }

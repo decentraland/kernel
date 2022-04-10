@@ -14,7 +14,6 @@ import { CommsContext, commsLogger } from './context'
 import { connect } from '.'
 
 import {
-  setVoiceChatRecording,
   SetVoiceMute,
   SetVoiceVolume,
   SET_VOICE_CHAT_RECORDING,
@@ -37,7 +36,6 @@ import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { getCommsContext, getPrevCommsContext } from 'shared/protocol/selectors'
 import { BEFORE_UNLOAD, setWorldContext, SET_WORLD_CONTEXT } from 'shared/protocol/actions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
-import { store } from 'shared/store/isolatedStore'
 import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import { initVoiceCommunicator } from './voice-over-comms'
 
@@ -85,10 +83,6 @@ function* listenToWhetherSceneSupportsVoiceChat() {
       : isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT)
 
     getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
-    if (!nowEnabled) {
-      // We want to stop any potential recordings when a user enters a new scene
-      store.dispatch(setVoiceChatRecording(false))
-    }
   })
 }
 
@@ -144,7 +138,9 @@ function* requestUserMedia() {
   const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
   if (!voiceCommunicator.hasInput()) {
     const media = yield call(requestMediaDevice)
-    voiceCommunicator.setInputStream(media)
+    if (media){
+      voiceCommunicator.setInputStream(media)
+    }
   }
 }
 
@@ -216,9 +212,9 @@ async function requestMediaDevice() {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          advanced: [{ echoCancellation: true }, { autoGainControl: true }, { noiseSuppression: true }] as any
+          advanced: [{ echoCancellation: true }, { autoGainControl: true }, { noiseSuppression: true }] as any,
         },
-        video: false
+        video: false,
       })
 
       return media
