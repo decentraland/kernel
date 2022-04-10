@@ -25,9 +25,10 @@ import { getProfileType } from 'shared/profiles/getProfileType'
 import { sleep } from 'atomicHelpers/sleep'
 import { localProfileReceived } from 'shared/profiles/actions'
 import { isURL } from 'atomicHelpers/isURL'
-import type { CommsContext } from './context'
+import { CommsContext, commsLogger } from './context'
 import { processVoiceFragment } from './voice-over-comms'
 import future, { IFuture } from 'fp-future'
+import { handleCommsDisconnection } from './actions'
 
 export const scenesSubscribedToCommsEvents = new Set<CommunicationsController>()
 
@@ -40,7 +41,11 @@ export function unsubscribeParcelSceneToCommsMessages(controller: Communications
 }
 
 export async function bindHandlersToCommsContext(context: CommsContext) {
+  commsLogger.log('Binding handlers: ', context)
+
   const connection = context.worldInstanceConnection!
+
+  context.onDisconnectObservable.add(() => store.dispatch(handleCommsDisconnection(context)))
 
   connection.events.on('position', (data: Package<Position>) => {
     processPositionMessage(context, data)

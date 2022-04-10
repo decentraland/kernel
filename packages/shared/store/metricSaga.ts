@@ -19,7 +19,6 @@ import {
   NO_WEBGL_COULD_BE_CREATED,
   AUTH_ERROR_LOGGED_OUT,
   FAILED_FETCHING_UNITY,
-  COMMS_ERROR_RETRYING,
   COMMS_COULD_NOT_BE_ESTABLISHED,
   MOBILE_NOT_SUPPORTED,
   NOT_INVITED,
@@ -53,7 +52,6 @@ const trackingEvents: Record<ExecutionLifecycleEvent, string> = {
   [NO_WEBGL_COULD_BE_CREATED]: 'error_webgl',
   [AUTH_ERROR_LOGGED_OUT]: 'error_authfail',
   [FAILED_FETCHING_UNITY]: 'error_fetchengine',
-  [COMMS_ERROR_RETRYING]: 'error_comms_retry',
   [COMMS_COULD_NOT_BE_ESTABLISHED]: 'error_comms_failed',
   [CATALYST_COULD_NOT_LOAD]: 'error_catalyst_loading',
   [MOBILE_NOT_SUPPORTED]: 'unsupported_mobile',
@@ -76,11 +74,7 @@ export function* metricSaga() {
 function toTrackingEvent(event: ExecutionLifecycleEvent, payload: any) {
   const result = trackingEvents[event]
 
-  if (event === COMMS_ERROR_RETRYING) {
-    return { stage: result, retries: payload }
-  }
-
-  return { stage: result }
+  return { stage: result, payload }
 }
 
 function toAvatarEditSuccess({ userId, version, profile }: SaveProfileSuccess['payload']) {

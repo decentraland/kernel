@@ -1,12 +1,28 @@
 import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
+import type { CommsContext } from './context'
 
 export type CommsState = {
   initialized: boolean
   voiceChatRecording: boolean
   voicePolicy: VoicePolicy
   island?: string
-  preferedIsland?: string
   voiceCommunicator?: VoiceCommunicator
+  context: CommsContext | undefined
+}
+
+export type CommsConnectionState =
+  | 'initial'
+  | 'connecting'
+  | 'connected'
+  | 'error'
+  | 'realm-full'
+  | 'reconnection-error'
+  | 'id-taken'
+  | 'disconnecting'
+
+export type CommsStatus = {
+  status: CommsConnectionState
+  connectedPeers: number
 }
 
 export type RootCommsState = {

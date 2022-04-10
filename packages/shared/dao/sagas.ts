@@ -1,47 +1,50 @@
 import {
   setCatalystCandidates,
   setAddedCatalystCandidates,
-  SET_CATALYST_REALM,
-  SetCatalystRealm,
   SET_CATALYST_CANDIDATES,
   SET_ADDED_CATALYST_CANDIDATES,
   SetCatalystCandidates,
   SetAddedCatalystCandidates,
   catalystRealmsScanRequested,
-  SELECT_NETWORK,
-  setCatalystRealm,
-  HANDLE_COMMS_DISCONNECTION,
-  HandleCommsDisconnection
+  TRIGGER_RECONNECT_REALM
 } from './actions'
 import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization } from '../meta/sagas'
 import { Candidate, PingResult, Realm, ServerConnectionStatus } from './types'
-import { fetchCatalystRealms, fetchCatalystStatuses, pickCatalystRealm, commsStatusUrl } from '.'
+import { fetchCatalystRealms, fetchCatalystStatuses, commsStatusUrl, changeRealmObject } from '.'
 import { ping } from './utils/ping'
-import { getAddedServers, getCatalystNodesEndpoint, getMinCatalystVersion } from 'shared/meta/selectors'
+import {
+  getAddedServers,
+  getCatalystNodesEndpoint,
+  getMinCatalystVersion,
+  getPickRealmsAlgorithmConfig
+} from 'shared/meta/selectors'
 import {
   getAllCatalystCandidates,
   getFetchContentServer,
-  getRealm,
   getSelectedNetwork,
-  getUpdateProfileServer,
-  isRealmInitialized
+  getUpdateProfileServer
 } from './selectors'
 import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
-import defaultLogger from '../logger'
 import {
   BringDownClientAndShowError,
   ErrorContext,
   ReportFatalErrorWithCatalystPayload
 } from 'shared/loading/ReportFatalError'
-import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
+import { CATALYST_COULD_NOT_LOAD, establishingComms } from 'shared/loading/types'
 import { gte } from 'semver'
-import { realmToConnectionString, resolveCommsConnectionString } from './utils/realmToString'
-import { CommsContext, commsLogger } from 'shared/comms/context'
-import { notifyStatusThroughChat } from 'shared/comms/chat'
-import { getCommsContext } from 'shared/protocol/selectors'
-import { setWorldContext } from 'shared/protocol/actions'
+import { candidateToRealm, resolveCommsConnectionString } from './utils/realmToString'
+import { commsLogger } from 'shared/comms/context'
+import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+
+import { createAlgorithm } from './pick-realm-algorithm/index'
+import { AlgorithmChainConfig } from './pick-realm-algorithm/types'
+import { defaultChainConfig } from './pick-realm-algorithm/defaults'
+import defaultLogger from 'shared/logger'
+import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { getRealm } from 'shared/comms/selectors'
+import { waitForExplorerIdentity } from 'shared/session/sagas'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
   return 'last_realm_' + network
@@ -51,36 +54,24 @@ function getLastRealmCandidatesCacheKey(network: ETHEREUM_NETWORK) {
 }
 
 export function* daoSaga(): any {
-  yield takeEvery(SELECT_NETWORK, loadCatalystRealms)
-  yield takeEvery(SET_CATALYST_REALM, cacheCatalystRealm)
+  yield takeEvery(TRIGGER_RECONNECT_REALM, selectAndReconnectRealm)
+  yield takeEvery(SET_WORLD_CONTEXT, cacheCatalystRealm)
   yield takeEvery([SET_CATALYST_CANDIDATES, SET_ADDED_CATALYST_CANDIDATES], cacheCatalystCandidates)
-  yield takeEvery(HANDLE_COMMS_DISCONNECTION, handleCommsDisconnection)
 }
 
-function* handleCommsDisconnection(action: HandleCommsDisconnection) {
-  const realm = yield select(getRealm)
+function* pickCatalystRealm(candidates: Candidate[]) {
+  let config: AlgorithmChainConfig | undefined = yield select(getPickRealmsAlgorithmConfig)
 
-  if (realm) {
-    notifyStatusThroughChat(`Lost connection to ${realmToConnectionString(realm)}`)
+  if (!config || config.length === 0) {
+    config = defaultChainConfig
   }
 
-  const context: CommsContext = yield select(getCommsContext)
+  const algorithm = createAlgorithm(config)
 
-  if (context && context === action.payload.context) {
-    // this also disconnects the context.
-    yield put(setWorldContext(undefined))
-  }
+  const qs = new URLSearchParams(globalThis.location.search)
+  const currentUserParcel = parseParcelPosition(qs.get('position') || '0,0')
 
-  const candidates = yield select(getAllCatalystCandidates)
-  const otherRealm = yield call(pickCatalystRealm, candidates)
-
-  if (otherRealm) {
-    notifyStatusThroughChat(`Joining realm ${realmToConnectionString(otherRealm)}.`)
-
-    yield put(setCatalystRealm(otherRealm))
-  } else {
-    notifyStatusThroughChat(`Could not find a suitable realm to connect to. :(`)
-  }
+  yield call(candidateToRealm, algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y]))
 }
 
 function qsRealm() {
@@ -97,10 +88,10 @@ function qsRealm() {
  * 3- Last cached realm (uses cache, forks async candidadte initialization)
  * 4- Best pick from candidate scan (implies sync candidate initialization)
  */
-function* loadCatalystRealms() {
+function* selectAndReconnectRealm() {
   yield call(waitForMetaConfigurationInitialization)
 
-  let realm: Realm | undefined
+  yield put(establishingComms())
 
   if (!PREVIEW) {
     // load candidates if necessary
@@ -111,8 +102,14 @@ function* loadCatalystRealms() {
     }
 
     try {
-      realm = yield call(selectRealm)
+      const realm: Realm | undefined = yield call(selectRealm)
 
+      if (realm) {
+        yield call(waitForExplorerIdentity)
+        yield call(changeRealmObject, realm)
+      } else {
+        throw new Error("Couldn't select a suitable realm to join.")
+      }
       // if no realm was selected, then do the whole initialization dance
     } catch (e: any) {
       ReportFatalErrorWithCatalystPayload(e, ErrorContext.KERNEL_INIT)
@@ -121,29 +118,13 @@ function* loadCatalystRealms() {
     }
   } else {
     yield initLocalCatalyst()
-    realm = {
+    yield call(waitForExplorerIdentity)
+    yield call(changeRealmObject, {
       protocol: 'v1',
       hostname: rootURLPreviewMode(),
       serverName: 'localhost'
-    }
+    })
   }
-
-  if (!realm) {
-    throw new Error('Unable to select a realm')
-  }
-
-  yield put(setCatalystRealm(realm))
-
-  const dao: string = yield select((state) => state.dao)
-  const fetchContentServer: string = yield select(getFetchContentServer)
-  const updateContentServer: string = yield select(getUpdateProfileServer)
-  defaultLogger.info(`Using Catalyst configuration: `, {
-    original: dao,
-    calculated: {
-      fetchContentServer,
-      updateContentServer
-    }
-  })
 }
 
 function* initLocalCatalyst() {
@@ -219,21 +200,42 @@ function* initializeCatalystCandidates() {
 }
 
 function* checkValidRealm(realm: Realm) {
-  const realmHasValues = realm && realm.hostname
-  if (!realmHasValues) {
-    return false
+  if (realm.protocol == 'v2') {
+    const realmHasValues = realm && realm.hostname
+    if (!realmHasValues) {
+      return false
+    }
+    const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
+    const pingResult: PingResult = yield ping(commsStatusUrl(realm.hostname))
+    const catalystVersion = pingResult.result?.env.catalystVersion ?? '0.0.0'
+    return (
+      pingResult.status === ServerConnectionStatus.OK &&
+      (!minCatalystVersion || gte(catalystVersion, minCatalystVersion))
+    )
   }
-  const minCatalystVersion: string | undefined = yield select(getMinCatalystVersion)
-  const pingResult: PingResult = yield ping(commsStatusUrl(realm.hostname))
-  const catalystVersion = pingResult.result?.env.catalystVersion ?? '0.0.0'
-  return (
-    pingResult.status === ServerConnectionStatus.OK && (!minCatalystVersion || gte(catalystVersion, minCatalystVersion))
-  )
+  return true
 }
 
-function* cacheCatalystRealm(action: SetCatalystRealm) {
+function* cacheCatalystRealm() {
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-  yield call(saveToPersistentStorage, getLastRealmCacheKey(network), action.payload)
+  const realm: Realm | undefined = yield select(getRealm)
+
+  if (realm) {
+    yield call(saveToPersistentStorage, getLastRealmCacheKey(network), realm)
+  }
+
+  // PRINT DEBUG INFO
+  const dao: string = yield select((state) => state.dao)
+  const fetchContentServer: string = yield select(getFetchContentServer)
+  const updateContentServer: string = yield select(getUpdateProfileServer)
+
+  defaultLogger.info(`Using Catalyst configuration: `, {
+    original: dao,
+    calculated: {
+      fetchContentServer,
+      updateContentServer
+    }
+  })
 }
 
 function* cacheCatalystCandidates(_action: SetCatalystCandidates | SetAddedCatalystCandidates) {
@@ -243,7 +245,7 @@ function* cacheCatalystCandidates(_action: SetCatalystCandidates | SetAddedCatal
 }
 
 export function* waitForRealmInitialized() {
-  while (!(yield select(isRealmInitialized))) {
-    yield take(SET_CATALYST_REALM)
+  while (!(yield select(getRealm))) {
+    yield take(SET_WORLD_CONTEXT)
   }
 }

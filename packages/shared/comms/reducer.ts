@@ -8,16 +8,15 @@ import {
   SET_COMMS_ISLAND,
   SET_VOICE_CHAT_RECORDING,
   SET_VOICE_POLICY,
+  SET_WORLD_CONTEXT,
   TOGGLE_VOICE_CHAT_RECORDING
 } from './actions'
-import { PREFERED_ISLAND } from 'config'
-import { SET_CATALYST_REALM } from 'shared/dao/actions'
 
-const INITIAL_COMMS = {
+const INITIAL_COMMS: CommsState = {
   initialized: false,
   voiceChatRecording: false,
   voicePolicy: VoicePolicy.ALLOW_ALL,
-  preferedIsland: PREFERED_ISLAND ?? undefined
+  context: undefined,
 }
 
 export function commsReducer(state?: CommsState, action?: AnyAction): CommsState {
@@ -41,8 +40,11 @@ export function commsReducer(state?: CommsState, action?: AnyAction): CommsState
       return { ...state, voicePolicy: action.payload.voicePolicy }
     case SET_COMMS_ISLAND:
       return { ...state, island: action.payload.island }
-    case SET_CATALYST_REALM:
-      return { ...state, island: undefined }
+    case SET_WORLD_CONTEXT:
+      if (state.context === action.payload) {
+        return state
+      }
+      return { ...state, context: action.payload, island: undefined }
     default:
       return state
   }

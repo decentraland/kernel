@@ -17,9 +17,9 @@ import { sendPublicChatMessage } from 'shared/comms'
 import { peerMap, avatarMessageObservable } from 'shared/comms/peers'
 import { parseParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { TeleportController } from 'shared/world/TeleportController'
-import { notifyStatusThroughChat } from 'shared/comms/chat'
+import { notifyStatusThroughChat } from './index'
 import defaultLogger from 'shared/logger'
-import { catalystRealmConnected, changeRealm, changeToCrowdedRealm } from 'shared/dao'
+import { changeRealm } from 'shared/dao'
 import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
 import { SHOW_FPS_COUNTER } from 'config'
 import { AvatarMessage, AvatarMessageType } from 'shared/comms/interface/types'
@@ -28,7 +28,6 @@ import { isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
-import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
@@ -218,52 +217,10 @@ function initChatCommands() {
     const realmString = message.trim()
     let response = ''
 
-    if (realmString === 'crowd') {
-      response = `Changing to realm that is crowded nearby...`
-
-      changeToCrowdedRealm().then(
-        ([changed, realm]) => {
-          if (changed) {
-            notifyStatusThroughChat(
-              `Found a crowded realm to join. Welcome to the realm ${realmToConnectionString(realm)}!`
-            )
-          } else {
-            notifyStatusThroughChat(`Already on most crowded realm for location. Nothing changed.`)
-          }
-        },
-        (e) => {
-          const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-          notifyStatusThroughChat('Could not join realm.' + cause)
-          defaultLogger.error(`Error joining crowded realm ${realmString}`, e)
-        }
-      )
-    } else {
-      changeRealm(realmString).then(
-        (realm) => {
-          if (realm) {
-            response = `Changing to Realm ${realm.serverName}...`
-            return catalystRealmConnected().then(
-              () =>
-                notifyStatusThroughChat(
-                  `Changed realm successfuly. Welcome to the realm ${realmToConnectionString(realm)}!`
-                ),
-              (e) => {
-                const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-                notifyStatusThroughChat('Could not join realm.' + cause)
-                defaultLogger.error('Error joining realm', e)
-              }
-            )
-          } else {
-            notifyStatusThroughChat(`Couldn't find realm ${realmString}`)
-          }
-        },
-        (e) => {
-          const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-          notifyStatusThroughChat('Could not join realm.' + cause)
-          defaultLogger.error(`Error joining crowded realm ${realmString}`, e)
-        }
-      )
-    }
+    changeRealm(realmString).catch((e) => {
+      notifyStatusThroughChat('changerealm: Could not join realm.')
+      defaultLogger.error(e)
+    })
 
     return {
       messageId: uuid(),

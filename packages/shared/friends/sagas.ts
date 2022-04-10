@@ -27,16 +27,14 @@ import {
   FriendshipAction,
   PresenceStatus,
   HUDElementID,
-  Profile
+  Profile,
+  UpdateUserStatusMessage
 } from 'shared/types'
-import { getRealm } from 'shared/dao/selectors'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition, positionObservable } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { ADDED_PROFILE_TO_CATALOG } from 'shared/profiles/actions'
 import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
-import { SET_CATALYST_REALM, SetCatalystRealm } from 'shared/dao/actions'
-import { notifyFriendOnlineStatusThroughChat } from 'shared/comms/chat'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState } from 'shared/friends/types'
 import { getClient, findByUserId, getPrivateMessaging } from 'shared/friends/selectors'
@@ -55,6 +53,9 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { notifyStatusThroughChat } from 'shared/chat'
+import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { getRealm } from 'shared/comms/selectors'
 
 const DEBUG = DEBUG_PM
 
@@ -433,13 +434,13 @@ function* initializeStatusUpdateInterval(client: SocialAPI) {
     sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
   })
 
-  const handleSetCatalystRealm = (action: SetCatalystRealm) => {
-    const realm = action.payload
+  function* handleSetCatalystRealm() {
+    const realm: Realm | undefined = yield select(getRealm)
 
     sendOwnStatusIfNecessary({ worldPosition: lastPlayerPosition.clone(), realm, timestamp: Date.now() })
   }
 
-  yield takeEvery(SET_CATALYST_REALM, handleSetCatalystRealm)
+  yield takeEvery(SET_WORLD_CONTEXT, handleSetCatalystRealm)
 }
 
 /**
@@ -686,4 +687,38 @@ function toSocialData(socialIds: string[]) {
       socialId
     }))
     .filter(({ userId }) => !!userId) as SocialData[]
+}
+
+const friendStatus: Record<string, PresenceStatus> = {}
+
+function notifyFriendOnlineStatusThroughChat(userStatus: UpdateUserStatusMessage) {
+  const friendName = getProfile(store.getState(), userStatus.userId)?.name
+
+  if (friendName === undefined) {
+    return
+  }
+
+  if (!friendStatus[friendName]) {
+    friendStatus[friendName] = userStatus.presence
+    return
+  }
+
+  if (!userStatus.realm?.serverName) {
+    if (userStatus.presence !== PresenceStatus.ONLINE) {
+      friendStatus[friendName] = userStatus.presence
+    }
+    return
+  }
+
+  if (userStatus.presence === PresenceStatus.ONLINE && friendStatus[friendName] === PresenceStatus.OFFLINE) {
+    let message = `${friendName} joined ${userStatus.realm?.serverName}`
+
+    if (userStatus.position) {
+      message += ` ${userStatus.position.x}, ${userStatus.position.y}`
+    }
+
+    notifyStatusThroughChat(message)
+  }
+
+  friendStatus[friendName] = userStatus.presence
 }

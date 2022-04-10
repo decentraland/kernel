@@ -65,3 +65,7 @@ export const LOCAL_PROFILE_RECEIVED = 'Local Profile Received'
 export const localProfileReceived = (userId: string, profile: Profile) =>
   action(LOCAL_PROFILE_RECEIVED, { userId, profile })
 export type LocalProfileReceived = ReturnType<typeof localProfileReceived>
+
+export const ANNOUNCE_PROFILE = '[Request] Announce profile to nearby users'
+export const announceProfile = (userId: string, version: number) => action(ANNOUNCE_PROFILE, { userId, version })
+export type AnnounceProfileAction = ReturnType<typeof announceProfile>

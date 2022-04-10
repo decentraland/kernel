@@ -1,15 +1,8 @@
 import { commConfigurations, parcelLimits } from 'config'
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { Stats } from './debug'
-import {
-  receiveUserData,
-  receiveUserPose,
-  receiveUserVisible,
-  removeById,
-  receiveUserTalking,
-  PeerTrackingInfo
-} from './peers'
-import { ConnectionEstablishmentError, Pose, UserInformation } from './interface/types'
+import { receiveUserData, receiveUserPose, receiveUserVisible, removeById, receiveUserTalking } from './peers'
+import { Pose, UserInformation } from './interface/types'
 import {
   CommunicationArea,
   Position,
@@ -25,12 +18,15 @@ import { getCommsConfig } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
 import { createLogger } from '../logger'
 import { MinPeerData } from '@dcl/catalyst-peer'
-import { Observer } from 'mz-observable'
+import { Observable, Observer } from 'mz-observable'
 import { setListenerSpatialParams } from './voice-over-comms'
 import { scenesSubscribedToCommsEvents } from './handlers'
 import { arrayEquals } from 'atomicHelpers/arrayEquals'
-import { commsErrorRetrying } from 'shared/loading/types'
-import { sleep } from 'atomicHelpers/sleep'
+import { Realm } from 'shared/dao/types'
+import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
+import { ProfileType } from 'shared/profiles/types'
+import { ProfileForRenderer } from '@dcl/legacy-ecs'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -59,6 +55,57 @@ export type ProcessingPeerInfo = {
 
 export const commsLogger = createLogger('comms: ')
 
+export type ProfilePromiseState = {
+  promise: Promise<ProfileForRenderer | void>
+  version: number | null
+  status: 'ok' | 'loading' | 'error'
+}
+
+export class PeerTrackingInfo {
+  public position: Position | null = null
+  public identity: string | null = null
+  public userInfo: UserInformation | null = null
+  public lastPositionUpdate: number = 0
+  public lastProfileUpdate: number = 0
+  public lastUpdate: number = 0
+  public receivedPublicChatMessages = new Set<string>()
+  public talking = false
+
+  profilePromise: ProfilePromiseState = {
+    promise: Promise.resolve(),
+    version: null,
+    status: 'loading'
+  }
+
+  profileType?: ProfileType
+
+  public loadProfileIfNecessary(profileVersion: number) {
+    if (this.identity && (profileVersion !== this.profilePromise.version || this.profilePromise.status === 'error')) {
+      if (!this.userInfo) {
+        this.userInfo = { userId: this.identity }
+      }
+      this.profilePromise = {
+        promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
+          .then((profile) => {
+            const forRenderer = profileToRendererFormat(profile)
+            this.lastProfileUpdate = new Date().getTime()
+            const userInfo = this.userInfo || ({ userId: this.identity } as UserInformation)
+            userInfo.version = profile.version
+            this.userInfo = userInfo
+            this.profilePromise.status = 'ok'
+            return forRenderer
+          })
+          .catch((error) => {
+            this.profilePromise.status = 'error'
+            commsLogger.error('Error fetching profile!', error)
+          }),
+        version: profileVersion,
+        status: 'loading'
+      }
+    }
+  }
+}
+
 export class CommsContext {
   public readonly stats: Stats = new Stats()
   public commRadius: number
@@ -68,6 +115,7 @@ export class CommsContext {
 
   public currentPosition: Position | null = null
 
+  public onDisconnectObservable = new Observable<void>()
   public worldInstanceConnection: RoomConnection | null = null
 
   timeToChangeRealm: number = Date.now() + commConfigurations.autoChangeRealmInterval
@@ -80,31 +128,39 @@ export class CommsContext {
   private positionObserver: Observer<any> | null = null
   private worldRunningObserver?: Observer<any> | null = null
   private infoCollecterInterval?: ReturnType<typeof setInterval>
-  private idTaken = false
 
   private currentParcelTopics = ''
   private previousTopics = ''
 
   private lastNetworkUpdatePosition = new Date().getTime()
   private lastPositionSent: Position | undefined
+  private destroyed = false
 
-  constructor(userInfo: UserInformation) {
+  constructor(public readonly realm: Realm, userInfo: UserInformation) {
     this.userInfo = userInfo
 
     this.commRadius = commConfigurations.commRadius
   }
 
   async connect(connection: RoomConnection) {
-    this.worldInstanceConnection = connection
+    try {
+      this.worldInstanceConnection = connection
 
-    this.idTaken = false
-    await this.connectWithRetries()
+      this.worldInstanceConnection.events.on('DISCONNECTION', () => this.disconnect())
+      await this.worldInstanceConnection.connect()
 
-    this.onConnected()
+      this.onConnected()
+    } catch (e: any) {
+      await this.disconnect()
+      throw e
+    }
   }
 
   async disconnect() {
+    if (this.destroyed) return
     commsLogger.info('Disconnecting comms context')
+    this.destroyed = true
+    this.onDisconnectObservable.notifyObservers()
     this.positionUpdatesPaused = true
     if (this.worldInstanceConnection) {
       await this.sendToMordor()
@@ -290,36 +346,6 @@ export class CommsContext {
     this.sendCurrentProfile()
     if (lastPlayerPositionReport) {
       this.onPositionUpdate(positionReportToCommsPosition(lastPlayerPositionReport))
-    }
-  }
-
-  private async connectWithRetries() {
-    const maxAttemps = 5
-    for (let i = 1; ; ++i) {
-      try {
-        if (this.idTaken) break
-
-        commsLogger.info(`Attempt number ${i}...`)
-        await this.worldInstanceConnection!.connect()
-
-        break
-      } catch (e) {
-        if (e instanceof ConnectionEstablishmentError) {
-          if (i >= maxAttemps) {
-            // max number of attemps reached => rethrow error
-            commsLogger.info(`Max number of attemps reached (${maxAttemps}), unsuccessful connection`)
-            throw e
-          } else {
-            await sleep(Math.random() * 2000 + 250)
-            // max number of attempts not reached => continue with loop
-            store.dispatch(commsErrorRetrying(i))
-          }
-        } else {
-          // not a comms issue per se => rethrow error
-          commsLogger.error(`error while trying to establish communications `, e)
-          throw e
-        }
-      }
     }
   }
 

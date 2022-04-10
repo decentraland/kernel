@@ -2,25 +2,17 @@ import { Store } from 'redux'
 
 import defaultLogger from '../logger'
 import { Realm, RootDaoState, ServerConnectionStatus, HealthStatus, Candidate, Parcel, PingResult } from './types'
-import {
-  isRealmInitialized,
-  getCatalystRealmCommsStatus,
-  getRealm,
-  getAllCatalystCandidates,
-  areCandidatesFetched
-} from './selectors'
+import { getAllCatalystCandidates, areCandidatesFetched } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
-import { setCatalystRealm, setCatalystCandidates } from './actions'
-import { deepEqual } from 'atomicHelpers/deepEqual'
+import { setCatalystCandidates } from './actions'
 import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
-import { getPickRealmsAlgorithmConfig } from 'shared/meta/selectors'
-import { defaultChainConfig } from './pick-realm-algorithm/defaults'
-import { createAlgorithm } from './pick-realm-algorithm'
 import { ping } from './utils/ping'
-import { candidateToRealm, resolveCommsConnectionString } from './utils/realmToString'
-import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+import { resolveCommsConnectionString } from './utils/realmToString'
+import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
+import { connectComms } from 'shared/comms'
+import { setWorldContext } from 'shared/comms/actions'
 
 const DEFAULT_TIMEOUT = 5000
 
@@ -145,21 +137,6 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
   }, new Array<Candidate>())
 }
 
-export async function pickCatalystRealm(candidates: Candidate[]): Promise<Realm> {
-  let config = getPickRealmsAlgorithmConfig(store.getState())
-
-  if (!config || config.length === 0) {
-    config = defaultChainConfig
-  }
-
-  const algorithm = createAlgorithm(config)
-
-  const qs = new URLSearchParams(globalThis.location.search)
-  const currentUserParcel = parseParcelPosition(qs.get('position') || '0,0')
-
-  return candidateToRealm(algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y]))
-}
-
 export async function candidatesFetched(): Promise<void> {
   if (areCandidatesFetched(store.getState())) {
     return
@@ -177,13 +154,13 @@ export async function candidatesFetched(): Promise<void> {
 }
 
 export async function realmInitialized(): Promise<void> {
-  if (isRealmInitialized(store.getState())) {
+  if (getRealm(store.getState())) {
     return
   }
 
   return new Promise((resolve) => {
     const unsubscribe = store.subscribe(() => {
-      if (isRealmInitialized(store.getState())) {
+      if (getRealm(store.getState())) {
         unsubscribe()
         return resolve()
       }
@@ -191,62 +168,34 @@ export async function realmInitialized(): Promise<void> {
   })
 }
 
-export async function changeRealm(realmString: string) {
+export async function changeRealm(realmString: string, forceChange: boolean = false) {
   const candidates = getAllCatalystCandidates(store.getState())
 
   const realm = await resolveCommsConnectionString(realmString, candidates)
 
   if (realm) {
-    store.dispatch(setCatalystRealm(realm))
+    return changeRealmObject(realm, forceChange)
   }
+
+  throw new Error(`Can't resolve realm ${realmString}`)
+}
+
+export async function changeRealmObject(realm: Realm, forceChange: boolean = false) {
+  const context = getCommsContext(store.getState())
+
+  // if not forceChange, then cancel operation if we are inside the desired realm
+  if (!forceChange && context && sameRealm(context.realm, realm)) {
+    return realm
+  }
+
+  const newCommsContext = await connectComms(realm)
+
+  store.dispatch(setWorldContext(newCommsContext))
 
   return realm
 }
 
-export async function changeToCrowdedRealm(): Promise<[boolean, Realm]> {
-  // TODO: Add support for changing to crowded realm in islands based candidates. Or remove this functionality
-
-  // const candidates = await refreshCandidatesStatuses()
-
-  const currentRealm = getRealm(store.getState())!
-
-  // const positionAsVector = worldToGrid(lastPlayerPosition)
-  // const currentPosition = [positionAsVector.x, positionAsVector.y] as ParcelArray
-
-  // type RealmPeople = { realm: Realm; closePeople: number }
-
-  // let crowdedRealm: RealmPeople = { realm: currentRealm, closePeople: 0 }
-
-  // candidates
-  //   .filter(
-  //     (it) =>
-  //       it.type === 'islands-based'
-  //   )
-  //   .forEach((candidate) => {
-  //     if (candidate.usersCount) {
-  //       let closePeople = countParcelsCloseTo(currentPosition, layer.usersParcels, 4)
-  //       // If it is the realm of the player, we substract 1 to not count ourselves
-  //       if (candidate.catalystName === currentRealm.catalystName && layer.name === currentRealm.layer) {
-  //         closePeople -= 1
-  //       }
-
-  //       if (closePeople > crowdedRealm.closePeople) {
-  //         crowdedRealm = {
-  //           realm: candidateToRealm(candidate),
-  //           closePeople
-  //         }
-  //       }
-  //     }
-  //   })
-
-  // if (!deepEqual(crowdedRealm.realm, currentRealm)) {
-  //   store.dispatch(setCatalystRealm(crowdedRealm.realm))
-  //   await catalystRealmConnected()
-  //   return [true, crowdedRealm.realm]
-  // } else {
-  return [false, currentRealm]
-  // }
-}
+;(globalThis as any).changeRealm = changeRealm
 
 export async function refreshCandidatesStatuses() {
   const candidates = await fetchCatalystStatuses(Array.from(getCandidateDomains(store)).map((it) => ({ domain: it })))
@@ -258,41 +207,4 @@ export async function refreshCandidatesStatuses() {
 
 function getCandidateDomains(store: Store<RootDaoState>): Set<string> {
   return new Set(getAllCatalystCandidates(store.getState()).map((it) => it.domain))
-}
-
-export async function catalystRealmConnected(): Promise<void> {
-  const status = getCatalystRealmCommsStatus(store.getState())
-
-  if (status.status === 'connected') {
-    return Promise.resolve()
-  } else if (status.status === 'error' || status.status === 'realm-full') {
-    return Promise.reject(status.status)
-  }
-
-  return new Promise((resolve, reject) => {
-    const unsubscribe = store.subscribe(() => {
-      const status = getCatalystRealmCommsStatus(store.getState())
-      if (status.status === 'connected') {
-        resolve()
-        unsubscribe()
-      } else if (status.status === 'error' || status.status === 'realm-full') {
-        reject(status.status)
-        unsubscribe()
-      }
-    })
-  })
-}
-
-export function observeRealmChange(
-  store: Store<RootDaoState>,
-  onRealmChange: (previousRealm: Realm | undefined, currentRealm: Realm) => any
-) {
-  let currentRealm: Realm | undefined = getRealm(store.getState())
-  store.subscribe(() => {
-    const previousRealm = currentRealm
-    currentRealm = getRealm(store.getState())
-    if (currentRealm && !deepEqual(previousRealm, currentRealm)) {
-      onRealmChange(previousRealm, currentRealm)
-    }
-  })
 }

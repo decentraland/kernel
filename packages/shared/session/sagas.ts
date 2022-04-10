@@ -5,7 +5,7 @@ import { Authenticator } from 'dcl-crypto'
 
 import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK, PREVIEW } from 'config'
 
-import { createDummyLogger, createLogger } from 'shared/logger'
+import defaultLogger, { createDummyLogger, createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
 import { getUserAccount, isSessionExpired, requestManager } from 'shared/ethereum/provider'
 import { setLocalInformationForComms } from 'shared/comms/peers'
@@ -14,7 +14,7 @@ import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
 import { getFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 
-import { getIdentity, getLastGuestSession, getStoredSession, removeStoredSession, setStoredSession } from './index'
+import { getLastGuestSession, getStoredSession, removeStoredSession, setStoredSession } from './index'
 import { ExplorerIdentity, RootSessionState, SessionState, StoredSession } from './types'
 import {
   AUTHENTICATE,
@@ -33,11 +33,17 @@ import {
   userAuthentified,
   AuthenticateAction,
   signUpCancel,
-  signupForm
+  signupForm,
+  USER_AUTHENTIFIED
 } from './actions'
-import { fetchProfileLocally, doesProfileExist, generateRandomUserProfile, localProfilesRepo } from '../profiles/sagas'
+import {
+  fetchProfileLocally,
+  generateRandomUserProfile,
+  localProfilesRepo,
+  profileServerRequest
+} from '../profiles/sagas'
 import { getUnityInstance } from '../../unity-interface/IUnityInterface'
-import { getIsGuestLogin, getSignUpIdentity, getSignUpProfile, isLoginCompleted } from './selectors'
+import { getCurrentIdentity, getIsGuestLogin, getSignUpIdentity, getSignUpProfile, isLoginCompleted } from './selectors'
 import { waitForRealmInitialized } from '../dao/sagas'
 import { saveProfileRequest } from '../profiles/actions'
 import { Profile } from '../profiles/types'
@@ -48,11 +54,11 @@ import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { Store } from 'redux'
 import { store } from 'shared/store/isolatedStore'
 import { globalObservable } from 'shared/observables'
-import { selectNetwork } from 'shared/dao/actions'
+import { selectNetwork, triggerReconnectRealm } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
-import { setWorldContext } from 'shared/protocol/actions'
+import { setWorldContext } from 'shared/comms/actions'
 
 const TOS_KEY = 'tos'
 const logger = DEBUG_KERNEL_LOG ? createLogger('session: ') : createDummyLogger()
@@ -117,9 +123,14 @@ function* authenticate(action: AuthenticateAction) {
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
   yield put(selectNetwork(net))
   registerProviderNetChanges()
+
+  yield put(userAuthentified(identity, net))
+
+  yield put(triggerReconnectRealm())
+
   yield call(waitForRealmInitialized)
 
-  const profileExists: boolean = yield doesProfileExist(identity.address)
+  const profileExists: boolean = yield call(doesProfileExist, identity.address)
   const isGuest: boolean = yield select(getIsGuestLogin)
   const profileLocally: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
   const isGuestWithProfileLocal: boolean = isGuest && profileLocally !== null
@@ -131,6 +142,19 @@ function* authenticate(action: AuthenticateAction) {
     yield startSignUp(identity)
     yield take(SIGNUP)
   }
+}
+
+function* doesProfileExist(userId: string): any {
+  try {
+    const profiles: { avatars: object[] } = yield call(profileServerRequest, userId)
+
+    return profiles.avatars.length > 0
+  } catch (error: any) {
+    if (error.message !== 'Profile not found') {
+      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
+    }
+  }
+  return false
 }
 
 function* startSignUp(identity: ExplorerIdentity) {
@@ -209,11 +233,7 @@ function* signIn(identity: ExplorerIdentity) {
     yield call(referUser, identity)
   }
 
-  const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-
   yield ensureMetaConfigurationInitialized()
-
-  yield put(userAuthentified(identity, net))
 
   yield put(changeLoginState(LoginState.COMPLETED))
 }
@@ -318,7 +338,7 @@ async function createAuthIdentity(requestManager: RequestManager, isGuest: boole
 }
 
 function* logout() {
-  const identity: ExplorerIdentity | undefined = yield select(getIdentity)
+  const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   if (identity && identity.address && network) {
     yield localProfilesRepo.remove(identity.address, network)
@@ -379,4 +399,10 @@ export function initializeSessionObserver() {
       isGuest: !!session.isGuestLogin
     })
   })
+}
+
+export function* waitForExplorerIdentity() {
+  while (!(yield select(getCurrentIdentity))) {
+    yield take(USER_AUTHENTIFIED)
+  }
 }

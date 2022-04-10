@@ -58,40 +58,21 @@ export type Realm = {
 }
 
 export type DaoState = {
-  initialized: boolean
   network: ETHEREUM_NETWORK | null
   candidatesFetched: boolean
   fetchContentServer: string
   catalystServer: string
   updateContentServer: string
-  commsServer: string
   resizeService: string
   hotScenesService: string
   exploreRealmsService: string
   poiService: string
-  realm: Realm | undefined
   candidates: Candidate[]
   addedCandidates: Candidate[]
-  commsStatus: CommsStatus
 }
 
 export type RootDaoState = {
   dao: DaoState
-}
-
-export type CommsState =
-  | 'initial'
-  | 'connecting'
-  | 'connected'
-  | 'error'
-  | 'realm-full'
-  | 'reconnection-error'
-  | 'id-taken'
-  | 'disconnecting'
-
-export type CommsStatus = {
-  status: CommsState
-  connectedPeers: number
 }
 
 export type PingResult = {

@@ -1,5 +1,4 @@
 import { CommsEvents, RoomConnection } from '../interface/index'
-import { Stats } from '../debug'
 import { Package, UserInformation } from '../interface/types'
 import { Position, positionHash } from '../interface/utils'
 import defaultLogger, { createLogger } from 'shared/logger'
@@ -21,7 +20,7 @@ import {
   ProfileRequestData,
   ProfileResponseData
 } from './proto/comms_pb'
-import { CommsStatus } from 'shared/dao/types'
+import { CommsStatus } from '../types'
 
 import { getProfileType } from 'shared/profiles/getProfileType'
 import { Profile } from 'shared/types'
@@ -74,10 +73,6 @@ function ProfileRequestResponseType(action: 'request' | 'response'): PeerMessage
 declare let globalThis: any
 
 export class LighthouseWorldInstanceConnection implements RoomConnection {
-  stats: Stats | null = null
-
-  ping: number = -1
-
   events = mitt<CommsEvents>()
 
   private peer: PeerType
@@ -112,9 +107,11 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  disconnect() {
+  async disconnect() {
+    if (this.disposed) return
     this.disposed = true
-    return this.cleanUpPeer()
+    await this.cleanUpPeer()
+    this.events.emit('DISCONNECTION')
   }
 
   async sendInitialMessage(userInfo: UserInformation) {
@@ -218,6 +215,9 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
   }
 
   private async sendData(topic: string, messageData: MessageData, type: PeerMessageType) {
+    if (this.disposed) {
+      return
+    }
     try {
       await this.peer.sendMessage(topic, createCommsMessage(messageData).serializeBinary(), type)
     } catch (e: any) {
@@ -246,7 +246,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     this.peer = this.createPeer()
     globalThis.__DEBUG_PEER = this.peer
 
-    if (this.peerConfig.preferedIslandId && 'setPreferedIslandId' in this.peer) {
+    if (this.peerConfig.preferedIslandId) {
       this.peer.setPreferedIslandId(this.peerConfig.preferedIslandId)
     }
 
@@ -314,8 +314,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
               commsMessage,
               mapToPackageVoice(
                 commsMessage.getVoiceData()!.getEncodedSamples_asU8(),
-                commsMessage.getVoiceData()!.getIndex(),
-                packet.sequenceId
+                commsMessage.getVoiceData()!.getIndex()
               )
             )
           )
@@ -404,9 +403,9 @@ function mapToPackageProfileResponse(profileResponseData: ProfileResponseData) {
   }
 }
 
-function mapToPackageVoice(encoded: Uint8Array, index: number, fallbackIndex: number) {
+function mapToPackageVoice(encoded: Uint8Array, index: number) {
   // If we receive a packet from an old implementation of voice chat, we use the fallbackIndex
-  return { encoded, index: index === 0 ? fallbackIndex : index }
+  return { encoded, index }
 }
 
 function createProfileData(userInfo: UserInformation) {

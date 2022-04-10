@@ -41,8 +41,8 @@ import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
 import { updateFriendship, updateUserData } from 'shared/friends/actions'
-import { candidatesFetched, catalystRealmConnected, changeRealm } from 'shared/dao'
-import { notifyStatusThroughChat } from 'shared/comms/chat'
+import { candidatesFetched, changeRealm } from 'shared/dao'
+import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
 import { updateStatusMessage } from 'shared/loading/actions'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
@@ -533,27 +533,20 @@ export class BrowserInterface {
 
     await future
 
-    const realm = await changeRealm(serverName)
-
-    if (realm) {
-      catalystRealmConnected().then(
-        () => {
-          const successMessage = `Jumped to ${x},${y} in realm ${serverName}!`
-          notifyStatusThroughChat(successMessage)
-          getUnityInstance().ConnectionToRealmSuccess(data)
-          TeleportController.goTo(x, y, successMessage)
-        },
-        (e) => {
-          const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-          notifyStatusThroughChat('Could not join realm.' + cause)
-          getUnityInstance().ConnectionToRealmFailed(data)
-          defaultLogger.error('Error joining realm', e)
-        }
-      )
-    } else {
-      notifyStatusThroughChat(`Couldn't find realm ${serverName}.`)
-      getUnityInstance().ConnectionToRealmFailed(data)
-    }
+    changeRealm(serverName).then(
+      () => {
+        const successMessage = `Jumped to ${x},${y} in realm ${serverName}!`
+        notifyStatusThroughChat(successMessage)
+        getUnityInstance().ConnectionToRealmSuccess(data)
+        TeleportController.goTo(x, y, successMessage)
+      },
+      (e) => {
+        const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
+        notifyStatusThroughChat('changerealm: Could not join realm.' + cause)
+        getUnityInstance().ConnectionToRealmFailed(data)
+        defaultLogger.error(e)
+      }
+    )
   }
 
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {

@@ -15,12 +15,11 @@ export const metricsUnityClientLoaded = () => action(METRICS_UNITY_CLIENT_LOADED
 export const WAITING_FOR_RENDERER = 'Uploading world information to the rendering engine...'
 export const waitingForRenderer = () => action(WAITING_FOR_RENDERER)
 
-export const ESTABLISHING_COMMS = 'Establishing communication channels...'
+export const ESTABLISHING_COMMS = '[COMMS] Establishing communication channels...'
 export const establishingComms = () => action(ESTABLISHING_COMMS)
-export const COMMS_ESTABLISHED = 'Communications established. Loading profile and item catalogs...'
+export const COMMS_ESTABLISHED = '[COMMS] Communications established.'
 export const commsEstablished = () => action(COMMS_ESTABLISHED)
 
-// ** TODO - trailing whitespace to workaround id -> label issue - moliva - 15/07/2020
 export const EXPERIENCE_STARTED = 'EXPERIENCE_STARTED'
 export const experienceStarted = () => action(EXPERIENCE_STARTED)
 
@@ -52,8 +51,6 @@ export const AUTH_ERROR_LOGGED_OUT = 'Auth: Logged out'
 export const authErrorLoggedOut = () => action(AUTH_ERROR_LOGGED_OUT)
 export const FAILED_FETCHING_UNITY = 'Failed to fetch the rendering engine'
 export const failedFetchingUnity = () => action(FAILED_FETCHING_UNITY)
-export const COMMS_ERROR_RETRYING = 'Communications channel error (will retry)'
-export const commsErrorRetrying = (attempt: number) => action(COMMS_ERROR_RETRYING, attempt)
 export const COMMS_COULD_NOT_BE_ESTABLISHED = 'Communications channel error'
 export const commsCouldNotBeEstablished = () => action(COMMS_COULD_NOT_BE_ESTABLISHED)
 export const CATALYST_COULD_NOT_LOAD = 'Catalysts Contract could not be queried'
@@ -90,7 +87,6 @@ export type ExecutionLifecycleEvent =
   | typeof AUTH_ERROR_LOGGED_OUT
   | typeof MOBILE_NOT_SUPPORTED
   | typeof FAILED_FETCHING_UNITY
-  | typeof COMMS_ERROR_RETRYING
   | typeof COMMS_COULD_NOT_BE_ESTABLISHED
   | typeof CATALYST_COULD_NOT_LOAD
   | typeof NEW_LOGIN
@@ -117,7 +113,6 @@ export const ExecutionLifecycleEventsList: ExecutionLifecycleEvent[] = [
   UNEXPECTED_ERROR_LOADING_CATALOG,
   AUTH_ERROR_LOGGED_OUT,
   FAILED_FETCHING_UNITY,
-  COMMS_ERROR_RETRYING,
   MOBILE_NOT_SUPPORTED,
   COMMS_COULD_NOT_BE_ESTABLISHED,
   CATALYST_COULD_NOT_LOAD,

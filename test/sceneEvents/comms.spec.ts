@@ -5,11 +5,8 @@ import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
 import { Realm } from 'shared/dao/types'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 import { reducers } from 'shared/store/rootReducer'
-import { setCommsIsland } from '../../packages/shared/comms/actions'
-
-import { getCommsIsland } from '../../packages/shared/comms/selectors'
-import { setCatalystRealm } from '../../packages/shared/dao/actions'
-import { getRealm } from '../../packages/shared/dao/selectors'
+import { setCommsIsland, setWorldContext } from '../../packages/shared/comms/actions'
+import { getCommsIsland, getRealm } from '../../packages/shared/comms/selectors'
 import { saveProfileSuccess } from '../../packages/shared/profiles/actions'
 import { sceneEventsSaga, updateLocation } from '../../packages/shared/sceneEvents/sagas'
 import { Profile } from '../../packages/shared/types'
@@ -21,9 +18,9 @@ const realm: Realm = {
   serverName: 'catalyst-name'
 }
 
-describe('when the realm change: SET_CATALYST_REALM', () => {
+describe('when the realm change: SET_WORLD_CONTEXT', () => {
   it('should call allScene events with empty string island', () => {
-    const action = setCatalystRealm(realm)
+    const action = setWorldContext({ realm } as any)
     const island = ''
     return expectSaga(sceneEventsSaga)
       .provide([
@@ -37,7 +34,7 @@ describe('when the realm change: SET_CATALYST_REALM', () => {
   })
 
   it('should call allScene events with null island', () => {
-    const action = setCatalystRealm(realm)
+    const action = setWorldContext({ realm } as any)
     const island = undefined
     return expectSaga(sceneEventsSaga)
       .provide([
@@ -52,7 +49,7 @@ describe('when the realm change: SET_CATALYST_REALM', () => {
 
   it('should call allScene events fn with the specified realm & island', () => {
     const island = 'casla-island'
-    const action = setCatalystRealm(realm)
+    const action = setWorldContext({ realm } as any)
 
     return expectSaga(sceneEventsSaga)
       .provide([

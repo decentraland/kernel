@@ -70,15 +70,13 @@ export const getResizeService = (store: RootDaoState) => {
   return urlWithProtocol(store.dao.resizeService)
 }
 
-export const getCommsServer = (store: RootDaoState) => {
+export const getCommsServer = (domain: string) => {
   if (COMMS_SERVICE) {
     return urlWithProtocol(COMMS_SERVICE)
   }
 
-  return urlWithProtocol(store.dao.commsServer)
+  return urlWithProtocol(domain + '/comms')
 }
-
-export const getRealm = (store: RootDaoState) => store.dao.realm
 
 export const getCatalystCandidates = (store: RootDaoState) => store.dao.candidates
 export const getAddedCatalystCandidates = (store: RootDaoState) => store.dao.addedCandidates
@@ -88,10 +86,7 @@ export const getAllCatalystCandidates = (store: RootDaoState) =>
     .concat(getCatalystCandidates(store))
     .filter((it) => !!it)
 
-export const isRealmInitialized = (store: RootDaoState) => store.dao.initialized
 export const areCandidatesFetched = (store: RootDaoState) => store.dao.candidatesFetched
-
-export const getCatalystRealmCommsStatus = (store: RootDaoState) => store.dao.commsStatus
 
 export const getHotScenesService = (store: RootDaoState) => {
   if (HOTSCENES_SERVICE) {
@@ -99,6 +94,7 @@ export const getHotScenesService = (store: RootDaoState) => {
   }
   return urlWithProtocol(store.dao.hotScenesService)
 }
+
 export const getExploreRealmsService = (store: RootDaoState) => store.dao.exploreRealmsService
 export const getPOIService = (store: RootDaoState) => {
   if (POI_SERVICE) {

@@ -9,7 +9,6 @@ import {
   ProfileRequest,
   Package
 } from './types'
-import { Stats } from '../debug'
 import { Profile } from 'shared/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import { Emitter } from 'mitt'
@@ -35,12 +34,7 @@ export interface RoomConnection {
   // @once
   connect(): Promise<boolean>
 
-  stats: Stats | null
-
   events: Emitter<CommsEvents>
-
-  // TODO - review metrics API - moliva - 19/12/2019
-  readonly ping: number
 
   sendInitialMessage(userInfo: UserInformation): Promise<void>
   sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>

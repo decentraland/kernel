@@ -1,9 +1,8 @@
 import { ETHEREUM_NETWORK } from 'config'
 import { AnyAction } from 'redux'
+import { SetWorldContextAction, SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import {
-  SET_CATALYST_REALM,
   SET_CATALYST_CANDIDATES,
-  SET_CATALYST_REALM_COMMS_STATUS,
   SET_ADDED_CATALYST_CANDIDATES,
   SELECT_NETWORK,
   SelectNetworkAction
@@ -14,20 +13,16 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
   if (!state) {
     return {
       network: null,
-      initialized: false,
       candidatesFetched: false,
       fetchContentServer: '',
       catalystServer: '',
       updateContentServer: '',
-      commsServer: '',
       resizeService: '',
       hotScenesService: '',
       exploreRealmsService: '',
       poiService: '',
-      realm: undefined,
       candidates: [],
-      addedCandidates: [],
-      commsStatus: { status: 'initial', connectedPeers: 0 }
+      addedCandidates: []
     }
   }
   if (!action) {
@@ -50,16 +45,12 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
         ...state,
         addedCandidates: action.payload
       }
-    case SET_CATALYST_REALM:
+    case SET_WORLD_CONTEXT:
+      const context = (action as SetWorldContextAction).payload
+      if (!context) return state
       return {
         ...state,
-        ...realmProperties(action.payload, state.network),
-        initialized: true
-      }
-    case SET_CATALYST_REALM_COMMS_STATUS:
-      return {
-        ...state,
-        commsStatus: action.payload ? action.payload : { status: 'initial', connectedPeers: 0 }
+        ...realmProperties(context.realm, state.network)
       }
   }
   return state
@@ -73,7 +64,6 @@ function realmProperties(realm: Realm, network: ETHEREUM_NETWORK | null): Partia
       fetchContentServer: domain + '/content',
       catalystServer: domain,
       updateContentServer: domain + '/content',
-      commsServer: domain + '/comms',
       resizeService: domain + '/lambdas/images',
       hotScenesService: domain + '/lambdas/explore/hot-scenes',
       poiService: domain + '/lambdas/contracts/pois',

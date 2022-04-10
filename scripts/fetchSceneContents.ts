@@ -3,7 +3,7 @@
  *
  * Example: PARCEL='0,0' make fetchSceneContents
  *
- * The scene will be downloaded from https://peer-lb.decentraland.org. This can be overriden with the CONTENT_SERVER_URL variable
+ * The scene will be downloaded from https://peer.decentraland.org. This can be overriden with the CONTENT_SERVER_URL variable
  * The scene will be downloaded in the public/downloaded-scenes folder. This can be overriden with the OUTPUT_DIR variable
  */
 

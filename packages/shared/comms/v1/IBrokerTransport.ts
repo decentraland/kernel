@@ -16,6 +16,7 @@ export enum SocketReadyState {
 export interface IBrokerTransport {
   stats: Stats | null
   onMessageObservable: Observable<TransportMessage>
+  onDisconnectObservable: Observable<void>
   send(data: Uint8Array, reliable: boolean): void
   disconnect(): Promise<void>
   connect(): Promise<void>

@@ -7,8 +7,9 @@ import defaultLogger from 'shared/logger'
 
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
-import { getCommsServer, getRealm } from 'shared/dao/selectors'
+import { getCommsServer } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { getCommsContext } from 'shared/comms/selectors'
 
 // TODO: don't do classess if it holds no state. Use namespaces or functions instead.
 export class TeleportController {
@@ -74,12 +75,13 @@ export class TeleportController {
 }
 
 async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
-  const realm = getRealm(store.getState())
-  const commsUrl = getCommsServer(store.getState())
+  const context = getCommsContext(store.getState())
 
   try {
-    if (realm && commsUrl) {
-      const commsStatusResponse = await fetch(`${commsUrl}/status?includeUsersParcels=true`)
+    if (context) {
+      const commsStatusResponse = await fetch(
+        `${getCommsServer(context.realm.hostname)}/status?includeUsersParcels=true`
+      )
       if (commsStatusResponse.ok) {
         const layerUsers = await commsStatusResponse.json()
         return layerUsers.usersParcels

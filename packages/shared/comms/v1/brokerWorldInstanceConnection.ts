@@ -41,8 +41,6 @@ class SendResult {
 export class BrokerWorldInstanceConnection implements RoomConnection {
   aliases: Record<number, string> = {}
 
-  ping: number = -1
-
   events = mitt<CommsEvents>()
 
   _stats: Stats | null = null
@@ -61,16 +59,12 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
       this.broker.send(bytes, false)
     }, 10000)
     this.broker.onMessageObservable.add(this.handleMessage.bind(this))
+    this.broker.onDisconnectObservable.add(this.disconnect.bind(this))
   }
 
   async connect(): Promise<boolean> {
     await this.broker.connect()
     return true
-  }
-
-  set stats(_stats: Stats) {
-    this._stats = _stats
-    this.broker.stats = _stats
   }
 
   async sendPositionMessage(p: Position) {
@@ -440,20 +434,6 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
         break
       }
       case MessageType.PING: {
-        let pingMessage
-        try {
-          pingMessage = PingMessage.deserializeBinary(message.data)
-        } catch (e) {
-          this.logger.error('cannot deserialize ping message', e, message)
-          break
-        }
-
-        if (this._stats) {
-          this._stats.ping.incrementRecv(msgSize)
-        }
-
-        this.ping = Date.now() - pingMessage.getTime()
-
         break
       }
       default: {

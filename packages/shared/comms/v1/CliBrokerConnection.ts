@@ -13,8 +13,8 @@ export class CliBrokerConnection implements IBrokerTransport {
 
   public logger: ILogger = createLogger('Broker: ')
 
+  public onDisconnectObservable = new Observable<void>()
   public onMessageObservable = new Observable<TransportMessage>()
-  public onDisconnect = new Observable<void>()
 
   private connected = future<void>()
 
@@ -43,7 +43,7 @@ export class CliBrokerConnection implements IBrokerTransport {
       this.ws.onclose = null
       this.ws.close()
       this.ws = null
-      this.onDisconnect.notifyObservers()
+      this.onDisconnectObservable.notifyObservers()
     }
   }
 
@@ -128,17 +128,15 @@ export class CliBrokerConnection implements IBrokerTransport {
 
     this.ws.onerror = (event) => {
       this.logger.error('socket error', event)
-      this.disconnect().catch(console.error)
+      this.disconnect().catch(this.logger.error)
     }
 
     this.ws.onclose = () => {
-      this.disconnect().catch(console.error)
+      this.disconnect().catch(this.logger.error)
     }
 
     this.ws.onmessage = (event) => {
-      this.onWsMessage(event).catch((err) => {
-        this.logger.error(err)
-      })
+      this.onWsMessage(event).catch(this.logger.error)
     }
   }
 }

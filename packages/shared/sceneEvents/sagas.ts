@@ -1,17 +1,15 @@
 import { call, select, takeLatest } from 'redux-saga/effects'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 import { toEnvironmentRealmType } from '../apis/EnvironmentAPI'
-import { SET_COMMS_ISLAND } from '../comms/actions'
-import { getCommsIsland } from '../comms/selectors'
-import { SET_CATALYST_REALM } from '../dao/actions'
-import { getRealm } from '../dao/selectors'
+import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
+import { getCommsIsland, getRealm } from '../comms/selectors'
 import { Realm } from '../dao/types'
 import { SaveProfileSuccess, SAVE_PROFILE_SUCCESS } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
 import { allScenesEvent } from '../world/parcelSceneManager'
 
 export function* sceneEventsSaga() {
-  yield takeLatest([SET_CATALYST_REALM, SET_COMMS_ISLAND], islandChanged)
+  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], islandChanged)
   yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
 }
 

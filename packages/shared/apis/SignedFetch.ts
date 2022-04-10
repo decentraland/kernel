@@ -4,10 +4,12 @@ import { ParcelIdentity } from './ParcelIdentity'
 import { FlatFetchInit, FlatFetchResponse } from 'atomicHelpers/flatFetch'
 import { signedFetch } from 'atomicHelpers/signedFetch'
 import { ETHEREUM_NETWORK } from '../../config'
-import { getRealm, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getIsGuestLogin } from 'shared/session/selectors'
 import { onLoginCompleted } from 'shared/session/sagas'
+import { getRealm } from 'shared/comms/selectors'
+
 @registerAPI('SignedFetch')
 export class SignedFetch extends ExposableAPI {
   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)

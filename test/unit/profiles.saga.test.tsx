@@ -9,9 +9,10 @@ import { processServerProfile } from '../../packages/shared/profiles/transformat
 import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
 import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
-import { isRealmInitialized, getResizeService } from '../../packages/shared/dao/selectors'
+import { getResizeService } from '../../packages/shared/dao/selectors'
 import { ETHEREUM_NETWORK, getServerConfigurations } from 'config'
 import { sleep } from 'atomicHelpers/sleep'
+import { getRealm } from 'shared/comms/selectors'
 
 const profile = { data: 'profile' }
 
@@ -32,7 +33,7 @@ describe('fetchProfile behavior', () => {
       .dispatch(profileRequest('user|1'))
       .dispatch(profileRequest('user|1'))
       .provide([
-        [select(isRealmInitialized), true],
+        [select(getRealm), {}],
         [call(profileServerRequest, 'user|1'), delayedProfile],
         [select(getCurrentUserId), 'myid'],
         [call(processServerProfile, 'user|1', profile), 'passport']
@@ -51,7 +52,7 @@ describe('fetchProfile behavior', () => {
       .dispatch(profileRequest('user|2'))
       .dispatch(profileRequest('user|2'))
       .provide([
-        [select(isRealmInitialized), true],
+        [select(getRealm), {}],
         [call(profileServerRequest, 'user|1'), delayedProfile],
         [select(getCurrentUserId), 'myid'],
         [call(processServerProfile, 'user|1', profile), 'passport1'],

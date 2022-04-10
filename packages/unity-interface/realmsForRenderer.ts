@@ -1,10 +1,11 @@
-import { getExploreRealmsService, getFetchContentServer, getRealm } from '../shared/dao/selectors'
+import { getExploreRealmsService, getFetchContentServer } from '../shared/dao/selectors'
 import { CurrentRealmInfoForRenderer, RealmsInfoForRenderer } from '../shared/types'
-import { observeRealmChange } from '../shared/dao'
 import { Realm } from '../shared/dao/types'
 import { getUnityInstance } from './IUnityInterface'
 import defaultLogger from '../shared/logger'
 import { store } from '../shared/store/isolatedStore'
+import { getRealm } from 'shared/comms/selectors'
+import { observeRealmChange } from 'shared/comms/sagas'
 
 const REPORT_INTERVAL = 2 * 60 * 1000
 
@@ -19,7 +20,7 @@ export function startRealmsReportToRenderer() {
       reportToRenderer({ current: convertCurrentRealmType(realm) })
     }
 
-    observeRealmChange(store, (previous, current) => {
+    observeRealmChange(store, (_previous, current) => {
       reportToRenderer({ current: convertCurrentRealmType(current) })
       fetchAndReportRealmsInfo().catch((e) => defaultLogger.log(e))
     })

@@ -1,35 +1,25 @@
-import { commConfigurations, COMMS } from 'config'
-import { notifyStatusThroughChat } from './chat'
+import { commConfigurations, COMMS, PREFERED_ISLAND } from 'config'
 import { CliBrokerConnection } from './v1/CliBrokerConnection'
 import { getCurrentPeer, localProfileUUID, receiveUserData } from './peers'
-import { UserInformation, ConnectionEstablishmentError } from './interface/types'
+import { UserInformation } from './interface/types'
 import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
-import { ensureRendererEnabled } from '../world/worldState'
 import { RoomConnection } from './interface/index'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
 import { Authenticator, AuthIdentity } from 'dcl-crypto'
-import { getCommsServer, getAllCatalystCandidates } from '../dao/selectors'
+import { getCommsServer } from '../dao/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { setCatalystRealmCommsStatus, setCatalystRealm, handleCommsDisconnection } from 'shared/dao/actions'
-import { pickCatalystRealm } from 'shared/dao'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
-import {
-  BringDownClientAndShowError,
-  ErrorContext,
-  ReportFatalErrorWithCommsPayload
-} from 'shared/loading/ReportFatalError'
-import { NEW_LOGIN, COMMS_COULD_NOT_BE_ESTABLISHED, commsEstablished } from 'shared/loading/types'
+import { ErrorContext, ReportFatalErrorWithCommsPayload } from 'shared/loading/ReportFatalError'
 import { getIdentity, getStoredSession } from 'shared/session'
 import { setCommsIsland } from './actions'
-import { getPreferedIsland } from './selectors'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { commsLogger, CommsContext } from './context'
-import { bindHandlersToCommsContext } from './handlers'
 import { getCurrentIdentity } from 'shared/session/selectors'
-import { getCommsContext } from 'shared/protocol/selectors'
-import { setWorldContext } from 'shared/protocol/actions'
+import { getCommsContext } from './selectors'
 import { Realm } from 'shared/dao/types'
+import { notifyStatusThroughChat } from '../chat'
+import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -77,7 +67,7 @@ export function updateCommsUser(changes: Partial<UserInformation>) {
   }
 }
 
-export async function connect(realm: Realm): Promise<void> {
+export async function connectComms(realm: Realm): Promise<CommsContext> {
   commsLogger.log('Connecting to realm', realm)
 
   if (!realm) {
@@ -89,15 +79,13 @@ export async function connect(realm: Realm): Promise<void> {
     const identity = getCurrentIdentity(store.getState())
 
     if (!identity) {
-      commsLogger.error("Can't connect to comms because there is no identity")
-      return
+      throw new Error("Can't connect to comms because there is no identity")
     }
 
     const user = await getStoredSession(identity.address)
 
     if (!user) {
-      commsLogger.error("Can't connect to comms because there is no storedSession")
-      return
+      throw new Error("Can't connect to comms because there is no storedSession")
     }
 
     const userInfo: UserInformation = {
@@ -105,7 +93,7 @@ export async function connect(realm: Realm): Promise<void> {
       ...user
     }
 
-    const commsContext = new CommsContext(userInfo)
+    const commsContext = new CommsContext(realm, userInfo)
 
     let connection: RoomConnection
 
@@ -134,7 +122,7 @@ export async function connect(realm: Realm): Promise<void> {
       case 'v2': {
         await ensureMetaConfigurationInitialized()
 
-        const lighthouseUrl = getCommsServer(store.getState())
+        const lighthouseUrl = getCommsServer(realm.hostname)
         const commsConfig = getCommsConfig(store.getState())
 
         const peerConfig: LighthouseConnectionConfig = {
@@ -172,7 +160,7 @@ export async function connect(realm: Realm): Promise<void> {
               commsContext.removePeer(peerId)
             }
           },
-          preferedIslandId: getPreferedIsland(store.getState())
+          preferedIslandId: PREFERED_ISLAND ?? ''
         }
 
         if (!commsConfig.relaySuspensionDisabled) {
@@ -185,20 +173,13 @@ export async function connect(realm: Realm): Promise<void> {
         commsLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
 
         connection = new LighthouseWorldInstanceConnection(lighthouseUrl, peerConfig, (status) => {
-          store.dispatch(setCatalystRealmCommsStatus(status))
+          commsLogger.log('Lighthouse status: ', lighthouseUrl)
           switch (status.status) {
-            case 'realm-full': {
-              handleFullLayer(commsContext).catch(commsLogger.error)
+            case 'realm-full':
+            case 'reconnection-error':
+            case 'id-taken':
+              connection.disconnect()
               break
-            }
-            case 'reconnection-error': {
-              store.dispatch(handleCommsDisconnection(commsContext))
-              break
-            }
-            case 'id-taken': {
-              handleIdTaken(commsContext)
-              break
-            }
           }
         })
 
@@ -238,10 +219,7 @@ export async function connect(realm: Realm): Promise<void> {
 
         commsLogger.log('Using WebSocket comms: ' + finalUrl)
         const commsBroker = new CliBrokerConnection(finalUrl)
-
         connection = new BrokerWorldInstanceConnection(commsBroker)
-
-        connection.events.on('DISCONNECTION', () => handleReconnectionError(commsContext))
 
         break
       }
@@ -250,48 +228,12 @@ export async function connect(realm: Realm): Promise<void> {
       }
     }
 
-    store.dispatch(setWorldContext(commsContext))
-    await ensureRendererEnabled()
-    try {
-      await commsContext.connect(connection)
-    } catch (e: any) {
-      handleReconnectionError(commsContext)
-      throw e
-    }
-    await bindHandlersToCommsContext(commsContext)
+    await commsContext.connect(connection)
+    notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(realm)}!`)
 
-    store.dispatch(commsEstablished())
+    return commsContext
   } catch (e: any) {
-    commsLogger.error(`Error while trying to establish communications`)
-    commsLogger.error(e)
-
     ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
-    BringDownClientAndShowError(COMMS_COULD_NOT_BE_ESTABLISHED)
-
-    store.dispatch(setWorldContext(undefined))
-
-    throw new ConnectionEstablishmentError(e.message)
+    throw e
   }
-}
-
-function handleReconnectionError(context: CommsContext) {
-  store.dispatch(handleCommsDisconnection(context))
-}
-
-function handleIdTaken(context: CommsContext) {
-  store.dispatch(handleCommsDisconnection(context))
-  ReportFatalErrorWithCommsPayload(new Error(`Handle Id already taken`), ErrorContext.COMMS_INIT)
-  BringDownClientAndShowError(NEW_LOGIN)
-}
-
-async function handleFullLayer(context: CommsContext) {
-  store.dispatch(handleCommsDisconnection(context))
-
-  const candidates = getAllCatalystCandidates(store.getState())
-
-  const otherRealm = await pickCatalystRealm(candidates)
-
-  notifyStatusThroughChat(`Joining realm ${otherRealm.serverName} since the previously requested was full`)
-
-  store.dispatch(setCatalystRealm(otherRealm))
 }

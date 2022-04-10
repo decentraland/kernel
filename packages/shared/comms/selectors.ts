@@ -1,3 +1,4 @@
+import { Realm } from 'shared/dao/types'
 import { isFriend } from 'shared/friends/selectors'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { BannedUsers } from 'shared/meta/types'
@@ -8,6 +9,7 @@ import { store } from 'shared/store/isolatedStore'
 import { Profile, SceneFeatureToggles } from 'shared/types'
 import { lastPlayerScene } from 'shared/world/sceneState'
 import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
+import { CommsContext } from './context'
 import { RootCommsState, VoicePolicy } from './types'
 
 export const isVoiceChatRecording = (store: RootCommsState) => store.comms.voiceChatRecording
@@ -17,10 +19,12 @@ export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator =
   if (!store.comms.voiceCommunicator) throw new Error('VoiceCommunicator not set')
   return store.comms.voiceCommunicator
 }
+export const getRealm = (store: RootCommsState): Realm | undefined => store.comms.context?.realm
+export function getCommsContext(state: RootCommsState): CommsContext | undefined {
+  return state.comms.context
+}
 
 export const getCommsIsland = (store: RootCommsState): string | undefined => store.comms.island
-
-export const getPreferedIsland = (store: RootCommsState) => store.comms.preferedIsland
 
 export function shouldPlayVoice(profile: Profile, voiceUserId: string) {
   const myAddress = getIdentity()?.address
@@ -72,4 +76,10 @@ export function hasBlockedMe(myAddress: string | undefined, theirAddress: string
   const profile = getProfile(store.getState(), theirAddress)
 
   return !!profile && !!myAddress && isBlocked(profile, myAddress)
+}
+
+export function sameRealm(realm1: Realm, realm2: Realm) {
+  return (
+    realm1.protocol == realm2.protocol && realm1.hostname === realm2.hostname && realm1.serverName === realm2.serverName
+  )
 }

@@ -1,6 +1,6 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
+import { call, throttle, put, select, takeEvery, takeLatest } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
 import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
@@ -28,7 +28,12 @@ import {
   deployProfileFailure,
   profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer
+  localProfileSentToRenderer,
+  PROFILE_SAVED_NOT_DEPLOYED,
+  DEPLOY_PROFILE_SUCCESS,
+  announceProfile,
+  ANNOUNCE_PROFILE,
+  AnnounceProfileAction
 } from './actions'
 import { getProfile, hasConnectedWeb3 } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
@@ -63,7 +68,7 @@ import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
-import { getCommsContext } from 'shared/protocol/selectors'
+import { getCommsContext } from 'shared/comms/selectors'
 import { updateCommsUser } from 'shared/comms'
 import { CommsContext } from 'shared/comms/context'
 import { requestLocalProfileToPeers } from 'shared/comms/handlers'
@@ -102,6 +107,28 @@ export function* profileSaga(): any {
   yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
   yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
   yield throttle(3000, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
+
+  // Handling of local actions
+  yield takeLatest(ANNOUNCE_PROFILE, handleAnnounceProfile)
+
+  // Forwarding effects
+  yield takeLatest(DEPLOY_PROFILE_SUCCESS, announceNewAvatar)
+  yield takeLatest(PROFILE_SAVED_NOT_DEPLOYED, announceNewAvatar)
+}
+
+function* announceNewAvatar(action: { type: string; payload: { userId: string; version: number } }) {
+  yield put(announceProfile(action.payload.userId, action.payload.version))
+}
+
+function* handleAnnounceProfile(action: AnnounceProfileAction) {
+  const context = (yield select(getCommsContext)) as CommsContext | undefined
+  if (context === undefined) {
+    defaultLogger.warn('Announce profile is impossible (no connection found)')
+    return
+  }
+  if (context.userInfo) {
+    context.userInfo.version = action.payload.version
+  }
 }
 
 function* initialProfileLoad() {
@@ -114,7 +141,7 @@ function* initialProfileLoad() {
   let profile: Profile
 
   try {
-    profile = yield ProfileAsPromise(userId, undefined, getProfileType(identity))
+    profile = yield call(ProfileAsPromise, userId, undefined, getProfileType(identity))
   } catch (e: any) {
     ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId: userId })
     BringDownClientAndShowError(UNEXPECTED_ERROR)
@@ -168,19 +195,6 @@ function scheduleProfileUpdate(profile: Profile) {
       store.dispatch(saveProfileRequest(profile))
     }
   })
-}
-
-export function* doesProfileExist(userId: string): any {
-  try {
-    const profiles: { avatars: object[] } = yield profileServerRequest(userId)
-
-    return profiles.avatars.length > 0
-  } catch (error: any) {
-    if (error.message !== 'Profile not found') {
-      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
-    }
-  }
-  return false
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
