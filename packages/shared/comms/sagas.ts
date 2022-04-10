@@ -42,6 +42,7 @@ function* handleNewCommsContext() {
     if (currentContext) {
       yield call(bindHandlersToCommsContext, currentContext)
       yield put(commsEstablished())
+      notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
       // connect new context
     }
 

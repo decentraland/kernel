@@ -18,8 +18,6 @@ import { commsLogger, CommsContext } from './context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
 import { Realm } from 'shared/dao/types'
-import { notifyStatusThroughChat } from '../chat'
-import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -196,7 +194,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
         }
 
         function securedRemote(hostname: string) {
-          if (hostname === 'localhost' || hostname.match(/\d+\.\d+\.\d+\.\d+/)) {
+          if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
             return `://${hostname}`
           }
           return `https://${realm.hostname}`
@@ -229,7 +227,6 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
     }
 
     await commsContext.connect(connection)
-    notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(realm)}!`)
 
     return commsContext
   } catch (e: any) {
