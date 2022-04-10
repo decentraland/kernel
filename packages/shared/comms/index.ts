@@ -10,7 +10,6 @@ import { getCommsServer } from '../dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
-import { ErrorContext, ReportFatalErrorWithCommsPayload } from 'shared/loading/ReportFatalError'
 import { getIdentity, getStoredSession } from 'shared/session'
 import { setCommsIsland } from './actions'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
@@ -73,164 +72,159 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
     throw new Error('No realm was found')
   }
 
-  try {
-    const identity = getCurrentIdentity(store.getState())
+  const identity = getCurrentIdentity(store.getState())
 
-    if (!identity) {
-      throw new Error("Can't connect to comms because there is no identity")
-    }
-
-    const user = await getStoredSession(identity.address)
-
-    if (!user) {
-      throw new Error("Can't connect to comms because there is no storedSession")
-    }
-
-    const userInfo: UserInformation = {
-      userId: identity.address,
-      ...user
-    }
-
-    const commsContext = new CommsContext(realm, userInfo)
-
-    let connection: RoomConnection
-
-    const DEFAULT_PROTOCOL = 'v2'
-    const protocol = realm.protocol ?? DEFAULT_PROTOCOL
-
-    switch (protocol) {
-      case 'v1': {
-        let location = document.location.toString()
-        if (location.indexOf('#') > -1) {
-          location = location.substring(0, location.indexOf('#')) // drop fragment identifier
-        }
-        const commsUrl = location.replace(/^http/, 'ws') // change protocol to ws
-
-        const url = new URL(commsUrl)
-        const qs = new URLSearchParams({
-          identity: btoa(user.identity.address)
-        })
-        url.search = qs.toString()
-
-        commsLogger.log('Using WebSocket comms: ' + url.href)
-
-        connection = new BrokerWorldInstanceConnection(new CliBrokerConnection(url.href))
-        break
-      }
-      case 'v2': {
-        await ensureMetaConfigurationInitialized()
-
-        const lighthouseUrl = getCommsServer(realm.hostname)
-        const commsConfig = getCommsConfig(store.getState())
-
-        const peerConfig: LighthouseConnectionConfig = {
-          connectionConfig: {
-            iceServers: commConfigurations.defaultIceServers
-          },
-          authHandler: async (msg: string) => {
-            try {
-              return Authenticator.signPayload(getIdentity() as AuthIdentity, msg)
-            } catch (e) {
-              commsLogger.info(`error while trying to sign message from lighthouse '${msg}'`)
-            }
-            // if any error occurs
-            return getIdentity()
-          },
-          logLevel: 'NONE',
-          targetConnections: commsConfig.targetConnections ?? 4,
-          maxConnections: commsConfig.maxConnections ?? 6,
-          positionConfig: {
-            selfPosition: () => {
-              if (commsContext.currentPosition) {
-                return commsContext.currentPosition.slice(0, 3) as Position3D
-              }
-            },
-            maxConnectionDistance: 4,
-            nearbyPeersDistance: 5,
-            disconnectDistance: 5
-          },
-          eventsHandler: {
-            onIslandChange: (island: string | undefined, peers: MinPeerData[]) => {
-              store.dispatch(setCommsIsland(island))
-              commsContext.removeMissingPeers(peers)
-            },
-            onPeerLeftIsland: (peerId: string) => {
-              commsContext.removePeer(peerId)
-            }
-          },
-          preferedIslandId: PREFERED_ISLAND ?? ''
-        }
-
-        if (!commsConfig.relaySuspensionDisabled) {
-          peerConfig.relaySuspensionConfig = {
-            relaySuspensionInterval: commsConfig.relaySuspensionInterval ?? 750,
-            relaySuspensionDuration: commsConfig.relaySuspensionDuration ?? 5000
-          }
-        }
-
-        commsLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
-
-        connection = new LighthouseWorldInstanceConnection(lighthouseUrl, peerConfig, (status) => {
-          commsLogger.log('Lighthouse status: ', status)
-          switch (status.status) {
-            case 'realm-full':
-            case 'reconnection-error':
-            case 'id-taken':
-              connection.disconnect().catch(commsLogger.error)
-              break
-          }
-        })
-
-        break
-      }
-      case 'v3': {
-        // TODO: all of this is temporary
-        function normalizeUrl(url: string) {
-          return url.replace(/^:\/\//, window.location.protocol + '//')
-        }
-
-        function httpToWs(url: string) {
-          return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-        }
-
-        function securedRemote(hostname: string) {
-          if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
-            return `://${hostname}`
-          }
-          return `https://${realm.hostname}`
-        }
-
-        const commsUrl =
-          realm.hostname === 'local'
-            ? 'ws://0.0.0.0:5000/ws'
-            : realm.hostname === 'remote'
-            ? 'wss://explorer-bff.decentraland.io/ws'
-            : securedRemote(realm.hostname)
-
-        const url = new URL(normalizeUrl(commsUrl))
-        const qs = new URLSearchParams({
-          identity: btoa(user.identity.address)
-        })
-        url.search = qs.toString()
-
-        const finalUrl = httpToWs(url.toString())
-
-        commsLogger.log('Using WebSocket comms: ' + finalUrl)
-        const commsBroker = new CliBrokerConnection(finalUrl)
-        connection = new BrokerWorldInstanceConnection(commsBroker)
-
-        break
-      }
-      default: {
-        throw new Error(`unrecognized comms mode "${COMMS}"`)
-      }
-    }
-
-    await commsContext.connect(connection)
-
-    return commsContext
-  } catch (e: any) {
-    ReportFatalErrorWithCommsPayload(e, ErrorContext.COMMS_INIT)
-    throw e
+  if (!identity) {
+    throw new Error("Can't connect to comms because there is no identity")
   }
+
+  const user = await getStoredSession(identity.address)
+
+  if (!user) {
+    throw new Error("Can't connect to comms because there is no storedSession")
+  }
+
+  const userInfo: UserInformation = {
+    userId: identity.address,
+    ...user
+  }
+
+  const commsContext = new CommsContext(realm, userInfo)
+
+  let connection: RoomConnection
+
+  const DEFAULT_PROTOCOL = 'v2'
+  const protocol = realm.protocol ?? DEFAULT_PROTOCOL
+
+  switch (protocol) {
+    case 'v1': {
+      let location = document.location.toString()
+      if (location.indexOf('#') > -1) {
+        location = location.substring(0, location.indexOf('#')) // drop fragment identifier
+      }
+      const commsUrl = location.replace(/^http/, 'ws') // change protocol to ws
+
+      const url = new URL(commsUrl)
+      const qs = new URLSearchParams({
+        identity: btoa(user.identity.address)
+      })
+      url.search = qs.toString()
+
+      commsLogger.log('Using WebSocket comms: ' + url.href)
+
+      connection = new BrokerWorldInstanceConnection(new CliBrokerConnection(url.href))
+      break
+    }
+    case 'v2': {
+      await ensureMetaConfigurationInitialized()
+
+      const lighthouseUrl = getCommsServer(realm.hostname)
+      const commsConfig = getCommsConfig(store.getState())
+
+      const peerConfig: LighthouseConnectionConfig = {
+        connectionConfig: {
+          iceServers: commConfigurations.defaultIceServers
+        },
+        authHandler: async (msg: string) => {
+          try {
+            return Authenticator.signPayload(getIdentity() as AuthIdentity, msg)
+          } catch (e) {
+            commsLogger.info(`error while trying to sign message from lighthouse '${msg}'`)
+          }
+          // if any error occurs
+          return getIdentity()
+        },
+        logLevel: 'NONE',
+        targetConnections: commsConfig.targetConnections ?? 4,
+        maxConnections: commsConfig.maxConnections ?? 6,
+        positionConfig: {
+          selfPosition: () => {
+            if (commsContext.currentPosition) {
+              return commsContext.currentPosition.slice(0, 3) as Position3D
+            }
+          },
+          maxConnectionDistance: 4,
+          nearbyPeersDistance: 5,
+          disconnectDistance: 5
+        },
+        eventsHandler: {
+          onIslandChange: (island: string | undefined, peers: MinPeerData[]) => {
+            store.dispatch(setCommsIsland(island))
+            commsContext.removeMissingPeers(peers)
+          },
+          onPeerLeftIsland: (peerId: string) => {
+            commsContext.removePeer(peerId)
+          }
+        },
+        preferedIslandId: PREFERED_ISLAND ?? ''
+      }
+
+      if (!commsConfig.relaySuspensionDisabled) {
+        peerConfig.relaySuspensionConfig = {
+          relaySuspensionInterval: commsConfig.relaySuspensionInterval ?? 750,
+          relaySuspensionDuration: commsConfig.relaySuspensionDuration ?? 5000
+        }
+      }
+
+      commsLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
+
+      connection = new LighthouseWorldInstanceConnection(lighthouseUrl, peerConfig, (status) => {
+        commsLogger.log('Lighthouse status: ', status)
+        switch (status.status) {
+          case 'realm-full':
+          case 'reconnection-error':
+          case 'id-taken':
+            connection.disconnect().catch(commsLogger.error)
+            break
+        }
+      })
+
+      break
+    }
+    case 'v3': {
+      // TODO: all of this is temporary
+      function normalizeUrl(url: string) {
+        return url.replace(/^:\/\//, window.location.protocol + '//')
+      }
+
+      function httpToWs(url: string) {
+        return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
+      }
+
+      function securedRemote(hostname: string) {
+        if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+          return `://${hostname}`
+        }
+        return `https://${realm.hostname}`
+      }
+
+      const commsUrl =
+        realm.hostname === 'local'
+          ? 'ws://0.0.0.0:5000/ws'
+          : realm.hostname === 'remote'
+          ? 'wss://explorer-bff.decentraland.io/ws'
+          : securedRemote(realm.hostname)
+
+      const url = new URL(normalizeUrl(commsUrl))
+      const qs = new URLSearchParams({
+        identity: btoa(user.identity.address)
+      })
+      url.search = qs.toString()
+
+      const finalUrl = httpToWs(url.toString())
+
+      commsLogger.log('Using WebSocket comms: ' + finalUrl)
+      const commsBroker = new CliBrokerConnection(finalUrl)
+      connection = new BrokerWorldInstanceConnection(commsBroker)
+
+      break
+    }
+    default: {
+      throw new Error(`unrecognized comms mode "${COMMS}"`)
+    }
+  }
+
+  await commsContext.connect(connection)
+
+  return commsContext
 }
