@@ -280,7 +280,7 @@ export class BrowserInterface {
   }
 
   public GoToMagic() {
-    TeleportController.goToMagic()
+    TeleportController.goToCrowd().catch((e) => defaultLogger.error('error goToCrowd', e))
   }
 
   public GoToCrowd() {

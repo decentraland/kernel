@@ -1,10 +1,15 @@
 import { action } from 'typesafe-actions'
+import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import { VoicePolicy } from './types'
 
 export const VOICE_PLAYING_UPDATE = 'Voice Playing Update'
 export const voicePlayingUpdate = (userId: string, playing: boolean) =>
   action(VOICE_PLAYING_UPDATE, { userId, playing })
 export type VoicePlayingUpdate = ReturnType<typeof voicePlayingUpdate>
+
+export const INIT_VOICE_COMMUNICATOR = 'Init voice communicator'
+export const setVoiceCommunicator = (voiceCommunicator: VoiceCommunicator) =>
+  action(INIT_VOICE_COMMUNICATOR, { voiceCommunicator })
 
 /**
  * Action to trigger voice chat recording

@@ -7,11 +7,16 @@ import { getIdentity } from 'shared/session'
 import { store } from 'shared/store/isolatedStore'
 import { Profile, SceneFeatureToggles } from 'shared/types'
 import { lastPlayerScene } from 'shared/world/sceneState'
+import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import { RootCommsState, VoicePolicy } from './types'
 
 export const isVoiceChatRecording = (store: RootCommsState) => store.comms.voiceChatRecording
 
 export const getVoicePolicy = (store: RootCommsState) => store.comms.voicePolicy
+export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator => {
+  if (!store.comms.voiceCommunicator) throw new Error('VoiceCommunicator not set')
+  return store.comms.voiceCommunicator
+}
 
 export const getCommsIsland = (store: RootCommsState): string | undefined => store.comms.island
 

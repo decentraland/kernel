@@ -1,9 +1,12 @@
+import type { VoiceCommunicator } from "voice-chat-codec/VoiceCommunicator"
+
 export type CommsState = {
   initialized: boolean
   voiceChatRecording: boolean
   voicePolicy: VoicePolicy
   island?: string
   preferedIsland?: string
+  voiceCommunicator?: VoiceCommunicator
 }
 
 export type RootCommsState = {

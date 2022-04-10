@@ -14,6 +14,7 @@ import { CommsContext, commsLogger } from './context'
 import { connect } from '.'
 
 import {
+  setVoiceChatRecording,
   SetVoiceMute,
   SetVoiceVolume,
   SET_VOICE_CHAT_RECORDING,
@@ -26,24 +27,26 @@ import {
   VOICE_RECORDING_UPDATE
 } from './actions'
 
-import { isVoiceChatAllowedByCurrentScene, isVoiceChatRecording } from './selectors'
+import { getVoiceCommunicator, isVoiceChatAllowedByCurrentScene, isVoiceChatRecording } from './selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { sceneObservable } from 'shared/world/sceneState'
 import { SceneFeatureToggles } from 'shared/types'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { setVoiceCommunicatorInputStream, voiceCommunicator } from './voice-over-comms'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { getCommsContext, getPrevCommsContext } from 'shared/protocol/selectors'
 import { BEFORE_UNLOAD, setWorldContext, SET_WORLD_CONTEXT } from 'shared/protocol/actions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
+import { store } from 'shared/store/isolatedStore'
+import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
+import { initVoiceCommunicator } from './voice-over-comms'
 
 export function* commsSaga() {
   yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
   yield takeLatest(CATALYST_REALMS_SCAN_SUCCESS, changeRealm)
 
   yield takeEvery(FATAL_ERROR, function* () {
-    // set null context on fatal error
+    // set null context on fatal error. this will bring down comms.
     yield put(setWorldContext(undefined))
   })
 
@@ -53,12 +56,16 @@ export function* commsSaga() {
     // this would disconnect the comms context
     yield put(setWorldContext(undefined))
   })
-
-  // 1 yield takeEvery(FATAL_ERROR, bringDownComms)
 }
 
 async function disconnectContext(context: CommsContext) {
-  await context.disconnect()
+  try {
+    await context.disconnect()
+  } catch (err: any) {
+    // this only needs to be logged. try {} catch is used because the function needs
+    // to wait for the disconnection to continue with the saga.
+    commsLogger.error(err)
+  }
 }
 
 function* handleNewCommsContext() {
@@ -72,19 +79,15 @@ function* handleNewCommsContext() {
 }
 
 function* listenToWhetherSceneSupportsVoiceChat() {
-  sceneObservable.add(({ previousScene, newScene }) => {
-    const previouslyEnabled = previousScene
-      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, previousScene.sceneJsonData)
-      : undefined
+  sceneObservable.add(({ newScene }) => {
     const nowEnabled = newScene
       ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, newScene.sceneJsonData)
-      : undefined
-    if (previouslyEnabled !== nowEnabled && nowEnabled !== undefined) {
-      getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
-      if (!nowEnabled) {
-        // We want to stop any potential recordings when a user enters a new scene
-        updateVoiceRecordingStatus(false).catch(commsLogger.error)
-      }
+      : isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT)
+
+    getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
+    if (!nowEnabled) {
+      // We want to stop any potential recordings when a user enters a new scene
+      store.dispatch(setVoiceChatRecording(false))
     }
   })
 }
@@ -95,6 +98,7 @@ function* userAuthentified() {
   }
 
   yield call(waitForRealmInitialized)
+  yield call(initVoiceCommunicator)
 
   yield takeEvery(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
@@ -103,7 +107,7 @@ function* userAuthentified() {
   yield takeEvery(SET_VOICE_VOLUME, updateVoiceChatVolume)
   yield takeEvery(SET_VOICE_MUTE, updateVoiceChatMute)
 
-  yield listenToWhetherSceneSupportsVoiceChat()
+  yield call(listenToWhetherSceneSupportsVoiceChat)
 
   yield put(establishingComms())
 
@@ -125,7 +129,23 @@ function* userAuthentified() {
 
 function* updateVoiceChatRecordingStatus() {
   const recording = yield select(isVoiceChatRecording)
-  yield call(updateVoiceRecordingStatus, recording)
+  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
+
+  if (!isVoiceChatAllowedByCurrentScene() || !recording) {
+    voiceCommunicator.pause()
+  } else {
+    yield call(requestUserMedia)
+    voiceCommunicator.start()
+  }
+}
+
+// TODO: bind this function to a "Request Microphone" button
+function* requestUserMedia() {
+  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
+  if (!voiceCommunicator.hasInput()) {
+    const media = yield call(requestMediaDevice)
+    voiceCommunicator.setInputStream(media)
+  }
 }
 
 function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
@@ -143,15 +163,13 @@ function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
 }
 
 function* updateVoiceChatVolume(action: SetVoiceVolume) {
-  if (voiceCommunicator) {
-    voiceCommunicator.setVolume(action.payload.volume)
-  }
+  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
+  voiceCommunicator.setVolume(action.payload.volume)
 }
 
 function* updateVoiceChatMute(action: SetVoiceMute) {
-  if (voiceCommunicator) {
-    voiceCommunicator.setMute(action.payload.mute)
-  }
+  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
+  voiceCommunicator.setMute(action.payload.mute)
 }
 
 function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
@@ -187,13 +205,10 @@ function sameRealm(realm1: Realm, realm2: Realm) {
 let audioRequestPending = false
 
 async function requestMediaDevice() {
-  // TODO: Push redux action to inform the user to ACCEPT the microphone usage
-
   if (!audioRequestPending) {
     audioRequestPending = true
 
     try {
-      // tslint:disable-next-line
       const media = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
@@ -206,33 +221,11 @@ async function requestMediaDevice() {
         video: false
       })
 
-      await setVoiceCommunicatorInputStream(media)
+      return media
     } catch (e: any) {
       commsLogger.log('Error requesting audio: ', e)
     } finally {
       audioRequestPending = false
     }
-  }
-}
-
-async function updateVoiceRecordingStatus(recording: boolean) {
-  if (!voiceCommunicator) {
-    return
-  }
-
-  if (!isVoiceChatAllowedByCurrentScene()) {
-    voiceCommunicator.pause()
-    return
-  }
-
-  if (!recording) {
-    voiceCommunicator.pause()
-    return
-  }
-
-  if (!voiceCommunicator.hasInput()) {
-    await requestMediaDevice()
-  } else {
-    voiceCommunicator.start()
   }
 }

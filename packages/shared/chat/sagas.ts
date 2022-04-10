@@ -181,16 +181,17 @@ function addChatCommand(name: string, description: string, fn: (message: string)
 function initChatCommands() {
   addChatCommand('goto', 'Teleport to another parcel', (message) => {
     const coordinates = parseParcelPosition(message)
-    const isValid = isFinite(coordinates.x) && isFinite(coordinates.y)
+    const isValidPosition = isFinite(coordinates.x) && isFinite(coordinates.y)
 
     let response = ''
 
-    if (!isValid) {
-      if (message.trim().toLowerCase() === 'magic') {
-        response = TeleportController.goToMagic().message
-      } else if (message.trim().toLowerCase() === 'random') {
+    if (isValidPosition) {
+      const { x, y } = coordinates
+      response = TeleportController.goTo(x, y).message
+    } else {
+      if (message.trim().toLowerCase() === 'random') {
         response = TeleportController.goToRandom().message
-      } else if (message.trim().toLowerCase() === 'crowd') {
+      } else if (message.trim().toLowerCase() === 'magic' || message.trim().toLowerCase() === 'crowd') {
         response = `Teleporting to a crowd of people in current realm...`
 
         TeleportController.goToCrowd().then(
@@ -202,9 +203,6 @@ function initChatCommands() {
       } else {
         response = 'Could not recognize the coordinates provided. Example usage: /goto 42,42'
       }
-    } else {
-      const { x, y } = coordinates
-      response = TeleportController.goTo(x, y).message
     }
 
     return {
