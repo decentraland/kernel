@@ -1,7 +1,7 @@
 import { call, select, takeLatest } from 'redux-saga/effects'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 import { toEnvironmentRealmType } from '../apis/EnvironmentAPI'
-import { SetCommsIsland, SET_COMMS_ISLAND } from '../comms/actions'
+import { SET_COMMS_ISLAND } from '../comms/actions'
 import { getCommsIsland } from '../comms/selectors'
 import { SET_CATALYST_REALM } from '../dao/actions'
 import { getRealm } from '../dao/selectors'
