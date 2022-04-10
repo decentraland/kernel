@@ -6,12 +6,7 @@ import { establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { waitForRealmInitialized, selectRealm } from 'shared/dao/sagas'
 import { getRealm } from 'shared/dao/selectors'
-import {
-  CATALYST_REALMS_SCAN_SUCCESS,
-  SetCatalystRealm,
-  setCatalystRealm,
-  SET_CATALYST_REALM
-} from 'shared/dao/actions'
+import { CATALYST_REALMS_SCAN_SUCCESS, setCatalystRealm, SET_CATALYST_REALM } from 'shared/dao/actions'
 import { Realm } from 'shared/dao/types'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 
@@ -19,10 +14,8 @@ import { CommsContext, commsLogger } from './context'
 import { connect } from '.'
 
 import {
-  SetCommsIsland,
   SetVoiceMute,
   SetVoiceVolume,
-  SET_COMMS_ISLAND,
   SET_VOICE_CHAT_RECORDING,
   SET_VOICE_MUTE,
   SET_VOICE_VOLUME,
@@ -33,7 +26,7 @@ import {
   VOICE_RECORDING_UPDATE
 } from './actions'
 
-import { getCommsIsland, isVoiceChatAllowedByCurrentScene, isVoiceChatRecording } from './selectors'
+import { isVoiceChatAllowedByCurrentScene, isVoiceChatRecording } from './selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { sceneObservable } from 'shared/world/sceneState'
 import { SceneFeatureToggles } from 'shared/types'
@@ -43,8 +36,6 @@ import { setVoiceCommunicatorInputStream, voiceCommunicator } from './voice-over
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { getCommsContext, getPrevCommsContext } from 'shared/protocol/selectors'
 import { BEFORE_UNLOAD, setWorldContext, SET_WORLD_CONTEXT } from 'shared/protocol/actions'
-import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
-import { allScenesEvent } from 'shared/world/parcelSceneManager'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 export function* commsSaga() {
@@ -64,9 +55,6 @@ export function* commsSaga() {
   })
 
   // 1 yield takeEvery(FATAL_ERROR, bringDownComms)
-
-  yield takeLatest(SET_CATALYST_REALM, realmChanged)
-  yield takeLatest(SET_COMMS_ISLAND, islandChanged)
 }
 
 async function disconnectContext(context: CommsContext) {
@@ -190,26 +178,6 @@ function* changeRealm() {
   } else {
     commsLogger.info(`Realm already set ${realmToConnectionString(currentRealm)}`)
   }
-}
-
-function* realmChanged(action: SetCatalystRealm) {
-  const realm = action.payload
-  const island: string = yield select(getCommsIsland) ?? ''
-
-  const payload = toEnvironmentRealmType(realm, island)
-  allScenesEvent({ eventType: 'onRealmChanged', payload })
-}
-
-function* islandChanged(action: SetCommsIsland) {
-  const realm: Realm = yield select(getRealm)
-  const island = action.payload.island ?? ''
-
-  if (!realm) {
-    return
-  }
-
-  const payload = toEnvironmentRealmType(realm, island)
-  allScenesEvent({ eventType: 'onRealmChanged', payload })
 }
 
 function sameRealm(realm1: Realm, realm2: Realm) {

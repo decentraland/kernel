@@ -8,17 +8,26 @@ const originalFetch: FetchFunction = async (resource: RequestInfo, init?: Reques
   return new Response()
 }
 
-describe('Fetch Wrapped for scenes' , () => {
+describe('Fetch Wrapped for scenes', () => {
   const log = sinon.spy()
   const logPreview = sinon.spy()
   const wrappedProductionFetch = createFetch({
-    canUseFetch: true, log, originalFetch, previewMode: false
+    canUseFetch: true,
+    log,
+    originalFetch,
+    previewMode: false
   })
   const wrappedPreviewFetch = createFetch({
-    canUseFetch: true, log: logPreview, originalFetch, previewMode: true
+    canUseFetch: true,
+    log: logPreview,
+    originalFetch,
+    previewMode: true
   })
   const wrappedNotAllowedFetch = createFetch({
-    canUseFetch: false, log, originalFetch, previewMode: false
+    canUseFetch: false,
+    log,
+    originalFetch,
+    previewMode: false
   })
 
   const timePerFetchSleep = 100
@@ -44,13 +53,13 @@ describe('Fetch Wrapped for scenes' , () => {
   // *
 
   it('should run successfully if the url is secure in deployed scenes', async () => {
-    await wrappedProductionFetch("https://decentraland.org")
+    await wrappedProductionFetch('https://decentraland.org')
   })
 
   it('should throw an error if the url is not secure in deployed scenes', async () => {
     const throwErrorLogger = sinon.spy()
     try {
-      await wrappedProductionFetch("http://decentraland.org")
+      await wrappedProductionFetch('http://decentraland.org')
     } catch (err) {
       throwErrorLogger(err)
     }
@@ -62,12 +71,12 @@ describe('Fetch Wrapped for scenes' , () => {
   // *
 
   it('should run successfully if the url is secure in preview scenes', async () => {
-    await wrappedPreviewFetch("https://decentraland.org")
+    await wrappedPreviewFetch('https://decentraland.org')
   })
 
   it('should log an error if the url is not secure in preview scenes', async () => {
     sinon.assert.notCalled(logPreview)
-    await wrappedPreviewFetch("http://decentraland.org")
+    await wrappedPreviewFetch('http://decentraland.org')
     sinon.assert.calledOnce(logPreview)
   })
 
@@ -78,7 +87,7 @@ describe('Fetch Wrapped for scenes' , () => {
   it('should throw an error because it does not have permissions', async () => {
     const throwErrorLogger = sinon.spy()
     try {
-      await wrappedNotAllowedFetch("https://decentraland.org")
+      await wrappedNotAllowedFetch('https://decentraland.org')
     } catch (err) {
       throwErrorLogger(err)
     }
@@ -113,7 +122,7 @@ describe('Fetch Wrapped for scenes' , () => {
     let error: Error = null
     let counter = 0
     await Promise.all([
-      wrappedDelayFetch('https://test.test/', { timeout: 5 }).catch(err => {
+      wrappedDelayFetch('https://test.test/', { timeout: 5 }).catch((err) => {
         error = err
         counter++
       }),

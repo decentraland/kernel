@@ -9,11 +9,9 @@ import { RoomConnection } from './interface/index'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
 import { Authenticator, AuthIdentity } from 'dcl-crypto'
 import { getCommsServer, getAllCatalystCandidates } from '../dao/selectors'
-import { Store } from 'redux'
 import { store } from 'shared/store/isolatedStore'
 import { setCatalystRealmCommsStatus, setCatalystRealm, handleCommsDisconnection } from 'shared/dao/actions'
 import { pickCatalystRealm } from 'shared/dao'
-import { realmToConnectionString } from '../dao/utils/realmToString'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
 import {
@@ -24,8 +22,7 @@ import {
 import { NEW_LOGIN, COMMS_COULD_NOT_BE_ESTABLISHED, commsEstablished } from 'shared/loading/types'
 import { getIdentity, getStoredSession } from 'shared/session'
 import { setCommsIsland } from './actions'
-import { getCommsIsland, getPreferedIsland } from './selectors'
-import { RootCommsState } from './types'
+import { getPreferedIsland } from './selectors'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { commsLogger, CommsContext } from './context'
 import { bindHandlersToCommsContext } from './handlers'
@@ -81,11 +78,6 @@ export function updateCommsUser(changes: Partial<UserInformation>) {
 }
 
 export async function connect(realm: Realm): Promise<void> {
-  const realmString = realmToConnectionString(realm)
-  const q = new URLSearchParams(window.location.search)
-  q.set('realm', realmString)
-  history.replaceState({ realm: realmString }, '', `?${q.toString()}`)
-
   commsLogger.log('Connecting to realm', realm)
 
   if (!realm) {
@@ -302,33 +294,4 @@ async function handleFullLayer(context: CommsContext) {
   notifyStatusThroughChat(`Joining realm ${otherRealm.serverName} since the previously requested was full`)
 
   store.dispatch(setCatalystRealm(otherRealm))
-}
-
-function observeIslandChange(
-  store: Store<RootCommsState>,
-  onIslandChange: (previousIsland: string | undefined, currentIsland: string | undefined) => any
-) {
-  let currentIsland = getCommsIsland(store.getState())
-
-  store.subscribe(() => {
-    const previousIsland = currentIsland
-    currentIsland = getCommsIsland(store.getState())
-    if (currentIsland !== previousIsland) {
-      onIslandChange(previousIsland, currentIsland)
-    }
-  })
-}
-
-export function initializeUrlIslandObserver() {
-  observeIslandChange(store, (_previousIsland, currentIsland) => {
-    const q = new URLSearchParams(location.search)
-
-    if (currentIsland) {
-      q.set('island', currentIsland)
-    } else {
-      q.delete('island')
-    }
-
-    history.replaceState({ island: currentIsland }, '', `?${q.toString()}`)
-  })
 }

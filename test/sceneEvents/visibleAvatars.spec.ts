@@ -1,9 +1,9 @@
 import * as sinon from 'sinon'
 import { expect } from 'chai'
-import * as peers from '../../../packages/shared/comms/peers'
-import { getVisibleAvatarsUserId } from '../../../packages/shared/sceneEvents/visibleAvatars'
-import { AvatarMessageType } from '../../../packages/shared/comms/interface/types'
-import * as sceneManager from '../../../packages/shared/world/parcelSceneManager'
+import * as peers from '../../packages/shared/comms/peers'
+import { getVisibleAvatarsUserId } from '../../packages/shared/sceneEvents/visibleAvatars'
+import { AvatarMessageType } from '../../packages/shared/comms/interface/types'
+import * as sceneManager from '../../packages/shared/world/parcelSceneManager'
 
 function sendAvatarMessage(uuid: string, visible: boolean) {
   peers.receiveUserVisible(uuid, visible)
@@ -30,7 +30,7 @@ beforeEach(() => {
 afterEach(() => {
   // clear visible avatars cache
   const users = getVisibleAvatarsUserId()
-  users.forEach(u => sendAvatarMessage(u, false))
+  users.forEach((u) => sendAvatarMessage(u, false))
 
   sinon.restore()
   sinon.reset()

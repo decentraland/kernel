@@ -4,7 +4,6 @@ import { DEBUG_PREFIX } from 'config'
 import { notStarted } from './loading/types'
 import { buildStore } from './store/store'
 import { initializeUrlPositionObserver } from './world/positionThings'
-import { initializeUrlIslandObserver } from './comms'
 import { globalObservable } from './observables'
 import { isRendererVisible } from './loading/selectors'
 import { RootStore } from './store/rootTypes'
@@ -31,7 +30,6 @@ export function initShared() {
   store.dispatch(notStarted())
 
   initializeUrlPositionObserver()
-  initializeUrlIslandObserver()
   initializeRendererVisibleObserver(store)
   initializeSessionObserver()
   initVoiceCommunicator()

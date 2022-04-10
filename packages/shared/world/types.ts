@@ -4,7 +4,7 @@ import { ILand } from 'shared/types'
 export type ParcelSceneLoadingState = {
   isWorldLoadingEnabled: boolean
   desiredParcelScenes: Set<string>
-  lifecycleManager: LifecycleManager | null
+  lifecycleManager: LifecycleManager
   runningIsolatedMode: boolean
   isolatedModeOptions: IsolatedModeOptions | null
 }

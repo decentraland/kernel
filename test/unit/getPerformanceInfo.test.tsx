@@ -11,7 +11,7 @@ describe('get performance info', function() {
     const result = getPerformanceInfo({ samples: strData, fpsIsCapped: false, hiccupsInThousandFrames: 4, hiccupsTime: 2, totalTime: 100})
     expect(result.len).to.eq(100)
     expect(result.min).to.eq(0)
-    expect(result.max).to.eq(98)
+    expect(result.max).to.eq(118)
     expect(result.hiccupsInThousandFrames).to.eq(4)
     expect(result.hiccupsTime).to.eq(2)
     expect(result.totalTime).to.eq(100)

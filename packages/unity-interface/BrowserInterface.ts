@@ -135,7 +135,7 @@ export class BrowserInterface {
   }
 
   public StartIsolatedMode(options: IsolatedModeOptions) {
-    startIsolatedMode(options)
+    startIsolatedMode(options).catch(defaultLogger.error)
   }
 
   public StopIsolatedMode(options: IsolatedModeOptions) {

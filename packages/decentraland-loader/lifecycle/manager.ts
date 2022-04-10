@@ -26,7 +26,7 @@ declare const globalThis: { workerManager: LifecycleManager }
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const lifecycleWorkerRaw = require('raw-loader!../../../static/loader/lifecycle/worker.js')
 const lifecycleWorkerUrl = URL.createObjectURL(new Blob([lifecycleWorkerRaw]))
-const worker: Worker = new (Worker as any)(lifecycleWorkerUrl, { name: 'LifecycleWorker' })
+const worker: Worker = new Worker(lifecycleWorkerUrl, { name: 'LifecycleWorker' })
 worker.onerror = (e) => defaultLogger.error('Loader worker error', e)
 
 export class LifecycleManager extends TransportBasedServer {
@@ -64,7 +64,7 @@ export class LifecycleManager extends TransportBasedServer {
     this.sceneIdToRequest.set(sceneId, theFuture)
   }
 
-  getParcelData(sceneId: string) {
+  getParcelData(sceneId: string): Promise<ILand> {
     let theFuture = this.sceneIdToRequest.get(sceneId)
     if (!theFuture) {
       theFuture = future<ILand>()

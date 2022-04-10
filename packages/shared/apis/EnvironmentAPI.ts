@@ -23,7 +23,7 @@ type ExplorerConfiguration = {
   configurations: Record<string, string | number | boolean>
 }
 
-export enum Platform {
+export const enum Platform {
   DESKTOP = 'desktop',
   BROWSER = 'browser'
 }
@@ -132,12 +132,12 @@ export class EnvironmentAPI extends ExposableAPI {
   }
 }
 
-export function toEnvironmentRealmType(realm: Realm, island: string): EnvironmentRealm {
-  const { hostname: domain, serverName } = realm
+export function toEnvironmentRealmType(realm: Realm, island: string | undefined): EnvironmentRealm {
+  const { hostname, serverName } = realm
   return {
-    domain,
-    layer: island,
-    room: island,
+    domain: hostname,
+    layer: island ?? '',
+    room: island ?? '',
     serverName,
     displayName: serverName
   }

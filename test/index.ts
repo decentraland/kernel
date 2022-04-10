@@ -5,6 +5,8 @@ globalThis['isRunningTests'] = true
  * You should import all your tests here.
  */
 
+beforeEach(() => history.replaceState({}, '', `?`))
+
 /* HELPERS */
 import './atomicHelpers/parcelScenePositions.test'
 import './atomicHelpers/landHelpers.test'
@@ -17,18 +19,25 @@ import './unit/ethereum.test'
 import './unit/objectComparison.test'
 import './unit/jsonFetch.test'
 import './unit/profiles.saga.test'
+import './unit/getPerformanceInfo.test'
 import './unit/BrowserInterface.test'
 import './unit/positionThings.test'
 import './unit/RestrictedActions.test'
 import './unit/engine.test'
 import './unit/catalog.saga.test'
 import './unit/portable-experiences.test'
+import './unit/logger.spec'
+
+/* SCENE EVENTS */
+import './sceneEvents/visibleAvatars.spec'
+import './sceneEvents/comms.spec'
+import './sceneEvents/world/parcelSceneManager.spec'
+import './sceneEvents/apis/sceneDeployer.spec'
 
 import './dao'
 
-import './shared'
-
-import './scene-system/sdk'
+import './scene-system/websocketWrapper.spec'
+import './scene-system/fetchWrapper.spec'
 
 declare var mocha: Mocha
 declare var globalThis: any
