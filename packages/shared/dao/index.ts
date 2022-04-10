@@ -83,7 +83,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promis
             elapsed: response.elapsed!,
             lighthouseVersion: result.version,
             usersCount: result.usersCount ?? 0,
-            maxUsers: result.usersCount ?? -1,
+            maxUsers: result.maxUsers ?? -1,
             usersParcels: result.usersParcels
           })
         }
