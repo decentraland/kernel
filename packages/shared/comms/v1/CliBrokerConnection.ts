@@ -115,7 +115,7 @@ export class CliBrokerConnection implements IBrokerTransport {
   }
 
   private connectWS() {
-    if(this.ws && this.ws.readyState == this.ws.OPEN) return
+    if (this.ws && this.ws.readyState === this.ws.OPEN) return
 
     if (this.ws) {
       this.ws.close()

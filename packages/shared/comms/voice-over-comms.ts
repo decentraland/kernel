@@ -74,7 +74,6 @@ export function* initVoiceCommunicator() {
   voiceCommunicator.addStreamRecordingListener((recording) => {
     store.dispatch(voiceRecordingUpdate(recording))
   })
-
   ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
 
   yield put(setVoiceCommunicator(voiceCommunicator))

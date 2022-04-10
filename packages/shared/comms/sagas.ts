@@ -94,7 +94,7 @@ function* userAuthentified() {
   yield call(waitForRealmInitialized)
   yield call(initVoiceCommunicator)
 
-  yield takeEvery(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
+  yield takeLatest(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlaying)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecording)
@@ -138,8 +138,8 @@ function* requestUserMedia() {
   const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
   if (!voiceCommunicator.hasInput()) {
     const media = yield call(requestMediaDevice)
-    if (media){
-      voiceCommunicator.setInputStream(media)
+    if (media) {
+      yield voiceCommunicator.setInputStream(media)
     }
   }
 }
@@ -212,9 +212,9 @@ async function requestMediaDevice() {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          advanced: [{ echoCancellation: true }, { autoGainControl: true }, { noiseSuppression: true }] as any,
+          advanced: [{ echoCancellation: true }, { autoGainControl: true }, { noiseSuppression: true }] as any
         },
-        video: false,
+        video: false
       })
 
       return media

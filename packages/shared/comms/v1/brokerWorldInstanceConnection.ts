@@ -45,8 +45,6 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
 
   events = mitt<CommsEvents>()
 
-  fatalErrorSent = false
-
   _stats: Stats | null = null
 
   private pingInterval: any = null
@@ -245,10 +243,9 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
     await this.broker.disconnect()
   }
 
-
   async sendVoiceMessage(_currentPosition: Position, frame: EncodedFrame): Promise<void> {
-    this.events.emit("voiceMessage", {
-      sender: "0x123",
+    this.events.emit('voiceMessage', {
+      sender: '0x123',
       time: new Date().getTime(),
       data: frame
     })

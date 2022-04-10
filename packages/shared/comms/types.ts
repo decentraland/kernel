@@ -1,4 +1,4 @@
-import type { VoiceCommunicator } from "voice-chat-codec/VoiceCommunicator"
+import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 
 export type CommsState = {
   initialized: boolean
