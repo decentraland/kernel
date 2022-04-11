@@ -24,12 +24,10 @@ export class CliBrokerConnection implements IBrokerTransport {
 
   private ws: WebSocket | null = null
 
-  constructor(public url: string) {
-    this.connectWS()
-  }
+  constructor(public url: string) {}
 
   async connect(): Promise<void> {
-    await this.connected
+    await this.connectWS()
   }
 
   send(data: Uint8Array, _reliable: boolean) {
@@ -114,29 +112,34 @@ export class CliBrokerConnection implements IBrokerTransport {
       .catch(console.error)
   }
 
-  private connectWS() {
-    if (this.ws && this.ws.readyState === this.ws.OPEN) return
+  private connectWS(): Promise<void> {
+    if (this.ws && this.ws.readyState === this.ws.OPEN) return Promise.resolve()
 
     if (this.ws) {
       this.ws.close()
       this.ws = null
     }
 
-    this.ws = new WebSocket(this.url, 'comms')
-    this.connected = future()
-    this.ws.binaryType = 'arraybuffer'
+    return new Promise<void>((resolve, reject) => {
+      this.ws = new WebSocket(this.url, 'comms')
+      this.connected = future()
+      this.ws.binaryType = 'arraybuffer'
 
-    this.ws.onerror = (event) => {
-      this.logger.error('socket error', event)
-      this.disconnect().catch(this.logger.error)
-    }
+      this.connected.then(resolve)
 
-    this.ws.onclose = () => {
-      this.disconnect().catch(this.logger.error)
-    }
+      this.ws.onerror = (event) => {
+        this.logger.error('socket error', event)
+        this.disconnect().catch(this.logger.error)
+        reject(event)
+      }
 
-    this.ws.onmessage = (event) => {
-      this.onWsMessage(event).catch(this.logger.error)
-    }
+      this.ws.onclose = () => {
+        this.disconnect().catch(this.logger.error)
+      }
+
+      this.ws.onmessage = (event) => {
+        this.onWsMessage(event).catch(this.logger.error)
+      }
+    })
   }
 }

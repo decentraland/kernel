@@ -44,6 +44,7 @@ import { getRealm } from 'shared/comms/selectors'
 import { waitForExplorerIdentity } from 'shared/session/sagas'
 import { store } from 'shared/store/isolatedStore'
 import { CatalystNode } from 'shared/types'
+import { resolveCommsV3Urls } from 'shared/comms/v3/resolver'
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
   return 'last_realm_' + network
@@ -202,7 +203,7 @@ function* initializeCatalystCandidates() {
   yield put(setCatalystCandidates(candidates))
 }
 
-async function checkValidRealm(realm: Realm) {
+export async function checkValidRealm(realm: Realm) {
   if (realm.protocol === 'v2') {
     const realmHasValues = realm && realm.hostname
     if (!realmHasValues) {
@@ -215,6 +216,11 @@ async function checkValidRealm(realm: Realm) {
     if (pingResult.status === ServerConnectionStatus.UNREACHABLE) return false
 
     return !minCatalystVersion || gte(pingResult.result?.version ?? '0.0.0', minCatalystVersion)
+  } else if (realm.protocol === 'v3') {
+    const { pingUrl } = resolveCommsV3Urls(realm)!
+    const pingResult = await ping(pingUrl)
+
+    return pingResult.status === ServerConnectionStatus.OK
   }
   return true
 }

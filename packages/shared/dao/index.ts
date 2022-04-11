@@ -6,10 +6,11 @@ import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { ping } from './utils/ping'
-import { resolveCommsConnectionString } from './utils/realmToString'
+import { realmToConnectionString, resolveCommsConnectionString } from './utils/realmToString'
 import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
 import { connectComms } from 'shared/comms'
 import { setWorldContext } from 'shared/comms/actions'
+import { checkValidRealm } from './sagas'
 
 async function fetchCatalystNodes(endpoint: string | undefined) {
   if (endpoint) {
@@ -113,11 +114,11 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
 
   const realm = await resolveCommsConnectionString(realmString, candidates)
 
-  if (realm) {
-    return changeRealmObject(realm, forceChange)
+  if (!realm) {
+    throw new Error(`Can't resolve realm ${realmString}`)
   }
 
-  throw new Error(`Can't resolve realm ${realmString}`)
+  return changeRealmObject(realm, forceChange)
 }
 
 export async function changeRealmObject(realm: Realm, forceChange: boolean = false) {
@@ -126,6 +127,10 @@ export async function changeRealmObject(realm: Realm, forceChange: boolean = fal
   // if not forceChange, then cancel operation if we are inside the desired realm
   if (!forceChange && context && sameRealm(context.realm, realm)) {
     return realm
+  }
+
+  if (!(await checkValidRealm(realm))) {
+    throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
   }
 
   const newCommsContext = await connectComms(realm)

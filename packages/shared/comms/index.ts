@@ -17,6 +17,7 @@ import { commsLogger, CommsContext } from './context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
 import { Realm } from 'shared/dao/types'
+import { resolveCommsV3Urls } from './v3/resolver'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -176,37 +177,14 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
       break
     }
     case 'v3': {
-      // TODO: all of this is temporary
-      function normalizeUrl(url: string) {
-        return url.replace(/^:\/\//, window.location.protocol + '//')
-      }
+      const { wsUrl } = resolveCommsV3Urls(realm)!
 
-      function httpToWs(url: string) {
-        return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
-      }
-
-      function securedRemote(hostname: string) {
-        if (hostname === 'localhost' || hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
-          return `://${hostname}`
-        }
-        return `https://${realm.hostname}`
-      }
-
-      const commsUrl =
-        realm.hostname === 'local'
-          ? 'ws://0.0.0.0:5000/ws'
-          : realm.hostname === 'remote'
-          ? 'wss://explorer-bff.decentraland.io/ws'
-          : securedRemote(realm.hostname)
-
-      const url = new URL(normalizeUrl(commsUrl))
+      const url = new URL(wsUrl)
       const qs = new URLSearchParams({
         identity: btoa(identity.address)
       })
       url.search = qs.toString()
-
-      const finalUrl = httpToWs(url.toString())
-
+      const finalUrl = url.toString()
       commsLogger.log('Using WebSocket comms: ' + finalUrl)
       const commsBroker = new CliBrokerConnection(finalUrl)
       connection = new BrokerWorldInstanceConnection(commsBroker)

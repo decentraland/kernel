@@ -11,17 +11,7 @@ import {
 } from 'config'
 import { RootMetaState } from 'shared/meta/types'
 import { getContentWhitelist } from 'shared/meta/selectors'
-
-function urlWithProtocol(url: string) {
-  function normalizeUrl(url: string) {
-    return url.replace(/^:\/\//, globalThis.location.protocol + '//')
-  }
-
-  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('://'))
-    return normalizeUrl(`://${url}`)
-
-  return normalizeUrl(url)
-}
+import { urlWithProtocol } from 'shared/comms/v3/resolver'
 
 function getAllowedContentServer(givenServer: string, meta: RootMetaState): string {
   // if a catalyst is pinned => avoid any override
