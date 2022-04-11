@@ -745,12 +745,12 @@
         }
 
         if (isElectron()) {
-          await initDesktop()
+          initDesktop()
         }
       }
 
 
-      async function initDesktop() {
+      function initDesktop() {
         const { ipcRenderer } = window.require('electron')
 
         ipcRenderer.on('downloadState', (event, payload) => {
@@ -771,7 +771,6 @@
         })
 
         ipcRenderer.send('checkVersion')
-        console.log('Electron found')
       }
       
       async function  injectScript(url) {
