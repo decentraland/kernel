@@ -16,8 +16,6 @@ export enum AvatarMessageType {
   USER_UNMUTED = 'USER_UNMUTED',
   USER_BLOCKED = 'USER_BLOCKED',
   USER_UNBLOCKED = 'USER_UNBLOCKED',
-
-  ADD_FRIEND = 'ADD_FRIEND'
 }
 
 export type ReceiveUserExpressionMessage = {

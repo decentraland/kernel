@@ -8,7 +8,6 @@ export type PositionTrackEvents = {
 
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
-  ['ADD_FRIEND']: Record<string, unknown>
   ['SET_LOCAL_UUID']: { uuid: string }
   ['USER_MUTED']: { uuid: string }
   ['USER_UNMUTED']: { uuid: string }
