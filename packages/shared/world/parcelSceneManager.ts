@@ -8,7 +8,7 @@ import {
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from '../analytics'
 import { informPendingScenes, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
-import { EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene } from '../types'
+import {EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene} from '../types'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { parcelObservable, teleportObservable } from './positionThings'
 import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
@@ -24,6 +24,8 @@ import { UnityScene } from 'unity-interface/UnityScene'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { PositionTrackEvents } from 'shared/analytics/types'
 import { getVariantContent } from 'shared/meta/selectors'
+import { killAllPortableExperiences} from "../portableExperiences/actions";
+
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -243,7 +245,7 @@ export async function invalidateScenesAtCoords(coords: string[], reloadScenes: b
   }
 }
 
-export function startIsolatedMode(options: IsolatedModeOptions) {
+export async function startIsolatedMode(options: IsolatedModeOptions) {
   if (!parcelSceneLoadingState.lifecycleManager || !options) return
 
   // set the isolated mode On
@@ -271,6 +273,10 @@ export function startIsolatedMode(options: IsolatedModeOptions) {
       // destroy old scene
       unloadParcelSceneById(sceneId)
     }
+  }
+
+  if(parcelSceneLoadingState.isolatedModeOptions.payload.killPortableExperiences){
+    store.dispatch(killAllPortableExperiences())
   }
 
   // Refresh state of scenes
