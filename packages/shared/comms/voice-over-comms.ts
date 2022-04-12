@@ -1,9 +1,9 @@
 import { Package, VoiceFragment } from './interface/types'
 import { Position, rotateUsingQuaternion } from './interface/utils'
 import { store } from 'shared/store/isolatedStore'
-import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
 import { VoiceCommunicator, VoiceSpatialParams } from 'voice-chat-codec/VoiceCommunicator'
-import { getCommsContext, getVoiceCommunicator, shouldPlayVoice } from './selectors'
+import { getCommsContext, getVoiceCommunicator, getVoicePolicy, isVoiceChatAllowedByCurrentScene } from './selectors'
 import { CommsContext } from './context'
 import { createLogger } from 'shared/logger'
 import { commConfigurations } from 'config'
@@ -11,8 +11,62 @@ import Html from 'shared/Html'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import { setVoiceCommunicator, voicePlayingUpdate, voiceRecordingUpdate } from './actions'
 import { put } from 'redux-saga/effects'
+import { Profile } from 'shared/types'
+import { getBannedUsers } from 'shared/meta/selectors'
+import { getIdentity } from 'shared/session'
+import { BannedUsers } from 'shared/meta/types'
+import { isFriend } from 'shared/friends/selectors'
+import { VoicePolicy } from './types'
 
 const logger = createLogger('VoiceCommunicator: ')
+
+function isVoiceAllowedByPolicy(profile: Profile, voiceUserId: string): boolean {
+  const policy = getVoicePolicy(store.getState())
+
+  switch (policy) {
+    case VoicePolicy.ALLOW_FRIENDS_ONLY:
+      return isFriend(store.getState(), voiceUserId)
+    case VoicePolicy.ALLOW_VERIFIED_ONLY:
+      const theirProfile = getProfile(store.getState(), voiceUserId)
+      return !!theirProfile?.hasClaimedName
+    default:
+      return true
+  }
+}
+
+function isBlockedOrBanned(profile: Profile, bannedUsers: BannedUsers, userId: string): boolean {
+  return isBlocked(profile, userId) || isBannedFromChat(bannedUsers, userId)
+}
+
+function isBannedFromChat(bannedUsers: BannedUsers, userId: string): boolean {
+  const bannedUser = bannedUsers[userId]
+  return bannedUser && bannedUser.some((it) => it.type === 'VOICE_CHAT_AND_CHAT' && it.expiration > Date.now())
+}
+
+function isBlocked(profile: Profile, userId: string): boolean {
+  return !!profile.blocked && profile.blocked.includes(userId)
+}
+
+function isMuted(profile: Profile, userId: string): boolean {
+  return !!profile.muted && profile.muted.includes(userId)
+}
+
+function hasBlockedMe(myAddress: string | undefined, theirAddress: string): boolean {
+  const profile = getProfile(store.getState(), theirAddress)
+
+  return !!profile && !!myAddress && isBlocked(profile, myAddress)
+}
+
+function shouldPlayVoice(profile: Profile, voiceUserId: string) {
+  const myAddress = getIdentity()?.address
+  return (
+    isVoiceAllowedByPolicy(profile, voiceUserId) &&
+    !isBlockedOrBanned(profile, getBannedUsers(store.getState()), voiceUserId) &&
+    !isMuted(profile, voiceUserId) &&
+    !hasBlockedMe(myAddress, voiceUserId) &&
+    isVoiceChatAllowedByCurrentScene()
+  )
+}
 
 export function processVoiceFragment(context: CommsContext, message: Package<VoiceFragment>) {
   const state = store.getState()

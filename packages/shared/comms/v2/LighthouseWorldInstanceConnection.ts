@@ -404,7 +404,6 @@ function mapToPackageProfileResponse(profileResponseData: ProfileResponseData) {
 }
 
 function mapToPackageVoice(encoded: Uint8Array, index: number) {
-  // If we receive a packet from an old implementation of voice chat, we use the fallbackIndex
   return { encoded, index }
 }
 
