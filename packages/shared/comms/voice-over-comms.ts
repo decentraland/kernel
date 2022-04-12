@@ -33,8 +33,7 @@ function isVoiceAllowedByPolicy(profile: Profile, voiceUserId: string): boolean 
       return true
   }
 }
-
-function isBlockedOrBanned(profile: Profile, bannedUsers: BannedUsers, userId: string): boolean {
+export function isBlockedOrBanned(profile: Profile, bannedUsers: BannedUsers, userId: string): boolean {
   return isBlocked(profile, userId) || isBannedFromChat(bannedUsers, userId)
 }
 
