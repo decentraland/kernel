@@ -631,7 +631,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   }
 }
 
-function* trackEvents({ payload, meta }: UpdateFriendship) {
+function* trackEvents({ payload }: UpdateFriendship) {
   const { action } = payload
   switch (action) {
     case FriendshipAction.APPROVED: {
