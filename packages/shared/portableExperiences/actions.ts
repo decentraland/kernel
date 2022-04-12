@@ -11,7 +11,7 @@ export const denyPortableExperiences = (urnList: string[]) => action(DENY_PORTAB
 export type DenyPortableExperiencesAction = ReturnType<typeof denyPortableExperiences>
 
 export const KILL_ALL_PORTABLE_EXPERIENCES = '[PX] KillAll'
-export const killAllPortableExperiences = () => action(KILL_ALL_PORTABLE_EXPERIENCES, { })
+export const killAllPortableExperiences = () => action(KILL_ALL_PORTABLE_EXPERIENCES, {})
 export type KillAllPortableExperiencesAction = ReturnType<typeof killAllPortableExperiences>
 
 export const ADD_SCENE_PX = '[PX] AddScenePx'

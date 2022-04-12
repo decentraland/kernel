@@ -4,7 +4,8 @@ import {
   ADD_SCENE_PX,
   REMOVE_SCENE_PX,
   RELOAD_SCENE_PX,
-  PortableExperienceActions, KILL_ALL_PORTABLE_EXPERIENCES
+  PortableExperienceActions,
+  KILL_ALL_PORTABLE_EXPERIENCES
 } from './actions'
 
 const INITIAL_STATE: PortableExperiencesState = {
@@ -24,7 +25,7 @@ export function portableExperienceReducer(
   }
 
   switch (action.type) {
-    case KILL_ALL_PORTABLE_EXPERIENCES:{
+    case KILL_ALL_PORTABLE_EXPERIENCES: {
       return { ...state }
     }
     case DENY_PORTABLE_EXPERIENCES: {
