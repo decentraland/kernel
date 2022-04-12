@@ -23,7 +23,7 @@ import {
   HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { defaultLogger } from 'shared/logger'
+import { defaultLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
@@ -62,7 +62,33 @@ function resizeCanvas(targetHeight: number) {
   }
 }
 
+export function createUnityLogger(): ILogger {
+  const unityPrefix = `unity: `
+  return {
+    error(message: string | Error, ...args: any[]): void {
+      if (typeof message === 'object' && message.stack) {
+        console.error(unityPrefix, message, ...args, message.stack)
+      } else {
+        console.error(unityPrefix, message, ...args)
+      }
+    },
+    log(message: string, ...args: any[]): void {
+      console.log(unityPrefix, message, ...args)
+    },
+    warn(message: string, ...args: any[]): void {
+      console.warn(unityPrefix, message, ...args)
+    },
+    info(message: string, ...args: any[]): void {
+      console.info(unityPrefix, message, ...args)
+    },
+    trace(message: string, ...args: any[]): void {
+      console.trace(unityPrefix, message, ...args)
+    }
+  }
+}
+
 export class UnityInterface implements IUnityInterface {
+  public logger: ILogger = createUnityLogger()
   public gameInstance!: UnityGame
   public Module: any
   public currentHeight: number = -1
