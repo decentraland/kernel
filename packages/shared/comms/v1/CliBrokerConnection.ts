@@ -125,7 +125,7 @@ export class CliBrokerConnection implements IBrokerTransport {
       this.connected = future()
       this.ws.binaryType = 'arraybuffer'
 
-      this.connected.then(resolve)
+      this.connected.then(resolve).catch(this.logger.error)
 
       this.ws.onerror = (event) => {
         this.logger.error('socket error', event)
