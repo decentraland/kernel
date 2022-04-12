@@ -82,16 +82,20 @@ type MessageEvent = typeof MESSAGE_RECEIVED | typeof SEND_MESSAGE
 
 function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
   const { type, payload } = action
+  const { messageId, body, messageType } = payload
   switch (type) {
     case MESSAGE_RECEIVED: {
-      trackEvent('Chat message received', { length: payload.body.length })
+      trackEvent('Chat message received', {
+        length: body.length,
+        type: messageType
+      })
       break
     }
     case SEND_MESSAGE: {
-      const { messageId, body } = payload
       trackEvent('Send chat message', {
         messageId,
-        length: body.length
+        length: body.length,
+        type: messageType
       })
       break
     }

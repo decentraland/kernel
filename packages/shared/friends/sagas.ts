@@ -55,6 +55,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { trackEvent } from "../analytics"
 
 const DEBUG = DEBUG_PM
 
@@ -156,6 +157,7 @@ function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdent
     })
   )
 
+  yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
 
   // register listener for new messages
@@ -626,6 +628,36 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
     // in case of any error, re initialize friends, to possibly correct state in both kernel and renderer
     yield call(initializeFriends, client)
+  }
+}
+
+function* trackEvents({ payload, meta }: UpdateFriendship) {
+  const { action } = payload
+  switch (action) {
+    case FriendshipAction.APPROVED: {
+      trackEvent('Friend request approved', {})
+      break
+    }
+    case FriendshipAction.REJECTED: {
+      trackEvent('Friend request rejected', {})
+      break
+    }
+    case FriendshipAction.CANCELED: {
+      trackEvent('Friend request cancelled', {})
+      break
+    }
+    case FriendshipAction.REQUESTED_FROM: {
+      trackEvent('Friend request received', {})
+      break
+    }
+    case FriendshipAction.REQUESTED_TO: {
+      trackEvent('Friend request sent', {})
+      break
+    }
+    case FriendshipAction.DELETED: {
+      trackEvent('Friend deleted', {})
+      break
+    }
   }
 }
 
