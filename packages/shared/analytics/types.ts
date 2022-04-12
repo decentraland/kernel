@@ -63,4 +63,11 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_start']: { renderer_version: string }
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number }
+
+  ['Friend request approved']: Record<string, unknown> // {}
+  ['Friend request rejected']: Record<string, unknown> // {}
+  ['Friend request cancelled']: Record<string, unknown> // {}
+  ['Friend request received']: Record<string, unknown> // {}
+  ['Friend request sent']: Record<string, unknown> // {}
+  ['Friend deleted']: Record<string, unknown> // {}
 }
