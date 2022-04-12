@@ -108,7 +108,7 @@ import * as qs from 'query-string'
 import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
 import { BannedUsers } from 'shared/meta/types'
 
-export type CommsVersion = 'v1' | 'v2'
+export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
 export type CommsV1Mode = 'local' | 'remote'
 export type CommsV2Mode = 'p2p' | 'server'
@@ -909,7 +909,7 @@ export async function connect(userId: string) {
 
         switch (mode) {
           case 'local': {
-            let location = document.location.toString()
+            let location = window.location.toString()
             if (location.indexOf('#') > -1) {
               location = location.substring(0, location.indexOf('#')) // drop fragment identifier
             }
@@ -946,7 +946,6 @@ export async function connect(userId: string) {
         if (COMMS_SERVICE) {
           // For now, we assume that if we provided a hardcoded url for comms it will be island based
           realm = { ...realm!, lighthouseVersion: '1.0.0' }
-          delete realm.layer
         }
 
         const peerConfig: LighthouseConnectionConfig = {
@@ -1032,6 +1031,25 @@ export async function connect(userId: string) {
           }
         )
 
+        break
+      }
+      case 'v3': {
+        const commsUrl = mode === 'local' ? 'ws://0.0.0.0:5000/ws' : 'wss://explorer-bff.decentraland.io/ws'
+
+        const url = new URL(commsUrl)
+        const qs = new URLSearchParams({
+          identity: btoa(userId)
+        })
+        url.search = qs.toString()
+
+        defaultLogger.log('Using WebSocket comms: ' + url.href)
+        const commsBroker = new CliBrokerConnection(url.href)
+
+        const instance = new BrokerWorldInstanceConnection(commsBroker)
+        await instance.isConnected
+        store.dispatch(commsEstablished())
+
+        connection = instance
         break
       }
       default: {
@@ -1255,9 +1273,7 @@ function handleFullLayer() {
 
   const otherRealm = pickCatalystRealm(candidates, [lastPlayerParcel.x, lastPlayerParcel.y])
 
-  notifyStatusThroughChat(
-    `Joining realm ${otherRealm.catalystName}-${otherRealm.layer} since the previously requested was full`
-  )
+  notifyStatusThroughChat(`Joining realm ${otherRealm.catalystName} since the previously requested was full`)
 
   store.dispatch(setCatalystRealm(otherRealm))
 }

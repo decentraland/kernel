@@ -50,6 +50,9 @@ function* initializeRenderer(action: InitializeRenderer) {
       loading_time: performance.now() - startTime
     })
   } catch (e) {
+    trackEvent('renderer_initialization_error', {
+      message: e + ''
+    })
     if (e instanceof Error) {
       throw e
     } else {

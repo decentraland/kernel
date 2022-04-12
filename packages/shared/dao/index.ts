@@ -2,15 +2,14 @@ import { Store } from 'redux'
 
 import defaultLogger from '../logger'
 import {
-  Layer,
   Realm,
   Candidate,
   RootDaoState,
   ServerConnectionStatus,
   HealthStatus,
-  LayerBasedCandidate,
   IslandsBasedCandidate,
-  Parcel
+  Parcel,
+  PingResult
 } from './types'
 import {
   isRealmInitialized,
@@ -22,9 +21,6 @@ import {
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { setCatalystRealm, setCatalystCandidates } from './actions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
-import { lastPlayerPosition } from 'shared/world/positionThings'
-import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
 import { CatalystNode } from '../types'
 import { realmToString } from './utils/realmToString'
 import { PIN_CATALYST } from 'config'
@@ -65,7 +61,7 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
     nodes.map(async (node) => ({ ...node, health: await fetchPeerHealthStatus(node) }))
   )
 
-  const healthyNodes = responses.filter((node) => isPeerHealthy(node.health))
+  const healthyNodes = responses.filter((node: CatalystNode & { health: any }) => isPeerHealthy(node.health))
 
   return fetchCatalystStatuses(healthyNodes)
 }
@@ -79,9 +75,13 @@ async function fetchPeerHealthStatus(node: CatalystNode) {
       abortController.abort()
     }, DEFAULT_TIMEOUT)
 
-    const response = await (await fetch(peerHealthStatusUrl(node.domain), { signal })).json()
+    const response = await fetch(peerHealthStatusUrl(node.domain), { signal })
 
-    return response
+    if (!response.ok) return {}
+
+    const json = await response.json()
+
+    return json
   } catch {
     return {}
   }
@@ -100,13 +100,9 @@ export function peerHealthStatusUrl(domain: string) {
   return `${domain}/lambdas/health`
 }
 
-export function commsStatusUrl(domain: string, includeLayers: boolean = false, includeUsersParcels: boolean = false) {
+export function commsStatusUrl(domain: string, includeUsersParcels: boolean = false) {
   let url = `${domain}/comms/status`
   const queryParameters: string[] = []
-
-  if (includeLayers) {
-    queryParameters.push('includeLayers=true')
-  }
 
   if (includeUsersParcels) {
     queryParameters.push('includeUsersParcels=true')
@@ -120,14 +116,14 @@ export function commsStatusUrl(domain: string, includeLayers: boolean = false, i
 }
 
 export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
-  const results = (
+  const results: Array<PingResult & { domain: string }> = (
     await Promise.all(
       nodes.map(async (node) => ({
-        ...(await ping(commsStatusUrl(node.domain, true, true))),
+        ...(await ping(commsStatusUrl(node.domain, true))),
         domain: node.domain
       }))
     )
-  ).filter((realm) => (realm.result?.maxUsers ?? 0) > (realm.result?.usersCount ?? -1))
+  ).filter((realm: PingResult & { domain: string }) => (realm.result?.maxUsers ?? 0) > (realm.result?.usersCount ?? -1))
 
   return results.reduce((union: Candidate[], { domain, elapsed, result, status }) => {
     function buildBaseCandidate() {
@@ -138,15 +134,6 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
         elapsed: elapsed!,
         lighthouseVersion: result!.version,
         catalystVersion: result!.env.catalystVersion
-      }
-    }
-
-    function buildLayerCandidate(layer: Layer): LayerBasedCandidate {
-      return {
-        ...buildBaseCandidate(),
-        layer,
-        type: 'layer-based',
-        domain
       }
     }
 
@@ -166,11 +153,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]) {
     }
 
     if (status === ServerConnectionStatus.OK) {
-      if (result!.layers) {
-        return [...union, ...result!.layers.map((layer) => buildLayerCandidate(layer))]
-      } else {
-        return [...union, buildIslandsCandidate(result!.usersCount!, result!.usersParcels, result!.maxUsers)]
-      }
+      return [...union, buildIslandsCandidate(result!.usersCount!, result!.usersParcels, result!.maxUsers)]
     } else return union
   }, new Array<Candidate>())
 }
@@ -220,11 +203,7 @@ export async function realmInitialized(): Promise<void> {
 
 export function getRealmFromString(realmString: string, candidates: Candidate[]) {
   const parts = realmString.split('-')
-  if (parts.length === 2) {
-    return realmForLayer(parts[0], parts[1], candidates)
-  } else {
-    return realmFor(parts[0], candidates)
-  }
+  return realmFor(parts[0], candidates)
 }
 
 function candidateToRealm(candidate: Candidate) {
@@ -234,18 +213,7 @@ function candidateToRealm(candidate: Candidate) {
     lighthouseVersion: candidate.lighthouseVersion
   }
 
-  if (candidate.type === 'layer-based') {
-    realm.layer = candidate.layer.name
-  }
-
   return realm
-}
-
-function realmForLayer(name: string, layer: string, candidates: Candidate[]): Realm | undefined {
-  const candidate = candidates.find(
-    (it) => it?.type === 'layer-based' && it.catalystName === name && it.layer.name === layer
-  )
-  return candidate ? candidateToRealm(candidate) : undefined
 }
 
 function realmFor(name: string, candidates: Candidate[]): Realm | undefined {
@@ -268,50 +236,46 @@ export function changeRealm(realmString: string) {
 export async function changeToCrowdedRealm(): Promise<[boolean, Realm]> {
   // TODO: Add support for changing to crowded realm in islands based candidates. Or remove this functionality
 
-  const candidates = await refreshCandidatesStatuses()
+  // const candidates = await refreshCandidatesStatuses()
 
   const currentRealm = getRealm(store.getState())!
 
-  const positionAsVector = worldToGrid(lastPlayerPosition)
-  const currentPosition = [positionAsVector.x, positionAsVector.y] as ParcelArray
+  // const positionAsVector = worldToGrid(lastPlayerPosition)
+  // const currentPosition = [positionAsVector.x, positionAsVector.y] as ParcelArray
 
-  type RealmPeople = { realm: Realm; closePeople: number }
+  // type RealmPeople = { realm: Realm; closePeople: number }
 
-  let crowdedRealm: RealmPeople = { realm: currentRealm, closePeople: 0 }
+  // let crowdedRealm: RealmPeople = { realm: currentRealm, closePeople: 0 }
 
-  candidates
-    .filter(
-      (it) =>
-        it.type === 'layer-based' &&
-        it.layer.usersParcels &&
-        it.layer.usersParcels.length > 0 &&
-        it.layer.usersCount < it.layer.maxUsers
-    )
-    .forEach((candidate) => {
-      const layer = (candidate as LayerBasedCandidate).layer
-      if (layer.usersParcels) {
-        let closePeople = countParcelsCloseTo(currentPosition, layer.usersParcels, 4)
-        // If it is the realm of the player, we substract 1 to not count ourselves
-        if (candidate.catalystName === currentRealm.catalystName && layer.name === currentRealm.layer) {
-          closePeople -= 1
-        }
+  // candidates
+  //   .filter(
+  //     (it) =>
+  //       it.type === 'islands-based'
+  //   )
+  //   .forEach((candidate) => {
+  //     if (candidate.usersCount) {
+  //       let closePeople = countParcelsCloseTo(currentPosition, layer.usersParcels, 4)
+  //       // If it is the realm of the player, we substract 1 to not count ourselves
+  //       if (candidate.catalystName === currentRealm.catalystName && layer.name === currentRealm.layer) {
+  //         closePeople -= 1
+  //       }
 
-        if (closePeople > crowdedRealm.closePeople) {
-          crowdedRealm = {
-            realm: candidateToRealm(candidate),
-            closePeople
-          }
-        }
-      }
-    })
+  //       if (closePeople > crowdedRealm.closePeople) {
+  //         crowdedRealm = {
+  //           realm: candidateToRealm(candidate),
+  //           closePeople
+  //         }
+  //       }
+  //     }
+  //   })
 
-  if (!deepEqual(crowdedRealm.realm, currentRealm)) {
-    store.dispatch(setCatalystRealm(crowdedRealm.realm))
-    await catalystRealmConnected()
-    return [true, crowdedRealm.realm]
-  } else {
-    return [false, currentRealm]
-  }
+  // if (!deepEqual(crowdedRealm.realm, currentRealm)) {
+  //   store.dispatch(setCatalystRealm(crowdedRealm.realm))
+  //   await catalystRealmConnected()
+  //   return [true, crowdedRealm.realm]
+  // } else {
+  return [false, currentRealm]
+  // }
 }
 
 export async function refreshCandidatesStatuses() {
