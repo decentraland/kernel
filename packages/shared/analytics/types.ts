@@ -1,5 +1,6 @@
 import { ErrorContextTypes } from '../loading/ReportFatalError'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
+import {ChatMessageType} from "../types";
 
 export type PositionTrackEvents = {
   ['Scene Spawn']: { parcel: string; spawnpoint: ReadOnlyVector3 }
@@ -13,7 +14,7 @@ export type TrackEvents = PositionTrackEvents & {
   ['USER_UNMUTED']: { uuid: string }
   ['USER_BLOCKED']: { uuid: string }
   ['USER_UNBLOCKED']: { uuid: string }
-  ['Chat message received']: { length: number }
+  ['Chat message received']: { length: number, messageType: ChatMessageType }
   ['Send chat message']: { length: number; messageId: string }
   ['Comms Status v2']: Record<string, any>
 
