@@ -55,7 +55,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { trackEvent } from "../analytics"
+import { trackEvent } from '../analytics'
 
 const DEBUG = DEBUG_PM
 

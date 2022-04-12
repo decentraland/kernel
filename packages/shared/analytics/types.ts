@@ -1,6 +1,6 @@
 import { ErrorContextTypes } from '../loading/ReportFatalError'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
-import { ChatMessageType } from "../types";
+import { ChatMessageType } from "../types"
 
 export type PositionTrackEvents = {
   ['Scene Spawn']: { parcel: string; spawnpoint: ReadOnlyVector3 }
