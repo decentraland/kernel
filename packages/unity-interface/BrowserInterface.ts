@@ -64,7 +64,7 @@ import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated, UNEXPECTED_ERROR } from 'shared/loading/types'
+import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
 import { unpublishSceneByCoords } from 'shared/apis/SceneStateStorageController/unpublishScene'
 import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
 import { areCandidatesFetched, getSelectedNetwork } from 'shared/dao/selectors'
@@ -789,11 +789,6 @@ export class BrowserInterface {
         logger.log(data.message)
         break
     }
-  }
-
-  public ReportUnityFatalError(data: { message: string }) {
-    ReportFatalErrorWithUnityPayload(new Error(data.message), ErrorContext.RENDERER_ERRORHANDLER)
-    BringDownClientAndShowError(UNEXPECTED_ERROR)
   }
 }
 
