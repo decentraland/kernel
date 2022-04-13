@@ -31,7 +31,6 @@ export function portableExperienceReducer(
       return { ...state, globalPortalExperienceShutDown: true }
     }
     case ACTIVATE_ALL_PORTABLE_EXPERIENCES: {
-      console.log("dsao")
       return { ...state, globalPortalExperienceShutDown: false }
     }
     case DENY_PORTABLE_EXPERIENCES: {
