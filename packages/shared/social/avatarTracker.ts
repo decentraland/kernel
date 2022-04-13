@@ -1,5 +1,5 @@
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
-import { AvatarRendererMessage, AvatarRendererMessageType } from 'shared/types'
+import {AvatarRendererMessage, AvatarRendererMessageType} from 'shared/types'
 
 export function* getInSceneAvatarsUserId(sceneId: string): Iterable<string> {
   for (const [userId, avatarData] of rendererAvatars) {
