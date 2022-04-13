@@ -292,7 +292,6 @@ describe('Portable experiences sagas test', () => {
       .put(updateEnginePortableExperiences([px]))
       .run())
 
-    // remove from deny list
     it('shutdown the PX, this should shutdown all the PX', () => expectSaga(portableExperienceSaga)
       .withReducer(reducers)
       .withState(state({
@@ -304,9 +303,7 @@ describe('Portable experiences sagas test', () => {
           globalPortalExperienceShutDown: false
         }
       }))
-      .provide([[call(declareWantedPortableExperiences, [px]), []]])
       .dispatch(killAllPortableExperiences())
-      .call(declareWantedPortableExperiences, [px])
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
@@ -316,10 +313,8 @@ describe('Portable experiences sagas test', () => {
           globalPortalExperienceShutDown: true
         }
       }))
-      .put(updateEnginePortableExperiences([px]))
       .run())
 
-    // remove from deny list
     it('activate the PX, this should activate all the PX that has been shutdown', () => expectSaga(portableExperienceSaga)
       .withReducer(reducers)
       .withState(state({
@@ -331,9 +326,7 @@ describe('Portable experiences sagas test', () => {
           globalPortalExperienceShutDown: true
         }
       }))
-      .provide([[call(declareWantedPortableExperiences, [px]), []]])
       .dispatch(activateAllPortableExperiences())
-      .call(declareWantedPortableExperiences, [px])
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
@@ -343,7 +336,6 @@ describe('Portable experiences sagas test', () => {
           globalPortalExperienceShutDown: false
         }
       }))
-      .put(updateEnginePortableExperiences([px]))
       .run())
   })
 })
