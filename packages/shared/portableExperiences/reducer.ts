@@ -28,12 +28,11 @@ export function portableExperienceReducer(
 
   switch (action.type) {
     case SHUTDOWN_ALL_PORTABLE_EXPERIENCES: {
-      state.globalPortalExperienceShutDown = true
-      return { ...state }
+      return { ...state, globalPortalExperienceShutDown: true }
     }
     case ACTIVATE_ALL_PORTABLE_EXPERIENCES: {
-      state.globalPortalExperienceShutDown = false
-      return { ...state }
+      console.log("dsao")
+      return { ...state, globalPortalExperienceShutDown: false }
     }
     case DENY_PORTABLE_EXPERIENCES: {
       const { payload } = action
