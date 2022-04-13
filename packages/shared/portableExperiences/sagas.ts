@@ -14,17 +14,16 @@ import {
   updateEnginePortableExperiences,
   UpdateEnginePortableExperiencesAction,
   UPDATE_ENGINE_PX,
-  denyPortableExperiences,
-  KILL_ALL_PORTABLE_EXPERIENCES
+  SHUTDOWN_ALL_PORTABLE_EXPERIENCES,
+  ACTIVATE_ALL_PORTABLE_EXPERIENCES
 } from './actions'
-import { getDesiredPortableExperiences, getPortableExperiencesCreatedByScenes } from './selectors'
-import { store } from '../store/isolatedStore'
-import { getDesiredLoadableWearablePortableExpriences } from '../wearablesPortableExperience/selectors'
+import { getDesiredPortableExperiences } from './selectors'
 
 export function* portableExperienceSaga(): any {
   yield takeEvery(REMOVE_DESIRED_PORTABLE_EXPERIENCE, handlePortableExperienceChanges)
   yield takeEvery(ADD_DESIRED_PORTABLE_EXPERIENCE, handlePortableExperienceChanges)
-  yield takeEvery(KILL_ALL_PORTABLE_EXPERIENCES, killAllPortableExperience)
+  yield takeEvery(SHUTDOWN_ALL_PORTABLE_EXPERIENCES, handlePortableExperienceChanges)
+  yield takeEvery(ACTIVATE_ALL_PORTABLE_EXPERIENCES, handlePortableExperienceChanges)
   yield takeEvery(DENY_PORTABLE_EXPERIENCES, handlePortableExperienceChanges)
   yield takeEvery(ADD_SCENE_PX, handlePortableExperienceChanges)
   yield takeEvery(REMOVE_SCENE_PX, handlePortableExperienceChanges)
@@ -36,14 +35,6 @@ export function* portableExperienceSaga(): any {
 function* handlePortableExperienceChanges() {
   const desiredPortableExperiences = yield select(getDesiredPortableExperiences)
   yield put(updateEnginePortableExperiences(desiredPortableExperiences))
-}
-
-function* killAllPortableExperience() {
-  const pex: StorePortableExperience[] = [
-    ...getPortableExperiencesCreatedByScenes(store.getState()),
-    ...getDesiredLoadableWearablePortableExpriences(store.getState())
-  ]
-  yield put(denyPortableExperiences(pex.map((p) => p.id)))
 }
 
 // reload portable experience

@@ -2,7 +2,14 @@ import { expectSaga } from 'redux-saga-test-plan'
 import { call, select } from 'redux-saga/effects'
 
 import { portableExperienceSaga } from '../../packages/shared/portableExperiences/sagas'
-import { addScenePortableExperience, denyPortableExperiences, updateEnginePortableExperiences, removeScenePortableExperience, reloadScenePortableExperience } from 'shared/portableExperiences/actions'
+import {
+  addScenePortableExperience,
+  denyPortableExperiences,
+  updateEnginePortableExperiences,
+  removeScenePortableExperience,
+  reloadScenePortableExperience,
+  killAllPortableExperiences, activateAllPortableExperiences
+} from 'shared/portableExperiences/actions'
 import { StorePortableExperience } from 'shared/types'
 import { getDesiredPortableExperiences } from 'shared/portableExperiences/selectors'
 import { declareWantedPortableExperiences } from 'unity-interface/portableExperiencesUtils'
@@ -89,6 +96,7 @@ describe('Portable experiences sagas test', () => {
           urnB: px3
         },
         deniedPortableExperiencesFromRenderer: [],
+        globalPortalExperienceShutDown: false
       },
       wearablesPortableExperiences: {
         desiredWearablePortableExperiences: {
@@ -119,6 +127,7 @@ describe('Portable experiences sagas test', () => {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
             },
+            globalPortalExperienceShutDown: false
           }
         }))
         .provide([[call(declareWantedPortableExperiences, [pxOld, pxDenied]), []]])
@@ -131,6 +140,7 @@ describe('Portable experiences sagas test', () => {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
             },
+            globalPortalExperienceShutDown: false
           }
         }))
         .put(updateEnginePortableExperiences([pxOld, pxDenied]))
@@ -149,6 +159,7 @@ describe('Portable experiences sagas test', () => {
             portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld
             },
+            globalPortalExperienceShutDown: false
           }
         }))
         .provide([[call(declareWantedPortableExperiences, [pxOld]), []]])
@@ -161,6 +172,7 @@ describe('Portable experiences sagas test', () => {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
             },
+            globalPortalExperienceShutDown: false
           }
         }))
         .put(updateEnginePortableExperiences([pxOld]))
@@ -178,6 +190,7 @@ describe('Portable experiences sagas test', () => {
             portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld
             },
+            globalPortalExperienceShutDown: false
           }
         }))
         .provide([[call(declareWantedPortableExperiences, []), []]])
@@ -187,6 +200,7 @@ describe('Portable experiences sagas test', () => {
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: [],
             portableExperiencesCreatedByScenesList: {},
+            globalPortalExperienceShutDown: false
           }
         }))
         .put(updateEnginePortableExperiences([]))
@@ -205,6 +219,7 @@ describe('Portable experiences sagas test', () => {
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
           portableExperiencesCreatedByScenesList: {},
+          globalPortalExperienceShutDown: false
         }
       }))
       .provide([[call(declareWantedPortableExperiences, [px]), []]])
@@ -216,6 +231,7 @@ describe('Portable experiences sagas test', () => {
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
+          globalPortalExperienceShutDown: false
         }
       }))
       .put(updateEnginePortableExperiences([px]))
@@ -230,6 +246,7 @@ describe('Portable experiences sagas test', () => {
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
+          globalPortalExperienceShutDown: false
         }
       }))
       .provide([[call(declareWantedPortableExperiences, []), []]])
@@ -241,6 +258,7 @@ describe('Portable experiences sagas test', () => {
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
+          globalPortalExperienceShutDown: false
         }
       }))
       .put(updateEnginePortableExperiences([]))
@@ -256,6 +274,7 @@ describe('Portable experiences sagas test', () => {
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
+          globalPortalExperienceShutDown: false
         }
       }))
       .provide([[call(declareWantedPortableExperiences, [px]), []]])
@@ -267,6 +286,61 @@ describe('Portable experiences sagas test', () => {
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
+          globalPortalExperienceShutDown: false
+        }
+      }))
+      .put(updateEnginePortableExperiences([px]))
+      .run())
+
+    // remove from deny list
+    it('shutdown the PX, this should shutdown all the PX', () => expectSaga(portableExperienceSaga)
+      .withReducer(reducers)
+      .withState(state({
+        portableExperiences: {
+          deniedPortableExperiencesFromRenderer: [px.id],
+          portableExperiencesCreatedByScenesList: {
+            [px.id]: px,
+          },
+          globalPortalExperienceShutDown: false
+        }
+      }))
+      .provide([[call(declareWantedPortableExperiences, [px]), []]])
+      .dispatch(killAllPortableExperiences())
+      .call(declareWantedPortableExperiences, [px])
+      .hasFinalState(state({
+        portableExperiences: {
+          deniedPortableExperiencesFromRenderer: [],
+          portableExperiencesCreatedByScenesList: {
+            [px.id]: px,
+          },
+          globalPortalExperienceShutDown: true
+        }
+      }))
+      .put(updateEnginePortableExperiences([px]))
+      .run())
+
+    // remove from deny list
+    it('activate the PX, this should activate all the PX that has been shutdown', () => expectSaga(portableExperienceSaga)
+      .withReducer(reducers)
+      .withState(state({
+        portableExperiences: {
+          deniedPortableExperiencesFromRenderer: [px.id],
+          portableExperiencesCreatedByScenesList: {
+            [px.id]: px,
+          },
+          globalPortalExperienceShutDown: true
+        }
+      }))
+      .provide([[call(declareWantedPortableExperiences, [px]), []]])
+      .dispatch(activateAllPortableExperiences())
+      .call(declareWantedPortableExperiences, [px])
+      .hasFinalState(state({
+        portableExperiences: {
+          deniedPortableExperiencesFromRenderer: [],
+          portableExperiencesCreatedByScenesList: {
+            [px.id]: px,
+          },
+          globalPortalExperienceShutDown: false
         }
       }))
       .put(updateEnginePortableExperiences([px]))
