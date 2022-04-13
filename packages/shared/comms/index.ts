@@ -18,6 +18,9 @@ import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
 import { Realm } from 'shared/dao/types'
 import { resolveCommsV3Urls } from './v3/resolver'
+import { WsTransport } from './v3/WsTransport'
+import { BFFConnection } from './v3/BFFConnection'
+import { InstanceConnection as V3InstanceConnection } from './v3/InstanceConnection'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -186,8 +189,10 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
       url.search = qs.toString()
       const finalUrl = url.toString()
       commsLogger.log('Using WebSocket comms: ' + finalUrl)
-      const commsBroker = new CliBrokerConnection(finalUrl)
-      connection = new BrokerWorldInstanceConnection(commsBroker)
+      const bff = new BFFConnection(finalUrl)
+      const transport = new WsTransport()
+
+      connection = new V3InstanceConnection(bff, transport)
 
       break
     }
