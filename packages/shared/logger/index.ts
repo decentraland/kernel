@@ -25,9 +25,8 @@ export function createDummyLogger(): ILogger {
     }
   }
 }
-export const KERNEL = 'kernel'
-export function createLogger(prefix: string, subPrefix: string = ''): ILogger {
-  const kernelPrefix = `${KERNEL}:${prefix} `
+function createDefaultLogger(type: 'kernel' | 'unity', prefix: string, subPrefix: string = ''): ILogger {
+  const kernelPrefix = `${type}:${prefix} `
   return {
     error(message: string | Error, ...args: any[]): void {
       if (typeof message === 'object' && message.stack) {
@@ -52,6 +51,14 @@ export function createLogger(prefix: string, subPrefix: string = ''): ILogger {
       console.trace(kernelPrefix, subPrefix, message, ...args)
     }
   }
+}
+
+export function createLogger(prefix: string, subPrefix: string = ''): ILogger {
+  return createDefaultLogger('kernel', prefix, subPrefix)
+}
+
+export function createUnityLogger(): ILogger {
+  return createDefaultLogger('unity', '')
 }
 
 export const defaultLogger: ILogger = createLogger('')
