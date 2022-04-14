@@ -23,7 +23,7 @@ import {
   HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { defaultLogger, ILogger } from 'shared/logger'
+import { createUnityLogger, defaultLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
@@ -59,31 +59,6 @@ function resizeCanvas(targetHeight: number) {
     // From 2020 version onwards, Unity hooks to devicePixelRatio to adjust
     // the FBO size instead of the canvas resize.
     devicePixelRatio = pixelRatioH * originalPixelRatio
-  }
-}
-
-export function createUnityLogger(): ILogger {
-  const unityPrefix = `unity: `
-  return {
-    error(message: string | Error, ...args: any[]): void {
-      if (typeof message === 'object' && message.stack) {
-        console.error(unityPrefix, message, ...args, message.stack)
-      } else {
-        console.error(unityPrefix, message, ...args)
-      }
-    },
-    log(message: string, ...args: any[]): void {
-      console.log(unityPrefix, message, ...args)
-    },
-    warn(message: string, ...args: any[]): void {
-      console.warn(unityPrefix, message, ...args)
-    },
-    info(message: string, ...args: any[]): void {
-      console.info(unityPrefix, message, ...args)
-    },
-    trace(message: string, ...args: any[]): void {
-      console.trace(unityPrefix, message, ...args)
-    }
   }
 }
 
