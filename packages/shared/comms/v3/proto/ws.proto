@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package protocol;
+
+enum MessageType {
+  UNKNOWN_MESSAGE_TYPE = 0;
+  WELCOME = 1;
+  SYSTEM = 2;
+  IDENTITY = 3;
+}
+
+message WelcomeMessage {
+  MessageType type = 1;
+  uint64 alias = 2;
+}
+
+message MessageHeader {
+  MessageType type = 1;
+}
+
+message SystemMessage {
+  MessageType type = 1;
+  uint64 from_alias = 2;
+  bytes body = 3;
+}
+
+message IdentityMessage {
+  MessageType type = 1;
+  uint64 from_alias = 2;
+  bytes identity = 3;
+  bytes body = 4;
+}
