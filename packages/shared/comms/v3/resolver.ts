@@ -22,7 +22,7 @@ export function resolveCommsV3Urls(realm: Realm): { pingUrl: string; wsUrl: stri
   let server = 'https://explorer-bff.decentraland.io'
 
   if (realm.hostname === 'local') {
-    server = 'http://0.0.0.0:5000'
+    server = 'http://127.0.0.1:5000'
   } else if (realm.hostname === 'remote') {
     server = 'https://explorer-bff.decentraland.io'
   } else {

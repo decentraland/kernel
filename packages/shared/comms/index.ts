@@ -190,7 +190,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
       const finalUrl = url.toString()
       commsLogger.log('Using WebSocket comms: ' + finalUrl)
       const bff = new BFFConnection(finalUrl)
-      const transport = new WsTransport()
+      const transport = new WsTransport(bff)
 
       connection = new V3InstanceConnection(bff, transport)
 

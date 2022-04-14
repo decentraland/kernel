@@ -51,7 +51,7 @@ export class InstanceConnection implements RoomConnection {
       msg.setTime(Date.now())
       const bytes = msg.serializeBinary()
 
-      this.bff.send(bytes, false)
+      this.bff.send(bytes)
     }, 10000)
     this.bff.onMessageObservable.add(this.handleBFFMessage.bind(this))
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
@@ -60,7 +60,9 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async connect(): Promise<boolean> {
+    this.logger.log('Connecting')
     await this.bff.connect()
+    this.logger.log('Connected')
     return true
   }
 

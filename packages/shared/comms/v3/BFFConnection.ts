@@ -1,21 +1,11 @@
-import { future, IFuture } from 'fp-future'
-
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
 
 export class BFFConnection {
-  public alias: number | null = null
-
   public logger: ILogger = createLogger('BFF: ')
 
   public onDisconnectObservable = new Observable<void>()
   public onMessageObservable = new Observable<Uint8Array>()
-
-  private connected = future<void>()
-
-  get connectedPromise(): IFuture<void> {
-    return this.connected
-  }
 
   private ws: WebSocket | null = null
 
@@ -23,16 +13,13 @@ export class BFFConnection {
 
   async connect(): Promise<void> {
     await this.connectWS()
+    this.logger.log('Connected')
   }
 
-  send(data: Uint8Array, _reliable: boolean) {
+  async send(data: Uint8Array): Promise<void> {
     if (!this.ws) throw new Error('This transport is closed')
 
-    this.connected
-      .then(() => {
-        if (this.ws) this.ws.send(data)
-      })
-      .catch(console.error)
+    this.ws.send(data)
   }
 
   async disconnect() {
@@ -62,10 +49,7 @@ export class BFFConnection {
 
     return new Promise<void>((resolve, reject) => {
       this.ws = new WebSocket(this.url, 'comms')
-      this.connected = future()
       this.ws.binaryType = 'arraybuffer'
-
-      this.connected.then(resolve).catch(this.logger.error)
 
       this.ws.onerror = (event) => {
         this.logger.error('socket error', event)
@@ -80,6 +64,8 @@ export class BFFConnection {
       this.ws.onmessage = (event) => {
         this.onWsMessage(event).catch(this.logger.error)
       }
+
+      resolve()
     })
   }
 }
