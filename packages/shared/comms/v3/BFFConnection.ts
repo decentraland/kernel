@@ -1,19 +1,72 @@
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
+import { Message } from 'google-protobuf'
+import {
+  MessageType,
+  HeartBeatMessage,
+  SubscriptionMessage,
+  TopicMessage,
+  MessageHeader,
+  MessageTypeMap
+} from './proto/bff_pb'
+import {
+  Category,
+  WorldPositionData
+} from './proto/comms_pb'
 
 export class BFFConnection {
   public logger: ILogger = createLogger('BFF: ')
 
   public onDisconnectObservable = new Observable<void>()
-  public onMessageObservable = new Observable<Uint8Array>()
+  public onTopicMessageObservable = new Observable<Uint8Array>()
 
   private ws: WebSocket | null = null
+  private heartBeatInterval: any = null
 
   constructor(public url: string) { }
 
   async connect(): Promise<void> {
     await this.connectWS()
+    this.heartBeatInterval = setInterval(() => {
+      const msg = new HeartBeatMessage()
+      msg.setType(MessageType.HEARTBEAT)
+      msg.setTime(Date.now())
+
+
+      const data = new WorldPositionData()
+      data.setCategory(Category.WORLD_POSITION)
+      data.setTime(Date.now())
+
+      //TODO: get real position
+      data.setPositionX(0)
+      data.setPositionY(0)
+      data.setPositionZ(0)
+
+      msg.setData(data.serializeBinary())
+
+      this.send(msg.serializeBinary())
+    }, 10000)
     this.logger.log('Connected')
+  }
+
+  sendTopicMessage(topic: string, body: Message) {
+    const encodedBody = body.serializeBinary()
+
+    const message = new TopicMessage()
+    message.setType(MessageType.TOPIC)
+    message.setTopic(topic)
+    message.setBody(encodedBody)
+
+    this.send(message.serializeBinary())
+  }
+
+  async setTopics(rawTopics: string[]) {
+    const subscriptionMessage = new SubscriptionMessage()
+    subscriptionMessage.setType(MessageType.SUBSCRIPTION)
+    // TODO: use TextDecoder instead of Buffer, it is a native browser API, works faster
+    subscriptionMessage.setTopics(Buffer.from(rawTopics.join(' '), 'utf8'))
+    const bytes = subscriptionMessage.serializeBinary()
+    this.send(bytes)
   }
 
   async send(data: Uint8Array): Promise<void> {
@@ -23,6 +76,9 @@ export class BFFConnection {
   }
 
   async disconnect() {
+    if (this.heartBeatInterval) {
+      clearInterval(this.heartBeatInterval)
+    }
     if (this.ws) {
       this.ws.onmessage = null
       this.ws.onerror = null
@@ -34,9 +90,38 @@ export class BFFConnection {
   }
 
   async onWsMessage(event: MessageEvent) {
-    const msg = new Uint8Array(event.data)
+    const data = new Uint8Array(event.data)
 
-    this.onMessageObservable.notifyObservers(msg)
+    let msgType = MessageType.UNKNOWN_MESSAGE_TYPE as MessageTypeMap[keyof MessageTypeMap]
+    try {
+      msgType = MessageHeader.deserializeBinary(data).getType()
+    } catch (err) {
+      this.logger.error('cannot deserialize message header')
+      return
+    }
+
+    switch (msgType) {
+      case MessageType.UNKNOWN_MESSAGE_TYPE: {
+        this.logger.log('unsupported message')
+        break
+      }
+      case MessageType.TOPIC: {
+        let dataMessage: TopicMessage
+        try {
+          dataMessage = TopicMessage.deserializeBinary(data)
+        } catch (e) {
+          this.logger.error('cannot process topic message', e)
+          break
+        }
+
+        const body = dataMessage.getBody() as any
+        this.onTopicMessageObservable.notifyObservers(body)
+      }
+      default: {
+        this.logger.log('ignoring msgType', msgType)
+        break
+      }
+    }
   }
 
   private connectWS(): Promise<void> {

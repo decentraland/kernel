@@ -1,9 +1,17 @@
+import { Message } from 'google-protobuf'
 import { Observable } from 'mz-observable'
+
+export type TransportMessage = {
+  data: Uint8Array
+  peer: string
+}
 
 export interface Transport {
   onDisconnectObservable: Observable<void>
-  onMessageObservable: Observable<Uint8Array>
+  onMessageObservable: Observable<TransportMessage>
 
-  send(data: Uint8Array, reliable: boolean): Promise<void>
+  connect(): Promise<void>
+  send(msg: Message, reliable: boolean): Promise<void>
+  sendIdentity(msg: Message, reliable: boolean): Promise<void>
   disconnect(): Promise<void>
 }
