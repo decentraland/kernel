@@ -28,6 +28,7 @@ import {
 import { ProfileForRenderer } from 'shared/profiles/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
+import { ILogger } from 'shared/logger'
 
 export type RealmInfo = {
   serverName: string
@@ -64,6 +65,7 @@ export interface IUnityInterface {
   gameInstance: UnityGame
   Module: any
   crashPayloadResponseObservable: Observable<string>
+  logger: ILogger
   SetTargetHeight(height: number): void
   Init(gameInstance: UnityGame): void
   SendGenericMessage(object: string, method: string, payload: string): void
