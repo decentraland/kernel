@@ -9,10 +9,7 @@ import {
   MessageHeader,
   MessageTypeMap
 } from './proto/bff_pb'
-import {
-  Category,
-  WorldPositionData
-} from './proto/comms_pb'
+import { Category, WorldPositionData } from './proto/comms_pb'
 
 export class BFFConnection {
   public logger: ILogger = createLogger('BFF: ')
@@ -23,7 +20,7 @@ export class BFFConnection {
   private ws: WebSocket | null = null
   private heartBeatInterval: any = null
 
-  constructor(public url: string) { }
+  constructor(public url: string) {}
 
   async connect(): Promise<void> {
     await this.connectWS()
@@ -31,7 +28,6 @@ export class BFFConnection {
       const msg = new HeartBeatMessage()
       msg.setType(MessageType.HEARTBEAT)
       msg.setTime(Date.now())
-
 
       const data = new WorldPositionData()
       data.setCategory(Category.WORLD_POSITION)
