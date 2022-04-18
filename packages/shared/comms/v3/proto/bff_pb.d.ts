@@ -53,6 +53,34 @@ export namespace HeartBeatMessage {
   }
 }
 
+export class IslandChangesMessage extends jspb.Message {
+  getType(): MessageTypeMap[keyof MessageTypeMap];
+  setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
+
+  getTransport(): string;
+  setTransport(value: string): void;
+
+  getTopic(): string;
+  setTopic(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): IslandChangesMessage.AsObject;
+  static toObject(includeInstance: boolean, msg: IslandChangesMessage): IslandChangesMessage.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: IslandChangesMessage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): IslandChangesMessage;
+  static deserializeBinaryFromReader(message: IslandChangesMessage, reader: jspb.BinaryReader): IslandChangesMessage;
+}
+
+export namespace IslandChangesMessage {
+  export type AsObject = {
+    type: MessageTypeMap[keyof MessageTypeMap],
+    transport: string,
+    topic: string,
+  }
+}
+
 export class SubscriptionMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
@@ -118,6 +146,7 @@ export interface MessageTypeMap {
   HEARTBEAT: 1;
   SUBSCRIPTION: 2;
   TOPIC: 3;
+  ISLAND_CHANGES: 4;
 }
 
 export const MessageType: MessageTypeMap;

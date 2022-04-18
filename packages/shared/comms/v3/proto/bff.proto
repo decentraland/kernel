@@ -7,6 +7,7 @@ enum MessageType {
   HEARTBEAT = 1;
   SUBSCRIPTION = 2;
   TOPIC = 3;
+  ISLAND_CHANGES = 4;
 }
 
 message MessageHeader {
@@ -17,6 +18,12 @@ message HeartBeatMessage {
   MessageType type = 1;
   double time = 2;
   bytes data = 3;
+}
+
+message IslandChangesMessage {
+  MessageType type = 1;
+  string transport = 2;
+  string topic = 3;
 }
 
 // NOTE: topics is a space separated string in the format specified by Format

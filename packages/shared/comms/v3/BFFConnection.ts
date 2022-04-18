@@ -7,7 +7,8 @@ import {
   SubscriptionMessage,
   TopicMessage,
   MessageHeader,
-  MessageTypeMap
+  MessageTypeMap,
+  IslandChangesMessage
 } from './proto/bff_pb'
 import { Category, WorldPositionData } from './proto/comms_pb'
 import { PeerConfig } from '@dcl/catalyst-peer'
@@ -115,6 +116,27 @@ export class BFFConnection {
 
         const body = dataMessage.getBody() as any
         this.onTopicMessageObservable.notifyObservers(body)
+      }
+      case MessageType.ISLAND_CHANGES: {
+        let dataMessage: IslandChangesMessage
+        try {
+          dataMessage = IslandChangesMessage.deserializeBinary(data)
+        } catch (e) {
+          this.logger.error('cannot process topic message', e)
+          break
+        }
+
+        const transport = dataMessage.getTransport()
+        const islandId = dataMessage.getTopic()
+
+        this.logger.info(`Island changed to: ${islandId}`)
+
+        if (transport === 'pubsub') {
+          // TODO Island Change
+        } else {
+          this.logger.log('unknown transport', transport)
+        }
+        break
       }
       default: {
         this.logger.log('ignoring msgType', msgType)
