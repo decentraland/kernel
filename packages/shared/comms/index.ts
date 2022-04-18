@@ -12,7 +12,7 @@ import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
 import { getIdentity } from 'shared/session'
 import { setCommsIsland } from './actions'
-import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
+import { MinPeerData, PeerConfig, Position3D } from '@dcl/catalyst-peer'
 import { commsLogger, CommsContext } from './context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
@@ -189,9 +189,19 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
       url.search = qs.toString()
       const finalUrl = url.toString()
 
+      const bffConfig: PeerConfig = {
+        positionConfig: {
+          selfPosition: () => {
+            if (commsContext.currentPosition) {
+              return commsContext.currentPosition.slice(0, 3) as Position3D
+            }
+          }
+        }
+      }
+
       const bffURL = finalUrl.replace('/ws', '/ws-bff') //TODO
       commsLogger.log('Using WebSocket comms: ' + bffURL)
-      const bff = new BFFConnection(bffURL)
+      const bff = new BFFConnection(bffURL, bffConfig)
 
       const roomURL = finalUrl.replace('/ws', '/ws-rooms/room-1') //TODO
       const transport = new WsTransport(roomURL)

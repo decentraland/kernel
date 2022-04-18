@@ -10,6 +10,7 @@ import {
   MessageTypeMap
 } from './proto/bff_pb'
 import { Category, WorldPositionData } from './proto/comms_pb'
+import { PeerConfig } from '@dcl/catalyst-peer'
 
 export class BFFConnection {
   public logger: ILogger = createLogger('BFF: ')
@@ -20,7 +21,7 @@ export class BFFConnection {
   private ws: WebSocket | null = null
   private heartBeatInterval: any = null
 
-  constructor(public url: string) {}
+  constructor(public url: string, private config: PeerConfig) {}
 
   async connect(): Promise<void> {
     await this.connectWS()
@@ -33,14 +34,16 @@ export class BFFConnection {
       data.setCategory(Category.WORLD_POSITION)
       data.setTime(Date.now())
 
-      //TODO: get real position
-      data.setPositionX(0)
-      data.setPositionY(0)
-      data.setPositionZ(0)
+      const position = this.config.positionConfig?.selfPosition()
+      if (position) {
+        data.setPositionX(position[0])
+        data.setPositionY(position[1])
+        data.setPositionZ(position[2])
 
-      msg.setData(data.serializeBinary())
+        msg.setData(data.serializeBinary())
 
-      this.send(msg.serializeBinary())
+        this.send(msg.serializeBinary())
+      }
     }, 10000)
     this.logger.log('Connected')
   }
