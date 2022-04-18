@@ -188,8 +188,10 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
       })
       url.search = qs.toString()
       const finalUrl = url.toString()
-      commsLogger.log('Using WebSocket comms: ' + finalUrl)
-      const bff = new BFFConnection(finalUrl)
+
+      const bffURL = finalUrl.replace('/ws', '/ws-bff') //TODO
+      commsLogger.log('Using WebSocket comms: ' + bffURL)
+      const bff = new BFFConnection(bffURL)
 
       const roomURL = finalUrl.replace('/ws', '/ws-rooms/room-1') //TODO
       const transport = new WsTransport(roomURL)
