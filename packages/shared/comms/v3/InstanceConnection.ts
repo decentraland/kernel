@@ -36,10 +36,7 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async connect(): Promise<boolean> {
-    await Promise.all([
-      this.bff.connect(),
-      this.transport.connect()
-    ])
+    await Promise.all([this.bff.connect(), this.transport.connect()])
     return true
   }
 
@@ -137,10 +134,7 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async disconnect(): Promise<void> {
-    await Promise.all([
-      this.transport.disconnect(),
-      this.bff.disconnect()
-    ])
+    await Promise.all([this.transport.disconnect(), this.bff.disconnect()])
   }
 
   async sendVoiceMessage(_currentPosition: Position, frame: EncodedFrame): Promise<void> {
@@ -163,7 +157,6 @@ export class InstanceConnection implements RoomConnection {
     const category = dataHeader.getCategory()
     switch (category) {
       case Category.SCENE_MESSAGE: {
-
         //TODO
         // const chatData = ChatData.deserializeBinary(data)
         // this.events.emit('chatMessage', {
@@ -232,9 +225,7 @@ export class InstanceConnection implements RoomConnection {
             user: peer,
             version: profileData.getProfileVersion(),
             type:
-              profileData.getProfileType() === ProfileData.ProfileType.LOCAL
-                ? ProfileType.LOCAL
-                : ProfileType.DEPLOYED
+              profileData.getProfileType() === ProfileData.ProfileType.LOCAL ? ProfileType.LOCAL : ProfileType.DEPLOYED
           } // We use deployed as default because that way we can emulate the old behaviour
         })
         break
