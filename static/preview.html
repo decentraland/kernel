@@ -751,7 +751,7 @@
 
 
       function initDesktop() {
-        const { ipcRenderer } = window.require('electron')
+        const ipcRenderer = window.electron.ipcRenderer
 
         ipcRenderer.on('downloadState', (event, payload) => {
           console.log(payload)
