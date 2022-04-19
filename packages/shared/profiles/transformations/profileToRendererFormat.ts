@@ -35,6 +35,7 @@ export function profileToRendererFormat(
 
 // Ensure all snapshots are URLs
 function prepareSnapshots({ face256, body }: Snapshots, userId: string): ProfileForRenderer['snapshots'] {
+  // TODO: move this logic to unity-renderer
   function prepare(value: string) {
     if (value === null || value === undefined) {
       trackEvent('SNAPSHOT_IMAGE_NOT_FOUND', { userId })
@@ -48,5 +49,7 @@ function prepareSnapshots({ face256, body }: Snapshots, userId: string): Profile
   }
 
   const x = prepare(face256)
-  return { face: x, body: prepare(body) }
+  // TODO: this "as any" comes from the ProfileForRenderer['snapshots'] in @dcl/legacy-ecs
+  // which only accepts {face, body} the new types accept {face256, body}
+  return { body: prepare(body), face256: x } as any
 }

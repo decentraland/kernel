@@ -37,6 +37,12 @@ export function processServerProfile(userId: string, receivedProfile: any): Prof
   const eyeColor = flattenColorIfNecessary(receivedProfile.avatar.eyes.color)
   const hairColor = flattenColorIfNecessary(receivedProfile.avatar.hair.color)
   const skinColor = flattenColorIfNecessary(receivedProfile.avatar.skin.color)
+
+  if (snapshots.face) {
+    if (!snapshots.face256) snapshots.face256 = snapshots.face
+    delete snapshots.face256
+  }
+
   return {
     userId,
     email: receivedProfile.email || '',

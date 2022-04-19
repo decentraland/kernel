@@ -3,7 +3,7 @@ import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
 import { call, throttle, put, select, takeEvery, takeLatest } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
-import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
+import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
 import defaultLogger from 'shared/logger'
 import {
   PROFILE_REQUEST,
@@ -42,14 +42,7 @@ import { buildServerMetadata, ensureServerFormat, ServerFormatProfile } from './
 import { Profile, ContentFile, Avatar, ProfileType } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from 'dcl-crypto'
-import {
-  getUpdateProfileServer,
-  getResizeService,
-  isResizeServiceUrl,
-  getCatalystServer,
-  getSelectedNetwork,
-  getFetchContentServer
-} from '../dao/selectors'
+import { getUpdateProfileServer, getCatalystServer, getFetchContentServer } from '../dao/selectors'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
 import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork } from 'shared/session/selectors'
@@ -58,7 +51,7 @@ import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { base64ToBlob } from 'atomicHelpers/base64ToBlob'
+import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
 import { getProfileType } from './getProfileType'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
@@ -151,8 +144,8 @@ function* initialProfileLoad() {
   let profileDirty: boolean = false
 
   if (!profile.hasClaimedName) {
-    const net: keyof typeof ethereumConfigurations = yield select(getCurrentNetwork)
-    const names: string[] = yield fetchOwnedENS(ethereumConfigurations[net].names, userId)
+    const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
+    const names: string[] = yield call(fetchOwnedENS, ethereumConfigurations[net].names, userId)
 
     // patch profile to re-add missing name
     profile = { ...profile, name: names[0], hasClaimedName: true }
@@ -161,13 +154,6 @@ function* initialProfileLoad() {
       defaultLogger.info(`Found missing claimed name '${names[0]}' for profile ${userId}, consolidating profile... `)
       profileDirty = true
     }
-  }
-
-  const isFace256Resized: boolean = yield select(isResizeServiceUrl, profile.avatar.snapshots?.face256)
-
-  if (isFace256Resized) {
-    // setting dirty profile, as at least one of the face images are taken from a local blob
-    profileDirty = true
   }
 
   if (RESET_TUTORIAL) {
@@ -252,54 +238,9 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     profile.email = ''
   }
 
-  yield populateFaceIfNecessary(profile, '256')
-  yield populateFaceIfNecessary(profile, '128')
-
   const passport: Profile = yield call(processServerProfile, userId, profile)
 
   yield put(profileSuccess(userId, passport, hasConnectedWeb3))
-}
-
-function lastSegment(url: string) {
-  const segments = url.split('/')
-  const segment = segments[segments.length - 1]
-  return segment
-}
-
-function* populateFaceIfNecessary(profile: any, resolution: string) {
-  const selector = `face${resolution}`
-  if (
-    profile.avatar?.snapshots &&
-    (!profile.avatar?.snapshots[selector] || lastSegment(profile.avatar.snapshots[selector]) === resolution) && // XXX - check if content === resolution to fix current issue with corrupted profiles https://github.com/decentraland/explorer/issues/1061 - moliva - 25/06/2020
-    profile.avatar?.snapshots?.face
-  ) {
-    try {
-      const resizeServiceUrl: string = yield select(getResizeService)
-      const faceUrlSegments = profile.avatar.snapshots.face.split('/')
-      const path = `${faceUrlSegments[faceUrlSegments.length - 1]}/${resolution}`
-      let faceUrl = `${resizeServiceUrl}/${path}`
-
-      // head to resize url in the current catalyst before populating
-      let response: Response = yield call(fetch, faceUrl, { method: 'HEAD' })
-      if (!response.ok) {
-        // if resize service is not available for this image, try with fallback server
-        const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-        const fallbackServiceUrl = getServerConfigurations(net).fallbackResizeServiceUrl
-        if (fallbackServiceUrl !== resizeServiceUrl) {
-          faceUrl = `${fallbackServiceUrl}/${path}`
-
-          response = yield call(fetch, faceUrl, { method: 'HEAD' })
-        }
-      }
-
-      if (response.ok) {
-        // only populate image field if resize service responded correctly
-        profile.avatar = { ...profile.avatar, snapshots: { ...profile.avatar?.snapshots, [selector]: faceUrl } }
-      }
-    } catch (e) {
-      defaultLogger.error(`error while resizing image for user ${profile.userId} for resolution ${resolution}`, e)
-    }
-  }
 }
 
 export async function profileServerRequest(userId: string, version?: number) {
@@ -430,30 +371,23 @@ export async function fetchProfileLocally(address: string, network: ETHEREUM_NET
   }
 }
 
-async function buildSnapshotContent(selector: string, value: string): Promise<[string, string, ContentFile?]> {
+async function buildSnapshotContent(selector: string, value: string) {
   let hash: string
   let contentFile: ContentFile | undefined
 
   const name = `${selector}.png`
 
-  if (isResizeServiceUrl(store.getState(), value)) {
-    // value is coming in a resize service url => generate image & upload content
-    const blob = await fetch(value).then((r) => r.blob())
-
-    contentFile = await makeContentFile(name, blob)
-    hash = await hashV1(contentFile.content)
-  } else if (value.includes('://')) {
+  if (value.includes('://')) {
     // value is already a URL => use existing hash
     hash = value.split('/').pop()!
   } else {
     // value is coming in base 64 => convert to blob & upload content
-    const blob = base64ToBlob(value)
-
-    contentFile = await makeContentFile(name, blob)
+    const buffer = base64ToBuffer(value)
+    contentFile = await makeContentFile(name, buffer)
     hash = await hashV1(contentFile.content)
   }
 
-  return [name, hash, contentFile]
+  return { name, hash, contentFile }
 }
 
 async function modifyAvatar(params: { url: string; userId: string; identity: ExplorerIdentity; profile: Profile }) {
@@ -466,10 +400,11 @@ async function modifyAvatar(params: { url: string; userId: string; identity: Exp
 
   const snapshots = avatar.snapshots || (profile as any).snapshots
   const content = new Map()
+
   if (snapshots) {
     const newSnapshots: Record<string, string> = {}
     for (const [selector, value] of Object.entries(snapshots)) {
-      const [name, hash, contentFile] = await buildSnapshotContent(selector, value as any)
+      const { name, hash, contentFile } = await buildSnapshotContent(selector, value as any)
 
       newSnapshots[selector] = hash
       content.set(name, hash)
@@ -500,6 +435,8 @@ async function deploy(
     metadata
   }
 
+  // TODO: validate metadata against @dcl/schemas Avatar
+
   // Build entity and group all files
   const preparationData = await (contentFiles.size
     ? catalyst.buildEntity({ type: EntityType.PROFILE, pointers: [identity.address], files: contentFiles, metadata })
@@ -512,9 +449,11 @@ async function deploy(
   return catalyst.deployEntity(deployData)
 }
 
-export function makeContentFile(path: string, content: string | Blob): Promise<ContentFile> {
+function makeContentFile(path: string, content: string | Blob | Buffer): Promise<ContentFile> {
   return new Promise((resolve, reject) => {
-    if (typeof content === 'string') {
+    if (Buffer.isBuffer(content)) {
+      resolve({ name: path, content })
+    } else if (typeof content === 'string') {
       const buffer = Buffer.from(content)
       resolve({ name: path, content: buffer })
     } else if (content instanceof Blob) {

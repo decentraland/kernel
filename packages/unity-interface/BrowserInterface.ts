@@ -306,7 +306,7 @@ export class BrowserInterface {
 
   public SaveUserAvatar(changes: { face256: string; body: string; avatar: Avatar; isSignUpFlow?: boolean }) {
     const { face256, body, avatar } = changes
-    const update = { avatar: { ...avatar, snapshots: { face256, body } } }
+    const update = { avatar: { ...avatar, snapshots: { face256, face: face256, body } } }
     if (!changes.isSignUpFlow) {
       store.dispatch(saveProfileRequest(update))
     } else {

@@ -9,8 +9,6 @@ import { processServerProfile } from '../../packages/shared/profiles/transformat
 import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
 import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
-import { getResizeService } from '../../packages/shared/dao/selectors'
-import { ETHEREUM_NETWORK, getServerConfigurations } from 'config'
 import { sleep } from 'atomicHelpers/sleep'
 import { getRealm } from 'shared/comms/selectors'
 
@@ -62,29 +60,6 @@ describe('fetchProfile behavior', () => {
       .run()
   })
 
-  it.skip('generates scaled face snapshots', () => {
-    const profileWithNoSnapshots = { avatar: { snapshots: { face256: 'http://fake.url/contents/facehash/256' } } }
-    const profile1 = { ...profileWithNoSnapshots, ethAddress: 'eth1' }
-    return expectSaga(handleFetchProfile, profileRequest('user|1'))
-      .provide([
-        [select(getCurrentUserId), 'myid'],
-        [select(getResizeService), 'http://fake/resizeurl'],
-        [matchers.call.fn(fetch), dynamic(() => ({ ok: true }))],
-        [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
-        [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
-      ])
-      .run()
-      .then((result) => {
-        const putEffects = result.effects.put
-        const lastPut = putEffects[putEffects.length - 1].payload.action
-        expect(lastPut.type).to.eq(PROFILE_SUCCESS)
-
-        const { face, face128, face256 } = lastPut.payload.profile.avatar.snapshots
-        expect(face).to.eq(undefined)
-        expect(face128).to.eq(undefined)
-        expect(face256).to.eq('http://fake/resizeurl/facehash/256')
-      })
-  })
 
   it.skip('detects and fixes corrupted scaled snapshots', () => {
     const profileWithCorruptedSnapshots = {
@@ -94,7 +69,7 @@ describe('fetchProfile behavior', () => {
     return expectSaga(handleFetchProfile, profileRequest('user|1'))
       .provide([
         [select(getCurrentUserId), 'myid'],
-        [select(getResizeService), 'http://fake/resizeurl'],
+        // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic(() => ({ ok: true }))],
         [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
         [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
@@ -120,7 +95,7 @@ describe('fetchProfile behavior', () => {
     return expectSaga(handleFetchProfile, profileRequest('user|1'))
       .provide([
         [select(getCurrentUserId), 'myid'],
-        [select(getResizeService), 'http://fake/resizeurl'],
+        // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic((call) => ({ ok: !call.args[0].startsWith('http://fake/resizeurl') }))],
         [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
         [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
@@ -131,14 +106,14 @@ describe('fetchProfile behavior', () => {
         const lastPut = putEffects[putEffects.length - 1].payload.action
         expect(lastPut.type).to.eq(PROFILE_SUCCESS)
 
-        const { face, face128, face256 } = lastPut.payload.profile.avatar.snapshots
-        expect(face).to.eq('http://fake.url/contents/facehash')
-        expect(face128).to.eq(
-          `${getServerConfigurations(ETHEREUM_NETWORK.MAINNET).fallbackResizeServiceUrl}/facehash/128`
-        )
-        expect(face256).to.eq(
-          `${getServerConfigurations(ETHEREUM_NETWORK.MAINNET).fallbackResizeServiceUrl}/facehash/256`
-        )
+        // const { face, face128, face256 } = lastPut.payload.profile.avatar.snapshots
+        // expect(face).to.eq('http://fake.url/contents/facehash')
+        // expect(face128).to.eq(
+        //   `${getServerConfigurations(ETHEREUM_NETWORK.MAINNET).fallbackResizeServiceUrl}/facehash/128`
+        // )
+        // expect(face256).to.eq(
+        //   `${getServerConfigurations(ETHEREUM_NETWORK.MAINNET).fallbackResizeServiceUrl}/facehash/256`
+        // )
       })
   })
 })
