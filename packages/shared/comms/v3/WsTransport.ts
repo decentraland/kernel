@@ -2,13 +2,7 @@ import { Message } from 'google-protobuf'
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
 import { Transport, TransportMessage } from './Transport'
-import {
-  MessageType,
-  MessageHeader,
-  MessageTypeMap,
-  SystemMessage,
-  IdentityMessage
-} from './proto/ws_pb'
+import { MessageType, MessageHeader, MessageTypeMap, SystemMessage, IdentityMessage } from './proto/ws_pb'
 
 export class WsTransport implements Transport {
   aliases: Record<number, string> = {}
@@ -19,7 +13,7 @@ export class WsTransport implements Transport {
 
   private ws: WebSocket | null = null
 
-  constructor(public url: string) { }
+  constructor(public url: string) {}
 
   async connect(): Promise<void> {
     await this.connectWS()
