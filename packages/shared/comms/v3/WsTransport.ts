@@ -143,7 +143,9 @@ export class WsTransport implements Transport {
         this.onWsMessage(event).catch(this.logger.error)
       }
 
-      resolve()
+      this.ws.onopen = () => {
+        resolve()
+      }
     })
   }
 }
