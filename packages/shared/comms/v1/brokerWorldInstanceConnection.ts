@@ -342,7 +342,7 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
               this._stats.sceneComms.incrementRecv(msgSize)
             }
 
-            this.events.emit('chatMessage', {
+            this.events.emit('sceneMessageBus', {
               sender: alias,
               time: chatData.getTime(),
               data: { id: chatData.getMessageId(), text: chatData.getText() }
