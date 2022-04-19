@@ -11,7 +11,12 @@ import {
   IslandChangesMessage
 } from './proto/bff_pb'
 import { Category, WorldPositionData } from './proto/comms_pb'
-import { PeerConfig } from '@dcl/catalyst-peer'
+import { Position3D } from '@dcl/catalyst-peer'
+
+export declare type BFFConfig = {
+  selfPosition: () => Position3D | undefined
+  onIslandChange: (transport: string, islandId: string) => Promise<void>
+}
 
 export class BFFConnection {
   public logger: ILogger = createLogger('BFF: ')
@@ -22,7 +27,7 @@ export class BFFConnection {
   private ws: WebSocket | null = null
   private heartBeatInterval: any = null
 
-  constructor(public url: string, private config: PeerConfig) {}
+  constructor(public url: string, private config: BFFConfig) {}
 
   async connect(): Promise<void> {
     await this.connectWS()
@@ -35,7 +40,7 @@ export class BFFConnection {
       data.setCategory(Category.WORLD_POSITION)
       data.setTime(Date.now())
 
-      const position = this.config.positionConfig?.selfPosition()
+      const position = this.config.selfPosition()
       if (position) {
         data.setPositionX(position[0])
         data.setPositionY(position[1])
@@ -130,12 +135,8 @@ export class BFFConnection {
         const islandId = dataMessage.getTopic()
 
         this.logger.info(`Island changed to: ${islandId}`)
+        await this.config.onIslandChange(transport, islandId)
 
-        if (transport === 'pubsub') {
-          // TODO Island Change
-        } else {
-          this.logger.log('unknown transport', transport)
-        }
         break
       }
       default: {

@@ -29,9 +29,19 @@ export class InstanceConnection implements RoomConnection {
 
   private logger = createLogger('Commsv3 connection: ')
 
-  constructor(private bff: BFFConnection, private transport: Transport) {
+  constructor(private bff: BFFConnection, public transport: Transport) {
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
+
+    this.transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
+    this.transport.onDisconnectObservable.add(this.disconnect.bind(this))
+  }
+
+  setTransport(transport: Transport): void {
+    this.transport.onMessageObservable.clear()
+    this.transport.onDisconnectObservable.clear()
+
+    this.transport = transport
 
     this.transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
     this.transport.onDisconnectObservable.add(this.disconnect.bind(this))
