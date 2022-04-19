@@ -7,8 +7,7 @@ import {
   ChatData,
   PositionData,
   ProfileData,
-  DataHeader,
-  WorldPositionData
+  DataHeader
 } from './proto/comms_pb'
 import { Position } from '../../comms/interface/utils'
 import { UserInformation } from '../../comms/interface/types'
@@ -22,7 +21,6 @@ import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
-import { HeartBeatMessage, MessageType } from './proto/bff_pb'
 
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
@@ -67,22 +65,8 @@ export class InstanceConnection implements RoomConnection {
     this.transport.send(d, false)
   }
 
-  async sendParcelUpdateMessage(_: Position, newPosition: Position) {
-    const msg = new HeartBeatMessage()
-    msg.setType(MessageType.HEARTBEAT)
-    msg.setTime(Date.now())
-
-    const data = new WorldPositionData()
-    data.setCategory(Category.WORLD_POSITION)
-    data.setTime(Date.now())
-
-    data.setPositionX(newPosition[0])
-    data.setPositionY(newPosition[1])
-    data.setPositionZ(newPosition[2])
-
-    msg.setData(data.serializeBinary())
-
-    this.bff.send(msg.serializeBinary())
+  async sendParcelUpdateMessage(_: Position, _newPosition: Position) {
+    // TODO
   }
 
   async sendProfileMessage(_: Position, userProfile: UserInformation) {
