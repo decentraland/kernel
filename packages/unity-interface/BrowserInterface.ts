@@ -829,6 +829,27 @@ export class BrowserInterface {
   public ReportDecentralandTime(data: any) {
     setDecentralandTime(data)
   }
+
+  public ReportLog(data: { type: string; message: string }) {
+    const logger = getUnityInstance().logger
+    switch (data.type) {
+      case 'trace':
+        logger.trace(data.message)
+        break
+      case 'info':
+        logger.info(data.message)
+        break
+      case 'warn':
+        logger.warn(data.message)
+        break
+      case 'error':
+        logger.error(data.message)
+        break
+      default:
+        logger.log(data.message)
+        break
+    }
+  }
 }
 
 function arrayCleanup<T>(array: T[] | null | undefined): T[] | undefined {

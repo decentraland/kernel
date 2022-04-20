@@ -22,7 +22,7 @@ import {
   HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { defaultLogger } from 'shared/logger'
+import { createUnityLogger, defaultLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
@@ -62,6 +62,7 @@ function resizeCanvas(targetHeight: number) {
 }
 
 export class UnityInterface implements IUnityInterface {
+  public logger: ILogger = createUnityLogger()
   public gameInstance!: UnityGame
   public Module: any
   public currentHeight: number = -1
