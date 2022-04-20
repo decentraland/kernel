@@ -1,16 +1,9 @@
 import { AnyAction } from 'redux'
 import { ProfileState } from './types'
-import {
-  ADDED_PROFILE_TO_CATALOG,
-  PROFILE_SUCCESS,
-  PROFILE_FAILURE,
-  PROFILE_REQUEST,
-  LOCAL_PROFILE_IN_RENDERER
-} from './actions'
+import { ADDED_PROFILE_TO_CATALOG, PROFILE_SUCCESS, PROFILE_FAILURE, PROFILE_REQUEST } from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
-  userInfo: {},
-  localProfileUploaded: false
+  userInfo: {}
 }
 
 export function profileReducer(state?: ProfileState, action?: AnyAction): ProfileState {
@@ -21,11 +14,6 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
     return state
   }
   switch (action.type) {
-    case LOCAL_PROFILE_IN_RENDERER:
-      return {
-        ...state,
-        localProfileUploaded: true
-      }
     case PROFILE_REQUEST:
       return {
         ...state,

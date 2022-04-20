@@ -63,4 +63,5 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_start']: { renderer_version: string }
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number }
+  ['invalid_schema']: { schema: string, payload: any }
 }

@@ -40,7 +40,7 @@ import { AlgorithmChainConfig } from './pick-realm-algorithm/types'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import defaultLogger from 'shared/logger'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { getRealm } from 'shared/comms/selectors'
+import { getCommsContext, getRealm } from 'shared/comms/selectors'
 import { waitForExplorerIdentity } from 'shared/session/sagas'
 import { store } from 'shared/store/isolatedStore'
 import { CatalystNode } from 'shared/types'
@@ -279,7 +279,7 @@ function* cacheCatalystCandidates(_action: SetCatalystCandidates) {
 }
 
 export function* waitForRealmInitialized() {
-  while (!(yield select(getRealm))) {
+  while (!(yield select(getCommsContext))) {
     yield take(SET_WORLD_CONTEXT)
   }
 }

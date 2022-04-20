@@ -1,8 +1,9 @@
 import { getProfile, getProfileStatusAndData } from './selectors'
 import { profileRequest } from './actions'
-import { Profile, ProfileType } from './types'
+import { ProfileType } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
+import { Avatar } from '@dcl/schemas'
 
 // We resolve a profile with an older version after this time, if there is that info
 const PROFILE_SOFT_TIMEOUT_MS = 5000
@@ -10,10 +11,9 @@ const PROFILE_SOFT_TIMEOUT_MS = 5000
 // We reject the profile promise if more time than this has passed
 const PROFILE_HARD_TIMEOUT_MS = COMMS_PROFILE_TIMEOUT + 20000
 
-export function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Profile> {
-  function isExpectedVersion(aProfile: Profile) {
+export function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Avatar> {
+  function isExpectedVersion(aProfile: Avatar) {
     return !version || aProfile.version >= version
-    // || aProfile.version === -1 // We signal random profiles with -1
   }
 
   const [status, existingProfile] = getProfileStatusAndData(store.getState(), userId)
@@ -21,7 +21,7 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
   if (existingProfile && existingProfileWithCorrectVersion && status === 'ok') {
     return Promise.resolve(existingProfile)
   }
-  return new Promise<Profile>((resolve, reject) => {
+  return new Promise<Avatar>((resolve, reject) => {
     let pending = true
     const unsubscribe = store.subscribe(() => {
       const [status, data] = getProfileStatusAndData(store.getState(), userId)
@@ -63,7 +63,7 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
   })
 }
 
-export function EnsureProfile(userId: string, version?: number): Promise<Profile> {
+export function EnsureProfile(userId: string, version?: number): Promise<Avatar> {
   const existingProfile = getProfile(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && (!version || existingProfile.version >= version)
   if (existingProfile && existingProfileWithCorrectVersion) {
@@ -80,6 +80,6 @@ export function EnsureProfile(userId: string, version?: number): Promise<Profile
   })
 }
 
-export function getProfileIfExist(userId: string): Profile | null {
+export function getProfileIfExist(userId: string): Avatar | null {
   return getProfile(store.getState(), userId)
 }

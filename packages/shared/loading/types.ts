@@ -8,8 +8,6 @@ export const AWAITING_USER_SIGNATURE = 'Awaiting your signature...'
 export const awaitingUserSignature = () => action(AWAITING_USER_SIGNATURE)
 export const METRICS_AUTH_SUCCESSFUL = 'Authentication successful. Loading the experience...'
 export const metricsAuthSuccessful = () => action(METRICS_AUTH_SUCCESSFUL)
-export const NOT_INVITED = 'Auth error: not invited'
-export const notInvited = () => action(NOT_INVITED)
 export const METRICS_UNITY_CLIENT_LOADED = 'Rendering engine finished loading! Setting up scene system...'
 export const metricsUnityClientLoaded = () => action(METRICS_UNITY_CLIENT_LOADED)
 export const WAITING_FOR_RENDERER = 'Uploading world information to the rendering engine...'
@@ -72,7 +70,6 @@ export type ExecutionLifecycleEvent =
   | typeof NOT_STARTED
   | typeof INIT_SESSION
   | typeof METRICS_AUTH_SUCCESSFUL
-  | typeof NOT_INVITED
   | typeof ESTABLISHING_COMMS
   | typeof COMMS_ESTABLISHED
   | typeof NO_WEBGL_COULD_BE_CREATED
@@ -100,7 +97,6 @@ export const ExecutionLifecycleEventsList: ExecutionLifecycleEvent[] = [
   AWAITING_USER_SIGNATURE,
   METRICS_AUTH_SUCCESSFUL,
   METRICS_UNITY_CLIENT_LOADED,
-  NOT_INVITED,
   ESTABLISHING_COMMS,
   COMMS_ESTABLISHED,
   NO_WEBGL_COULD_BE_CREATED,

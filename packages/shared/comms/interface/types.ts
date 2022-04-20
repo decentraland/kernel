@@ -1,8 +1,9 @@
-import { ProfileForRenderer } from '@dcl/legacy-ecs'
-import { Profile, ProfileType } from 'shared/profiles/types'
-import { ExplorerIdentity } from 'shared/session/types'
+import type { Avatar } from '@dcl/schemas'
+import type { NewProfileForRenderer } from 'shared/profiles/transformations/profileToRendererFormat'
+import type { ProfileType } from 'shared/profiles/types'
+import type { ExplorerIdentity } from 'shared/session/types'
 
-export enum AvatarMessageType {
+export const enum AvatarMessageType {
   // Networking related messages
   USER_DATA = 'USER_DATA',
   USER_POSE = 'USER_POSE',
@@ -32,7 +33,7 @@ export type ReceiveUserDataMessage = {
   type: AvatarMessageType.USER_DATA
   uuid: string
   data: Partial<UserInformation>
-  profile: ProfileForRenderer
+  profile: NewProfileForRenderer
 }
 
 export type ReceiveUserVisibleMessage = {
@@ -88,7 +89,6 @@ export type PeerInformation = {
    * Unique peer ID
    */
   uuid: UUID
-
   user?: UserInformation
 }
 
@@ -142,7 +142,7 @@ export type ProfileRequest = {
 }
 
 export type ProfileResponse = {
-  profile: Profile
+  profile: Avatar
 }
 
 export type BusMessage = ChatMessage

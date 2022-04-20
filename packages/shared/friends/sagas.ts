@@ -27,7 +27,6 @@ import {
   FriendshipAction,
   PresenceStatus,
   HUDElementID,
-  Profile,
   UpdateUserStatusMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
@@ -56,6 +55,7 @@ import { store } from 'shared/store/isolatedStore'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
+import { Avatar } from '@dcl/schemas'
 
 const DEBUG = DEBUG_PM
 
@@ -291,7 +291,7 @@ function* initializeFriends(client: SocialAPI) {
 
   const profileIds = Object.values(socialInfo).map((socialData) => socialData.userId)
 
-  const profiles: Profile[] = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
+  const profiles: Avatar[] = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
   DEBUG && logger.info(`profiles`, profiles)
 
   for (const userId of profileIds) {
@@ -612,7 +612,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
   } catch (e) {
     if (e instanceof UnknownUsersError) {
-      const profile: Profile = yield ensureFriendProfile(userId)
+      const profile: Avatar = yield call(ensureFriendProfile, userId)
       const id = profile?.name ? profile.name : `with address '${userId}'`
       showErrorNotification(`User ${id} must log in at least once before befriending them`)
     }

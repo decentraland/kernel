@@ -29,10 +29,12 @@ import { createLogger } from 'shared/logger'
 
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import { getProfileType } from 'shared/profiles/getProfileType'
-import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
+import { Avatar } from '@dcl/schemas'
+import { validateAvatar } from '../../profiles/schemaValidation'
+import { commsLogger } from '../context'
 
 class SendResult {
   constructor(public bytesSize: number) {}
@@ -138,7 +140,7 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  async sendProfileResponse(currentPosition: Position, profile: Profile) {
+  async sendProfileResponse(currentPosition: Position, profile: Avatar) {
     const topic = positionHash(currentPosition)
 
     const d = new ProfileResponseData()
@@ -417,13 +419,18 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
           }
           case Category.PROF_RES: {
             const profileResponseData = ProfileResponseData.deserializeBinary(body)
-            this.events.emit('profileResponse', {
-              sender: alias,
-              time: profileResponseData.getTime(),
-              data: {
-                profile: JSON.parse(profileResponseData.getSerializedProfile()) as Profile
-              }
-            })
+            const profile = JSON.parse(profileResponseData.getSerializedProfile()) as Avatar
+            if (validateAvatar(profile)) {
+              this.events.emit('profileResponse', {
+                sender: alias,
+                time: profileResponseData.getTime(),
+                data: {
+                  profile
+                }
+              })
+            } else {
+              commsLogger.error('Received invalid Avatar schema over comms', profile, validateAvatar.errors)
+            }
             break
           }
           default: {

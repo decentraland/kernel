@@ -1,4 +1,4 @@
-import { Profile } from './types'
+import { Avatar } from '@dcl/schemas'
 import {
   getFromPersistentStorage,
   removeFromPersistentStorage,
@@ -9,7 +9,7 @@ import { ETHEREUM_NETWORK } from 'config'
 const LOCAL_PROFILES_KEY = 'dcl-local-profile'
 
 export class LocalProfilesRepository {
-  async persist(address: string, network: ETHEREUM_NETWORK, profile: Profile) {
+  async persist(address: string, network: ETHEREUM_NETWORK, profile: Avatar) {
     // For now, we use local storage. BUT DON'T USE THIS KEY OUTSIDE BECAUSE THIS MIGHT CHANGE EVENTUALLY
     await saveToPersistentStorage(this.profileKey(address, network), profile)
   }
@@ -18,7 +18,7 @@ export class LocalProfilesRepository {
     await removeFromPersistentStorage(this.profileKey(address, network))
   }
 
-  async get(address: string, network: ETHEREUM_NETWORK) {
+  async get(address: string, network: ETHEREUM_NETWORK): Promise<unknown> {
     return getFromPersistentStorage(this.profileKey(address, network))
   }
 

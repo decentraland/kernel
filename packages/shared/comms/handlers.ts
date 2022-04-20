@@ -16,7 +16,6 @@ import {
 import { Position } from './interface/utils'
 import { store } from 'shared/store/isolatedStore'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
-import { Profile, Snapshots } from 'shared/profiles/types'
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
@@ -28,6 +27,7 @@ import { CommsContext, commsLogger } from './context'
 import { isBlockedOrBanned, processVoiceFragment } from './voice-over-comms'
 import future, { IFuture } from 'fp-future'
 import { handleCommsDisconnection } from './actions'
+import { Avatar, Snapshots } from '@dcl/schemas'
 
 export const scenesSubscribedToCommsEvents = new Set<CommunicationsController>()
 
@@ -69,18 +69,18 @@ export async function bindHandlersToCommsContext(context: CommsContext) {
   })
 }
 
-const pendingProfileRequests: Record<string, IFuture<Profile | null>[]> = {}
+const pendingProfileRequests: Record<string, IFuture<Avatar | null>[]> = {}
 export async function requestLocalProfileToPeers(
   context: CommsContext,
   userId: string,
   version?: number
-): Promise<Profile | null> {
+): Promise<Avatar | null> {
   if (context && context.worldInstanceConnection && context.currentPosition) {
     if (!pendingProfileRequests[userId]) {
       pendingProfileRequests[userId] = []
     }
 
-    const thisFuture = future<Profile | null>()
+    const thisFuture = future<Avatar | null>()
 
     pendingProfileRequests[userId].push(thisFuture)
 
@@ -239,17 +239,17 @@ function processPositionMessage(context: CommsContext, message: Package<Position
   }
 }
 
-function stripSnapshots(profile: Profile): Profile {
+function stripSnapshots(profile: Avatar): Avatar {
   const newSnapshots: Record<string, string> = {}
   const currentSnapshots: Record<string, string> = profile.avatar.snapshots
-  Object.keys(currentSnapshots).forEach((snapshotKey) => {
-    const snapshot = currentSnapshots[snapshotKey]
 
+  for (const snapshotKey of ['face256', 'body'] as const) {
+    const snapshot = currentSnapshots[snapshotKey]
     newSnapshots[snapshotKey] =
-      snapshot.startsWith('/') || snapshot.startsWith('./') || isURL(snapshot)
+      snapshot && (snapshot.startsWith('/') || snapshot.startsWith('./') || isURL(snapshot))
         ? snapshot
         : genericAvatarSnapshots[snapshotKey]
-  })
+  }
   return {
     ...profile,
     avatar: { ...profile.avatar, snapshots: newSnapshots as Snapshots }

@@ -4,6 +4,7 @@ import { RootSessionState } from 'shared/session/types'
 import { RootState } from 'shared/store/rootTypes'
 import { RootLoadingState } from './reducer'
 
+export const getLoadingState = (state: RootLoadingState) => state.loading
 export const isInitialLoading = (state: RootLoadingState) => state.loading.initialLoad
 export const isWaitingTutorial = (state: RootLoadingState) => state.loading.waitingTutorial
 
@@ -16,7 +17,7 @@ export function isLoadingScreenVisible(state: RootLoadingState & RootSessionStat
 
   // in the case of signup, we show the avatars editor instead of the loading screen
   // that is so, to enable the user to customize the avatar while loading the world
-  if (!session.identity && session.isSignUp && session.loginState === LoginState.WAITING_PROFILE) {
+  if (session.isSignUp && session.loginState === LoginState.WAITING_PROFILE) {
     return false
   }
 

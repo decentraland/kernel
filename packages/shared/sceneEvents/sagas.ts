@@ -4,13 +4,13 @@ import { toEnvironmentRealmType } from '../apis/EnvironmentAPI'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
 import { getCommsIsland, getRealm } from '../comms/selectors'
 import { Realm } from '../dao/types'
-import { SaveProfileSuccess, SAVE_PROFILE_SUCCESS } from '../profiles/actions'
+import { SendProfileToRenderer, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
 import { allScenesEvent } from '../world/parcelSceneManager'
 
 export function* sceneEventsSaga() {
   yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], islandChanged)
-  yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
+  yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, submitProfileToScenes)
 }
 
 function* islandChanged() {
@@ -42,7 +42,9 @@ export function updateLocation(realm: string | undefined, island: string | undef
   history.replaceState({ island, realm }, '', `?${q.toString()}`)
 }
 
-function* submitProfileToScenes(action: SaveProfileSuccess) {
+function* submitProfileToScenes(action: SendProfileToRenderer) {
+  // TODO: are all profile changes supposed to go to the scene????
+  //       this function sends all of them
   yield call(allScenesEvent, {
     eventType: 'profileChanged',
     payload: {

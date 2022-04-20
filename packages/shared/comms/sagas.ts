@@ -13,6 +13,8 @@ import { bindHandlersToCommsContext } from './handlers'
 import { RootCommsState } from './types'
 import { Realm } from 'shared/dao/types'
 import { Store } from 'redux'
+import { AnnounceProfileAction, ANNOUNCE_PROFILE, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
+import { receiveUserData } from './peers'
 
 export function* commsSaga() {
   yield takeLatest(HANDLE_COMMS_DISCONNECTION, handleCommsDisconnection)
@@ -29,6 +31,24 @@ export function* commsSaga() {
 
   yield fork(voiceSaga)
   yield fork(handleNewCommsContext)
+
+  // Handling of local actions
+  yield takeLatest([ANNOUNCE_PROFILE, SEND_PROFILE_TO_RENDERER], handleAnnounceProfile)
+}
+
+function* handleAnnounceProfile(action: AnnounceProfileAction) {
+  const context = (yield select(getCommsContext)) as CommsContext | undefined
+
+  if (context === undefined) {
+    commsLogger.warn('Announce profile is impossible (no connection found)')
+    return
+  }
+
+  if (context.userInfo) {
+    context.userInfo.version = action.payload.version
+    receiveUserData(action.payload.userId, context.userInfo)
+    context.sendCurrentProfile()
+  }
 }
 
 // this saga reacts to changes in context and disconnects the old context

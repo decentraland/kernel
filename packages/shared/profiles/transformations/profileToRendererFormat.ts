@@ -1,45 +1,81 @@
-import { Profile } from '../types'
 import { ParcelsWithAccess, ProfileForRenderer } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
-import { dropDeprecatedWearables } from './processServerProfile'
 import { ExplorerIdentity } from 'shared/session/types'
 import { isURL } from 'atomicHelpers/isURL'
-import { trackEvent } from '../../analytics'
-import { Snapshots } from '@dcl/schemas'
+import { Avatar, Snapshots } from '@dcl/schemas'
+import { backupProfile } from '../generateRandomUserProfile'
+import { genericAvatarSnapshots } from 'config'
 
-const profileDefaults = {
-  tutorialStep: 0
+export type NewProfileForRenderer = {
+  userId: string
+  ethAddress: string
+  name: string
+  // @deprecated
+  email: string
+  parcelsWithAccess: ProfileForRenderer['parcelsWithAccess']
+  snapshots: Snapshots
+  blocked: string[]
+  muted: string[]
+  tutorialStep: number
+  hasConnectedWeb3: boolean
+  hasClaimedName: boolean
+  avatar: ProfileForRenderer['avatar']
+
+  // TODO evaluate usage of the following
+  version: number
+  description: string
+  created_at: number
+  updated_at: number
+  inventory: string[]
+  tutorialFlagsMask: number
 }
 
 export function profileToRendererFormat(
-  profile: Profile,
-  options?: { identity?: ExplorerIdentity; parcels?: ParcelsWithAccess }
-): ProfileForRenderer {
-  const { snapshots, ...rendererAvatar } = profile.avatar
+  profile: Partial<Avatar>,
+  options: {
+    identity?: ExplorerIdentity
+
+    // TODO: there is no explaination why the profile has the parcels of Builder. Remove it from here
+    parcels?: ParcelsWithAccess
+  }
+): NewProfileForRenderer {
+  const stage = { ...backupProfile(profile.userId || options.identity?.address || 'noeth'), ...profile }
 
   return {
-    ...profileDefaults,
-    ...profile,
-    snapshots: prepareSnapshots(snapshots, profile.userId),
-    hasConnectedWeb3: options?.identity ? options.identity.hasConnectedWeb3 : false,
+    ...stage,
+    name: stage.name || 'NoName',
+    description: stage.description || '',
+    version: stage.version || -1,
+    ethAddress: stage.ethAddress || options.identity?.address || '0x0000000000000000000000000000000000000000',
+    blocked: stage.blocked || [],
+    muted: stage.muted || [],
+    inventory: [],
+    created_at: 0,
+    updated_at: 0,
+    // @deprecated
+    email: '',
+    hasConnectedWeb3: options.identity ? options.identity.hasConnectedWeb3 : false,
+    hasClaimedName: stage.hasClaimedName ?? false,
+    tutorialFlagsMask: 0,
+    tutorialStep: stage.tutorialStep || 0,
+    snapshots: prepareSnapshots(profile.avatar!.snapshots, profile.userId!),
     avatar: {
-      ...rendererAvatar,
-      wearables: profile.avatar.wearables.filter(dropDeprecatedWearables),
-      eyeColor: convertToRGBObject(profile.avatar.eyeColor),
-      hairColor: convertToRGBObject(profile.avatar.hairColor),
-      skinColor: convertToRGBObject(profile.avatar.skinColor)
+      wearables: profile.avatar?.wearables || [],
+      bodyShape: profile.avatar?.bodyShape || '',
+      eyeColor: convertToRGBObject(profile.avatar?.eyes.color),
+      hairColor: convertToRGBObject(profile.avatar?.hair.color),
+      skinColor: convertToRGBObject(profile.avatar?.skin.color)
     },
-    parcelsWithAccess: options?.parcels
+    parcelsWithAccess: options.parcels || []
   }
 }
 
 // Ensure all snapshots are URLs
-function prepareSnapshots({ face256, body }: Snapshots, userId: string): ProfileForRenderer['snapshots'] {
+function prepareSnapshots({ face256, body }: Snapshots, userId: string): NewProfileForRenderer['snapshots'] {
   // TODO: move this logic to unity-renderer
   function prepare(value: string) {
     if (value === null || value === undefined) {
-      trackEvent('SNAPSHOT_IMAGE_NOT_FOUND', { userId })
-      return '/images/image_not_found.png'
+      return null
     }
     if (value === '' || isURL(value) || value.startsWith('/images')) {
       return value
@@ -49,7 +85,5 @@ function prepareSnapshots({ face256, body }: Snapshots, userId: string): Profile
   }
 
   const x = prepare(face256)
-  // TODO: this "as any" comes from the ProfileForRenderer['snapshots'] in @dcl/legacy-ecs
-  // which only accepts {face, body} the new types accept {face256, body}
-  return { body: prepare(body), face256: x } as any
+  return { body: prepare(body) || genericAvatarSnapshots.body, face256: x || genericAvatarSnapshots.face256 }
 }

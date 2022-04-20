@@ -9,9 +9,9 @@ import {
   ProfileRequest,
   Package
 } from './types'
-import { Profile } from 'shared/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import { Emitter } from 'mitt'
+import { Avatar } from '@dcl/schemas'
 
 export type CommsEvents = {
   initialMessage: Package<UserInformation>
@@ -39,7 +39,7 @@ export interface RoomConnection {
   sendInitialMessage(userInfo: UserInformation): Promise<void>
   sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>
   sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void>
-  sendProfileResponse(currentPosition: Position, profile: Profile): Promise<void>
+  sendProfileResponse(currentPosition: Position, profile: Avatar): Promise<void>
   sendPositionMessage(p: Position): Promise<void>
   sendParcelUpdateMessage(currentPosition: Position, p: Position): Promise<void>
   sendParcelSceneCommsMessage(cid: string, message: string): Promise<void>

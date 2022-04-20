@@ -1,7 +1,7 @@
 import { call, put, select, takeEvery } from 'redux-saga/effects'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { getProfile } from 'shared/profiles/selectors'
-import { saveProfileRequest } from 'shared/profiles/actions'
+import { saveProfileDelta } from 'shared/profiles/actions'
 import {
   BlockPlayers,
   BLOCK_PLAYERS,
@@ -12,9 +12,10 @@ import {
   UnmutePlayers,
   UNMUTE_PLAYERS
 } from './actions'
-import { Profile } from 'shared/profiles/types'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { Avatar } from '@dcl/schemas'
+import { validateAvatar } from 'shared/profiles/schemaValidation'
 
 type ProfileSetKey = 'muted' | 'blocked'
 
@@ -42,7 +43,7 @@ function* saveUnblockedPlayer(action: UnblockPlayers) {
 }
 
 function* addPlayerToProfileSet(playersId: string[], setKey: ProfileSetKey) {
-  const profile: Profile | null = yield call(getCurrentProfile)
+  const profile: Avatar | null = yield call(getCurrentProfile)
 
   if (profile) {
     let idsToAdd = playersId
@@ -53,7 +54,7 @@ function* addPlayerToProfileSet(playersId: string[], setKey: ProfileSetKey) {
       set = profile[setKey]!.concat(idsToAdd)
     }
 
-    yield put(saveProfileRequest({ [setKey]: set }))
+    yield put(saveProfileDelta({ [setKey]: set }))
     if (setKey === 'muted') {
       yield call(waitForRendererInstance)
       getUnityInstance().SetUsersMuted(idsToAdd, true)
@@ -62,11 +63,11 @@ function* addPlayerToProfileSet(playersId: string[], setKey: ProfileSetKey) {
 }
 
 function* removePlayerFromProfileSet(playersId: string[], setKey: ProfileSetKey) {
-  const profile = yield* getCurrentProfile()
+  const profile = yield call(getCurrentProfile)
 
   if (profile) {
     const set = profile[setKey] ? profile[setKey]!.filter((id) => !playersId.includes(id)) : []
-    yield put(saveProfileRequest({ ...profile, [setKey]: set }))
+    yield put(saveProfileDelta({ ...profile, [setKey]: set }))
     if (setKey === 'muted') {
       yield call(waitForRendererInstance)
       getUnityInstance().SetUsersMuted(playersId, false)
@@ -77,6 +78,7 @@ function* removePlayerFromProfileSet(playersId: string[], setKey: ProfileSetKey)
 function* getCurrentProfile() {
   const address: string | undefined = yield select(getCurrentUserId)
   if (!address) return null
-  const profile: Profile | null = yield select(getProfile, address)
+  const profile: Avatar | null = yield select(getProfile, address)
+  if (!profile || !validateAvatar(profile)) return null
   return profile
 }

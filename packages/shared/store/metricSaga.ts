@@ -1,6 +1,6 @@
 import { takeEvery } from 'redux-saga/effects'
 import { trackEvent } from '../analytics'
-import { SAVE_PROFILE_SUCCESS, SaveProfileSuccess } from '../profiles/actions'
+import { SEND_PROFILE_TO_RENDERER, SendProfileToRenderer } from '../profiles/actions'
 import {
   NETWORK_MISMATCH,
   COMMS_ESTABLISHED,
@@ -21,7 +21,6 @@ import {
   FAILED_FETCHING_UNITY,
   COMMS_COULD_NOT_BE_ESTABLISHED,
   MOBILE_NOT_SUPPORTED,
-  NOT_INVITED,
   NEW_LOGIN,
   CATALYST_COULD_NOT_LOAD,
   AWAITING_USER_SIGNATURE,
@@ -55,7 +54,6 @@ const trackingEvents: Record<ExecutionLifecycleEvent, string> = {
   [COMMS_COULD_NOT_BE_ESTABLISHED]: 'error_comms_failed',
   [CATALYST_COULD_NOT_LOAD]: 'error_catalyst_loading',
   [MOBILE_NOT_SUPPORTED]: 'unsupported_mobile',
-  [NOT_INVITED]: 'error_not_invited',
   [AVATAR_LOADING_ERROR]: 'error_avatar_loading'
 }
 
@@ -66,7 +64,7 @@ export function* metricSaga() {
       trackEvent('lifecycle event', toTrackingEvent(event, _action.payload))
     })
   }
-  yield takeEvery(SAVE_PROFILE_SUCCESS, (action: SaveProfileSuccess) =>
+  yield takeEvery(SEND_PROFILE_TO_RENDERER, (action: SendProfileToRenderer) =>
     trackEvent('avatar_edit_success', toAvatarEditSuccess(action.payload))
   )
 }
@@ -77,6 +75,6 @@ function toTrackingEvent(event: ExecutionLifecycleEvent, payload: any) {
   return { stage: result, payload }
 }
 
-function toAvatarEditSuccess({ userId, version, profile }: SaveProfileSuccess['payload']) {
+function toAvatarEditSuccess({ userId, version, profile }: SendProfileToRenderer['payload']) {
   return { userId, version, wearables: profile.avatar.wearables }
 }

@@ -1,4 +1,4 @@
-import { AvatarShape, engine, Entity, Observable, Transform, EventManager, ProfileForRenderer } from '@dcl/legacy-ecs'
+import { AvatarShape, engine, Entity, Observable, Transform, EventManager } from '@dcl/legacy-ecs'
 import {
   AvatarMessage,
   AvatarMessageType,
@@ -12,9 +12,28 @@ import {
   UserRemovedMessage,
   UUID
 } from 'shared/comms/interface/types'
+import type { NewProfileForRenderer } from 'shared/profiles/transformations/profileToRendererFormat'
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 const avatarMap = new Map<string, AvatarEntity>()
+
+const nameValidCharacterRegex = /[a-zA-Z0-9]/g
+
+function filterInvalidNameCharacters(name: string) {
+  return name.match(nameValidCharacterRegex)?.join('') ?? ''
+}
+
+function calculateDisplayName(profile: NewProfileForRenderer): string {
+  if (profile && profile.name && profile.hasClaimedName) {
+    return profile.name
+  }
+
+  if (profile && profile.name) {
+    return `${filterInvalidNameCharacters(profile.name)}#${profile.userId.slice(-4)}`
+  }
+
+  return `???`
+}
 
 export class AvatarEntity extends Entity {
   visible = true
@@ -34,13 +53,13 @@ export class AvatarEntity extends Entity {
     this.transform = this.getComponentOrCreate(Transform)
   }
 
-  loadProfile(profile: ProfileForRenderer) {
+  loadProfile(profile: NewProfileForRenderer) {
     if (profile) {
       const { avatar } = profile
 
       const shape = this.avatarShape
       shape.id = profile.userId
-      shape.name = profile.name
+      shape.name = calculateDisplayName(profile)
 
       shape.bodyShape = avatar.bodyShape
       shape.wearables = avatar.wearables

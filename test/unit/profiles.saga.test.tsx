@@ -11,14 +11,16 @@ import { expect } from 'chai'
 import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
 import { sleep } from 'atomicHelpers/sleep'
 import { getRealm } from 'shared/comms/selectors'
+import { Avatar } from '@dcl/schemas'
 
-const profile = { data: 'profile' }
+const profile: Avatar = { data: 'profile' } as any
 
-const delayed = (result: any) =>
-  dynamic(async () => {
+function delayed<T>(result: T) {
+  return dynamic<T>(async () => {
     await sleep(1)
     return result
   })
+}
 
 const delayedProfile = delayed({ avatars: [profile] })
 
@@ -72,7 +74,7 @@ describe('fetchProfile behavior', () => {
         // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic(() => ({ ok: true }))],
         [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
-        [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
+        // [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
       ])
       .run()
       .then((result) => {
@@ -98,7 +100,7 @@ describe('fetchProfile behavior', () => {
         // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic((call) => ({ ok: !call.args[0].startsWith('http://fake/resizeurl') }))],
         [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
-        [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
+        // [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
       ])
       .run()
       .then((result) => {

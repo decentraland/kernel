@@ -6,7 +6,6 @@ import {
   NETWORK_MISMATCH,
   NEW_LOGIN,
   NO_WEBGL_COULD_BE_CREATED,
-  NOT_INVITED,
   AVATAR_LOADING_ERROR,
   ExecutionLifecycleEventsList
 } from './types'
@@ -24,8 +23,6 @@ export function BringDownClientAndShowError(event: ExecutionLifecycleEvent) {
   const targetError =
     event === COMMS_COULD_NOT_BE_ESTABLISHED
       ? 'comms'
-      : event === NOT_INVITED
-      ? 'notinvited'
       : event === NO_WEBGL_COULD_BE_CREATED
       ? 'notsupported'
       : event === MOBILE_NOT_SUPPORTED

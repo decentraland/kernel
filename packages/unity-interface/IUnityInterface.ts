@@ -3,7 +3,7 @@ import { Vector3 } from '@dcl/ecs-math'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { Observable } from 'mz-observable'
-import { MinimapSceneInfo, ProfileForRenderer } from '@dcl/legacy-ecs'
+import { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from '../shared/airdrops/interface'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import {
@@ -15,7 +15,6 @@ import {
   HUDElementID,
   HUDConfiguration,
   RealmsInfoForRenderer,
-  Profile,
   BuilderConfiguration,
   ChatMessage,
   FriendshipUpdateStatusMessage,
@@ -27,6 +26,8 @@ import {
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
+import { Avatar } from '@dcl/schemas'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/profileToRendererFormat'
 
 export type RealmInfo = {
   serverName: string
@@ -48,6 +49,7 @@ export type HotSceneInfo = {
   realms: RealmInfo[]
 }
 
+
 let instance: IUnityInterface | null = null
 
 export function setUnityInstance(_instance: IUnityInterface) {
@@ -67,7 +69,7 @@ export interface IUnityInterface {
   Init(gameInstance: UnityGame): void
   SendGenericMessage(object: string, method: string, payload: string): void
   SetDebug(): void
-  LoadProfile(profile: ProfileForRenderer): void
+  LoadProfile(profile: NewProfileForRenderer): void
   SetRenderProfile(id: RenderProfile): void
   CreateGlobalScene(data: {
     id: string
@@ -108,7 +110,7 @@ export interface IUnityInterface {
   UnlockCursor(): void
   SetCursorState(locked: boolean): void
   SetBuilderReady(): void
-  AddUserProfileToCatalog(peerProfile: ProfileForRenderer): void
+  AddUserProfileToCatalog(peerProfile: NewProfileForRenderer): void
   AddWearablesToCatalog(wearables: WearableV2[], context?: string): void
   WearablesRequestFailed(error: string, context: string | undefined): void
   RemoveWearablesFromCatalog(wearableIds: string[]): void
@@ -143,7 +145,7 @@ export interface IUnityInterface {
   SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
-  SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
+  SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
 
   // *********************************************************************************

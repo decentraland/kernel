@@ -1,6 +1,5 @@
 import { commConfigurations, COMMS, PREFERED_ISLAND } from 'config'
 import { CliBrokerConnection } from './v1/CliBrokerConnection'
-import { getCurrentPeer, localProfileUUID, receiveUserData } from './peers'
 import { UserInformation } from './interface/types'
 import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
 import { RoomConnection } from './interface/index'
@@ -41,27 +40,6 @@ export function sendParcelSceneCommsMessage(cid: string, message: string) {
     commsContext.worldInstanceConnection
       .sendParcelSceneCommsMessage(cid, message)
       .catch((e) => commsLogger.warn(`error while sending message `, e))
-  }
-}
-
-export function updateCommsUser(changes: Partial<UserInformation>) {
-  const peer = getCurrentPeer()
-
-  if (!peer || !localProfileUUID) throw new Error('cannotGetCurrentPeer')
-  if (!peer.user) throw new Error('cannotGetCurrentPeer.user')
-
-  Object.assign(peer.user, changes)
-
-  receiveUserData(localProfileUUID, peer.user)
-
-  const user = peer.user
-
-  if (user) {
-    const commsContext = getCommsContext(store.getState())
-
-    if (commsContext) {
-      commsContext.userInfo = user
-    }
   }
 }
 

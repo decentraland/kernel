@@ -23,10 +23,12 @@ import {
 import { CommsStatus } from '../types'
 
 import { getProfileType } from 'shared/profiles/getProfileType'
-import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
+import { Avatar } from '@dcl/schemas'
+import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
+import { validateAvatar } from 'shared/profiles/schemaValidation'
 
 type PeerType = IslandBasedPeer
 
@@ -136,7 +138,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     await this.sendData(topic, profileRequestData, ProfileRequestResponseType('request'))
   }
 
-  async sendProfileResponse(currentPosition: Position, profile: Profile): Promise<void> {
+  async sendProfileResponse(currentPosition: Position, profile: Avatar): Promise<void> {
     const topic = positionHash(currentPosition)
 
     const profileResponseData = new ProfileResponseData()
@@ -325,12 +327,17 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
             createPackage(sender, commsMessage, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
           )
           break
-        case CommsMessage.DataCase.PROFILE_RESPONSE_DATA:
-          this.events.emit(
-            'profileResponse',
-            createPackage(sender, commsMessage, mapToPackageProfileResponse(commsMessage.getProfileResponseData()!))
+        case CommsMessage.DataCase.PROFILE_RESPONSE_DATA: {
+          const profile = ensureAvatarCompatibilityFormat(
+            JSON.parse(commsMessage.getProfileResponseData()!.getSerializedProfile()) as Avatar
           )
+          if (validateAvatar(profile)) {
+            this.events.emit('profileResponse', createPackage(sender, commsMessage, { profile }))
+          } else {
+            logger.error('Received invalid Avatar schema over comms', profile, validateAvatar.errors)
+          }
           break
+        }
         default: {
           logger.warn(`message with unknown type received ${commsMessage.getDataCase()}`)
           break
@@ -394,12 +401,6 @@ function mapToPackageProfileRequest(profileRequestData: ProfileRequestData) {
   return {
     userId: profileRequestData.getUserId(),
     version: versionData !== '' ? versionData : undefined
-  }
-}
-
-function mapToPackageProfileResponse(profileResponseData: ProfileResponseData) {
-  return {
-    profile: JSON.parse(profileResponseData.getSerializedProfile()) as Profile
   }
 }
 

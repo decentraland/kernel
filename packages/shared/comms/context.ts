@@ -24,9 +24,8 @@ import { scenesSubscribedToCommsEvents } from './handlers'
 import { arrayEquals } from 'atomicHelpers/arrayEquals'
 import { Realm } from 'shared/dao/types'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
-import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { ProfileType } from 'shared/profiles/types'
-import { ProfileForRenderer } from '@dcl/legacy-ecs'
+import { Avatar } from '@dcl/schemas'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -56,7 +55,7 @@ export type ProcessingPeerInfo = {
 export const commsLogger = createLogger('comms: ')
 
 export type ProfilePromiseState = {
-  promise: Promise<ProfileForRenderer | void>
+  promise: Promise<Avatar | void>
   version: number | null
   status: 'ok' | 'loading' | 'error'
 }
@@ -87,13 +86,12 @@ export class PeerTrackingInfo {
       this.profilePromise = {
         promise: ProfileAsPromise(this.identity, profileVersion, this.profileType)
           .then((profile) => {
-            const forRenderer = profileToRendererFormat(profile)
             this.lastProfileUpdate = new Date().getTime()
             const userInfo = this.userInfo || ({ userId: this.identity } as UserInformation)
             userInfo.version = profile.version
             this.userInfo = userInfo
             this.profilePromise.status = 'ok'
-            return forRenderer
+            return profile
           })
           .catch((error) => {
             this.profilePromise.status = 'error'
@@ -239,6 +237,14 @@ export class CommsContext {
     return peerTrackingInfo
   }
 
+  public sendCurrentProfile() {
+    if (this.currentPosition && this.worldInstanceConnection) {
+      this.worldInstanceConnection
+        .sendProfileMessage(this.currentPosition, this.userInfo)
+        .catch((e) => commsLogger.warn(`error while sending message `, e))
+    }
+  }
+
   private onPositionUpdate(p: Position) {
     const worldConnection = this.worldInstanceConnection
 
@@ -310,14 +316,6 @@ export class CommsContext {
       this.lastPositionSent = p
       this.lastNetworkUpdatePosition = now
       worldConnection.sendPositionMessage(p).catch((e) => commsLogger.warn(`error while sending message `, e))
-    }
-  }
-
-  private sendCurrentProfile() {
-    if (this.currentPosition && this.worldInstanceConnection) {
-      this.worldInstanceConnection
-        .sendProfileMessage(this.currentPosition, this.userInfo)
-        .catch((e) => commsLogger.warn(`error while sending message `, e))
     }
   }
 

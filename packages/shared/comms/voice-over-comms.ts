@@ -11,16 +11,16 @@ import Html from 'shared/Html'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import { setVoiceCommunicator, voicePlayingUpdate, voiceRecordingUpdate } from './actions'
 import { put } from 'redux-saga/effects'
-import { Profile } from 'shared/types'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
 import { BannedUsers } from 'shared/meta/types'
 import { isFriend } from 'shared/friends/selectors'
 import { VoicePolicy } from './types'
+import { Avatar } from '@dcl/schemas'
 
 const logger = createLogger('VoiceCommunicator: ')
 
-function isVoiceAllowedByPolicy(profile: Profile, voiceUserId: string): boolean {
+function isVoiceAllowedByPolicy(voiceUserId: string): boolean {
   const policy = getVoicePolicy(store.getState())
 
   switch (policy) {
@@ -33,7 +33,7 @@ function isVoiceAllowedByPolicy(profile: Profile, voiceUserId: string): boolean 
       return true
   }
 }
-export function isBlockedOrBanned(profile: Profile, bannedUsers: BannedUsers, userId: string): boolean {
+export function isBlockedOrBanned(profile: Avatar, bannedUsers: BannedUsers, userId: string): boolean {
   return isBlocked(profile, userId) || isBannedFromChat(bannedUsers, userId)
 }
 
@@ -42,11 +42,11 @@ function isBannedFromChat(bannedUsers: BannedUsers, userId: string): boolean {
   return bannedUser && bannedUser.some((it) => it.type === 'VOICE_CHAT_AND_CHAT' && it.expiration > Date.now())
 }
 
-function isBlocked(profile: Profile, userId: string): boolean {
+function isBlocked(profile: Avatar, userId: string): boolean {
   return !!profile.blocked && profile.blocked.includes(userId)
 }
 
-function isMuted(profile: Profile, userId: string): boolean {
+function isMuted(profile: Avatar, userId: string): boolean {
   return !!profile.muted && profile.muted.includes(userId)
 }
 
@@ -56,10 +56,10 @@ function hasBlockedMe(myAddress: string | undefined, theirAddress: string): bool
   return !!profile && !!myAddress && isBlocked(profile, myAddress)
 }
 
-function shouldPlayVoice(profile: Profile, voiceUserId: string) {
+function shouldPlayVoice(profile: Avatar, voiceUserId: string) {
   const myAddress = getIdentity()?.address
   return (
-    isVoiceAllowedByPolicy(profile, voiceUserId) &&
+    isVoiceAllowedByPolicy(voiceUserId) &&
     !isBlockedOrBanned(profile, getBannedUsers(store.getState()), voiceUserId) &&
     !isMuted(profile, voiceUserId) &&
     !hasBlockedMe(myAddress, voiceUserId) &&

@@ -1,4 +1,4 @@
-export function base64ToBuffer(base64: string, type: string = 'image/jpeg'): Buffer {
+export function base64ToBuffer(base64: string): Buffer {
   const sliceSize = 1024
   const byteChars = globalThis.atob(base64)
   const byteArrays: Uint8Array[] = []

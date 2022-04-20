@@ -4,9 +4,8 @@ import { ParcelIdentity } from './ParcelIdentity'
 
 import { store } from 'shared/store/isolatedStore'
 
-import { UserData } from 'shared/types'
+import { AvatarForUserData, UserData } from 'shared/types'
 import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/selectors'
-import { Avatar } from 'shared/profiles/types'
 import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
@@ -15,6 +14,8 @@ import { getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
+import { AvatarInfo } from '@dcl/schemas'
+import { rgbToHex } from 'shared/profiles/transformations/convertToRGBObject'
 
 export interface IPlayers {
   /**
@@ -25,14 +26,19 @@ export interface IPlayers {
   getPlayersInScene(): Promise<{ userId: string }[]>
 }
 
-function backwardsCompatibilityAvatar(avatar: Avatar) {
+export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
   return {
     ...avatar,
+    bodyShape: avatar.bodyShape,
+    wearables: avatar.wearables,
     snapshots: {
       ...avatar.snapshots,
       face: avatar.snapshots.face256,
       face128: avatar.snapshots.face256
-    }
+    } as any,
+    eyeColor: rgbToHex(avatar.eyes.color),
+    hairColor: rgbToHex(avatar.hair.color),
+    skinColor: rgbToHex(avatar.hair.color)
   }
 }
 
@@ -55,7 +61,7 @@ export class Players extends ExposableAPI implements IPlayers {
       hasConnectedWeb3: hasConnectedWeb3,
       userId: userId,
       version: profile.version,
-      avatar: backwardsCompatibilityAvatar(profile.avatar)
+      avatar: sdkCompatibilityAvatar(profile.avatar)
     }
   }
 
