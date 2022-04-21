@@ -15,7 +15,6 @@ import { Position3D } from '@dcl/catalyst-peer'
 
 export declare type BFFConfig = {
   selfPosition: () => Position3D | undefined
-  onIslandChange: (transport: string, islandId: string) => Promise<void>
 }
 
 export class BFFConnection {
@@ -23,36 +22,41 @@ export class BFFConnection {
 
   public onDisconnectObservable = new Observable<void>()
   public onTopicMessageObservable = new Observable<Uint8Array>()
+  public onIslandChangeObservable = new Observable<string>()
 
   private ws: WebSocket | null = null
   private heartBeatInterval: any = null
 
-  constructor(public url: string, private config: BFFConfig) {}
+  constructor(public url: string, private config: BFFConfig) { }
 
   async connect(): Promise<void> {
     await this.connectWS()
     this.heartBeatInterval = setInterval(() => {
-      const msg = new HeartBeatMessage()
-      msg.setType(MessageType.HEARTBEAT)
-      msg.setTime(Date.now())
-
-      const data = new WorldPositionData()
-      data.setCategory(Category.WORLD_POSITION)
-      data.setTime(Date.now())
-
-      const position = this.config.selfPosition()
-      if (position) {
-        data.setPositionX(position[0])
-        data.setPositionY(position[1])
-        data.setPositionZ(position[2])
-
-        msg.setData(data.serializeBinary())
-
-        this.send(msg.serializeBinary())
-      }
+      this.sendHeartBeat()
     }, 10000)
     this.logger.log('Connected')
   }
+
+  async sendHeartBeat() {
+    const msg = new HeartBeatMessage()
+    msg.setType(MessageType.HEARTBEAT)
+    msg.setTime(Date.now())
+
+    const data = new WorldPositionData()
+    data.setCategory(Category.WORLD_POSITION)
+    data.setTime(Date.now())
+
+    const position = this.config.selfPosition()
+    if (position) {
+      data.setPositionX(position[0])
+      data.setPositionY(position[1])
+      data.setPositionZ(position[2])
+
+      msg.setData(data.serializeBinary())
+      return this.send(msg.serializeBinary())
+    }
+  }
+
 
   sendTopicMessage(topic: string, body: Message) {
     const encodedBody = body.serializeBinary()
@@ -131,11 +135,9 @@ export class BFFConnection {
           break
         }
 
-        const transport = dataMessage.getTransport()
-        const islandId = dataMessage.getTopic()
+        const islandConnStr = dataMessage.getConnStr()
 
-        this.logger.info(`Island changed to: ${islandId}`)
-        await this.config.onIslandChange(transport, islandId)
+        this.onIslandChangeObservable.notifyObservers(islandConnStr)
 
         break
       }

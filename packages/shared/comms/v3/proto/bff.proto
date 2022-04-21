@@ -22,8 +22,7 @@ message HeartBeatMessage {
 
 message IslandChangesMessage {
   MessageType type = 1;
-  string transport = 2;
-  string topic = 3;
+  string conn_str = 2;
 }
 
 // NOTE: topics is a space separated string in the format specified by Format

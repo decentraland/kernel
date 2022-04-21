@@ -12,6 +12,8 @@ import {
 import { Position } from '../../comms/interface/utils'
 import { UserInformation } from '../../comms/interface/types'
 import { BFFConnection } from './BFFConnection'
+import { WsTransport } from './WsTransport'
+import { LivekitTransport } from './LivekitTransport'
 import { Transport, TransportMessage } from './Transport'
 import { createLogger } from 'shared/logger'
 
@@ -21,32 +23,36 @@ import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
+import { DummyTransport } from './DummyTransport'
+
 
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
   private logger = createLogger('Commsv3 connection: ')
+  private transport: Transport = new DummyTransport()
 
-  constructor(private bff: BFFConnection, public transport: Transport) {
+  constructor(private bff: BFFConnection) {
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
-
-    this.transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
-    this.transport.onDisconnectObservable.add(this.disconnect.bind(this))
-  }
-
-  setTransport(transport: Transport): void {
-    this.transport.onMessageObservable.clear()
-    this.transport.onDisconnectObservable.clear()
-
-    this.transport = transport
-
-    this.transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
-    this.transport.onDisconnectObservable.add(this.disconnect.bind(this))
   }
 
   async connect(): Promise<boolean> {
-    await Promise.all([this.bff.connect(), this.transport.connect()])
+    this.bff.onIslandChangeObservable.add(async (islandConnStr) => {
+      let transport: Transport | null = null
+      if (islandConnStr.startsWith('ws-room:')) {
+        transport = new WsTransport(islandConnStr.substring("ws-room:".length))
+      } else if (islandConnStr.startsWith('livekit:')) {
+        transport = new LivekitTransport(islandConnStr.substring("livekit:".length))
+      }
+
+      if (!transport) {
+        this.logger.error(`Invalid islandConnStr ${islandConnStr}`)
+        return
+      }
+      this.changeTransport(transport)
+    })
+    await this.bff.connect()
     return true
   }
 
@@ -131,7 +137,10 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async disconnect(): Promise<void> {
-    await Promise.all([this.transport.disconnect(), this.bff.disconnect()])
+    if (this.transport) {
+      await this.transport.disconnect()
+    }
+    return this.bff.disconnect()
   }
 
   async sendVoiceMessage(_currentPosition: Position, frame: EncodedFrame): Promise<void> {
@@ -256,4 +265,18 @@ export class InstanceConnection implements RoomConnection {
       }
     }
   }
+
+  private changeTransport(transport: Transport): Promise<void> {
+    if (this.transport) {
+      this.transport.onMessageObservable.clear()
+      this.transport.onDisconnectObservable.clear()
+    }
+    this.transport = transport
+
+    this.transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
+    this.transport.onDisconnectObservable.add(this.disconnect.bind(this))
+
+    return this.transport.connect()
+  }
+
 }

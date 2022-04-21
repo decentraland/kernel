@@ -18,10 +18,8 @@ import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
 import { Realm } from 'shared/dao/types'
 import { resolveCommsV3Urls } from './v3/resolver'
-import { DummyTransport } from './v3/DummyTransport'
 import { BFFConfig, BFFConnection } from './v3/BFFConnection'
 import { InstanceConnection as V3InstanceConnection } from './v3/InstanceConnection'
-import { WsTransport } from './v3/WsTransport'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -195,30 +193,11 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
           if (commsContext.currentPosition) {
             return commsContext.currentPosition.slice(0, 3) as Position3D
           }
-        },
-        onIslandChange: async (transport: string, islandId: string) => {
-          if (transport === 'pubsub') {
-            const roomURL = finalUrl.replace('/ws', `/ws-rooms/${islandId}`) //TODO
-            const wsTransport = new WsTransport(roomURL)
-            // FIXME
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            connection.setTransport(wsTransport)
-            await wsTransport.connect()
-          } else {
-            commsLogger.log('unknown transport', transport)
-          }
         }
       }
 
-      const bffURL = finalUrl.replace('/ws', '/ws-bff') //TODO
-      commsLogger.log('Using WebSocket comms: ' + bffURL)
-      const bff = new BFFConnection(bffURL, bffConfig)
-
-      const transport = new DummyTransport()
-
-      connection = new V3InstanceConnection(bff, transport)
-
+      const bff = new BFFConnection(finalUrl, bffConfig)
+      connection = new V3InstanceConnection(bff)
       break
     }
     default: {

@@ -57,11 +57,8 @@ export class IslandChangesMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
 
-  getTransport(): string;
-  setTransport(value: string): void;
-
-  getTopic(): string;
-  setTopic(value: string): void;
+  getConnStr(): string;
+  setConnStr(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): IslandChangesMessage.AsObject;
@@ -76,8 +73,7 @@ export class IslandChangesMessage extends jspb.Message {
 export namespace IslandChangesMessage {
   export type AsObject = {
     type: MessageTypeMap[keyof MessageTypeMap],
-    transport: string,
-    topic: string,
+    connStr: string,
   }
 }
 

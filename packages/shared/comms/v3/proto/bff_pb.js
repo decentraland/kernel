@@ -13,13 +13,7 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global = (function() {
-  if (this) { return this; }
-  if (typeof window !== 'undefined') { return window; }
-  if (typeof global !== 'undefined') { return global; }
-  if (typeof self !== 'undefined') { return self; }
-  return Function('return this')();
-}.call(null));
+var global = (function() { return this || window || global || self || Function('return this')(); }).call(null);
 
 goog.exportSymbol('proto.protocol.HeartBeatMessage', null, global);
 goog.exportSymbol('proto.protocol.IslandChangesMessage', null, global);
@@ -509,8 +503,7 @@ proto.protocol.IslandChangesMessage.prototype.toObject = function(opt_includeIns
 proto.protocol.IslandChangesMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
     type: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    transport: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    topic: jspb.Message.getFieldWithDefault(msg, 3, "")
+    connStr: jspb.Message.getFieldWithDefault(msg, 2, "")
   };
 
   if (includeInstance) {
@@ -553,11 +546,7 @@ proto.protocol.IslandChangesMessage.deserializeBinaryFromReader = function(msg, 
       break;
     case 2:
       var value = /** @type {string} */ (reader.readString());
-      msg.setTransport(value);
-      break;
-    case 3:
-      var value = /** @type {string} */ (reader.readString());
-      msg.setTopic(value);
+      msg.setConnStr(value);
       break;
     default:
       reader.skipField();
@@ -595,17 +584,10 @@ proto.protocol.IslandChangesMessage.serializeBinaryToWriter = function(message, 
       f
     );
   }
-  f = message.getTransport();
+  f = message.getConnStr();
   if (f.length > 0) {
     writer.writeString(
       2,
-      f
-    );
-  }
-  f = message.getTopic();
-  if (f.length > 0) {
-    writer.writeString(
-      3,
       f
     );
   }
@@ -631,10 +613,10 @@ proto.protocol.IslandChangesMessage.prototype.setType = function(value) {
 
 
 /**
- * optional string transport = 2;
+ * optional string conn_str = 2;
  * @return {string}
  */
-proto.protocol.IslandChangesMessage.prototype.getTransport = function() {
+proto.protocol.IslandChangesMessage.prototype.getConnStr = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
@@ -643,26 +625,8 @@ proto.protocol.IslandChangesMessage.prototype.getTransport = function() {
  * @param {string} value
  * @return {!proto.protocol.IslandChangesMessage} returns this
  */
-proto.protocol.IslandChangesMessage.prototype.setTransport = function(value) {
+proto.protocol.IslandChangesMessage.prototype.setConnStr = function(value) {
   return jspb.Message.setProto3StringField(this, 2, value);
-};
-
-
-/**
- * optional string topic = 3;
- * @return {string}
- */
-proto.protocol.IslandChangesMessage.prototype.getTopic = function() {
-  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
-};
-
-
-/**
- * @param {string} value
- * @return {!proto.protocol.IslandChangesMessage} returns this
- */
-proto.protocol.IslandChangesMessage.prototype.setTopic = function(value) {
-  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 

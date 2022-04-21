@@ -30,7 +30,7 @@ export function resolveCommsV3Urls(realm: Realm): { pingUrl: string; wsUrl: stri
   }
 
   const pingUrl = new URL('./status', server).toString()
-  const wsUrl = httpToWs(new URL('./ws', server).toString())
+  const wsUrl = httpToWs(new URL('./ws-bff', server).toString())
 
   return { pingUrl, wsUrl }
 }
