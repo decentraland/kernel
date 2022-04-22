@@ -119,7 +119,7 @@ function* authenticate(action: AuthenticateAction) {
   try {
     net = yield call(getAppNetwork)
   } catch (err) {
-    logger.error(`Couldn't get the network, please check the state of ethereum provider.`)
+    logger.error(`Couldn't get the network, please check the state of ethereum provider.`, err)
   }
   yield put(selectNetwork(net))
   registerProviderNetChanges()
