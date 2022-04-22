@@ -6,6 +6,9 @@ export type PortableExperiencesState = {
 
   /** List of portable experiences created by scenes */
   portableExperiencesCreatedByScenesList: Record<string, StorePortableExperience>
+
+  /** This boolean will enable or disable the execution of portable experience */
+  globalPortalExperienceShutDown: boolean
 }
 
 export type RootPortableExperiencesState = {

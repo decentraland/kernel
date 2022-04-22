@@ -1,5 +1,6 @@
 import { ErrorContextTypes } from '../loading/ReportFatalError'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
+import { ChatMessageType } from '../types'
 
 export type PositionTrackEvents = {
   ['Scene Spawn']: { parcel: string; spawnpoint: ReadOnlyVector3 }
@@ -7,14 +8,13 @@ export type PositionTrackEvents = {
 
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
-  ['ADD_FRIEND']: Record<string, unknown>
   ['SET_LOCAL_UUID']: { uuid: string }
   ['USER_MUTED']: { uuid: string }
   ['USER_UNMUTED']: { uuid: string }
   ['USER_BLOCKED']: { uuid: string }
   ['USER_UNBLOCKED']: { uuid: string }
-  ['Chat message received']: { length: number }
-  ['Send chat message']: { length: number; messageId: string }
+  ['Chat message received']: { length: number; messageType: ChatMessageType }
+  ['Send chat message']: { length: number; messageId: string; messageType: ChatMessageType }
   ['Comms Status v2']: Record<string, any>
 
   // Info logs, such as networks or things we want to track
@@ -64,4 +64,10 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number }
   ['invalid_schema']: { schema: string, payload: any }
+  ['Friend request approved']: Record<string, never> // {}
+  ['Friend request rejected']: Record<string, never> // {}
+  ['Friend request cancelled']: Record<string, never> // {}
+  ['Friend request received']: Record<string, never> // {}
+  ['Friend request sent']: Record<string, never> // {}
+  ['Friend deleted']: Record<string, never> // {}
 }

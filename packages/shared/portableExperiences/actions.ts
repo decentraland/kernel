@@ -10,6 +10,14 @@ export const DENY_PORTABLE_EXPERIENCES = '[PX] SetDenyList'
 export const denyPortableExperiences = (urnList: string[]) => action(DENY_PORTABLE_EXPERIENCES, { urnList })
 export type DenyPortableExperiencesAction = ReturnType<typeof denyPortableExperiences>
 
+export const SHUTDOWN_ALL_PORTABLE_EXPERIENCES = '[PX] ShutDownAll'
+export const killAllPortableExperiences = () => action(SHUTDOWN_ALL_PORTABLE_EXPERIENCES, {})
+export type KillAllPortableExperiencesAction = ReturnType<typeof killAllPortableExperiences>
+
+export const ACTIVATE_ALL_PORTABLE_EXPERIENCES = '[PX] ActivateAll'
+export const activateAllPortableExperiences = () => action(ACTIVATE_ALL_PORTABLE_EXPERIENCES, {})
+export type ActivateAllPortableExperiencesAction = ReturnType<typeof activateAllPortableExperiences>
+
 export const ADD_SCENE_PX = '[PX] AddScenePx'
 export const addScenePortableExperience = (data: StorePortableExperience) => action(ADD_SCENE_PX, { data })
 export type AddScenePortableExperienceAction = ReturnType<typeof addScenePortableExperience>
@@ -28,3 +36,5 @@ export type PortableExperienceActions =
   | AddScenePortableExperienceAction
   | ReloadScenePortableExperienceAction
   | RemoveScenePortableExperienceAction
+  | KillAllPortableExperiencesAction
+  | ActivateAllPortableExperiencesAction

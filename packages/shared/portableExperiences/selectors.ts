@@ -12,6 +12,8 @@ export const getPortableExperiencesCreatedByScenes = (store: RootPortableExperie
 export const getDesiredPortableExperiences = (
   store: RootPortableExperiencesState & RootWearablesPortableExperienceState
 ): StorePortableExperience[] => {
+  if (store.portableExperiences.globalPortalExperienceShutDown) return []
+
   const denylist: string[] = getPortableExperienceDenyList(store)
 
   const allDesiredPortableExperiences: StorePortableExperience[] = dedup(

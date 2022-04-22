@@ -16,7 +16,6 @@ export async function initializeUnityEditor(
   const engineStartedFuture = future<UnityGame>()
 
   let firstConnect = true
-  let errorState = false
 
   const connect = () => {
     logger.info(`Connecting WS to ${webSocketUrl}`)
@@ -24,20 +23,12 @@ export async function initializeUnityEditor(
     const ws = new WebSocket(webSocketUrl)
 
     globalObservable.on('error', (_error) => {
-      errorState = true
       ws.close()
     })
 
     ws.onclose = function (e) {
-      if (firstConnect === false) {
-        logger.error('WS closed!', e)
-        if (errorState === false) {
-          location.reload()
-          container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
-        } else {
-          container.innerHTML = ``
-        }
-      }
+      logger.error('WS closed!', e)
+      container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
     }
 
     ws.onerror = function (e) {
