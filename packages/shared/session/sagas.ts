@@ -114,7 +114,13 @@ function* authenticate(action: AuthenticateAction) {
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
 
   // set the etherum network to start loading profiles
-  const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
+  //  default network mainnet
+  let net: ETHEREUM_NETWORK = ETHEREUM_NETWORK.MAINNET
+  try {
+    net = yield call(getAppNetwork)
+  } catch (err) {
+    logger.error(`Couldn't get the network, please check the state of ethereum provider.`)
+  }
   yield put(selectNetwork(net))
   registerProviderNetChanges()
   yield call(waitForRealmInitialized)
@@ -126,9 +132,9 @@ function* authenticate(action: AuthenticateAction) {
 
   if (profileExists || isGuestWithProfileLocal) {
     yield put(setLoadingWaitTutorial(false))
-    yield signIn(identity)
+    yield call(signIn, identity)
   } else {
-    yield startSignUp(identity)
+    yield call(startSignUp, identity)
     yield take(SIGNUP)
   }
 }
@@ -136,7 +142,7 @@ function* authenticate(action: AuthenticateAction) {
 function* startSignUp(identity: ExplorerIdentity) {
   yield put(signUpSetIsSignUp(true))
 
-  const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
+  const net: ETHEREUM_NETWORK = store.getState().session.network || ETHEREUM_NETWORK.MAINNET
   const cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
   const profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
   profile.userId = identity.address
