@@ -8,6 +8,10 @@ enum MessageType {
   SUBSCRIPTION = 2;
   TOPIC = 3;
   ISLAND_CHANGES = 4;
+  OPEN = 5;
+  VALIDATION = 6;
+  VALIDATION_FAILURE = 7;
+  VALIDATION_OK = 8;
 }
 
 message MessageHeader {
@@ -23,6 +27,20 @@ message HeartBeatMessage {
 message IslandChangesMessage {
   MessageType type = 1;
   string conn_str = 2;
+}
+
+message OpenMessage {
+    MessageType type = 1;
+    string payload = 2;
+}
+
+message ValidationMessage {
+    MessageType type = 1;
+    string encoded_payload = 2;
+}
+
+message ValidationResultMessage {
+    MessageType type = 1;
 }
 
 message SubscriptionMessage {

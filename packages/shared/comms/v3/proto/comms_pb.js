@@ -2114,7 +2114,7 @@ proto.protocol.SceneData.toObject = function(includeInstance, msg) {
     category: jspb.Message.getFieldWithDefault(msg, 1, 0),
     time: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
     sceneId: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    data: msg.getData_asB64()
+    data: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -2164,7 +2164,7 @@ proto.protocol.SceneData.deserializeBinaryFromReader = function(msg, reader) {
       msg.setSceneId(value);
       break;
     case 4:
-      var value = /** @type {!Uint8Array} */ (reader.readBytes());
+      var value = /** @type {string} */ (reader.readString());
       msg.setData(value);
       break;
     default:
@@ -2217,9 +2217,9 @@ proto.protocol.SceneData.serializeBinaryToWriter = function(message, writer) {
       f
     );
   }
-  f = message.getData_asU8();
+  f = message.getData();
   if (f.length > 0) {
-    writer.writeBytes(
+    writer.writeString(
       4,
       f
     );
@@ -2282,44 +2282,20 @@ proto.protocol.SceneData.prototype.setSceneId = function(value) {
 
 
 /**
- * optional bytes data = 4;
- * @return {!(string|Uint8Array)}
- */
-proto.protocol.SceneData.prototype.getData = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
-};
-
-
-/**
- * optional bytes data = 4;
- * This is a type-conversion wrapper around `getData()`
+ * optional string data = 4;
  * @return {string}
  */
-proto.protocol.SceneData.prototype.getData_asB64 = function() {
-  return /** @type {string} */ (jspb.Message.bytesAsB64(
-      this.getData()));
+proto.protocol.SceneData.prototype.getData = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
 };
 
 
 /**
- * optional bytes data = 4;
- * Note that Uint8Array is not supported on all browsers.
- * @see http://caniuse.com/Uint8Array
- * This is a type-conversion wrapper around `getData()`
- * @return {!Uint8Array}
- */
-proto.protocol.SceneData.prototype.getData_asU8 = function() {
-  return /** @type {!Uint8Array} */ (jspb.Message.bytesAsU8(
-      this.getData()));
-};
-
-
-/**
- * @param {!(string|Uint8Array)} value
+ * @param {string} value
  * @return {!proto.protocol.SceneData} returns this
  */
 proto.protocol.SceneData.prototype.setData = function(value) {
-  return jspb.Message.setProto3BytesField(this, 4, value);
+  return jspb.Message.setProto3StringField(this, 4, value);
 };
 
 

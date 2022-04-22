@@ -8,13 +8,17 @@ import {
   TopicMessage,
   MessageHeader,
   MessageTypeMap,
+  OpenMessage,
+  ValidationMessage,
   IslandChangesMessage
 } from './proto/bff_pb'
 import { Category, WorldPositionData } from './proto/comms_pb'
 import { Position3D } from '@dcl/catalyst-peer'
+import { AuthIdentity, Authenticator } from 'dcl-crypto'
 
 export declare type BFFConfig = {
-  selfPosition: () => Position3D | undefined
+  selfPosition: () => Position3D | undefined,
+  getIdentity: () => AuthIdentity
 }
 
 export type TopicData = {
@@ -119,6 +123,32 @@ export class BFFConnection {
         this.logger.log('unsupported message')
         break
       }
+      case MessageType.OPEN: {
+        this.logger.log('open message received')
+        let openMessage: OpenMessage
+        try {
+          openMessage = OpenMessage.deserializeBinary(data)
+        } catch (e) {
+          this.logger.error('cannot process open message', e)
+          break
+        }
+
+        const signedPayload = Authenticator.signPayload(this.config.getIdentity(), openMessage.getPayload())
+        const validationMessage = new ValidationMessage()
+        validationMessage.setType(MessageType.VALIDATION)
+        validationMessage.setEncodedPayload(JSON.stringify(signedPayload))
+        this.send(validationMessage.serializeBinary())
+        break
+      }
+      case MessageType.VALIDATION_OK: {
+        this.logger.log('validation ok')
+        break
+      }
+      case MessageType.VALIDATION_FAILURE: {
+        this.logger.log('validation failure, disconnecting bff')
+        this.disconnect()
+        break
+      }
       case MessageType.TOPIC: {
         let dataMessage: TopicMessage
         try {
@@ -133,6 +163,7 @@ export class BFFConnection {
           peerId: dataMessage.getPeerId(),
           data: body
         })
+        break
       }
       case MessageType.ISLAND_CHANGES: {
         let dataMessage: IslandChangesMessage
@@ -144,9 +175,7 @@ export class BFFConnection {
         }
 
         const islandConnStr = dataMessage.getConnStr()
-
         this.onIslandChangeObservable.notifyObservers(islandConnStr)
-
         break
       }
       default: {

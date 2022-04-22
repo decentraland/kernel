@@ -77,6 +77,74 @@ export namespace IslandChangesMessage {
   }
 }
 
+export class OpenMessage extends jspb.Message {
+  getType(): MessageTypeMap[keyof MessageTypeMap];
+  setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
+
+  getPayload(): string;
+  setPayload(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): OpenMessage.AsObject;
+  static toObject(includeInstance: boolean, msg: OpenMessage): OpenMessage.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: OpenMessage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): OpenMessage;
+  static deserializeBinaryFromReader(message: OpenMessage, reader: jspb.BinaryReader): OpenMessage;
+}
+
+export namespace OpenMessage {
+  export type AsObject = {
+    type: MessageTypeMap[keyof MessageTypeMap],
+    payload: string,
+  }
+}
+
+export class ValidationMessage extends jspb.Message {
+  getType(): MessageTypeMap[keyof MessageTypeMap];
+  setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
+
+  getEncodedPayload(): string;
+  setEncodedPayload(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ValidationMessage.AsObject;
+  static toObject(includeInstance: boolean, msg: ValidationMessage): ValidationMessage.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ValidationMessage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ValidationMessage;
+  static deserializeBinaryFromReader(message: ValidationMessage, reader: jspb.BinaryReader): ValidationMessage;
+}
+
+export namespace ValidationMessage {
+  export type AsObject = {
+    type: MessageTypeMap[keyof MessageTypeMap],
+    encodedPayload: string,
+  }
+}
+
+export class ValidationResultMessage extends jspb.Message {
+  getType(): MessageTypeMap[keyof MessageTypeMap];
+  setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ValidationResultMessage.AsObject;
+  static toObject(includeInstance: boolean, msg: ValidationResultMessage): ValidationResultMessage.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ValidationResultMessage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ValidationResultMessage;
+  static deserializeBinaryFromReader(message: ValidationResultMessage, reader: jspb.BinaryReader): ValidationResultMessage;
+}
+
+export namespace ValidationResultMessage {
+  export type AsObject = {
+    type: MessageTypeMap[keyof MessageTypeMap],
+  }
+}
+
 export class SubscriptionMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
@@ -143,6 +211,10 @@ export interface MessageTypeMap {
   SUBSCRIPTION: 2;
   TOPIC: 3;
   ISLAND_CHANGES: 4;
+  OPEN: 5;
+  VALIDATION: 6;
+  VALIDATION_FAILURE: 7;
+  VALIDATION_OK: 8;
 }
 
 export const MessageType: MessageTypeMap;

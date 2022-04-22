@@ -80,5 +80,5 @@ message SceneData {
     Category category = 1;
     double time = 2;
     string scene_id = 3;
-    bytes data = 4;
+    string data = 4;
 }

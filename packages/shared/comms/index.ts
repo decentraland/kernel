@@ -189,6 +189,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
       const finalUrl = url.toString()
 
       const bffConfig: BFFConfig = {
+        getIdentity: () => getIdentity() as AuthIdentity,
         selfPosition: () => {
           if (commsContext.currentPosition) {
             return commsContext.currentPosition.slice(0, 3) as Position3D

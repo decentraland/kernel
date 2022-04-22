@@ -288,10 +288,8 @@ export class SceneData extends jspb.Message {
   getSceneId(): string;
   setSceneId(value: string): void;
 
-  getData(): Uint8Array | string;
-  getData_asU8(): Uint8Array;
-  getData_asB64(): string;
-  setData(value: Uint8Array | string): void;
+  getData(): string;
+  setData(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SceneData.AsObject;
@@ -308,7 +306,7 @@ export namespace SceneData {
     category: CategoryMap[keyof CategoryMap],
     time: number,
     sceneId: string,
-    data: Uint8Array | string,
+    data: string,
   }
 }
 
