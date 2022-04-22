@@ -107,8 +107,8 @@ export class TopicMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
 
-  getFromAlias(): number;
-  setFromAlias(value: number): void;
+  getPeerId(): string;
+  setPeerId(value: string): void;
 
   getTopic(): string;
   setTopic(value: string): void;
@@ -131,7 +131,7 @@ export class TopicMessage extends jspb.Message {
 export namespace TopicMessage {
   export type AsObject = {
     type: MessageTypeMap[keyof MessageTypeMap],
-    fromAlias: number,
+    peerId: string,
     topic: string,
     body: Uint8Array | string,
   }

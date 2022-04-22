@@ -7,11 +7,12 @@ import {
   ChatData,
   PositionData,
   ProfileData,
-  DataHeader
+  DataHeader,
+  SceneData
 } from './proto/comms_pb'
 import { Position } from '../../comms/interface/utils'
 import { UserInformation } from '../../comms/interface/types'
-import { BFFConnection } from './BFFConnection'
+import { BFFConnection, TopicData } from './BFFConnection'
 import { WsTransport } from './WsTransport'
 import { LivekitTransport } from './LivekitTransport'
 import { Transport, TransportMessage } from './Transport'
@@ -114,11 +115,11 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async sendParcelSceneCommsMessage(sceneId: string, message: string) {
-    const d = new ChatData()
+    const d = new SceneData()
     d.setCategory(Category.SCENE_MESSAGE)
     d.setTime(Date.now())
-    d.setMessageId(sceneId)
-    d.setText(message)
+    d.setSceneId(sceneId)
+    d.setData(message)
 
     this.bff.sendTopicMessage(sceneId, d)
   }
@@ -151,25 +152,28 @@ export class InstanceConnection implements RoomConnection {
     })
   }
 
-  private handleTopicMessage(data: Uint8Array) {
+  private handleTopicMessage(message: TopicData) {
     let dataHeader: DataHeader
     try {
-      dataHeader = DataHeader.deserializeBinary(data)
+      dataHeader = DataHeader.deserializeBinary(message.data)
     } catch (e) {
-      this.logger.error('cannot topic message, data header', e)
+      this.logger.error('cannot process topic message, data header', e)
       return
     }
 
     const category = dataHeader.getCategory()
     switch (category) {
       case Category.SCENE_MESSAGE: {
-        //TODO
-        // const chatData = ChatData.deserializeBinary(data)
-        // this.events.emit('chatMessage', {
-        //   sender: alias,
-        //   time: chatData.getTime(),
-        //   data: { id: chatData.getMessageId(), text: chatData.getText() }
-        // })
+        const sceneData = SceneData.deserializeBinary(message.data)
+
+        this.events.emit('chatMessage', {
+          sender: message.peerId,
+          time: sceneData.getTime(),
+          data: {
+            id: sceneData.getSceneId(),
+            text: sceneData.getData() as string
+          }
+        })
         break
       }
       default: {

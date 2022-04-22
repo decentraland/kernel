@@ -13,7 +13,13 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global = (function() { return this || window || global || self || Function('return this')(); }).call(null);
+var global = (function() {
+  if (this) { return this; }
+  if (typeof window !== 'undefined') { return window; }
+  if (typeof global !== 'undefined') { return global; }
+  if (typeof self !== 'undefined') { return self; }
+  return Function('return this')();
+}.call(null));
 
 goog.exportSymbol('proto.protocol.HeartBeatMessage', null, global);
 goog.exportSymbol('proto.protocol.IslandChangesMessage', null, global);
@@ -847,7 +853,7 @@ proto.protocol.TopicMessage.prototype.toObject = function(opt_includeInstance) {
 proto.protocol.TopicMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
     type: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    fromAlias: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    peerId: jspb.Message.getFieldWithDefault(msg, 2, ""),
     topic: jspb.Message.getFieldWithDefault(msg, 3, ""),
     body: msg.getBody_asB64()
   };
@@ -891,8 +897,8 @@ proto.protocol.TopicMessage.deserializeBinaryFromReader = function(msg, reader) 
       msg.setType(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readUint64());
-      msg.setFromAlias(value);
+      var value = /** @type {string} */ (reader.readString());
+      msg.setPeerId(value);
       break;
     case 3:
       var value = /** @type {string} */ (reader.readString());
@@ -938,9 +944,9 @@ proto.protocol.TopicMessage.serializeBinaryToWriter = function(message, writer) 
       f
     );
   }
-  f = message.getFromAlias();
-  if (f !== 0) {
-    writer.writeUint64(
+  f = message.getPeerId();
+  if (f.length > 0) {
+    writer.writeString(
       2,
       f
     );
@@ -981,20 +987,20 @@ proto.protocol.TopicMessage.prototype.setType = function(value) {
 
 
 /**
- * optional uint64 from_alias = 2;
- * @return {number}
+ * optional string peer_id = 2;
+ * @return {string}
  */
-proto.protocol.TopicMessage.prototype.getFromAlias = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+proto.protocol.TopicMessage.prototype.getPeerId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
 };
 
 
 /**
- * @param {number} value
+ * @param {string} value
  * @return {!proto.protocol.TopicMessage} returns this
  */
-proto.protocol.TopicMessage.prototype.setFromAlias = function(value) {
-  return jspb.Message.setProto3IntField(this, 2, value);
+proto.protocol.TopicMessage.prototype.setPeerId = function(value) {
+  return jspb.Message.setProto3StringField(this, 2, value);
 };
 
 

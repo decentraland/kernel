@@ -17,11 +17,16 @@ export declare type BFFConfig = {
   selfPosition: () => Position3D | undefined
 }
 
+export type TopicData = {
+  peerId: string
+  data: Uint8Array
+}
+
 export class BFFConnection {
   public logger: ILogger = createLogger('BFF: ')
 
   public onDisconnectObservable = new Observable<void>()
-  public onTopicMessageObservable = new Observable<Uint8Array>()
+  public onTopicMessageObservable = new Observable<TopicData>()
   public onIslandChangeObservable = new Observable<string>()
 
   private ws: WebSocket | null = null
@@ -124,7 +129,10 @@ export class BFFConnection {
         }
 
         const body = dataMessage.getBody() as any
-        this.onTopicMessageObservable.notifyObservers(body)
+        this.onTopicMessageObservable.notifyObservers({
+          peerId: dataMessage.getPeerId(),
+          data: body
+        })
       }
       case MessageType.ISLAND_CHANGES: {
         let dataMessage: IslandChangesMessage

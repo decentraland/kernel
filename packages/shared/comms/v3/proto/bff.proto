@@ -25,7 +25,6 @@ message IslandChangesMessage {
   string conn_str = 2;
 }
 
-// NOTE: topics is a space separated string in the format specified by Format
 message SubscriptionMessage {
     MessageType type = 1;
     bytes topics = 2;
@@ -33,7 +32,7 @@ message SubscriptionMessage {
 
 message TopicMessage {
     MessageType type = 1;
-    uint64 from_alias = 2;
+    string peer_id = 2;
     string topic = 3;
     bytes body = 4;
 }
