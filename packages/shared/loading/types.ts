@@ -63,9 +63,6 @@ export const fatalError = (type: string) => action(FATAL_ERROR, { type })
 export const AVATAR_LOADING_ERROR = 'The avatar could not be loaded correctly'
 export const avatarLoadingError = () => action(AVATAR_LOADING_ERROR)
 
-export const SET_LOADING_WAIT_TUTORIAL = '[LOADING] waiting tutorial'
-export const setLoadingWaitTutorial = (waiting: boolean) => action(SET_LOADING_WAIT_TUTORIAL, { waiting })
-
 export type ExecutionLifecycleEvent =
   | typeof NOT_STARTED
   | typeof INIT_SESSION

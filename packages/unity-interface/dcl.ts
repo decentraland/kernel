@@ -96,7 +96,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 }
 
-export async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
+async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
   const scene = new UnityScene({
     sceneId: cid,
     name: title,

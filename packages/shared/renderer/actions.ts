@@ -2,7 +2,7 @@ import { action } from 'typesafe-actions'
 
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
 
-import { RENDERER_INITIALIZED_CORRECTLY, PARCEL_LOADING_STARTED, RENDERER_INITIALIZE } from './types'
+import { RENDERER_INITIALIZED_CORRECTLY, PARCEL_LOADING_STARTED, RENDERER_INITIALIZE, RENDERER_READY } from './types'
 
 export const initializeRenderer = (delegate: (container: HTMLElement) => Promise<UnityGame>, container: HTMLElement) =>
   action(RENDERER_INITIALIZE, { delegate, container })
@@ -13,4 +13,6 @@ export type SignalRendererInitialized = ReturnType<typeof signalRendererInitiali
 
 export const signalParcelLoadingStarted = () => action(PARCEL_LOADING_STARTED)
 export type SignalParcelLoadingStarted = ReturnType<typeof signalParcelLoadingStarted>
+
+export const signalEngineReady = () => action(RENDERER_READY)
 

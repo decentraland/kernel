@@ -1,6 +1,9 @@
-import { takeEvery } from 'redux-saga/effects'
+import { select, takeEvery } from 'redux-saga/effects'
 import { trackEvent } from '../analytics'
-import { SEND_PROFILE_TO_RENDERER, SendProfileToRenderer } from '../profiles/actions'
+import {
+  PROFILE_SUCCESS,
+  ProfileSuccessAction
+} from '../profiles/actions'
 import {
   NETWORK_MISMATCH,
   COMMS_ESTABLISHED,
@@ -28,6 +31,8 @@ import {
 } from '../loading/types'
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
 import { INIT_SESSION } from 'shared/session/actions'
+import { Avatar } from '@dcl/schemas'
+import { getProfile } from 'shared/profiles/selectors'
 
 const trackingEvents: Record<ExecutionLifecycleEvent, string> = {
   // lifecycle events
@@ -64,17 +69,20 @@ export function* metricSaga() {
       trackEvent('lifecycle event', toTrackingEvent(event, _action.payload))
     })
   }
-  yield takeEvery(SEND_PROFILE_TO_RENDERER, (action: SendProfileToRenderer) =>
-    trackEvent('avatar_edit_success', toAvatarEditSuccess(action.payload))
-  )
+  yield takeEvery(PROFILE_SUCCESS, function* (action: ProfileSuccessAction) {
+    const profile: Avatar | null = yield select(getProfile, action.payload.userId)
+    if (profile) {
+      trackEvent('avatar_edit_success', {
+        userId: profile.userId,
+        version: profile.version,
+        wearables: profile.avatar.wearables
+      })
+    }
+  })
 }
 
 function toTrackingEvent(event: ExecutionLifecycleEvent, payload: any) {
   const result = trackingEvents[event]
 
   return { stage: result, payload }
-}
-
-function toAvatarEditSuccess({ userId, version, profile }: SendProfileToRenderer['payload']) {
-  return { userId, version, wearables: profile.avatar.wearables }
 }

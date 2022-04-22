@@ -24,8 +24,7 @@ export type ProfileFailureAction = ReturnType<typeof profileFailure>
 // Profile update
 
 export const saveProfileDelta = (profile: Partial<Avatar>) => action(SAVE_PROFILE_DELTA, { profile })
-export const sendProfileToRenderer = (userId: string, version: number, profile: Avatar) =>
-  action(SEND_PROFILE_TO_RENDERER, { userId, version, profile })
+export const sendProfileToRenderer = (userId: string) => action(SEND_PROFILE_TO_RENDERER, { userId })
 export const saveProfileFailure = (userId: string, error: any) => action(SAVE_PROFILE_FAILURE, { userId, error })
 
 export type SaveProfileDelta = ReturnType<typeof saveProfileDelta>
@@ -44,11 +43,6 @@ export const deployProfileFailure = (userId: string, profile: Avatar, error: any
 export type DeployProfileSuccess = ReturnType<typeof deployProfileSuccess>
 export type DeployProfile = ReturnType<typeof deployProfile>
 
-export const PROFILE_SAVED_NOT_DEPLOYED = 'Profile not deployed'
-export const profileSavedNotDeployed = (userId: string, version: number, profile: Avatar) =>
-  action(PROFILE_SAVED_NOT_DEPLOYED, { userId, version, profile })
-export type ProfileSavedNotDeployed = ReturnType<typeof profileSavedNotDeployed>
-
 export const ADDED_PROFILE_TO_CATALOG = '[Success] Added profile to catalog'
 export const addedProfileToCatalog = (userId: string, profile: Avatar) =>
   action(ADDED_PROFILE_TO_CATALOG, { userId, profile })
@@ -59,7 +53,3 @@ export const LOCAL_PROFILE_RECEIVED = 'Local Profile Received'
 export const localProfileReceived = (userId: string, profile: Avatar) =>
   action(LOCAL_PROFILE_RECEIVED, { userId, profile })
 export type LocalProfileReceived = ReturnType<typeof localProfileReceived>
-
-export const ANNOUNCE_PROFILE = '[Request] Announce profile to nearby users'
-export const announceProfile = (userId: string, version: number) => action(ANNOUNCE_PROFILE, { userId, version })
-export type AnnounceProfileAction = ReturnType<typeof announceProfile>

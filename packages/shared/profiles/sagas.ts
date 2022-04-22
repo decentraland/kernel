@@ -1,21 +1,17 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { call, throttle, put, select, takeEvery, takeLatest } from 'redux-saga/effects'
+import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
 import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
 import defaultLogger from 'shared/logger'
 import {
   PROFILE_REQUEST,
-  PROFILE_SUCCESS,
   SAVE_PROFILE_DELTA,
   ProfileRequestAction,
-  profileSuccess,
-  ProfileSuccessAction,
   SaveProfileDelta,
   sendProfileToRenderer,
   saveProfileFailure,
-  addedProfileToCatalog,
   saveProfileDelta,
   LOCAL_PROFILE_RECEIVED,
   LocalProfileReceived,
@@ -23,15 +19,13 @@ import {
   DEPLOY_PROFILE_REQUEST,
   deployProfileSuccess,
   deployProfileFailure,
-  profileSavedNotDeployed,
   DeployProfile,
-  PROFILE_SAVED_NOT_DEPLOYED,
-  DEPLOY_PROFILE_SUCCESS,
-  announceProfile
+  profileSuccess,
+  PROFILE_SUCCESS,
+  ProfileSuccessAction
 } from './actions'
-import { getCurrentUserProfile, getProfile, hasConnectedWeb3 } from './selectors'
+import { getCurrentUserProfile, getHasConnectedWeb3, getProfile } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
-import { profileToRendererFormat } from './transformations/profileToRendererFormat'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
 import { ContentFile, ProfileType } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -44,15 +38,11 @@ import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
 import { getProfileType } from './getProfileType'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { UNEXPECTED_ERROR } from 'shared/loading/types'
-import { fetchParcelsWithAccess } from './fetchLand'
-import { ParcelsWithAccess } from '@dcl/legacy-ecs'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
 import { getCommsContext } from 'shared/comms/selectors'
@@ -90,18 +80,15 @@ export const localProfilesRepo = new LocalProfilesRepository()
  */
 export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
-  yield takeEvery(PROFILE_REQUEST, handleFetchProfile)
-  yield takeEvery(PROFILE_SUCCESS, submitProfileToRenderer)
-  yield takeEvery(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
+  yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
+  yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
+  yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
   yield throttle(3000, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
-  yield takeLatest(SAVE_PROFILE_DELTA, handleSaveAvatar)
-
-  // Forwarding effects
-  yield takeLatest([DEPLOY_PROFILE_SUCCESS, PROFILE_SAVED_NOT_DEPLOYED], announceNewAvatar)
+  yield takeEvery(SAVE_PROFILE_DELTA, handleSaveAvatar)
 }
 
-function* announceNewAvatar(action: { type: string; payload: { userId: string; version: number } }) {
-  yield put(announceProfile(action.payload.userId, action.payload.version))
+function* forwardProfileToRenderer(action: ProfileSuccessAction) {
+  yield put(sendProfileToRenderer(action.payload.userId))
 }
 
 function* initialProfileLoad() {
@@ -233,34 +220,10 @@ function* handleLocalProfile(action: LocalProfileReceived) {
   const { userId, profile } = action.payload
 
   const existingProfile: Avatar = yield select(getProfile, userId)
-  const connectedWeb3: boolean = yield select(hasConnectedWeb3, userId)
+  const connectedWeb3: boolean = yield select(getHasConnectedWeb3, userId)
 
   if (!existingProfile || existingProfile.version < profile.version) {
     yield put(profileSuccess(userId, profile, connectedWeb3))
-  }
-}
-
-function* submitProfileToRenderer(action: ProfileSuccessAction): any {
-  const { profile, userId, hasConnectedWeb3 } = action.payload
-
-  yield call(waitForRendererInstance)
-
-  if (yield select(isCurrentUserId, userId)) {
-    const avatar: Avatar | null = yield select(getCurrentUserProfile)
-    if (!avatar) {
-      debugger
-      throw new Error('Avatar not available for Unity')
-    }
-    const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-    const parcels: ParcelsWithAccess = !hasConnectedWeb3 ? [] : yield call(fetchParcelsWithAccess, userId)
-    const forRenderer = profileToRendererFormat(avatar, { identity, parcels })
-    forRenderer.hasConnectedWeb3 = hasConnectedWeb3
-    getUnityInstance().LoadProfile(forRenderer)
-  } else {
-    const forRenderer = profileToRendererFormat(profile, {})
-    forRenderer.hasConnectedWeb3 = hasConnectedWeb3
-    getUnityInstance().AddUserProfileToCatalog(forRenderer)
-    yield put(addedProfileToCatalog(userId, profile))
   }
 }
 
@@ -290,15 +253,15 @@ function* handleSaveAvatar(saveAvatar: SaveProfileDelta) {
       debugger
     }
 
+    // save the profile in the local storage
     yield localProfilesRepo.persist(identity.address, network, profile)
 
-    yield put(sendProfileToRenderer(userId, profile.version, profile))
+    // save the profile in the store
+    yield put(profileSuccess(userId, profile, identity.hasConnectedWeb3))
 
     // only update profile on server if wallet is connected
     if (identity.hasConnectedWeb3) {
       yield put(deployProfile(profile))
-    } else {
-      yield put(profileSavedNotDeployed(userId, profile.version, profile))
     }
   } catch (error: any) {
     trackEvent('error_fatal', {

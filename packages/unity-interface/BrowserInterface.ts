@@ -4,7 +4,7 @@ import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { AvatarMessageType } from 'shared/comms/interface/types'
 import { avatarMessageObservable, localProfileUUID } from 'shared/comms/peers'
-import { findProfileByName, hasConnectedWeb3 } from 'shared/profiles/selectors'
+import { findProfileByName, getHasConnectedWeb3 } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
@@ -551,7 +551,7 @@ export class BrowserInterface {
       await ensureFriendProfile(userId)
 
       if (isAddress(userId)) {
-        found = hasConnectedWeb3(state, userId)
+        found = getHasConnectedWeb3(state, userId)
       } else {
         const profileByName = findProfileByName(state, userId)
         if (profileByName) {

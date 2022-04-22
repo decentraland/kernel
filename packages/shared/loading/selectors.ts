@@ -6,7 +6,6 @@ import { RootLoadingState } from './reducer'
 
 export const getLoadingState = (state: RootLoadingState) => state.loading
 export const isInitialLoading = (state: RootLoadingState) => state.loading.initialLoad
-export const isWaitingTutorial = (state: RootLoadingState) => state.loading.waitingTutorial
 
 export function hasPendingScenes(state: RootLoadingState) {
   return state.loading.pendingScenes !== 0

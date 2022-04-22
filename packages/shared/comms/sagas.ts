@@ -13,8 +13,10 @@ import { bindHandlersToCommsContext } from './handlers'
 import { RootCommsState } from './types'
 import { Realm } from 'shared/dao/types'
 import { Store } from 'redux'
-import { AnnounceProfileAction, ANNOUNCE_PROFILE, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
+import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
 import { receiveUserData } from './peers'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { Avatar } from '@dcl/schemas'
 
 export function* commsSaga() {
   yield takeLatest(HANDLE_COMMS_DISCONNECTION, handleCommsDisconnection)
@@ -32,11 +34,10 @@ export function* commsSaga() {
   yield fork(voiceSaga)
   yield fork(handleNewCommsContext)
 
-  // Handling of local actions
-  yield takeLatest([ANNOUNCE_PROFILE, SEND_PROFILE_TO_RENDERER], handleAnnounceProfile)
+  yield takeLatest([SEND_PROFILE_TO_RENDERER, DEPLOY_PROFILE_SUCCESS], handleAnnounceProfile)
 }
 
-function* handleAnnounceProfile(action: AnnounceProfileAction) {
+function* handleAnnounceProfile() {
   const context = (yield select(getCommsContext)) as CommsContext | undefined
 
   if (context === undefined) {
@@ -44,9 +45,11 @@ function* handleAnnounceProfile(action: AnnounceProfileAction) {
     return
   }
 
-  if (context.userInfo) {
-    context.userInfo.version = action.payload.version
-    receiveUserData(action.payload.userId, context.userInfo)
+  const profile = (yield select(getCurrentUserProfile)) as Avatar | null
+
+  if (profile && context.userInfo && (context.userInfo.version ?? 0) < profile.version) {
+    context.userInfo.version = profile.version
+    receiveUserData(profile.userId, context.userInfo)
     context.sendCurrentProfile()
   }
 }

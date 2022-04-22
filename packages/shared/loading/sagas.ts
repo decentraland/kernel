@@ -14,7 +14,6 @@ import {
   SCENE_LOAD,
   SCENE_START,
   updateLoadingScreen,
-  UPDATE_LOADING_SCREEN
 } from './actions'
 import {
   metricsUnityClientLoaded,
@@ -33,10 +32,6 @@ import { onLoginCompleted } from 'shared/session/sagas'
 import { getResourcesURL } from 'shared/location'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { getAssetBundlesBaseUrl } from 'config'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { getParcelLoadingStarted } from 'shared/renderer/selectors'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { isLoadingScreenVisible, getLoadingState } from './selectors'
 
 // The following actions may change the status of the loginVisible
 const ACTIONS_FOR_LOADING = [
@@ -63,19 +58,6 @@ export function* loadingSaga() {
     yield put(updateLoadingScreen())
   })
 
-  yield takeLatest(UPDATE_LOADING_SCREEN, function* () {
-    yield call(waitForRendererInstance)
-
-    const isVisible = yield select(isLoadingScreenVisible)
-    const loadingState = yield select(getLoadingState)
-    const parcelLoadingStarted = yield select(getParcelLoadingStarted)
-    const loadingScreen = {
-      isVisible,
-      message: loadingState.message || loadingState.status || '',
-      showTips: loadingState.initialLoad || !parcelLoadingStarted
-    }
-    getUnityInstance().SetLoadingScreen(loadingScreen)
-  })
 }
 
 function* reportFailedScene(action: SceneFail) {

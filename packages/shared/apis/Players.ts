@@ -5,7 +5,7 @@ import { ParcelIdentity } from './ParcelIdentity'
 import { store } from 'shared/store/isolatedStore'
 
 import { AvatarForUserData, UserData } from 'shared/types'
-import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/selectors'
+import { getHasConnectedWeb3 } from 'shared/profiles/selectors'
 import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
@@ -53,7 +53,7 @@ export class Players extends ExposableAPI implements IPlayers {
       return null
     }
 
-    const hasConnectedWeb3 = hasConnectedWeb3Selector(store.getState(), userId)
+    const hasConnectedWeb3 = getHasConnectedWeb3(store.getState(), userId)
 
     return {
       displayName: calculateDisplayName(userId, profile),

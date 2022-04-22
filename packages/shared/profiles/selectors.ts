@@ -31,7 +31,7 @@ export const getCurrentUserProfileStatusAndData = (
   return currentUserId ? getProfileStatusAndData(store, currentUserId) : [undefined, undefined]
 }
 
-export const hasConnectedWeb3 = (store: RootProfileState, userId: string): boolean =>
+export const getHasConnectedWeb3 = (store: RootProfileState, userId: string): boolean =>
   getProfileValueIfOkOrLoading(
     store,
     userId,

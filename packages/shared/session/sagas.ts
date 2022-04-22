@@ -9,7 +9,7 @@ import { createDummyLogger, createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
 import { getUserAccount, isSessionExpired, requestManager } from 'shared/ethereum/provider'
 import { setLocalInformationForComms } from 'shared/comms/peers'
-import { awaitingUserSignature, AWAITING_USER_SIGNATURE, setLoadingWaitTutorial } from 'shared/loading/types'
+import { awaitingUserSignature, AWAITING_USER_SIGNATURE } from 'shared/loading/types'
 import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
 import { getFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
@@ -36,7 +36,6 @@ import {
   SignUpAction
 } from './actions'
 import { localProfilesRepo } from '../profiles/sagas'
-import { getUnityInstance } from '../../unity-interface/IUnityInterface'
 import { getCurrentIdentity, getIsGuestLogin, isLoginCompleted } from './selectors'
 import { waitForRealmInitialized } from '../dao/sagas'
 import { profileRequest, PROFILE_SUCCESS, saveProfileDelta, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
@@ -50,7 +49,6 @@ import { globalObservable } from 'shared/observables'
 import { selectNetwork, triggerReconnectRealm } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { setWorldContext } from 'shared/comms/actions'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar } from '@dcl/schemas'
 
@@ -95,8 +93,9 @@ function* initSession() {
 }
 
 function* authenticate(action: AuthenticateAction) {
+  const { isGuest, provider } = action.payload
   // setup provider
-  requestManager.setProvider(action.payload.provider)
+  requestManager.setProvider(provider)
 
   yield put(changeLoginState(LoginState.SIGNATURE_PENDING))
 
@@ -115,7 +114,7 @@ function* authenticate(action: AuthenticateAction) {
 
   yield put(changeLoginState(LoginState.WAITING_RENDERER))
 
-  yield ensureUnityInterface()
+  yield call(ensureUnityInterface)
 
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
 
@@ -124,36 +123,31 @@ function* authenticate(action: AuthenticateAction) {
   yield put(selectNetwork(net))
   registerProviderNetChanges()
 
-  const isGuest: boolean = yield select(getIsGuestLogin)
   // 1. authenticate our user
   yield put(userAuthentified(identity, net, isGuest))
   // 2. wait for comms to connect, it only requires the Identity authentication
   yield call(waitForRealmInitialized)
-  // 3. first wait for renderer.
-  yield call(waitForRendererInstance)
-  // 4. then ask for our profile
+  // 3. then ask for our profile
   yield put(profileRequest(identity.address))
-  // 5. wait for the response of the profile
+  // 4. wait for the response of the profile
   yield call(waitForLocalProfile)
 
   const avatar: Avatar = yield select(getCurrentUserProfile)
 
   // 6. continue with signin/signup
   const isSignUp = avatar.version <= 0
-  yield put(signUpSetIsSignUp(isSignUp))
-  yield put(setLoadingWaitTutorial(isSignUp))
-
   if (isSignUp) {
-    getUnityInstance().ShowAvatarEditorInSignIn()
+    yield put(signUpSetIsSignUp(isSignUp))
     yield take(SIGNUP)
   }
 
   // 7. finish sign in
+  yield call(ensureMetaConfigurationInitialized)
+  yield put(changeLoginState(LoginState.COMPLETED))
+
   if (identity.hasConnectedWeb3) {
     yield call(referUser, identity)
   }
-  yield ensureMetaConfigurationInitialized()
-  yield put(changeLoginState(LoginState.COMPLETED))
 }
 
 function* waitForLocalProfile() {

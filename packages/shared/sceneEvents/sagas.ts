@@ -1,5 +1,7 @@
+import { Avatar } from '@dcl/schemas'
 import { call, select, takeLatest } from 'redux-saga/effects'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
+import { getProfile } from 'shared/profiles/selectors'
 import { toEnvironmentRealmType } from '../apis/EnvironmentAPI'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
 import { getCommsIsland, getRealm } from '../comms/selectors'
@@ -45,11 +47,14 @@ export function updateLocation(realm: string | undefined, island: string | undef
 function* submitProfileToScenes(action: SendProfileToRenderer) {
   // TODO: are all profile changes supposed to go to the scene????
   //       this function sends all of them
-  yield call(allScenesEvent, {
-    eventType: 'profileChanged',
-    payload: {
-      ethAddress: action.payload.profile.ethAddress,
-      version: action.payload.profile.version
-    }
-  })
+  const profile: Avatar | null = yield select(getProfile, action.payload.userId)
+  if (profile) {
+    yield call(allScenesEvent, {
+      eventType: 'profileChanged',
+      payload: {
+        ethAddress: profile.ethAddress,
+        version: profile.version
+      }
+    })
+  }
 }
