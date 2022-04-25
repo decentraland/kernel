@@ -225,10 +225,10 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     // TODO: this condition shouldn't be necessary. Unity fails with setThrew
     //       if LoadProfile is called rapidly because it cancels ongoing
     //       requests and those cancellations throw exceptions
-    if (!deepEqual(lastSentProfile, forRenderer)) {
+    // if (!deepEqual(lastSentProfile, forRenderer)) {
       lastSentProfile = forRenderer
       getUnityInstance().LoadProfile(forRenderer)
-    }
+    // }
   } else {
     const forRenderer = profileToRendererFormat(profile.data, {})
     forRenderer.hasConnectedWeb3 = profile.hasConnectedWeb3
