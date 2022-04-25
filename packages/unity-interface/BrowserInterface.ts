@@ -2,8 +2,6 @@ import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 
 
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
-import { AvatarMessageType } from 'shared/comms/interface/types'
-import { avatarMessageObservable, localProfileUUID } from 'shared/comms/peers'
 import { findProfileByName, getHasConnectedWeb3 } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
@@ -307,13 +305,6 @@ export class BrowserInterface {
   }
 
   public TriggerExpression(data: { id: string; timestamp: number }) {
-    avatarMessageObservable.notifyObservers({
-      type: AvatarMessageType.USER_EXPRESSION,
-      uuid: localProfileUUID || 'non-local-profile-uuid',
-      expressionId: data.id,
-      timestamp: data.timestamp
-    })
-
     allScenesEvent({
       eventType: 'playerExpression',
       payload: {

@@ -122,6 +122,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
             removeMissingPeers(peers)
           },
           onPeerLeftIsland: (peerId: string) => {
+            commsLogger.info('Removing peer that left an island', peerId)
             removePeerByUUID(peerId)
           }
         },

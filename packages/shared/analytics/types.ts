@@ -45,6 +45,7 @@ export type TrackEvents = PositionTrackEvents & {
   }
   ['renderer_initializing_start']: Record<string, unknown> // {}
   ['renderer_initializing_end']: { loading_time: number }
+  ['renderer_set_threw']: { object: string, method: string, payload: string, stack: string }
   ['lifecycle event']: { stage: string; retries?: unknown }
   ['performance report']: ReturnType<typeof getPerformanceInfo>
   ['system info report']: {

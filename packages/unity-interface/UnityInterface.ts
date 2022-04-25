@@ -22,7 +22,7 @@ import {
   HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { createUnityLogger, defaultLogger, ILogger } from 'shared/logger'
+import { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
@@ -61,8 +61,10 @@ function resizeCanvas(targetHeight: number) {
   }
 }
 
+const unityLogger: ILogger = createUnityLogger()
+
 export class UnityInterface implements IUnityInterface {
-  public logger: ILogger = createUnityLogger()
+  public logger = unityLogger
   public gameInstance!: UnityGame
   public Module: any
   public currentHeight: number = -1
@@ -320,7 +322,7 @@ export class UnityInterface implements IUnityInterface {
     try {
       message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
     } catch (err: any) {
-      defaultLogger.error(err)
+      unityLogger.error(err)
     }
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
@@ -595,11 +597,17 @@ export class UnityInterface implements IUnityInterface {
 
     const originalSetThrew = this.Module['setThrew']
     const unityModule = this.Module
-    let isError = false
 
     function overrideSetThrew() {
       unityModule['setThrew'] = function () {
-        isError = true
+        trackEvent('renderer_set_threw', {
+          method,
+          object,
+          payload,
+          stack: (new Error().stack || '?')
+        })
+        const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}. Payload: ${payload}.`
+        unityLogger.error(error)
         // eslint-disable-next-line prefer-rest-params
         return originalSetThrew.apply(this, arguments)
       }
@@ -614,11 +622,6 @@ export class UnityInterface implements IUnityInterface {
       this.gameInstance.SendMessage(object, method, payload)
     } finally {
       restoreSetThrew()
-    }
-
-    if (isError) {
-      const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}. Payload: ${payload}.`
-      defaultLogger.error(error)
     }
   }
 }

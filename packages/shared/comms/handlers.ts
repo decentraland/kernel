@@ -143,6 +143,7 @@ function processChatMessage(message: Package<ChatMessage>) {
   if (!senderPeer.receivedPublicChatMessages.has(msgId)) {
     const text = message.data.text
     senderPeer.receivedPublicChatMessages.add(msgId)
+    senderPeer.lastUpdate = Date.now()
 
     if (text.startsWith('␐')) {
       const [id, timestamp] = text.split(' ')

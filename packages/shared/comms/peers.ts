@@ -6,17 +6,16 @@ import { CommunicationArea, position2parcel, positionReportToCommsPosition, squa
 import { commConfigurations } from 'config'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
-import { ProcessingPeerInfo } from './context'
+import { commsLogger, MORDOR_POSITION, ProcessingPeerInfo } from './context'
 import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { getCommsContext } from './selectors'
 import { Avatar } from '@dcl/schemas'
 import { getProfileFromStore } from 'shared/profiles/selectors'
+import { deepEqual } from 'atomicHelpers/deepEqual'
 
 const peerMap = new Map<UUID, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
-
-export let localProfileUUID: UUID | null = null
 
 export function getAllPeers() {
   return new Map(peerMap)
@@ -28,17 +27,15 @@ export function getAllPeers() {
  * Removes both the peer information and the Avatar from the world.
  * @param uuid
  */
-export function removePeerByUUID(uuid: UUID) {
-  if (localProfileUUID === uuid) {
-    localProfileUUID = null
-  }
-
+export function removePeerByUUID(uuid: UUID): boolean {
   if (peerMap.delete(uuid)) {
     avatarMessageObservable.notifyObservers({
       type: AvatarMessageType.USER_REMOVED,
       uuid
     })
+    return true
   }
+  return false
 }
 
 /**
@@ -114,6 +111,14 @@ export function receiveUserTalking(uuid: string, talking: boolean) {
 }
 
 export function receiveUserPosition(uuid: string, position: Pose, msgTimestamp: number) {
+  if (deepEqual(position, MORDOR_POSITION)) {
+    return
+    const peer = getPeer(uuid)
+    if (peer && removePeerByUUID(uuid)) commsLogger.info('Removing peer that went to mordor', uuid, peer)
+
+    return
+  }
+
   const peer = setupPeer(uuid)
 
   if (msgTimestamp > peer.lastPositionUpdate) {
@@ -184,8 +189,20 @@ export function ensureTrackingUniqueAndLatest(fromAlias: string, ethereumAddress
   peerMap.forEach((info, key) => {
     if (info.ethereumAddress === ethereumAddress) {
       if (info.lastProfileUpdate < currentLastProfileUpdate) {
+        commsLogger.info(
+          'Removing peer cond 1',
+          key,
+          info,
+          peerMap.get(currentLastProfileAlias)
+        )
         removePeerByUUID(key)
       } else if (info.lastProfileUpdate > currentLastProfileUpdate) {
+        commsLogger.info(
+          'Removing peer cond 2',
+          currentLastProfileAlias,
+          info,
+          peerMap.get(currentLastProfileAlias)
+        )
         removePeerByUUID(currentLastProfileAlias)
         currentLastProfileAlias = key
         currentLastProfileUpdate = info.lastProfileUpdate
@@ -210,6 +227,7 @@ export function processAvatarVisibility() {
     const msSinceLastUpdate = now - trackingInfo.lastUpdate
 
     if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
+      commsLogger.info('Removing peer due to inactivity', peerAlias, trackingInfo.ethereumAddress)
       removePeerByUUID(peerAlias)
 
       continue

@@ -81,7 +81,6 @@ export type PeerInformation = UserInformation & {
   lastProfileUpdate: number
   lastUpdate: number
   receivedPublicChatMessages: Set<string>
-  visible: boolean
 }
 
 export type UserInformation = {
@@ -90,6 +89,7 @@ export type UserInformation = {
   expression?: AvatarExpression
   position?: Pose
   profile?: NewProfileForRenderer
+  visible?: boolean
 }
 
 export type AvatarExpression = {
