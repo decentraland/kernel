@@ -40,6 +40,7 @@ import { Realm } from 'shared/dao/types'
 import { CommsContext } from 'shared/comms/context'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
+import { deepEqual } from 'atomicHelpers/deepEqual'
 
 export function* waitForRendererInstance() {
   while (!(yield select(isRendererInitialized))) {
@@ -194,6 +195,7 @@ function* sendSignUpToRenderer(action: SignUpSetIsSignUp) {
   }
 }
 
+let lastSentProfile: any = null
 function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   const { userId } = action.payload
 
@@ -220,7 +222,13 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
       hasConnectedWeb3: identity.hasConnectedWeb3,
       parcels
     })
-    getUnityInstance().LoadProfile(forRenderer)
+    // TODO: this condition shouldn't be necessary. Unity fails with setThrew
+    //       if LoadProfile is called rapidly because it cancels ongoing
+    //       requests and those cancellations throw exceptions
+    if (!deepEqual(lastSentProfile, forRenderer)) {
+      lastSentProfile = forRenderer
+      getUnityInstance().LoadProfile(forRenderer)
+    }
   } else {
     const forRenderer = profileToRendererFormat(profile.data, {})
     forRenderer.hasConnectedWeb3 = profile.hasConnectedWeb3
