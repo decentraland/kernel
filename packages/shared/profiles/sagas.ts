@@ -168,7 +168,6 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     profile = yield call(fetchProfileLocally, userId, net)
   }
   if (!profile) {
-    debugger
     profile = yield call(generateRandomUserProfile, userId)
   }
 
