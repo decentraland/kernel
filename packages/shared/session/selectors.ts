@@ -7,6 +7,7 @@ export const getCurrentUserId = (store: RootSessionState) => store.session.ident
 export const getCurrentIdentity = (store: RootSessionState) => store.session.identity
 export const getCurrentNetwork = (store: RootSessionState) => store.session.network
 export const hasWallet = (store: RootSessionState) => store.session.identity?.hasConnectedWeb3
+export const getIsSignUp = (state: RootSessionState): boolean => !!state.session.isSignUp
 export const getIsGuestLogin = (state: RootSessionState): boolean => !!state.session.isGuestLogin
 export const getProvider = (state: RootSessionState): IEthereumProvider | undefined => state.session.provider
 export const isLoginStageCompleted = (state: RootSessionState) => state.session.loginState === LoginState.COMPLETED
