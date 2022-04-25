@@ -7,13 +7,15 @@ import { trackEvent } from '../analytics'
 import { lastPlayerPosition } from '../world/positionThings'
 
 import {
+  informPendingScenes,
   PENDING_SCENES,
   SceneFail,
   SceneLoad,
+  SCENE_CHANGED,
   SCENE_FAIL,
   SCENE_LOAD,
   SCENE_START,
-  updateLoadingScreen,
+  updateLoadingScreen
 } from './actions'
 import {
   metricsUnityClientLoaded,
@@ -32,6 +34,8 @@ import { onLoginCompleted } from 'shared/session/sagas'
 import { getResourcesURL } from 'shared/location'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { getAssetBundlesBaseUrl } from 'config'
+import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
+import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
 
 // The following actions may change the status of the loginVisible
 const ACTIONS_FOR_LOADING = [
@@ -58,6 +62,7 @@ export function* loadingSaga() {
     yield put(updateLoadingScreen())
   })
 
+  yield takeLatest([SCENE_FAIL, SCENE_LOAD, SCENE_START, SCENE_CHANGED], handleReportPendingScenes)
 }
 
 function* reportFailedScene(action: SceneFail) {
@@ -136,4 +141,28 @@ function* initialSceneLoading() {
   yield call(onLoginCompleted)
   yield call(waitForSceneLoads)
   yield put(experienceStarted())
+}
+
+/**
+ * Reports the number of loading parcel scenes to unity to handle the loading states
+ */
+function* handleReportPendingScenes() {
+  const pendingScenes = new Set<string>()
+
+  let countableScenes = 0
+  for (const [sceneId, sceneWorker] of loadedSceneWorkers) {
+    // avatar scene should not be counted here
+    const shouldBeCounted = !sceneWorker.isPersistent()
+
+    const isPending = (sceneWorker.ready & SceneWorkerReadyState.STARTED) === 0
+    const failedLoading = (sceneWorker.ready & SceneWorkerReadyState.LOADING_FAILED) !== 0
+    if (shouldBeCounted) {
+      countableScenes++
+    }
+    if (shouldBeCounted && isPending && !failedLoading) {
+      pendingScenes.add(sceneId)
+    }
+  }
+
+  yield put(informPendingScenes(pendingScenes.size, countableScenes))
 }

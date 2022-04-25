@@ -86,9 +86,6 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   observeSessionStateChange(() => {
     store.dispatch(updateLoadingScreen())
   })
-  renderStateObservable.add(() => {
-    store.dispatch(updateLoadingScreen())
-  })
   store.dispatch(updateLoadingScreen())
 
   if (!EDITOR) {

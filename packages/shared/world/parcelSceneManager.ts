@@ -7,7 +7,7 @@ import {
   getEmptySceneId
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from '../analytics'
-import { informPendingScenes, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
+import { scenesChanged, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
 import { EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene } from '../types'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { parcelObservable, teleportObservable } from './positionThings'
@@ -98,7 +98,7 @@ export function forceStopSceneWorker(worker: SceneWorker) {
   const sceneId = worker.getSceneId()
   worker.dispose()
   loadedSceneWorkers.delete(sceneId)
-  reportPendingScenes()
+  store.dispatch(scenesChanged())
 }
 
 /**
@@ -140,42 +140,16 @@ export function setNewParcelScene(sceneId: string, worker: SceneWorker) {
 
 function globalSignalSceneLoad(sceneId: string) {
   store.dispatch(signalSceneLoad(sceneId))
-  reportPendingScenes()
 }
 
 function globalSignalSceneStart(sceneId: string) {
   store.dispatch(signalSceneStart(sceneId))
-  reportPendingScenes()
 }
 
 function globalSignalSceneFail(sceneId: string) {
   store.dispatch(signalSceneFail(sceneId))
-  reportPendingScenes()
 }
 
-/**
- * Reports the number of loading parcel scenes to unity to handle the loading states
- */
-function reportPendingScenes() {
-  const pendingScenes = new Set<string>()
-
-  let countableScenes = 0
-  for (const [sceneId, sceneWorker] of loadedSceneWorkers) {
-    // avatar scene should not be counted here
-    const shouldBeCounted = !sceneWorker.isPersistent()
-
-    const isPending = (sceneWorker.ready & SceneWorkerReadyState.STARTED) === 0
-    const failedLoading = (sceneWorker.ready & SceneWorkerReadyState.LOADING_FAILED) !== 0
-    if (shouldBeCounted) {
-      countableScenes++
-    }
-    if (shouldBeCounted && isPending && !failedLoading) {
-      pendingScenes.add(sceneId)
-    }
-  }
-
-  store.dispatch(informPendingScenes(pendingScenes.size, countableScenes))
-}
 
 // @internal
 export const parcelSceneLoadingState: ParcelSceneLoadingState = {

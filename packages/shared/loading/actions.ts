@@ -3,10 +3,11 @@ import { action } from 'typesafe-actions'
 export const SCENE_LOAD = '[SCENE MANAGER] Loading scene'
 export const SCENE_START = '[SCENE MANAGER] Started scene'
 export const SCENE_FAIL = '[SCENE MANAGER] Failed scene'
+export const SCENE_CHANGED = '[SCENE MANAGER] Scenes changed'
 export const PENDING_SCENES = '[SCENE MANAGER] Pending count'
 export const UPDATE_LOADING_SCREEN = '[RENDERER] Refresh loading screen visible'
 
-
+export const scenesChanged = () => action(SCENE_CHANGED)
 export const signalSceneLoad = (sceneId: string) => action(SCENE_LOAD, sceneId)
 export const signalSceneStart = (sceneId: string) => action(SCENE_START, sceneId)
 export const signalSceneFail = (sceneId: string) => action(SCENE_FAIL, sceneId)
@@ -22,6 +23,5 @@ export const UPDATE_STATUS_MESSAGE = '[RENDERER] Update loading message'
 export const updateStatusMessage = (message: string, loadPercentage: number) =>
   action(UPDATE_STATUS_MESSAGE, { message, loadPercentage })
 export type UpdateStatusMessage = ReturnType<typeof updateStatusMessage>
-
 
 export const updateLoadingScreen = () => action(UPDATE_LOADING_SCREEN)
