@@ -11,7 +11,6 @@ import {
   SceneData
 } from './proto/comms_pb'
 import { Position } from '../../comms/interface/utils'
-import { UserInformation } from '../../comms/interface/types'
 import { BFFConnection, TopicData } from './BFFConnection'
 import { WsTransport } from './WsTransport'
 import { LivekitTransport } from './LivekitTransport'
@@ -19,12 +18,11 @@ import { Transport, TransportMessage } from './Transport'
 import { createLogger } from 'shared/logger'
 
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
-import { getProfileType } from 'shared/profiles/getProfileType'
-import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
 import { DummyTransport } from './DummyTransport'
+import { Avatar } from '@dcl/schemas'
 
 
 export class InstanceConnection implements RoomConnection {
@@ -38,8 +36,9 @@ export class InstanceConnection implements RoomConnection {
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
   }
 
-  async connect(): Promise<boolean> {
+  async connect(): Promise<void> {
     this.bff.onIslandChangeObservable.add(async (islandConnStr) => {
+      this.logger.error(`Got island change message: ${islandConnStr}`)
       let transport: Transport | null = null
       if (islandConnStr.startsWith('ws-room:')) {
         transport = new WsTransport(islandConnStr.substring("ws-room:".length))
@@ -54,7 +53,6 @@ export class InstanceConnection implements RoomConnection {
       this.changeTransport(transport)
     })
     await this.bff.connect()
-    return true
   }
 
   async sendPositionMessage(p: Position) {
@@ -76,12 +74,12 @@ export class InstanceConnection implements RoomConnection {
     // TODO
   }
 
-  async sendProfileMessage(_: Position, userProfile: UserInformation) {
+  async sendProfileMessage(_: Position, __: string, profileType: ProfileType, version: number) {
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)
     d.setTime(Date.now())
-    d.setProfileType(getProfileType(userProfile.identity))
-    userProfile.version && d.setProfileVersion('' + userProfile.version)
+    d.setProfileType(profileType)
+    d.setProfileVersion(`${version}`)
 
     this.transport.sendIdentity(d, true)
   }
@@ -91,12 +89,12 @@ export class InstanceConnection implements RoomConnection {
     d.setCategory(Category.PROF_REQ)
     d.setTime(Date.now())
     d.setUserId(userId)
-    version && d.setProfileVersion('' + version)
+    d.setProfileVersion(`${version}`)
 
     this.transport.sendIdentity(d, true)
   }
 
-  async sendProfileResponse(_: Position, profile: Profile) {
+  async sendProfileResponse(_: Position, profile: Avatar) {
     const d = new ProfileResponseData()
     d.setCategory(Category.PROF_RES)
     d.setTime(Date.now())
@@ -105,11 +103,12 @@ export class InstanceConnection implements RoomConnection {
     this.transport.sendIdentity(d, true)
   }
 
-  async sendInitialMessage(userProfile: UserInformation) {
+  async sendInitialMessage(_: string, profileType: ProfileType) {
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)
     d.setTime(Date.now())
-    userProfile.version && d.setProfileVersion('' + userProfile.version)
+    d.setProfileType(profileType)
+    d.setProfileVersion('')
 
     this.transport.sendIdentity(d, true)
   }
@@ -258,7 +257,7 @@ export class InstanceConnection implements RoomConnection {
           sender: peer,
           time: profileResponseData.getTime(),
           data: {
-            profile: JSON.parse(profileResponseData.getSerializedProfile()) as Profile
+            profile: JSON.parse(profileResponseData.getSerializedProfile()) as Avatar
           }
         })
         break
