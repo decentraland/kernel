@@ -13,7 +13,7 @@ export function positionHash(p: Position) {
   return `${x}:${z}`
 }
 
-export function position2parcel(p: Position): Vector2 {
+export function position2parcel(p: Readonly<Position>): Vector2 {
   const parcelSize = parcelLimits.parcelSize
   return new Vector2(Math.trunc(p[0] / parcelSize), Math.trunc(p[2] / parcelSize))
 }

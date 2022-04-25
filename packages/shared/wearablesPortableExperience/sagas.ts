@@ -4,7 +4,7 @@ import { wearablesRequest, WearablesSuccess, WEARABLES_SUCCESS } from 'shared/ca
 import { getFetchContentServer } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
-import { getCurrentUserId } from 'shared/session/selectors'
+import { isCurrentUserId } from 'shared/session/selectors'
 import { StorePortableExperience } from 'shared/types'
 import { getDesiredWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import {
@@ -22,7 +22,8 @@ export function* wearablesPortableExperienceSaga(): any {
 }
 
 function* handleProfileSuccess(action: ProfileSuccessAction): any {
-  if ((yield select(getCurrentUserId)) !== action.payload.userId) {
+  // cancel the saga if we receive a profile from a different user
+  if (!(yield select(isCurrentUserId, action.payload.userId))) {
     return
   }
 

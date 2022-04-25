@@ -3,13 +3,12 @@ import { createIdentity } from 'eth-crypto'
 import { Account } from 'web3x/account'
 import { Authenticator } from 'dcl-crypto'
 
-import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK, PREVIEW } from 'config'
+import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK } from 'config'
 
-import defaultLogger, { createDummyLogger, createLogger } from 'shared/logger'
+import { createDummyLogger, createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
 import { getUserAccount, isSessionExpired, requestManager } from 'shared/ethereum/provider'
-import { setLocalInformationForComms } from 'shared/comms/peers'
-import { awaitingUserSignature, AWAITING_USER_SIGNATURE, setLoadingWaitTutorial } from 'shared/loading/types'
+import { awaitingUserSignature, AWAITING_USER_SIGNATURE } from 'shared/loading/types'
 import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
 import { getFromPersistentStorage, saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
@@ -25,29 +24,20 @@ import {
   SIGNUP,
   SIGNUP_CANCEL,
   signUpClearData,
-  signUpSetIdentity,
   signUpSetIsSignUp,
-  signUpSetProfile,
   UPDATE_TOS,
   updateTOS,
   userAuthentified,
   AuthenticateAction,
   signUpCancel,
-  signupForm,
   USER_AUTHENTIFIED,
-  UserAuthentified
+  UserAuthentified,
+  SignUpAction
 } from './actions'
-import {
-  fetchProfileLocally,
-  generateRandomUserProfile,
-  localProfilesRepo,
-  profileServerRequest
-} from '../profiles/sagas'
-import { getUnityInstance } from '../../unity-interface/IUnityInterface'
-import { getCurrentIdentity, getIsGuestLogin, getSignUpIdentity, getSignUpProfile, isLoginCompleted } from './selectors'
+import { localProfilesRepo } from '../profiles/sagas'
+import { getCurrentIdentity, getIsGuestLogin, isLoginCompleted } from './selectors'
 import { waitForRealmInitialized } from '../dao/sagas'
-import { saveProfileRequest } from '../profiles/actions'
-import { Profile } from '../profiles/types'
+import { profileRequest, PROFILE_SUCCESS, saveProfileDelta, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
 import { ensureUnityInterface } from '../renderer'
 import { LoginState } from '@dcl/kernel-interface'
 import { RequestManager } from 'eth-connect'
@@ -57,21 +47,22 @@ import { store } from 'shared/store/isolatedStore'
 import { globalObservable } from 'shared/observables'
 import { selectNetwork, triggerReconnectRealm } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { ServerFormatProfile } from 'shared/profiles/transformations/profileToServerFormat'
 import { setWorldContext } from 'shared/comms/actions'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { Avatar } from '@dcl/schemas'
 
 const TOS_KEY = 'tos'
 const logger = DEBUG_KERNEL_LOG ? createLogger('session: ') : createDummyLogger()
 
 export function* sessionSaga(): any {
+  yield takeLatest(AUTHENTICATE, authenticate)
+
   yield takeEvery(UPDATE_TOS, updateTermOfService)
   yield takeLatest(INIT_SESSION, initSession)
   yield takeLatest(LOGOUT, logout)
   yield takeLatest(REDIRECT_TO_SIGN_UP, redirectToSignUp)
-  yield takeLatest(SIGNUP, signUp)
+  yield takeLatest(SIGNUP, signUpHandler)
   yield takeLatest(SIGNUP_CANCEL, cancelSignUp)
-  yield takeLatest(AUTHENTICATE, authenticate)
   yield takeLatest(AWAITING_USER_SIGNATURE, signaturePrompt)
   yield takeEvery(USER_AUTHENTIFIED, function* (action: UserAuthentified) {
     yield call(saveSession, action.payload.identity, action.payload.isGuest)
@@ -101,8 +92,9 @@ function* initSession() {
 }
 
 function* authenticate(action: AuthenticateAction) {
+  const { isGuest, provider } = action.payload
   // setup provider
-  requestManager.setProvider(action.payload.provider)
+  requestManager.setProvider(provider)
 
   yield put(changeLoginState(LoginState.SIGNATURE_PENDING))
 
@@ -121,7 +113,7 @@ function* authenticate(action: AuthenticateAction) {
 
   yield put(changeLoginState(LoginState.WAITING_RENDERER))
 
-  yield ensureUnityInterface()
+  yield call(ensureUnityInterface)
 
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
 
@@ -130,66 +122,36 @@ function* authenticate(action: AuthenticateAction) {
   yield put(selectNetwork(net))
   registerProviderNetChanges()
 
-  const isGuest: boolean = yield select(getIsGuestLogin)
+  // 1. authenticate our user
   yield put(userAuthentified(identity, net, isGuest))
-
+  // 2. wait for comms to connect, it only requires the Identity authentication
   yield call(waitForRealmInitialized)
+  // 3. then ask for our profile
+  yield put(profileRequest(identity.address))
+  // 4. wait for the response of the profile
+  yield call(waitForLocalProfile)
 
-  const profileExists: boolean = yield call(doesProfileExist, identity.address)
-  const profileLocally: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
-  const isGuestWithProfileLocal: boolean = isGuest && profileLocally !== null
+  const avatar: Avatar = yield select(getCurrentUserProfile)
 
-  if (profileExists || isGuestWithProfileLocal) {
-    yield put(setLoadingWaitTutorial(false))
-    yield signIn(identity)
-  } else {
-    yield startSignUp(identity)
+  // 6. continue with signin/signup
+  const isSignUp = avatar.version <= 0
+  if (isSignUp) {
+    yield put(signUpSetIsSignUp(isSignUp))
     yield take(SIGNUP)
   }
-}
 
-function* doesProfileExist(userId: string): any {
-  try {
-    const profiles: { avatars: object[] } = yield call(profileServerRequest, userId)
+  // 7. finish sign in
+  yield call(ensureMetaConfigurationInitialized)
+  yield put(changeLoginState(LoginState.COMPLETED))
 
-    return profiles.avatars.length > 0
-  } catch (error: any) {
-    if (error.message !== 'Profile not found') {
-      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
-    }
+  if (identity.hasConnectedWeb3) {
+    yield call(referUser, identity)
   }
-  return false
 }
 
-function* startSignUp(identity: ExplorerIdentity) {
-  yield put(signUpSetIsSignUp(true))
-
-  const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
-  const cachedProfile: ServerFormatProfile | null = yield call(fetchProfileLocally, identity.address, net)
-  const profile: Profile = cachedProfile ? cachedProfile : yield generateRandomUserProfile(identity.address)
-  profile.userId = identity.address
-  profile.ethAddress = identity.rawAddress
-  profile.unclaimedName = '' // clean here to allow user complete in passport step
-  profile.hasClaimedName = false
-  profile.version = 0
-
-  yield put(signUpSetIdentity(identity))
-  yield put(signUpSetProfile(profile))
-
-  if (cachedProfile) {
-    yield signUp()
-  } else {
-    if (PREVIEW) {
-      yield put(signupForm('Test', ''))
-      yield signUp()
-    } else {
-      const profile: Partial<Profile> = yield select(getSignUpProfile)
-      yield call(waitForRendererInstance)
-
-      // TODO: Fix as any
-      getUnityInstance().LoadProfile(profile as any)
-      getUnityInstance().ShowAvatarEditorInSignIn()
-    }
+function* waitForLocalProfile() {
+  while (!(yield select(getCurrentUserProfile))) {
+    yield take([SEND_PROFILE_TO_RENDERER, PROFILE_SUCCESS])
   }
 }
 
@@ -227,41 +189,25 @@ function* authorize(requestManager: RequestManager) {
   return userData.identity
 }
 
-function* signIn(identity: ExplorerIdentity) {
-  if (identity.hasConnectedWeb3) {
-    yield call(referUser, identity)
-  }
-
-  yield ensureMetaConfigurationInitialized()
-
-  yield put(changeLoginState(LoginState.COMPLETED))
-}
-
-function* signUp() {
-  const identity: ExplorerIdentity = yield select(getSignUpIdentity)
+function* signUpHandler(action: SignUpAction) {
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
 
   if (!identity) {
-    throw new Error('missing signup session')
+    throw new Error('missing identity in signup session')
   }
 
+  yield put(
+    saveProfileDelta({
+      userId: identity.address,
+      ethAddress: identity.rawAddress,
+      version: 0,
+      hasClaimedName: false,
+      email: ''
+    })
+  )
+
+  globalObservable.emit('signUp', { email: action.payload.email })
   logger.log(`User ${identity.address} signed up`)
-
-  const profile: Partial<Profile> = yield select(getSignUpProfile)
-  profile.userId = identity.address
-  profile.ethAddress = identity.rawAddress
-  profile.version = 0
-  profile.hasClaimedName = false
-  if (profile.email) {
-    profile.tutorialStep = profile.tutorialStep || 0
-    profile.tutorialStep |= 128 // We use binary 256 for tutorial and 128 for email promp
-  }
-  globalObservable.emit('signUp', { email: profile.email || '' })
-  delete profile.email // We don't deploy the email because it is public
-
-  yield put(setLoadingWaitTutorial(true))
-  yield signIn(identity)
-  yield put(saveProfileRequest(profile))
-  yield put(signUpClearData())
 }
 
 function* cancelSignUp() {
@@ -271,16 +217,9 @@ function* cancelSignUp() {
 }
 
 async function saveSession(identity: ExplorerIdentity, isGuest: boolean) {
-  const userId = identity.address
-
   await setStoredSession({
     identity,
     isGuest
-  })
-
-  setLocalInformationForComms(userId, {
-    userId,
-    identity
   })
 }
 

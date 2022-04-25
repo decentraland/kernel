@@ -1,16 +1,18 @@
+import { Avatar } from '@dcl/schemas'
 import { call, select, takeLatest } from 'redux-saga/effects'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { toEnvironmentRealmType } from '../apis/EnvironmentAPI'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
 import { getCommsIsland, getRealm } from '../comms/selectors'
 import { Realm } from '../dao/types'
-import { SaveProfileSuccess, SAVE_PROFILE_SUCCESS } from '../profiles/actions'
+import { SAVE_PROFILE } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
 import { allScenesEvent } from '../world/parcelSceneManager'
 
 export function* sceneEventsSaga() {
   yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], islandChanged)
-  yield takeLatestByUserId(SAVE_PROFILE_SUCCESS, submitProfileToScenes)
+  yield takeLatestByUserId(SAVE_PROFILE, submitProfileToScenes)
 }
 
 function* islandChanged() {
@@ -42,12 +44,15 @@ export function updateLocation(realm: string | undefined, island: string | undef
   history.replaceState({ island, realm }, '', `?${q.toString()}`)
 }
 
-function* submitProfileToScenes(action: SaveProfileSuccess) {
-  yield call(allScenesEvent, {
-    eventType: 'profileChanged',
-    payload: {
-      ethAddress: action.payload.profile.ethAddress,
-      version: action.payload.profile.version
-    }
-  })
+function* submitProfileToScenes() {
+  const profile: Avatar | null = yield select(getCurrentUserProfile)
+  if (profile) {
+    yield call(allScenesEvent, {
+      eventType: 'profileChanged',
+      payload: {
+        ethAddress: profile.ethAddress,
+        version: profile.version
+      }
+    })
+  }
 }

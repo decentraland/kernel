@@ -3,7 +3,6 @@ import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHe
 import type { QueryType } from '@dcl/legacy-ecs'
 import type { WearableId } from 'shared/catalogs/types'
 import { Snapshots } from '@dcl/schemas'
-export { Avatar, Profile } from './profiles/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
 export type MappingsResponse = {
@@ -643,7 +642,6 @@ export enum AvatarRendererMessageType {
 }
 
 export type AvatarRendererBasePayload = {
-  entityId: string
   avatarShapeId: string
 }
 

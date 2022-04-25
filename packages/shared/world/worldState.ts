@@ -1,7 +1,6 @@
 import { Observable } from 'mz-observable'
 import { store } from 'shared/store/isolatedStore'
 import { LoadingState } from 'shared/loading/reducer'
-import { RendererState } from 'shared/renderer/types'
 import { SessionState } from 'shared/session/types'
 
 let hidden: 'hidden' | 'msHidden' | 'webkitHidden' = 'hidden'
@@ -54,17 +53,6 @@ export function observeSessionStateChange(onLoadingChange: (previous: SessionSta
   })
 }
 
-export function observeRendererStateChange(onLoadingChange: (previous: RendererState, current: RendererState) => any) {
-  let previousState = store.getState().renderer
-
-  store.subscribe(() => {
-    const currentState = store.getState().renderer
-    if (previousState !== currentState) {
-      previousState = currentState
-      onLoadingChange(previousState, currentState)
-    }
-  })
-}
 
 export function isRendererEnabled(): boolean {
   return store.getState().loading.renderingActivated

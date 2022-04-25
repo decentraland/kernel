@@ -1,77 +1,56 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { call, throttle, put, select, takeEvery, takeLatest } from 'redux-saga/effects'
+import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
-import { getServerConfigurations, ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
+import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
 import defaultLogger from 'shared/logger'
 import {
   PROFILE_REQUEST,
-  PROFILE_SUCCESS,
-  PROFILE_RANDOM,
-  SAVE_PROFILE_REQUEST,
+  SAVE_PROFILE,
   ProfileRequestAction,
-  profileSuccess,
-  ProfileRandomAction,
-  ProfileSuccessAction,
-  SaveProfileRequest,
-  saveProfileSuccess,
-  profileRequest,
+  SaveProfileDelta,
+  sendProfileToRenderer,
   saveProfileFailure,
-  addedProfileToCatalog,
-  saveProfileRequest,
-  LOCAL_PROFILE_RECEIVED,
-  LocalProfileReceived,
+  saveProfileDelta,
+  PROFILE_RECEIVED_OVER_COMMS,
+  ProfileReceivedOverComms,
   deployProfile,
   DEPLOY_PROFILE_REQUEST,
   deployProfileSuccess,
   deployProfileFailure,
-  profileSavedNotDeployed,
   DeployProfile,
-  localProfileSentToRenderer,
-  PROFILE_SAVED_NOT_DEPLOYED,
-  DEPLOY_PROFILE_SUCCESS,
-  announceProfile,
-  ANNOUNCE_PROFILE,
-  AnnounceProfileAction
+  profileSuccess,
+  PROFILE_SUCCESS,
+  ProfileSuccessAction
 } from './actions'
-import { getProfile, hasConnectedWeb3 } from './selectors'
+import { getCurrentUserProfile, getProfileFromStore } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
-import { profileToRendererFormat } from './transformations/profileToRendererFormat'
-import { buildServerMetadata, ensureServerFormat, ServerFormatProfile } from './transformations/profileToServerFormat'
-import { Profile, ContentFile, Avatar, ProfileType } from './types'
+import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
+import { ContentFile, ProfileType, ProfileUserInfo } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from 'dcl-crypto'
-import {
-  getUpdateProfileServer,
-  getResizeService,
-  isResizeServiceUrl,
-  getCatalystServer,
-  getSelectedNetwork,
-  getFetchContentServer
-} from '../dao/selectors'
+import { getUpdateProfileServer, getCatalystServer } from '../dao/selectors'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
-import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork } from 'shared/session/selectors'
+import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, isCurrentUserId } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { base64ToBlob } from 'atomicHelpers/base64ToBlob'
+import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
 import { getProfileType } from './getProfileType'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { UNEXPECTED_ERROR } from 'shared/loading/types'
-import { fetchParcelsWithAccess } from './fetchLand'
-import { ParcelsWithAccess } from '@dcl/legacy-ecs'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
 import { getCommsContext } from 'shared/comms/selectors'
-import { updateCommsUser } from 'shared/comms'
 import { CommsContext } from 'shared/comms/context'
 import { requestLocalProfileToPeers } from 'shared/comms/handlers'
+import { Avatar, Profile, Snapshots } from '@dcl/schemas'
+import { validateAvatar } from './schemaValidation'
+import { trackEvent } from 'shared/analytics'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const toBuffer = require('blob-to-buffer')
@@ -102,33 +81,14 @@ export const localProfilesRepo = new LocalProfilesRepository()
 export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
-  yield takeLatestByUserId(PROFILE_SUCCESS, submitProfileToRenderer)
-  yield takeLatestByUserId(PROFILE_RANDOM, handleRandomAsSuccess)
-  yield takeLatestByUserId(SAVE_PROFILE_REQUEST, handleSaveAvatar)
-  yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
+  yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
+  yield takeLatestByUserId(PROFILE_RECEIVED_OVER_COMMS, handleCommsProfile)
   yield throttle(3000, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
-
-  // Handling of local actions
-  yield takeLatest(ANNOUNCE_PROFILE, handleAnnounceProfile)
-
-  // Forwarding effects
-  yield takeLatest(DEPLOY_PROFILE_SUCCESS, announceNewAvatar)
-  yield takeLatest(PROFILE_SAVED_NOT_DEPLOYED, announceNewAvatar)
+  yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
 }
 
-function* announceNewAvatar(action: { type: string; payload: { userId: string; version: number } }) {
-  yield put(announceProfile(action.payload.userId, action.payload.version))
-}
-
-function* handleAnnounceProfile(action: AnnounceProfileAction) {
-  const context = (yield select(getCommsContext)) as CommsContext | undefined
-  if (context === undefined) {
-    defaultLogger.warn('Announce profile is impossible (no connection found)')
-    return
-  }
-  if (context.userInfo) {
-    context.userInfo.version = action.payload.version
-  }
+function* forwardProfileToRenderer(action: ProfileSuccessAction) {
+  yield put(sendProfileToRenderer(action.payload.userId))
 }
 
 function* initialProfileLoad() {
@@ -138,7 +98,7 @@ function* initialProfileLoad() {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const userId = identity.address
 
-  let profile: Profile
+  let profile: Avatar
 
   try {
     profile = yield call(ProfileAsPromise, userId, undefined, getProfileType(identity))
@@ -151,11 +111,11 @@ function* initialProfileLoad() {
   let profileDirty: boolean = false
 
   if (!profile.hasClaimedName) {
-    const net: keyof typeof ethereumConfigurations = yield select(getCurrentNetwork)
-    const names: string[] = yield fetchOwnedENS(ethereumConfigurations[net].names, userId)
+    const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
+    const names: string[] = yield call(fetchOwnedENS, ethereumConfigurations[net].names, userId)
 
     // patch profile to re-add missing name
-    profile = { ...profile, name: names[0], hasClaimedName: true }
+    profile = { ...profile, name: names[0], hasClaimedName: true, tutorialStep: 0xff }
 
     if (names && names.length > 0) {
       defaultLogger.info(`Found missing claimed name '${names[0]}' for profile ${userId}, consolidating profile... `)
@@ -163,60 +123,38 @@ function* initialProfileLoad() {
     }
   }
 
-  const isFace256Resized: boolean = yield select(isResizeServiceUrl, profile.avatar.snapshots?.face256)
-
-  if (isFace256Resized) {
-    // setting dirty profile, as at least one of the face images are taken from a local blob
-    profileDirty = true
-  }
-
   if (RESET_TUTORIAL) {
     profile = { ...profile, tutorialStep: 0 }
     profileDirty = true
   }
 
+  // if the profile is dirty, then save it
   if (profileDirty) {
-    scheduleProfileUpdate(profile)
+    yield put(saveProfileDelta(profile))
   }
-
-  updateCommsUser({ version: profile.version })
-}
-
-/**
- * Schedule profile update post login (i.e. comms authenticated & established).
- *
- * @param profile Updated profile
- */
-function scheduleProfileUpdate(profile: Profile) {
-  const unsubscribe = store.subscribe(() => {
-    const initialized = store.getState().comms.initialized
-    if (initialized) {
-      unsubscribe()
-      store.dispatch(saveProfileRequest(profile))
-    }
-  })
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
   const { userId, profileType, version } = action.payload
 
-  const currentId = yield select(getCurrentUserId)
-  let profile: ServerFormatProfile | null = null
+  const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
+  const commsContext: CommsContext | undefined = yield select(getCommsContext)
+  if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
+
+  const lookingForMyProfile = yield select(isCurrentUserId, userId)
+
+  let profile: Avatar | null = null
   let hasConnectedWeb3 = false
   try {
-    const commsContext: CommsContext | undefined = yield select(getCommsContext)
-
-    if ((PREVIEW || profileType === ProfileType.LOCAL) && currentId !== userId && commsContext) {
-      const peerProfile: Profile = yield call(requestLocalProfileToPeers, commsContext, userId)
+    if ((PREVIEW || profileType === ProfileType.LOCAL) && !lookingForMyProfile && commsContext) {
+      const peerProfile: Avatar = yield call(requestLocalProfileToPeers, commsContext, userId)
       if (peerProfile) {
-        profile = ensureServerFormat(peerProfile)
+        profile = ensureAvatarCompatibilityFormat(peerProfile)
         profile.hasClaimedName = false // for now, comms profiles can't have claimed names
       }
     } else {
-      const profiles: { avatars: ServerFormatProfile[] } = yield call(profileServerRequest, userId, version)
-
-      if (profiles.avatars.length !== 0) {
-        profile = profiles.avatars[0]
+      profile = yield call(getRemoteProfile, userId, version)
+      if (profile) {
         profile.hasClaimedName = !!profile.name && profile.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
         hasConnectedWeb3 = true
       }
@@ -225,81 +163,34 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     // we throw here because it seems this is an unrecoverable error
     throw new Error(`Error requesting profile for ${userId}: ${error}`)
   }
-
-  if (currentId === userId) {
+  if (lookingForMyProfile && !profile) {
     const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-    const localProfile = yield call(fetchProfileLocally, userId, net)
-    // checks if profile name was changed on builder
-    if (profile && localProfile && localProfile.name !== profile.name) {
-      localProfile.name = profile.name
-    }
-    if (!profile || (localProfile && profile.version < localProfile.version)) {
-      profile = localProfile
-    }
-
-    const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-    if (profile) {
-      profile.ethAddress = identity.rawAddress
-    }
+    profile = yield call(fetchProfileLocally, userId, net)
   }
-
   if (!profile) {
-    defaultLogger.info(`Profile for ${userId} not found, generating random profile`)
     profile = yield call(generateRandomUserProfile, userId)
   }
 
-  if (currentId === userId && profile) {
-    profile.email = ''
-  }
-
-  yield populateFaceIfNecessary(profile, '256')
-  yield populateFaceIfNecessary(profile, '128')
-
-  const passport: Profile = yield call(processServerProfile, userId, profile)
-
-  yield put(profileSuccess(userId, passport, hasConnectedWeb3))
+  profile!.email = ''
+  const avatar: Avatar = yield call(processServerProfile, userId, profile!)
+  yield put(profileSuccess(userId, avatar, hasConnectedWeb3))
 }
 
-function lastSegment(url: string) {
-  const segments = url.split('/')
-  const segment = segments[segments.length - 1]
-  return segment
-}
+function* getRemoteProfile(userId: string, version?: number) {
+  try {
+    const profiles: { avatars: Avatar[] } = yield call(profileServerRequest, userId, version)
 
-function* populateFaceIfNecessary(profile: any, resolution: string) {
-  const selector = `face${resolution}`
-  if (
-    profile.avatar?.snapshots &&
-    (!profile.avatar?.snapshots[selector] || lastSegment(profile.avatar.snapshots[selector]) === resolution) && // XXX - check if content === resolution to fix current issue with corrupted profiles https://github.com/decentraland/explorer/issues/1061 - moliva - 25/06/2020
-    profile.avatar?.snapshots?.face
-  ) {
-    try {
-      const resizeServiceUrl: string = yield select(getResizeService)
-      const faceUrlSegments = profile.avatar.snapshots.face.split('/')
-      const path = `${faceUrlSegments[faceUrlSegments.length - 1]}/${resolution}`
-      let faceUrl = `${resizeServiceUrl}/${path}`
+    const avatar = profiles.avatars[0]
 
-      // head to resize url in the current catalyst before populating
-      let response: Response = yield call(fetch, faceUrl, { method: 'HEAD' })
-      if (!response.ok) {
-        // if resize service is not available for this image, try with fallback server
-        const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-        const fallbackServiceUrl = getServerConfigurations(net).fallbackResizeServiceUrl
-        if (fallbackServiceUrl !== resizeServiceUrl) {
-          faceUrl = `${fallbackServiceUrl}/${path}`
-
-          response = yield call(fetch, faceUrl, { method: 'HEAD' })
-        }
-      }
-
-      if (response.ok) {
-        // only populate image field if resize service responded correctly
-        profile.avatar = { ...profile.avatar, snapshots: { ...profile.avatar?.snapshots, [selector]: faceUrl } }
-      }
-    } catch (e) {
-      defaultLogger.error(`error while resizing image for user ${profile.userId} for resolution ${resolution}`, e)
+    if (avatar && validateAvatar(avatar)) {
+      return avatar
+    }
+  } catch (error: any) {
+    if (error.message !== 'Profile not found') {
+      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
     }
   }
+  return null
 }
 
 export async function profileServerRequest(userId: string, version?: number) {
@@ -316,88 +207,73 @@ export async function profileServerRequest(userId: string, version?: number) {
       throw new Error(`Invalid response from ${url}`)
     }
 
-    const profiles = await response.json()
+    const res = await response.json()
 
-    return profiles[0] || { avatars: [] }
+    return res[0] || { avatars: [] }
   } catch (e: any) {
     defaultLogger.error(e)
     return { avatars: [] }
   }
 }
 
-function* handleRandomAsSuccess(action: ProfileRandomAction): any {
-  // TODO (eordano, 16/Sep/2019): See if there's another way around people expecting PASSPORT_SUCCESS
-  yield put(profileSuccess(action.payload.userId, action.payload.profile))
-}
+/**
+ * Handle comms profiles. If we have the profile then it calls a profileSuccess to
+ * store it and forward it to the renderer.
+ */
+function* handleCommsProfile(action: ProfileReceivedOverComms) {
+  // TODO: Mendez, add signatures and verifications to this profile-over-comms mechanism
+  const { profile } = action.payload
 
-function* handleLocalProfile(action: LocalProfileReceived) {
-  const { userId, profile } = action.payload
+  const existingProfile: ProfileUserInfo | null = yield select(getProfileFromStore, profile.userId)
 
-  const existingProfile: Profile = yield select(getProfile, userId)
-  const connectedWeb3: boolean = yield select(hasConnectedWeb3, userId)
-
-  if (!existingProfile || existingProfile.version < profile.version) {
-    yield put(profileSuccess(userId, profile, connectedWeb3))
+  if (!existingProfile || existingProfile.data?.version < profile.version) {
+    // store profile locally and forward to renderer
+    yield put(profileSuccess(profile.userId, profile, existingProfile?.hasConnectedWeb3))
   }
 }
 
-function* submitProfileToRenderer(action: ProfileSuccessAction): any {
-  const profile = { ...action.payload.profile }
-  if (profile.avatar) {
-    const { snapshots } = profile.avatar
-    // set face variants if missing before sending profile to renderer
-    profile.avatar.snapshots = {
-      ...snapshots,
-      face256: snapshots.face256
-    }
-  }
-
-  if ((yield select(getCurrentUserId)) === action.payload.userId) {
-    yield call(sendLoadProfile, profile)
-  } else {
-    const forRenderer = profileToRendererFormat(profile)
-    forRenderer.hasConnectedWeb3 = action.payload.hasConnectedWeb3
-
-    yield call(waitForRendererInstance)
-    getUnityInstance().AddUserProfileToCatalog(forRenderer)
-
-    yield put(addedProfileToCatalog(action.payload.userId, forRenderer))
-  }
-}
-
-function* sendLoadProfile(profile: Profile) {
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-  const parcels: ParcelsWithAccess = !identity.hasConnectedWeb3 ? [] : yield fetchParcelsWithAccess(identity.address)
-  const rendererFormat = profileToRendererFormat(profile, { identity, parcels })
-  yield call(waitForRendererInstance)
-  getUnityInstance().LoadProfile(rendererFormat)
-  yield put(localProfileSentToRenderer())
-}
-
-function* handleSaveAvatar(saveAvatar: SaveProfileRequest) {
-  const userId: string = saveAvatar.payload.profile.userId || (yield select(getCurrentUserId))
+function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
+  const userId: string = yield select(getCurrentUserId)
 
   try {
-    const savedProfile: Profile | null = yield select(getProfile, userId)
+    const savedProfile: Avatar | null = yield select(getCurrentUserProfile)
     const currentVersion: number = savedProfile?.version && savedProfile?.version > 0 ? savedProfile?.version : 0
-    const profile = { ...savedProfile, ...saveAvatar.payload.profile, ...{ version: currentVersion + 1 } } as Profile
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
 
+    const profile = {
+      ...savedProfile,
+      ...saveAvatar.payload.profile,
+      userId,
+      version: currentVersion + 1,
+      ethAddress: identity.address
+    } as Avatar
+
+    if (!validateAvatar(profile)) {
+      trackEvent('invalid_schema', {
+        schema: 'avatar',
+        payload: profile
+      })
+      debugger
+    }
+
+    // save the profile in the local storage
     yield localProfilesRepo.persist(identity.address, network, profile)
 
-    yield put(saveProfileSuccess(userId, profile.version, profile))
+    // save the profile in the store
+    yield put(profileSuccess(userId, profile, identity.hasConnectedWeb3))
 
     // only update profile on server if wallet is connected
     if (identity.hasConnectedWeb3) {
       yield put(deployProfile(profile))
-    } else {
-      yield put(profileSavedNotDeployed(userId, profile.version, profile))
     }
-
-    yield put(profileRequest(userId))
-  } catch (error) {
+  } catch (error: any) {
+    trackEvent('error_fatal', {
+      message: `cant_persist_avatar ${error}`,
+      context: 'kernel#saga',
+      stack: error.stacktrace
+    })
     yield put(saveProfileFailure(userId, 'unknown reason'))
   }
 }
@@ -406,57 +282,55 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
   const url: string = yield select(getUpdateProfileServer)
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const userId: string = yield select(getCurrentUserId)
-  const profile: Profile = deployProfileAction.payload.profile
+  const profile: Avatar = deployProfileAction.payload.profile
   try {
-    yield call(modifyAvatar, {
+    yield call(deployAvatar, {
       url,
       userId,
       identity,
       profile
     })
     yield put(deployProfileSuccess(userId, profile.version, profile))
-  } catch (e) {
+  } catch (e: any) {
+    trackEvent('error_fatal', {
+      context: 'kernel#saga',
+      message: 'error deploying profile. ' + e.message,
+      stack: e.stacktrace
+    })
     defaultLogger.error('Error deploying profile!', e)
     yield put(deployProfileFailure(userId, profile, e))
   }
 }
 
-export async function fetchProfileLocally(address: string, network: ETHEREUM_NETWORK) {
-  const profile: Profile | null = await localProfilesRepo.get(address, network)
-  if (profile?.userId === address) {
-    return ensureServerFormat(profile)
+export async function fetchProfileLocally(address: string, network: ETHEREUM_NETWORK): Promise<Avatar | null> {
+  const profile = (await localProfilesRepo.get(address, network)) as Avatar | null
+  if (profile && profile.userId === address) {
+    return ensureAvatarCompatibilityFormat(profile)
   } else {
     return null
   }
 }
 
-async function buildSnapshotContent(selector: string, value: string): Promise<[string, string, ContentFile?]> {
+async function buildSnapshotContent(selector: string, value: string) {
   let hash: string
   let contentFile: ContentFile | undefined
 
   const name = `${selector}.png`
 
-  if (isResizeServiceUrl(store.getState(), value)) {
-    // value is coming in a resize service url => generate image & upload content
-    const blob = await fetch(value).then((r) => r.blob())
-
-    contentFile = await makeContentFile(name, blob)
-    hash = await hashV1(contentFile.content)
-  } else if (value.includes('://')) {
+  if (value.includes('://')) {
     // value is already a URL => use existing hash
     hash = value.split('/').pop()!
   } else {
     // value is coming in base 64 => convert to blob & upload content
-    const blob = base64ToBlob(value)
-
-    contentFile = await makeContentFile(name, blob)
+    const buffer = base64ToBuffer(value)
+    contentFile = await makeContentFile(name, buffer)
     hash = await hashV1(contentFile.content)
   }
 
-  return [name, hash, contentFile]
+  return { name, hash, contentFile }
 }
 
-async function modifyAvatar(params: { url: string; userId: string; identity: ExplorerIdentity; profile: Profile }) {
+async function deployAvatar(params: { url: string; userId: string; identity: ExplorerIdentity; profile: Avatar }) {
   const { url, profile, identity } = params
   const { avatar } = profile
 
@@ -466,16 +340,17 @@ async function modifyAvatar(params: { url: string; userId: string; identity: Exp
 
   const snapshots = avatar.snapshots || (profile as any).snapshots
   const content = new Map()
+
   if (snapshots) {
     const newSnapshots: Record<string, string> = {}
     for (const [selector, value] of Object.entries(snapshots)) {
-      const [name, hash, contentFile] = await buildSnapshotContent(selector, value as any)
+      const { name, hash, contentFile } = await buildSnapshotContent(selector, value as any)
 
       newSnapshots[selector] = hash
       content.set(name, hash)
       contentFile && files.set(contentFile.name, contentFile.content)
     }
-    newAvatar.snapshots = newSnapshots as Avatar['snapshots']
+    newAvatar.snapshots = newSnapshots as Snapshots
   }
 
   const metadata = buildServerMetadata({ ...profile, avatar: newAvatar })
@@ -486,7 +361,7 @@ async function modifyAvatar(params: { url: string; userId: string; identity: Exp
 async function deploy(
   url: string,
   identity: ExplorerIdentity,
-  metadata: any,
+  metadata: Profile,
   contentFiles: Map<string, Buffer>,
   contentHashes: Map<string, string>
 ) {
@@ -512,9 +387,11 @@ async function deploy(
   return catalyst.deployEntity(deployData)
 }
 
-export function makeContentFile(path: string, content: string | Blob): Promise<ContentFile> {
+function makeContentFile(path: string, content: string | Blob | Buffer): Promise<ContentFile> {
   return new Promise((resolve, reject) => {
-    if (typeof content === 'string') {
+    if (Buffer.isBuffer(content)) {
+      resolve({ name: path, content })
+    } else if (typeof content === 'string') {
       const buffer = Buffer.from(content)
       resolve({ name: path, content: buffer })
     } else if (content instanceof Blob) {
@@ -532,12 +409,14 @@ function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
-export async function generateRandomUserProfile(userId: string): Promise<Profile> {
+async function generateRandomUserProfile(userId: string): Promise<Avatar> {
+  defaultLogger.info('Generating random profile for ' + userId)
+
   const _number = randomBetween(1, 160)
 
-  let profile: Profile | undefined = undefined
+  let profile: Avatar | undefined = undefined
   try {
-    const profiles: { avatars: Profile[] } = await profileServerRequest(`default${_number}`)
+    const profiles: { avatars: Avatar[] } = await profileServerRequest(`default${_number}`)
     if (profiles.avatars.length !== 0) {
       profile = profiles.avatars[0]
     }
@@ -546,14 +425,16 @@ export async function generateRandomUserProfile(userId: string): Promise<Profile
   }
 
   if (!profile) {
-    profile = backupProfile(getFetchContentServer(store.getState()), userId) as any as Profile
+    profile = backupProfile(userId)
   }
 
+  profile.ethAddress = userId
+  profile.userId = userId
   profile.avatar.snapshots.face256 = profile.avatar.snapshots.face256 ?? (profile.avatar.snapshots as any).face
-  profile.unclaimedName = createFakeName()
+  profile.name = createFakeName()
   profile.hasClaimedName = false
   profile.tutorialStep = 0
   profile.version = -1 // We signal random user profiles with -1
 
-  return profile
+  return ensureAvatarCompatibilityFormat(profile)
 }

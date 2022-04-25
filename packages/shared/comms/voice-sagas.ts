@@ -1,9 +1,4 @@
 import { call, select, takeEvery, takeLatest } from 'redux-saga/effects'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { isFeatureToggleEnabled } from 'shared/selectors'
-import { SceneFeatureToggles } from 'shared/types'
-import { sceneObservable } from 'shared/world/sceneState'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import {
@@ -14,40 +9,21 @@ import {
   SET_VOICE_MUTE,
   SET_VOICE_VOLUME,
   TOGGLE_VOICE_CHAT_RECORDING,
-  VoiceRecordingUpdate,
-  VOICE_PLAYING_UPDATE,
-  VOICE_RECORDING_UPDATE
+  VOICE_PLAYING_UPDATE
 } from './actions'
-import { CommsContext, commsLogger } from './context'
-import {
-  isVoiceChatRecording,
-  getVoiceCommunicator,
-  isVoiceChatAllowedByCurrentScene,
-  getCommsContext
-} from './selectors'
+import { commsLogger } from './context'
+import { receiveUserTalking } from './peers'
+import { isVoiceChatRecording, getVoiceCommunicator, isVoiceChatAllowedByCurrentScene } from './selectors'
 import { initVoiceCommunicator } from './voice-over-comms'
 
 export function* voiceSaga() {
   yield call(initVoiceCommunicator)
 
-  yield call(listenToWhetherSceneSupportsVoiceChat)
-
   yield takeLatest(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlaying)
-  yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecording)
   yield takeEvery(SET_VOICE_VOLUME, updateVoiceChatVolume)
   yield takeEvery(SET_VOICE_MUTE, updateVoiceChatMute)
-}
-
-function* listenToWhetherSceneSupportsVoiceChat() {
-  sceneObservable.add(({ newScene }) => {
-    const nowEnabled = newScene
-      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, newScene.sceneJsonData)
-      : isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT)
-
-    getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
-  })
 }
 
 function* updateVoiceChatRecordingStatus() {
@@ -75,21 +51,8 @@ function* requestUserMedia() {
 
 function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
   const { userId, playing } = action.payload
-  const commsContext: CommsContext | undefined = yield select(getCommsContext)
-  if (commsContext) {
-    for (const peerInfo of commsContext.peerData.values()) {
-      if (peerInfo.identity === userId) {
-        peerInfo.talking = playing
-        break
-      }
-    }
-  }
-  getUnityInstance().SetUserTalking(userId, playing)
-}
 
-function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
-  yield call(waitForRendererInstance)
-  getUnityInstance().SetPlayerTalking(action.payload.recording)
+  receiveUserTalking(userId, playing)
 }
 
 function* updateVoiceChatVolume(action: SetVoiceVolume) {

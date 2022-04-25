@@ -1,24 +1,20 @@
-import { ProfileForRenderer } from '@dcl/legacy-ecs'
-import { Profile, ProfileType } from 'shared/profiles/types'
-import { ExplorerIdentity } from 'shared/session/types'
+import type { Avatar } from '@dcl/schemas'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/profileToRendererFormat'
+import type { ProfileType } from 'shared/profiles/types'
 
-export enum AvatarMessageType {
+export const enum AvatarMessageType {
   // Networking related messages
   USER_DATA = 'USER_DATA',
-  USER_POSE = 'USER_POSE',
   USER_VISIBLE = 'USER_VISIBLE',
   USER_EXPRESSION = 'USER_EXPRESSION',
   USER_REMOVED = 'USER_REMOVED',
-  SET_LOCAL_UUID = 'SET_LOCAL_UUID',
   USER_TALKING = 'USER_TALKING',
 
   // Actions related messages
   USER_MUTED = 'USER_MUTED',
   USER_UNMUTED = 'USER_UNMUTED',
   USER_BLOCKED = 'USER_BLOCKED',
-  USER_UNBLOCKED = 'USER_UNBLOCKED',
-
-  ADD_FRIEND = 'ADD_FRIEND'
+  USER_UNBLOCKED = 'USER_UNBLOCKED'
 }
 
 export type ReceiveUserExpressionMessage = {
@@ -32,7 +28,7 @@ export type ReceiveUserDataMessage = {
   type: AvatarMessageType.USER_DATA
   uuid: string
   data: Partial<UserInformation>
-  profile: ProfileForRenderer
+  profile: NewProfileForRenderer
 }
 
 export type ReceiveUserVisibleMessage = {
@@ -47,12 +43,6 @@ export type ReceiveUserTalkingMessage = {
   talking: boolean
 }
 
-export type ReceiveUserPoseMessage = {
-  type: AvatarMessageType.USER_POSE
-  uuid: string
-  pose: Pose
-}
-
 export type UserRemovedMessage = {
   type: AvatarMessageType.USER_REMOVED
   uuid: string
@@ -60,7 +50,6 @@ export type UserRemovedMessage = {
 
 export type UserMessage = {
   type:
-    | AvatarMessageType.SET_LOCAL_UUID
     | AvatarMessageType.USER_BLOCKED
     | AvatarMessageType.USER_UNBLOCKED
     | AvatarMessageType.USER_MUTED
@@ -71,7 +60,6 @@ export type UserMessage = {
 
 export type AvatarMessage =
   | ReceiveUserDataMessage
-  | ReceiveUserPoseMessage
   | ReceiveUserVisibleMessage
   | ReceiveUserExpressionMessage
   | UserRemovedMessage
@@ -83,21 +71,25 @@ export type UUID = string
 /**
  * This type contains information about the peers, the AvatarEntity must accept this whole object in setAttributes(obj).
  */
-export type PeerInformation = {
+export type PeerInformation = UserInformation & {
   /**
    * Unique peer ID
    */
   uuid: UUID
-
-  user?: UserInformation
+  talking: boolean
+  lastPositionUpdate: number
+  lastProfileUpdate: number
+  lastUpdate: number
+  receivedPublicChatMessages: Set<string>
+  visible: boolean
 }
 
 export type UserInformation = {
-  userId: string
-  version?: number
-  pose?: Pose
+  profileType?: ProfileType
+  ethereumAddress?: string
   expression?: AvatarExpression
-  identity?: ExplorerIdentity
+  position?: Pose
+  profile?: NewProfileForRenderer
 }
 
 export type AvatarExpression = {
@@ -142,7 +134,7 @@ export type ProfileRequest = {
 }
 
 export type ProfileResponse = {
-  profile: Profile
+  profile: Avatar
 }
 
 export type BusMessage = ChatMessage

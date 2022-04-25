@@ -1,6 +1,5 @@
 import { takeEvery, put, select, call } from 'redux-saga/effects'
 import { PayloadAction } from 'typesafe-actions'
-import { Vector3Component } from 'atomicHelpers/landHelpers'
 import {
   MESSAGE_RECEIVED,
   MessageReceived,
@@ -14,7 +13,7 @@ import { ChatMessageType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
-import { peerMap, avatarMessageObservable } from 'shared/comms/peers'
+import { getAllPeers } from 'shared/comms/peers'
 import { parseParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { TeleportController } from 'shared/world/TeleportController'
 import { notifyStatusThroughChat } from './index'
@@ -22,7 +21,6 @@ import defaultLogger from 'shared/logger'
 import { changeRealm } from 'shared/dao'
 import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
 import { SHOW_FPS_COUNTER } from 'config'
-import { AvatarMessage, AvatarMessageType } from 'shared/comms/interface/types'
 import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
 import { isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
@@ -44,16 +42,6 @@ const excludeList = ['help', 'airdrop', 'feelinglonely']
 const fpsConfiguration = {
   visible: SHOW_FPS_COUNTER
 }
-
-const userPose: { [key: string]: Vector3Component } = {}
-avatarMessageObservable.add((pose: AvatarMessage) => {
-  if (pose.type === AvatarMessageType.USER_POSE) {
-    userPose[pose.uuid] = { x: pose.pose[0], y: pose.pose[1], z: pose.pose[2] }
-  }
-  if (pose.type === AvatarMessageType.USER_REMOVED) {
-    delete userPose[pose.uuid]
-  }
-})
 
 export function* chatSaga(): any {
   initChatCommands()
@@ -83,14 +71,17 @@ function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
   const { type, payload } = action
   switch (type) {
     case MESSAGE_RECEIVED: {
-      trackEvent('Chat message received', { length: payload.body.length })
+      trackEvent('Chat message received', {
+        length: payload.body.length,
+        messageType: payload.messageType
+      })
       break
     }
     case SEND_MESSAGE: {
-      const { messageId, body } = payload
       trackEvent('Send chat message', {
-        messageId,
-        length: body.length
+        messageId: payload.messageId,
+        length: payload.body.length,
+        messageType: payload.messageType
       })
       break
     }
@@ -232,16 +223,16 @@ function initChatCommands() {
   })
 
   addChatCommand('players', 'Shows a list of players around you', (_message) => {
-    const users = [...peerMap.entries()]
+    const users = [...getAllPeers().entries()]
 
     const strings = users
-      .filter(([_, value]) => !!(value && value.user && value.user.userId))
-      .filter(([uuid]) => userPose[uuid])
+      .filter(([_, value]) => !!(value && value.ethereumAddress))
+      .filter(([_, value]) => value.position)
       .map(function ([uuid, value]) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-        const name = getProfile(store.getState(), value.user?.userId!)?.name ?? 'unknown'
+        const name = getProfile(store.getState(), value.ethereumAddress!)?.name ?? 'unknown'
         const pos = { x: 0, y: 0 }
-        worldToGrid(userPose[uuid], pos)
+        worldToGrid({ x: value.position![0], y: value.position![1], z: value.position![2] }, pos)
         return `  ${name}: ${pos.x}, ${pos.y}`
       })
       .join('\n')

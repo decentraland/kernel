@@ -22,17 +22,17 @@ import {
   TopicIdentityFWMessage
 } from './proto/broker'
 import { Position, positionHash } from '../../comms/interface/utils'
-import { UserInformation } from '../../comms/interface/types'
 import { IBrokerTransport, TransportMessage } from './IBrokerTransport'
 import { Stats } from '../../comms/debug'
 import { createLogger } from 'shared/logger'
 
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
-import { getProfileType } from 'shared/profiles/getProfileType'
-import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
+import { Avatar } from '@dcl/schemas'
+import { validateAvatar } from '../../profiles/schemaValidation'
+import { commsLogger } from '../context'
 
 class SendResult {
   constructor(public bytesSize: number) {}
@@ -62,9 +62,8 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
     this.broker.onDisconnectObservable.add(this.disconnect.bind(this))
   }
 
-  async connect(): Promise<boolean> {
+  async connect(): Promise<void> {
     await this.broker.connect()
-    return true
   }
 
   async sendPositionMessage(p: Position) {
@@ -108,14 +107,14 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  async sendProfileMessage(p: Position, userProfile: UserInformation) {
-    const topic = positionHash(p)
+  async sendProfileMessage(currentPosition: Position, address: string, profileType: ProfileType, version: number) {
+    const topic = positionHash(currentPosition)
 
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)
     d.setTime(Date.now())
-    d.setProfileType(getProfileType(userProfile.identity))
-    userProfile.version && d.setProfileVersion('' + userProfile.version)
+    d.setProfileType(profileType)
+    d.setProfileVersion('' + version)
 
     const r = this.sendTopicIdentityMessage(true, topic, d)
     if (this._stats) {
@@ -138,7 +137,7 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  async sendProfileResponse(currentPosition: Position, profile: Profile) {
+  async sendProfileResponse(currentPosition: Position, profile: Avatar) {
     const topic = positionHash(currentPosition)
 
     const d = new ProfileResponseData()
@@ -151,15 +150,13 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
       this._stats.profile.incrementSent(1, r.bytesSize)
     }
   }
-  async sendInitialMessage(userProfile: UserInformation) {
-    const topic = userProfile.userId
-
+  async sendInitialMessage(address: string) {
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)
     d.setTime(Date.now())
-    userProfile.version && d.setProfileVersion('' + userProfile.version)
+    d.setProfileVersion('')
 
-    const r = this.sendTopicIdentityMessage(true, topic, d)
+    const r = this.sendTopicIdentityMessage(true, address, d)
     if (this._stats) {
       this._stats.profile.incrementSent(1, r.bytesSize)
     }
@@ -342,7 +339,7 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
               this._stats.sceneComms.incrementRecv(msgSize)
             }
 
-            this.events.emit('chatMessage', {
+            this.events.emit('sceneMessageBus', {
               sender: alias,
               time: chatData.getTime(),
               data: { id: chatData.getMessageId(), text: chatData.getText() }
@@ -417,13 +414,18 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
           }
           case Category.PROF_RES: {
             const profileResponseData = ProfileResponseData.deserializeBinary(body)
-            this.events.emit('profileResponse', {
-              sender: alias,
-              time: profileResponseData.getTime(),
-              data: {
-                profile: JSON.parse(profileResponseData.getSerializedProfile()) as Profile
-              }
-            })
+            const profile = JSON.parse(profileResponseData.getSerializedProfile()) as Avatar
+            if (validateAvatar(profile)) {
+              this.events.emit('profileResponse', {
+                sender: alias,
+                time: profileResponseData.getTime(),
+                data: {
+                  profile
+                }
+              })
+            } else {
+              commsLogger.error('Received invalid Avatar schema over comms', profile, validateAvatar.errors)
+            }
             break
           }
           default: {

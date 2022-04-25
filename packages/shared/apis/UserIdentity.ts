@@ -6,6 +6,7 @@ import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
 
 import { ExposableAPI } from './ExposableAPI'
 import { onLoginCompleted } from 'shared/session/sagas'
+import { sdkCompatibilityAvatar } from './Players'
 
 export interface IUserIdentity {
   /**
@@ -42,12 +43,12 @@ export class UserIdentity extends ExposableAPI implements IUserIdentity {
     const profile = await EnsureProfile(identity?.address)
 
     return {
-      displayName: calculateDisplayName(identity.address, profile),
+      displayName: calculateDisplayName(profile),
       publicKey: identity.hasConnectedWeb3 ? identity.address : null,
       hasConnectedWeb3: !!identity.hasConnectedWeb3,
       userId: identity.address,
       version: profile.version,
-      avatar: { ...profile.avatar }
+      avatar: sdkCompatibilityAvatar(profile.avatar)
     }
   }
 }

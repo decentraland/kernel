@@ -1,5 +1,4 @@
 import { expectSaga } from 'redux-saga-test-plan'
-// import * as matchers from 'redux-saga-test-plan/matchers'
 import { select } from 'redux-saga/effects'
 import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
 import { Realm } from 'shared/dao/types'
@@ -7,9 +6,8 @@ import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 import { reducers } from 'shared/store/rootReducer'
 import { setCommsIsland, setWorldContext } from '../../packages/shared/comms/actions'
 import { getCommsIsland, getRealm } from '../../packages/shared/comms/selectors'
-import { saveProfileSuccess } from '../../packages/shared/profiles/actions'
+import { sendProfileToRenderer } from '../../packages/shared/profiles/actions'
 import { sceneEventsSaga, updateLocation } from '../../packages/shared/sceneEvents/sagas'
-import { Profile } from '../../packages/shared/types'
 import { allScenesEvent } from '../../packages/shared/world/parcelSceneManager'
 
 const realm: Realm = {
@@ -92,12 +90,7 @@ describe('when the island change: SET_COMMS_ISLAND', () => {
 describe('when the profile updates successfully: SAVE_PROFILE_SUCCESS', () => {
   it('should call allScene events with profileChanged', () => {
     const userId = 'user-id'
-    const version = 8
-    const profile: Profile = {
-      version,
-      ethAddress: 'eth-address'
-    } as any as Profile
-    const action = saveProfileSuccess(userId, version, profile)
+    const action = sendProfileToRenderer(userId)
     const payload = {
       ethAddress: 'eth-address',
       version: 8

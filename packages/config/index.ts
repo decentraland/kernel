@@ -109,7 +109,6 @@ export const COMMS_PROFILE_TIMEOUT = 10000
 export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
 export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('FETCH_CONTENT_SERVICE'))
 export const COMMS_SERVICE = ensureSingleString(qs.get('COMMS_SERVICE'))
-export const RESIZE_SERVICE = ensureSingleString(qs.get('RESIZE_SERVICE'))
 export const HOTSCENES_SERVICE = ensureSingleString(qs.get('HOTSCENES_SERVICE'))
 export const POI_SERVICE = ensureSingleString(qs.get('POI_SERVICE'))
 export const PREFERED_ISLAND = ensureSingleString(qs.get('island'))
@@ -238,8 +237,7 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   return {
     explorerConfiguration: `${metaConfigBaseUrl}?t=${new Date().getTime()}`,
     explorerFeatureFlags: `${metaFeatureFlagsBaseUrl}?t=${new Date().getTime()}`,
-    questsUrl,
-    fallbackResizeServiceUrl: `${PIN_CATALYST ?? 'https://peer.decentraland.' + tld}/lambdas/images`
+    questsUrl
   }
 }
 
@@ -277,10 +275,10 @@ export namespace ethereumConfigurations {
 
 export const isRunningTest: boolean = (global as any)['isRunningTests'] === true
 
-export const genericAvatarSnapshots: Record<string, string> = {
-  body: '/images/image_not_found.png',
-  face256: '/images/avatar_snapshot_default256.png'
-}
+export const genericAvatarSnapshots = {
+  body: '',
+  face256: ''
+} as const
 
 export function getCatalystNodesDefaultURL() {
   return `https://peer.decentraland.${getTLD()}/lambdas/contracts/servers`

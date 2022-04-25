@@ -1,6 +1,6 @@
 import { Vector3 } from '@dcl/ecs-math'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
-import { MinimapSceneInfo, ProfileForRenderer } from '@dcl/legacy-ecs'
+import { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {
@@ -17,17 +17,16 @@ import {
   BuilderConfiguration,
   RealmsInfoForRenderer,
   ContentMapping,
-  Profile,
   TutorialInitializationMessage,
   WorldPosition,
   HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { defaultLogger } from 'shared/logger'
+import { createUnityLogger, defaultLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
-import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
+import { NewProfileForRenderer, profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { WearableV2 } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
@@ -37,6 +36,7 @@ import { uuid } from 'atomicHelpers/math'
 import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
+import { Avatar } from '@dcl/schemas'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -62,6 +62,7 @@ function resizeCanvas(targetHeight: number) {
 }
 
 export class UnityInterface implements IUnityInterface {
+  public logger: ILogger = createUnityLogger()
   public gameInstance!: UnityGame
   public Module: any
   public currentHeight: number = -1
@@ -109,7 +110,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'SetDebug')
   }
 
-  public LoadProfile(profile: ProfileForRenderer) {
+  public LoadProfile(profile: NewProfileForRenderer) {
     this.SendMessageToUnity('Main', 'LoadProfile', JSON.stringify(profile))
   }
 
@@ -244,7 +245,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'BuilderReady')
   }
 
-  public AddUserProfileToCatalog(peerProfile: ProfileForRenderer) {
+  public AddUserProfileToCatalog(peerProfile: NewProfileForRenderer) {
     this.SendMessageToUnity('Main', 'AddUserProfileToCatalog', JSON.stringify(peerProfile))
   }
 
@@ -473,14 +474,15 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddAssets', JSON.stringify(assets))
   }
 
-  public SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined) {
+  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined) {
     if (!profiles) {
       this.SendMessageToUnity('Bridges', 'SetENSOwnerQueryResult', JSON.stringify({ searchInput, success: false }))
       return
     }
-    const profilesForRenderer: ProfileForRenderer[] = []
+    // TODO: why do we send the whole profile while asking for the ENS???
+    const profilesForRenderer: NewProfileForRenderer[] = []
     for (const profile of profiles) {
-      profilesForRenderer.push(profileToRendererFormat(profile))
+      profilesForRenderer.push(profileToRendererFormat(profile, {address: profile.userId}))
     }
     this.SendMessageToUnity(
       'Bridges',

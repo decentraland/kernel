@@ -2,11 +2,9 @@ import { RootDaoState } from './types'
 import {
   COMMS_SERVICE,
   FETCH_CONTENT_SERVICE,
-  getServerConfigurations,
   HOTSCENES_SERVICE,
   PIN_CATALYST,
   POI_SERVICE,
-  RESIZE_SERVICE,
   UPDATE_CONTENT_SERVICE
 } from 'config'
 import { RootMetaState } from 'shared/meta/types'
@@ -53,13 +51,6 @@ export const getFetchContentServer = (state: RootDaoState & RootMetaState) => {
 
 export const getCatalystServer = (store: RootDaoState) => urlWithProtocol(store.dao.catalystServer)
 
-export const getResizeService = (store: RootDaoState) => {
-  if (RESIZE_SERVICE) {
-    return RESIZE_SERVICE
-  }
-  return urlWithProtocol(store.dao.resizeService)
-}
-
 export const getCommsServer = (domain: string) => {
   if (COMMS_SERVICE) {
     return urlWithProtocol(COMMS_SERVICE)
@@ -93,7 +84,3 @@ export const getSelectedNetwork = (store: RootDaoState) => {
   }
   throw new Error('Missing network')
 }
-
-export const isResizeServiceUrl = (store: RootDaoState, url: string | undefined) =>
-  url?.startsWith(getResizeService(store)) ||
-  url?.startsWith(getServerConfigurations(getSelectedNetwork(store)).fallbackResizeServiceUrl)

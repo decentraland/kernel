@@ -73,13 +73,13 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
     }
   }
   if (location.search.length !== 0) {
-    const flags = location.search.substr(1, location.search.length - 1).split('&')
-    flags.forEach((element) => {
-      if (element.includes(`DISABLE_`)) {
-        const featureName = element.replace('DISABLE_', '').toLowerCase()
+    const flags = new URLSearchParams(location.search)
+    flags.forEach((_, key) => {
+      if (key.includes(`DISABLE_`)) {
+        const featureName = key.replace('DISABLE_', '').toLowerCase()
         featureFlag.flags[featureName] = false
-      } else if (location.search.includes(`ENABLE_`)) {
-        const featureName = element.replace('ENABLE_', '').toLowerCase()
+      } else if (key.includes(`ENABLE_`)) {
+        const featureName = key.replace('ENABLE_', '').toLowerCase()
         featureFlag.flags[featureName] = true
       }
     })

@@ -1,15 +1,18 @@
 import { PortableExperiencesState } from './types'
 import {
-  DENY_PORTABLE_EXPERIENCES,
+  ACTIVATE_ALL_PORTABLE_EXPERIENCES,
   ADD_SCENE_PX,
-  REMOVE_SCENE_PX,
+  DENY_PORTABLE_EXPERIENCES,
+  PortableExperienceActions,
   RELOAD_SCENE_PX,
-  PortableExperienceActions
+  REMOVE_SCENE_PX,
+  SHUTDOWN_ALL_PORTABLE_EXPERIENCES
 } from './actions'
 
 const INITIAL_STATE: PortableExperiencesState = {
   deniedPortableExperiencesFromRenderer: [],
-  portableExperiencesCreatedByScenesList: {}
+  portableExperiencesCreatedByScenesList: {},
+  globalPortalExperienceShutDown: false
 }
 
 export function portableExperienceReducer(
@@ -24,6 +27,12 @@ export function portableExperienceReducer(
   }
 
   switch (action.type) {
+    case SHUTDOWN_ALL_PORTABLE_EXPERIENCES: {
+      return { ...state, globalPortalExperienceShutDown: true }
+    }
+    case ACTIVATE_ALL_PORTABLE_EXPERIENCES: {
+      return { ...state, globalPortalExperienceShutDown: false }
+    }
     case DENY_PORTABLE_EXPERIENCES: {
       const { payload } = action
       return { ...state, deniedPortableExperiencesFromRenderer: payload.urnList }

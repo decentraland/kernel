@@ -1,7 +1,5 @@
 import { commConfigurations, COMMS, PREFERED_ISLAND } from 'config'
 import { CliBrokerConnection } from './v1/CliBrokerConnection'
-import { getCurrentPeer, localProfileUUID, receiveUserData } from './peers'
-import { UserInformation } from './interface/types'
 import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
 import { RoomConnection } from './interface/index'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
@@ -12,7 +10,7 @@ import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
 import { getIdentity } from 'shared/session'
 import { setCommsIsland } from './actions'
-import { MinPeerData, Position3D } from '@dcl/catalyst-peer'
+import { MinPeerData } from '@dcl/catalyst-peer'
 import { commsLogger, CommsContext } from './context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
@@ -20,6 +18,9 @@ import { Realm } from 'shared/dao/types'
 import { resolveCommsV3Urls } from './v3/resolver'
 import { BFFConfig, BFFConnection } from './v3/BFFConnection'
 import { InstanceConnection as V3InstanceConnection } from './v3/InstanceConnection'
+import { removePeerByUUID, removeMissingPeers } from './peers'
+import { lastPlayerPositionReport } from 'shared/world/positionThings'
+import { ProfileType } from 'shared/profiles/types'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -29,7 +30,7 @@ export type CommsV2Mode = 'p2p' | 'server'
 export function sendPublicChatMessage(messageId: string, text: string) {
   const commsContext = getCommsContext(store.getState())
 
-  if (commsContext && commsContext.currentPosition && commsContext.worldInstanceConnection) {
+  if (commsContext && commsContext.currentPosition) {
     commsContext.worldInstanceConnection
       .sendChatMessage(commsContext.currentPosition, messageId, text)
       .catch((e) => commsLogger.warn(`error while sending message `, e))
@@ -39,35 +40,14 @@ export function sendPublicChatMessage(messageId: string, text: string) {
 export function sendParcelSceneCommsMessage(cid: string, message: string) {
   const commsContext = getCommsContext(store.getState())
 
-  if (commsContext && commsContext.currentPosition && commsContext.worldInstanceConnection) {
+  if (commsContext && commsContext.currentPosition) {
     commsContext.worldInstanceConnection
       .sendParcelSceneCommsMessage(cid, message)
       .catch((e) => commsLogger.warn(`error while sending message `, e))
   }
 }
 
-export function updateCommsUser(changes: Partial<UserInformation>) {
-  const peer = getCurrentPeer()
-
-  if (!peer || !localProfileUUID) throw new Error('cannotGetCurrentPeer')
-  if (!peer.user) throw new Error('cannotGetCurrentPeer.user')
-
-  Object.assign(peer.user, changes)
-
-  receiveUserData(localProfileUUID, peer.user)
-
-  const user = peer.user
-
-  if (user) {
-    const commsContext = getCommsContext(store.getState())
-
-    if (commsContext) {
-      commsContext.userInfo = user
-    }
-  }
-}
-
-export async function connectComms(realm: Realm): Promise<CommsContext> {
+export async function connectComms(realm: Realm): Promise<CommsContext | null> {
   commsLogger.log('Connecting to realm', realm)
 
   if (!realm) {
@@ -80,13 +60,6 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
   if (!identity) {
     throw new Error("Can't connect to comms because there is no identity")
   }
-
-  const userInfo: UserInformation = {
-    userId: identity.address,
-    identity
-  }
-
-  const commsContext = new CommsContext(realm, userInfo)
 
   let connection: RoomConnection
 
@@ -136,8 +109,9 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
         maxConnections: commsConfig.maxConnections ?? 6,
         positionConfig: {
           selfPosition: () => {
-            if (commsContext.currentPosition) {
-              return commsContext.currentPosition.slice(0, 3) as Position3D
+            if (lastPlayerPositionReport) {
+              const { x, y, z } = lastPlayerPositionReport.position
+              return [x, y, z]
             }
           },
           maxConnectionDistance: 4,
@@ -147,10 +121,10 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
         eventsHandler: {
           onIslandChange: (island: string | undefined, peers: MinPeerData[]) => {
             store.dispatch(setCommsIsland(island))
-            commsContext.removeMissingPeers(peers)
+            removeMissingPeers(peers)
           },
           onPeerLeftIsland: (peerId: string) => {
-            commsContext.removePeer(peerId)
+            removePeerByUUID(peerId)
           }
         },
         preferedIslandId: PREFERED_ISLAND ?? ''
@@ -206,7 +180,16 @@ export async function connectComms(realm: Realm): Promise<CommsContext> {
     }
   }
 
-  await commsContext.connect(connection)
+  const commsContext = new CommsContext(
+    realm,
+    identity.address,
+    identity.hasConnectedWeb3 ? ProfileType.DEPLOYED : ProfileType.LOCAL,
+    connection
+  )
 
-  return commsContext
+  if (await commsContext.connect()) {
+    return commsContext
+  } else {
+    return null
+  }
 }

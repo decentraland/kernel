@@ -2,7 +2,6 @@ import { APIOptions, registerAPI } from 'decentraland-rpc/lib/host'
 import { ExposableAPI } from './ExposableAPI'
 import { EngineAPI } from 'shared/apis/EngineAPI'
 import { avatarMessageObservable } from 'shared/comms/peers'
-import { AvatarMessage } from 'shared/comms/interface/types'
 
 export interface IProfileData {
   displayName: string
@@ -27,11 +26,3 @@ export class SocialController extends ExposableAPI {
     })
   }
 }
-
-export namespace avatarMock {
-  export function sendMessage(msg: AvatarMessage) {
-    avatarMessageObservable.notifyObservers(msg)
-  }
-}
-
-;(globalThis as any)['avatarMock'] = avatarMock

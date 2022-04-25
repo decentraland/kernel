@@ -111,7 +111,7 @@ describe('Fetch Wrapped for scenes', () => {
 
     try {
       await wrappedDelayFetch('https://test.test/', { timeout: 10 })
-    } catch (err) {
+    } catch (err: any) {
       console.log(err)
       error = err
     }

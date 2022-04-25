@@ -27,11 +27,14 @@ import {
   FriendshipAction,
   PresenceStatus,
   HUDElementID,
-  Profile,
   UpdateUserStatusMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
-import { lastPlayerPosition, positionObservable } from 'shared/world/positionThings'
+import {
+  lastPlayerPosition,
+  lastPlayerPositionReport,
+  parcelObservable,
+} from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { ADDED_PROFILE_TO_CATALOG } from 'shared/profiles/actions'
 import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
@@ -56,6 +59,8 @@ import { store } from 'shared/store/isolatedStore'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
+import { Avatar } from '@dcl/schemas'
+import { trackEvent } from '../analytics'
 
 const DEBUG = DEBUG_PM
 
@@ -92,12 +97,17 @@ function* initializeFriendsSaga() {
       yield call(waitForRendererInstance)
 
       getUnityInstance().ConfigureHUDElement(HUDElementID.FRIENDS, { active: false, visible: false })
-      // getUnityInstance().ShowNotification({
-      //   type: NotificationType.GENERIC,
-      //   message: 'There was an error initializing friends and private messages',
-      //   buttonMessage: 'OK',
-      //   timer: 7
-      // })
+      getUnityInstance().ShowNotification({
+        type: NotificationType.GENERIC,
+        message: 'There was an error initializing friends and private messages',
+        buttonMessage: 'OK',
+        timer: 7
+      })
+      trackEvent('error_fatal', {
+        context: 'kernel#saga',
+        message: 'There was an error initializing friends and private messages',
+        stack: ''
+      })
     }
   }
 }
@@ -149,6 +159,7 @@ function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdent
     })
   )
 
+  yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
 
   // register listener for new messages
@@ -291,7 +302,7 @@ function* initializeFriends(client: SocialAPI) {
 
   const profileIds = Object.values(socialInfo).map((socialData) => socialData.userId)
 
-  const profiles: Profile[] = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
+  const profiles: Avatar[] = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
   DEBUG && logger.info(`profiles`, profiles)
 
   for (const userId of profileIds) {
@@ -428,10 +439,15 @@ function* initializeStatusUpdateInterval(client: SocialAPI) {
     lastStatus = status
   }
 
-  positionObservable.add(({ position: { x, y, z } }) => {
+  parcelObservable.add(() => {
     const realm = getRealm(store.getState())
+    if (lastPlayerPositionReport) {
+      const {
+        position: { x, y, z }
+      } = lastPlayerPositionReport!
 
-    sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
+      sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
+    }
   })
 
   function* handleSetCatalystRealm() {
@@ -612,13 +628,43 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
   } catch (e) {
     if (e instanceof UnknownUsersError) {
-      const profile: Profile = yield ensureFriendProfile(userId)
+      const profile: Avatar = yield call(ensureFriendProfile, userId)
       const id = profile?.name ? profile.name : `with address '${userId}'`
       showErrorNotification(`User ${id} must log in at least once before befriending them`)
     }
 
     // in case of any error, re initialize friends, to possibly correct state in both kernel and renderer
     yield call(initializeFriends, client)
+  }
+}
+
+function* trackEvents({ payload }: UpdateFriendship) {
+  const { action } = payload
+  switch (action) {
+    case FriendshipAction.APPROVED: {
+      trackEvent('Friend request approved', {})
+      break
+    }
+    case FriendshipAction.REJECTED: {
+      trackEvent('Friend request rejected', {})
+      break
+    }
+    case FriendshipAction.CANCELED: {
+      trackEvent('Friend request cancelled', {})
+      break
+    }
+    case FriendshipAction.REQUESTED_FROM: {
+      trackEvent('Friend request received', {})
+      break
+    }
+    case FriendshipAction.REQUESTED_TO: {
+      trackEvent('Friend request sent', {})
+      break
+    }
+    case FriendshipAction.DELETED: {
+      trackEvent('Friend deleted', {})
+      break
+    }
   }
 }
 

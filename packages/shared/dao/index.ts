@@ -11,6 +11,7 @@ import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
 import { connectComms } from 'shared/comms'
 import { setWorldContext } from 'shared/comms/actions'
 import { checkValidRealm } from './sagas'
+import { establishingComms } from 'shared/loading/types'
 
 async function fetchCatalystNodes(endpoint: string | undefined) {
   if (endpoint) {
@@ -121,23 +122,29 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   return changeRealmObject(realm, forceChange)
 }
 
-export async function changeRealmObject(realm: Realm, forceChange: boolean = false) {
+export async function changeRealmObject(realm: Realm, forceChange: boolean = false): Promise<void> {
   const context = getCommsContext(store.getState())
 
   // if not forceChange, then cancel operation if we are inside the desired realm
   if (!forceChange && context && sameRealm(context.realm, realm)) {
-    return realm
+    return
   }
 
   if (!(await checkValidRealm(realm))) {
     throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
   }
 
+  store.dispatch(establishingComms())
+
   const newCommsContext = await connectComms(realm)
 
-  store.dispatch(setWorldContext(newCommsContext))
+  if (newCommsContext) {
+    store.dispatch(setWorldContext(newCommsContext))
+  } else {
+    throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
+  }
 
-  return realm
+  return
 }
 
 ;(globalThis as any).changeRealm = changeRealm
