@@ -5,7 +5,7 @@ import {
   catalystRealmsScanRequested,
   TRIGGER_RECONNECT_REALM
 } from './actions'
-import { call, put, takeEvery, select, take } from 'redux-saga/effects'
+import { call, put, takeEvery, select, take, takeLatest } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization } from '../meta/sagas'
 import { Candidate, Realm, ServerConnectionStatus } from './types'
@@ -29,7 +29,7 @@ import {
   ErrorContext,
   ReportFatalErrorWithCatalystPayload
 } from 'shared/loading/ReportFatalError'
-import { CATALYST_COULD_NOT_LOAD, establishingComms } from 'shared/loading/types'
+import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
 import { gte } from 'semver'
 import { candidateToRealm, resolveCommsConnectionString } from './utils/realmToString'
 import { commsLogger } from 'shared/comms/context'
@@ -54,7 +54,7 @@ function getLastRealmCandidatesCacheKey(network: ETHEREUM_NETWORK) {
 }
 
 export function* daoSaga(): any {
-  yield takeEvery(TRIGGER_RECONNECT_REALM, selectAndReconnectRealm)
+  yield takeLatest(TRIGGER_RECONNECT_REALM, selectAndReconnectRealm)
   yield takeEvery(SET_WORLD_CONTEXT, cacheCatalystRealm)
   yield takeEvery(SET_CATALYST_CANDIDATES, cacheCatalystCandidates)
 }
@@ -95,8 +95,6 @@ function qsRealm() {
  * 4- Best pick from candidate scan (implies sync candidate initialization)
  */
 function* selectAndReconnectRealm() {
-  yield put(establishingComms())
-
   if (!PREVIEW) {
     try {
       const realm: Realm | undefined = yield call(selectRealm)
@@ -109,6 +107,7 @@ function* selectAndReconnectRealm() {
       }
       // if no realm was selected, then do the whole initialization dance
     } catch (e: any) {
+      debugger
       ReportFatalErrorWithCatalystPayload(e, ErrorContext.KERNEL_INIT)
       BringDownClientAndShowError(CATALYST_COULD_NOT_LOAD)
       throw e

@@ -43,7 +43,7 @@ export class UserIdentity extends ExposableAPI implements IUserIdentity {
     const profile = await EnsureProfile(identity?.address)
 
     return {
-      displayName: calculateDisplayName(identity.address, profile),
+      displayName: calculateDisplayName(profile),
       publicKey: identity.hasConnectedWeb3 ? identity.address : null,
       hasConnectedWeb3: !!identity.hasConnectedWeb3,
       userId: identity.address,

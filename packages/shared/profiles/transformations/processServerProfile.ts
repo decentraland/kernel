@@ -7,16 +7,22 @@ export function fixWearableIds(wearableId: string) {
 }
 
 // TODO: enforce this in renderer
-export function calculateDisplayName(userId: string, profile: Avatar): string {
-  if (profile && profile.name && profile.hasClaimedName) {
-    return profile.name
+export function calculateDisplayName(profile: Avatar): string {
+  const lastPart = `#${profile.userId.slice(-4)}`
+
+  const name = filterInvalidNameCharacters(
+    profile
+      ? profile.name.endsWith(lastPart)
+        ? profile.name.substring(0, profile.name.length - lastPart.length)
+        : profile.name
+      : createFakeName()
+  )
+
+  if (profile && profile.hasClaimedName) {
+    return name
   }
 
-  if (profile && profile.name) {
-    return `${filterInvalidNameCharacters(profile.name)}#${userId.slice(-4)}`
-  }
-
-  return `${createFakeName()}#${userId.slice(-4)}`
+  return `${name}${lastPart}`
 }
 
 export function processServerProfile(userId: string, receivedProfile: Avatar): Avatar {
@@ -40,6 +46,6 @@ export function processServerProfile(userId: string, receivedProfile: Avatar): A
     muted: receivedProfile.muted,
     tutorialStep: receivedProfile.tutorialStep || 0,
     interests: receivedProfile.interests || [],
-    version: receivedProfile.version || 1
+    version: receivedProfile.version || 0
   }
 }

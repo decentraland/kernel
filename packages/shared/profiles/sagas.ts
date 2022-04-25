@@ -7,14 +7,14 @@ import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } fro
 import defaultLogger from 'shared/logger'
 import {
   PROFILE_REQUEST,
-  SAVE_PROFILE_DELTA,
+  SAVE_PROFILE,
   ProfileRequestAction,
   SaveProfileDelta,
   sendProfileToRenderer,
   saveProfileFailure,
   saveProfileDelta,
-  LOCAL_PROFILE_RECEIVED,
-  LocalProfileReceived,
+  PROFILE_RECEIVED_OVER_COMMS,
+  ProfileReceivedOverComms,
   deployProfile,
   DEPLOY_PROFILE_REQUEST,
   deployProfileSuccess,
@@ -24,10 +24,10 @@ import {
   PROFILE_SUCCESS,
   ProfileSuccessAction
 } from './actions'
-import { getCurrentUserProfile, getHasConnectedWeb3, getProfile } from './selectors'
+import { getCurrentUserProfile, getProfileFromStore } from './selectors'
 import { processServerProfile } from './transformations/processServerProfile'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
-import { ContentFile, ProfileType } from './types'
+import { ContentFile, ProfileType, ProfileUserInfo } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from 'dcl-crypto'
 import { getUpdateProfileServer, getCatalystServer } from '../dao/selectors'
@@ -82,9 +82,9 @@ export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
   yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
-  yield takeLatestByUserId(LOCAL_PROFILE_RECEIVED, handleLocalProfile)
+  yield takeLatestByUserId(PROFILE_RECEIVED_OVER_COMMS, handleCommsProfile)
   yield throttle(3000, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
-  yield takeEvery(SAVE_PROFILE_DELTA, handleSaveAvatar)
+  yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
 }
 
 function* forwardProfileToRenderer(action: ProfileSuccessAction) {
@@ -168,6 +168,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     profile = yield call(fetchProfileLocally, userId, net)
   }
   if (!profile) {
+    debugger
     profile = yield call(generateRandomUserProfile, userId)
   }
 
@@ -216,18 +217,23 @@ export async function profileServerRequest(userId: string, version?: number) {
   }
 }
 
-function* handleLocalProfile(action: LocalProfileReceived) {
-  const { userId, profile } = action.payload
+/**
+ * Handle comms profiles. If we have the profile then it calls a profileSuccess to
+ * store it and forward it to the renderer.
+ */
+function* handleCommsProfile(action: ProfileReceivedOverComms) {
+  // TODO: Mendez, add signatures and verifications to this profile-over-comms mechanism
+  const { profile } = action.payload
 
-  const existingProfile: Avatar = yield select(getProfile, userId)
-  const connectedWeb3: boolean = yield select(getHasConnectedWeb3, userId)
+  const existingProfile: ProfileUserInfo | null = yield select(getProfileFromStore, profile.userId)
 
-  if (!existingProfile || existingProfile.version < profile.version) {
-    yield put(profileSuccess(userId, profile, connectedWeb3))
+  if (!existingProfile || existingProfile.data?.version < profile.version) {
+    // store profile locally and forward to renderer
+    yield put(profileSuccess(profile.userId, profile, existingProfile?.hasConnectedWeb3))
   }
 }
 
-function* handleSaveAvatar(saveAvatar: SaveProfileDelta) {
+function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
   const userId: string = yield select(getCurrentUserId)
 
   try {
@@ -241,7 +247,7 @@ function* handleSaveAvatar(saveAvatar: SaveProfileDelta) {
       ...savedProfile,
       ...saveAvatar.payload.profile,
       userId,
-      version: currentVersion,
+      version: currentVersion + 1,
       ethAddress: identity.address
     } as Avatar
 
@@ -279,7 +285,7 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
   const userId: string = yield select(getCurrentUserId)
   const profile: Avatar = deployProfileAction.payload.profile
   try {
-    yield call(modifyAvatar, {
+    yield call(deployAvatar, {
       url,
       userId,
       identity,
@@ -287,7 +293,11 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
     })
     yield put(deployProfileSuccess(userId, profile.version, profile))
   } catch (e: any) {
-    trackEvent('error_fatal', { context: 'kernel#saga', message: 'error deploying profile', stack: e.stacktrace })
+    trackEvent('error_fatal', {
+      context: 'kernel#saga',
+      message: 'error deploying profile. ' + e.message,
+      stack: e.stacktrace
+    })
     defaultLogger.error('Error deploying profile!', e)
     yield put(deployProfileFailure(userId, profile, e))
   }
@@ -321,7 +331,7 @@ async function buildSnapshotContent(selector: string, value: string) {
   return { name, hash, contentFile }
 }
 
-async function modifyAvatar(params: { url: string; userId: string; identity: ExplorerIdentity; profile: Avatar }) {
+async function deployAvatar(params: { url: string; userId: string; identity: ExplorerIdentity; profile: Avatar }) {
   const { url, profile, identity } = params
   const { avatar } = profile
 

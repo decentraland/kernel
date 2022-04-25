@@ -3,7 +3,7 @@ import { Avatar } from '@dcl/schemas'
 export type ProfileStatus = 'ok' | 'error' | 'loading'
 
 export type ProfileUserInfo =
-  | { status: 'loading' | 'error'; data: any; hasConnectedWeb3: boolean; addedToCatalog?: boolean }
+  | { status: 'loading' | 'error'; data: Avatar; hasConnectedWeb3: boolean; addedToCatalog?: boolean }
   | { status: 'ok'; data: Avatar; hasConnectedWeb3: boolean; addedToCatalog?: boolean }
 
 export type ProfileState = {
@@ -21,7 +21,8 @@ export type ContentFile = {
   content: Buffer
 }
 
+// NEVER CHANGE THIS ENUM, IT IS USED IN THE WIRE PROTOCOL
 export enum ProfileType {
-  LOCAL,
-  DEPLOYED
+  LOCAL = 0,
+  DEPLOYED = 1
 }

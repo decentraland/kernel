@@ -5,8 +5,7 @@ import { ParcelIdentity } from './ParcelIdentity'
 import { store } from 'shared/store/isolatedStore'
 
 import { AvatarForUserData, UserData } from 'shared/types'
-import { getHasConnectedWeb3 } from 'shared/profiles/selectors'
-import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
+import { getProfileFromStore } from 'shared/profiles/selectors'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
 import { getVisibleAvatarsUserId } from 'shared/sceneEvents/visibleAvatars'
@@ -47,21 +46,19 @@ export class Players extends ExposableAPI implements IPlayers {
   @exposeMethod
   async getPlayerData(opt: { userId: string }): Promise<UserData | null> {
     const userId = opt.userId
-    const profile = getProfileIfExist(userId)
+    const profile = getProfileFromStore(store.getState(), userId)
 
-    if (!profile) {
+    if (!profile?.data) {
       return null
     }
 
-    const hasConnectedWeb3 = getHasConnectedWeb3(store.getState(), userId)
-
     return {
-      displayName: calculateDisplayName(userId, profile),
-      publicKey: hasConnectedWeb3 ? profile.ethAddress : null,
-      hasConnectedWeb3: hasConnectedWeb3,
+      displayName: calculateDisplayName(profile.data),
+      publicKey: profile.hasConnectedWeb3 ? profile.data.userId : null,
+      hasConnectedWeb3: profile.hasConnectedWeb3,
       userId: userId,
-      version: profile.version,
-      avatar: sdkCompatibilityAvatar(profile.avatar)
+      version: profile.data.version,
+      avatar: sdkCompatibilityAvatar(profile.data.avatar)
     }
   }
 

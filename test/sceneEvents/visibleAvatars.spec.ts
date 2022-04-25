@@ -17,7 +17,7 @@ function removeAvatarMessage(uuid: string) {
 }
 
 function mockGetUser() {
-  sinon.stub(peers, 'getUser').callsFake((userId: string) => ({ userId }))
+  sinon.stub(peers, 'getPeer').callsFake((userId: string) => ({ userId } as any))
 }
 
 let sceneEventsMocked

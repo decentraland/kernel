@@ -12,6 +12,7 @@ import {
 import { EncodedFrame } from 'voice-chat-codec/types'
 import { Emitter } from 'mitt'
 import { Avatar } from '@dcl/schemas'
+import { ProfileType } from 'shared/profiles/types'
 
 export type CommsEvents = {
   initialMessage: Package<UserInformation>
@@ -32,12 +33,17 @@ export interface RoomConnection {
   // this operation is non-reversible
   disconnect(): Promise<void>
   // @once
-  connect(): Promise<boolean>
+  connect(): Promise<void>
 
   events: Emitter<CommsEvents>
 
-  sendInitialMessage(userInfo: UserInformation): Promise<void>
-  sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>
+  sendInitialMessage(address: string, profileType: ProfileType): Promise<void>
+  sendProfileMessage(
+    currentPosition: Position,
+    address: string,
+    profileType: ProfileType,
+    version: number
+  ): Promise<void>
   sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void>
   sendProfileResponse(currentPosition: Position, profile: Avatar): Promise<void>
   sendPositionMessage(p: Position): Promise<void>

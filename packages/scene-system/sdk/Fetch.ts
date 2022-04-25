@@ -37,10 +37,13 @@ export function createFetch({ canUseFetch, previewMode, log, originalFetch }: Fe
       const abortController = new AbortController()
       const timeout = setTimeout(() => {
         abortController.abort()
-      }, init?.timeout || TIMEOUT_LIMIT)
-      const response = await originalFetch(resource, { signal: abortController.signal, ...init })
-      clearTimeout(timeout)
-      return response
+      }, Math.max(init?.timeout || TIMEOUT_LIMIT, TIMEOUT_LIMIT, 100))
+      try {
+        // DO NOT remove the "await" from the next line
+        return await originalFetch(resource, { signal: abortController.signal, ...init })
+      } finally {
+        clearTimeout(timeout)
+      }
     }
 
     return fifoFetch.add(fetchRequest)

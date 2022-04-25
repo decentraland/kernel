@@ -1,10 +1,10 @@
 import { ParcelsWithAccess, ProfileForRenderer } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
-import { ExplorerIdentity } from 'shared/session/types'
 import { isURL } from 'atomicHelpers/isURL'
 import { Avatar, Snapshots } from '@dcl/schemas'
 import { backupProfile } from '../generateRandomUserProfile'
 import { genericAvatarSnapshots } from 'config'
+import { calculateDisplayName } from './processServerProfile'
 
 export type NewProfileForRenderer = {
   userId: string
@@ -33,20 +33,21 @@ export type NewProfileForRenderer = {
 export function profileToRendererFormat(
   profile: Partial<Avatar>,
   options: {
-    identity?: ExplorerIdentity
+    address?: string
+    hasConnectedWeb3?: boolean
 
     // TODO: there is no explaination why the profile has the parcels of Builder. Remove it from here
     parcels?: ParcelsWithAccess
   }
 ): NewProfileForRenderer {
-  const stage = { ...backupProfile(profile.userId || options.identity?.address || 'noeth'), ...profile }
+  const stage = { ...backupProfile(profile.userId || options.address || 'noeth'), ...profile }
 
   return {
     ...stage,
-    name: stage.name || 'NoName',
+    name: calculateDisplayName(stage),
     description: stage.description || '',
     version: stage.version || -1,
-    ethAddress: stage.ethAddress || options.identity?.address || '0x0000000000000000000000000000000000000000',
+    ethAddress: stage.ethAddress || options.address || '0x0000000000000000000000000000000000000000',
     blocked: stage.blocked || [],
     muted: stage.muted || [],
     inventory: [],
@@ -54,7 +55,7 @@ export function profileToRendererFormat(
     updated_at: 0,
     // @deprecated
     email: '',
-    hasConnectedWeb3: options.identity ? options.identity.hasConnectedWeb3 : false,
+    hasConnectedWeb3: options.hasConnectedWeb3 || false,
     hasClaimedName: stage.hasClaimedName ?? false,
     tutorialFlagsMask: 0,
     tutorialStep: stage.tutorialStep || 0,

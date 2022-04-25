@@ -11,6 +11,14 @@ export const getProfileStatusAndData = (
   store?.profiles?.userInfo[userId]?.data
 ]
 
+export const getProfileFromStore = (store: RootProfileState, userId: string): ProfileUserInfo | null =>
+  getProfileValueIfOkOrLoading(
+    store,
+    userId,
+    (info) => info,
+    () => null
+  )
+
 export const getProfile = (store: RootProfileState, userId: string): Avatar | null =>
   getProfileValueIfOkOrLoading(
     store,
@@ -43,7 +51,11 @@ export const findProfileByName = (store: RootProfileState, userName: string): Av
   store.profiles && store.profiles.userInfo
     ? Object.values(store.profiles.userInfo)
         .filter((user) => user.status === 'ok')
-        .find((user) => user.data.name?.toLowerCase() === userName.toLowerCase())?.data
+        .find(
+          (user) =>
+            user.data?.name.toLowerCase() === userName.toLowerCase() ||
+            user.data?.userId.toLowerCase() === userName.toLowerCase()
+        )?.data || null
     : null
 
 export const isAddedToCatalog = (store: RootProfileState, userId: string): boolean =>

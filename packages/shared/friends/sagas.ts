@@ -30,7 +30,11 @@ import {
   UpdateUserStatusMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
-import { lastPlayerPosition, positionObservable } from 'shared/world/positionThings'
+import {
+  lastPlayerPosition,
+  lastPlayerPositionReport,
+  parcelObservable,
+} from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { ADDED_PROFILE_TO_CATALOG } from 'shared/profiles/actions'
 import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
@@ -93,12 +97,17 @@ function* initializeFriendsSaga() {
       yield call(waitForRendererInstance)
 
       getUnityInstance().ConfigureHUDElement(HUDElementID.FRIENDS, { active: false, visible: false })
-      // getUnityInstance().ShowNotification({
-      //   type: NotificationType.GENERIC,
-      //   message: 'There was an error initializing friends and private messages',
-      //   buttonMessage: 'OK',
-      //   timer: 7
-      // })
+      getUnityInstance().ShowNotification({
+        type: NotificationType.GENERIC,
+        message: 'There was an error initializing friends and private messages',
+        buttonMessage: 'OK',
+        timer: 7
+      })
+      trackEvent('error_fatal', {
+        context: 'kernel#saga',
+        message: 'There was an error initializing friends and private messages',
+        stack: ''
+      })
     }
   }
 }
@@ -430,10 +439,15 @@ function* initializeStatusUpdateInterval(client: SocialAPI) {
     lastStatus = status
   }
 
-  positionObservable.add(({ position: { x, y, z } }) => {
+  parcelObservable.add(() => {
     const realm = getRealm(store.getState())
+    if (lastPlayerPositionReport) {
+      const {
+        position: { x, y, z }
+      } = lastPlayerPositionReport!
 
-    sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
+      sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
+    }
   })
 
   function* handleSetCatalystRealm() {

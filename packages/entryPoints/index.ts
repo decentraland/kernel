@@ -19,7 +19,6 @@ import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
 import { getFeatureFlags, getWorldConfig, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
-import { startRealmsReportToRenderer } from 'unity-interface/realmsForRenderer'
 import { ensureUnityInterface } from 'shared/renderer'
 import { globalObservable } from 'shared/observables'
 import { initShared } from 'shared'
@@ -232,8 +231,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
   i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: identity.hasConnectedWeb3, visible: false })
-
-  startRealmsReportToRenderer()
 
   await realmInitialized()
 

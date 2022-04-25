@@ -12,6 +12,7 @@ import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
 import { sleep } from 'atomicHelpers/sleep'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar } from '@dcl/schemas'
+import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 
 const profile: Avatar = { data: 'profile' } as any
 
@@ -25,21 +26,46 @@ function delayed<T>(result: T) {
 const delayedProfile = delayed({ avatars: [profile] })
 
 describe('fetchProfile behavior', () => {
-  it.skip('completes once for more than one request of same user', () => {
-    return expectSaga(profileSaga)
-      .put(profileSuccess('user|1', 'passport' as any, true))
-      .not.put(profileSuccess('user|1', 'passport' as any, true))
-      .dispatch(profileRequest('user|1'))
-      .dispatch(profileRequest('user|1'))
-      .dispatch(profileRequest('user|1'))
-      .provide([
-        [select(getRealm), {}],
-        [call(profileServerRequest, 'user|1'), delayedProfile],
-        [select(getCurrentUserId), 'myid'],
-        [call(processServerProfile, 'user|1', profile), 'passport']
-      ])
-      .run()
+  it('avatar compatibility format', () => {
+    ensureAvatarCompatibilityFormat({
+      avatar: {
+        "bodyShape": "urn:decentraland:off-chain:base-avatars:BaseMale",
+        "wearables": [
+          "urn:decentraland:off-chain:base-avatars:eyes_00",
+          "urn:decentraland:off-chain:base-avatars:eyebrows_00",
+          "urn:decentraland:off-chain:base-avatars:mouth_00",
+          "urn:decentraland:off-chain:base-avatars:casual_hair_01",
+          "urn:decentraland:off-chain:base-avatars:beard",
+          "urn:decentraland:off-chain:base-avatars:green_hoodie",
+          "urn:decentraland:off-chain:base-avatars:brown_pants",
+          "urn:decentraland:off-chain:base-avatars:sneakers"
+        ],
+        "snapshots": {
+          "face256": "/images/avatar_snapshot_default256.png",
+          "body": "/images/image_not_found.png"
+        }
+      }
+    } as any)
+
   })
+
+
+  it.skip('completes once for more than one request of same user',
+    () => {
+      return expectSaga(profileSaga)
+        .put(profileSuccess('user|1', 'passport' as any, true))
+        .not.put(profileSuccess('user|1', 'passport' as any, true))
+        .dispatch(profileRequest('user|1'))
+        .dispatch(profileRequest('user|1'))
+        .dispatch(profileRequest('user|1'))
+        .provide([
+          [select(getRealm), {}],
+          [call(profileServerRequest, 'user|1'), delayedProfile],
+          [select(getCurrentUserId), 'myid'],
+          [call(processServerProfile, 'user|1', profile), 'passport']
+        ])
+        .run()
+    })
 
   it.skip('runs one request for each user', () => {
     return expectSaga(profileSaga)

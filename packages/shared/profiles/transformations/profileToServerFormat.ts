@@ -19,9 +19,9 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
   avatarInfo.snapshots = profile.avatar.snapshots
 
   if ('eyeColor' in profile.avatar) {
-    const eyes = stripAlpha(analizeColorPart(avatarInfo, 'eyeColor', 'eyes'))
-    const hair = stripAlpha(analizeColorPart(avatarInfo, 'hairColor', 'hair'))
-    const skin = stripAlpha(analizeColorPart(avatarInfo, 'skinColor', 'skin'))
+    const eyes = stripAlpha(analizeColorPart(profile.avatar, 'eyeColor', 'eyes'))
+    const hair = stripAlpha(analizeColorPart(profile.avatar, 'hairColor', 'hair'))
+    const skin = stripAlpha(analizeColorPart(profile.avatar, 'skinColor', 'skin'))
     avatarInfo.eyes = { color: eyes }
     avatarInfo.hair = { color: hair }
     avatarInfo.skin = { color: skin }
@@ -44,7 +44,11 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
     snapshots.face256 = snapshots.face!
     delete snapshots['face']
   }
-  if (!avatarInfo.snapshots || !avatarInfo.snapshots.face256 || !avatarInfo.snapshots.body) {
+  if (
+    !avatarInfo.snapshots ||
+    typeof avatarInfo.snapshots.face256 !== 'string' ||
+    typeof avatarInfo.snapshots.body !== 'string'
+  ) {
     throw new Error('Invalid snapshot data:' + JSON.stringify(avatarInfo.snapshots))
   }
   if (!avatarInfo.bodyShape || !isValidBodyShape(avatarInfo.bodyShape)) {

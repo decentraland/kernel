@@ -1,7 +1,6 @@
 import { CommsEvents, RoomConnection } from '../interface/index'
-import { Package, UserInformation } from '../interface/types'
+import { Package } from '../interface/types'
 import { Position, positionHash } from '../interface/utils'
-import defaultLogger, { createLogger } from 'shared/logger'
 import {
   Peer as IslandBasedPeer,
   PeerConfig,
@@ -22,13 +21,13 @@ import {
 } from './proto/comms_pb'
 import { CommsStatus } from '../types'
 
-import { getProfileType } from 'shared/profiles/getProfileType'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
 import { Avatar } from '@dcl/schemas'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 import { validateAvatar } from 'shared/profiles/schemaValidation'
+import { createLogger } from 'shared/logger'
 
 type PeerType = IslandBasedPeer
 
@@ -98,34 +97,33 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
       }
       this.statusHandler({ status: 'connected', connectedPeers: this.connectedPeersCount() })
       await this.syncRoomsWithPeer()
-      return true
     } catch (e: any) {
-      defaultLogger.error('Error while connecting to layer', e)
+      logger.error('Error while connecting to layer', e)
       this.statusHandler({
         status: e.responseJson && e.responseJson.status === 'layer_is_full' ? 'realm-full' : 'error',
         connectedPeers: this.connectedPeersCount()
       })
-      throw e
+      await this.disconnect()
     }
   }
 
   async disconnect() {
     if (this.disposed) return
     this.disposed = true
-    await this.cleanUpPeer()
+
+    await this.peer.dispose()
+
     this.events.emit('DISCONNECTION')
   }
 
-  async sendInitialMessage(userInfo: UserInformation) {
-    const topic = userInfo.userId
-
-    await this.sendProfileData(userInfo, topic, 'initialProfile')
+  async sendInitialMessage(address: string, profileType: ProfileType) {
+    await this.sendProfileData(address, profileType, 0, address, 'initialProfile')
   }
 
-  async sendProfileMessage(currentPosition: Position, userInfo: UserInformation) {
+  async sendProfileMessage(currentPosition: Position, address: string, profileType: ProfileType, version: number) {
     const topic = positionHash(currentPosition)
 
-    await this.sendProfileData(userInfo, topic, 'profile')
+    await this.sendProfileData(address, profileType, version, topic, 'profile')
   }
 
   async sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void> {
@@ -238,8 +236,14 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     await this.sendData(topic, positionData, PeerMessageTypes.unreliable(typeName))
   }
 
-  private async sendProfileData(userInfo: UserInformation, topic: string, typeName: string) {
-    const profileData = createProfileData(userInfo)
+  private async sendProfileData(
+    address: string,
+    profileType: ProfileType,
+    version: number,
+    topic: string,
+    typeName: string
+  ) {
+    const profileData = createProfileData(address, profileType, version)
     await this.sendData(topic, profileData, PeerMessageTypes.unreliable(typeName))
   }
 
@@ -274,10 +278,6 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
 
     // We require a version greater than 0.1 to not send an ID
     return new IslandBasedPeer(this.lighthouseUrl, undefined, this.peerCallback, this.peerConfig)
-  }
-
-  private async cleanUpPeer() {
-    return this.peer.dispose()
   }
 
   private peerCallback: PacketCallback = (sender, room, payload, _packet) => {
@@ -408,11 +408,11 @@ function mapToPackageVoice(encoded: Uint8Array, index: number) {
   return { encoded, index }
 }
 
-function createProfileData(userInfo: UserInformation) {
+function createProfileData(address: string, profileType: ProfileType, version: number) {
   const profileData = new ProfileData()
-  profileData.setProfileVersion(userInfo.version ? userInfo.version.toString() : '')
-  profileData.setUserId(userInfo.userId ? userInfo.userId : '')
-  profileData.setProfileType(getProtobufProfileType(getProfileType(userInfo.identity)))
+  profileData.setProfileVersion(version ? version.toString() : '')
+  profileData.setUserId(address)
+  profileData.setProfileType(getProtobufProfileType(profileType))
   return profileData
 }
 

@@ -1,6 +1,12 @@
 import { AnyAction } from 'redux'
 import { ProfileState } from './types'
-import { ADDED_PROFILE_TO_CATALOG, PROFILE_SUCCESS, PROFILE_FAILURE, PROFILE_REQUEST } from './actions'
+import {
+  ADDED_PROFILE_TO_CATALOG,
+  PROFILE_SUCCESS,
+  PROFILE_FAILURE,
+  PROFILE_REQUEST,
+  ProfileSuccessAction
+} from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
   userInfo: {}
@@ -23,14 +29,16 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         }
       }
     case PROFILE_SUCCESS:
+      const { userId, profile, hasConnectedWeb3 } = (action as ProfileSuccessAction).payload
       return {
         ...state,
         userInfo: {
           ...state.userInfo,
-          [action.payload.userId]: {
-            data: action.payload.profile,
+          [userId]: {
+            ...state.userInfo[userId],
+            data: profile,
             status: 'ok',
-            hasConnectedWeb3: action.payload.hasConnectedWeb3
+            hasConnectedWeb3
           }
         }
       }

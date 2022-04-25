@@ -7,14 +7,26 @@ import { ProfileType } from './types'
 export const PROFILE_REQUEST = '[PROFILE] Fetch request'
 export const PROFILE_SUCCESS = '[PROFILE] Fetch succeeded'
 export const PROFILE_FAILURE = '[PROFILE] Fetch failed'
-export const SAVE_PROFILE_DELTA = '[PROFILE] Save delta'
-export const SEND_PROFILE_TO_RENDERER = '[PROFILE] Save delta succeeded'
-export const SAVE_PROFILE_FAILURE = '[PROFILE] Save delta failed'
+
+export const SAVE_PROFILE = 'SAVE_PROFILE'
+export const SAVE_PROFILE_FAILURE = 'SAVE_PROFILE_FAILURE'
+
+export const DEPLOY_PROFILE_SUCCESS = 'DEPLOY_PROFILE_SUCCESS'
+export const DEPLOY_PROFILE_REQUEST = 'DEPLOY_PROFILE_REQUEST'
+export const DEPLOY_PROFILE_FAILURE = 'DEPLOY_PROFILE_FAILURE'
+
+export const SEND_PROFILE_TO_RENDERER = 'SEND_PROFILE_TO_RENDERER'
 
 export const profileRequest = (userId: string, profileType?: ProfileType, version?: number) =>
   action(PROFILE_REQUEST, { userId, profileType, version })
+
+/**
+ * profileSuccess stores locally a profile and sends it to the renderer.
+ * It can be the result of either a profileRequest or local profile loading/editing
+ */
 export const profileSuccess = (userId: string, profile: Avatar, hasConnectedWeb3: boolean = false) =>
   action(PROFILE_SUCCESS, { userId, profile, hasConnectedWeb3 })
+
 export const profileFailure = (userId: string, error: any) => action(PROFILE_FAILURE, { userId, error })
 
 export type ProfileRequestAction = ReturnType<typeof profileRequest>
@@ -23,7 +35,7 @@ export type ProfileFailureAction = ReturnType<typeof profileFailure>
 
 // Profile update
 
-export const saveProfileDelta = (profile: Partial<Avatar>) => action(SAVE_PROFILE_DELTA, { profile })
+export const saveProfileDelta = (profile: Partial<Avatar>) => action(SAVE_PROFILE, { profile })
 export const sendProfileToRenderer = (userId: string) => action(SEND_PROFILE_TO_RENDERER, { userId })
 export const saveProfileFailure = (userId: string, error: any) => action(SAVE_PROFILE_FAILURE, { userId, error })
 
@@ -31,9 +43,7 @@ export type SaveProfileDelta = ReturnType<typeof saveProfileDelta>
 export type SendProfileToRenderer = ReturnType<typeof sendProfileToRenderer>
 export type SaveProfileFailure = ReturnType<typeof saveProfileFailure>
 
-export const DEPLOY_PROFILE_SUCCESS = '[Success] Deploy Profile'
-export const DEPLOY_PROFILE_REQUEST = '[Request] Deploy Profile'
-export const DEPLOY_PROFILE_FAILURE = '[Failure] Deploy Profile'
+
 export const deployProfile = (profile: Avatar) => action(DEPLOY_PROFILE_REQUEST, { profile })
 export const deployProfileSuccess = (userId: string, version: number, profile: Avatar) =>
   action(DEPLOY_PROFILE_SUCCESS, { userId, version, profile })
@@ -49,7 +59,7 @@ export const addedProfileToCatalog = (userId: string, profile: Avatar) =>
 export type AddedProfileToCatalog = ReturnType<typeof addedProfileToCatalog>
 
 // Profiles over comms
-export const LOCAL_PROFILE_RECEIVED = 'Local Profile Received'
-export const localProfileReceived = (userId: string, profile: Avatar) =>
-  action(LOCAL_PROFILE_RECEIVED, { userId, profile })
-export type LocalProfileReceived = ReturnType<typeof localProfileReceived>
+export const PROFILE_RECEIVED_OVER_COMMS = 'PROFILE_RECEIVED_OVER_COMMS'
+export const profileReceivedOverComms = (profile: Avatar) =>
+  action(PROFILE_RECEIVED_OVER_COMMS, { profile })
+export type ProfileReceivedOverComms = ReturnType<typeof profileReceivedOverComms>

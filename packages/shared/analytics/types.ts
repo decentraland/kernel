@@ -8,7 +8,6 @@ export type PositionTrackEvents = {
 
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
-  ['SET_LOCAL_UUID']: { uuid: string }
   ['USER_MUTED']: { uuid: string }
   ['USER_UNMUTED']: { uuid: string }
   ['USER_BLOCKED']: { uuid: string }

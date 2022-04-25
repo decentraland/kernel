@@ -17,6 +17,7 @@ import { BannedUsers } from 'shared/meta/types'
 import { isFriend } from 'shared/friends/selectors'
 import { VoicePolicy } from './types'
 import { Avatar } from '@dcl/schemas'
+import { setupPeer } from './peers'
 
 const logger = createLogger('VoiceCommunicator: ')
 
@@ -67,21 +68,21 @@ function shouldPlayVoice(profile: Avatar, voiceUserId: string) {
   )
 }
 
-export function processVoiceFragment(context: CommsContext, message: Package<VoiceFragment>) {
+export function processVoiceFragment(message: Package<VoiceFragment>) {
   const state = store.getState()
   const voiceCommunicator = getVoiceCommunicator(state)
   const profile = getCurrentUserProfile(state)
 
-  const peerTrackingInfo = context.ensurePeerTrackingInfo(message.sender)
+  const peerTrackingInfo = setupPeer(message.sender)
 
   if (
     profile &&
-    peerTrackingInfo.identity &&
+    peerTrackingInfo.ethereumAddress &&
     peerTrackingInfo.position &&
-    shouldPlayVoice(profile, peerTrackingInfo.identity)
+    shouldPlayVoice(profile, peerTrackingInfo.ethereumAddress)
   ) {
     voiceCommunicator
-      .playEncodedAudio(peerTrackingInfo.identity, getSpatialParamsFor(peerTrackingInfo.position), message.data)
+      .playEncodedAudio(peerTrackingInfo.ethereumAddress, getSpatialParamsFor(peerTrackingInfo.position), message.data)
       .catch((e) => logger.error('Error playing encoded audio!', e))
   }
 }
@@ -107,7 +108,7 @@ export function* initVoiceCommunicator() {
       send(frame: EncodedFrame) {
         const commsContext = getCommsContext(store.getState())
 
-        if (commsContext && commsContext.currentPosition && commsContext.worldInstanceConnection) {
+        if (commsContext && commsContext.currentPosition) {
           commsContext.worldInstanceConnection.sendVoiceMessage(commsContext.currentPosition, frame).catch(logger.error)
         }
       }

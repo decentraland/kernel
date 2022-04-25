@@ -1,6 +1,4 @@
-import { Avatar } from '@dcl/schemas'
 import { expectSaga } from 'redux-saga-test-plan'
-// import * as matchers from 'redux-saga-test-plan/matchers'
 import { select } from 'redux-saga/effects'
 import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
 import { Realm } from 'shared/dao/types'
@@ -92,12 +90,7 @@ describe('when the island change: SET_COMMS_ISLAND', () => {
 describe('when the profile updates successfully: SAVE_PROFILE_SUCCESS', () => {
   it('should call allScene events with profileChanged', () => {
     const userId = 'user-id'
-    const version = 8
-    const profile: Avatar = {
-      version,
-      ethAddress: 'eth-address'
-    } as any as Avatar
-    const action = sendProfileToRenderer(userId, version, profile)
+    const action = sendProfileToRenderer(userId)
     const payload = {
       ethAddress: 'eth-address',
       version: 8

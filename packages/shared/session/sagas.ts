@@ -8,7 +8,6 @@ import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK } from 'config'
 import { createDummyLogger, createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
 import { getUserAccount, isSessionExpired, requestManager } from 'shared/ethereum/provider'
-import { setLocalInformationForComms } from 'shared/comms/peers'
 import { awaitingUserSignature, AWAITING_USER_SIGNATURE } from 'shared/loading/types'
 import { getAppNetwork, registerProviderNetChanges } from 'shared/web3'
 
@@ -218,16 +217,9 @@ function* cancelSignUp() {
 }
 
 async function saveSession(identity: ExplorerIdentity, isGuest: boolean) {
-  const userId = identity.address
-
   await setStoredSession({
     identity,
     isGuest
-  })
-
-  setLocalInformationForComms(userId, {
-    userId,
-    identity
   })
 }
 

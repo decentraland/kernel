@@ -5,7 +5,6 @@ import {
   Pose,
   ReceiveUserDataMessage,
   ReceiveUserExpressionMessage,
-  ReceiveUserPoseMessage,
   ReceiveUserTalkingMessage,
   ReceiveUserVisibleMessage,
   UserInformation,
@@ -16,24 +15,6 @@ import type { NewProfileForRenderer } from 'shared/profiles/transformations/prof
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 const avatarMap = new Map<string, AvatarEntity>()
-
-const nameValidCharacterRegex = /[a-zA-Z0-9]/g
-
-function filterInvalidNameCharacters(name: string) {
-  return name.match(nameValidCharacterRegex)?.join('') ?? ''
-}
-
-function calculateDisplayName(profile: NewProfileForRenderer): string {
-  if (profile && profile.name && profile.hasClaimedName) {
-    return profile.name
-  }
-
-  if (profile && profile.name) {
-    return `${filterInvalidNameCharacters(profile.name)}#${profile.userId.slice(-4)}`
-  }
-
-  return `???`
-}
 
 export class AvatarEntity extends Entity {
   visible = true
@@ -59,7 +40,7 @@ export class AvatarEntity extends Entity {
 
       const shape = this.avatarShape
       shape.id = profile.userId
-      shape.name = calculateDisplayName(profile)
+      shape.name = profile.name
 
       shape.bodyShape = avatar.bodyShape
       shape.wearables = avatar.wearables
@@ -71,11 +52,13 @@ export class AvatarEntity extends Entity {
         shape.expressionTriggerTimestamp = 0
       }
     }
-    this.setVisible(true)
+    this.updateVisibility()
   }
 
   setVisible(visible: boolean): void {
-    this.visible = visible
+    if (this.visible != visible) {
+      this.visible = visible
+    }
     this.updateVisibility()
   }
 
@@ -84,10 +67,9 @@ export class AvatarEntity extends Entity {
   }
 
   setUserData(userData: Partial<UserInformation>): void {
-    if (userData.pose) {
-      this.setPose(userData.pose)
+    if (userData.position) {
+      this.setPose(userData.position)
     }
-
     if (userData.expression) {
       this.setExpression(userData.expression.expressionType, userData.expression.expressionTimestamp)
     }
@@ -151,25 +133,14 @@ function ensureAvatar(uuid: UUID): AvatarEntity {
   return avatar
 }
 
-function handleUserData(message: ReceiveUserDataMessage): void {
-  const avatar = ensureAvatar(message.uuid)
-
-  const userData = message.data
-
-  avatar.loadProfile(message.profile)
-  avatar.setUserData(userData)
-}
-
-function handleUserPose({ uuid, pose }: ReceiveUserPoseMessage): void {
+function handleUserData({ uuid, data, profile }: ReceiveUserDataMessage): void {
   const avatar = ensureAvatar(uuid)
-
-  avatar.setPose(pose)
+  avatar.setUserData(data)
+  avatar.loadProfile(profile)
 }
 
 function handleUserExpression({ uuid, expressionId, timestamp }: ReceiveUserExpressionMessage): void {
-  const avatar = ensureAvatar(uuid)
-
-  avatar.setExpression(expressionId, timestamp)
+  ensureAvatar(uuid).setExpression(expressionId, timestamp)
 }
 
 /**
@@ -177,15 +148,11 @@ function handleUserExpression({ uuid, expressionId, timestamp }: ReceiveUserExpr
  * This function handles those visible changes.
  */
 function handleUserVisible({ uuid, visible }: ReceiveUserVisibleMessage): void {
-  const avatar = ensureAvatar(uuid)
-
-  avatar.setVisible(visible)
+  ensureAvatar(uuid).setVisible(visible)
 }
 
 function handleUserTalkingUpdate({ uuid, talking }: ReceiveUserTalkingMessage): void {
-  const avatar = ensureAvatar(uuid)
-
-  avatar.setTalking(talking)
+  ensureAvatar(uuid).setTalking(talking)
 }
 
 function handleUserRemoved({ uuid }: UserRemovedMessage): void {
@@ -198,8 +165,6 @@ function handleUserRemoved({ uuid }: UserRemovedMessage): void {
 avatarMessageObservable.add((evt) => {
   if (evt.type === AvatarMessageType.USER_DATA) {
     handleUserData(evt)
-  } else if (evt.type === AvatarMessageType.USER_POSE) {
-    handleUserPose(evt)
   } else if (evt.type === AvatarMessageType.USER_VISIBLE) {
     handleUserVisible(evt)
   } else if (evt.type === AvatarMessageType.USER_EXPRESSION) {

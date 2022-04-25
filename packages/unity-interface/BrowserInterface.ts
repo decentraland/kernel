@@ -150,7 +150,8 @@ const color3Schema: JSONSchema<{ r: number; g: number; b: number; a: number }> =
     b: { type: 'number', nullable: false },
     a: { type: 'number', nullable: false }
   }
-}
+} as any
+
 export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
   type: 'object',
   required: ['avatar', 'body', 'face256'],
@@ -171,7 +172,7 @@ export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
       }
     }
   }
-}
+} as any
 
 const validateRendererSaveProfile = generateValidator<RendererSaveProfile>(rendererSaveProfileSchema)
 

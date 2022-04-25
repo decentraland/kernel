@@ -40,28 +40,14 @@ export const SCENE_ENTERED = 'Entered into a new scene'
 export const sceneEntered = () => action(SCENE_ENTERED)
 export const UNEXPECTED_ERROR = 'Unexpected fatal error'
 export const unexpectedError = (error: any) => action(UNEXPECTED_ERROR, { error })
-export const UNEXPECTED_ERROR_LOADING_CATALOG = 'Unexpected fatal error when loading items'
-export const unexpectedErrorLoadingCatalog = (error: any) => action(UNEXPECTED_ERROR_LOADING_CATALOG, { error })
 
-export const NO_WEBGL_COULD_BE_CREATED = 'Capabilities: Could not create WebGL context'
-export const noWebglCouldBeCreated = () => action(NO_WEBGL_COULD_BE_CREATED)
-export const AUTH_ERROR_LOGGED_OUT = 'Auth: Logged out'
-export const authErrorLoggedOut = () => action(AUTH_ERROR_LOGGED_OUT)
-export const FAILED_FETCHING_UNITY = 'Failed to fetch the rendering engine'
-export const failedFetchingUnity = () => action(FAILED_FETCHING_UNITY)
 export const COMMS_COULD_NOT_BE_ESTABLISHED = 'Communications channel error'
 export const commsCouldNotBeEstablished = () => action(COMMS_COULD_NOT_BE_ESTABLISHED)
 export const CATALYST_COULD_NOT_LOAD = 'Catalysts Contract could not be queried'
-export const catalystCouldNotLoad = () => action(CATALYST_COULD_NOT_LOAD)
-export const MOBILE_NOT_SUPPORTED = 'Mobile is not supported'
-export const mobileNotSupported = () => action(MOBILE_NOT_SUPPORTED)
-export const NEW_LOGIN = 'New login'
-export const newLogin = () => action(NEW_LOGIN)
 export const NETWORK_MISMATCH = 'Network mismatch'
 export const FATAL_ERROR = 'fatal error'
 export const fatalError = (type: string) => action(FATAL_ERROR, { type })
 export const AVATAR_LOADING_ERROR = 'The avatar could not be loaded correctly'
-export const avatarLoadingError = () => action(AVATAR_LOADING_ERROR)
 
 export type ExecutionLifecycleEvent =
   | typeof NOT_STARTED
@@ -69,7 +55,6 @@ export type ExecutionLifecycleEvent =
   | typeof METRICS_AUTH_SUCCESSFUL
   | typeof ESTABLISHING_COMMS
   | typeof COMMS_ESTABLISHED
-  | typeof NO_WEBGL_COULD_BE_CREATED
   | typeof METRICS_UNITY_CLIENT_LOADED
   | typeof PARCEL_LOADING_STARTED
   | typeof WAITING_FOR_RENDERER
@@ -77,13 +62,8 @@ export type ExecutionLifecycleEvent =
   | typeof TELEPORT_TRIGGERED
   | typeof SCENE_ENTERED
   | typeof UNEXPECTED_ERROR
-  | typeof UNEXPECTED_ERROR_LOADING_CATALOG
-  | typeof AUTH_ERROR_LOGGED_OUT
-  | typeof MOBILE_NOT_SUPPORTED
-  | typeof FAILED_FETCHING_UNITY
   | typeof COMMS_COULD_NOT_BE_ESTABLISHED
   | typeof CATALYST_COULD_NOT_LOAD
-  | typeof NEW_LOGIN
   | typeof NETWORK_MISMATCH
   | typeof AWAITING_USER_SIGNATURE
   | typeof AVATAR_LOADING_ERROR
@@ -96,20 +76,14 @@ export const ExecutionLifecycleEventsList: ExecutionLifecycleEvent[] = [
   METRICS_UNITY_CLIENT_LOADED,
   ESTABLISHING_COMMS,
   COMMS_ESTABLISHED,
-  NO_WEBGL_COULD_BE_CREATED,
   PARCEL_LOADING_STARTED,
   WAITING_FOR_RENDERER,
   EXPERIENCE_STARTED,
   TELEPORT_TRIGGERED,
   SCENE_ENTERED,
   UNEXPECTED_ERROR,
-  UNEXPECTED_ERROR_LOADING_CATALOG,
-  AUTH_ERROR_LOGGED_OUT,
-  FAILED_FETCHING_UNITY,
-  MOBILE_NOT_SUPPORTED,
   COMMS_COULD_NOT_BE_ESTABLISHED,
   CATALYST_COULD_NOT_LOAD,
-  NEW_LOGIN,
   NETWORK_MISMATCH,
   AVATAR_LOADING_ERROR
 ]
