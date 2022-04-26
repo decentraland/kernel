@@ -24,6 +24,7 @@ import { UnityScene } from 'unity-interface/UnityScene'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { PositionTrackEvents } from 'shared/analytics/types'
 import { getVariantContent } from 'shared/meta/selectors'
+import { activateAllPortableExperiences, killAllPortableExperiences } from '../portableExperiences/actions'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -273,6 +274,10 @@ export function startIsolatedMode(options: IsolatedModeOptions) {
     }
   }
 
+  if (parcelSceneLoadingState.isolatedModeOptions.payload.killPortableExperiences) {
+    store.dispatch(killAllPortableExperiences())
+  }
+
   // Refresh state of scenes
   setDesiredParcelScenes(newSet)
 
@@ -300,6 +305,9 @@ export function stopIsolatedMode(options: IsolatedModeOptions) {
 
   //In the builder we need to go back to the world
   if (options.mode === IsolatedMode.BUILDER) {
+    // We reactivate the portable experiences
+    store.dispatch(activateAllPortableExperiences())
+
     // We do a teleport to go back to the world to the last position of the player
     const text = 'Going back to the world'
     teleportObservable.notifyObservers({

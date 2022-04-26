@@ -650,7 +650,6 @@ export enum AvatarRendererMessageType {
 }
 
 export type AvatarRendererBasePayload = {
-  entityId: string
   avatarShapeId: string
 }
 
