@@ -9,7 +9,7 @@ import {
   positionReportToCommsPosition,
   sameParcel
 } from './interface/utils'
-import { isRendererEnabled, renderStateObservable } from '../world/worldState'
+import { renderStateObservable } from '../world/worldState'
 import { RoomConnection } from './interface/index'
 import { createLogger } from '../logger'
 import { Observable, Observer } from 'mz-observable'
@@ -63,7 +63,7 @@ export class CommsContext {
   sendingProfileResponse: boolean = false
   positionUpdatesPaused: boolean = false
 
-  private analyticsInterval?: ReturnType<typeof setInterval>
+  private reportPositionInterval?: ReturnType<typeof setInterval>
   private positionObserver: Observer<any> | null = null
   private worldRunningObserver?: Observer<any> | null = null
 
@@ -90,16 +90,22 @@ export class CommsContext {
       await this.worldInstanceConnection.connect()
 
       this.worldRunningObserver = renderStateObservable.add(() => {
-        if (!isRendererEnabled()) {
-          this.sendToMordor().catch(commsLogger.error)
-        }
+        // TODO:
+        // this.sendCellphonePose(!isRendererEnabled())
       })
 
       this.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-        if (isRendererEnabled()) {
-          this.onPositionUpdate(positionReportToCommsPosition(obj))
-        }
+        this.onPositionUpdate(positionReportToCommsPosition(obj))
       })
+
+      // this interval is important because if we stand still without sending position reports
+      // then archipelago may timeout and peers may magically stop appearing for us. fixable with
+      // walking one centimeter in any direction. don't know the reason
+      this.reportPositionInterval = setInterval(() => {
+        if (lastPlayerPositionReport) {
+          this.onPositionUpdate(positionReportToCommsPosition(lastPlayerPositionReport))
+        }
+      }, 5001)
       return true
     } catch (e: any) {
       await this.disconnect()
@@ -120,8 +126,8 @@ export class CommsContext {
 
     removeAllPeers()
 
-    if (this.analyticsInterval) {
-      clearInterval(this.analyticsInterval)
+    if (this.reportPositionInterval) {
+      clearInterval(this.reportPositionInterval)
     }
     if (this.positionObserver) {
       positionObservable.remove(this.positionObserver)
@@ -136,12 +142,7 @@ export class CommsContext {
       if (lastPlayerPositionReport) {
         const pos = positionReportToCommsPosition(lastPlayerPositionReport)
         this.onPositionUpdate(pos, true)
-          await this.worldInstanceConnection.sendProfileMessage(
-            pos,
-            this.userAddress,
-            this.profileType,
-            version
-          )
+        await this.worldInstanceConnection.sendProfileMessage(pos, this.userAddress, this.profileType, version)
       }
     }
     doSend().catch((e) => commsLogger.warn(`error in sendCurrentProfile `, e))

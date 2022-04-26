@@ -114,7 +114,7 @@ export type Package<T> = {
 
 export type ProfileVersion = {
   version: string
-  user: string // TODO - to remove with new login flow - moliva - 22/12/2019
+  user: string
   type: ProfileType
 }
 

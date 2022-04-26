@@ -6,8 +6,7 @@ import {
   avatarMessageObservable,
   setupPeer,
   ensureTrackingUniqueAndLatest,
-  receiveUserPosition,
-  receivePeerUserData
+  receiveUserPosition
 } from './peers'
 import {
   Package,
@@ -23,14 +22,19 @@ import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/sele
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
-import { profileReceivedOverComms } from 'shared/profiles/actions'
 import { CommsContext, commsLogger } from './context'
 import { isBlockedOrBanned, processVoiceFragment } from './voice-over-comms'
 import future, { IFuture } from 'fp-future'
-import { handleCommsDisconnection, loadProfileIfNecessaryAction, sendMyProfileOverComms } from './actions'
+import { handleCommsDisconnection } from './actions'
 import { Avatar } from '@dcl/schemas'
+import { Observable } from 'mz-observable'
+import { eventChannel } from 'redux-saga'
+import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { trackEvent } from 'shared/analytics'
 
 export const scenesSubscribedToCommsEvents = new Set<CommunicationsController>()
+const receiveProfileOverCommsChannel = new Observable<Avatar>()
+const sendMyProfileOverCommsChannel = new Observable<{}>()
 
 export function subscribeParcelSceneToCommsMessages(controller: CommunicationsController) {
   scenesSubscribedToCommsEvents.add(controller)
@@ -96,26 +100,34 @@ function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
   const msgTimestamp = message.time
 
   const peerTrackingInfo = setupPeer(message.sender)
-
+  if (!peerTrackingInfo.ethereumAddress) commsLogger.info('Peer ', message.sender, 'is now', message.data.user)
   peerTrackingInfo.ethereumAddress = message.data.user
   peerTrackingInfo.profileType = message.data.type
 
+  peerTrackingInfo.lastUpdate = Date.now()
+
   if (msgTimestamp > peerTrackingInfo.lastProfileUpdate) {
     peerTrackingInfo.lastProfileUpdate = msgTimestamp
-    peerTrackingInfo.lastUpdate = Date.now()
 
-    if (ensureTrackingUniqueAndLatest(message.sender, message.data.user, msgTimestamp)) {
-      const profileVersion = +message.data.version
-      const currentProfile = getProfileFromStore(store.getState(), message.data.user)
-      const isProfileUpToDate = (currentProfile?.data?.version ?? -1) >= profileVersion
+    // remove duplicates
+    ensureTrackingUniqueAndLatest(peerTrackingInfo)
 
-      if (!isProfileUpToDate) {
-        store.dispatch(
-          loadProfileIfNecessaryAction(peerTrackingInfo.ethereumAddress, profileVersion, peerTrackingInfo.profileType)
-        )
-      } else if (currentProfile?.data) {
-        receivePeerUserData(currentProfile?.data)
-      }
+    const profileVersion = +message.data.version
+    const currentProfile = getProfileFromStore(store.getState(), message.data.user)
+
+    const shouldLoadRemoteProfile =
+      !currentProfile ||
+      currentProfile.status == 'error' ||
+      (currentProfile.status == 'ok' && currentProfile.data.version < profileVersion)
+
+    if (shouldLoadRemoteProfile) {
+      ProfileAsPromise(message.data.user, profileVersion, peerTrackingInfo.profileType).catch((e: Error) => {
+        trackEvent('error_fatal', {
+          message: `error loading profile ${message.data.user}:${profileVersion}: ` + e.message,
+          context: 'kernel#saga',
+          stack: e.stack || 'processProfileUpdatedMessage'
+        })
+      })
     }
   }
 }
@@ -181,7 +193,7 @@ function processProfileRequest(message: Package<ProfileRequest>) {
 
   // We only send profile responses for our own address
   if (message.data.userId === myAddress) {
-    store.dispatch(sendMyProfileOverComms())
+    sendMyProfileOverCommsChannel.notifyObservers({})
   }
 }
 
@@ -199,7 +211,25 @@ function processProfileResponse(message: Package<ProfileResponse>) {
 
   // TODO: send whether or no hasWeb3 connection on ProfileResponse
   // If we received an unexpected profile, maybe the profile saga can use this preemptively
-  store.dispatch(profileReceivedOverComms(profile))
+  receiveProfileOverCommsChannel.notifyObservers(profile)
+}
+
+export function createSendMyProfileOverCommsChannel() {
+  return eventChannel<{}>((emitter) => {
+    const listener = sendMyProfileOverCommsChannel.add(emitter)
+    return () => {
+      sendMyProfileOverCommsChannel.remove(listener)
+    }
+  })
+}
+
+export function createReceiveProfileOverCommsChannel() {
+  return eventChannel<Avatar>((emitter) => {
+    const listener = receiveProfileOverCommsChannel.add(emitter)
+    return () => {
+      receiveProfileOverCommsChannel.remove(listener)
+    }
+  })
 }
 
 function processPositionMessage(message: Package<Position>) {

@@ -1,4 +1,3 @@
-import { ProfileType } from 'shared/profiles/types'
 import { action } from 'typesafe-actions'
 import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import type { CommsContext } from './context'
@@ -57,11 +56,3 @@ export type SetWorldContextAction = ReturnType<typeof setWorldContext>
 export const HANDLE_COMMS_DISCONNECTION = '[COMMS] handleCommsDisconnection'
 export const handleCommsDisconnection = (context: CommsContext) => action(HANDLE_COMMS_DISCONNECTION, { context })
 export type HandleCommsDisconnection = ReturnType<typeof handleCommsDisconnection>
-
-export const LOAD_REMOTE_PROFILE_IF_NECESSARY = 'LOAD_REMOTE_PROFILE_IF_NECESSARY'
-export const loadProfileIfNecessaryAction = (userId: string, version: number, profileType: ProfileType) =>
-  action(LOAD_REMOTE_PROFILE_IF_NECESSARY, { userId, version, profileType })
-export type LoadProfileIfNecessaryAction = ReturnType<typeof loadProfileIfNecessaryAction>
-
-export const SEND_MY_PROFILE_OVER_COMMS = 'SEND_MY_PROFILE_OVER_COMMS'
-export const sendMyProfileOverComms = () => action(SEND_MY_PROFILE_OVER_COMMS)

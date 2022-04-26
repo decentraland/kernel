@@ -24,6 +24,7 @@ import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { PositionTrackEvents } from 'shared/analytics/types'
 import { getVariantContent } from 'shared/meta/selectors'
 import { activateAllPortableExperiences, killAllPortableExperiences } from '../portableExperiences/actions'
+import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -149,7 +150,6 @@ function globalSignalSceneStart(sceneId: string) {
 function globalSignalSceneFail(sceneId: string) {
   store.dispatch(signalSceneFail(sceneId))
 }
-
 
 // @internal
 export const parcelSceneLoadingState: ParcelSceneLoadingState = {
@@ -473,6 +473,8 @@ export async function enableParcelSceneLoading() {
       teleported: false
     })
   })
+
+  store.dispatch(signalParcelLoadingStarted())
 }
 
 export type AllScenesEvents<T extends IEventNames> = {

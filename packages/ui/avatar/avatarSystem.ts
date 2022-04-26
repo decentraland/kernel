@@ -8,8 +8,7 @@ import {
   BoxShape,
   IEntity,
   Material,
-  Color4,
-  Vector3
+  Color4
 } from '@dcl/legacy-ecs'
 import {
   AvatarMessage,
@@ -193,10 +192,10 @@ function handleUserTalkingUpdate({ uuid, talking }: ReceiveUserTalkingMessage): 
 function handleUserRemoved({ uuid }: UserRemovedMessage): void {
   const avatar = avatarMap.get(uuid)
   if (avatar) {
-    avatar.transform.translate(new Vector3(0, 100, 0))
-    setTimeout(() => {
-      avatar.remove()
-    }, 2000)
+    // avatar.transform.translate(new Vector3(0, 100, 0))
+    // setTimeout(() => {
+    avatar.remove()
+    // }, 2000)
   }
 }
 

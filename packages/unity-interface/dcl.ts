@@ -11,11 +11,6 @@ import {
   onPositionUnsettledObservable
 } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
-import {
-  observeLoadingStateChange,
-  observeSessionStateChange,
-  renderStateObservable
-} from 'shared/world/worldState'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { UnityParcelScene } from './UnityParcelScene'
 import { getUnityInstance } from './IUnityInterface'
@@ -27,13 +22,11 @@ import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
-import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
-import { updateLoadingScreen } from 'shared/loading/actions'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -79,14 +72,6 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   if (ENGINE_DEBUG_PANEL) {
     getUnityInstance().SetEngineDebugPanel()
   }
-
-  observeLoadingStateChange(() => {
-    store.dispatch(updateLoadingScreen())
-  })
-  observeSessionStateChange(() => {
-    store.dispatch(updateLoadingScreen())
-  })
-  store.dispatch(updateLoadingScreen())
 
   if (!EDITOR) {
     await startGlobalScene('dcl-gs-avatars', 'Avatars', hudWorkerUrl)
@@ -137,8 +122,6 @@ export async function startUnitySceneWorkers() {
   })
 
   await enableParcelSceneLoading()
-
-  store.dispatch(signalParcelLoadingStarted())
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {

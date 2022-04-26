@@ -1,4 +1,4 @@
-import { put, takeEvery, select, call, takeLatest, fork, throttle, take, race, delay } from 'redux-saga/effects'
+import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, apply } from 'redux-saga/effects'
 
 import { commsEstablished, FATAL_ERROR } from 'shared/loading/types'
 import { triggerReconnectRealm } from 'shared/dao/actions'
@@ -9,26 +9,21 @@ import { voiceSaga } from './voice-sagas'
 import {
   HandleCommsDisconnection,
   HANDLE_COMMS_DISCONNECTION,
-  LoadProfileIfNecessaryAction,
-  LOAD_REMOTE_PROFILE_IF_NECESSARY,
-  SEND_MY_PROFILE_OVER_COMMS,
   setWorldContext,
   SET_COMMS_ISLAND,
   SET_WORLD_CONTEXT
 } from './actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
-import { bindHandlersToCommsContext } from './handlers'
+import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel } from './handlers'
 import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
-import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/selectors'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
 import { genericAvatarSnapshots } from 'config'
 import { isURL } from 'atomicHelpers/isURL'
-import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { processAvatarVisibility } from './peers'
 import { getFatalError } from 'shared/loading/selectors'
-import { ProfileUserInfo } from 'shared/profiles/types'
-import { trackEvent } from 'shared/analytics'
+import { EventChannel } from 'redux-saga'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -48,8 +43,10 @@ export function* commsSaga() {
 
   yield fork(voiceSaga)
   yield fork(handleNewCommsContext)
-  yield throttle(TIME_BETWEEN_PROFILE_RESPONSES, SEND_MY_PROFILE_OVER_COMMS, sendProfileToComms)
-  yield takeEvery(LOAD_REMOTE_PROFILE_IF_NECESSARY, loadProfileIfNecessary)
+
+  // respond to profile requests over comms
+  yield fork(respondCommsProfileRequests)
+
   yield fork(handleAnnounceProfile)
   yield fork(initAvatarVisibilityProcess)
   yield fork(handleCommsReconnectionInterval)
@@ -64,12 +61,27 @@ function* initAvatarVisibilityProcess() {
 /**
  * This handler sends profile responses over comms.
  */
-function* sendProfileToComms() {
-  const context = (yield select(getCommsContext)) as CommsContext | undefined
-  const profile: Avatar | null = yield select(getCurrentUserProfile)
+function* respondCommsProfileRequests() {
+  const chan: EventChannel<void> = yield call(createSendMyProfileOverCommsChannel)
 
-  if (profile && context && context.currentPosition) {
-    yield context.worldInstanceConnection.sendProfileResponse(context.currentPosition, stripSnapshots(profile))
+  let lastMessage = 0
+  while (true) {
+    // wait for the next event of the channel
+    yield take(chan)
+
+    const context = (yield select(getCommsContext)) as CommsContext | undefined
+    const profile: Avatar | null = yield select(getCurrentUserProfile)
+
+    if (profile && context && context.currentPosition) {
+      // naive throttling
+      const now = Date.now()
+      const elapsed = now - lastMessage
+      if (elapsed < TIME_BETWEEN_PROFILE_RESPONSES) continue
+      lastMessage = now
+
+      const connection = context.worldInstanceConnection
+      yield apply(connection, connection.sendProfileResponse, [context.currentPosition, stripSnapshots(profile)])
+    }
   }
 }
 
@@ -79,11 +91,13 @@ function stripSnapshots(profile: Avatar): Avatar {
 
   for (const snapshotKey of ['face256', 'body'] as const) {
     const snapshot = currentSnapshots[snapshotKey]
-    newSnapshots[snapshotKey] =
+    const defaultValue = genericAvatarSnapshots[snapshotKey]
+    const newValue =
       snapshot &&
       (snapshot.startsWith('/') || snapshot.startsWith('./') || isURL(snapshot) || IPFSv2.validate(snapshot))
         ? snapshot
-        : genericAvatarSnapshots[snapshotKey]
+        : null
+    newSnapshots[snapshotKey] = newValue || defaultValue
   }
 
   return {
@@ -181,31 +195,5 @@ function* handleCommsDisconnection(action: HandleCommsDisconnection) {
     }
 
     yield put(triggerReconnectRealm())
-  }
-}
-
-/**
- * When a profile announcement is made via comms, then we must update the
- * profile locally.
- */
-function* loadProfileIfNecessary(action: LoadProfileIfNecessaryAction) {
-  const { userId, version, profileType: type } = action.payload
-  const localProfile: ProfileUserInfo | null = yield select(getProfileFromStore, userId)
-
-  const shouldLoadRemoteProfile =
-    !localProfile ||
-    localProfile.status == 'error' ||
-    (localProfile.status == 'ok' && localProfile.data.version < version)
-
-  if (shouldLoadRemoteProfile) {
-    try {
-      yield call(ProfileAsPromise, userId, version, type)
-    } catch (e: any) {
-      trackEvent('error_fatal', {
-        message: `error loading profile ${userId}:${version}: ` + e.message,
-        context: 'kernel#saga',
-        stack: e.stack || e.stacktrace
-      })
-    }
   }
 }

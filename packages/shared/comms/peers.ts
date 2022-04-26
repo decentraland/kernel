@@ -112,19 +112,17 @@ export function receiveUserTalking(uuid: string, talking: boolean) {
 
 export function receiveUserPosition(uuid: string, position: Pose, msgTimestamp: number) {
   if (deepEqual(position, MORDOR_POSITION)) {
-    return
-    const peer = getPeer(uuid)
-    if (peer && removePeerByUUID(uuid)) commsLogger.info('Removing peer that went to mordor', uuid, peer)
+    receiveUserVisible(uuid, false)
 
     return
   }
 
   const peer = setupPeer(uuid)
+  peer.lastUpdate = Date.now()
 
   if (msgTimestamp > peer.lastPositionUpdate) {
     peer.position = position
     peer.lastPositionUpdate = msgTimestamp
-    peer.lastUpdate = Date.now()
 
     sendPeerUserData(uuid)
   }
@@ -163,6 +161,7 @@ export function receiveUserVisible(uuid: string, visible: boolean) {
 }
 
 export function removeMissingPeers(newPeers: MinPeerData[]) {
+  commsLogger.log('remove missing peers', newPeers)
   for (const [key, { ethereumAddress }] of peerMap) {
     if (!newPeers.some((x) => x.id === key || x.id == ethereumAddress)) {
       removePeerByUUID(key)
@@ -171,6 +170,7 @@ export function removeMissingPeers(newPeers: MinPeerData[]) {
 }
 
 export function removeAllPeers() {
+  commsLogger.log('remove all peers')
   for (const alias of peerMap.keys()) {
     removePeerByUUID(alias)
   }
@@ -182,35 +182,28 @@ export function removeAllPeers() {
  *
  * TODO(Mendez 24/04/2022): wtf does this function do?
  */
-export function ensureTrackingUniqueAndLatest(fromAlias: string, ethereumAddress: string, thisUpdateTimestamp: number) {
-  let currentLastProfileAlias = fromAlias
-  let currentLastProfileUpdate = thisUpdateTimestamp
+export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
+  let currentPeer = peer
 
-  peerMap.forEach((info, key) => {
-    if (info.ethereumAddress === ethereumAddress) {
-      if (info.lastProfileUpdate < currentLastProfileUpdate) {
-        commsLogger.info(
-          'Removing peer cond 1',
-          key,
-          info,
-          peerMap.get(currentLastProfileAlias)
-        )
-        removePeerByUUID(key)
-      } else if (info.lastProfileUpdate > currentLastProfileUpdate) {
-        commsLogger.info(
-          'Removing peer cond 2',
-          currentLastProfileAlias,
-          info,
-          peerMap.get(currentLastProfileAlias)
-        )
-        removePeerByUUID(currentLastProfileAlias)
-        currentLastProfileAlias = key
-        currentLastProfileUpdate = info.lastProfileUpdate
+  peerMap.forEach((info, uuid) => {
+    if (info.ethereumAddress === currentPeer.ethereumAddress && uuid != peer.uuid) {
+      if (info.lastProfileUpdate < currentPeer.lastProfileUpdate) {
+        commsLogger.info('Removing peer cond 1', uuid, info, currentPeer)
+        removePeerByUUID(uuid)
+      } else if (info.lastProfileUpdate > currentPeer.lastProfileUpdate) {
+        commsLogger.info('Removing peer cond 2', currentPeer.uuid, info, currentPeer)
+        removePeerByUUID(currentPeer.uuid)
+
+        info.position = info.position || currentPeer.position
+        info.visible = info.visible || currentPeer.visible
+        info.profile = info.profile || currentPeer.profile
+
+        currentPeer = info
       }
     }
   })
 
-  return currentLastProfileAlias === fromAlias
+  return currentPeer
 }
 
 export function processAvatarVisibility() {

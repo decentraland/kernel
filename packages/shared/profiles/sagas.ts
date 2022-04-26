@@ -1,6 +1,6 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { call, throttle, put, select, takeEvery } from 'redux-saga/effects'
+import { call, put, select, takeEvery, fork, take, debounce } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
 import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
@@ -13,8 +13,6 @@ import {
   sendProfileToRenderer,
   saveProfileFailure,
   saveProfileDelta,
-  PROFILE_RECEIVED_OVER_COMMS,
-  ProfileReceivedOverComms,
   deployProfile,
   DEPLOY_PROFILE_REQUEST,
   deployProfileSuccess,
@@ -47,13 +45,11 @@ import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
 import { getCommsContext } from 'shared/comms/selectors'
 import { CommsContext } from 'shared/comms/context'
-import { requestLocalProfileToPeers } from 'shared/comms/handlers'
+import { createReceiveProfileOverCommsChannel, requestLocalProfileToPeers } from 'shared/comms/handlers'
 import { Avatar, Profile, Snapshots } from '@dcl/schemas'
 import { validateAvatar } from './schemaValidation'
 import { trackEvent } from 'shared/analytics'
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const toBuffer = require('blob-to-buffer')
+import { EventChannel } from 'redux-saga'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -82,8 +78,8 @@ export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
   yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
-  yield takeLatestByUserId(PROFILE_RECEIVED_OVER_COMMS, handleCommsProfile)
-  yield throttle(3000, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
+  yield fork(handleCommsProfile)
+  yield debounce(200, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
   yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
 }
 
@@ -159,9 +155,12 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
         hasConnectedWeb3 = true
       }
     }
-  } catch (error) {
-    // we throw here because it seems this is an unrecoverable error
-    throw new Error(`Error requesting profile for ${userId}: ${error}`)
+  } catch (error: any) {
+    trackEvent('error', {
+      context: 'kernel#saga',
+      message: `Error requesting profile for ${userId}: ${error}`,
+      stack: error.stack || ''
+    })
   }
   if (lookingForMyProfile && !profile) {
     const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
@@ -180,9 +179,14 @@ function* getRemoteProfile(userId: string, version?: number) {
   try {
     const profiles: { avatars: Avatar[] } = yield call(profileServerRequest, userId, version)
 
-    const avatar = profiles.avatars[0]
+    let avatar = profiles.avatars[0]
 
-    if (avatar && validateAvatar(avatar)) {
+    if (avatar) {
+      avatar = ensureAvatarCompatibilityFormat(avatar)
+      if (!validateAvatar(avatar)) {
+        defaultLogger.warn(`Remote avatar for user is invalid.`, userId, avatar, validateAvatar.errors)
+        return null
+      }
       return avatar
     }
   } catch (error: any) {
@@ -220,15 +224,18 @@ export async function profileServerRequest(userId: string, version?: number) {
  * Handle comms profiles. If we have the profile then it calls a profileSuccess to
  * store it and forward it to the renderer.
  */
-function* handleCommsProfile(action: ProfileReceivedOverComms) {
-  // TODO: Mendez, add signatures and verifications to this profile-over-comms mechanism
-  const { profile } = action.payload
+function* handleCommsProfile() {
+  const chan: EventChannel<Avatar> = yield call(createReceiveProfileOverCommsChannel)
 
-  const existingProfile: ProfileUserInfo | null = yield select(getProfileFromStore, profile.userId)
+  while (true) {
+    // TODO: Mendez, add signatures and verifications to this profile-over-comms mechanism
+    const receivedProfile: Avatar = yield take(chan)
+    const existingProfile: ProfileUserInfo | null = yield select(getProfileFromStore, receivedProfile.userId)
 
-  if (!existingProfile || existingProfile.data?.version < profile.version) {
-    // store profile locally and forward to renderer
-    yield put(profileSuccess(profile.userId, profile, existingProfile?.hasConnectedWeb3))
+    if (!existingProfile || existingProfile.data?.version < receivedProfile.version) {
+      // store profile locally and forward to renderer
+      yield put(profileSuccess(receivedProfile.userId, receivedProfile, existingProfile?.hasConnectedWeb3))
+    }
   }
 }
 
@@ -269,7 +276,7 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
       yield put(deployProfile(profile))
     }
   } catch (error: any) {
-    trackEvent('error_fatal', {
+    trackEvent('error', {
       message: `cant_persist_avatar ${error}`,
       context: 'kernel#saga',
       stack: error.stacktrace
@@ -292,7 +299,7 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
     })
     yield put(deployProfileSuccess(userId, profile.version, profile))
   } catch (e: any) {
-    trackEvent('error_fatal', {
+    trackEvent('error', {
       context: 'kernel#saga',
       message: 'error deploying profile. ' + e.message,
       stack: e.stacktrace
@@ -387,22 +394,15 @@ async function deploy(
   return catalyst.deployEntity(deployData)
 }
 
-function makeContentFile(path: string, content: string | Blob | Buffer): Promise<ContentFile> {
-  return new Promise((resolve, reject) => {
-    if (Buffer.isBuffer(content)) {
-      resolve({ name: path, content })
-    } else if (typeof content === 'string') {
-      const buffer = Buffer.from(content)
-      resolve({ name: path, content: buffer })
-    } else if (content instanceof Blob) {
-      toBuffer(content, (err: Error, buffer: Buffer) => {
-        if (err) reject(err)
-        resolve({ name: path, content: buffer })
-      })
-    } else {
-      reject(new Error('Unable to create ContentFile: content must be a string or a Blob'))
-    }
-  })
+async function makeContentFile(path: string, content: string | Blob | Buffer): Promise<ContentFile> {
+  if (Buffer.isBuffer(content)) {
+    return { name: path, content }
+  } else if (typeof content === 'string') {
+    const buffer = Buffer.from(content)
+    return { name: path, content: buffer }
+  } else {
+    throw new Error('Unable to create ContentFile: content must be a string or a Blob')
+  }
 }
 
 function randomBetween(min: number, max: number) {

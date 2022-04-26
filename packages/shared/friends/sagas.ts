@@ -103,7 +103,7 @@ function* initializeFriendsSaga() {
         buttonMessage: 'OK',
         timer: 7
       })
-      trackEvent('error_fatal', {
+      trackEvent('error', {
         context: 'kernel#saga',
         message: 'There was an error initializing friends and private messages',
         stack: ''

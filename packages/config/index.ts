@@ -276,8 +276,8 @@ export namespace ethereumConfigurations {
 export const isRunningTest: boolean = (global as any)['isRunningTests'] === true
 
 export const genericAvatarSnapshots = {
-  body: '',
-  face256: ''
+  body: 'QmSav1o6QK37Jj1yhbmhYk9MJc6c2H5DWbWzPVsg9JLYfF',
+  face256: 'QmSqZ2npVD4RLdqe17FzGCFcN29RfvmqmEd2FcQUctxaKk'
 } as const
 
 export function getCatalystNodesDefaultURL() {

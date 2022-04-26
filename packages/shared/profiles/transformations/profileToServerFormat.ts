@@ -57,6 +57,7 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
 
   const ret: Avatar = {
     ...profile,
+    name: profile.name || (profile as any).unclaimedName,
     avatar: avatarInfo
   }
 

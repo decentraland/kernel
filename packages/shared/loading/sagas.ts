@@ -2,7 +2,7 @@ import { AnyAction } from 'redux'
 import { fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 
 import { PARCEL_LOADING_STARTED, RENDERER_INITIALIZED_CORRECTLY } from 'shared/renderer/types'
-import { ChangeLoginStateAction, CHANGE_LOGIN_STAGE } from 'shared/session/actions'
+import { AUTHENTICATE, ChangeLoginStateAction, CHANGE_LOGIN_STAGE, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
 import { trackEvent } from '../analytics'
 import { lastPlayerPosition } from '../world/positionThings'
 
@@ -15,7 +15,8 @@ import {
   SCENE_FAIL,
   SCENE_LOAD,
   SCENE_START,
-  updateLoadingScreen
+  updateLoadingScreen,
+  UPDATE_STATUS_MESSAGE
 } from './actions'
 import {
   metricsUnityClientLoaded,
@@ -24,7 +25,8 @@ import {
   RENDERING_ACTIVATED,
   RENDERING_DEACTIVATED,
   RENDERING_BACKGROUND,
-  RENDERING_FOREGROUND
+  RENDERING_FOREGROUND,
+  TELEPORT_TRIGGERED
 } from './types'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { LoginState } from '@dcl/kernel-interface'
@@ -39,16 +41,20 @@ import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
 
 // The following actions may change the status of the loginVisible
 const ACTIONS_FOR_LOADING = [
-  PARCEL_LOADING_STARTED,
-  SCENE_LOAD,
-  SCENE_FAIL,
+  AUTHENTICATE,
   CHANGE_LOGIN_STAGE,
+  PARCEL_LOADING_STARTED,
+  PENDING_SCENES,
   RENDERER_INITIALIZED_CORRECTLY,
-  RENDERING_BACKGROUND,
-  RENDERING_FOREGROUND,
   RENDERING_ACTIVATED,
+  RENDERING_BACKGROUND,
   RENDERING_DEACTIVATED,
-  PENDING_SCENES
+  RENDERING_FOREGROUND,
+  SCENE_FAIL,
+  SCENE_LOAD,
+  SIGNUP_SET_IS_SIGNUP,
+  TELEPORT_TRIGGERED,
+  UPDATE_STATUS_MESSAGE,
 ]
 
 export function* loadingSaga() {
