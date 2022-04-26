@@ -28,11 +28,15 @@ export function getAllPeers() {
  * @param uuid
  */
 export function removePeerByUUID(uuid: UUID): boolean {
-  if (peerMap.delete(uuid)) {
-    avatarMessageObservable.notifyObservers({
-      type: AvatarMessageType.USER_REMOVED,
-      uuid
-    })
+  const peer = peerMap.get(uuid)
+  if (peer) {
+    peerMap.delete(uuid)
+    if (peer.ethereumAddress) {
+      avatarMessageObservable.notifyObservers({
+        type: AvatarMessageType.USER_REMOVED,
+        userId: peer.ethereumAddress
+      })
+    }
     return true
   }
   return false
@@ -91,7 +95,7 @@ function sendPeerUserData(uuid: string) {
     if (profile) {
       avatarMessageObservable.notifyObservers({
         type: AvatarMessageType.USER_DATA,
-        uuid,
+        userId: peer.ethereumAddress,
         data: peer,
         profile
       })
@@ -103,11 +107,13 @@ export function receiveUserTalking(uuid: string, talking: boolean) {
   const peer = setupPeer(uuid)
   peer.talking = talking
   peer.lastUpdate = Date.now()
-  avatarMessageObservable.notifyObservers({
-    type: AvatarMessageType.USER_TALKING,
-    uuid,
-    talking
-  })
+  if (peer.ethereumAddress) {
+    avatarMessageObservable.notifyObservers({
+      type: AvatarMessageType.USER_TALKING,
+      userId: peer.ethereumAddress,
+      talking
+    })
+  }
 }
 
 export function receiveUserPosition(uuid: string, position: Pose, msgTimestamp: number) {
@@ -147,16 +153,18 @@ export function receiveUserVisible(uuid: string, visible: boolean) {
   const peer = setupPeer(uuid)
   const didChange = peer.visible !== visible
   peer.visible = visible
-  avatarMessageObservable.notifyObservers({
-    type: AvatarMessageType.USER_VISIBLE,
-    uuid,
-    visible
-  })
-  if (didChange && peer.ethereumAddress) {
-    // often changes in visibility may delete the avatar remotely.
-    // we send all the USER_DATA to make sure the scene always have
-    // the required information to render the whole avatar
-    sendPeerUserData(uuid)
+  if (peer.ethereumAddress) {
+    avatarMessageObservable.notifyObservers({
+      type: AvatarMessageType.USER_VISIBLE,
+      userId: peer.ethereumAddress,
+      visible
+    })
+    if (didChange) {
+      // often changes in visibility may delete the avatar remotely.
+      // we send all the USER_DATA to make sure the scene always have
+      // the required information to render the whole avatar
+      sendPeerUserData(uuid)
+    }
   }
 }
 

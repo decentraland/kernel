@@ -10,6 +10,7 @@ export const enum AvatarMessageType {
   USER_REMOVED = 'USER_REMOVED',
   USER_TALKING = 'USER_TALKING',
 
+  // TODO(mendez): what emits this messages?
   // Actions related messages
   USER_MUTED = 'USER_MUTED',
   USER_UNMUTED = 'USER_UNMUTED',
@@ -19,33 +20,33 @@ export const enum AvatarMessageType {
 
 export type ReceiveUserExpressionMessage = {
   type: AvatarMessageType.USER_EXPRESSION
-  uuid: string
+  userId: string
   expressionId: string
   timestamp: number
 }
 
 export type ReceiveUserDataMessage = {
   type: AvatarMessageType.USER_DATA
-  uuid: string
+  userId: string
   data: Partial<UserInformation>
   profile: NewProfileForRenderer
 }
 
 export type ReceiveUserVisibleMessage = {
   type: AvatarMessageType.USER_VISIBLE
-  uuid: string
+  userId: string
   visible: boolean
 }
 
 export type ReceiveUserTalkingMessage = {
   type: AvatarMessageType.USER_TALKING
-  uuid: string
+  userId: string
   talking: boolean
 }
 
 export type UserRemovedMessage = {
   type: AvatarMessageType.USER_REMOVED
-  uuid: string
+  userId: string
 }
 
 export type UserMessage = {
@@ -55,7 +56,7 @@ export type UserMessage = {
     | AvatarMessageType.USER_MUTED
     | AvatarMessageType.USER_UNMUTED
     | AvatarMessageType.USER_TALKING
-  uuid: string
+  userId: string
 }
 
 export type AvatarMessage =

@@ -5,14 +5,15 @@ import { getVisibleAvatarsUserId } from '../../packages/shared/sceneEvents/visib
 import { AvatarMessageType } from '../../packages/shared/comms/interface/types'
 import * as sceneManager from '../../packages/shared/world/parcelSceneManager'
 
-function sendAvatarMessage(uuid: string, visible: boolean) {
-  peers.receiveUserVisible(uuid, visible)
+function sendAvatarMessage(userId: string, visible: boolean) {
+  peers.setupPeer(userId).ethereumAddress = userId
+  peers.receiveUserVisible(userId, visible)
 }
 
-function removeAvatarMessage(uuid: string) {
+function removeAvatarMessage(userId: string) {
   peers.avatarMessageObservable.notifyObservers({
     type: AvatarMessageType.USER_REMOVED,
-    uuid
+    userId
   })
 }
 

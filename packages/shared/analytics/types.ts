@@ -8,10 +8,10 @@ export type PositionTrackEvents = {
 
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
-  ['USER_MUTED']: { uuid: string }
-  ['USER_UNMUTED']: { uuid: string }
-  ['USER_BLOCKED']: { uuid: string }
-  ['USER_UNBLOCKED']: { uuid: string }
+  ['USER_MUTED']: { userId: string }
+  ['USER_UNMUTED']: { userId: string }
+  ['USER_BLOCKED']: { userId: string }
+  ['USER_UNBLOCKED']: { userId: string }
   ['Chat message received']: { length: number; messageType: ChatMessageType }
   ['Send chat message']: { length: number; messageId: string; messageType: ChatMessageType }
   ['Comms Status v2']: Record<string, any>

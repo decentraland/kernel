@@ -157,30 +157,32 @@ function processChatMessage(message: Package<ChatMessage>) {
     senderPeer.receivedPublicChatMessages.add(msgId)
     senderPeer.lastUpdate = Date.now()
 
-    if (text.startsWith('␐')) {
-      const [id, timestamp] = text.split(' ')
-      avatarMessageObservable.notifyObservers({
-        type: AvatarMessageType.USER_EXPRESSION,
-        uuid: fromAlias,
-        expressionId: id.slice(1),
-        timestamp: parseInt(timestamp, 10)
-      })
-    } else {
-      const isBanned =
-        !myProfile ||
-        (senderPeer.ethereumAddress &&
-          isBlockedOrBanned(myProfile, getBannedUsers(store.getState()), senderPeer.ethereumAddress)) ||
-        false
+    if (senderPeer.ethereumAddress) {
+      if (text.startsWith('␐')) {
+        const [id, timestamp] = text.split(' ')
+        avatarMessageObservable.notifyObservers({
+          type: AvatarMessageType.USER_EXPRESSION,
+          userId: senderPeer.ethereumAddress,
+          expressionId: id.slice(1),
+          timestamp: parseInt(timestamp, 10)
+        })
+      } else {
+        const isBanned =
+          !myProfile ||
+          (senderPeer.ethereumAddress &&
+            isBlockedOrBanned(myProfile, getBannedUsers(store.getState()), senderPeer.ethereumAddress)) ||
+          false
 
-      if (!isBanned) {
-        const messageEntry: InternalChatMessage = {
-          messageType: ChatMessageType.PUBLIC,
-          messageId: msgId,
-          sender: senderPeer.ethereumAddress,
-          body: text,
-          timestamp: Date.now()
+        if (!isBanned) {
+          const messageEntry: InternalChatMessage = {
+            messageType: ChatMessageType.PUBLIC,
+            messageId: msgId,
+            sender: senderPeer.ethereumAddress,
+            body: text,
+            timestamp: Date.now()
+          }
+          store.dispatch(messageReceived(messageEntry))
         }
-        store.dispatch(messageReceived(messageEntry))
       }
     }
   }

@@ -40,8 +40,8 @@ export class AvatarEntity extends Entity {
 
   sub: IEntity
 
-  constructor(uuid?: string, avatarShape = new AvatarShape()) {
-    super(uuid)
+  constructor(public readonly userId: string, avatarShape = new AvatarShape()) {
+    super(userId)
     this.avatarShape = avatarShape
     this.avatarShape.useDummyModel = true
 
@@ -59,13 +59,13 @@ export class AvatarEntity extends Entity {
     this.sub.addComponentOrReplace(red)
   }
 
-  loadProfile(profile: Pick<NewProfileForRenderer, 'avatar' | 'userId' | 'name'>) {
-    if (profile && profile.userId && profile.name && profile.avatar.bodyShape) {
+  loadProfile(profile: Pick<NewProfileForRenderer, 'avatar' | 'name'>) {
+    if (profile && profile.name && profile.avatar.bodyShape) {
       this.sub.addComponentOrReplace(green)
       const { avatar } = profile
 
       const shape = this.avatarShape
-      shape.id = profile.userId
+      shape.id = this.userId
       shape.name = profile.name
 
       this.avatarShape.useDummyModel = false
@@ -133,7 +133,7 @@ export class AvatarEntity extends Entity {
   public remove() {
     if (this.isAddedToEngine()) {
       engine.removeEntity(this)
-      avatarMap.delete(this.uuid)
+      avatarMap.delete(this.userId)
     }
     if (this.sub.isAddedToEngine()) engine.removeEntity(this.sub)
   }
@@ -151,46 +151,46 @@ export class AvatarEntity extends Entity {
 /**
  * For every UUID, ensures synchronously that an avatar exists in the local state.
  * Returns the AvatarEntity instance
- * @param uuid
+ * @param userId
  */
-function ensureAvatar(uuid: UUID): AvatarEntity {
-  let avatar = avatarMap.get(uuid)
+function ensureAvatar(userId: UUID): AvatarEntity {
+  let avatar = avatarMap.get(userId)
 
   if (avatar) {
     return avatar
   }
 
-  avatar = new AvatarEntity(uuid)
-  avatarMap.set(uuid, avatar)
+  avatar = new AvatarEntity(userId)
+  avatarMap.set(userId, avatar)
 
   return avatar
 }
 
-function handleUserData({ uuid, data, profile }: ReceiveUserDataMessage): void {
-  const avatar = ensureAvatar(uuid)
+function handleUserData({ userId, data, profile }: ReceiveUserDataMessage): void {
+  const avatar = ensureAvatar(userId)
   avatar.setUserData(data)
   avatar.loadProfile(profile)
   avatar.setVisible(data.visible ?? true)
 }
 
-function handleUserExpression({ uuid, expressionId, timestamp }: ReceiveUserExpressionMessage): void {
-  ensureAvatar(uuid).setExpression(expressionId, timestamp)
+function handleUserExpression({ userId, expressionId, timestamp }: ReceiveUserExpressionMessage): void {
+  ensureAvatar(userId).setExpression(expressionId, timestamp)
 }
 
 /**
  * In some cases, like minimizing the window, the user will be invisible to the rest of the world.
  * This function handles those visible changes.
  */
-function handleUserVisible({ uuid, visible }: ReceiveUserVisibleMessage): void {
-  ensureAvatar(uuid).setVisible(visible)
+function handleUserVisible({ userId, visible }: ReceiveUserVisibleMessage): void {
+  ensureAvatar(userId).setVisible(visible)
 }
 
-function handleUserTalkingUpdate({ uuid, talking }: ReceiveUserTalkingMessage): void {
-  ensureAvatar(uuid).setTalking(talking)
+function handleUserTalkingUpdate({ userId, talking }: ReceiveUserTalkingMessage): void {
+  ensureAvatar(userId).setTalking(talking)
 }
 
-function handleUserRemoved({ uuid }: UserRemovedMessage): void {
-  const avatar = avatarMap.get(uuid)
+function handleUserRemoved({ userId }: UserRemovedMessage): void {
+  const avatar = avatarMap.get(userId)
   if (avatar) {
     // avatar.transform.translate(new Vector3(0, 100, 0))
     // setTimeout(() => {
