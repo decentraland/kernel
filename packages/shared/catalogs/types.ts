@@ -114,4 +114,5 @@ export type WearablesRequestFilters = {
   ownedByUser?: string
   wearableIds?: WearableId[]
   collectionIds?: string[]
+  thirdPartyId?: string
 }
