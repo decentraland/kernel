@@ -312,6 +312,7 @@ export async function startPreview() {
           }
         })
         clientDebug.ToggleSceneBoundingBoxes(sceneData.sceneId, false).catch((e) => defaultLogger.error(e))
+        clientDebug.ToggleSceneSpawnPoints(sceneData.sceneId, false).catch((e) => defaultLogger.error(e))
         unityInterface.SendMessageToUnity('Main', 'TogglePreviewMenu', JSON.stringify({ enabled: true }))
       }
     })

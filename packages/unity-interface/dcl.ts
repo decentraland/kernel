@@ -170,13 +170,15 @@ export async function startUnitySceneWorkers() {
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
+  const jsonData = await getPreviewSceneJson()
+  const [sceneId] = await fetchSceneIds([jsonData.scene.base])
+  return { sceneId, sceneBase: jsonData.scene.base }
+}
+
+async function getPreviewSceneJson() {
   const result = await fetch('/scene.json?nocache=' + Math.random())
-
   if (result.ok) {
-    const scene = (await result.json()) as SceneJsonData
-
-    const [sceneId] = await fetchSceneIds([scene.scene.base])
-    return { sceneId, sceneBase: scene.scene.base }
+    return (await result.json()) as SceneJsonData
   } else {
     throw new Error('Could not load scene.json')
   }
@@ -186,11 +188,21 @@ export async function loadPreviewScene(message: sdk.Messages) {
   async function oldReload() {
     const { sceneId, sceneBase } = await getPreviewSceneId()
     if (sceneId) {
-      await reloadScene(sceneId)
+      await doReload(sceneId)
     } else {
       defaultLogger.log(`Unable to load sceneId of ${sceneBase}`)
       debugger
     }
+  }
+
+  async function doReload(sceneId: string) {
+    await reloadScene(sceneId)
+
+    // We get scene json here to use hot-reload to update displayed spawnpoints
+    // since the ILand info is not currently changing on hot-reload
+    getPreviewSceneJson()
+      .then((sceneJson) => clientDebug.ToggleSceneSpawnPoints(sceneId, undefined, sceneJson))
+      .catch((e) => defaultLogger.error(e))
   }
 
   if (message.type === sdk.SCENE_UPDATE && sdk.SceneUpdate.validate(message)) {
@@ -219,7 +231,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
       }
     } else {
       if (message.payload.sceneId) {
-        await reloadScene(message.payload.sceneId)
+        await doReload(message.payload.sceneId)
       } else {
         await oldReload()
       }
