@@ -31,6 +31,7 @@ import { Observable } from 'mz-observable'
 import { eventChannel } from 'redux-saga'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { trackEvent } from 'shared/analytics'
+import { ProfileType } from 'shared/profiles/types'
 
 export const scenesSubscribedToCommsEvents = new Set<CommunicationsController>()
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
@@ -121,7 +122,12 @@ function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
       (currentProfile.status == 'ok' && currentProfile.data.version < profileVersion)
 
     if (shouldLoadRemoteProfile) {
-      ProfileAsPromise(message.data.user, profileVersion, peerTrackingInfo.profileType).catch((e: Error) => {
+      ProfileAsPromise(
+        message.data.user,
+        profileVersion,
+        /* we ask for LOCAL to ask information about the profile using comms o not overload the servers*/
+        ProfileType.LOCAL
+      ).catch((e: Error) => {
         trackEvent('error_fatal', {
           message: `error loading profile ${message.data.user}:${profileVersion}: ` + e.message,
           context: 'kernel#saga',

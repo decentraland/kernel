@@ -1,7 +1,7 @@
 import { ParcelsWithAccess, ProfileForRenderer } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
 import { isURL } from 'atomicHelpers/isURL'
-import { Avatar, Snapshots } from '@dcl/schemas'
+import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
 import { backupProfile } from '../generateRandomUserProfile'
 import { genericAvatarSnapshots } from 'config'
 import { calculateDisplayName } from './processServerProfile'
@@ -78,7 +78,7 @@ function prepareSnapshots({ face256, body }: Snapshots, userId: string): NewProf
     if (value === null || value === undefined) {
       return null
     }
-    if (value === '' || isURL(value) || value.startsWith('/images')) {
+    if (value === '' || isURL(value) || value.startsWith('/images') || value.startsWith('Qm') || IPFSv2.validate(value)) {
       return value
     }
 

@@ -138,14 +138,13 @@ export class CommsContext {
   }
 
   public sendCurrentProfile(version: number) {
-    const doSend = async () => {
-      if (lastPlayerPositionReport) {
-        const pos = positionReportToCommsPosition(lastPlayerPositionReport)
-        this.onPositionUpdate(pos, true)
-        await this.worldInstanceConnection.sendProfileMessage(pos, this.userAddress, this.profileType, version)
-      }
+    if (lastPlayerPositionReport) {
+      const pos = positionReportToCommsPosition(lastPlayerPositionReport)
+      this.onPositionUpdate(pos, true)
+      this.worldInstanceConnection
+        .sendProfileMessage(pos, this.userAddress, this.profileType, version)
+        .catch((e) => commsLogger.warn(`error in sendCurrentProfile `, e))
     }
-    doSend().catch((e) => commsLogger.warn(`error in sendCurrentProfile `, e))
   }
 
   private onPositionUpdate(newPosition: Position, force: boolean = false) {
@@ -226,8 +225,10 @@ export class CommsContext {
   }
 
   private async sendToMordor() {
-    if (this.currentPosition) {
-      await this.worldInstanceConnection.sendParcelUpdateMessage(this.currentPosition, MORDOR_POSITION)
+    let pos = this.currentPosition
+    if (lastPlayerPositionReport) pos = positionReportToCommsPosition(lastPlayerPositionReport)
+    if (pos) {
+      await this.worldInstanceConnection.sendParcelUpdateMessage(pos, MORDOR_POSITION)
     }
   }
 }
