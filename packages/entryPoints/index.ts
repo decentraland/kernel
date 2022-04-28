@@ -6,7 +6,13 @@ import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, Lo
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
-import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
+import {
+  DEBUG_WS_MESSAGES,
+  ETHEREUM_NETWORK,
+  getAssetBundlesBaseUrl,
+  HAS_INITIAL_POSITION_MARK,
+  OPEN_AVATAR_EDITOR
+} from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
 import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
@@ -31,7 +37,7 @@ import { authenticate, initSession } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
 import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
-import { getSelectedNetwork } from 'shared/dao/selectors'
+import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { clientDebug } from 'unity-interface/ClientDebug'
 import { signalEngineReady } from 'shared/renderer/actions'
 import { IUnityInterface } from 'unity-interface/IUnityInterface'
@@ -247,7 +253,13 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   foregroundChangeObservable.add(reportForeground)
   reportForeground()
 
-  await startUnitySceneWorkers()
+  const state = store.getState()
+  await startUnitySceneWorkers({
+    contentServer: getFetchContentServer(state),
+    catalystServer: getCatalystServer(state),
+    contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
+    worldConfig: getWorldConfig(state)
+  })
 
   teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
 

@@ -1,5 +1,5 @@
 /* eslint-disable prefer-const */
-import { initParcelSceneWorker, LifecycleManager } from 'decentraland-loader/lifecycle/manager'
+import { initParcelSceneWorker, LifecycleManager, ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import {
   sceneLifeCycleObservable,
@@ -417,8 +417,8 @@ function hasDesiredParcelScenes(sceneId: string): boolean {
   return parcelSceneLoadingState.desiredParcelScenes.has(sceneId)
 }
 
-export async function enableParcelSceneLoading() {
-  const lifecycleManager = await initParcelSceneWorker()
+export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams) {
+  const lifecycleManager = await initParcelSceneWorker(params)
 
   parcelSceneLoadingState.lifecycleManager = lifecycleManager
 

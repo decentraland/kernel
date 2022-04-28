@@ -6,7 +6,7 @@ import { CommunicationArea, position2parcel, positionReportToCommsPosition, squa
 import { commConfigurations } from 'config'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
-import { MORDOR_POSITION, ProcessingPeerInfo } from './context'
+import { MORDOR_POSITION, ProcessingPeerInfo } from './const'
 import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { getCommsContext } from './selectors'

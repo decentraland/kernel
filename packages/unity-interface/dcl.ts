@@ -27,6 +27,7 @@ import defaultLogger from 'shared/logger'
 import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
+import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -102,7 +103,7 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
   })
 }
 
-export async function startUnitySceneWorkers() {
+export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   onLoadParcelScenesObservable.add((lands) => {
     getUnityInstance().LoadParcelScenes(
       lands.map(($) => {
@@ -121,7 +122,7 @@ export async function startUnitySceneWorkers() {
     getUnityInstance().DeactivateRendering()
   })
 
-  await enableParcelSceneLoading()
+  await enableParcelSceneLoading(params)
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {

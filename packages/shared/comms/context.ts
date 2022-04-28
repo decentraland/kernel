@@ -9,39 +9,23 @@ import {
   positionReportToCommsPosition,
   sameParcel
 } from './interface/utils'
-import { renderStateObservable } from '../world/worldState'
 import { RoomConnection } from './interface/index'
 import { createLogger } from '../logger'
 import { Observable, Observer } from 'mz-observable'
 import { setListenerSpatialParams } from './voice-over-comms'
-import { scenesSubscribedToCommsEvents } from './handlers'
 import { arrayEquals } from 'atomicHelpers/arrayEquals'
 import { Realm } from 'shared/dao/types'
 import { Avatar } from '@dcl/schemas'
 import { ProfileType } from 'shared/profiles/types'
+import { getParcelSceneSubscriptions } from './sceneSubscriptions'
+import { MORDOR_POSITION } from './const'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
 export type CommsV1Mode = 'local' | 'remote'
 export type CommsV2Mode = 'p2p' | 'server'
 
-export const MORDOR_POSITION: Position = [
-  1000 * parcelLimits.parcelSize,
-  1000,
-  1000 * parcelLimits.parcelSize,
-  0,
-  0,
-  0,
-  0,
-  true
-]
-
 export type PeerAlias = string
-
-export type ProcessingPeerInfo = {
-  alias: PeerAlias
-  squareDistance: number
-}
 
 export const commsLogger = createLogger('comms: ')
 
@@ -59,7 +43,6 @@ export class CommsContext {
 
   private reportPositionInterval?: ReturnType<typeof setInterval>
   private positionObserver: Observer<any> | null = null
-  private worldRunningObserver?: Observer<any> | null = null
 
   private currentParcelTopics = ''
   private previousTopics = ''
@@ -83,10 +66,10 @@ export class CommsContext {
     try {
       await this.worldInstanceConnection.connect()
 
-      this.worldRunningObserver = renderStateObservable.add(() => {
-        // TODO:
-        // this.sendCellphonePose(!isRendererEnabled())
-      })
+      // this.worldRunningObserver = renderStateObservable.add(() => {
+      // TODO:
+      // this.sendCellphonePose(!isRendererEnabled())
+      // })
 
       this.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
         if (!this.destroyed) {
@@ -126,9 +109,6 @@ export class CommsContext {
     }
     if (this.positionObserver) {
       positionObservable.remove(this.positionObserver)
-    }
-    if (this.worldRunningObserver) {
-      renderStateObservable.remove(this.worldRunningObserver)
     }
   }
 
@@ -224,17 +204,4 @@ export class CommsContext {
       await this.worldInstanceConnection.sendParcelUpdateMessage(pos, MORDOR_POSITION)
     }
   }
-}
-
-/**
- * Returns a list of CIDs that must receive scene messages from comms
- */
-function getParcelSceneSubscriptions(): string[] {
-  const ids: string[] = []
-
-  scenesSubscribedToCommsEvents.forEach(($) => {
-    ids.push($.cid)
-  })
-
-  return ids
 }

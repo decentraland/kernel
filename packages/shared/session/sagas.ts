@@ -338,9 +338,3 @@ export function initializeSessionObserver() {
     })
   })
 }
-
-export function* waitForExplorerIdentity() {
-  while (!(yield select(getCurrentIdentity))) {
-    yield take(USER_AUTHENTIFIED)
-  }
-}

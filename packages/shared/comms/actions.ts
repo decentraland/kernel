@@ -1,7 +1,7 @@
 import { action } from 'typesafe-actions'
 import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import type { CommsContext } from './context'
-import { VoicePolicy } from './types'
+import type { VoicePolicy } from './types'
 
 export const VOICE_PLAYING_UPDATE = '[COMMS] voicePlayingUpdate'
 export const voicePlayingUpdate = (userId: string, playing: boolean) =>

@@ -1,5 +1,4 @@
 import { COMMS_PROFILE_TIMEOUT } from 'config'
-import type { CommunicationsController } from 'shared/apis/CommunicationsController'
 import { ChatMessage as InternalChatMessage, ChatMessageType } from 'shared/types'
 import {
   getPeer,
@@ -33,18 +32,10 @@ import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { trackEvent } from 'shared/analytics'
 import { ProfileType } from 'shared/profiles/types'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
+import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
 
-export const scenesSubscribedToCommsEvents = new Set<CommunicationsController>()
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
-
-export function subscribeParcelSceneToCommsMessages(controller: CommunicationsController) {
-  scenesSubscribedToCommsEvents.add(controller)
-}
-
-export function unsubscribeParcelSceneToCommsMessages(controller: CommunicationsController) {
-  scenesSubscribedToCommsEvents.delete(controller)
-}
 
 export async function bindHandlersToCommsContext(context: CommsContext) {
   commsLogger.log('Binding handlers: ', context)
