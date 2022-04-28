@@ -4,7 +4,8 @@ import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface
 import defaultLogger from '../../packages/shared/logger'
 import { RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
-import { PermissionItem, Permissions } from 'shared/apis/Permissions'
+import { Permissions } from 'shared/apis/Permissions'
+import { PermissionItem } from 'shared/apis/PermissionItems'
 
 describe('RestrictedActions tests', () => {
   afterEach(() => sinon.restore())
@@ -42,7 +43,7 @@ describe('RestrictedActions tests', () => {
       try{
         await module.triggerEmote({ predefined: 'emote' })
       }catch(err){
-        
+
       }
       sinon.stub(module, 'assertHasPermissions').threw()
       sinon.verify()
@@ -113,7 +114,7 @@ describe('RestrictedActions tests', () => {
       try{
         await module.movePlayerTo(new Vector3(8, 0, 8))
       }catch(err){
-        
+
       }
 
       sinon.stub(module, 'assertHasPermissions').threw()
