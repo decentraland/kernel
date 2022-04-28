@@ -16,7 +16,7 @@ COMPILED_SUPPORT_JS_FILES := $(subst .ts,.js,$(SOURCE_SUPPORT_TS_FILES))
 
 SCENE_SYSTEM_SOURCES := $(wildcard static/systems/**/*.ts)
 SCENE_SYSTEM := static/systems/scene.system.js
-DECENTRALAND_LOADER := static/loader/lifecycle/worker.js
+DECENTRALAND_LOADER := static/loader/worker.js
 GIF_PROCESSOR := static/gif-processor/worker.js
 INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
 VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
@@ -26,7 +26,7 @@ EMPTY_SCENES := public/empty-scenes/common
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
 	@node_modules/.bin/tsc --build scripts/tsconfig.json
 
-static/loader/lifecycle/worker.js: packages/decentraland-loader/**/*.ts
+static/loader/worker.js: packages/decentraland-loader/**/*.ts
 	@$(COMPILER) targets/engine/loader.json
 
 static/gif-processor/worker.js: packages/gif-processor/*.ts
