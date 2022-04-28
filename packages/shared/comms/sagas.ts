@@ -24,6 +24,8 @@ import { isURL } from 'atomicHelpers/isURL'
 import { processAvatarVisibility } from './peers'
 import { getFatalError } from 'shared/loading/selectors'
 import { EventChannel } from 'redux-saga'
+import { ExplorerIdentity } from 'shared/session/types'
+import { getIdentity } from 'shared/session'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -71,8 +73,11 @@ function* respondCommsProfileRequests() {
 
     const context = (yield select(getCommsContext)) as CommsContext | undefined
     const profile: Avatar | null = yield select(getCurrentUserProfile)
+    const identity: ExplorerIdentity | null = yield select(getIdentity)
 
     if (profile && context && context.currentPosition) {
+      profile.hasConnectedWeb3 = identity?.hasConnectedWeb3 || profile.hasConnectedWeb3
+
       // naive throttling
       const now = Date.now()
       const elapsed = now - lastMessage

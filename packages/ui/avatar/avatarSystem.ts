@@ -5,10 +5,10 @@ import {
   Observable,
   Transform,
   EventManager,
-  BoxShape,
-  IEntity,
-  Material,
-  Color4
+  // BoxShape,
+  // IEntity,
+  // Material,
+  // Color4
 } from '@dcl/legacy-ecs'
 import {
   AvatarMessage,
@@ -26,11 +26,11 @@ import type { NewProfileForRenderer } from 'shared/profiles/transformations/prof
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 const avatarMap = new Map<string, AvatarEntity>()
-const box = new BoxShape()
-const red = new Material()
-red.albedoColor = new Color4(1.0, 0.0, 0.0, 1.0)
-const green = new Material()
-green.albedoColor = new Color4(0.0, 1.0, 0.0, 1.0)
+// const box = new BoxShape()
+// const red = new Material()
+// red.albedoColor = new Color4(1.0, 0.0, 0.0, 1.0)
+// const green = new Material()
+// green.albedoColor = new Color4(0.0, 1.0, 0.0, 1.0)
 
 export class AvatarEntity extends Entity {
   visible = true
@@ -38,7 +38,7 @@ export class AvatarEntity extends Entity {
   transform: Transform
   avatarShape!: AvatarShape
 
-  sub: IEntity
+  // sub: IEntity
 
   constructor(public readonly userId: string, avatarShape = new AvatarShape()) {
     super(userId)
@@ -52,16 +52,16 @@ export class AvatarEntity extends Entity {
     // we need this component to filter the interpolator system
     this.transform = this.getComponentOrCreate(Transform)
 
-    this.sub = new Entity()
-    engine.addEntity(this.sub)
-    this.sub.addComponent(box)
-    this.sub.addComponent(this.transform)
-    this.sub.addComponentOrReplace(red)
+    // this.sub = new Entity()
+    // engine.addEntity(this.sub)
+    // this.sub.addComponent(box)
+    // this.sub.addComponent(this.transform)
+    // this.sub.addComponentOrReplace(red)
   }
 
   loadProfile(profile: Pick<NewProfileForRenderer, 'avatar' | 'name'>) {
     if (profile && profile.name && profile.avatar.bodyShape) {
-      this.sub.addComponentOrReplace(green)
+      // this.sub.addComponentOrReplace(green)
       const { avatar } = profile
 
       const shape = this.avatarShape
@@ -81,7 +81,7 @@ export class AvatarEntity extends Entity {
       }
     } else {
       this.avatarShape.useDummyModel = true
-      this.sub.addComponentOrReplace(red)
+      // this.sub.addComponentOrReplace(red)
     }
     this.updateVisibility()
   }
@@ -135,7 +135,7 @@ export class AvatarEntity extends Entity {
       engine.removeEntity(this)
       avatarMap.delete(this.userId)
     }
-    if (this.sub.isAddedToEngine()) engine.removeEntity(this.sub)
+    // if (this.sub.isAddedToEngine()) engine.removeEntity(this.sub)
   }
 
   private updateVisibility() {
@@ -143,7 +143,7 @@ export class AvatarEntity extends Entity {
       this.remove()
     } else if (this.visible && !this.isAddedToEngine()) {
       engine.addEntity(this)
-      engine.addEntity(this.sub)
+      // engine.addEntity(this.sub)
     }
   }
 }

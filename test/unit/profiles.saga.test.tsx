@@ -5,7 +5,6 @@ import { profileRequest, profileSuccess } from 'shared/profiles/actions'
 import { handleFetchProfile, profileServerRequest } from 'shared/profiles/sagas'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { profileSaga } from '../../packages/shared/profiles/sagas'
-import { processServerProfile } from '../../packages/shared/profiles/transformations/processServerProfile'
 import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
 import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
@@ -53,8 +52,8 @@ describe('fetchProfile behavior', () => {
   it.skip('completes once for more than one request of same user',
     () => {
       return expectSaga(profileSaga)
-        .put(profileSuccess('user|1', 'passport' as any, true))
-        .not.put(profileSuccess('user|1', 'passport' as any, true))
+        .put(profileSuccess('passport' as any))
+        .not.put(profileSuccess('passport' as any))
         .dispatch(profileRequest('user|1'))
         .dispatch(profileRequest('user|1'))
         .dispatch(profileRequest('user|1'))
@@ -62,17 +61,17 @@ describe('fetchProfile behavior', () => {
           [select(getRealm), {}],
           [call(profileServerRequest, 'user|1'), delayedProfile],
           [select(getCurrentUserId), 'myid'],
-          [call(processServerProfile, 'user|1', profile), 'passport']
+          [call(ensureAvatarCompatibilityFormat, profile), 'passport']
         ])
         .run()
     })
 
   it.skip('runs one request for each user', () => {
     return expectSaga(profileSaga)
-      .put(profileSuccess('user|1', 'passport1' as any, true))
-      .put(profileSuccess('user|2', 'passport2' as any, true))
-      .not.put(profileSuccess('user|1', 'passport1' as any))
-      .not.put(profileSuccess('user|2', 'passport2' as any))
+      .put(profileSuccess('passport1' as any))
+      .put(profileSuccess('passport2' as any))
+      .not.put(profileSuccess('passport1' as any))
+      .not.put(profileSuccess('passport2' as any))
       .dispatch(profileRequest('user|1'))
       .dispatch(profileRequest('user|1'))
       .dispatch(profileRequest('user|2'))
@@ -81,9 +80,9 @@ describe('fetchProfile behavior', () => {
         [select(getRealm), {}],
         [call(profileServerRequest, 'user|1'), delayedProfile],
         [select(getCurrentUserId), 'myid'],
-        [call(processServerProfile, 'user|1', profile), 'passport1'],
+        [call(ensureAvatarCompatibilityFormat, profile), 'passport1'],
         [call(profileServerRequest, 'user|2'), delayedProfile],
-        [call(processServerProfile, 'user|2', profile), 'passport2']
+        [call(ensureAvatarCompatibilityFormat, profile), 'passport2']
       ])
       .run()
   })
@@ -100,7 +99,7 @@ describe('fetchProfile behavior', () => {
         // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic(() => ({ ok: true }))],
         [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
-        // [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
+        // [call(ensureAvatarCompatibilityFormat, 'user|1', profile1), dynamic((effect) => effect.args[1])]
       ])
       .run()
       .then((result) => {
@@ -126,7 +125,7 @@ describe('fetchProfile behavior', () => {
         // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic((call) => ({ ok: !call.args[0].startsWith('http://fake/resizeurl') }))],
         [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
-        // [call(processServerProfile, 'user|1', profile1), dynamic((effect) => effect.args[1])]
+        // [call(ensureAvatarCompatibilityFormat, 'user|1', profile1), dynamic((effect) => effect.args[1])]
       ])
       .run()
       .then((result) => {

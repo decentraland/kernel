@@ -24,9 +24,7 @@ export const profileRequest = (userId: string, profileType?: ProfileType, versio
  * profileSuccess stores locally a profile and sends it to the renderer.
  * It can be the result of either a profileRequest or local profile loading/editing
  */
-export const profileSuccess = (userId: string, profile: Avatar, hasConnectedWeb3: boolean = false) =>
-  action(PROFILE_SUCCESS, { userId, profile, hasConnectedWeb3 })
-
+export const profileSuccess = (profile: Avatar) => action(PROFILE_SUCCESS, { profile })
 export const profileFailure = (userId: string, error: any) => action(PROFILE_FAILURE, { userId, error })
 
 export type ProfileRequestAction = ReturnType<typeof profileRequest>
@@ -42,7 +40,6 @@ export const saveProfileFailure = (userId: string, error: any) => action(SAVE_PR
 export type SaveProfileDelta = ReturnType<typeof saveProfileDelta>
 export type SendProfileToRenderer = ReturnType<typeof sendProfileToRenderer>
 export type SaveProfileFailure = ReturnType<typeof saveProfileFailure>
-
 
 export const deployProfile = (profile: Avatar) => action(DEPLOY_PROFILE_REQUEST, { profile })
 export const deployProfileSuccess = (userId: string, version: number, profile: Avatar) =>
@@ -60,6 +57,5 @@ export type AddedProfileToCatalog = ReturnType<typeof addedProfileToCatalog>
 
 // Profiles over comms
 export const PROFILE_RECEIVED_OVER_COMMS = 'PROFILE_RECEIVED_OVER_COMMS'
-export const profileReceivedOverComms = (profile: Avatar) =>
-  action(PROFILE_RECEIVED_OVER_COMMS, { profile })
+export const profileReceivedOverComms = (profile: Avatar) => action(PROFILE_RECEIVED_OVER_COMMS, { profile })
 export type ProfileReceivedOverComms = ReturnType<typeof profileReceivedOverComms>

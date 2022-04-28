@@ -484,7 +484,7 @@ export class UnityInterface implements IUnityInterface {
     // TODO: why do we send the whole profile while asking for the ENS???
     const profilesForRenderer: NewProfileForRenderer[] = []
     for (const profile of profiles) {
-      profilesForRenderer.push(profileToRendererFormat(profile, {address: profile.userId}))
+      profilesForRenderer.push(profileToRendererFormat(profile, { address: profile.userId }))
     }
     this.SendMessageToUnity(
       'Bridges',
@@ -604,7 +604,7 @@ export class UnityInterface implements IUnityInterface {
           method,
           object,
           payload,
-          stack: (new Error().stack || '?')
+          stack: new Error().stack || '?'
         })
         const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}. Payload: ${payload}.`
         unityLogger.error(error)

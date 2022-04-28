@@ -39,14 +39,6 @@ export const getCurrentUserProfileStatusAndData = (
   return currentUserId ? getProfileStatusAndData(store, currentUserId) : [undefined, undefined]
 }
 
-export const getHasConnectedWeb3 = (store: RootProfileState, userId: string): boolean =>
-  getProfileValueIfOkOrLoading(
-    store,
-    userId,
-    (info) => !!info.hasConnectedWeb3,
-    () => false
-  )
-
 export const findProfileByName = (store: RootProfileState, userName: string): Avatar | null =>
   store.profiles && store.profiles.userInfo
     ? Object.values(store.profiles.userInfo)

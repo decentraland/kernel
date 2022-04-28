@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { processServerProfile } from 'shared/profiles/transformations/processServerProfile'
+import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 
 describe('legacy spec conversion', () => {
   it.skip('works with a sample case', () => {
@@ -69,6 +69,6 @@ describe('legacy spec conversion', () => {
       }
     }
 
-    expect(processServerProfile('email|5d056a5302751940134de62c', original as any)).to.deep.equal(expected)
+    expect(ensureAvatarCompatibilityFormat(original as any)).to.deep.equal(expected)
   })
 })

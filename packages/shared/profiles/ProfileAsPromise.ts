@@ -16,9 +16,9 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
     return !version || aProfile.version >= version
   }
 
-  const [status, existingProfile] = getProfileStatusAndData(store.getState(), userId)
+  const [_, existingProfile] = getProfileStatusAndData(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
-  if (existingProfile && existingProfileWithCorrectVersion && status === 'ok') {
+  if (existingProfile && existingProfileWithCorrectVersion) {
     return Promise.resolve(existingProfile)
   }
   return new Promise<Avatar>((resolve, reject) => {
@@ -60,23 +60,6 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
         }
       }
     }, PROFILE_SOFT_TIMEOUT_MS)
-  })
-}
-
-export function EnsureProfile(userId: string, version?: number): Promise<Avatar> {
-  const existingProfile = getProfile(store.getState(), userId)
-  const existingProfileWithCorrectVersion = existingProfile && (!version || existingProfile.version >= version)
-  if (existingProfile && existingProfileWithCorrectVersion) {
-    return Promise.resolve(existingProfile)
-  }
-  return new Promise((resolve) => {
-    const unsubscribe = store.subscribe(() => {
-      const profile = getProfile(store.getState(), userId)
-      if (profile) {
-        unsubscribe()
-        return resolve(profile)
-      }
-    })
   })
 }
 

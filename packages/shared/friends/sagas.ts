@@ -84,8 +84,9 @@ export function* friendsSaga() {
 
 function* initializeFriendsSaga() {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+  const isGuest = identity.hasConnectedWeb3
 
-  if (identity.hasConnectedWeb3) {
+  if (!isGuest) {
     yield call(waitForRealmInitialized)
 
     try {

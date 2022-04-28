@@ -1,9 +1,9 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { call, put, select, takeEvery, fork, take, debounce } from 'redux-saga/effects'
+import { call, put, select, takeEvery, fork, take, debounce, apply } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
-import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK, PREVIEW } from 'config'
+import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
 import defaultLogger from 'shared/logger'
 import {
   PROFILE_REQUEST,
@@ -20,10 +20,10 @@ import {
   DeployProfile,
   profileSuccess,
   PROFILE_SUCCESS,
-  ProfileSuccessAction
+  ProfileSuccessAction,
+  profileFailure
 } from './actions'
 import { getCurrentUserProfile, getProfileFromStore } from './selectors'
-import { processServerProfile } from './transformations/processServerProfile'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
 import { ContentFile, ProfileType, ProfileUserInfo } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -38,18 +38,18 @@ import { fetchOwnedENS } from 'shared/web3'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
-import { getProfileType } from './getProfileType'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
 import { getCommsContext } from 'shared/comms/selectors'
 import { CommsContext } from 'shared/comms/context'
-import { createReceiveProfileOverCommsChannel, requestLocalProfileToPeers } from 'shared/comms/handlers'
+import { createReceiveProfileOverCommsChannel, requestProfileToPeers } from 'shared/comms/handlers'
 import { Avatar, Profile, Snapshots } from '@dcl/schemas'
 import { validateAvatar } from './schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
+import { getIdentity } from 'shared/session'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -75,7 +75,7 @@ export const localProfilesRepo = new LocalProfilesRepository()
  * It's *very* important for the renderer to never receive a passport with items that have not been loaded into the catalog.
  */
 export function* profileSaga(): any {
-  yield takeEvery(USER_AUTHENTIFIED, initialProfileLoad)
+  yield takeEvery(USER_AUTHENTIFIED, initialRemoteProfileLoad)
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
   yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
   yield fork(handleCommsProfile)
@@ -84,38 +84,46 @@ export function* profileSaga(): any {
 }
 
 function* forwardProfileToRenderer(action: ProfileSuccessAction) {
-  yield put(sendProfileToRenderer(action.payload.userId))
+  yield put(sendProfileToRenderer(action.payload.profile.userId))
 }
 
-function* initialProfileLoad() {
+function* initialRemoteProfileLoad() {
   yield call(waitForRealmInitialized)
 
   // initialize profile
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+  const isGuest = !identity.hasConnectedWeb3
   const userId = identity.address
 
   let profile: Avatar
 
   try {
-    profile = yield call(ProfileAsPromise, userId, undefined, getProfileType(identity))
+    profile = yield call(ProfileAsPromise, userId, undefined, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
   } catch (e: any) {
-    ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId: userId })
+    ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
     BringDownClientAndShowError(UNEXPECTED_ERROR)
     throw e
   }
 
   let profileDirty: boolean = false
 
-  if (!profile.hasClaimedName) {
-    const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-    const names: string[] = yield call(fetchOwnedENS, ethereumConfigurations[net].names, userId)
+  const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
+  const names: string[] = yield call(fetchOwnedENS, ethereumConfigurations[net].names, userId)
 
-    // patch profile to re-add missing name
-    profile = { ...profile, name: names[0], hasClaimedName: true, tutorialStep: 0xff }
-
-    if (names && names.length > 0) {
+  // check that the user still has the claimed name, otherwise pick one
+  function selectClaimedName() {
+    if (names.length) {
       defaultLogger.info(`Found missing claimed name '${names[0]}' for profile ${userId}, consolidating profile... `)
-      profileDirty = true
+      profile = { ...profile, name: names[0], hasClaimedName: true, tutorialStep: 0xfff }
+    } else {
+      profile = { ...profile, hasClaimedName: false, tutorialStep: 0x0 }
+    }
+    profileDirty = true
+  }
+
+  if (profile.hasClaimedName || names.length) {
+    if (!names.includes(profile.name)) {
+      selectClaimedName()
     }
   }
 
@@ -131,48 +139,48 @@ function* initialProfileLoad() {
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
-  const { userId, profileType, version } = action.payload
+  const { userId, version } = action.payload
 
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
   const commsContext: CommsContext | undefined = yield select(getCommsContext)
+
   if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
 
-  const lookingForMyProfile = yield select(isCurrentUserId, userId)
-
-  let profile: Avatar | null = null
-  let hasConnectedWeb3 = false
   try {
-    if ((PREVIEW || profileType === ProfileType.LOCAL) && !lookingForMyProfile && commsContext) {
-      const peerProfile: Avatar = yield call(requestLocalProfileToPeers, commsContext, userId)
-      if (peerProfile) {
-        profile = ensureAvatarCompatibilityFormat(peerProfile)
-        profile.hasClaimedName = false // for now, comms profiles can't have claimed names
-      }
-    } else {
-      profile = yield call(getRemoteProfile, userId, version)
-      if (profile) {
-        profile.hasClaimedName = !!profile.name && profile.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
-        hasConnectedWeb3 = true
-      }
+    const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
+    const shouldFetchViaComms = commsContext && !shouldReadProfileFromLocalStorage
+    const shouldLoadFromCatalyst = true
+    const shouldFallbackToRandomProfile = true
+
+    const profile: Avatar =
+      // first fetch avatar through comms
+      (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
+      // and then via catalyst
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
+      // then for my profile, try localStorage
+      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
+      // lastly, come up with a random profile
+      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
+
+    const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
+    avatar.userId = userId
+
+    if (shouldReadProfileFromLocalStorage) {
+      // for local user, hasConnectedWeb3 == identity.hasConnectedWeb3
+      const identity: ExplorerIdentity | undefined = yield call(getIdentity)
+      avatar.hasConnectedWeb3 = identity?.hasConnectedWeb3 || avatar.hasConnectedWeb3
     }
+
+    yield put(profileSuccess(avatar))
   } catch (error: any) {
+    debugger
     trackEvent('error', {
       context: 'kernel#saga',
       message: `Error requesting profile for ${userId}: ${error}`,
       stack: error.stack || ''
     })
+    yield put(profileFailure(userId, `${error}`))
   }
-  if (lookingForMyProfile && !profile) {
-    const net: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-    profile = yield call(fetchProfileLocally, userId, net)
-  }
-  if (!profile) {
-    profile = yield call(generateRandomUserProfile, userId)
-  }
-
-  profile!.email = ''
-  const avatar: Avatar = yield call(processServerProfile, userId, profile!)
-  yield put(profileSuccess(userId, avatar, hasConnectedWeb3))
 }
 
 function* getRemoteProfile(userId: string, version?: number) {
@@ -187,6 +195,10 @@ function* getRemoteProfile(userId: string, version?: number) {
         defaultLogger.warn(`Remote avatar for user is invalid.`, userId, avatar, validateAvatar.errors)
         return null
       }
+
+      avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
+      avatar.hasConnectedWeb3 = true
+
       return avatar
     }
   } catch (error: any) {
@@ -233,8 +245,11 @@ function* handleCommsProfile() {
     const existingProfile: ProfileUserInfo | null = yield select(getProfileFromStore, receivedProfile.userId)
 
     if (!existingProfile || existingProfile.data?.version < receivedProfile.version) {
+      // TEMP:
+      receivedProfile.hasConnectedWeb3 = receivedProfile.hasConnectedWeb3 || false
+
       // store profile locally and forward to renderer
-      yield put(profileSuccess(receivedProfile.userId, receivedProfile, existingProfile?.hasConnectedWeb3))
+      yield put(profileSuccess(receivedProfile))
     }
   }
 }
@@ -254,7 +269,8 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
       ...saveAvatar.payload.profile,
       userId,
       version: currentVersion + 1,
-      ethAddress: identity.address
+      ethAddress: userId,
+      hasConnectedWeb3: identity.hasConnectedWeb3
     } as Avatar
 
     if (!validateAvatar(profile)) {
@@ -266,13 +282,13 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
     }
 
     // save the profile in the local storage
-    yield localProfilesRepo.persist(identity.address, network, profile)
+    yield localProfilesRepo.persist(profile.ethAddress, network, profile)
 
     // save the profile in the store
-    yield put(profileSuccess(userId, profile, identity.hasConnectedWeb3))
+    yield put(profileSuccess(profile))
 
     // only update profile on server if wallet is connected
-    if (identity.hasConnectedWeb3) {
+    if (profile.hasConnectedWeb3) {
       yield put(deployProfile(profile))
     }
   } catch (error: any) {
@@ -309,9 +325,11 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
   }
 }
 
-export async function fetchProfileLocally(address: string, network: ETHEREUM_NETWORK): Promise<Avatar | null> {
-  const profile = (await localProfilesRepo.get(address, network)) as Avatar | null
-  if (profile && profile.userId === address) {
+function* readProfileFromLocalStorage() {
+  const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
+  const identity: ExplorerIdentity = yield select(getIdentity)
+  const profile = (yield apply(localProfilesRepo, localProfilesRepo.get, [identity.address, network])) as Avatar | null
+  if (profile && profile.userId === identity.address) {
     return ensureAvatarCompatibilityFormat(profile)
   } else {
     return null

@@ -2,7 +2,7 @@ import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 
 import { UserData } from 'shared/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
-import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
+import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 
 import { ExposableAPI } from './ExposableAPI'
 import { onLoginCompleted } from 'shared/session/sagas'
@@ -40,7 +40,7 @@ export class UserIdentity extends ExposableAPI implements IUserIdentity {
       return null
     }
 
-    const profile = await EnsureProfile(identity?.address)
+    const profile = await ProfileAsPromise(identity?.address)
 
     return {
       displayName: calculateDisplayName(profile),

@@ -2,7 +2,7 @@ import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 
 
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
-import { findProfileByName, getHasConnectedWeb3 } from 'shared/profiles/selectors'
+import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
@@ -540,10 +540,10 @@ export class BrowserInterface {
 
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     if (message.action === FriendshipAction.REQUESTED_TO) {
-      await ensureFriendProfile(userId)
+      const avatar = await ensureFriendProfile(userId)
 
       if (isAddress(userId)) {
-        found = getHasConnectedWeb3(state, userId)
+        found = avatar.hasConnectedWeb3 || false
       } else {
         const profileByName = findProfileByName(state, userId)
         if (profileByName) {

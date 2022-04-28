@@ -54,14 +54,8 @@ export type ProfilePromiseState = {
 export class CommsContext {
   public readonly stats: Stats = new Stats()
   public commRadius: number
-
   public currentPosition: Position | null = null
-
   public onDisconnectObservable = new Observable<void>()
-
-  timeToChangeRealm: number = Date.now() + commConfigurations.autoChangeRealmInterval
-  sendingProfileResponse: boolean = false
-  positionUpdatesPaused: boolean = false
 
   private reportPositionInterval?: ReturnType<typeof setInterval>
   private positionObserver: Observer<any> | null = null
@@ -95,15 +89,17 @@ export class CommsContext {
       })
 
       this.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-        this.onPositionUpdate(positionReportToCommsPosition(obj))
+        if (!this.destroyed) {
+          this.onPositionUpdate(positionReportToCommsPosition(obj))
+        }
       })
 
       // this interval is important because if we stand still without sending position reports
       // then archipelago may timeout and peers may magically stop appearing for us. fixable with
       // walking one centimeter in any direction. don't know the reason
       this.reportPositionInterval = setInterval(() => {
-        if (lastPlayerPositionReport) {
-          this.onPositionUpdate(positionReportToCommsPosition(lastPlayerPositionReport))
+        if (this.currentPosition && !this.destroyed) {
+          this.onPositionUpdate(this.currentPosition)
         }
       }, 5001)
       return true
@@ -120,7 +116,6 @@ export class CommsContext {
     commsLogger.info('Disconnecting comms context')
     this.destroyed = true
     this.onDisconnectObservable.notifyObservers()
-    this.positionUpdatesPaused = true
 
     await this.worldInstanceConnection.disconnect()
 
@@ -180,11 +175,9 @@ export class CommsContext {
         }
       }
       this.currentParcelTopics = rawTopics.join(' ')
-      if (!this.positionUpdatesPaused) {
-        worldConnection
-          .sendParcelUpdateMessage(oldPosition || newPosition, newPosition)
-          .catch((e) => commsLogger.warn(`error while sending message `, e))
-      }
+      worldConnection
+        .sendParcelUpdateMessage(oldPosition || newPosition, newPosition)
+        .catch((e) => commsLogger.warn(`error while sending message `, e))
     }
 
     if (!immediateReposition) {
@@ -217,7 +210,7 @@ export class CommsContext {
       return
     }
 
-    if ((immediateReposition || elapsed > 100) && !this.positionUpdatesPaused) {
+    if ((immediateReposition || elapsed > 100) && !this.destroyed) {
       this.lastPositionSent = newPosition
       this.lastNetworkUpdatePosition = now
       worldConnection.sendPositionMessage(newPosition).catch((e) => commsLogger.warn(`error while sending message `, e))

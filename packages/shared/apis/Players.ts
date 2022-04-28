@@ -54,8 +54,8 @@ export class Players extends ExposableAPI implements IPlayers {
 
     return {
       displayName: calculateDisplayName(profile.data),
-      publicKey: profile.hasConnectedWeb3 ? profile.data.userId : null,
-      hasConnectedWeb3: profile.hasConnectedWeb3,
+      publicKey: profile.data.hasConnectedWeb3 ? profile.data.userId : null,
+      hasConnectedWeb3: !!profile.data.hasConnectedWeb3,
       userId: userId,
       version: profile.data.version,
       avatar: sdkCompatibilityAvatar(profile.data.avatar)

@@ -226,11 +226,11 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
 
-  const BUILDER_IN_WORLD_ENABLED =
-    identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
+  const isGuest = !identity.hasConnectedWeb3
+  const BUILDER_IN_WORLD_ENABLED = !isGuest && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
 
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
-  i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: identity.hasConnectedWeb3, visible: false })
+  i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: !isGuest, visible: false })
 
   await realmInitialized()
 

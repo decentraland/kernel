@@ -23,6 +23,7 @@ export interface MessageDict {
   [key: string]: string
 }
 
+/** THIS TYPE IS APPEND ONLY BECAUSE IT IS USED FOR THE SDK APIs */
 export type UserData = {
   displayName: string
   publicKey: string | null

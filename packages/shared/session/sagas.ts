@@ -144,7 +144,7 @@ function* authenticate(action: AuthenticateAction) {
   yield call(ensureMetaConfigurationInitialized)
   yield put(changeLoginState(LoginState.COMPLETED))
 
-  if (identity.hasConnectedWeb3) {
+  if (!isGuest) {
     yield call(referUser, identity)
   }
 }

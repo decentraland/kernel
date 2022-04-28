@@ -29,16 +29,15 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         }
       }
     case PROFILE_SUCCESS:
-      const { userId, profile, hasConnectedWeb3 } = (action as ProfileSuccessAction).payload
+      const { profile } = (action as ProfileSuccessAction).payload
       return {
         ...state,
         userInfo: {
           ...state.userInfo,
-          [userId]: {
-            ...state.userInfo[userId],
+          [profile.userId]: {
+            ...state.userInfo[profile.userId],
             data: profile,
-            status: 'ok',
-            hasConnectedWeb3
+            status: 'ok'
           }
         }
       }

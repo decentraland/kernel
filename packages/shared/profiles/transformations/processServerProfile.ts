@@ -24,28 +24,3 @@ export function calculateDisplayName(profile: Avatar): string {
 
   return `${name}${lastPart}`
 }
-
-export function processServerProfile(userId: string, receivedProfile: Avatar): Avatar {
-  const snapshots: any = receivedProfile.avatar.snapshots
-
-  if (snapshots.face) {
-    if (!snapshots.face256) snapshots.face256 = snapshots.face
-    delete snapshots.face256
-  }
-
-  return {
-    userId,
-    // @deprecated
-    email: '',
-    name: receivedProfile.name,
-    hasClaimedName: receivedProfile.hasClaimedName || false,
-    description: receivedProfile.description || '',
-    ethAddress: receivedProfile.ethAddress || userId,
-    avatar: receivedProfile.avatar,
-    blocked: receivedProfile.blocked,
-    muted: receivedProfile.muted,
-    tutorialStep: receivedProfile.tutorialStep || 0,
-    interests: receivedProfile.interests || [],
-    version: receivedProfile.version || 0
-  }
-}

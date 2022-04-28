@@ -215,14 +215,16 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     let parcels: ParcelsWithAccess = []
+
     if (identity.hasConnectedWeb3) {
       parcels = yield call(fetchParcelsWithAccess, identity.address)
     }
+
     const forRenderer = profileToRendererFormat(profile.data, {
       address: identity.address,
-      hasConnectedWeb3: identity.hasConnectedWeb3,
       parcels
     })
+    forRenderer.hasConnectedWeb3 = identity.hasConnectedWeb3
     // TODO: this condition shouldn't be necessary. Unity fails with setThrew
     //       if LoadProfile is called rapidly because it cancels ongoing
     //       requests and those cancellations throw exceptions
@@ -232,7 +234,6 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     }
   } else {
     const forRenderer = profileToRendererFormat(profile.data, {})
-    forRenderer.hasConnectedWeb3 = profile.hasConnectedWeb3
     getUnityInstance().AddUserProfileToCatalog(forRenderer)
     yield put(addedProfileToCatalog(userId, profile.data))
 

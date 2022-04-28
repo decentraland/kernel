@@ -118,8 +118,7 @@ export function receiveUserTalking(uuid: string, talking: boolean) {
 
 export function receiveUserPosition(uuid: string, position: Pose, msgTimestamp: number) {
   if (deepEqual(position, MORDOR_POSITION)) {
-    receiveUserVisible(uuid, false)
-
+    removePeerByUUID(uuid)
     return
   }
 
@@ -138,7 +137,6 @@ function avatarUiProfileForUserId(userId: string) {
   const avatar = getProfileFromStore(store.getState(), userId)
   if (avatar && avatar.data) {
     return profileToRendererFormat(avatar.data, {
-      hasConnectedWeb3: avatar.hasConnectedWeb3,
       address: userId
     })
   }

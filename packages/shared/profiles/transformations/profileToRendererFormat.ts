@@ -34,7 +34,6 @@ export function profileToRendererFormat(
   profile: Partial<Avatar>,
   options: {
     address?: string
-    hasConnectedWeb3?: boolean
 
     // TODO: there is no explaination why the profile has the parcels of Builder. Remove it from here
     parcels?: ParcelsWithAccess
@@ -55,7 +54,7 @@ export function profileToRendererFormat(
     updated_at: 0,
     // @deprecated
     email: '',
-    hasConnectedWeb3: options.hasConnectedWeb3 || false,
+    hasConnectedWeb3: stage.hasConnectedWeb3 || false,
     hasClaimedName: stage.hasClaimedName ?? false,
     tutorialFlagsMask: 0,
     tutorialStep: stage.tutorialStep || 0,

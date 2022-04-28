@@ -23,7 +23,7 @@ export function* wearablesPortableExperienceSaga(): any {
 
 function* handleProfileSuccess(action: ProfileSuccessAction): any {
   // cancel the saga if we receive a profile from a different user
-  if (!(yield select(isCurrentUserId, action.payload.userId))) {
+  if (!(yield select(isCurrentUserId, action.payload.profile.userId))) {
     return
   }
 
