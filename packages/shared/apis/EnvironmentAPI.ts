@@ -8,25 +8,7 @@ import { getCommsIsland, getRealm } from 'shared/comms/selectors'
 import { Realm } from 'shared/dao/types'
 import { isFeatureEnabled } from 'shared/meta/selectors'
 import { FeatureFlags } from 'shared/meta/types'
-
-export type EnvironmentRealm = {
-  domain: string
-  /** @deprecated use room instead */
-  layer: string
-  room: string
-  serverName: string
-  displayName: string
-}
-
-type ExplorerConfiguration = {
-  clientUri: string
-  configurations: Record<string, string | number | boolean>
-}
-
-export const enum Platform {
-  DESKTOP = 'desktop',
-  BROWSER = 'browser'
-}
+import { EnvironmentRealm, ExplorerConfiguration, IEnvironmentAPI, Platform } from './IEnvironmentAPI'
 
 type DecentralandTimeData = {
   timeNormalizationFactor: number
@@ -39,7 +21,7 @@ type DecentralandTimeData = {
 let decentralandTimeData: DecentralandTimeData
 
 @registerAPI('EnvironmentAPI')
-export class EnvironmentAPI extends ExposableAPI {
+export class EnvironmentAPI extends ExposableAPI implements IEnvironmentAPI {
   data!: EnvironmentData<any>
   /**
    * Returns the coordinates and the definition of a parcel

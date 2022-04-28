@@ -3,8 +3,7 @@ import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import type { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
 import type { Permissions } from 'shared/apis/Permissions'
-import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
-
+import type { IEnvironmentAPI } from 'shared/apis/IEnvironmentAPI'
 import { EventSubscriber, WebWorkerTransport } from 'decentraland-rpc'
 import { inject, Script } from 'decentraland-rpc/lib/client/Script'
 import { defaultLogger } from 'shared/logger'
@@ -22,7 +21,7 @@ class StatefulWebWorkerScene extends Script {
   engine!: IEngineAPI
 
   @inject('EnvironmentAPI')
-  environmentAPI!: EnvironmentAPI
+  environmentAPI!: IEnvironmentAPI
 
   @inject('ParcelIdentity')
   parcelIdentity!: ParcelIdentity

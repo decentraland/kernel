@@ -8,7 +8,7 @@ import future, { IFuture } from 'fp-future'
 import type { ScriptingTransport, ILogOpts } from 'decentraland-rpc/src/common/json-rpc/types'
 import type { QueryType } from '@dcl/legacy-ecs'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
-import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
+import type { IEnvironmentAPI } from 'shared/apis/IEnvironmentAPI'
 import type {
   RPCSendableMessage,
   EntityAction,
@@ -164,7 +164,7 @@ export abstract class SceneRuntime extends Script {
   }
 
   async loadProject() {
-    const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: EnvironmentAPI }
+    const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: IEnvironmentAPI }
     const bootstrapData = await EnvironmentAPI.getBootstrapData()
     this.isPreview = await EnvironmentAPI.isPreviewMode()
 
@@ -538,7 +538,7 @@ export abstract class SceneRuntime extends Script {
         const { Permissions } = await this.loadAPIs(['Permissions'])
         const canUseWebsocket = await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
         const canUseFetch = await Permissions.hasPermission(PermissionItem.USE_FETCH)
-        const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: EnvironmentAPI }
+        const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: IEnvironmentAPI }
         const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
         const originalFetch = fetch
