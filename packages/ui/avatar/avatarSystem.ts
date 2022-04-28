@@ -10,9 +10,8 @@ import {
   // Material,
   // Color4
 } from '@dcl/legacy-ecs'
-import {
+import type {
   AvatarMessage,
-  AvatarMessageType,
   Pose,
   ReceiveUserDataMessage,
   ReceiveUserExpressionMessage,
@@ -22,7 +21,7 @@ import {
   UserRemovedMessage,
   UUID
 } from 'shared/comms/interface/types'
-import type { NewProfileForRenderer } from 'shared/profiles/transformations/profileToRendererFormat'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 const avatarMap = new Map<string, AvatarEntity>()
@@ -200,15 +199,15 @@ function handleUserRemoved({ userId }: UserRemovedMessage): void {
 }
 
 avatarMessageObservable.add((evt) => {
-  if (evt.type === AvatarMessageType.USER_DATA) {
+  if (evt.type === 'USER_DATA') {
     handleUserData(evt)
-  } else if (evt.type === AvatarMessageType.USER_VISIBLE) {
+  } else if (evt.type === 'USER_VISIBLE') {
     handleUserVisible(evt)
-  } else if (evt.type === AvatarMessageType.USER_EXPRESSION) {
+  } else if (evt.type === 'USER_EXPRESSION') {
     handleUserExpression(evt)
-  } else if (evt.type === AvatarMessageType.USER_REMOVED) {
+  } else if (evt.type === 'USER_REMOVED') {
     handleUserRemoved(evt)
-  } else if (evt.type === AvatarMessageType.USER_TALKING) {
+  } else if (evt.type === 'USER_TALKING') {
     handleUserTalkingUpdate(evt as ReceiveUserTalkingMessage)
   }
 })

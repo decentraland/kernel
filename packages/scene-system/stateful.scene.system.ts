@@ -1,16 +1,17 @@
-import { EventSubscriber, WebWorkerTransport } from 'decentraland-rpc'
-import { inject, Script } from 'decentraland-rpc/lib/client/Script'
 import type { ILogOpts, ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
 import type { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
-import { Permissions } from 'shared/apis/Permissions'
+import type { Permissions } from 'shared/apis/Permissions'
+import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
+
+import { EventSubscriber, WebWorkerTransport } from 'decentraland-rpc'
+import { inject, Script } from 'decentraland-rpc/lib/client/Script'
 import { defaultLogger } from 'shared/logger'
 import { DevToolsAdapter } from './sdk/DevToolsAdapter'
 import { RendererStatefulActor } from './stateful-scene/RendererStatefulActor'
 import { BuilderStatefulActor } from './stateful-scene/BuilderStatefulActor'
 import { serializeSceneState } from './stateful-scene/SceneStateDefinitionSerializer'
-import type { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
 import { SceneStateDefinition } from './stateful-scene/SceneStateDefinition'
 
 class StatefulWebWorkerScene extends Script {

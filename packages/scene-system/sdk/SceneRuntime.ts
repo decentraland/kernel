@@ -28,7 +28,7 @@ import type {
 import { generatePBObject } from './Utils'
 import { createWebSocket } from './WebSocket'
 import { createFetch } from './Fetch'
-import { PermissionItem } from 'shared/apis/Permissions'
+import { PermissionItem } from 'shared/apis/PermissionItems'
 
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/

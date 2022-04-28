@@ -16,7 +16,7 @@ export type RootProfileState = {
 
 export type ContentFile = {
   name: string
-  content: Buffer
+  content: Uint8Array
 }
 
 // NEVER CHANGE THIS ENUM, IT IS USED IN THE WIRE PROTOCOL

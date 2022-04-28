@@ -1,7 +1,8 @@
-﻿import { SceneStateDefinition } from './SceneStateDefinition'
-import { ILand } from 'shared/types'
-import { deserializeSceneState, serializeSceneState } from './SceneStateDefinitionSerializer'
+﻿import type { ILand } from 'shared/types'
 import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
+
+import { SceneStateDefinition } from './SceneStateDefinition'
+import { deserializeSceneState, serializeSceneState } from './SceneStateDefinitionSerializer'
 import { CONTENT_PATH } from 'shared/apis/SceneStateStorageController/types'
 
 export class BuilderStatefulActor {

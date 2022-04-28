@@ -1,14 +1,7 @@
 import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import { ExposableAPI } from './ExposableAPI'
 import { ParcelIdentity } from './ParcelIdentity'
-
-export enum PermissionItem {
-  ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE = 'ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE',
-  ALLOW_TO_TRIGGER_AVATAR_EMOTE = 'ALLOW_TO_TRIGGER_AVATAR_EMOTE',
-  USE_WEB3_API = 'USE_WEB3_API',
-  USE_WEBSOCKET = 'USE_WEBSOCKET',
-  USE_FETCH = 'USE_FETCH'
-}
+import { PermissionItem } from './PermissionItems'
 
 export const defaultParcelPermissions = [
   PermissionItem.USE_WEB3_API,

@@ -1,34 +1,11 @@
-import { ParcelsWithAccess, ProfileForRenderer } from '@dcl/legacy-ecs'
+import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
 import { isURL } from 'atomicHelpers/isURL'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
 import { backupProfile } from '../generateRandomUserProfile'
 import { genericAvatarSnapshots } from 'config'
 import { calculateDisplayName } from './processServerProfile'
-
-export type NewProfileForRenderer = {
-  userId: string
-  ethAddress: string
-  name: string
-  // @deprecated
-  email: string
-  parcelsWithAccess: ProfileForRenderer['parcelsWithAccess']
-  snapshots: Snapshots
-  blocked: string[]
-  muted: string[]
-  tutorialStep: number
-  hasConnectedWeb3: boolean
-  hasClaimedName: boolean
-  avatar: ProfileForRenderer['avatar']
-
-  // TODO evaluate usage of the following
-  version: number
-  description: string
-  created_at: number
-  updated_at: number
-  inventory: string[]
-  tutorialFlagsMask: number
-}
+import { NewProfileForRenderer } from './types'
 
 export function profileToRendererFormat(
   profile: Partial<Avatar>,

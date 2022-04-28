@@ -11,7 +11,7 @@ import {
 import { lastPlayerPosition } from '../world/positionThings'
 import { browserInterface } from '../../unity-interface/BrowserInterface'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { PermissionItem } from './Permissions'
+import { PermissionItem } from './PermissionItems'
 
 @registerAPI('RestrictedActions')
 export class RestrictedActions extends RestrictedExposableAPI {

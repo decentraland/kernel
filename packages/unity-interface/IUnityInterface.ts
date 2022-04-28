@@ -27,8 +27,8 @@ import {
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/profileToRendererFormat'
 import { ILogger } from 'shared/logger'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 export type RealmInfo = {
   serverName: string

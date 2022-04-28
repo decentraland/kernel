@@ -1,5 +1,6 @@
 import { ExposableAPI } from './ExposableAPI'
-import { Permissions, PermissionItem } from './Permissions'
+import { PermissionItem } from './PermissionItems'
+import { Permissions } from './Permissions'
 
 export class RestrictedExposableAPI extends ExposableAPI {
   permissions = this.options.getAPIInstance(Permissions)

@@ -373,7 +373,7 @@ async function deployAvatar(params: { url: string; userId: string; identity: Exp
 
       newSnapshots[selector] = hash
       content.set(name, hash)
-      contentFile && files.set(contentFile.name, contentFile.content)
+      contentFile && files.set(contentFile.name, Buffer.from(contentFile.content))
     }
     newAvatar.snapshots = newSnapshots as Snapshots
   }

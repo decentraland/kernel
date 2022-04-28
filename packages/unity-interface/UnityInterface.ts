@@ -26,7 +26,7 @@ import { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
-import { NewProfileForRenderer, profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
+import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { WearableV2 } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
@@ -37,6 +37,7 @@ import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 const MINIMAP_CHUNK_SIZE = 100
 

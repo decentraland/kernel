@@ -1,5 +1,5 @@
 import type { Avatar } from '@dcl/schemas'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/profileToRendererFormat'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import type { ProfileType } from 'shared/profiles/types'
 
 export const enum AvatarMessageType {
