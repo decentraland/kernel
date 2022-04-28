@@ -1,72 +1,20 @@
 import { Package, VoiceFragment } from './interface/types'
-import { Position, rotateUsingQuaternion } from './interface/utils'
+import { Position, positionReportToCommsPosition, rotateUsingQuaternion } from './interface/utils'
 import { store } from 'shared/store/isolatedStore'
-import { getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { VoiceCommunicator, VoiceSpatialParams } from 'voice-chat-codec/VoiceCommunicator'
-import { getCommsContext, getVoiceCommunicator, getVoicePolicy, isVoiceChatAllowedByCurrentScene } from './selectors'
-import { CommsContext } from './context'
+import { getCommsContext, getVoiceCommunicator } from './selectors'
 import { createLogger } from 'shared/logger'
 import { commConfigurations } from 'config'
 import Html from 'shared/Html'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import { setVoiceCommunicator, voicePlayingUpdate, voiceRecordingUpdate } from './actions'
 import { put } from 'redux-saga/effects'
-import { getBannedUsers } from 'shared/meta/selectors'
-import { getIdentity } from 'shared/session'
-import { BannedUsers } from 'shared/meta/types'
-import { isFriend } from 'shared/friends/selectors'
-import { VoicePolicy } from './types'
-import { Avatar } from '@dcl/schemas'
 import { setupPeer } from './peers'
+import { shouldPlayVoice } from './voice-selectors'
+import { positionObservable, PositionReport } from 'shared/world/positionThings'
 
 const logger = createLogger('VoiceCommunicator: ')
-
-function isVoiceAllowedByPolicy(voiceUserId: string): boolean {
-  const policy = getVoicePolicy(store.getState())
-
-  switch (policy) {
-    case VoicePolicy.ALLOW_FRIENDS_ONLY:
-      return isFriend(store.getState(), voiceUserId)
-    case VoicePolicy.ALLOW_VERIFIED_ONLY:
-      const theirProfile = getProfile(store.getState(), voiceUserId)
-      return !!theirProfile?.hasClaimedName
-    default:
-      return true
-  }
-}
-export function isBlockedOrBanned(profile: Avatar, bannedUsers: BannedUsers, userId: string): boolean {
-  return isBlocked(profile, userId) || isBannedFromChat(bannedUsers, userId)
-}
-
-function isBannedFromChat(bannedUsers: BannedUsers, userId: string): boolean {
-  const bannedUser = bannedUsers[userId]
-  return bannedUser && bannedUser.some((it) => it.type === 'VOICE_CHAT_AND_CHAT' && it.expiration > Date.now())
-}
-
-function isBlocked(profile: Avatar, userId: string): boolean {
-  return !!profile.blocked && profile.blocked.includes(userId)
-}
-
-function isMuted(profile: Avatar, userId: string): boolean {
-  return !!profile.muted && profile.muted.includes(userId)
-}
-
-function hasBlockedMe(myAddress: string | undefined, theirAddress: string): boolean {
-  const profile = getProfile(store.getState(), theirAddress)
-
-  return !!profile && !!myAddress && isBlocked(profile, myAddress)
-}
-
-function shouldPlayVoice(profile: Avatar, voiceUserId: string) {
-  const myAddress = getIdentity()?.address
-  return (
-    isVoiceAllowedByPolicy(voiceUserId) &&
-    !isBlockedOrBanned(profile, getBannedUsers(store.getState()), voiceUserId) &&
-    !isMuted(profile, voiceUserId) &&
-    !hasBlockedMe(myAddress, voiceUserId) &&
-    isVoiceChatAllowedByCurrentScene()
-  )
-}
 
 export function processVoiceFragment(message: Package<VoiceFragment>) {
   const state = store.getState()
@@ -79,7 +27,7 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
     profile &&
     peerTrackingInfo.ethereumAddress &&
     peerTrackingInfo.position &&
-    shouldPlayVoice(profile, peerTrackingInfo.ethereumAddress)
+    shouldPlayVoice(state, profile, peerTrackingInfo.ethereumAddress)
   ) {
     voiceCommunicator
       .playEncodedAudio(peerTrackingInfo.ethereumAddress, getSpatialParamsFor(peerTrackingInfo.position), message.data)
@@ -87,11 +35,9 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
   }
 }
 
-export function setListenerSpatialParams(context: CommsContext) {
+function setListenerSpatialParams(position: Position) {
   const state = store.getState()
-  if (context.currentPosition) {
-    getVoiceCommunicator(state).setListenerSpatialParams(getSpatialParamsFor(context.currentPosition))
-  }
+  getVoiceCommunicator(state).setListenerSpatialParams(getSpatialParamsFor(position))
 }
 
 export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
@@ -126,6 +72,10 @@ export function* initVoiceCommunicator() {
 
   voiceCommunicator.addStreamRecordingListener((recording) => {
     store.dispatch(voiceRecordingUpdate(recording))
+  })
+
+  positionObservable.add((obj: Readonly<PositionReport>) => {
+    setListenerSpatialParams(positionReportToCommsPosition(obj))
   })
   ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
 

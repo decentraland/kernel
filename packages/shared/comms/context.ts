@@ -1,7 +1,6 @@
 import { commConfigurations, parcelLimits } from 'config'
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { Stats } from './debug'
-import { removeAllPeers } from './peers'
 import {
   CommunicationArea,
   Position,
@@ -12,7 +11,6 @@ import {
 import { RoomConnection } from './interface/index'
 import { createLogger } from '../logger'
 import { Observable, Observer } from 'mz-observable'
-import { setListenerSpatialParams } from './voice-over-comms'
 import { arrayEquals } from 'atomicHelpers/arrayEquals'
 import { Realm } from 'shared/dao/types'
 import { Avatar } from '@dcl/schemas'
@@ -102,8 +100,6 @@ export class CommsContext {
 
     await this.worldInstanceConnection.disconnect()
 
-    removeAllPeers()
-
     if (this.reportPositionInterval) {
       clearInterval(this.reportPositionInterval)
     }
@@ -178,9 +174,6 @@ export class CommsContext {
         this.previousTopics = topics
       }
     }
-
-    // set voicechat position params
-    setListenerSpatialParams(this)
 
     const now = Date.now()
     const elapsed = now - this.lastNetworkUpdatePosition

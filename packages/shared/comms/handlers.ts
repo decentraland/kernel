@@ -5,7 +5,8 @@ import {
   avatarMessageObservable,
   setupPeer,
   ensureTrackingUniqueAndLatest,
-  receiveUserPosition
+  receiveUserPosition,
+  removeAllPeers
 } from './peers'
 import {
   Package,
@@ -22,7 +23,7 @@ import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
 import { CommsContext, commsLogger } from './context'
-import { isBlockedOrBanned, processVoiceFragment } from './voice-over-comms'
+import { processVoiceFragment } from './voice-over-comms'
 import future, { IFuture } from 'fp-future'
 import { handleCommsDisconnection } from './actions'
 import { Avatar } from '@dcl/schemas'
@@ -33,12 +34,15 @@ import { trackEvent } from 'shared/analytics'
 import { ProfileType } from 'shared/profiles/types'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
+import { isBlockedOrBanned } from './voice-selectors'
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
 
 export async function bindHandlersToCommsContext(context: CommsContext) {
   commsLogger.log('Binding handlers: ', context)
+
+  removeAllPeers()
 
   const connection = context.worldInstanceConnection!
 

@@ -1,5 +1,9 @@
 /* eslint-disable prefer-const */
-import { initParcelSceneWorker, LifecycleManager, ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
+import {
+  initParcelSceneWorker,
+  LifecycleManager,
+  ParcelSceneLoadingParams
+} from 'decentraland-loader/lifecycle/manager'
 import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import {
   sceneLifeCycleObservable,
