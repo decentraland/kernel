@@ -134,7 +134,7 @@ function* authenticate(action: AuthenticateAction) {
   const avatar: Avatar = yield select(getCurrentUserProfile)
 
   // 6. continue with signin/signup (only not in preview)
-  const isSignUp = avatar.version <= 0  && !PREVIEW
+  const isSignUp = avatar.version <= 0 && !PREVIEW
   if (isSignUp) {
     yield put(signUpSetIsSignUp(isSignUp))
     yield take(SIGNUP)
