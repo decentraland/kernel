@@ -3,7 +3,7 @@ import { createIdentity } from 'eth-crypto'
 import { Account } from 'web3x/account'
 import { Authenticator } from 'dcl-crypto'
 
-import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK } from 'config'
+import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK, PREVIEW } from 'config'
 
 import { createDummyLogger, createLogger } from 'shared/logger'
 import { initializeReferral, referUser } from 'shared/referral'
@@ -133,8 +133,8 @@ function* authenticate(action: AuthenticateAction) {
 
   const avatar: Avatar = yield select(getCurrentUserProfile)
 
-  // 6. continue with signin/signup
-  const isSignUp = avatar.version <= 0
+  // 6. continue with signin/signup (only not in preview)
+  const isSignUp = avatar.version <= 0  && !PREVIEW
   if (isSignUp) {
     yield put(signUpSetIsSignUp(isSignUp))
     yield take(SIGNUP)

@@ -259,7 +259,7 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
 
   try {
     const savedProfile: Avatar | null = yield select(getCurrentUserProfile)
-    const currentVersion: number = savedProfile?.version && savedProfile?.version > 0 ? savedProfile?.version : 0
+    const currentVersion: number = Math.max(savedProfile?.version || 0, 0)
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
@@ -278,7 +278,6 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
         schema: 'avatar',
         payload: profile
       })
-      debugger
     }
 
     // save the profile in the local storage
