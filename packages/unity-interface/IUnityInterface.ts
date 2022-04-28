@@ -126,6 +126,7 @@ export interface IUnityInterface {
   TriggerAirdropDisplay(data: AirdropInfo): void
   AddMessageToChatWindow(message: ChatMessage): void
   InitializeFriends(initializationMessage: FriendsInitializationMessage): void
+  NotifyAboutFriendsNotInitialized(): void
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void

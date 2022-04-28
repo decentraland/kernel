@@ -792,6 +792,11 @@ export class BrowserInterface {
         break
     }
   }
+
+  public RetryFriendsInitialization() {
+    const logger = getUnityInstance().logger
+    logger.log('TODO (SANTI): Retrying friends initialization...')
+  }
 }
 
 function arrayCleanup<T>(array: T[] | null | undefined): T[] | undefined {

@@ -51,7 +51,7 @@ function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: bool
       enableQuestPanel: isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
     }
   )
-  i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: true })
+  i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: false })
 
   i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.HELP_AND_SUPPORT_HUD, { active: true, visible: false })

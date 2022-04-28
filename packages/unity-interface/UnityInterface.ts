@@ -334,6 +334,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
   }
 
+  public NotifyAboutFriendsNotInitialized() {
+    this.SendMessageToUnity('Main', 'NotifyAboutFriendsNotInitialized')
+  }
+
   public UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage) {
     this.SendMessageToUnity('Main', 'UpdateFriendshipStatus', JSON.stringify(updateMessage))
   }

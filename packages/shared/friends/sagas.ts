@@ -26,7 +26,6 @@ import {
   ChatMessageType,
   FriendshipAction,
   PresenceStatus,
-  HUDElementID,
   Profile
 } from 'shared/types'
 import { getRealm, getUpdateProfileServer } from 'shared/dao/selectors'
@@ -91,13 +90,7 @@ function* initializeFriendsSaga() {
 
       yield call(waitForRendererInstance)
 
-      getUnityInstance().ConfigureHUDElement(HUDElementID.FRIENDS, { active: false, visible: false })
-      // getUnityInstance().ShowNotification({
-      //   type: NotificationType.GENERIC,
-      //   message: 'There was an error initializing friends and private messages',
-      //   buttonMessage: 'OK',
-      //   timer: 7
-      // })
+      getUnityInstance().NotifyAboutFriendsNotInitialized()
     }
   }
 }
