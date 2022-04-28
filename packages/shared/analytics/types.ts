@@ -1,4 +1,3 @@
-import { ErrorContextTypes } from '../loading/ReportFatalError'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
 import { ChatMessageType } from '../types'
 
@@ -24,8 +23,8 @@ export type TrackEvents = PositionTrackEvents & {
   ['Move to Parcel']: { newParcel: string; oldParcel: string | null; exactPosition: ReadOnlyVector3 }
   ['motd_failed']: Record<string, unknown> // {}
   ['TermsOfServiceResponse']: { sceneId: string; accepted: boolean; dontShowAgain: boolean }
-  ['error']: { context: ErrorContextTypes; message: string; stack: string; saga_stack?: string }
-  ['error_fatal']: { context: ErrorContextTypes; message: string; stack: string; saga_stack?: string }
+  ['error']: { context: string; message: string; stack: string; saga_stack?: string }
+  ['error_fatal']: { context: string; message: string; stack: string; saga_stack?: string }
   ['long_chat_message_ignored']: { message: string; sender?: string }
   ['renderer_initialization_error']: { message: string }
 

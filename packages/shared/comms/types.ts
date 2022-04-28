@@ -1,4 +1,3 @@
-import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import type { CommsContext } from './context'
 
 export type CommsState = {
@@ -6,7 +5,7 @@ export type CommsState = {
   voiceChatRecording: boolean
   voicePolicy: VoicePolicy
   island?: string
-  voiceCommunicator?: VoiceCommunicator
+  voiceCommunicator?: any
   context: CommsContext | undefined
 }
 

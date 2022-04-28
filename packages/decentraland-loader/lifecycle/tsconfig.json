@@ -21,14 +21,14 @@
     "jsxFactory": "createElement",
     "removeComments": true,
     "pretty": true,
-    "outDir": "../../static/loader",
+    "outDir": "../../../static/loader",
     "lib": [
       "es2017",
       "dom"
     ],
-    "baseUrl": ".."
+    "baseUrl": "../.."
   },
   "exclude": [
-    "../../node_modules"
+    "../../../node_modules"
   ]
 }

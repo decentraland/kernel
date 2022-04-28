@@ -1,6 +1,7 @@
 import madge = require('madge')
 import { sha3 } from 'eth-connect'
 import { writeFileSync } from 'fs'
+import { resolve, dirname } from 'path'
 
 const baseDir = process.cwd()
 type Result = {
@@ -9,14 +10,21 @@ type Result = {
 type Tree = Record<string, string[]>
 
 async function main() {
+  await processEntryPoint('packages/gif-processor/worker.ts')
   await processEntryPoint('packages/scene-system/stateful.scene.system.ts')
+  await processEntryPoint('packages/decentraland-loader/lifecycle/worker.ts')
   await processEntryPoint('packages/scene-system/scene.system.ts')
   await processEntryPoint('packages/scene-system/cli.scene.system.ts')
   await processEntryPoint('packages/entryPoints/index.ts')
+  await processEntryPoint('packages/ui/decentraland-ui.scene.ts')
+  await processEntryPoint('packages/voice-chat-codec/audioWorkletProcessors.ts')
+  await processEntryPoint('packages/voice-chat-codec/worker.ts')
 }
 
 async function processEntryPoint(entryPoint: string) {
-  const result: Result = await madge(entryPoint, { baseDir })
+  const tsConfig = resolve(dirname(entryPoint), './tsconfig.json')
+  console.log({ entryPoint, tsConfig })
+  const result: Result = await madge(entryPoint, { baseDir, tsConfig })
 
   function nodeKey(path: string) {
     return 'N' + sha3(path).substring(0, 6)
@@ -79,12 +87,13 @@ async function processEntryPoint(entryPoint: string) {
 
   const dot = [
     `digraph G {`,
+    `rankdir="LR";`,
     `concentrate=true;`,
-    `graph[fontname="Arial",rankdir=LR];`,
+    `graph[fontname="Arial",ratio=fill];`,
     `edge[fontname="Arial"];`,
     `node[fontname="Arial",shape=rectangle];`,
-    //`splines=polyline;`,
-    `labeljust="l";`,
+    // `splines=polyline;`,
+    // `labeljust="l";`,
     '/* Files */',
     ...drawNodes(),
     '\n/* Edges */',
