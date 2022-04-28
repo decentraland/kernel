@@ -4,9 +4,10 @@ import * as peers from '../../packages/shared/comms/peers'
 import { getVisibleAvatarsUserId } from '../../packages/shared/sceneEvents/visibleAvatars'
 import { AvatarMessageType } from '../../packages/shared/comms/interface/types'
 import * as sceneManager from '../../packages/shared/world/parcelSceneManager'
+import { buildStore } from 'shared/store/store'
 
-function sendAvatarMessage(userId: string, visible: boolean) {
-  peers.setupPeer(userId).ethereumAddress = userId
+function sendAvatarMessage(userId: string, visible: boolean, removeInfo: boolean = false) {
+  peers.setupPeer(userId).ethereumAddress = removeInfo ? undefined : userId
   peers.receiveUserVisible(userId, visible)
 }
 
@@ -23,21 +24,23 @@ function mockGetUser() {
 
 let sceneEventsMocked
 
-beforeEach(() => {
-  mockGetUser()
-  sceneEventsMocked = sinon.stub(sceneManager, 'allScenesEvent')
-})
-
-afterEach(() => {
-  // clear visible avatars cache
-  const users = getVisibleAvatarsUserId()
-  users.forEach((u) => sendAvatarMessage(u, false))
-
-  sinon.restore()
-  sinon.reset()
-})
-
 describe('Avatar observable', () => {
+  beforeEach('start store', () => {
+    const { store } = buildStore()
+    globalThis.globalStore = store
+
+    mockGetUser()
+    sceneEventsMocked = sinon.stub(sceneManager, 'allScenesEvent')
+  })
+
+  afterEach(() => {
+    // clear visible avatars cache
+    const users = getVisibleAvatarsUserId()
+    users.forEach((u) => sendAvatarMessage(u, false))
+
+    sinon.restore()
+    sinon.reset()
+  })
   it('should return user A and B that are visible at the scene', () => {
     const userA = 'user-a'
     const userB = 'user-b'
@@ -74,7 +77,8 @@ describe('Avatar observable', () => {
   it('should not add the users if there is not info about them. Race cond', () => {
     sinon.restore()
     const userA = 'user-a'
-    sendAvatarMessage(userA, true)
+    removeAvatarMessage(userA)
+    sendAvatarMessage(userA, true, true)
     expect(getVisibleAvatarsUserId()).to.eql([])
     sinon.assert.notCalled(sceneEventsMocked)
   })

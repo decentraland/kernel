@@ -6,7 +6,7 @@ import { CommunicationArea, position2parcel, positionReportToCommsPosition, squa
 import { commConfigurations } from 'config'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
-import { commsLogger, MORDOR_POSITION, ProcessingPeerInfo } from './context'
+import { MORDOR_POSITION, ProcessingPeerInfo } from './context'
 import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { getCommsContext } from './selectors'
@@ -82,7 +82,7 @@ export function setupPeer(uuid: UUID): PeerInformation {
 
 export function receivePeerUserData(avatar: Avatar) {
   for (const [uuid, peer] of peerMap) {
-    if (peer.ethereumAddress == avatar.userId) {
+    if (peer.ethereumAddress === avatar.userId) {
       sendPeerUserData(uuid)
     }
   }
@@ -167,16 +167,14 @@ export function receiveUserVisible(uuid: string, visible: boolean) {
 }
 
 export function removeMissingPeers(newPeers: MinPeerData[]) {
-  commsLogger.log('remove missing peers', newPeers)
   for (const [key, { ethereumAddress }] of peerMap) {
-    if (!newPeers.some((x) => x.id === key || x.id == ethereumAddress)) {
+    if (!newPeers.some((x) => x.id === key || x.id.toLowerCase() === ethereumAddress?.toLowerCase())) {
       removePeerByUUID(key)
     }
   }
 }
 
 export function removeAllPeers() {
-  commsLogger.log('remove all peers')
   for (const alias of peerMap.keys()) {
     removePeerByUUID(alias)
   }
@@ -192,12 +190,10 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   let currentPeer = peer
 
   peerMap.forEach((info, uuid) => {
-    if (info.ethereumAddress === currentPeer.ethereumAddress && uuid != peer.uuid) {
+    if (info.ethereumAddress === currentPeer.ethereumAddress && uuid !== peer.uuid) {
       if (info.lastProfileUpdate < currentPeer.lastProfileUpdate) {
-        commsLogger.info('Removing peer cond 1', uuid, info, currentPeer)
         removePeerByUUID(uuid)
       } else if (info.lastProfileUpdate > currentPeer.lastProfileUpdate) {
-        commsLogger.info('Removing peer cond 2', currentPeer.uuid, info, currentPeer)
         removePeerByUUID(currentPeer.uuid)
 
         info.position = info.position || currentPeer.position
@@ -226,7 +222,6 @@ export function processAvatarVisibility() {
     const msSinceLastUpdate = now - trackingInfo.lastUpdate
 
     if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
-      commsLogger.info('Removing peer due to inactivity', peerAlias, trackingInfo.ethereumAddress)
       removePeerByUUID(peerAlias)
 
       continue

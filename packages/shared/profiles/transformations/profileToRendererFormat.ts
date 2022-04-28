@@ -58,7 +58,7 @@ export function profileToRendererFormat(
     hasClaimedName: stage.hasClaimedName ?? false,
     tutorialFlagsMask: 0,
     tutorialStep: stage.tutorialStep || 0,
-    snapshots: prepareSnapshots(profile.avatar!.snapshots, profile.userId!),
+    snapshots: prepareSnapshots(profile.avatar!.snapshots),
     avatar: {
       wearables: profile.avatar?.wearables || [],
       bodyShape: profile.avatar?.bodyShape || '',
@@ -71,13 +71,19 @@ export function profileToRendererFormat(
 }
 
 // Ensure all snapshots are URLs
-function prepareSnapshots({ face256, body }: Snapshots, userId: string): NewProfileForRenderer['snapshots'] {
+function prepareSnapshots({ face256, body }: Snapshots): NewProfileForRenderer['snapshots'] {
   // TODO: move this logic to unity-renderer
   function prepare(value: string) {
     if (value === null || value === undefined) {
       return null
     }
-    if (value === '' || isURL(value) || value.startsWith('/images') || value.startsWith('Qm') || IPFSv2.validate(value)) {
+    if (
+      value === '' ||
+      isURL(value) ||
+      value.startsWith('/images') ||
+      value.startsWith('Qm') ||
+      IPFSv2.validate(value)
+    ) {
       return value
     }
 

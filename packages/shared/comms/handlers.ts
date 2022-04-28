@@ -36,7 +36,7 @@ import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations
 
 export const scenesSubscribedToCommsEvents = new Set<CommunicationsController>()
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
-const sendMyProfileOverCommsChannel = new Observable<{}>()
+const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
 
 export function subscribeParcelSceneToCommsMessages(controller: CommunicationsController) {
   scenesSubscribedToCommsEvents.add(controller)
@@ -120,8 +120,8 @@ function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
 
     const shouldLoadRemoteProfile =
       !currentProfile ||
-      currentProfile.status == 'error' ||
-      (currentProfile.status == 'ok' && currentProfile.data.version < profileVersion)
+      currentProfile.status === 'error' ||
+      (currentProfile.status === 'ok' && currentProfile.data.version < profileVersion)
 
     if (shouldLoadRemoteProfile) {
       ProfileAsPromise(
@@ -226,7 +226,7 @@ function processProfileResponse(message: Package<ProfileResponse>) {
 }
 
 export function createSendMyProfileOverCommsChannel() {
-  return eventChannel<{}>((emitter) => {
+  return eventChannel<Record<string, never>>((emitter) => {
     const listener = sendMyProfileOverCommsChannel.add(emitter)
     return () => {
       sendMyProfileOverCommsChannel.remove(listener)

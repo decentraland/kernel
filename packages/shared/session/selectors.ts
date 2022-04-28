@@ -2,7 +2,8 @@ import { IEthereumProvider, LoginState } from '@dcl/kernel-interface'
 import { RootSessionState } from './types'
 
 // TODO use userId
-export const isCurrentUserId = (store: RootSessionState, userId: string) => store.session.identity?.address.toLowerCase() == userId.toLowerCase()
+export const isCurrentUserId = (store: RootSessionState, userId: string) =>
+  store.session.identity?.address.toLowerCase() === userId.toLowerCase()
 export const getCurrentUserId = (store: RootSessionState) => store.session.identity?.address
 export const getCurrentIdentity = (store: RootSessionState) => store.session.identity
 export const getCurrentNetwork = (store: RootSessionState) => store.session.network

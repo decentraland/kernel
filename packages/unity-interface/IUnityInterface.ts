@@ -50,7 +50,6 @@ export type HotSceneInfo = {
   realms: RealmInfo[]
 }
 
-
 let instance: IUnityInterface | null = null
 
 export function setUnityInstance(_instance: IUnityInterface) {

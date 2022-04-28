@@ -37,7 +37,7 @@ export function createFetch({ canUseFetch, previewMode, log, originalFetch }: Fe
       const abortController = new AbortController()
       const timeout = setTimeout(() => {
         abortController.abort()
-      }, Math.max(init?.timeout || TIMEOUT_LIMIT, TIMEOUT_LIMIT, 100))
+      }, Math.max(init?.timeout || TIMEOUT_LIMIT, 1))
       try {
         // DO NOT remove the "await" from the next line
         return await originalFetch(resource, { signal: abortController.signal, ...init })

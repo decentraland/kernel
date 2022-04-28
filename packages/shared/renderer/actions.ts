@@ -15,4 +15,3 @@ export const signalParcelLoadingStarted = () => action(PARCEL_LOADING_STARTED)
 export type SignalParcelLoadingStarted = ReturnType<typeof signalParcelLoadingStarted>
 
 export const signalEngineReady = () => action(RENDERER_READY)
-

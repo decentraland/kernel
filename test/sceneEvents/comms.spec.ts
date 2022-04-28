@@ -3,10 +3,11 @@ import { select } from 'redux-saga/effects'
 import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
 import { Realm } from 'shared/dao/types'
 import { realmToConnectionString } from 'shared/dao/utils/realmToString'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { reducers } from 'shared/store/rootReducer'
 import { setCommsIsland, setWorldContext } from '../../packages/shared/comms/actions'
 import { getCommsIsland, getRealm } from '../../packages/shared/comms/selectors'
-import { sendProfileToRenderer } from '../../packages/shared/profiles/actions'
+import { saveProfileDelta } from '../../packages/shared/profiles/actions'
 import { sceneEventsSaga, updateLocation } from '../../packages/shared/sceneEvents/sagas'
 import { allScenesEvent } from '../../packages/shared/world/parcelSceneManager'
 
@@ -88,15 +89,15 @@ describe('when the island change: SET_COMMS_ISLAND', () => {
 })
 
 describe('when the profile updates successfully: SAVE_PROFILE_SUCCESS', () => {
-  it('should call allScene events with profileChanged', () => {
+  it('should call allScene events with profileChanged using information from getCurrentUserProfile', () => {
     const userId = 'user-id'
-    const action = sendProfileToRenderer(userId)
+    const action = saveProfileDelta({ userId })
     const payload = {
       ethAddress: 'eth-address',
       version: 8
     }
     return expectSaga(sceneEventsSaga)
-      .provide([[select(getRealm), realm]])
+      .provide([[select(getCurrentUserProfile), payload]])
       .dispatch(action)
       .call(allScenesEvent, { eventType: 'profileChanged', payload })
       .run()

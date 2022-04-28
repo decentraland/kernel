@@ -26,26 +26,7 @@ const delayedProfile = delayed({ avatars: [profile] })
 
 describe('fetchProfile behavior', () => {
   it('avatar compatibility format', () => {
-    ensureAvatarCompatibilityFormat({
-      avatar: {
-        "bodyShape": "urn:decentraland:off-chain:base-avatars:BaseMale",
-        "wearables": [
-          "urn:decentraland:off-chain:base-avatars:eyes_00",
-          "urn:decentraland:off-chain:base-avatars:eyebrows_00",
-          "urn:decentraland:off-chain:base-avatars:mouth_00",
-          "urn:decentraland:off-chain:base-avatars:casual_hair_01",
-          "urn:decentraland:off-chain:base-avatars:beard",
-          "urn:decentraland:off-chain:base-avatars:green_hoodie",
-          "urn:decentraland:off-chain:base-avatars:brown_pants",
-          "urn:decentraland:off-chain:base-avatars:sneakers"
-        ],
-        "snapshots": {
-          "face256": "/images/avatar_snapshot_default256.png",
-          "body": "/images/image_not_found.png"
-        }
-      }
-    } as any)
-
+    ensureAvatarCompatibilityFormat({ "userId": "0x736df2ecb40e4bdc368e19e3067136802536550c", "email": "", "name": "Ant#550c", "hasClaimedName": false, "description": "Host at The Aquarium casino         * -140,126*                                         ", "ethAddress": "0x736df2ecb40e4bdc368e19e3067136802536550c", "version": 2, "avatar": { "bodyShape": "urn:decentraland:off-chain:base-avatars:BaseMale", "snapshots": { "face256": "https://peer.decentral.io/content/contents/bafkreidxhkfakmifeccr3ypojv53oqnecufx647tkqupwipuelru3tkevm", "body": "https://peer.decentral.io/content/contents/bafkreie2pwupprfvg64mopsvwnmgzxckxw4q3i4gquaedelwdf6ax2soea" }, "eyes": { "color": { "r": 0.75, "g": 0.62109375, "b": 0.3515625 } }, "hair": { "color": { "r": 0.234375, "g": 0.12890625, "b": 0.04296875 } }, "skin": { "color": { "r": 0.60546875, "g": 0.4609375, "b": 0.35546875 } }, "wearables": ["urn:decentraland:off-chain:base-avatars:casual_hair_03", "urn:decentraland:off-chain:base-avatars:eyebrows_00", "urn:decentraland:off-chain:base-avatars:eyes_08", "urn:decentraland:off-chain:base-avatars:mouth_03", "urn:decentraland:matic:collections-v2:0x1286dad1da5233a63a5d55fcf9e834feb14e1d6d:0", "urn:decentraland:off-chain:base-avatars:thug_life", "urn:decentraland:off-chain:base-avatars:Thunder_earring", "urn:decentraland:off-chain:base-avatars:brown_pants", "urn:decentraland:off-chain:base-avatars:sneakers", "urn:decentraland:matic:collections-v2:0x1286dad1da5233a63a5d55fcf9e834feb14e1d6d:1"] }, "tutorialStep": 256, "interests": [], "unclaimedName": "" } as any)
   })
 
 

@@ -12,7 +12,7 @@ import { logTrace } from 'unity-interface/trace'
 import sagaMonitorModule from '@redux-saga/simple-saga-monitor'
 
 export const buildStore = () => {
-  let sagaMonitor = DEBUG_REDUX ? sagaMonitorModule : undefined
+  const sagaMonitor = DEBUG_REDUX ? sagaMonitorModule : undefined
 
   const sagaMiddleware = createSagaMiddleware({
     sagaMonitor,

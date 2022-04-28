@@ -16,7 +16,7 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
     return !version || aProfile.version >= version
   }
 
-  const [_, existingProfile] = getProfileStatusAndData(store.getState(), userId)
+  const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
   if (existingProfile && existingProfileWithCorrectVersion) {
     return Promise.resolve(existingProfile)

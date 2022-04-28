@@ -46,7 +46,7 @@ export type TrackEvents = PositionTrackEvents & {
   }
   ['renderer_initializing_start']: Record<string, unknown> // {}
   ['renderer_initializing_end']: { loading_time: number }
-  ['renderer_set_threw']: { object: string, method: string, payload: string, stack: string }
+  ['renderer_set_threw']: { object: string; method: string; payload: string; stack: string }
   ['lifecycle event']: { stage: string; retries?: unknown }
   ['performance report']: ReturnType<typeof getPerformanceInfo>
   ['system info report']: {
@@ -64,7 +64,7 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_start']: { renderer_version: string }
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number }
-  ['invalid_schema']: { schema: string, payload: any }
+  ['invalid_schema']: { schema: string; payload: any }
   ['Friend request approved']: Record<string, never> // {}
   ['Friend request rejected']: Record<string, never> // {}
   ['Friend request cancelled']: Record<string, never> // {}

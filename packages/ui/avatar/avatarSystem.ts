@@ -4,7 +4,7 @@ import {
   Entity,
   Observable,
   Transform,
-  EventManager,
+  EventManager
   // BoxShape,
   // IEntity,
   // Material,
@@ -87,7 +87,7 @@ export class AvatarEntity extends Entity {
   }
 
   setVisible(visible: boolean): void {
-    if (this.visible != visible) {
+    if (this.visible !== visible) {
       this.visible = visible
     }
     this.updateVisibility()

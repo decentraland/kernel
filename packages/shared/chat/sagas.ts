@@ -228,7 +228,7 @@ function initChatCommands() {
     const strings = users
       .filter(([_, value]) => !!(value && value.ethereumAddress))
       .filter(([_, value]) => value.position)
-      .map(function ([uuid, value]) {
+      .map(function ([, value]) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
         const name = getProfile(store.getState(), value.ethereumAddress!)?.name ?? 'unknown'
         const pos = { x: 0, y: 0 }
