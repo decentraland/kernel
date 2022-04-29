@@ -20,14 +20,7 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import { createLogger, createDummyLogger } from 'shared/logger'
-import {
-  ChatMessage,
-  NotificationType,
-  ChatMessageType,
-  FriendshipAction,
-  PresenceStatus,
-  Profile
-} from 'shared/types'
+import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus, Profile } from 'shared/types'
 import { getRealm, getUpdateProfileServer } from 'shared/dao/selectors'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition, positionObservable } from 'shared/world/positionThings'
