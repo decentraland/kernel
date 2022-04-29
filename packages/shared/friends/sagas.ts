@@ -1,12 +1,33 @@
 import { takeEvery, put, select, call, take, delay } from 'redux-saga/effects'
+
 import { Authenticator } from 'dcl-crypto'
-import { SocialClient, FriendshipRequest, Conversation, PresenceType, CurrentUserStatus, UnknownUsersError, UserPosition, SocialAPI, Realm as SocialRealm } from 'dcl-social-client'
+import {
+  SocialClient,
+  FriendshipRequest,
+  Conversation,
+  PresenceType,
+  CurrentUserStatus,
+  UnknownUsersError,
+  UserPosition,
+  SocialAPI,
+  Realm as SocialRealm
+} from 'dcl-social-client'
+
 import { DEBUG_PM, WORLD_EXPLORER, DEBUG_KERNEL_LOG } from 'config'
+
 import { Vector3Component } from 'atomicHelpers/landHelpers'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
+
 import { createLogger, createDummyLogger } from 'shared/logger'
-import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus, Profile } from 'shared/types'
+import {
+  ChatMessage,
+  NotificationType,
+  ChatMessageType,
+  FriendshipAction,
+  PresenceStatus,
+  Profile
+} from 'shared/types'
 import { getRealm, getUpdateProfileServer } from 'shared/dao/selectors'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition, positionObservable } from 'shared/world/positionThings'
@@ -21,7 +42,14 @@ import { getClient, findByUserId, getPrivateMessaging } from 'shared/friends/sel
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
-import { updateFriendship, UPDATE_FRIENDSHIP, UpdateFriendship, updatePrivateMessagingState, updateUserData, RETRY_FRIENDS_INITIALIZATION } from 'shared/friends/actions'
+import {
+  updateFriendship,
+  UPDATE_FRIENDSHIP,
+  UpdateFriendship,
+  updatePrivateMessagingState,
+  updateUserData,
+  RETRY_FRIENDS_INITIALIZATION
+} from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
