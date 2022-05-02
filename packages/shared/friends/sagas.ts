@@ -80,11 +80,11 @@ function* initializeFriendsSaga() {
     yield call(waitForRealmInitialized)
 
     let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
-    
+
     while (true) {
       const client: SocialAPI | null = yield select(getClient)
-      const isLoggedIn: boolean = client && (yield apply(client, client.isLoggedIn)) || false
-      if (isLoggedIn) { 
+      const isLoggedIn: boolean = (client && (yield apply(client, client.isLoggedIn))) || false
+      if (isLoggedIn) {
         return
       } else {
         try {
@@ -94,15 +94,15 @@ function* initializeFriendsSaga() {
           yield call(initializePrivateMessaging, synapseUrl, identity)
         } catch (e) {
           logger.error(`error initializing private messaging`, e)
-  
+
           yield call(waitForRendererInstance)
-  
+
           yield delay(secondsToRetry)
-  
+
           if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
             secondsToRetry *= 2
           }
-  
+
           logger.warn('retrying private messaging initialization...')
         }
       }
