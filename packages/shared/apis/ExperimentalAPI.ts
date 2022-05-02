@@ -29,17 +29,17 @@ export class ExperimentalAPI extends ExposableAPI {
             defaultLogger.info('NewECS::sendToRenderer', 'There were no chunks at the last second.')
           }
         } else {
-          const byteAveragePerChunk = metrics.byteAmount / Math.min(1, metrics.chunksAmount)
+          const byteAveragePerChunk = metrics.byteAmount / metrics.chunksAmount
           defaultLogger.info('NewECS::sendToRenderer', {
             sceneId: this.sceneId,
             ...metrics,
             byteAveragePerChunk
           })
-        }
 
-        metrics.withoutUpdates = false
-        metrics.byteAmount = 0
-        metrics.chunksAmount = 0
+          metrics.withoutUpdates = false
+          metrics.byteAmount = 0
+          metrics.chunksAmount = 0
+        }
       }, 1000) as any,
       byteAmount: 0,
       chunksAmount: 0,
