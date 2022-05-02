@@ -54,10 +54,10 @@ function* waitForExplorerIdentity() {
 }
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
-  return 'last_realm_' + network
+  return 'last_realm_new_' + network
 }
 function getLastRealmCandidatesCacheKey(network: ETHEREUM_NETWORK) {
-  return 'last_realm_candidates_' + network
+  return 'last_realm_new_candidates_' + network
 }
 
 export function* daoSaga(): any {
@@ -210,7 +210,9 @@ function* initializeCatalystCandidates() {
 }
 
 export async function checkValidRealm(realm: Realm) {
-  if (realm.protocol === 'v2') {
+  if (realm.protocol === 'v1') {
+    return true
+  } else if (realm.protocol === 'v2') {
     const realmHasValues = realm && realm.hostname
     if (!realmHasValues) {
       return false
@@ -228,7 +230,7 @@ export async function checkValidRealm(realm: Realm) {
 
     return pingResult.status === ServerConnectionStatus.OK
   }
-  return true
+  return false
 }
 
 export async function fetchPeerHealthStatus(node: CatalystNode) {
