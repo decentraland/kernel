@@ -48,6 +48,7 @@ import { ensureFriendProfile } from './ensureFriendProfile'
 import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { trackEvent } from '../analytics'
+import { apply } from 'redux-saga-test-plan/matchers'
 
 const DEBUG = DEBUG_PM
 
@@ -79,23 +80,31 @@ function* initializeFriendsSaga() {
     yield call(waitForRealmInitialized)
 
     let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
-
+    
     while (true) {
-      try {
-        const synapseUrl: string = yield select(getSynapseUrl)
-        yield call(initializePrivateMessaging, synapseUrl, identity)
-      } catch (e) {
-        logger.error(`error initializing private messaging`, e)
-
-        yield call(waitForRendererInstance)
-
-        yield delay(secondsToRetry)
-
-        if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
-          secondsToRetry *= 2
+      const client: SocialAPI | null = yield select(getClient)
+      const isLoggedIn: boolean = client && (yield apply(client, client.isLoggedIn)) || false
+      if (isLoggedIn) { 
+        return
+      } else {
+        try {
+          const synapseUrl: string = yield select(getSynapseUrl)
+          // TODO: The call to initializePrivateMessaging, when it finishes successfully, is making the 'initializeFriendsSaga' function directly ends.
+          //       It seems for this reason we don't have to forze the flow to break out the 'while' loop, but we should investigate it.
+          yield call(initializePrivateMessaging, synapseUrl, identity)
+        } catch (e) {
+          logger.error(`error initializing private messaging`, e)
+  
+          yield call(waitForRendererInstance)
+  
+          yield delay(secondsToRetry)
+  
+          if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
+            secondsToRetry *= 2
+          }
+  
+          logger.warn('retrying private messaging initialization...')
         }
-
-        logger.warn('retrying private messaging initialization...')
       }
     }
   }
