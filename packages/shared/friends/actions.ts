@@ -17,7 +17,3 @@ export const UPDATE_USER_DATA = 'Update user data'
 export const updateUserData = (userId: string, socialId: string, conversationId?: string) =>
   action(UPDATE_USER_DATA, { userId, socialId, conversationId })
 export type UpdateUserData = ReturnType<typeof updateUserData>
-
-export const RETRY_FRIENDS_INITIALIZATION = 'Retry Friends Initialization'
-export const retryFriendsInitialization = () => action(RETRY_FRIENDS_INITIALIZATION)
-export type RetryFriendsInitialization = ReturnType<typeof retryFriendsInitialization>

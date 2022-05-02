@@ -40,8 +40,7 @@ import {
   UPDATE_FRIENDSHIP,
   UpdateFriendship,
   updatePrivateMessagingState,
-  updateUserData,
-  RETRY_FRIENDS_INITIALIZATION
+  updateUserData
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -67,7 +66,6 @@ export function* friendsSaga() {
   if (WORLD_EXPLORER) {
     // We don't want to initialize the friends & chat feature if we are on preview or builder mode
     yield takeEvery(USER_AUTHENTIFIED, initializeFriendsSaga)
-    yield takeEvery(RETRY_FRIENDS_INITIALIZATION, initializeFriendsSaga)
   }
 }
 
@@ -84,8 +82,6 @@ function* initializeFriendsSaga() {
       logger.error(`error initializing private messaging`, e)
 
       yield call(waitForRendererInstance)
-
-      getUnityInstance().NotifyAboutFriendsNotInitialized()
     }
   }
 }

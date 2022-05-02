@@ -40,7 +40,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { retryFriendsInitialization, updateFriendship, updateUserData } from 'shared/friends/actions'
+import { updateFriendship, updateUserData } from 'shared/friends/actions'
 import { candidatesFetched, catalystRealmConnected, changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/comms/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -791,10 +791,6 @@ export class BrowserInterface {
         logger.log(data.message)
         break
     }
-  }
-
-  public RetryFriendsInitialization() {
-    store.dispatch(retryFriendsInitialization())
   }
 }
 
