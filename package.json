@@ -27,7 +27,7 @@
   "devDependencies": {
     "@dcl/eslint-config": "^1.0.1-20211208155836.commit-63a2880",
     "@dcl/posix": "^1.0.3",
-    "@dcl/unity-renderer": "^1.0.31370-20220328092623.commit-2b7cc9e",
+    "@dcl/unity-renderer": "^1.0.34479-20220502092111.commit-844bafd",
     "@microsoft/api-documenter": "^7.2.2",
     "@microsoft/api-extractor": "^7.1.7",
     "@tweenjs/tween.js": "^17.2.0",
@@ -85,7 +85,7 @@
     "@types/redux-logger": "^3.0.9",
     "bignumber.js": "^9.0.1",
     "blob-to-buffer": "^1.2.8",
-    "dcl-catalyst-client": "^11.1.0",
+    "dcl-catalyst-client": "^11.2.0",
     "dcl-crypto": "^2.3.0",
     "dcl-quests-client": "^2.10.0",
     "dcl-scene-writer": "^1.1.2",

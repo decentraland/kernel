@@ -118,11 +118,13 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
         result.push(...v2Wearables)
       }
     } else {
-      const ownedWearables: OwnedWearablesWithDefinition[] = yield call(
-        fetchOwnedWearables,
-        filters.ownedByUser,
-        client
-      )
+      let ownedWearables: OwnedWearablesWithDefinition[]
+      if (filters.thirdPartyId) {
+        ownedWearables = yield call(fetchOwnedThirdPartyWearables, filters.ownedByUser, filters.thirdPartyId, client)
+      } else {
+        ownedWearables = yield call(fetchOwnedWearables, filters.ownedByUser, client)
+      }
+
       for (const { amount, definition } of ownedWearables) {
         if (definition) {
           for (let i = 0; i < amount; i++) {
@@ -168,6 +170,10 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       }
     })
     .filter((wearable) => !!wearable)
+}
+
+function fetchOwnedThirdPartyWearables(ethAddress: string, thirdPartyId: string, client: CatalystClient) {
+  return client.fetchOwnedThirdPartyWearables(ethAddress, thirdPartyId, true)
 }
 
 function fetchOwnedWearables(ethAddress: string, client: CatalystClient) {
@@ -313,6 +319,10 @@ function areFiltersValid(filters: WearablesRequestFilters) {
 
   if (filters.wearableIds) {
     filtersSet += 1
+  }
+
+  if (filters.thirdPartyId && !filters.ownedByUser) {
+    ok = false
   }
 
   return filtersSet === 1 && ok
