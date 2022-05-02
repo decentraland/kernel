@@ -62,6 +62,9 @@ const SEND_STATUS_INTERVAL_MILLIS = 5000
 type PresenceMemoization = { realm: SocialRealm | undefined; position: UserPosition | undefined }
 const presenceMap: Record<string, PresenceMemoization | undefined> = {}
 
+const MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 1000
+const MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 256000
+
 export function* friendsSaga() {
   if (WORLD_EXPLORER) {
     // We don't want to initialize the friends & chat feature if we are on preview or builder mode
@@ -75,13 +78,25 @@ function* initializeFriendsSaga() {
   if (identity.hasConnectedWeb3) {
     yield call(waitForRealmInitialized)
 
-    try {
-      const synapseUrl: string = yield select(getSynapseUrl)
-      yield call(initializePrivateMessaging, synapseUrl, identity)
-    } catch (e) {
-      logger.error(`error initializing private messaging`, e)
+    let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
 
-      yield call(waitForRendererInstance)
+    while(true) {
+      try {
+        const synapseUrl: string = yield select(getSynapseUrl)
+        yield call(initializePrivateMessaging, synapseUrl, identity)
+      } catch (e) {
+        logger.error(`error initializing private messaging`, e)
+
+        yield call(waitForRendererInstance)
+        
+        yield delay(secondsToRetry)
+        
+        if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
+          secondsToRetry *= 2
+        }
+
+        logger.warn('retrying private messaging initialization...')
+      }
     }
   }
 }
