@@ -88,13 +88,13 @@ function* initializeFriendsSaga() {
         logger.error(`error initializing private messaging`, e)
 
         yield call(waitForRendererInstance)
-        
+
         yield delay(secondsToRetry)
-        
+
         if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
           secondsToRetry *= 2
         }
-        
+
         logger.warn('retrying private messaging initialization...')
       }
     }
