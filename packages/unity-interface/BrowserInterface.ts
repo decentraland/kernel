@@ -794,8 +794,6 @@ export class BrowserInterface {
   }
 
   public RetryFriendsInitialization() {
-    const logger = getUnityInstance().logger
-    logger.log('TODO (SANTI): Retrying friends initializationnnn...')
     store.dispatch(retryFriendsInitialization())
   }
 }
