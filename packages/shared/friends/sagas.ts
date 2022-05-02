@@ -80,7 +80,7 @@ function* initializeFriendsSaga() {
 
     let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
 
-    while(true) {
+    while (true) {
       try {
         const synapseUrl: string = yield select(getSynapseUrl)
         yield call(initializePrivateMessaging, synapseUrl, identity)
@@ -94,7 +94,7 @@ function* initializeFriendsSaga() {
         if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
           secondsToRetry *= 2
         }
-
+        
         logger.warn('retrying private messaging initialization...')
       }
     }
