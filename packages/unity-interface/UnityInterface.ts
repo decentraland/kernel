@@ -583,13 +583,13 @@ export class UnityInterface implements IUnityInterface {
     this.SendBuilderMessage('SetBuilderConfiguration', JSON.stringify(config))
   }
 
-  public SendCRDTMessage(sceneId: string, message: Uint8Array) {
+  public SendBinaryMessage(sceneId: string, message: Uint8Array, length: number) {
     if (!WSS_ENABLED) {
-      nativeMsgBridge.crdtMessage(sceneId, message)
+      nativeMsgBridge.binaryMessage(sceneId, message, length)
     } else {
       this.SendMessageToUnity(
         'Bridges',
-        `CRDTMessage`,
+        `BinaryMessage`,
         JSON.stringify({ sceneId, data: Buffer.from(message).toString('base64') })
       )
     }

@@ -67,7 +67,7 @@ export class NativeMessagesBridge {
   private callUpdateParcelScene!: (scene: LoadableParcelScene) => void
   private callUnloadParcelScene!: (sceneId: string) => void
 
-  private callCRDTMessage!: (ptr: number, sceneId: string) => void
+  private callBinaryMessage!: (ptr: number, length: number, sceneId: string) => void
 
   private currentSceneId: string = ''
   private currentTag: string = ''
@@ -76,7 +76,7 @@ export class NativeMessagesBridge {
   private unityModule: any
 
   private queryMemBlockPtr: number = 0
-  private crdtMemBlockPtr: number = 0
+  private binaryMessageMemBlockPtr: number = 0
 
   public initNativeMessages(gameInstance: UnityGame) {
     this.unityModule = gameInstance.Module
@@ -89,8 +89,8 @@ export class NativeMessagesBridge {
     const QUERY_MEM_SIZE = 40
     this.queryMemBlockPtr = this.unityModule._malloc(QUERY_MEM_SIZE)
 
-    const CRDT_MEM_SIZE = 8388608
-    this.crdtMemBlockPtr = this.unityModule._malloc(CRDT_MEM_SIZE)
+    const BINARY_MSG_MEM_SIZE = 8388608
+    this.binaryMessageMemBlockPtr = this.unityModule._malloc(BINARY_MSG_MEM_SIZE)
 
     this.callSetEntityId = this.unityModule.cwrap('call_SetEntityId', null, ['string'])
     this.callSetSceneId = this.unityModule.cwrap('call_SetSceneId', null, ['string'])
@@ -117,7 +117,7 @@ export class NativeMessagesBridge {
     this.callCreateEntity = this.unityModule.cwrap('call_CreateEntity', null, [])
     this.callRemoveEntity = this.unityModule.cwrap('call_RemoveEntity', null, [])
     this.callSceneReady = this.unityModule.cwrap('call_SceneReady', null, [])
-    this.callCRDTMessage = this.unityModule.cwrap('call_CRDTMessage', null, ['number', 'string'])
+    this.callBinaryMessage = this.unityModule.cwrap('call_BinaryMessage', null, ['number', 'number', 'string'])
   }
 
   public optimizeSendMessage() {
@@ -285,10 +285,10 @@ export class NativeMessagesBridge {
     }
   }
 
-  public crdtMessage(sceneId: string, message: Uint8Array) {
-    const ptr = this.crdtMemBlockPtr
+  public binaryMessage(sceneId: string, message: Uint8Array, messageLength: number) {
+    const ptr = this.binaryMessageMemBlockPtr
     this.unityModule.HEAPU8.set(message, ptr)
-    this.callCRDTMessage(ptr, sceneId)
+    this.callBinaryMessage(ptr, messageLength, sceneId)
   }
 }
 
