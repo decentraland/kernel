@@ -1,4 +1,4 @@
-import { takeEvery, put, select, call, take, delay } from 'redux-saga/effects'
+import { takeEvery, put, select, call, take, delay, apply } from 'redux-saga/effects'
 
 import { Authenticator } from 'dcl-crypto'
 import {
@@ -48,7 +48,6 @@ import { ensureFriendProfile } from './ensureFriendProfile'
 import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { trackEvent } from '../analytics'
-import { apply } from 'redux-saga-test-plan/matchers'
 
 const DEBUG = DEBUG_PM
 
@@ -83,7 +82,7 @@ function* initializeFriendsSaga() {
 
     while (true) {
       const client: SocialAPI | null = yield select(getClient)
-      const isLoggedIn: boolean = (client && (yield apply(client, client.isLoggedIn))) || false
+      const isLoggedIn: boolean = (client && (yield apply(client, client.isLoggedIn, []))) || false
       if (isLoggedIn) {
         return
       } else {
