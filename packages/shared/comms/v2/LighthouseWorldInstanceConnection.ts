@@ -207,8 +207,10 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
       }
     })
     const leaving = currentRooms.map((current) => {
-      if (typeof (current as any) === 'string') {
+      if (!this.rooms.some((room) => isSameRoom(room, current))) {
         return this.peer.leaveRoom(current)
+      } else {
+        return Promise.resolve()
       }
     })
     return Promise.all([...joining, ...leaving])

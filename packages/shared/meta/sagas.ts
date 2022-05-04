@@ -44,7 +44,7 @@ export function* waitForMetaConfigurationInitialization() {
   }
 }
 
-function* waitForNetworkSelected() {
+export function* waitForNetworkSelected() {
   while (!(yield select((state: RootState) => !!state.dao.network))) {
     yield take(SELECT_NETWORK)
   }

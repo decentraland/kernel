@@ -1,7 +1,6 @@
 import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, apply } from 'redux-saga/effects'
 
 import { commsEstablished, FATAL_ERROR } from 'shared/loading/types'
-import { triggerReconnectRealm } from 'shared/dao/actions'
 import { CommsContext, commsLogger } from './context'
 import { getCommsContext, getRealm } from './selectors'
 import { BEFORE_UNLOAD } from 'shared/protocol/actions'
@@ -26,6 +25,8 @@ import { getFatalError } from 'shared/loading/selectors'
 import { EventChannel } from 'redux-saga'
 import { ExplorerIdentity } from 'shared/session/types'
 import { getIdentity } from 'shared/session'
+import { USER_AUTHENTIFIED } from 'shared/session/actions'
+import { selectAndReconnectRealm } from 'shared/dao/sagas'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -116,16 +117,21 @@ function stripSnapshots(profile: Avatar): Avatar {
  */
 function* handleCommsReconnectionInterval() {
   while (true) {
-    yield take(SET_WORLD_CONTEXT)
-    yield delay(1000)
+    const reason: any = yield race({
+      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT),
+      USER_AUTHENTIFIED: take(USER_AUTHENTIFIED),
+      timeout: delay(1000)
+    })
 
     const context: CommsContext | undefined = yield select(getCommsContext)
     const hasFatalError: string | undefined = yield select(getFatalError)
+    const identity: ExplorerIdentity | undefined = yield select(getIdentity)
 
-    if (!context && !hasFatalError) {
+    const shouldReconnect = !context && !hasFatalError && identity?.address
+    if (shouldReconnect) {
       // reconnect
-      yield put(triggerReconnectRealm())
-      commsLogger.info('Trying to reconnect to a realm')
+      commsLogger.info('Trying to reconnect to a realm. reason:', reason)
+      yield call(selectAndReconnectRealm)
     }
   }
 }
@@ -159,7 +165,7 @@ function* handleNewCommsContext() {
 
   yield takeEvery(SET_WORLD_CONTEXT, function* () {
     const oldContext = currentContext
-    currentContext = (yield select(getCommsContext)) as CommsContext | undefined
+    currentContext = yield select(getCommsContext)
 
     if (currentContext) {
       // bind messages to this comms instance
@@ -192,13 +198,11 @@ function* handleCommsDisconnection(action: HandleCommsDisconnection) {
   const context: CommsContext = yield select(getCommsContext)
 
   if (context && context === action.payload.context) {
-    // this also disconnects the context.
+    // this also remove the context
     yield put(setWorldContext(undefined))
 
     if (realm) {
       notifyStatusThroughChat(`Lost connection to ${realmToConnectionString(realm)}`)
     }
-
-    yield put(triggerReconnectRealm())
   }
 }

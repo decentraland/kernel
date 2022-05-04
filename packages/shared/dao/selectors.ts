@@ -60,6 +60,7 @@ export const getCommsServer = (domain: string) => {
 }
 
 export const getCatalystCandidates = (store: RootDaoState) => store.dao.candidates
+export const getCatalystCandidatesReceived = (store: RootDaoState) => store.dao.catalystCandidatesReceived
 
 export const getAllCatalystCandidates = (store: RootDaoState) => getCatalystCandidates(store).filter((it) => !!it)
 

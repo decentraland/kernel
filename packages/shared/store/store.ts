@@ -9,10 +9,9 @@ import defaultLogger from '../logger'
 import { setStore } from './isolatedStore'
 import { composeWithDevTools } from 'redux-devtools-extension'
 import { logTrace } from 'unity-interface/trace'
-import sagaMonitorModule from '@redux-saga/simple-saga-monitor'
 
 export const buildStore = () => {
-  const sagaMonitor = DEBUG_REDUX ? sagaMonitorModule : undefined
+  const sagaMonitor = DEBUG_REDUX ? require('@redux-saga/simple-saga-monitor') : undefined
 
   const sagaMiddleware = createSagaMiddleware({
     sagaMonitor,

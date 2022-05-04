@@ -17,7 +17,3 @@ export type SelectNetworkAction = ReturnType<typeof selectNetwork>
 export const CATALYST_REALMS_SCAN_REQUESTED = '[Request] Catalyst Realms scan'
 export const catalystRealmsScanRequested = () => action(CATALYST_REALMS_SCAN_REQUESTED)
 export type CatalystRealmsScanRequested = ReturnType<typeof catalystRealmsScanRequested>
-
-export const TRIGGER_RECONNECT_REALM = '[DAO] Trigger reconnect realm'
-export const triggerReconnectRealm = () => action(TRIGGER_RECONNECT_REALM)
-export type RriggerReconnectRealm = ReturnType<typeof triggerReconnectRealm>

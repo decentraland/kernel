@@ -63,6 +63,7 @@ export type DaoState = {
   exploreRealmsService: string
   poiService: string
   candidates: Candidate[]
+  catalystCandidatesReceived: boolean
 }
 
 export type RootDaoState = {

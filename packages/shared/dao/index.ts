@@ -12,6 +12,7 @@ import { connectComms } from 'shared/comms'
 import { setWorldContext } from 'shared/comms/actions'
 import { checkValidRealm } from './sagas'
 import { establishingComms } from 'shared/loading/types'
+import { commsLogger } from 'shared/comms/context'
 
 async function fetchCatalystNodes(endpoint: string | undefined) {
   if (endpoint) {
@@ -124,6 +125,8 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
 
 export async function changeRealmObject(realm: Realm, forceChange: boolean = false): Promise<void> {
   const context = getCommsContext(store.getState())
+
+  commsLogger.info('Connecting to realm', realm)
 
   // if not forceChange, then cancel operation if we are inside the desired realm
   if (!forceChange && context && sameRealm(context.realm, realm)) {

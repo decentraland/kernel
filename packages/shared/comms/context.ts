@@ -109,11 +109,10 @@ export class CommsContext {
   }
 
   public sendCurrentProfile(version: number) {
-    if (lastPlayerPositionReport) {
-      const pos = positionReportToCommsPosition(lastPlayerPositionReport)
-      this.onPositionUpdate(pos, true)
+    if (this.currentPosition) {
+      this.onPositionUpdate(this.currentPosition, true)
       this.worldInstanceConnection
-        .sendProfileMessage(pos, this.userAddress, this.profileType, version)
+        .sendProfileMessage(this.currentPosition, this.userAddress, this.profileType, version)
         .catch((e) => commsLogger.warn(`error in sendCurrentProfile `, e))
     }
   }

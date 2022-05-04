@@ -15,7 +15,8 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
       hotScenesService: '',
       exploreRealmsService: '',
       poiService: '',
-      candidates: []
+      candidates: [],
+      catalystCandidatesReceived: false
     }
   }
   if (!action) {
@@ -30,6 +31,7 @@ export function daoReducer(state?: DaoState, action?: AnyAction): DaoState {
     case SET_CATALYST_CANDIDATES:
       return {
         ...state,
+        catalystCandidatesReceived: true,
         candidates: action.payload
       }
     case SET_WORLD_CONTEXT:

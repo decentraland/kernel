@@ -45,7 +45,7 @@ import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { Store } from 'redux'
 import { store } from 'shared/store/isolatedStore'
 import { globalObservable } from 'shared/observables'
-import { selectNetwork, triggerReconnectRealm } from 'shared/dao/actions'
+import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { setWorldContext } from 'shared/comms/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
@@ -66,7 +66,6 @@ export function* sessionSaga(): any {
   yield takeLatest(AWAITING_USER_SIGNATURE, signaturePrompt)
   yield takeEvery(USER_AUTHENTIFIED, function* (action: UserAuthentified) {
     yield call(saveSession, action.payload.identity, action.payload.isGuest)
-    yield put(triggerReconnectRealm())
     logger.log(`User ${action.payload.identity.address} logged in isGuest=` + action.payload.isGuest)
   })
 
