@@ -23,6 +23,14 @@ export class SignedFetch extends ExposableAPI {
     const isGuest = !!getIsGuestLogin(state)
     const network = getSelectedNetwork(state)
 
+    const compatibilityRealm:
+      | {
+          domain: string
+          layer: string
+          catalystName: string
+        }
+      | undefined = realm ? { domain: realm.hostname, layer: '', catalystName: realm.serverName } : undefined
+
     const additionalMetadata: Record<string, any> = {
       sceneId: this.parcelIdentity.cid,
       parcel: this.getSceneData().scene.base,
@@ -30,7 +38,8 @@ export class SignedFetch extends ExposableAPI {
       tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
       network,
       isGuest,
-      realm: realm ? { ...realm, layer: '' } : undefined // If the realm doesn't have layer, we send it
+      realm: realm?.protocol === 'v2' || realm?.protocol === 'v1' ? compatibilityRealm : realm,
+      signer: 'decentraland-kernel-scene'
     }
 
     return signedFetch(url, identity!, init, additionalMetadata)
