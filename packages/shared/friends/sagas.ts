@@ -20,7 +20,14 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import { createLogger, createDummyLogger } from 'shared/logger'
-import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus, UpdateUserStatusMessage } from 'shared/types'
+import {
+  ChatMessage,
+  NotificationType,
+  ChatMessageType,
+  FriendshipAction,
+  PresenceStatus,
+  UpdateUserStatusMessage
+} from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition, lastPlayerPositionReport, parcelObservable } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
@@ -96,7 +103,7 @@ function* initializeFriendsSaga() {
           yield call(initializePrivateMessaging, synapseUrl, identity)
         } catch (e) {
           logger.error(`error initializing private messaging`, e)
-    
+
           yield call(waitForRendererInstance)
 
           trackEvent('error', {
