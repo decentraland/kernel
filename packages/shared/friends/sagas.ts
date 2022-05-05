@@ -1,4 +1,4 @@
-import { takeEvery, put, select, call, take, delay } from 'redux-saga/effects'
+import { takeEvery, put, select, call, take, delay, apply } from 'redux-saga/effects'
 
 import { Authenticator } from 'dcl-crypto'
 import {
@@ -20,15 +20,7 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import { createLogger, createDummyLogger } from 'shared/logger'
-import {
-  ChatMessage,
-  NotificationType,
-  ChatMessageType,
-  FriendshipAction,
-  PresenceStatus,
-  HUDElementID,
-  UpdateUserStatusMessage
-} from 'shared/types'
+import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus, UpdateUserStatusMessage } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition, lastPlayerPositionReport, parcelObservable } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
@@ -71,6 +63,9 @@ const SEND_STATUS_INTERVAL_MILLIS = 5000
 type PresenceMemoization = { realm: SocialRealm | undefined; position: UserPosition | undefined }
 const presenceMap: Record<string, PresenceMemoization | undefined> = {}
 
+const MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 1000
+const MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 256000
+
 export function* friendsSaga() {
   if (WORLD_EXPLORER) {
     // We don't want to initialize the friends & chat feature if we are on preview or builder mode
@@ -85,26 +80,40 @@ function* initializeFriendsSaga() {
   if (!isGuest) {
     yield call(waitForRealmInitialized)
 
-    try {
-      const synapseUrl: string = yield select(getSynapseUrl)
-      yield call(initializePrivateMessaging, synapseUrl, identity)
-    } catch (e) {
-      logger.error(`error initializing private messaging`, e)
+    let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
 
-      yield call(waitForRendererInstance)
+    while (true) {
+      const client: SocialAPI | null = yield select(getClient)
+      const isLoggedIn: boolean = (client && (yield apply(client, client.isLoggedIn, []))) || false
 
-      getUnityInstance().ConfigureHUDElement(HUDElementID.FRIENDS, { active: false, visible: false })
-      getUnityInstance().ShowNotification({
-        type: NotificationType.GENERIC,
-        message: 'There was an error initializing friends and private messages',
-        buttonMessage: 'OK',
-        timer: 7
-      })
-      trackEvent('error', {
-        context: 'kernel#saga',
-        message: 'There was an error initializing friends and private messages',
-        stack: ''
-      })
+      if (isLoggedIn) {
+        return
+      } else {
+        try {
+          const synapseUrl: string = yield select(getSynapseUrl)
+          // TODO: The call to initializePrivateMessaging, when it finishes successfully, is making the 'initializeFriendsSaga' function directly ends.
+          //       It seems for this reason we don't have to forze the flow to break out the 'while' loop, but we should investigate it.
+          yield call(initializePrivateMessaging, synapseUrl, identity)
+        } catch (e) {
+          logger.error(`error initializing private messaging`, e)
+    
+          yield call(waitForRendererInstance)
+
+          trackEvent('error', {
+            context: 'kernel#saga',
+            message: 'There was an error initializing friends and private messages',
+            stack: ''
+          })
+
+          yield delay(secondsToRetry)
+
+          if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
+            secondsToRetry *= 2
+          }
+
+          logger.warn('retrying private messaging initialization...')
+        }
+      }
     }
   }
 }
