@@ -40,7 +40,7 @@ export class AvatarEntity extends Entity {
   // sub: IEntity
 
   constructor(public readonly userId: string, avatarShape = new AvatarShape()) {
-    super(userId)
+    super()
     this.avatarShape = avatarShape
     this.avatarShape.useDummyModel = true
 
