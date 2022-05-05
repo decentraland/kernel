@@ -1,15 +1,4 @@
-import {
-  AvatarShape,
-  engine,
-  Entity,
-  Observable,
-  Transform,
-  EventManager
-  // BoxShape,
-  // IEntity,
-  // Material,
-  // Color4
-} from '@dcl/legacy-ecs'
+import { AvatarShape, engine, Entity, Observable, Transform } from '@dcl/legacy-ecs'
 import type {
   AvatarMessage,
   Pose,
@@ -25,11 +14,6 @@ import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 const avatarMap = new Map<string, AvatarEntity>()
-// const box = new BoxShape()
-// const red = new Material()
-// red.albedoColor = new Color4(1.0, 0.0, 0.0, 1.0)
-// const green = new Material()
-// green.albedoColor = new Color4(0.0, 1.0, 0.0, 1.0)
 
 export class AvatarEntity extends Entity {
   visible = true
@@ -37,25 +21,13 @@ export class AvatarEntity extends Entity {
   transform: Transform
   avatarShape!: AvatarShape
 
-  // sub: IEntity
-
   constructor(public readonly userId: string, avatarShape = new AvatarShape()) {
     super()
     this.avatarShape = avatarShape
     this.avatarShape.useDummyModel = true
 
-    this.addComponentOrReplace(this.avatarShape)
-    this.eventManager = new EventManager()
-    this.eventManager.fireEvent
-
     // we need this component to filter the interpolator system
     this.transform = this.getComponentOrCreate(Transform)
-
-    // this.sub = new Entity()
-    // engine.addEntity(this.sub)
-    // this.sub.addComponent(box)
-    // this.sub.addComponent(this.transform)
-    // this.sub.addComponentOrReplace(red)
   }
 
   loadProfile(profile: Pick<NewProfileForRenderer, 'avatar' | 'name'>) {
@@ -115,7 +87,7 @@ export class AvatarEntity extends Entity {
     const [x, y, z, Qx, Qy, Qz, Qw, immediate] = pose
 
     // We re-add the entity to the engine when reposition is immediate to avoid lerping its position in the renderer (and avoid adding a property to the transform for that)
-    const shouldReAddEntity = immediate && this.visible
+    const shouldReAddEntity = immediate
 
     if (shouldReAddEntity) {
       this.remove()
@@ -134,15 +106,15 @@ export class AvatarEntity extends Entity {
       engine.removeEntity(this)
       avatarMap.delete(this.userId)
     }
-    // if (this.sub.isAddedToEngine()) engine.removeEntity(this.sub)
   }
 
   private updateVisibility() {
-    if (!this.visible && this.isAddedToEngine()) {
-      this.remove()
-    } else if (this.visible && !this.isAddedToEngine()) {
-      engine.addEntity(this)
-      // engine.addEntity(this.sub)
+    if (!this.visible && this.getComponentOrNull(AvatarShape)) {
+      try {
+        this.removeComponent(AvatarShape)
+      } catch {}
+    } else if (this.visible && !this.getComponentOrNull(AvatarShape)) {
+      this.addComponentOrReplace(this.avatarShape)
     }
   }
 }
