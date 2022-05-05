@@ -389,8 +389,8 @@ export async function fetchENSOwnersContains(url: string, name: string, maxResul
   }
 }
 
+const fetcher = new Fetcher()
 async function queryGraph(url: string, query: string, variables: any, totalAttempts: number = 5) {
-  const fetcher = new Fetcher()
   return fetcher.queryGraph(url, query, variables, { attempts: totalAttempts })
 }
 

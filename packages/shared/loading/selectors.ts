@@ -1,11 +1,13 @@
 import { LoginState } from '@dcl/kernel-interface'
 import { RootRendererState } from 'shared/renderer/types'
+import { getIsSignUp } from 'shared/session/selectors'
 import { RootSessionState } from 'shared/session/types'
 import { RootState } from 'shared/store/rootTypes'
 import { RootLoadingState } from './reducer'
 
+export const getFatalError = (state: RootLoadingState) => state.loading.error
+export const getLoadingState = (state: RootLoadingState) => state.loading
 export const isInitialLoading = (state: RootLoadingState) => state.loading.initialLoad
-export const isWaitingTutorial = (state: RootLoadingState) => state.loading.waitingTutorial
 
 export function hasPendingScenes(state: RootLoadingState) {
   return state.loading.pendingScenes !== 0
@@ -16,7 +18,7 @@ export function isLoadingScreenVisible(state: RootLoadingState & RootSessionStat
 
   // in the case of signup, we show the avatars editor instead of the loading screen
   // that is so, to enable the user to customize the avatar while loading the world
-  if (!session.identity && session.isSignUp && session.loginState === LoginState.WAITING_PROFILE) {
+  if (session.isSignUp && session.loginState === LoginState.WAITING_PROFILE) {
     return false
   }
 
@@ -55,13 +57,17 @@ export function isRendererVisible(state: RootState) {
     return false
   }
 
+  // some login stages requires the renderer to be turned off
+  const { loginState } = state.session
+  if (loginState === LoginState.WAITING_PROFILE && getIsSignUp(state)) {
+    return true
+  }
+
   // if it is not yet loading scenes, renderer should not be visible either
   if (!state.renderer.parcelLoadingStarted) {
     return false
   }
 
-  // some login stages requires the renderer to be turned off
-  const { loginState } = state.session
   if (
     loginState === LoginState.SIGNATURE_FAILED ||
     loginState === LoginState.SIGNATURE_PENDING ||

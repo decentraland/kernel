@@ -19,28 +19,24 @@ export type CatalystStatus = {
   usersCount?: number
   maxUsers?: number
   usersParcels?: Parcel[]
-  env: {
-    catalystVersion: string
-  }
 }
 
 type BaseCandidate = {
+  // connectionString: string
+  protocol: string
   domain: string
   catalystName: string
   elapsed: number
   status: ServerConnectionStatus
   lighthouseVersion: string
-  catalystVersion: string
 }
 
-export type IslandsBasedCandidate = {
+export type Candidate = {
   type: 'islands-based'
   usersCount: number
   usersParcels?: Parcel[]
   maxUsers?: number
 } & BaseCandidate
-
-export type Candidate = IslandsBasedCandidate
 
 export type Parcel = [number, number]
 
@@ -52,45 +48,26 @@ export type LayerUserInfo = {
 }
 
 export type Realm = {
-  domain: string
-  catalystName: string
-  lighthouseVersion: string
+  protocol: string
+  hostname: string
+  serverName: string
 }
 
 export type DaoState = {
-  initialized: boolean
   network: ETHEREUM_NETWORK | null
-  candidatesFetched: boolean
   fetchContentServer: string
   catalystServer: string
   updateContentServer: string
-  commsServer: string
   resizeService: string
   hotScenesService: string
   exploreRealmsService: string
   poiService: string
-  realm: Realm | undefined
   candidates: Candidate[]
-  addedCandidates: Candidate[]
-  commsStatus: CommsStatus
+  catalystCandidatesReceived: boolean
 }
 
 export type RootDaoState = {
   dao: DaoState
-}
-
-export type CommsState =
-  | 'initial'
-  | 'connecting'
-  | 'connected'
-  | 'error'
-  | 'realm-full'
-  | 'reconnection-error'
-  | 'id-taken'
-
-export type CommsStatus = {
-  status: CommsState
-  connectedPeers: number
 }
 
 export type PingResult = {

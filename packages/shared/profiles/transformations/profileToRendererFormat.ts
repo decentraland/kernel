@@ -1,59 +1,72 @@
-import { Profile, ProfileForRenderer } from '../types'
 import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import { convertToRGBObject } from './convertToRGBObject'
-import { dropDeprecatedWearables } from './processServerProfile'
-import { ExplorerIdentity } from 'shared/session/types'
 import { isURL } from 'atomicHelpers/isURL'
-import { trackEvent } from '../../analytics'
-
-const profileDefaults = {
-  tutorialStep: 0
-}
+import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
+import { backupProfile } from '../generateRandomUserProfile'
+import { genericAvatarSnapshots } from 'config'
+import { calculateDisplayName } from './processServerProfile'
+import { NewProfileForRenderer } from './types'
 
 export function profileToRendererFormat(
-  profile: Profile,
-  options?: { identity?: ExplorerIdentity; parcels?: ParcelsWithAccess }
-): ProfileForRenderer {
-  const { snapshots, ...rendererAvatar } = profile.avatar
+  profile: Partial<Avatar>,
+  options: {
+    address?: string
+
+    // TODO: there is no explaination why the profile has the parcels of Builder. Remove it from here
+    parcels?: ParcelsWithAccess
+  }
+): NewProfileForRenderer {
+  const stage = { ...backupProfile(profile.userId || options.address || 'noeth'), ...profile }
 
   return {
-    ...profileDefaults,
-    ...profile,
-    snapshots: prepareSnapshots(snapshots, profile.userId),
-    hasConnectedWeb3: options?.identity ? options.identity.hasConnectedWeb3 : false,
+    ...stage,
+    name: calculateDisplayName(stage),
+    description: stage.description || '',
+    version: stage.version || -1,
+    ethAddress: stage.ethAddress || options.address || '0x0000000000000000000000000000000000000000',
+    blocked: stage.blocked || [],
+    muted: stage.muted || [],
+    inventory: [],
+    created_at: 0,
+    updated_at: 0,
+    // @deprecated
+    email: '',
+    hasConnectedWeb3: stage.hasConnectedWeb3 || false,
+    hasClaimedName: stage.hasClaimedName ?? false,
+    tutorialFlagsMask: 0,
+    tutorialStep: stage.tutorialStep || 0,
+    snapshots: prepareSnapshots(profile.avatar!.snapshots),
     avatar: {
-      ...rendererAvatar,
-      wearables: profile.avatar.wearables.filter(dropDeprecatedWearables),
-      eyeColor: convertToRGBObject(profile.avatar.eyeColor),
-      hairColor: convertToRGBObject(profile.avatar.hairColor),
-      skinColor: convertToRGBObject(profile.avatar.skinColor)
+      wearables: profile.avatar?.wearables || [],
+      bodyShape: profile.avatar?.bodyShape || '',
+      eyeColor: convertToRGBObject(profile.avatar?.eyes.color),
+      hairColor: convertToRGBObject(profile.avatar?.hair.color),
+      skinColor: convertToRGBObject(profile.avatar?.skin.color)
     },
-    parcelsWithAccess: options?.parcels
+    parcelsWithAccess: options.parcels || []
   }
 }
 
 // Ensure all snapshots are URLs
-function prepareSnapshots(
-  { face256, body }: { face256: string; body: string },
-  userId: string
-): {
-  face256: string
-  body: string
-  face?: string
-  face128?: string
-} {
+function prepareSnapshots({ face256, body }: Snapshots): NewProfileForRenderer['snapshots'] {
+  // TODO: move this logic to unity-renderer
   function prepare(value: string) {
     if (value === null || value === undefined) {
-      trackEvent('SNAPSHOT_IMAGE_NOT_FOUND', { userId })
-      return '/images/image_not_found.png'
+      return null
     }
-    if (value === '' || isURL(value) || value.startsWith('/images')) {
+    if (
+      value === '' ||
+      isURL(value) ||
+      value.startsWith('/images') ||
+      value.startsWith('Qm') ||
+      IPFSv2.validate(value)
+    ) {
       return value
     }
 
     return 'data:text/plain;base64,' + value
   }
 
-  const face = prepare(face256)
-  return { face, face128: face, face256: face, body: prepare(body) }
+  const x = prepare(face256)
+  return { body: prepare(body) || genericAvatarSnapshots.body, face256: x || genericAvatarSnapshots.face256 }
 }

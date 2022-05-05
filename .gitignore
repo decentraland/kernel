@@ -92,3 +92,5 @@ public/local-ipfs
 
 **/*.js.lib
 static/package-lock.json
+**/*.dot.pdf
+**/*.dot

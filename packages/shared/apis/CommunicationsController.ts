@@ -1,17 +1,18 @@
 import { registerAPI, exposeMethod, APIOptions } from 'decentraland-rpc/lib/host'
 
 import {
-  sendParcelSceneCommsMessage,
+  ICommunicationsController,
   subscribeParcelSceneToCommsMessages,
   unsubscribeParcelSceneToCommsMessages
-} from 'shared/comms'
+} from 'shared/comms/sceneSubscriptions'
 import { ExposableAPI } from 'shared/apis/ExposableAPI'
 import { EngineAPI } from 'shared/apis/EngineAPI'
 import { ParcelIdentity } from './ParcelIdentity'
 import { PeerInformation } from 'shared/comms/interface/types'
+import { sendParcelSceneCommsMessage } from 'shared/comms'
 
 @registerAPI('CommunicationsController')
-export class CommunicationsController extends ExposableAPI {
+export class CommunicationsController extends ExposableAPI implements ICommunicationsController {
   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
   engineAPI = this.options.getAPIInstance(EngineAPI)
 

@@ -44,10 +44,10 @@ import { META_CONFIGURATION_INITIALIZED } from '../meta/actions'
 import { retrieve, store as cacheStore } from 'shared/cache'
 import { getFetchContentServer, getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { realmInitialized } from 'shared/dao'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { MarketData } from 'shared/atlas/types'
+import { waitForRealmInitialized } from 'shared/dao/sagas'
 
 const tiles = {
   id: 'tiles',
@@ -160,7 +160,8 @@ function* initializePois() {
   const pois: Vector2Component[] = yield select(getPois)
   const metaPOIs = pois.map((position) => `${position.x},${position.y}`)
 
-  yield realmInitialized()
+  yield call(waitForRealmInitialized)
+
   const daoPOIs: string[] | undefined = yield fetchPOIsFromDAO()
 
   if (daoPOIs) {

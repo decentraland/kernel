@@ -59,6 +59,8 @@ export type VoiceSpatialParams = {
 
 type AudioContextWithInitPromise = [AudioContext, Promise<any>]
 
+const SELF_STREAM_ID = 'localhost'
+
 export class VoiceCommunicator {
   private contextWithInitPromise: AudioContextWithInitPromise
   private outputGainNode: GainNode
@@ -83,11 +85,7 @@ export class VoiceCommunicator {
     return this.contextWithInitPromise[0]
   }
 
-  constructor(
-    private selfId: string,
-    private channel: AudioCommunicatorChannel,
-    private options: VoiceCommunicatorOptions
-  ) {
+  constructor(private channel: AudioCommunicatorChannel, private options: VoiceCommunicatorOptions) {
     this.sampleRate = this.options.sampleRate ?? VOICE_CHAT_SAMPLE_RATE
     this.outputBufferLength = this.options.outputBufferLength ?? 2.0
 
@@ -111,14 +109,6 @@ export class VoiceCommunicator {
     this.voiceChatWorkerMain = new VoiceChatCodecWorkerMain()
 
     this.startOutputsExpiration()
-  }
-
-  public setSelfId(selfId: string) {
-    this.voiceChatWorkerMain.destroyEncodeStream(this.selfId)
-    this.selfId = selfId
-    if (this.input) {
-      this.input.encodeStream = this.createInputEncodeStream(this.input.recordingContext[0], this.input.workletNode)
-    }
   }
 
   public addStreamPlayingListener(listener: StreamPlayingListener) {
@@ -227,7 +217,7 @@ export class VoiceCommunicator {
 
   async setInputStream(stream: MediaStream) {
     if (this.input) {
-      this.voiceChatWorkerMain.destroyEncodeStream(this.selfId)
+      this.voiceChatWorkerMain.destroyEncodeStream(SELF_STREAM_ID)
       if (this.input.recordingContext[0] !== this.context) {
         this.input.recordingContext[0].close().catch((e) => defaultLogger.error('Error closing recording context', e))
       }
@@ -434,7 +424,7 @@ export class VoiceCommunicator {
 
   private createInputEncodeStream(recordingContext: AudioContext, workletNode: AudioWorkletNode) {
     const encodeStream = this.voiceChatWorkerMain.getOrCreateEncodeStream(
-      this.selfId,
+      SELF_STREAM_ID,
       this.sampleRate,
       recordingContext.sampleRate
     )

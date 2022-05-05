@@ -24,7 +24,7 @@ export type SerializedComponent = {
   value: any
 }
 
-export enum CONTENT_PATH {
+export const enum CONTENT_PATH {
   DEFINITION_FILE = 'scene-state-definition.json',
   SCENE_FILE = 'scene.json',
   MODELS_FOLDER = 'models',
