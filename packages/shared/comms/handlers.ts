@@ -22,7 +22,7 @@ import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/sele
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
-import { CommsContext, commsLogger } from './context'
+import { CommsContext } from './context'
 import { processVoiceFragment } from './voice-over-comms'
 import future, { IFuture } from 'fp-future'
 import { handleCommsDisconnection } from './actions'
@@ -40,8 +40,6 @@ const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
 
 export async function bindHandlersToCommsContext(context: CommsContext) {
-  commsLogger.log('Binding handlers: ', context)
-
   removeAllPeers()
 
   const connection = context.worldInstanceConnection!
@@ -97,9 +95,6 @@ function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
   const msgTimestamp = message.time
 
   const peerTrackingInfo = setupPeer(message.sender)
-  if (!peerTrackingInfo.ethereumAddress) {
-    commsLogger.info('Peer ', message.sender, 'is now', message.data.user)
-  }
   peerTrackingInfo.ethereumAddress = message.data.user
   peerTrackingInfo.profileType = message.data.type
   peerTrackingInfo.lastUpdate = Date.now()

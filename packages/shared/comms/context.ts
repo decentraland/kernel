@@ -94,7 +94,7 @@ export class CommsContext {
     if (this.destroyed) return
     await this.sendToMordor()
 
-    commsLogger.info('Disconnecting comms context')
+    commsLogger.info('Disconnecting comms context', this)
     this.destroyed = true
     this.onDisconnectObservable.notifyObservers()
 
