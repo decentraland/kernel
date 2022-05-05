@@ -11,12 +11,6 @@ import {
   onPositionUnsettledObservable
 } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
-import {
-  observeLoadingStateChange,
-  observeRendererStateChange,
-  observeSessionStateChange,
-  renderStateObservable
-} from 'shared/world/worldState'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { UnityParcelScene } from './UnityParcelScene'
 import { getUnityInstance } from './IUnityInterface'
@@ -25,16 +19,15 @@ import { UnityScene } from './UnityScene'
 import { ensureUiApis } from 'shared/world/uiSceneInitializer'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
-import { isLoadingScreenVisible } from 'shared/loading/selectors'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
-import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
+import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -44,27 +37,6 @@ export const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
 declare const globalThis: { clientDebug: ClientDebug }
 
 globalThis.clientDebug = clientDebug
-
-export function setLoadingScreenBasedOnState() {
-  const state = store.getState()
-
-  if (!state) {
-    getUnityInstance().SetLoadingScreen({
-      isVisible: true,
-      message: 'Loading...',
-      showTips: true
-    })
-    return
-  }
-
-  const loading = state.loading
-
-  getUnityInstance().SetLoadingScreen({
-    isVisible: isLoadingScreenVisible(state),
-    message: loading.message || loading.status || '',
-    showTips: loading.initialLoad || !state.renderer.parcelLoadingStarted
-  })
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -102,26 +74,12 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
     getUnityInstance().SetEngineDebugPanel()
   }
 
-  observeLoadingStateChange(() => {
-    setLoadingScreenBasedOnState()
-  })
-  observeSessionStateChange(() => {
-    setLoadingScreenBasedOnState()
-  })
-  observeRendererStateChange(() => {
-    setLoadingScreenBasedOnState()
-  })
-  renderStateObservable.add(() => {
-    setLoadingScreenBasedOnState()
-  })
-  setLoadingScreenBasedOnState()
-
   if (!EDITOR) {
     await startGlobalScene('dcl-gs-avatars', 'Avatars', hudWorkerUrl)
   }
 }
 
-export async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
+async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
   const scene = new UnityScene({
     sceneId: cid,
     name: title,
@@ -145,7 +103,7 @@ export async function startGlobalScene(cid: string, title: string, fileContentUr
   })
 }
 
-export async function startUnitySceneWorkers() {
+export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   onLoadParcelScenesObservable.add((lands) => {
     getUnityInstance().LoadParcelScenes(
       lands.map(($) => {
@@ -164,9 +122,7 @@ export async function startUnitySceneWorkers() {
     getUnityInstance().DeactivateRendering()
   })
 
-  await enableParcelSceneLoading()
-
-  store.dispatch(signalParcelLoadingStarted())
+  await enableParcelSceneLoading(params)
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {

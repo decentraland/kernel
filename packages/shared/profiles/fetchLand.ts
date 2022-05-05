@@ -183,6 +183,8 @@ type EstateFields = {
   } | null
 }
 
+const fetcher = new Fetcher()
+
 /**
  * This function returns all Lands (parcel or estates) that the address has access to.
  * If the address has access to 2 parcels and 2 estates (which each if composed of 3 parcels), 4 Land will be returned.
@@ -191,7 +193,6 @@ type EstateFields = {
  */
 async function fetchLand(_address: string): Promise<Land[]> {
   const address = _address.toLowerCase()
-  const fetcher = new Fetcher()
 
   const net = await getAppNetwork()
 

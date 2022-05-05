@@ -1,4 +1,4 @@
-import { call, put, select, take, takeLatest } from 'redux-saga/effects'
+import { call, put, select, take } from 'redux-saga/effects'
 import {
   ETHEREUM_NETWORK,
   FORCE_RENDERING_STYLE,
@@ -6,17 +6,14 @@ import {
   getServerConfigurations,
   QS_MAX_VISIBLE_PEERS
 } from 'config'
-import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized, metaUpdateMessageOfTheDay } from './actions'
+import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized } from './actions'
 import defaultLogger from '../logger'
 import { BannedUsers, MetaConfiguration, WorldConfig } from './types'
 import { isMetaConfigurationInitiazed } from './selectors'
-import { USER_AUTHENTIFIED } from '../session/actions'
-import { getCurrentUserId } from '../session/selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { RootState } from 'shared/store/rootTypes'
-import { trackEvent } from 'shared/analytics'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 
 function valueFromVariants<T>(variants: Record<string, any> | undefined, key: string): T | undefined {
@@ -47,7 +44,7 @@ export function* waitForMetaConfigurationInitialization() {
   }
 }
 
-function* waitForNetworkSelected() {
+export function* waitForNetworkSelected() {
   while (!(yield select((state: RootState) => !!state.dao.network))) {
     yield take(SELECT_NETWORK)
   }
@@ -97,27 +94,7 @@ function* initMeta() {
 }
 
 export function* metaSaga(): any {
-  yield takeLatest(USER_AUTHENTIFIED, fetchMessageOfTheDay)
   yield call(initMeta)
-}
-
-function* fetchMessageOfTheDay() {
-  const userId: string | undefined = yield select(getCurrentUserId)
-  if (userId) {
-    const url = `https://dclcms.club/api/notifications?address=${userId}`
-    const result: Response = yield call(async () => {
-      try {
-        const response = await fetch(url)
-        const data = await response.json()
-        return data?.length ? data[0] : null
-      } catch (e) {
-        trackEvent('motd_failed', {})
-        defaultLogger.error(`Error fetching Message of the day ${e}`)
-        return null
-      }
-    })
-    yield put(metaUpdateMessageOfTheDay(result))
-  }
 }
 
 async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<Record<string, boolean> | undefined> {
@@ -157,7 +134,8 @@ async function fetchMetaConfiguration(network: ETHEREUM_NETWORK) {
         contentWhitelist: []
       },
       bannedUsers: {},
-      synapseUrl: 'https://synapse.decentraland.org',
+      synapseUrl:
+        network === ETHEREUM_NETWORK.MAINNET ? 'https://synapse.decentraland.org' : 'https://synapse.decentraland.io',
       world: {
         pois: []
       },

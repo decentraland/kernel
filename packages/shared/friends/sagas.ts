@@ -1,4 +1,4 @@
-import { takeEvery, put, select, call, take, delay, apply } from 'redux-saga/effects'
+import { takeEvery, put, select, call, take, delay } from 'redux-saga/effects'
 
 import { Authenticator } from 'dcl-crypto'
 import {
@@ -20,15 +20,20 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import { createLogger, createDummyLogger } from 'shared/logger'
-import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus, Profile } from 'shared/types'
-import { getRealm, getUpdateProfileServer } from 'shared/dao/selectors'
+import {
+  ChatMessage,
+  NotificationType,
+  ChatMessageType,
+  FriendshipAction,
+  PresenceStatus,
+  HUDElementID,
+  UpdateUserStatusMessage
+} from 'shared/types'
 import { Realm } from 'shared/dao/types'
-import { lastPlayerPosition, positionObservable } from 'shared/world/positionThings'
+import { lastPlayerPosition, lastPlayerPositionReport, parcelObservable } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { ADDED_PROFILE_TO_CATALOG } from 'shared/profiles/actions'
 import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
-import { SET_CATALYST_REALM, SetCatalystRealm } from 'shared/dao/actions'
-import { notifyFriendOnlineStatusThroughChat } from 'shared/comms/chat'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState } from 'shared/friends/types'
 import { getClient, findByUserId, getPrivateMessaging } from 'shared/friends/selectors'
@@ -47,6 +52,10 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { notifyStatusThroughChat } from 'shared/chat'
+import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { getRealm } from 'shared/comms/selectors'
+import { Avatar } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
 
 const DEBUG = DEBUG_PM
@@ -62,9 +71,6 @@ const SEND_STATUS_INTERVAL_MILLIS = 5000
 type PresenceMemoization = { realm: SocialRealm | undefined; position: UserPosition | undefined }
 const presenceMap: Record<string, PresenceMemoization | undefined> = {}
 
-const MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 1000
-const MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 256000
-
 export function* friendsSaga() {
   if (WORLD_EXPLORER) {
     // We don't want to initialize the friends & chat feature if we are on preview or builder mode
@@ -74,54 +80,40 @@ export function* friendsSaga() {
 
 function* initializeFriendsSaga() {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+  const isGuest = identity.hasConnectedWeb3
 
-  if (identity.hasConnectedWeb3) {
+  if (!isGuest) {
     yield call(waitForRealmInitialized)
 
-    let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
+    try {
+      const synapseUrl: string = yield select(getSynapseUrl)
+      yield call(initializePrivateMessaging, synapseUrl, identity)
+    } catch (e) {
+      logger.error(`error initializing private messaging`, e)
 
-    while (true) {
-      const client: SocialAPI | null = yield select(getClient)
-      const isLoggedIn: boolean = (client && (yield apply(client, client.isLoggedIn, []))) || false
-      if (isLoggedIn) {
-        return
-      } else {
-        try {
-          const synapseUrl: string = yield select(getSynapseUrl)
-          // TODO: The call to initializePrivateMessaging, when it finishes successfully, is making the 'initializeFriendsSaga' function directly ends.
-          //       It seems for this reason we don't have to forze the flow to break out the 'while' loop, but we should investigate it.
-          yield call(initializePrivateMessaging, synapseUrl, identity)
-        } catch (e) {
-          logger.error(`error initializing private messaging`, e)
+      yield call(waitForRendererInstance)
 
-          yield call(waitForRendererInstance)
-
-          yield delay(secondsToRetry)
-
-          if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
-            secondsToRetry *= 2
-          }
-
-          logger.warn('retrying private messaging initialization...')
-        }
-      }
+      getUnityInstance().ConfigureHUDElement(HUDElementID.FRIENDS, { active: false, visible: false })
+      getUnityInstance().ShowNotification({
+        type: NotificationType.GENERIC,
+        message: 'There was an error initializing friends and private messages',
+        buttonMessage: 'OK',
+        timer: 7
+      })
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: 'There was an error initializing friends and private messages',
+        stack: ''
+      })
     }
   }
 }
 
 function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdentity) {
   const { address: ethAddress } = identity
-  let timestamp: number
+  const timestamp: number = Date.now()
 
-  // Try to fetch time from the catalyst server
-  timestamp = yield fetchTimeFromCatalystServer()
-
-  // If that fails, fall back to local time
-  if (!timestamp) {
-    logger.warn(`Failed to fetch global time. Will fall back to local time`)
-    timestamp = Date.now()
-  }
-
+  // TODO: the "timestamp" should be a message also signed by a catalyst.
   const messageToSign = `${timestamp}`
 
   const authChain = Authenticator.signPayload(identity, messageToSign)
@@ -307,7 +299,7 @@ function* initializeFriends(client: SocialAPI) {
 
   const profileIds = Object.values(socialInfo).map((socialData) => socialData.userId)
 
-  const profiles: Profile[] = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
+  const profiles: Avatar[] = yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
   DEBUG && logger.info(`profiles`, profiles)
 
   for (const userId of profileIds) {
@@ -433,7 +425,7 @@ function* initializeStatusUpdateInterval(client: SocialAPI) {
     const updateStatus = {
       realm: {
         layer: '',
-        serverName: realm.catalystName
+        serverName: realm.serverName
       },
       position,
       presence: PresenceType.ONLINE
@@ -444,19 +436,24 @@ function* initializeStatusUpdateInterval(client: SocialAPI) {
     lastStatus = status
   }
 
-  positionObservable.add(({ position: { x, y, z } }) => {
+  parcelObservable.add(() => {
     const realm = getRealm(store.getState())
+    if (lastPlayerPositionReport) {
+      const {
+        position: { x, y, z }
+      } = lastPlayerPositionReport!
 
-    sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
+      sendOwnStatusIfNecessary({ worldPosition: { x, y, z }, realm, timestamp: Date.now() })
+    }
   })
 
-  const handleSetCatalystRealm = (action: SetCatalystRealm) => {
-    const realm = action.payload
+  function* handleSetCatalystRealm() {
+    const realm: Realm | undefined = yield select(getRealm)
 
     sendOwnStatusIfNecessary({ worldPosition: lastPlayerPosition.clone(), realm, timestamp: Date.now() })
   }
 
-  yield takeEvery(SET_CATALYST_REALM, handleSetCatalystRealm)
+  yield takeEvery(SET_WORLD_CONTEXT, handleSetCatalystRealm)
 }
 
 /**
@@ -628,7 +625,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
   } catch (e) {
     if (e instanceof UnknownUsersError) {
-      const profile: Profile = yield ensureFriendProfile(userId)
+      const profile: Avatar = yield call(ensureFriendProfile, userId)
       const id = profile?.name ? profile.name : `with address '${userId}'`
       showErrorNotification(`User ${id} must log in at least once before befriending them`)
     }
@@ -735,15 +732,36 @@ function toSocialData(socialIds: string[]) {
     .filter(({ userId }) => !!userId) as SocialData[]
 }
 
-function* fetchTimeFromCatalystServer() {
-  try {
-    const contentServer = getUpdateProfileServer(store.getState())
-    const response: Response = yield fetch(`${contentServer}/status`)
-    if (response.ok) {
-      const { currentTime } = yield response.json()
-      return currentTime
-    }
-  } catch (e) {
-    logger.warn(`Failed to fetch time from catalyst server`, e)
+const friendStatus: Record<string, PresenceStatus> = {}
+
+function notifyFriendOnlineStatusThroughChat(userStatus: UpdateUserStatusMessage) {
+  const friendName = getProfile(store.getState(), userStatus.userId)?.name
+
+  if (friendName === undefined) {
+    return
   }
+
+  if (!friendStatus[friendName]) {
+    friendStatus[friendName] = userStatus.presence
+    return
+  }
+
+  if (!userStatus.realm?.serverName) {
+    if (userStatus.presence !== PresenceStatus.ONLINE) {
+      friendStatus[friendName] = userStatus.presence
+    }
+    return
+  }
+
+  if (userStatus.presence === PresenceStatus.ONLINE && friendStatus[friendName] === PresenceStatus.OFFLINE) {
+    let message = `${friendName} joined ${userStatus.realm?.serverName}`
+
+    if (userStatus.position) {
+      message += ` ${userStatus.position.x}, ${userStatus.position.y}`
+    }
+
+    notifyStatusThroughChat(message)
+  }
+
+  friendStatus[friendName] = userStatus.presence
 }

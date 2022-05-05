@@ -45,7 +45,7 @@ export class SceneSystemWorker extends SceneWorker {
   }
 
   private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): ScriptingTransport {
-    const worker = new (Worker as any)(gamekitWorkerUrl, {
+    const worker = new Worker(gamekitWorkerUrl, {
       name: `ParcelSceneWorker(${parcelScene.data.sceneId})`
     })
 

@@ -15,7 +15,6 @@ import {
   HUDElementID,
   HUDConfiguration,
   RealmsInfoForRenderer,
-  Profile,
   BuilderConfiguration,
   ChatMessage,
   FriendshipUpdateStatusMessage,
@@ -25,10 +24,11 @@ import {
   UpdateUserStatusMessage,
   WorldPosition
 } from '../shared/types'
-import { ProfileForRenderer } from 'shared/profiles/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
+import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 export type RealmInfo = {
   serverName: string
@@ -70,7 +70,7 @@ export interface IUnityInterface {
   Init(gameInstance: UnityGame): void
   SendGenericMessage(object: string, method: string, payload: string): void
   SetDebug(): void
-  LoadProfile(profile: ProfileForRenderer): void
+  LoadProfile(profile: NewProfileForRenderer): void
   SetRenderProfile(id: RenderProfile): void
   CreateGlobalScene(data: {
     id: string
@@ -111,7 +111,7 @@ export interface IUnityInterface {
   UnlockCursor(): void
   SetCursorState(locked: boolean): void
   SetBuilderReady(): void
-  AddUserProfileToCatalog(peerProfile: ProfileForRenderer): void
+  AddUserProfileToCatalog(peerProfile: NewProfileForRenderer): void
   AddWearablesToCatalog(wearables: WearableV2[], context?: string): void
   WearablesRequestFailed(error: string, context: string | undefined): void
   RemoveWearablesFromCatalog(wearableIds: string[]): void
@@ -146,7 +146,7 @@ export interface IUnityInterface {
   SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
-  SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined): void
+  SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
 
   // *********************************************************************************

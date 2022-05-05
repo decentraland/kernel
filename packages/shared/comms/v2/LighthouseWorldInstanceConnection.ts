@@ -1,21 +1,8 @@
-import { WorldInstanceConnection } from '../interface/index'
-import { Stats } from '../debug'
-import {
-  Package,
-  BusMessage,
-  ChatMessage,
-  ProfileVersion,
-  UserInformation,
-  PackageType,
-  VoiceFragment,
-  ProfileResponse,
-  ProfileRequest
-} from '../interface/types'
+import { CommsEvents, RoomConnection } from '../interface/index'
+import { Package } from '../interface/types'
 import { Position, positionHash } from '../interface/utils'
-import defaultLogger, { createLogger } from 'shared/logger'
 import {
   Peer as IslandBasedPeer,
-  buildCatalystPeerStatsData,
   PeerConfig,
   PacketCallback,
   PeerStatus,
@@ -32,19 +19,17 @@ import {
   ProfileRequestData,
   ProfileResponseData
 } from './proto/comms_pb'
-import { Realm, CommsStatus } from 'shared/dao/types'
-import { compareVersions } from 'atomicHelpers/semverCompare'
+import { CommsStatus } from '../types'
 
-import { getProfileType } from 'shared/profiles/getProfileType'
-import { Profile } from 'shared/types'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
+import mitt from 'mitt'
+import { Avatar } from '@dcl/schemas'
+import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
+import { validateAvatar } from 'shared/profiles/schemaValidation'
+import { createLogger } from 'shared/logger'
 
 type PeerType = IslandBasedPeer
-
-const NOOP = () => {
-  // do nothing
-}
 
 const logger = createLogger('Lighthouse: ')
 
@@ -88,28 +73,15 @@ function ProfileRequestResponseType(action: 'request' | 'response'): PeerMessage
 
 declare let globalThis: any
 
-export class LighthouseWorldInstanceConnection implements WorldInstanceConnection {
-  stats: Stats | null = null
-
-  sceneMessageHandler: (alias: string, data: Package<BusMessage>) => void = NOOP
-  chatHandler: (alias: string, data: Package<ChatMessage>) => void = NOOP
-  profileHandler: (alias: string, identity: string, data: Package<ProfileVersion>) => void = NOOP
-  positionHandler: (alias: string, data: Package<Position>) => void = NOOP
-  voiceHandler: (alias: string, data: Package<VoiceFragment>) => void = NOOP
-  profileResponseHandler: (alias: string, data: Package<ProfileResponse>) => void = NOOP
-  profileRequestHandler: (alias: string, data: Package<ProfileRequest>) => void = NOOP
-
-  isAuthenticated: boolean = true // TODO - remove this
-
-  ping: number = -1
+export class LighthouseWorldInstanceConnection implements RoomConnection {
+  events = mitt<CommsEvents>()
 
   private peer: PeerType
 
   private rooms: string[] = []
+  private disposed = false
 
   constructor(
-    private peerId: string,
-    private realm: Realm,
     private lighthouseUrl: string,
     private peerConfig: LighthouseConnectionConfig,
     private statusHandler: (status: CommsStatus) => void
@@ -118,60 +90,40 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     this.peer = this.initializePeer()
   }
 
-  async connectPeer() {
+  async connect() {
     try {
-      await this.peer.awaitConnectionEstablished(60000)
+      if (!this.peer.connectedCount()) {
+        await this.peer.awaitConnectionEstablished(60000)
+      }
       this.statusHandler({ status: 'connected', connectedPeers: this.connectedPeersCount() })
+      await this.syncRoomsWithPeer()
     } catch (e: any) {
-      defaultLogger.error('Error while connecting to layer', e)
+      logger.error('Error while connecting to layer', e)
       this.statusHandler({
         status: e.responseJson && e.responseJson.status === 'layer_is_full' ? 'realm-full' : 'error',
         connectedPeers: this.connectedPeersCount()
       })
-      throw e
+      await this.disconnect()
     }
   }
 
-  public async changeRealm(realm: Realm, url: string) {
-    this.statusHandler({ status: 'connecting', connectedPeers: this.connectedPeersCount() })
-    if (this.peer) {
-      await this.cleanUpPeer()
-    }
+  async disconnect() {
+    if (this.disposed) return
+    this.disposed = true
 
-    this.realm = realm
-    this.lighthouseUrl = url
-    this.peerConfig.eventsHandler?.onIslandChange?.(undefined, [])
+    await this.peer.dispose()
 
-    this.initializePeer()
-    await this.connectPeer()
-    await this.syncRoomsWithPeer()
+    this.events.emit('DISCONNECTION')
   }
 
-  printDebugInformation() {
-    // TODO - implement this - moliva - 20/12/2019
+  async sendInitialMessage(address: string, profileType: ProfileType) {
+    await this.sendProfileData(address, profileType, 0, address, 'initialProfile')
   }
 
-  close() {
-    return this.cleanUpPeer()
-  }
-
-  analyticsData() {
-    return {
-      // This should work for any of both peer library types. Once we stop using both, we can remove the type cast
-      stats: buildCatalystPeerStatsData(this.peer as any)
-    }
-  }
-
-  async sendInitialMessage(userInfo: UserInformation) {
-    const topic = userInfo.userId
-
-    await this.sendProfileData(userInfo, topic, 'initialProfile')
-  }
-
-  async sendProfileMessage(currentPosition: Position, userInfo: UserInformation) {
+  async sendProfileMessage(currentPosition: Position, address: string, profileType: ProfileType, version: number) {
     const topic = positionHash(currentPosition)
 
-    await this.sendProfileData(userInfo, topic, 'profile')
+    await this.sendProfileData(address, profileType, version, topic, 'profile')
   }
 
   async sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void> {
@@ -184,7 +136,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     await this.sendData(topic, profileRequestData, ProfileRequestResponseType('request'))
   }
 
-  async sendProfileResponse(currentPosition: Position, profile: Profile): Promise<void> {
+  async sendProfileResponse(currentPosition: Position, profile: Avatar): Promise<void> {
     const topic = positionHash(currentPosition)
 
     const profileResponseData = new ProfileResponseData()
@@ -235,7 +187,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     await this.sendData(topic, chatMessage, PeerMessageTypes.reliable('chat'))
   }
 
-  async updateSubscriptions(rooms: string[]) {
+  async setTopics(rooms: string[]) {
     this.rooms = rooms
     await this.syncRoomsWithPeer()
   }
@@ -261,10 +213,13 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
         return Promise.resolve()
       }
     })
-    return Promise.all([...joining, ...leaving]).then(NOOP)
+    return Promise.all([...joining, ...leaving])
   }
 
   private async sendData(topic: string, messageData: MessageData, type: PeerMessageType) {
+    if (this.disposed) {
+      return
+    }
     try {
       await this.peer.sendMessage(topic, createCommsMessage(messageData).serializeBinary(), type)
     } catch (e: any) {
@@ -283,8 +238,14 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     await this.sendData(topic, positionData, PeerMessageTypes.unreliable(typeName))
   }
 
-  private async sendProfileData(userInfo: UserInformation, topic: string, typeName: string) {
-    const profileData = createProfileData(userInfo)
+  private async sendProfileData(
+    address: string,
+    profileType: ProfileType,
+    version: number,
+    topic: string,
+    typeName: string
+  ) {
+    const profileData = createProfileData(address, profileType, version)
     await this.sendData(topic, profileData, PeerMessageTypes.unreliable(typeName))
   }
 
@@ -293,7 +254,7 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     this.peer = this.createPeer()
     globalThis.__DEBUG_PEER = this.peer
 
-    if (this.peerConfig.preferedIslandId && 'setPreferedIslandId' in this.peer) {
+    if (this.peerConfig.preferedIslandId) {
       this.peer.setPreferedIslandId(this.peerConfig.preferedIslandId)
     }
 
@@ -318,74 +279,67 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
     }
 
     // We require a version greater than 0.1 to not send an ID
-    const idToUse = compareVersions('0.1', this.realm.lighthouseVersion) === -1 ? undefined : this.peerId
-
-    return new IslandBasedPeer(this.lighthouseUrl, idToUse, this.peerCallback, this.peerConfig)
+    return new IslandBasedPeer(this.lighthouseUrl, undefined, this.peerCallback, this.peerConfig)
   }
 
-  private async cleanUpPeer() {
-    return this.peer.dispose()
-  }
-
-  private peerCallback: PacketCallback = (sender, room, payload, packet) => {
+  private peerCallback: PacketCallback = (sender, room, payload, _packet) => {
+    if (this.disposed) return
     try {
       const commsMessage = CommsMessage.deserializeBinary(payload)
       switch (commsMessage.getDataCase()) {
         case CommsMessage.DataCase.CHAT_DATA:
-          this.chatHandler(sender, createPackage(commsMessage, 'chat', mapToPackageChat(commsMessage.getChatData()!)))
+          this.events.emit(
+            'chatMessage',
+            createPackage(sender, commsMessage, mapToPackageChat(commsMessage.getChatData()!))
+          )
           break
         case CommsMessage.DataCase.POSITION_DATA:
           const positionMessage = mapToPositionMessage(commsMessage.getPositionData()!)
           this.peer.setPeerPosition(sender, positionMessage.slice(0, 3) as [number, number, number])
-          this.positionHandler(sender, createPackage(commsMessage, 'position', positionMessage))
+          this.events.emit('position', createPackage(sender, commsMessage, positionMessage))
           break
         case CommsMessage.DataCase.SCENE_DATA:
-          this.sceneMessageHandler(
-            sender,
-            createPackage(commsMessage, 'chat', mapToPackageScene(commsMessage.getSceneData()!))
+          this.events.emit(
+            'sceneMessageBus',
+            createPackage(sender, commsMessage, mapToPackageScene(commsMessage.getSceneData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_DATA:
-          this.profileHandler(
-            sender,
-            commsMessage.getProfileData()!.getUserId(),
-            createPackage(commsMessage, 'profile', mapToPackageProfile(commsMessage.getProfileData()!))
+          this.events.emit(
+            'profileMessage',
+            createPackage(sender, commsMessage, mapToPackageProfile(commsMessage.getProfileData()!))
           )
           break
         case CommsMessage.DataCase.VOICE_DATA:
-          this.voiceHandler(
-            sender,
+          this.events.emit(
+            'voiceMessage',
             createPackage(
+              sender,
               commsMessage,
-              'voice',
               mapToPackageVoice(
                 commsMessage.getVoiceData()!.getEncodedSamples_asU8(),
-                commsMessage.getVoiceData()!.getIndex(),
-                packet.sequenceId
+                commsMessage.getVoiceData()!.getIndex()
               )
             )
           )
           break
         case CommsMessage.DataCase.PROFILE_REQUEST_DATA:
-          this.profileRequestHandler(
-            sender,
-            createPackage(
-              commsMessage,
-              'profileRequest',
-              mapToPackageProfileRequest(commsMessage.getProfileRequestData()!)
-            )
+          this.events.emit(
+            'profileRequest',
+            createPackage(sender, commsMessage, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
           )
           break
-        case CommsMessage.DataCase.PROFILE_RESPONSE_DATA:
-          this.profileResponseHandler(
-            sender,
-            createPackage(
-              commsMessage,
-              'profileResponse',
-              mapToPackageProfileResponse(commsMessage.getProfileResponseData()!)
-            )
+        case CommsMessage.DataCase.PROFILE_RESPONSE_DATA: {
+          const profile = ensureAvatarCompatibilityFormat(
+            JSON.parse(commsMessage.getProfileResponseData()!.getSerializedProfile()) as Avatar
           )
+          if (validateAvatar(profile)) {
+            this.events.emit('profileResponse', createPackage(sender, commsMessage, { profile }))
+          } else {
+            logger.error('Received invalid Avatar schema over comms', profile, validateAvatar.errors)
+          }
           break
+        }
         default: {
           logger.warn(`message with unknown type received ${commsMessage.getDataCase()}`)
           break
@@ -397,10 +351,10 @@ export class LighthouseWorldInstanceConnection implements WorldInstanceConnectio
   }
 }
 
-function createPackage<T>(commsMessage: CommsMessage, type: PackageType, data: T): Package<T> {
+function createPackage<T>(sender: string, commsMessage: CommsMessage, data: T): Package<T> {
   return {
+    sender,
     time: commsMessage.getTime(),
-    type,
     data
   }
 }
@@ -452,22 +406,15 @@ function mapToPackageProfileRequest(profileRequestData: ProfileRequestData) {
   }
 }
 
-function mapToPackageProfileResponse(profileResponseData: ProfileResponseData) {
-  return {
-    profile: JSON.parse(profileResponseData.getSerializedProfile()) as Profile
-  }
+function mapToPackageVoice(encoded: Uint8Array, index: number) {
+  return { encoded, index }
 }
 
-function mapToPackageVoice(encoded: Uint8Array, index: number, fallbackIndex: number) {
-  // If we receive a packet from an old implementation of voice chat, we use the fallbackIndex
-  return { encoded, index: index === 0 ? fallbackIndex : index }
-}
-
-function createProfileData(userInfo: UserInformation) {
+function createProfileData(address: string, profileType: ProfileType, version: number) {
   const profileData = new ProfileData()
-  profileData.setProfileVersion(userInfo.version ? userInfo.version.toString() : '')
-  profileData.setUserId(userInfo.userId ? userInfo.userId : '')
-  profileData.setProfileType(getProtobufProfileType(getProfileType(userInfo.identity)))
+  profileData.setProfileVersion(version ? version.toString() : '')
+  profileData.setUserId(address)
+  profileData.setProfileType(getProtobufProfileType(profileType))
   return profileData
 }
 

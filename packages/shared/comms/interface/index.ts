@@ -1,53 +1,56 @@
 import { Position } from './utils'
 import {
   UserInformation,
-  Package,
   ChatMessage,
   ProfileVersion,
   BusMessage,
   VoiceFragment,
   ProfileResponse,
-  ProfileRequest
+  ProfileRequest,
+  Package
 } from './types'
-import { Stats } from '../debug'
-import { Realm } from 'shared/dao/types'
-import { Profile } from 'shared/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
+import { Emitter } from 'mitt'
+import { Avatar } from '@dcl/schemas'
+import { ProfileType } from 'shared/profiles/types'
 
-export interface WorldInstanceConnection {
-  stats: Stats | null
+export type CommsEvents = {
+  initialMessage: Package<UserInformation>
+  sceneMessageBus: Package<BusMessage>
+  chatMessage: Package<ChatMessage>
+  profileMessage: Package<ProfileVersion>
+  position: Package<Position>
+  voiceMessage: Package<VoiceFragment>
 
-  // handlers
-  sceneMessageHandler: (alias: string, data: Package<BusMessage>) => void
-  chatHandler: (alias: string, data: Package<ChatMessage>) => void
-  profileHandler: (alias: string, identity: string, data: Package<ProfileVersion>) => void
-  positionHandler: (alias: string, data: Package<Position>) => void
-  voiceHandler: (alias: string, data: Package<VoiceFragment>) => void
-  profileResponseHandler: (alias: string, data: Package<ProfileResponse>) => void
-  profileRequestHandler: (alias: string, data: Package<ProfileRequest>) => void
+  // move the following to GlobalMessages+RPC instead of RoomConnection
+  profileResponse: Package<ProfileResponse>
+  profileRequest: Package<ProfileRequest>
 
-  readonly isAuthenticated: boolean
+  DISCONNECTION: any
+}
 
-  // TODO - review metrics API - moliva - 19/12/2019
-  readonly ping: number
-  printDebugInformation(): void
-  analyticsData(): Record<string, any>
+export interface RoomConnection {
+  // this operation is non-reversible
+  disconnect(): Promise<void>
+  // @once
+  connect(): Promise<void>
 
-  close(): void
+  events: Emitter<CommsEvents>
 
-  sendInitialMessage(userInfo: UserInformation): Promise<void>
-  sendProfileMessage(currentPosition: Position, userInfo: UserInformation): Promise<void>
+  sendInitialMessage(address: string, profileType: ProfileType): Promise<void>
+  sendProfileMessage(
+    currentPosition: Position,
+    address: string,
+    profileType: ProfileType,
+    version: number
+  ): Promise<void>
   sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void>
-  sendProfileResponse(currentPosition: Position, profile: Profile): Promise<void>
+  sendProfileResponse(currentPosition: Position, profile: Avatar): Promise<void>
   sendPositionMessage(p: Position): Promise<void>
   sendParcelUpdateMessage(currentPosition: Position, p: Position): Promise<void>
   sendParcelSceneCommsMessage(cid: string, message: string): Promise<void>
   sendChatMessage(currentPosition: Position, messageId: string, text: string): Promise<void>
   sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void>
 
-  updateSubscriptions(topics: string[]): Promise<void>
-
-  changeRealm(realm: Realm, url: string): Promise<void>
-
-  connectPeer(): Promise<void>
+  setTopics(topics: string[]): Promise<void>
 }

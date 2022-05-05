@@ -16,7 +16,7 @@ COMPILED_SUPPORT_JS_FILES := $(subst .ts,.js,$(SOURCE_SUPPORT_TS_FILES))
 
 SCENE_SYSTEM_SOURCES := $(wildcard static/systems/**/*.ts)
 SCENE_SYSTEM := static/systems/scene.system.js
-DECENTRALAND_LOADER := static/loader/lifecycle/worker.js
+DECENTRALAND_LOADER := static/loader/worker.js
 GIF_PROCESSOR := static/gif-processor/worker.js
 INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
 VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
@@ -26,7 +26,7 @@ EMPTY_SCENES := public/empty-scenes/common
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
 	@node_modules/.bin/tsc --build scripts/tsconfig.json
 
-static/loader/lifecycle/worker.js: packages/decentraland-loader/**/*.ts
+static/loader/worker.js: packages/decentraland-loader/**/*.ts
 	@$(COMPILER) targets/engine/loader.json
 
 static/gif-processor/worker.js: packages/gif-processor/*.ts
@@ -162,9 +162,21 @@ clean: ## Clean all generated files
 update-renderer:  ## Update the renderer
 	npm install @dcl/unity-renderer@latest
 
+madge: scripts/deps.js
+	@node scripts/deps.js
+	dot packages/scene-system/cli.scene.system.ts.dot -T pdf -O
+	dot packages/scene-system/scene.system.ts.dot -T pdf -O
+	dot packages/scene-system/stateful.scene.system.ts.dot -T pdf -O
+	dot packages/ui/decentraland-ui.scene.ts.dot -T pdf -O
+	dot packages/entryPoints/index.ts.dot -T pdf -O
+	dot packages/decentraland-loader/lifecycle/worker.ts.dot -T pdf -O
+	dot packages/gif-processor/worker.ts.dot -T pdf -O
+	dot packages/voice-chat-codec/audioWorkletProcessors.ts.dot -T pdf -O
+	dot packages/voice-chat-codec/worker.ts.dot -T pdf -O
+
 # Makefile
 
-.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer
+.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
 .DEFAULT_GOAL := help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

@@ -7,7 +7,6 @@ import { positionObservable } from '../world/positionThings'
 import { trackEvent } from '.'
 
 const TRACEABLE_AVATAR_EVENTS = [
-  AvatarMessageType.SET_LOCAL_UUID,
   AvatarMessageType.USER_MUTED,
   AvatarMessageType.USER_UNMUTED,
   AvatarMessageType.USER_BLOCKED,

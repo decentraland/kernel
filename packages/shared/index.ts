@@ -4,14 +4,13 @@ import { DEBUG_PREFIX } from 'config'
 import { notStarted } from './loading/types'
 import { buildStore } from './store/store'
 import { initializeUrlPositionObserver } from './world/positionThings'
-import { initializeUrlIslandObserver } from './comms'
-import { initializeUrlRealmObserver } from './dao'
 import { globalObservable } from './observables'
 import { isRendererVisible } from './loading/selectors'
 import { RootStore } from './store/rootTypes'
 import { initializeSessionObserver } from './session/sagas'
 import { hookAnalyticsObservables } from './analytics/hook-observable'
 import wrapConsoleLogger from './logger/wrap'
+import { beforeUnloadAction } from './protocol/actions'
 
 declare const globalThis: { globalStore: RootStore }
 
@@ -30,11 +29,15 @@ export function initShared() {
   store.dispatch(notStarted())
 
   initializeUrlPositionObserver()
-  initializeUrlRealmObserver()
-  initializeUrlIslandObserver()
   initializeRendererVisibleObserver(store)
   initializeSessionObserver()
   hookAnalyticsObservables()
+
+  if (typeof (window as any) !== 'undefined') {
+    window.addEventListener('beforeunload', () => {
+      store.dispatch(beforeUnloadAction())
+    })
+  }
 }
 
 function observeIsRendererVisibleChanges(store: RootStore, cb: (visible: boolean) => void) {
@@ -52,7 +55,7 @@ function observeIsRendererVisibleChanges(store: RootStore, cb: (visible: boolean
   })
 }
 
-export function initializeRendererVisibleObserver(store: RootStore) {
+function initializeRendererVisibleObserver(store: RootStore) {
   observeIsRendererVisibleChanges(store, (visible: boolean) => {
     globalObservable.emit('rendererVisible', {
       visible

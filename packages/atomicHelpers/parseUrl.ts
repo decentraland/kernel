@@ -1,6 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const URL = require('url')
-
 export function resolveUrl(baseUrl: string, url: string): string
 export function resolveUrl(baseUrl: string, url: URL): URL
 export function resolveUrl(baseUrl: string, url: string | URL) {
@@ -22,9 +19,9 @@ export function resolveUrl(baseUrl: string, url: string | URL) {
     } else if (url.match(/^test-local:/)) {
       const folder = url.replace('test-local:', '')
 
-      return URL.resolve(baseUrl, `/test-scenes/${folder}/`)
+      return new URL(baseUrl, `/test-scenes/${folder}/`).toString()
     } else {
-      return URL.resolve(baseUrl, url)
+      return new URL(baseUrl, url).toString()
     }
   } else if (url instanceof URL) {
     return url

@@ -1,4 +1,3 @@
-import * as qs from 'query-string'
 import {
   Vector3,
   EcsMathReadOnlyVector3,
@@ -53,13 +52,15 @@ export const parcelObservable = new Observable<ParcelReport>()
 export const teleportObservable = new Observable<EcsMathReadOnlyVector2 & { text?: string }>()
 
 export const lastPlayerPosition = new Vector3()
-export let lastPlayerParcel: Vector2
+export let lastPlayerPositionReport: Readonly<PositionReport> | null = null
 
 positionObservable.add((event) => {
   lastPlayerPosition.copyFrom(event.position)
+  lastPlayerPositionReport = event
 })
 
 // Listen to position changes, and notify if the parcel changed
+let lastPlayerParcel: Vector2
 positionObservable.add(({ position, immediate }) => {
   const parcel = Vector2.Zero()
   worldToGrid(position, parcel)
@@ -94,10 +95,10 @@ export function initializeUrlPositionObserver() {
 
   if (lastPlayerPosition.equalsToFloats(0, 0, 0)) {
     // LOAD INITIAL POSITION IF SET TO ZERO
-    const query = qs.parse(location.search)
-
-    if (typeof query.position === 'string') {
-      const [xString, yString] = query.position.split(',')
+    const query = new URLSearchParams(location.search)
+    const position = query.get('position')
+    if (typeof position === 'string') {
+      const [xString, yString] = position.split(',')
       let x = parseFloat(xString)
       let y = parseFloat(yString)
 
@@ -122,10 +123,11 @@ export function initializeUrlPositionObserver() {
 
 function replaceQueryStringPosition(x: any, y: any) {
   const currentPosition = `${x | 0},${y | 0}`
-  const q = qs.parse(location.search)
-  q.position = currentPosition
 
-  history.replaceState({ position: currentPosition }, 'position', `?${qs.stringify(q)}`)
+  const q = new URLSearchParams(location.search)
+  q.set('position', currentPosition)
+
+  history.replaceState({ position: currentPosition }, 'position', `?${q.toString()}`)
 }
 
 /**
@@ -234,19 +236,4 @@ export function getLandBase(land: ILand): { x: number; y: number } {
   } else {
     return parseParcelPosition(land.mappingsResponse.parcel_id)
   }
-}
-
-export async function parcelAvailable(): Promise<EcsMathReadOnlyVector2> {
-  if (lastPlayerParcel) return lastPlayerParcel
-
-  return new Promise((resolve, reject) => {
-    parcelObservable.addOnce((parcel) => {
-      resolve(parcel.newParcel)
-    })
-
-    setTimeout(() => {
-      if (lastPlayerParcel) resolve(lastPlayerParcel)
-      else reject('Timed out awaiting for parcel')
-    }, 60000)
-  })
 }

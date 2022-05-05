@@ -1,5 +1,5 @@
-import { Store } from 'redux'
-import { RootState } from './rootTypes'
+import type { Store } from 'redux'
+import type { RootState } from './rootTypes'
 
 export let store: Store<RootState>
 

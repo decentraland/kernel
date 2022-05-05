@@ -1,143 +1,208 @@
-import { put, takeEvery, select, call, takeLatest } from 'redux-saga/effects'
+import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, apply } from 'redux-saga/effects'
 
-import { EDITOR, DEBUG_KERNEL_LOG } from 'config'
-
-import { establishingComms, FATAL_ERROR } from 'shared/loading/types'
-import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getCurrentIdentity } from 'shared/session/selectors'
-import { setWorldContext } from 'shared/protocol/actions'
-import { waitForRealmInitialized, selectRealm } from 'shared/dao/sagas'
-import { getRealm } from 'shared/dao/selectors'
-import { CATALYST_REALMS_SCAN_SUCCESS, setCatalystRealm } from 'shared/dao/actions'
-import { Realm } from 'shared/dao/types'
-import { realmToString } from 'shared/dao/utils/realmToString'
-import { createLogger, createDummyLogger } from 'shared/logger'
-
+import { commsEstablished, FATAL_ERROR } from 'shared/loading/types'
+import { CommsContext, commsLogger } from './context'
+import { getCommsContext, getRealm } from './selectors'
+import { BEFORE_UNLOAD } from 'shared/protocol/actions'
+import { voiceSaga } from './voice-sagas'
 import {
-  connect,
-  Context,
-  disconnect,
-  updatePeerVoicePlaying,
-  updateVoiceCommunicatorMute,
-  updateVoiceCommunicatorVolume,
-  updateVoiceRecordingStatus
-} from '.'
-import {
-  SetVoiceMute,
-  SetVoiceVolume,
-  SET_VOICE_CHAT_RECORDING,
-  SET_VOICE_MUTE,
-  SET_VOICE_VOLUME,
-  TOGGLE_VOICE_CHAT_RECORDING,
-  VoicePlayingUpdate,
-  VoiceRecordingUpdate,
-  VOICE_PLAYING_UPDATE,
-  VOICE_RECORDING_UPDATE
+  HandleCommsDisconnection,
+  HANDLE_COMMS_DISCONNECTION,
+  setWorldContext,
+  SET_COMMS_ISLAND,
+  SET_WORLD_CONTEXT
 } from './actions'
+import { notifyStatusThroughChat } from 'shared/chat'
+import { realmToConnectionString } from 'shared/dao/utils/realmToString'
+import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel } from './handlers'
+import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
+import { genericAvatarSnapshots } from 'config'
+import { isURL } from 'atomicHelpers/isURL'
+import { processAvatarVisibility } from './peers'
+import { getFatalError } from 'shared/loading/selectors'
+import { EventChannel } from 'redux-saga'
+import { ExplorerIdentity } from 'shared/session/types'
+import { getIdentity } from 'shared/session'
+import { USER_AUTHENTIFIED } from 'shared/session/actions'
+import { selectAndReconnectRealm } from 'shared/dao/sagas'
 
-import { isVoiceChatRecording } from './selectors'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { sceneObservable } from 'shared/world/sceneState'
-import { SceneFeatureToggles } from 'shared/types'
-import { isFeatureToggleEnabled } from 'shared/selectors'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { ExplorerIdentity } from '../session/types'
-
-const DEBUG = false
-const logger = DEBUG_KERNEL_LOG ? createLogger('comms: ') : createDummyLogger()
+const TIME_BETWEEN_PROFILE_RESPONSES = 1000
+const INTERVAL_ANNOUNCE_PROFILE = 1000
 
 export function* commsSaga() {
-  yield takeEvery(USER_AUTHENTIFIED, userAuthentified)
-  yield takeLatest(CATALYST_REALMS_SCAN_SUCCESS, changeRealm)
-  yield takeEvery(FATAL_ERROR, bringDownComms)
+  yield takeLatest(HANDLE_COMMS_DISCONNECTION, handleCommsDisconnection)
+
+  yield takeEvery(FATAL_ERROR, function* () {
+    // set null context on fatal error. this will bring down comms.
+    yield put(setWorldContext(undefined))
+  })
+
+  yield takeEvery(BEFORE_UNLOAD, function* () {
+    // this would disconnect the comms context
+    yield put(setWorldContext(undefined))
+  })
+
+  yield fork(voiceSaga)
+  yield fork(handleNewCommsContext)
+
+  // respond to profile requests over comms
+  yield fork(respondCommsProfileRequests)
+
+  yield fork(handleAnnounceProfile)
+  yield fork(initAvatarVisibilityProcess)
+  yield fork(handleCommsReconnectionInterval)
 }
 
-function* bringDownComms() {
-  disconnect()
+function* initAvatarVisibilityProcess() {
+  const interval = setInterval(processAvatarVisibility, 100)
+  yield take(BEFORE_UNLOAD)
+  clearInterval(interval)
 }
 
-function* listenToWhetherSceneSupportsVoiceChat() {
-  sceneObservable.add(({ previousScene, newScene }) => {
-    const previouslyEnabled = previousScene
-      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, previousScene.sceneJsonData)
-      : undefined
-    const nowEnabled = newScene
-      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, newScene.sceneJsonData)
-      : undefined
-    if (previouslyEnabled !== nowEnabled && nowEnabled !== undefined) {
-      getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
-      if (!nowEnabled) {
-        // We want to stop any potential recordings when a user enters a new scene
-        updateVoiceRecordingStatus(false)
-      }
+/**
+ * This handler sends profile responses over comms.
+ */
+function* respondCommsProfileRequests() {
+  const chan: EventChannel<void> = yield call(createSendMyProfileOverCommsChannel)
+
+  let lastMessage = 0
+  while (true) {
+    // wait for the next event of the channel
+    yield take(chan)
+
+    const context = (yield select(getCommsContext)) as CommsContext | undefined
+    const profile: Avatar | null = yield select(getCurrentUserProfile)
+    const identity: ExplorerIdentity | null = yield select(getIdentity)
+
+    if (profile && context && context.currentPosition) {
+      profile.hasConnectedWeb3 = identity?.hasConnectedWeb3 || profile.hasConnectedWeb3
+
+      // naive throttling
+      const now = Date.now()
+      const elapsed = now - lastMessage
+      if (elapsed < TIME_BETWEEN_PROFILE_RESPONSES) continue
+      lastMessage = now
+
+      const connection = context.worldInstanceConnection
+      yield apply(connection, connection.sendProfileResponse, [context.currentPosition, stripSnapshots(profile)])
+    }
+  }
+}
+
+function stripSnapshots(profile: Avatar): Avatar {
+  const newSnapshots: Record<string, string> = {}
+  const currentSnapshots: Record<string, string> = profile.avatar.snapshots
+
+  for (const snapshotKey of ['face256', 'body'] as const) {
+    const snapshot = currentSnapshots[snapshotKey]
+    const defaultValue = genericAvatarSnapshots[snapshotKey]
+    const newValue =
+      snapshot &&
+      (snapshot.startsWith('/') || snapshot.startsWith('./') || isURL(snapshot) || IPFSv2.validate(snapshot))
+        ? snapshot
+        : null
+    newSnapshots[snapshotKey] = newValue || defaultValue
+  }
+
+  return {
+    ...profile,
+    avatar: { ...profile.avatar, snapshots: newSnapshots as Snapshots }
+  }
+}
+
+/**
+ * This saga handle reconnections of comms contexts.
+ */
+function* handleCommsReconnectionInterval() {
+  while (true) {
+    const reason: any = yield race({
+      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT),
+      USER_AUTHENTIFIED: take(USER_AUTHENTIFIED),
+      timeout: delay(1000)
+    })
+
+    const context: CommsContext | undefined = yield select(getCommsContext)
+    const hasFatalError: string | undefined = yield select(getFatalError)
+    const identity: ExplorerIdentity | undefined = yield select(getIdentity)
+
+    const shouldReconnect = !context && !hasFatalError && identity?.address
+    if (shouldReconnect) {
+      // reconnect
+      commsLogger.info('Trying to reconnect to a realm. reason:', reason)
+      yield call(selectAndReconnectRealm)
+    }
+  }
+}
+
+/**
+ * This saga waits for one of the conditions that may trigger a
+ * sendCurrentProfile and then does it.
+ */
+function* handleAnnounceProfile() {
+  while (true) {
+    yield race({
+      SEND_PROFILE_TO_RENDERER: take(SEND_PROFILE_TO_RENDERER),
+      DEPLOY_PROFILE_SUCCESS: take(DEPLOY_PROFILE_SUCCESS),
+      SET_COMMS_ISLAND: take(SET_COMMS_ISLAND),
+      timeout: delay(INTERVAL_ANNOUNCE_PROFILE),
+      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT)
+    })
+
+    const context: CommsContext | undefined = yield select(getCommsContext)
+    const profile: Avatar | null = yield select(getCurrentUserProfile)
+
+    if (context && profile) {
+      context.sendCurrentProfile(profile.version)
+    }
+  }
+}
+
+// this saga reacts to changes in context and disconnects the old context
+function* handleNewCommsContext() {
+  let currentContext: CommsContext | undefined = undefined
+
+  yield takeEvery(SET_WORLD_CONTEXT, function* () {
+    const oldContext = currentContext
+    currentContext = yield select(getCommsContext)
+
+    if (currentContext) {
+      // bind messages to this comms instance
+      yield call(bindHandlersToCommsContext, currentContext)
+      yield put(commsEstablished())
+      notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
+    }
+
+    if (oldContext && oldContext !== currentContext) {
+      // disconnect previous context
+      yield call(disconnectContext, oldContext)
     }
   })
 }
 
-function* userAuthentified() {
-  if (EDITOR) {
-    return
-  }
-
-  yield call(waitForRealmInitialized)
-
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-
-  yield takeEvery(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
-  yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
-  yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlaying)
-  yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecording)
-  yield takeEvery(SET_VOICE_VOLUME, updateVoiceChatVolume)
-  yield takeEvery(SET_VOICE_MUTE, updateVoiceChatMute)
-  yield listenToWhetherSceneSupportsVoiceChat()
-
-  yield put(establishingComms())
-  const context: Context | undefined = yield call(connect, identity.address)
-  if (context !== undefined) {
-    yield put(setWorldContext(context))
+async function disconnectContext(context: CommsContext) {
+  try {
+    await context.disconnect()
+  } catch (err: any) {
+    // this only needs to be logged. try {} catch is used because the function needs
+    // to wait for the disconnection to continue with the saga.
+    commsLogger.error(err)
   }
 }
 
-function* updateVoiceChatRecordingStatus() {
-  const recording: boolean = yield select(isVoiceChatRecording)
-  updateVoiceRecordingStatus(recording)
-}
+// this saga handles the suddenly disconnection of a CommsContext
+function* handleCommsDisconnection(action: HandleCommsDisconnection) {
+  const realm = yield select(getRealm)
 
-function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
-  updatePeerVoicePlaying(action.payload.userId, action.payload.playing)
-}
+  const context: CommsContext = yield select(getCommsContext)
 
-function* updateVoiceChatVolume(action: SetVoiceVolume) {
-  updateVoiceCommunicatorVolume(action.payload.volume)
-}
+  if (context && context === action.payload.context) {
+    // this also remove the context
+    yield put(setWorldContext(undefined))
 
-function* updateVoiceChatMute(action: SetVoiceMute) {
-  updateVoiceCommunicatorMute(action.payload.mute)
-}
-
-function* updatePlayerVoiceRecording(action: VoiceRecordingUpdate) {
-  yield call(waitForRendererInstance)
-  getUnityInstance().SetPlayerTalking(action.payload.recording)
-}
-
-function* changeRealm() {
-  const currentRealm: ReturnType<typeof getRealm> = yield select(getRealm)
-  if (!currentRealm) {
-    DEBUG && logger.info(`No realm set, wait for actual DAO initialization`)
-    // if not realm is set => wait for actual dao initialization
-    return
+    if (realm) {
+      notifyStatusThroughChat(`Lost connection to ${realmToConnectionString(realm)}`)
+    }
   }
-
-  const otherRealm: Realm = yield call(selectRealm)
-
-  if (!sameRealm(currentRealm, otherRealm)) {
-    logger.info(`Changing realm from ${realmToString(currentRealm)} to ${realmToString(otherRealm)}`)
-    yield put(setCatalystRealm(otherRealm))
-  } else {
-    DEBUG && logger.info(`Realm already set ${realmToString(currentRealm)}`)
-  }
-}
-
-function sameRealm(realm1: Realm, realm2: Realm) {
-  return realm1.catalystName === realm2.catalystName
 }

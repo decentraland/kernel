@@ -9,15 +9,11 @@ import { WebWorkerTransport } from 'decentraland-rpc/lib/common/transports/WebWo
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { getResourcesURL } from 'shared/location'
 
-import { parcelLimits, ENABLE_EMPTY_SCENES, LOS, getAssetBundlesBaseUrl, ENABLE_TEST_SCENES } from 'config'
+import { parcelLimits, ENABLE_EMPTY_SCENES, LOS } from 'config'
 
 import { ILand } from 'shared/types'
-import { getFetchContentServer, getCatalystServer, getSelectedNetwork } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
-import { store } from 'shared/store/isolatedStore'
-
-import { resolveUrl } from 'atomicHelpers/parseUrl'
-import { getWorldConfig } from 'shared/meta/selectors'
+import { WorldConfig } from 'shared/meta/types'
 
 declare const globalThis: { workerManager: LifecycleManager }
 
@@ -25,9 +21,9 @@ declare const globalThis: { workerManager: LifecycleManager }
  * The worker is set up on the first require of this file
  */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const lifecycleWorkerRaw = require('raw-loader!../../../static/loader/lifecycle/worker.js')
+const lifecycleWorkerRaw = require('raw-loader!../../../static/loader/worker.js')
 const lifecycleWorkerUrl = URL.createObjectURL(new Blob([lifecycleWorkerRaw]))
-const worker: Worker = new (Worker as any)(lifecycleWorkerUrl, { name: 'LifecycleWorker' })
+const worker: Worker = new Worker(lifecycleWorkerUrl, { name: 'LifecycleWorker' })
 worker.onerror = (e) => defaultLogger.error('Loader worker error', e)
 
 export class LifecycleManager extends TransportBasedServer {
@@ -65,7 +61,7 @@ export class LifecycleManager extends TransportBasedServer {
     this.sceneIdToRequest.set(sceneId, theFuture)
   }
 
-  getParcelData(sceneId: string) {
+  getParcelData(sceneId: string): Promise<ILand> {
     let theFuture = this.sceneIdToRequest.get(sceneId)
     if (!theFuture) {
       theFuture = future<ILand>()
@@ -142,7 +138,14 @@ export class LifecycleManager extends TransportBasedServer {
 let server: LifecycleManager
 export const getServer = (): LifecycleManager | void => server
 
-export async function initParcelSceneWorker() {
+export type ParcelSceneLoadingParams = {
+  contentServer: string
+  catalystServer: string
+  contentServerBundles: string
+  worldConfig: WorldConfig
+}
+
+export async function initParcelSceneWorker(config: ParcelSceneLoadingParams) {
   await ensureMetaConfigurationInitialized()
 
   server = new LifecycleManager(WebWorkerTransport(worker))
@@ -151,19 +154,13 @@ export async function initParcelSceneWorker() {
 
   server.enable()
 
-  const state = store.getState()
-
   const fullRootUrl = getResourcesURL('.')
-  const localServer = resolveUrl(`${location.protocol}//${location.hostname}:${8080}`, '/local-ipfs')
 
   server.notify('Lifecycle.initialize', {
-    contentServer: ENABLE_TEST_SCENES ? localServer : getFetchContentServer(state),
-    catalystServer: ENABLE_TEST_SCENES ? localServer : getCatalystServer(state),
-    contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
+    ...config,
     rootUrl: fullRootUrl,
     lineOfSightRadius: LOS ? Number.parseInt(LOS, 10) : parcelLimits.visibleRadius,
-    emptyScenes: ENABLE_EMPTY_SCENES && !(globalThis as any)['isRunningTests'],
-    worldConfig: getWorldConfig(state)
+    emptyScenes: ENABLE_EMPTY_SCENES && !(globalThis as any)['isRunningTests']
   })
 
   return server

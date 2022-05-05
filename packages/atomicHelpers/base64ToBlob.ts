@@ -1,7 +1,7 @@
-export function base64ToBlob(base64: string, type: string = 'image/jpeg'): Blob {
+export function base64ToBuffer(base64: string): Buffer {
   const sliceSize = 1024
   const byteChars = globalThis.atob(base64)
-  const byteArrays: Uint8Array[] = []
+  const byteArrays: Buffer[] = []
   let len = byteChars.length
 
   for (let offset = 0; offset < len; offset += sliceSize) {
@@ -14,9 +14,13 @@ export function base64ToBlob(base64: string, type: string = 'image/jpeg'): Blob 
 
     const byteArray = new Uint8Array(byteNumbers)
 
-    byteArrays.push(byteArray)
+    byteArrays.push(Buffer.from(byteArray))
     len = byteChars.length
   }
 
-  return new Blob(byteArrays, { type })
+  return Buffer.concat(byteArrays)
+}
+
+export function base64ToBlob(base64: string, type: string = 'image/jpeg'): Blob {
+  return new Blob([base64ToBuffer(base64)], { type })
 }

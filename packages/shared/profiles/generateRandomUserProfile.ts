@@ -1,12 +1,14 @@
-export function backupProfile(contentServerUrl: string, userId: string) {
+import { Avatar } from '@dcl/schemas'
+
+export function backupProfile(userId: string): Avatar {
   return {
     userId,
     email: '',
-    inventory: [],
+    version: -1,
     hasClaimedName: false,
-    ethAddress: 'noeth',
+    ethAddress: '0x0000000000000000000000000000000000000000',
     tutorialStep: 0,
-    name: '',
+    name: 'Guest',
     description: '',
     avatar: {
       bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseFemale',
@@ -40,10 +42,9 @@ export function backupProfile(contentServerUrl: string, userId: string) {
         'urn:decentraland:off-chain:base-avatars:f_eyebrows_00',
         'urn:decentraland:off-chain:base-avatars:f_mouth_00'
       ],
-      version: -1,
       snapshots: {
-        face256: `${contentServerUrl}/contents/QmZbyGxDnZ4PaMVX7kpA2NuGTrmnpwTJ8heKKTSCk4GRJL`,
-        body: `${contentServerUrl}/contents/QmaQvcBWg57Eqf5E9R3Ts1ttPKKLhKueqdyhshaLS1tu2g`
+        face256: `QmZbyGxDnZ4PaMVX7kpA2NuGTrmnpwTJ8heKKTSCk4GRJL`,
+        body: `QmaQvcBWg57Eqf5E9R3Ts1ttPKKLhKueqdyhshaLS1tu2g`
       }
     }
   }

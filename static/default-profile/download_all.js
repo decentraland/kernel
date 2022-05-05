@@ -39,11 +39,11 @@ const filterUrn = new Set([
 
 async function main() {
   const response = await fetch(
-    "https://peer-lb.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars"
+    "https://peer.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars"
   )
   if (!response.ok)
     throw new Error(
-      "https://peer-lb.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars not ok"
+      "https://peer.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars not ok"
     )
   const catalog = await response.json()
 

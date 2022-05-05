@@ -1,7 +1,6 @@
 import { AuthIdentity } from 'dcl-crypto'
 
 import { ETHEREUM_NETWORK } from 'config'
-import { Profile } from '../profiles/types'
 import { IEthereumProvider, LoginState } from '@dcl/kernel-interface'
 
 export type RootSessionState = {
@@ -14,18 +13,11 @@ export type ExplorerIdentity = AuthIdentity & {
   hasConnectedWeb3: boolean
 }
 
-export type SignUpData = {
-  stage: string
-  profile: Partial<Profile>
-  identity?: ExplorerIdentity
-}
-
 export type SessionState = {
   identity: ExplorerIdentity | undefined
   network: ETHEREUM_NETWORK | undefined
   loginState: LoginState | undefined
   isSignUp?: boolean
-  signup: SignUpData
   isGuestLogin?: boolean
   provider?: IEthereumProvider
 }

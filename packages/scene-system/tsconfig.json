@@ -25,7 +25,7 @@
     "outDir": "../../static/systems",
     "lib": ["es2017", "webworker"],
     "baseUrl": "..",
-    "types": ["@dcl/posix", "segment-analytics"]
+    "types": ["@dcl/posix"]
   },
-  "exclude": ["../../node_modules"]
+  "exclude": ["../../node_modules", "../voice-chat-codec"]
 }

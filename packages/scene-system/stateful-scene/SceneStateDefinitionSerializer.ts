@@ -1,4 +1,4 @@
-import { SerializedSceneState } from 'shared/apis/SceneStateStorageController/types'
+import type { SerializedSceneState } from 'shared/apis/SceneStateStorageController/types'
 import { SceneStateDefinition } from './SceneStateDefinition'
 import { Component, EntityId } from './types'
 

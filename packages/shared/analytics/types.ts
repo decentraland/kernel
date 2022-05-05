@@ -1,4 +1,3 @@
-import { ErrorContextTypes } from '../loading/ReportFatalError'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
 import { ChatMessageType } from '../types'
 
@@ -8,11 +7,10 @@ export type PositionTrackEvents = {
 
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
-  ['SET_LOCAL_UUID']: { uuid: string }
-  ['USER_MUTED']: { uuid: string }
-  ['USER_UNMUTED']: { uuid: string }
-  ['USER_BLOCKED']: { uuid: string }
-  ['USER_UNBLOCKED']: { uuid: string }
+  ['USER_MUTED']: { userId: string }
+  ['USER_UNMUTED']: { userId: string }
+  ['USER_BLOCKED']: { userId: string }
+  ['USER_UNBLOCKED']: { userId: string }
   ['Chat message received']: { length: number; messageType: ChatMessageType }
   ['Send chat message']: { length: number; messageId: string; messageType: ChatMessageType }
   ['Comms Status v2']: Record<string, any>
@@ -25,7 +23,8 @@ export type TrackEvents = PositionTrackEvents & {
   ['Move to Parcel']: { newParcel: string; oldParcel: string | null; exactPosition: ReadOnlyVector3 }
   ['motd_failed']: Record<string, unknown> // {}
   ['TermsOfServiceResponse']: { sceneId: string; accepted: boolean; dontShowAgain: boolean }
-  ['error_fatal']: { context: ErrorContextTypes; message: string; stack: string; saga_stack?: string }
+  ['error']: { context: string; message: string; stack: string; saga_stack?: string }
+  ['error_fatal']: { context: string; message: string; stack: string; saga_stack?: string }
   ['long_chat_message_ignored']: { message: string; sender?: string }
   ['renderer_initialization_error']: { message: string }
 
@@ -46,6 +45,7 @@ export type TrackEvents = PositionTrackEvents & {
   }
   ['renderer_initializing_start']: Record<string, unknown> // {}
   ['renderer_initializing_end']: { loading_time: number }
+  ['renderer_set_threw']: { object: string; method: string; payload: string; stack: string }
   ['lifecycle event']: { stage: string; retries?: unknown }
   ['performance report']: ReturnType<typeof getPerformanceInfo>
   ['system info report']: {
@@ -63,7 +63,7 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_start']: { renderer_version: string }
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number }
-
+  ['invalid_schema']: { schema: string; payload: any }
   ['Friend request approved']: Record<string, never> // {}
   ['Friend request rejected']: Record<string, never> // {}
   ['Friend request cancelled']: Record<string, never> // {}
