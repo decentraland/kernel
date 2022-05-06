@@ -8,7 +8,7 @@ export const enum AvatarMessageType {
   USER_VISIBLE = 'USER_VISIBLE',
   USER_EXPRESSION = 'USER_EXPRESSION',
   USER_REMOVED = 'USER_REMOVED',
-  USER_TALKING = 'USER_TALKING',
+  USER_TALKING = 'USER_TALKING'
 }
 
 export type ReceiveUserExpressionMessage = {
@@ -43,8 +43,7 @@ export type UserRemovedMessage = {
 }
 
 export type UserMessage = {
-  type:
-    | AvatarMessageType.USER_TALKING
+  type: | AvatarMessageType.USER_TALKING
   userId: string
 }
 
