@@ -115,8 +115,9 @@ export class EnvironmentAPI extends ExposableAPI implements IEnvironmentAPI {
 }
 
 export function toEnvironmentRealmType(realm: Realm, island: string | undefined): EnvironmentRealm {
-  const { hostname, serverName } = realm
+  const { hostname, serverName, protocol } = realm
   return {
+    protocol: protocol,
     domain: hostname,
     layer: island ?? '',
     room: island ?? '',

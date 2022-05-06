@@ -7,6 +7,7 @@ export type EnvironmentRealm = {
   room: string
   serverName: string
   displayName: string
+  protocol: string
 }
 
 export type ExplorerConfiguration = {

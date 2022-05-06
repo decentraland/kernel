@@ -13,7 +13,6 @@ import {
   SET_WORLD_CONTEXT
 } from './actions'
 import { notifyStatusThroughChat } from 'shared/chat'
-import { realmToConnectionString } from 'shared/dao/utils/realmToString'
 import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel } from './handlers'
 import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
@@ -27,6 +26,7 @@ import { ExplorerIdentity } from 'shared/session/types'
 import { getIdentity } from 'shared/session'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
+import { realmToConnectionString } from './v3/resolver'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
