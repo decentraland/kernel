@@ -75,6 +75,10 @@ export function* friendsSaga() {
   if (WORLD_EXPLORER) {
     // We don't want to initialize the friends & chat feature if we are on preview or builder mode
     yield takeEvery(USER_AUTHENTIFIED, initializeFriendsSaga)
+
+    yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
+    yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
+    yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
   }
 }
 
@@ -156,11 +160,6 @@ function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdent
     })
   )
 
-  yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
-
-  // register listener for new messages
-
-  DEBUG && logger.info(`registering onMessage`)
   client.onMessage((conversation, message) => {
     DEBUG && logger.info(`onMessage`, conversation, message)
 
@@ -234,8 +233,6 @@ function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdent
   client.onFriendshipRequestRejection((socialId) =>
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
-
-  yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
 
   initializeReceivedMessagesCleanUp()
   yield initializeStatusUpdateInterval(client)
@@ -511,7 +508,11 @@ function* handleSendPrivateMessage(action: SendPrivateMessage, debug: boolean = 
 function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   const { action, userId } = payload
 
-  const client: SocialAPI = yield select(getClient)
+  const client: SocialAPI | undefined = yield select(getClient)
+
+  if (!client) {
+    return
+  }
 
   try {
     const { incoming } = meta
@@ -646,8 +647,12 @@ function showErrorNotification(message: string) {
 function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload']) {
   DEBUG && logger.info(`handleOutgoingFriendshipUpdateStatus`, update)
 
-  const client: SocialAPI = yield select(getClient)
+  const client: SocialAPI | undefined = yield select(getClient)
   const socialData: SocialData = yield select(findByUserId, update.userId)
+
+  if (!client) {
+    return
+  }
 
   if (!socialData) {
     logger.error(`could not find social data for`, update.userId)

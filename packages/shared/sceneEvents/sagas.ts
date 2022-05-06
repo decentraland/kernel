@@ -1,6 +1,6 @@
 import { Avatar } from '@dcl/schemas'
 import { call, select, takeLatest } from 'redux-saga/effects'
-import { realmToConnectionString } from 'shared/dao/utils/realmToString'
+import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { toEnvironmentRealmType } from '../apis/EnvironmentAPI'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'

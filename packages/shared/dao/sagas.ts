@@ -30,7 +30,6 @@ import {
 } from 'shared/loading/ReportFatalError'
 import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
 import { gte } from 'semver'
-import { candidateToRealm, resolveCommsConnectionString } from './utils/realmToString'
 import { commsLogger } from 'shared/comms/context'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 
@@ -42,7 +41,7 @@ import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getCommsContext, getRealm } from 'shared/comms/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { CatalystNode } from 'shared/types'
-import { resolveCommsV3Urls } from 'shared/comms/v3/resolver'
+import { candidateToRealm, resolveCommsConnectionString, resolveCommsV3Urls } from 'shared/comms/v3/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 
