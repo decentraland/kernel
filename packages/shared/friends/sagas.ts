@@ -37,8 +37,7 @@ import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState } from 'shared/friends/types'
 import { getClient, findByUserId, getPrivateMessaging } from 'shared/friends/selectors'
-import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getCurrentIdentity } from 'shared/session/selectors'
+import { UserAuthentified, USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
 import {
   updateFriendship,
@@ -82,16 +81,13 @@ export function* friendsSaga() {
   }
 }
 
-function* initializeFriendsSaga() {
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-  const isGuest = identity.hasConnectedWeb3
-
-  if (!isGuest) {
+function* initializeFriendsSaga(action: UserAuthentified) {
+  if (!action.payload.isGuest) {
     yield call(waitForRealmInitialized)
 
     try {
       const synapseUrl: string = yield select(getSynapseUrl)
-      yield call(initializePrivateMessaging, synapseUrl, identity)
+      yield call(initializePrivateMessaging, synapseUrl, action.payload.identity)
     } catch (e) {
       logger.error(`error initializing private messaging`, e)
 
