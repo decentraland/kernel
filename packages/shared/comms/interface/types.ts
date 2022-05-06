@@ -43,7 +43,7 @@ export type UserRemovedMessage = {
 }
 
 export type UserMessage = {
-  type: | AvatarMessageType.USER_TALKING
+  type: AvatarMessageType.USER_TALKING
   userId: string
 }
 
