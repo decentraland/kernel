@@ -3,6 +3,7 @@ import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
 import { Transport, TransportMessage } from './Transport'
 import { MessageType, MessageHeader, MessageTypeMap, SystemMessage, IdentityMessage } from './proto/ws_pb'
+import { Position } from '../../comms/interface/utils'
 
 export class WsTransport implements Transport {
   aliases: Record<number, string> = {}
@@ -21,7 +22,7 @@ export class WsTransport implements Transport {
     this.logger.log('Connected')
   }
 
-  async send(msg: Message, _: boolean): Promise<void> {
+  async send(_: Position, msg: Message, __: boolean): Promise<void> {
     if (!this.ws) throw new Error('This transport is closed')
 
     const d = new SystemMessage()
@@ -30,7 +31,7 @@ export class WsTransport implements Transport {
     this.ws.send(d.serializeBinary())
   }
 
-  async sendIdentity(msg: Message, _: boolean): Promise<void> {
+  async sendIdentity(msg: Message, _: boolean, __: Position): Promise<void> {
     if (!this.ws) throw new Error('This transport is closed')
 
     const d = new IdentityMessage()

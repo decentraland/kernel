@@ -18,6 +18,7 @@ import { LivekitTransport } from './LivekitTransport'
 import { Transport, TransportMessage } from './Transport'
 import { createLogger } from 'shared/logger'
 
+import { PeerToPeerTransport } from './PeerToPeerTransport'
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
@@ -30,7 +31,7 @@ export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
   private logger = createLogger('CommsV4: ')
-  private transport: Transport = new DummyTransport()
+  protected transport: Transport = new DummyTransport()
 
   constructor(private bff: BFFConnection) {
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
@@ -39,19 +40,14 @@ export class InstanceConnection implements RoomConnection {
 
   async connect(): Promise<void> {
     this.bff.onIslandChangeObservable.add(async (islandConnStr) => {
-      this.logger.info(`Got island change message: ${islandConnStr}`)
-      let transport: Transport | null = null
-      if (islandConnStr.startsWith('ws-room:')) {
-        transport = new WsTransport(islandConnStr.substring("ws-room:".length))
-      } else if (islandConnStr.startsWith('livekit:')) {
-        transport = new LivekitTransport(islandConnStr.substring("livekit:".length))
-      }
-
-      if (!transport) {
-        this.logger.error(`Invalid islandConnStr ${islandConnStr}`)
-        return
-      }
-      this.changeTransport(transport)
+      this.logger.info(`Ignoring (for testing purposes) island change message: ${islandConnStr}`)
+      // this.logger.info(`Got island change message: ${islandConnStr}`)
+      // const transport = this.createTransport(islandConnStr)
+      // if (!transport) {
+      //   this.logger.error(`Invalid islandConnStr ${islandConnStr}`)
+      //   return
+      // }
+      // this.changeTransport(transport)
     })
     await this.bff.connect()
   }
@@ -68,39 +64,39 @@ export class InstanceConnection implements RoomConnection {
     d.setRotationZ(p[5])
     d.setRotationW(p[6])
 
-    this.transport.send(d, false)
+    this.transport.send(p, d, false)
   }
 
   async sendParcelUpdateMessage(_: Position, _newPosition: Position) {
   }
 
-  async sendProfileMessage(_: Position, __: string, profileType: ProfileType, version: number) {
+  async sendProfileMessage(p: Position, __: string, profileType: ProfileType, version: number) {
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)
     d.setTime(Date.now())
     d.setProfileType(profileType)
     d.setProfileVersion(`${version}`)
 
-    this.transport.sendIdentity(d, true)
+    this.transport.sendIdentity(d, true, p)
   }
 
-  async sendProfileRequest(_: Position, userId: string, version: number | undefined) {
+  async sendProfileRequest(p: Position, userId: string, version: number | undefined) {
     const d = new ProfileRequestData()
     d.setCategory(Category.PROF_REQ)
     d.setTime(Date.now())
     d.setUserId(userId)
     d.setProfileVersion(`${version}`)
 
-    this.transport.sendIdentity(d, true)
+    this.transport.sendIdentity(d, true, p)
   }
 
-  async sendProfileResponse(_: Position, profile: Avatar) {
+  async sendProfileResponse(p: Position, profile: Avatar) {
     const d = new ProfileResponseData()
     d.setCategory(Category.PROF_RES)
     d.setTime(Date.now())
     d.setSerializedProfile(JSON.stringify(profile))
 
-    this.transport.sendIdentity(d, true)
+    this.transport.sendIdentity(d, true, p)
   }
 
   async sendInitialMessage(_: string, profileType: ProfileType) {
@@ -123,17 +119,21 @@ export class InstanceConnection implements RoomConnection {
     this.bff.sendTopicMessage(sceneId, d)
   }
 
-  async sendChatMessage(_: Position, messageId: string, text: string) {
+  async sendChatMessage(p: Position, messageId: string, text: string) {
     const d = new ChatData()
     d.setCategory(Category.CHAT)
     d.setTime(Date.now())
     d.setMessageId(messageId)
     d.setText(text)
-    this.transport.send(d, true)
+    this.transport.send(p, d, true)
   }
 
-  async setTopics(rawTopics: string[]) {
-    this.bff.setTopics(rawTopics)
+  async setTopics(topics: string[]) {
+    this.bff.setTopics(topics)
+
+    if (this.transport instanceof PeerToPeerTransport) {
+      await this.transport.setTopics(topics)
+    }
   }
 
   async disconnect(): Promise<void> {
@@ -143,16 +143,16 @@ export class InstanceConnection implements RoomConnection {
     return this.bff.disconnect()
   }
 
-  async sendVoiceMessage(_currentPosition: Position, frame: EncodedFrame): Promise<void> {
+  async sendVoiceMessage(p: Position, frame: EncodedFrame): Promise<void> {
     const d = new VoiceData()
     d.setCategory(Category.VOICE)
     d.setEncodedSamples(frame.encoded)
     d.setIndex(frame.index)
 
-    return this.transport.send(d, true)
+    return this.transport.send(p, d, true)
   }
 
-  private handleTopicMessage(message: TopicData) {
+  protected handleTopicMessage(message: TopicData) {
     let dataHeader: DataHeader
     try {
       dataHeader = DataHeader.deserializeBinary(message.data)
@@ -183,7 +183,7 @@ export class InstanceConnection implements RoomConnection {
     }
   }
 
-  private handleTransportMessage({ peer, data }: TransportMessage) {
+  protected handleTransportMessage({ peer, data }: TransportMessage) {
     let dataHeader: DataHeader
     try {
       dataHeader = DataHeader.deserializeBinary(data)
@@ -283,7 +283,7 @@ export class InstanceConnection implements RoomConnection {
     }
   }
 
-  private async changeTransport(transport: Transport): Promise<void> {
+  public async changeTransport(transport: Transport): Promise<void> {
     const oldTransport = this.transport
 
     await transport.connect()
@@ -298,4 +298,13 @@ export class InstanceConnection implements RoomConnection {
     }
   }
 
+  protected createTransport(islandConnStr: string): Transport | null {
+    let transport: Transport | null = null
+    if (islandConnStr.startsWith('ws-room:')) {
+      transport = new WsTransport(islandConnStr.substring('ws-room:'.length))
+    } else if (islandConnStr.startsWith('livekit:')) {
+      transport = new LivekitTransport(islandConnStr.substring('livekit:'.length))
+    }
+    return transport
+  }
 }

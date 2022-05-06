@@ -21,7 +21,7 @@ export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: stri
 
   let server: string
   if (realm.hostname === 'local') {
-    server = 'http://127.0.0.1:5002'
+    server = 'http://127.0.0.1:3000'
   } else if (realm.hostname === 'remote') {
     server = 'https://explorer-bff.decentraland.io'
   } else {

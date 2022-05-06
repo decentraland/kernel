@@ -3,6 +3,7 @@ import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
 import { Transport, TransportMessage } from './Transport'
 import { LivekitTransport as Livekit } from '@dcl/comms3-livekit-transport'
+import { Position } from '../../comms/interface/utils'
 
 export class LivekitTransport implements Transport {
   public onDisconnectObservable = new Observable<void>()
@@ -33,17 +34,21 @@ export class LivekitTransport implements Transport {
     this.logger.log('Connected')
   }
 
-  async send(msg: Message, reliable: boolean): Promise<void> {
-    const data = msg.serializeBinary()
-    if (reliable) {
-      this.livekit.publishReliableData(data)
-    } else {
-      this.livekit.publishUnreliableData(data)
-    }
+  send(_: Position, msg: Message, reliable: boolean): Promise<void> {
+    return this.sendMessage(msg, reliable)
   }
 
-  async sendIdentity(msg: Message, reliable: boolean): Promise<void> {
-    this.send(msg, reliable)
+  sendIdentity(msg: Message, reliable: boolean, _: Position): Promise<void> {
+    return this.sendMessage(msg, reliable)
+  }
+
+  sendMessage(msg: Message, reliable: boolean): Promise<void> {
+    const data = msg.serializeBinary()
+    if (reliable) {
+      return this.livekit.publishReliableData(data)
+    } else {
+      return this.livekit.publishUnreliableData(data)
+    }
   }
 
   async disconnect() {
