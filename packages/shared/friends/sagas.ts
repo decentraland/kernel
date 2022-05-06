@@ -75,8 +75,6 @@ export function* friendsSaga() {
   if (WORLD_EXPLORER) {
     // We don't want to initialize the friends & chat feature if we are on preview or builder mode
     yield takeEvery(USER_AUTHENTIFIED, initializeFriendsSaga)
-
-    yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
     yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
     yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
   }
