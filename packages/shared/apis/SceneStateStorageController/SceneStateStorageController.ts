@@ -418,8 +418,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
     const promises: Promise<[string, Buffer]>[] = Array.from(allMappings.entries()).map<Promise<[string, Buffer]>>(
       async ([path, url]) => {
         const response = await fetch(url)
-        const blob = await response.blob()
-        const buffer = await blobToBuffer(blob)
+        const buffer = Buffer.from(await response.arrayBuffer())
         return [path, buffer]
       }
     )
@@ -458,6 +457,7 @@ export class SceneStateStorageController extends ExposableAPI implements ISceneS
 }
 setAPIName('SceneStateStorageController', SceneStateStorageController)
 
+// TODO: do not use blobs
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const toBuffer = require('blob-to-buffer')
 export function blobToBuffer(blob: Blob): Promise<Buffer> {

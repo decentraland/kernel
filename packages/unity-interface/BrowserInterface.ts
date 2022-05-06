@@ -2,9 +2,7 @@ import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 
 
 import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
-import { AvatarMessageType } from 'shared/comms/interface/types'
-import { avatarMessageObservable, localProfileUUID } from 'shared/comms/peers'
-import { findProfileByName, hasConnectedWeb3 } from 'shared/profiles/selectors'
+import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
@@ -17,8 +15,8 @@ import {
   ReportFatalErrorWithUnityPayload
 } from 'shared/loading/ReportFatalError'
 import { defaultLogger } from 'shared/logger'
-import { profileRequest, saveProfileRequest } from 'shared/profiles/actions'
-import { Avatar, ProfileType } from 'shared/profiles/types'
+import { profileRequest, saveProfileDelta } from 'shared/profiles/actions'
+import { ProfileType } from 'shared/profiles/types'
 import {
   ChatMessage,
   FriendshipUpdateStatusMessage,
@@ -41,13 +39,13 @@ import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
 import { updateFriendship, updateUserData } from 'shared/friends/actions'
-import { candidatesFetched, catalystRealmConnected, changeRealm } from 'shared/dao'
-import { notifyStatusThroughChat } from 'shared/comms/chat'
+import { changeRealm } from 'shared/dao'
+import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
 import { updateStatusMessage } from 'shared/loading/actions'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
 import { setAudioStream } from './audioStream'
-import { logout, redirectToSignUp, signUp, signUpCancel, signupForm, signUpSetProfile } from 'shared/session/actions'
+import { logout, redirectToSignUp, signUp, signUpCancel } from 'shared/session/actions'
 import { getIdentity, hasWallet } from 'shared/session'
 import { getUnityInstance } from './IUnityInterface'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
@@ -62,15 +60,12 @@ import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
-import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
-import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
 import { unpublishSceneByCoords } from 'shared/apis/SceneStateStorageController/unpublishScene'
 import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
-import { areCandidatesFetched, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
-import { realmToString } from 'shared/dao/utils/realmToString'
 import { store } from 'shared/store/isolatedStore'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { setRendererAvatarState } from 'shared/social/avatarTracker'
@@ -82,6 +77,7 @@ import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeploy
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/EnvironmentAPI'
+import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -114,6 +110,70 @@ type SystemInfoPayload = {
   systemMemorySize: number
 }
 
+/** Message from renderer sent to save the profile in the catalyst */
+export type RendererSaveProfile = {
+  avatar: {
+    name: string
+    bodyShape: string
+    skinColor: {
+      r: number
+      g: number
+      b: number
+      a: number
+    }
+    hairColor: {
+      r: number
+      g: number
+      b: number
+      a: number
+    }
+    eyeColor: {
+      r: number
+      g: number
+      b: number
+      a: number
+    }
+    wearables: string[]
+  }
+  face256: string
+  body: string
+  isSignUpFlow?: boolean
+}
+const color3Schema: JSONSchema<{ r: number; g: number; b: number; a: number }> = {
+  type: 'object',
+  required: ['r', 'g', 'b', 'a'],
+  properties: {
+    r: { type: 'number', nullable: false },
+    g: { type: 'number', nullable: false },
+    b: { type: 'number', nullable: false },
+    a: { type: 'number', nullable: false }
+  }
+} as any
+
+export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
+  type: 'object',
+  required: ['avatar', 'body', 'face256'],
+  properties: {
+    face256: { type: 'string' },
+    body: { type: 'string' },
+    isSignUpFlow: { type: 'boolean', nullable: true },
+    avatar: {
+      type: 'object',
+      required: ['bodyShape', 'eyeColor', 'hairColor', 'name', 'skinColor', 'wearables'],
+      properties: {
+        bodyShape: { type: 'string' },
+        name: { type: 'string' },
+        eyeColor: color3Schema,
+        hairColor: color3Schema,
+        skinColor: color3Schema,
+        wearables: { type: 'array', items: { type: 'string' } }
+      }
+    }
+  }
+} as any
+
+const validateRendererSaveProfile = generateValidator<RendererSaveProfile>(rendererSaveProfileSchema)
+
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {
   private lastBalanceOfMana: number = -1
@@ -136,7 +196,7 @@ export class BrowserInterface {
   }
 
   public StartIsolatedMode(options: IsolatedModeOptions) {
-    startIsolatedMode(options)
+    startIsolatedMode(options).catch(defaultLogger.error)
   }
 
   public StopIsolatedMode(options: IsolatedModeOptions) {
@@ -245,13 +305,6 @@ export class BrowserInterface {
   }
 
   public TriggerExpression(data: { id: string; timestamp: number }) {
-    avatarMessageObservable.notifyObservers({
-      type: AvatarMessageType.USER_EXPRESSION,
-      uuid: localProfileUUID || 'non-local-profile-uuid',
-      expressionId: data.id,
-      timestamp: data.timestamp
-    })
-
     allScenesEvent({
       eventType: 'playerExpression',
       payload: {
@@ -281,7 +334,7 @@ export class BrowserInterface {
   }
 
   public GoToMagic() {
-    TeleportController.goToMagic()
+    TeleportController.goToCrowd().catch((e) => defaultLogger.error('error goToCrowd', e))
   }
 
   public GoToCrowd() {
@@ -302,22 +355,39 @@ export class BrowserInterface {
     }
     const unique = new Set<string>(interests)
 
-    store.dispatch(saveProfileRequest({ interests: Array.from(unique) }))
+    store.dispatch(saveProfileDelta({ interests: Array.from(unique) }))
   }
 
-  public SaveUserAvatar(changes: { face256: string; body: string; avatar: Avatar; isSignUpFlow?: boolean }) {
-    const { face256, body, avatar } = changes
-    const update = { avatar: { ...avatar, snapshots: { face256, body } } }
-    if (!changes.isSignUpFlow) {
-      store.dispatch(saveProfileRequest(update))
+  public SaveUserAvatar(changes: RendererSaveProfile) {
+    if (validateRendererSaveProfile(changes)) {
+      const update: Partial<Avatar> = {
+        avatar: {
+          bodyShape: changes.avatar.bodyShape,
+          eyes: { color: changes.avatar.eyeColor },
+          hair: { color: changes.avatar.hairColor },
+          skin: { color: changes.avatar.skinColor },
+          wearables: changes.avatar.wearables,
+          snapshots: {
+            body: changes.body,
+            face256: changes.face256
+          }
+        }
+      }
+      store.dispatch(saveProfileDelta(update))
     } else {
-      store.dispatch(signUpSetProfile(update))
+      trackEvent('invalid_schema', { schema: 'SaveUserAvatar', payload: changes })
+      defaultLogger.error(
+        'Unity sent invalid profile' +
+          JSON.stringify(changes) +
+          ' Errors: ' +
+          JSON.stringify(validateRendererSaveProfile.errors)
+      )
     }
   }
 
   public SendPassport(passport: { name: string; email: string }) {
-    store.dispatch(signupForm(passport.name, passport.email))
-    store.dispatch(signUp())
+    store.dispatch(saveProfileDelta({ name: passport.name }))
+    store.dispatch(signUp(passport.email))
   }
 
   public RequestOwnProfileUpdate() {
@@ -329,11 +399,11 @@ export class BrowserInterface {
   }
 
   public SaveUserUnverifiedName(changes: { newUnverifiedName: string }) {
-    store.dispatch(saveProfileRequest({ unclaimedName: changes.newUnverifiedName }))
+    store.dispatch(saveProfileDelta({ name: changes.newUnverifiedName, hasClaimedName: false }))
   }
 
   public SaveUserDescription(changes: { description: string }) {
-    store.dispatch(saveProfileRequest({ description: changes.description }))
+    store.dispatch(saveProfileDelta({ description: changes.description }))
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
@@ -344,8 +414,7 @@ export class BrowserInterface {
   }
 
   public SaveUserTutorialStep(data: { tutorialStep: number }) {
-    const update = { tutorialStep: data.tutorialStep }
-    store.dispatch(saveProfileRequest(update))
+    store.dispatch(saveProfileDelta({ tutorialStep: data.tutorialStep }))
   }
 
   public ControlEvent({ eventType, payload }: { eventType: string; payload: any }) {
@@ -471,10 +540,10 @@ export class BrowserInterface {
 
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     if (message.action === FriendshipAction.REQUESTED_TO) {
-      await ensureFriendProfile(userId)
+      const avatar = await ensureFriendProfile(userId)
 
       if (isAddress(userId)) {
-        found = hasConnectedWeb3(state, userId)
+        found = avatar.hasConnectedWeb3 || false
       } else {
         const profileByName = findProfileByName(state, userId)
         if (profileByName) {
@@ -521,42 +590,25 @@ export class BrowserInterface {
   public async JumpIn(data: WorldPosition) {
     const {
       gridPosition: { x, y },
-      realm: { serverName, layer }
+      realm: { serverName }
     } = data
 
-    const realmString = realmToString({ serverName, layer })
+    notifyStatusThroughChat(`Jumping to ${serverName} at ${x},${y}...`)
 
-    notifyStatusThroughChat(`Jumping to ${realmString} at ${x},${y}...`)
-
-    const future = candidatesFetched()
-
-    if (!areCandidatesFetched(store.getState())) {
-      notifyStatusThroughChat(`Waiting while realms are initialized, this may take a while...`)
-    }
-
-    await future
-
-    const realm = changeRealm(realmString)
-
-    if (realm) {
-      catalystRealmConnected().then(
-        () => {
-          const successMessage = `Jumped to ${x},${y} in realm ${realmString}!`
-          notifyStatusThroughChat(successMessage)
-          getUnityInstance().ConnectionToRealmSuccess(data)
-          TeleportController.goTo(x, y, successMessage)
-        },
-        (e) => {
-          const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-          notifyStatusThroughChat('Could not join realm.' + cause)
-          getUnityInstance().ConnectionToRealmFailed(data)
-          defaultLogger.error('Error joining realm', e)
-        }
-      )
-    } else {
-      notifyStatusThroughChat(`Couldn't find realm ${realmString}.`)
-      getUnityInstance().ConnectionToRealmFailed(data)
-    }
+    changeRealm(serverName).then(
+      () => {
+        const successMessage = `Jumped to ${x},${y} in realm ${serverName}!`
+        notifyStatusThroughChat(successMessage)
+        getUnityInstance().ConnectionToRealmSuccess(data)
+        TeleportController.goTo(x, y, successMessage)
+      },
+      (e) => {
+        const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
+        notifyStatusThroughChat('changerealm: Could not join realm.' + cause)
+        getUnityInstance().ConnectionToRealmFailed(data)
+        defaultLogger.error(e)
+      }
+    )
   }
 
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {
@@ -599,7 +651,7 @@ export class BrowserInterface {
   }
 
   public FetchBalanceOfMANA() {
-    ;(async () => {
+    const fn = async () => {
       const identity = getIdentity()
 
       if (!identity?.hasConnectedWeb3) {
@@ -611,7 +663,9 @@ export class BrowserInterface {
         this.lastBalanceOfMana = balance
         getUnityInstance().UpdateBalanceOfMANA(`${balance}`)
       }
-    })().catch((err) => defaultLogger.error(err))
+    }
+
+    fn().catch((err) => defaultLogger.error(err))
   }
 
   public SetMuteUsers(data: { usersId: string[]; mute: boolean }) {
@@ -723,9 +777,7 @@ export class BrowserInterface {
   }
 
   public RequestUserProfile(userIdPayload: { value: string }) {
-    ProfileAsPromise(userIdPayload.value, undefined, ProfileType.DEPLOYED)
-      .then((profile) => getUnityInstance().AddUserProfileToCatalog(profileToRendererFormat(profile)))
-      .catch((error) => defaultLogger.error(`error fetching profile ${userIdPayload.value} ${error}`))
+    store.dispatch(profileRequest(userIdPayload.value, ProfileType.DEPLOYED))
   }
 
   public ReportAvatarFatalError() {

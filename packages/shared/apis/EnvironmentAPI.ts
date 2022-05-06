@@ -1,32 +1,14 @@
 import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 import { ExposableAPI } from './ExposableAPI'
 import { EnvironmentData } from 'shared/types'
-import { getRealm, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { getServerConfigurations, PREVIEW, RENDERER_WS } from 'config'
 import { store } from 'shared/store/isolatedStore'
-import { getCommsIsland } from 'shared/comms/selectors'
+import { getCommsIsland, getRealm } from 'shared/comms/selectors'
 import { Realm } from 'shared/dao/types'
 import { isFeatureEnabled } from 'shared/meta/selectors'
 import { FeatureFlags } from 'shared/meta/types'
-
-export type EnvironmentRealm = {
-  domain: string
-  /** @deprecated use room instead */
-  layer: string
-  room: string
-  serverName: string
-  displayName: string
-}
-
-type ExplorerConfiguration = {
-  clientUri: string
-  configurations: Record<string, string | number | boolean>
-}
-
-export enum Platform {
-  DESKTOP = 'desktop',
-  BROWSER = 'browser'
-}
+import { EnvironmentRealm, ExplorerConfiguration, IEnvironmentAPI, Platform } from './IEnvironmentAPI'
 
 type DecentralandTimeData = {
   timeNormalizationFactor: number
@@ -39,7 +21,7 @@ type DecentralandTimeData = {
 let decentralandTimeData: DecentralandTimeData
 
 @registerAPI('EnvironmentAPI')
-export class EnvironmentAPI extends ExposableAPI {
+export class EnvironmentAPI extends ExposableAPI implements IEnvironmentAPI {
   data!: EnvironmentData<any>
   /**
    * Returns the coordinates and the definition of a parcel
@@ -132,14 +114,14 @@ export class EnvironmentAPI extends ExposableAPI {
   }
 }
 
-export function toEnvironmentRealmType(realm: Realm, island: string): EnvironmentRealm {
-  const { domain, catalystName: serverName } = realm
+export function toEnvironmentRealmType(realm: Realm, island: string | undefined): EnvironmentRealm {
+  const { hostname, serverName } = realm
   return {
-    domain,
-    layer: island,
-    room: island,
+    domain: hostname,
+    layer: island ?? '',
+    room: island ?? '',
     serverName,
-    displayName: `${serverName}-${island}`
+    displayName: serverName
   }
 }
 

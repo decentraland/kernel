@@ -1,5 +1,9 @@
 export default class Html {
   static loopbackAudioElement() {
-    return document.getElementById('voice-chat-audio') as HTMLAudioElement | undefined
+    const audio = document.getElementById('voice-chat-audio')
+    if (!audio) {
+      console.error('There is no #voice-chat-audio element to use with VoiceChat')
+    }
+    return audio as HTMLAudioElement | undefined
   }
 }

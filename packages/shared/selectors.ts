@@ -97,6 +97,7 @@ export function isFeatureToggleEnabled(toggle: SceneFeatureToggle, sceneJsonData
     // If not set or value is invalid, then use default
     feature = toggle.default
   }
+
   return feature === 'enabled'
 }
 

@@ -2,10 +2,11 @@ import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
 
 import { UserData } from 'shared/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
-import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
+import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 
 import { ExposableAPI } from './ExposableAPI'
 import { onLoginCompleted } from 'shared/session/sagas'
+import { sdkCompatibilityAvatar } from './Players'
 
 export interface IUserIdentity {
   /**
@@ -39,15 +40,15 @@ export class UserIdentity extends ExposableAPI implements IUserIdentity {
       return null
     }
 
-    const profile = await EnsureProfile(identity?.address)
+    const profile = await ProfileAsPromise(identity?.address)
 
     return {
-      displayName: calculateDisplayName(identity.address, profile),
+      displayName: calculateDisplayName(profile),
       publicKey: identity.hasConnectedWeb3 ? identity.address : null,
       hasConnectedWeb3: !!identity.hasConnectedWeb3,
       userId: identity.address,
       version: profile.version,
-      avatar: { ...profile.avatar }
+      avatar: sdkCompatibilityAvatar(profile.avatar)
     }
   }
 }

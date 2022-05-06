@@ -7,7 +7,7 @@ import { worldToGrid, gridToWorld } from '../../../atomicHelpers/parcelScenePosi
 import { pickWorldSpawnpoint } from 'shared/world/positionThings'
 import { InstancedSpawnPoint } from 'shared/types'
 import { createLogger } from 'shared/logger'
-import { PositionTrackEvents } from 'shared/analytics/types'
+import type { PositionTrackEvents } from 'shared/analytics/types'
 
 const DEBUG = false
 

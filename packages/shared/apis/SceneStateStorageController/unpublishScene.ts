@@ -11,7 +11,6 @@ import { DeploymentResult, CONTENT_PATH, SceneDeploymentSourceMetadata } from '.
 import { defaultLogger } from '../../logger'
 import { ContentMapping, SceneJsonData } from '../../types'
 import { jsonFetch } from '../../../atomicHelpers/jsonFetch'
-import { blobToBuffer } from './SceneStateStorageController'
 import { getResourcesURL } from 'shared/location'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -132,8 +131,7 @@ async function getModelsFiles(baseUrl: string, mappings: ContentMapping[]) {
 
   const promises: Promise<[string, Buffer]>[] = assets.map<Promise<[string, Buffer]>>(async (asset) => {
     const response = await fetch(`${baseUrl}/${asset.hash}`)
-    const blob = await response.blob()
-    const buffer = await blobToBuffer(blob)
+    const buffer = Buffer.from(await response.arrayBuffer())
     return [asset.file, buffer]
   })
 
