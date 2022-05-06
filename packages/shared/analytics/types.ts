@@ -5,11 +5,7 @@ export type PositionTrackEvents = {
 }
 
 export type TrackEvents = PositionTrackEvents & {
-  // Comms & Chat Events
-  ['USER_MUTED']: { userId: string }
-  ['USER_UNMUTED']: { userId: string }
-  ['USER_BLOCKED']: { userId: string }
-  ['USER_UNBLOCKED']: { userId: string }
+  // Comms Events
   ['Comms Status v2']: Record<string, any>
 
   // Info logs, such as networks or things we want to track
