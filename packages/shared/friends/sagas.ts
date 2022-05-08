@@ -1,4 +1,4 @@
-import { takeEvery, put, select, call, take, delay, apply } from 'redux-saga/effects'
+import { takeEvery, put, select, call, take, delay } from 'redux-saga/effects'
 
 import { Authenticator } from 'dcl-crypto'
 import {
@@ -26,6 +26,7 @@ import {
   ChatMessageType,
   FriendshipAction,
   PresenceStatus,
+  HUDElementID,
   UpdateUserStatusMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
@@ -36,8 +37,7 @@ import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState } from 'shared/friends/types'
 import { getClient, findByUserId, getPrivateMessaging } from 'shared/friends/selectors'
-import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getCurrentIdentity } from 'shared/session/selectors'
+import { UserAuthentified, USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
 import {
   updateFriendship,
@@ -70,57 +70,41 @@ const SEND_STATUS_INTERVAL_MILLIS = 5000
 type PresenceMemoization = { realm: SocialRealm | undefined; position: UserPosition | undefined }
 const presenceMap: Record<string, PresenceMemoization | undefined> = {}
 
-const MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 1000
-const MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 256000
-
 export function* friendsSaga() {
   if (WORLD_EXPLORER) {
     // We don't want to initialize the friends & chat feature if we are on preview or builder mode
     yield takeEvery(USER_AUTHENTIFIED, initializeFriendsSaga)
+
+    yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
+    yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
+    yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
   }
 }
 
-function* initializeFriendsSaga() {
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-  const isGuest = identity.hasConnectedWeb3
-
-  if (!isGuest) {
+function* initializeFriendsSaga(action: UserAuthentified) {
+  if (!action.payload.isGuest) {
     yield call(waitForRealmInitialized)
 
-    let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
+    try {
+      const synapseUrl: string = yield select(getSynapseUrl)
+      yield call(initializePrivateMessaging, synapseUrl, action.payload.identity)
+    } catch (e) {
+      logger.error(`error initializing private messaging`, e)
 
-    while (true) {
-      const client: SocialAPI | null = yield select(getClient)
-      const isLoggedIn: boolean = (client && (yield apply(client, client.isLoggedIn, []))) || false
+      yield call(waitForRendererInstance)
 
-      if (isLoggedIn) {
-        return
-      } else {
-        try {
-          const synapseUrl: string = yield select(getSynapseUrl)
-          // TODO: The call to initializePrivateMessaging, when it finishes successfully, is making the 'initializeFriendsSaga' function directly ends.
-          //       It seems for this reason we don't have to forze the flow to break out the 'while' loop, but we should investigate it.
-          yield call(initializePrivateMessaging, synapseUrl, identity)
-        } catch (e) {
-          logger.error(`error initializing private messaging`, e)
-
-          yield call(waitForRendererInstance)
-
-          trackEvent('error', {
-            context: 'kernel#saga',
-            message: 'There was an error initializing friends and private messages',
-            stack: ''
-          })
-
-          yield delay(secondsToRetry)
-
-          if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
-            secondsToRetry *= 2
-          }
-
-          logger.warn('retrying private messaging initialization...')
-        }
-      }
+      getUnityInstance().ConfigureHUDElement(HUDElementID.FRIENDS, { active: false, visible: false })
+      getUnityInstance().ShowNotification({
+        type: NotificationType.GENERIC,
+        message: 'There was an error initializing friends and private messages',
+        buttonMessage: 'OK',
+        timer: 7
+      })
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: 'There was an error initializing friends and private messages',
+        stack: ''
+      })
     }
   }
 }
@@ -172,12 +156,6 @@ function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdent
     })
   )
 
-  yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
-  yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
-
-  // register listener for new messages
-
-  DEBUG && logger.info(`registering onMessage`)
   client.onMessage((conversation, message) => {
     DEBUG && logger.info(`onMessage`, conversation, message)
 
@@ -251,8 +229,6 @@ function* initializePrivateMessaging(synapseUrl: string, identity: ExplorerIdent
   client.onFriendshipRequestRejection((socialId) =>
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
-
-  yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
 
   initializeReceivedMessagesCleanUp()
   yield initializeStatusUpdateInterval(client)
@@ -528,7 +504,11 @@ function* handleSendPrivateMessage(action: SendPrivateMessage, debug: boolean = 
 function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   const { action, userId } = payload
 
-  const client: SocialAPI = yield select(getClient)
+  const client: SocialAPI | undefined = yield select(getClient)
+
+  if (!client) {
+    return
+  }
 
   try {
     const { incoming } = meta
@@ -693,8 +673,12 @@ function showErrorNotification(message: string) {
 function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload']) {
   DEBUG && logger.info(`handleOutgoingFriendshipUpdateStatus`, update)
 
-  const client: SocialAPI = yield select(getClient)
+  const client: SocialAPI | undefined = yield select(getClient)
   const socialData: SocialData = yield select(findByUserId, update.userId)
+
+  if (!client) {
+    return
+  }
 
   if (!socialData) {
     logger.error(`could not find social data for`, update.userId)

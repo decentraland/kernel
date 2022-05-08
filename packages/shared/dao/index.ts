@@ -6,13 +6,13 @@ import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { ping } from './utils/ping'
-import { realmToConnectionString, resolveCommsConnectionString } from './utils/realmToString'
 import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
 import { connectComms } from 'shared/comms'
 import { setWorldContext } from 'shared/comms/actions'
 import { checkValidRealm } from './sagas'
 import { establishingComms } from 'shared/loading/types'
 import { commsLogger } from 'shared/comms/context'
+import { realmToConnectionString, resolveCommsConnectionString } from 'shared/comms/v3/resolver'
 
 async function fetchCatalystNodes(endpoint: string | undefined) {
   if (endpoint) {
