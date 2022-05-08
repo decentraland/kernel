@@ -130,7 +130,7 @@ function* handleCommsReconnectionInterval() {
     const shouldReconnect = !context && !hasFatalError && identity?.address
     if (shouldReconnect) {
       // reconnect
-      commsLogger.info('Trying to reconnect to a realm. reason:', reason)
+      commsLogger.info('Trying to reconnect to a realm. reason:', Object.keys(reason)[0])
       yield call(selectAndReconnectRealm)
     }
   }
