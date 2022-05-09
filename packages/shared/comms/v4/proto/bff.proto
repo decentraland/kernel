@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package protocol;
+
+enum MessageType {
+  UNKNOWN_MESSAGE_TYPE = 0;
+  HEARTBEAT = 1;
+  SUBSCRIPTION = 2;
+  TOPIC = 3;
+  ISLAND_CHANGES = 4;
+  OPEN = 5;
+  VALIDATION = 6;
+  VALIDATION_FAILURE = 7;
+  VALIDATION_OK = 8;
+}
+
+message MessageHeader {
+  MessageType type = 1;
+}
+
+message HeartBeatMessage {
+  MessageType type = 1;
+  double time = 2;
+  bytes data = 3;
+}
+
+message IslandChangesMessage {
+  MessageType type = 1;
+  string conn_str = 2;
+}
+
+message OpenMessage {
+    MessageType type = 1;
+    string payload = 2;
+}
+
+message ValidationMessage {
+    MessageType type = 1;
+    string encoded_payload = 2;
+}
+
+message ValidationResultMessage {
+    MessageType type = 1;
+}
+
+message SubscriptionMessage {
+    MessageType type = 1;
+    bytes topics = 2;
+}
+
+message TopicMessage {
+    MessageType type = 1;
+    string peer_id = 2;
+    string topic = 3;
+    bytes body = 4;
+}
