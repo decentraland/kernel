@@ -19,8 +19,6 @@ export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: stri
     return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
   }
 
-  console.log(realm)
-
   let server: string
   if (realm.serverName === 'local') {
     server = 'http://127.0.0.1:3000'

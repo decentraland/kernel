@@ -195,6 +195,9 @@ export class InstanceConnection implements RoomConnection {
 
     switch (category) {
       case Category.POSITION: {
+
+        // TODO
+        // this.peer.setPeerPosition(sender, positionMessage.slice(0, 3) as [number, number, number])
         const positionData = PositionData.deserializeBinary(data)
         this.events.emit('position', {
           sender: peer,
