@@ -86,7 +86,7 @@
     "@types/redux-logger": "^3.0.9",
     "bignumber.js": "^9.0.1",
     "blob-to-buffer": "^1.2.8",
-    "dcl-catalyst-client": "^11.2.0",
+    "dcl-catalyst-client": "^11.3.2",
     "dcl-crypto": "^2.3.0",
     "dcl-quests-client": "^2.10.0",
     "dcl-scene-writer": "^1.1.2",
