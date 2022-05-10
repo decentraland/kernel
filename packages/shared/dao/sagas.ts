@@ -226,7 +226,9 @@ export async function checkValidRealm(realm: Realm) {
   } else if (realm.protocol === 'v4') {
     const { pingUrl } = resolveCommsV4Urls(realm)!
     const pingResult = await ping(pingUrl)
-
+    if (pingResult.status !== ServerConnectionStatus.OK) {
+      commsLogger.warn(`ping failed for ${pingUrl}`)
+    }
     return pingResult.status === ServerConnectionStatus.OK
   }
   return false

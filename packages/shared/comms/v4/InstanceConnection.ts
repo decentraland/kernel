@@ -40,14 +40,13 @@ export class InstanceConnection implements RoomConnection {
 
   async connect(): Promise<void> {
     this.bff.onIslandChangeObservable.add(async (islandConnStr) => {
-      this.logger.info(`Ignoring (for testing purposes) island change message: ${islandConnStr}`)
-      // this.logger.info(`Got island change message: ${islandConnStr}`)
-      // const transport = this.createTransport(islandConnStr)
-      // if (!transport) {
-      //   this.logger.error(`Invalid islandConnStr ${islandConnStr}`)
-      //   return
-      // }
-      // this.changeTransport(transport)
+      this.logger.info(`Got island change message: ${islandConnStr}`)
+      const transport = this.createTransport(islandConnStr)
+      if (!transport) {
+        this.logger.error(`Invalid islandConnStr ${islandConnStr}`)
+        return
+      }
+      this.changeTransport(transport)
     })
     await this.bff.connect()
   }
@@ -283,7 +282,7 @@ export class InstanceConnection implements RoomConnection {
     }
   }
 
-  public async changeTransport(transport: Transport): Promise<void> {
+  private async changeTransport(transport: Transport): Promise<void> {
     const oldTransport = this.transport
 
     await transport.connect()
@@ -298,12 +297,17 @@ export class InstanceConnection implements RoomConnection {
     }
   }
 
-  protected createTransport(islandConnStr: string): Transport | null {
+  private createTransport(islandConnStr: string): Transport | null {
     let transport: Transport | null = null
     if (islandConnStr.startsWith('ws-room:')) {
       transport = new WsTransport(islandConnStr.substring('ws-room:'.length))
     } else if (islandConnStr.startsWith('livekit:')) {
       transport = new LivekitTransport(islandConnStr.substring('livekit:'.length))
+    } else if (islandConnStr.startsWith('lighthouse:')) {
+
+      const lighthouseUrl = islandConnStr.substring('lighthouse:'.length)
+      this.logger.log('Using Remote lighthouse service: ', lighthouseUrl)
+      transport = new PeerToPeerTransport(lighthouseUrl)
     }
     return transport
   }

@@ -124,7 +124,6 @@ export class BFFConnection {
         break
       }
       case MessageType.OPEN: {
-        this.logger.log('open message received')
         let openMessage: OpenMessage
         try {
           openMessage = OpenMessage.deserializeBinary(data)
