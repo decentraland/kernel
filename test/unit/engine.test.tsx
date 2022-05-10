@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 
-import { Entity, BoxShape, Transform, Vector3, engine } from 'decentraland-ecs'
+import { Entity, BoxShape, Transform, Vector3, engine } from '@dcl/legacy-ecs'
 
 describe('Engine tests', () => {
   it('getComponentGroup returns cached group', () => {

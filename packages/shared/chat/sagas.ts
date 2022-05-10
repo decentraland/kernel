@@ -1,6 +1,5 @@
 import { takeEvery, put, select, call } from 'redux-saga/effects'
 import { PayloadAction } from 'typesafe-actions'
-import { Vector3Component } from 'atomicHelpers/landHelpers'
 import {
   MESSAGE_RECEIVED,
   MessageReceived,
@@ -14,21 +13,19 @@ import { ChatMessageType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
-import { peerMap, avatarMessageObservable } from 'shared/comms/peers'
+import { getAllPeers } from 'shared/comms/peers'
 import { parseParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { TeleportController } from 'shared/world/TeleportController'
-import { notifyStatusThroughChat } from 'shared/comms/chat'
+import { notifyStatusThroughChat } from './index'
 import defaultLogger from 'shared/logger'
-import { catalystRealmConnected, changeRealm, changeToCrowdedRealm } from 'shared/dao'
+import { changeRealm } from 'shared/dao'
 import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
 import { SHOW_FPS_COUNTER } from 'config'
-import { AvatarMessage, AvatarMessageType } from 'shared/comms/interface/types'
 import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
 import { isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
-import { realmToString } from 'shared/dao/utils/realmToString'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
@@ -45,16 +42,6 @@ const excludeList = ['help', 'airdrop', 'feelinglonely']
 const fpsConfiguration = {
   visible: SHOW_FPS_COUNTER
 }
-
-const userPose: { [key: string]: Vector3Component } = {}
-avatarMessageObservable.add((pose: AvatarMessage) => {
-  if (pose.type === AvatarMessageType.USER_POSE) {
-    userPose[pose.uuid] = { x: pose.pose[0], y: pose.pose[1], z: pose.pose[2] }
-  }
-  if (pose.type === AvatarMessageType.USER_REMOVED) {
-    delete userPose[pose.uuid]
-  }
-})
 
 export function* chatSaga(): any {
   initChatCommands()
@@ -184,16 +171,17 @@ function addChatCommand(name: string, description: string, fn: (message: string)
 function initChatCommands() {
   addChatCommand('goto', 'Teleport to another parcel', (message) => {
     const coordinates = parseParcelPosition(message)
-    const isValid = isFinite(coordinates.x) && isFinite(coordinates.y)
+    const isValidPosition = isFinite(coordinates.x) && isFinite(coordinates.y)
 
     let response = ''
 
-    if (!isValid) {
-      if (message.trim().toLowerCase() === 'magic') {
-        response = TeleportController.goToMagic().message
-      } else if (message.trim().toLowerCase() === 'random') {
+    if (isValidPosition) {
+      const { x, y } = coordinates
+      response = TeleportController.goTo(x, y).message
+    } else {
+      if (message.trim().toLowerCase() === 'random') {
         response = TeleportController.goToRandom().message
-      } else if (message.trim().toLowerCase() === 'crowd') {
+      } else if (message.trim().toLowerCase() === 'magic' || message.trim().toLowerCase() === 'crowd') {
         response = `Teleporting to a crowd of people in current realm...`
 
         TeleportController.goToCrowd().then(
@@ -205,9 +193,6 @@ function initChatCommands() {
       } else {
         response = 'Could not recognize the coordinates provided. Example usage: /goto 42,42'
       }
-    } else {
-      const { x, y } = coordinates
-      response = TeleportController.goTo(x, y).message
     }
 
     return {
@@ -221,43 +206,12 @@ function initChatCommands() {
 
   addChatCommand('changerealm', 'Changes communications realms', (message) => {
     const realmString = message.trim()
-    let response = ''
+    const response = ''
 
-    if (realmString === 'crowd') {
-      response = `Changing to realm that is crowded nearby...`
-
-      changeToCrowdedRealm().then(
-        ([changed, realm]) => {
-          if (changed) {
-            notifyStatusThroughChat(`Found a crowded realm to join. Welcome to the realm ${realmToString(realm)}!`)
-          } else {
-            notifyStatusThroughChat(`Already on most crowded realm for location. Nothing changed.`)
-          }
-        },
-        (e) => {
-          const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-          notifyStatusThroughChat('Could not join realm.' + cause)
-          defaultLogger.error(`Error joining crowded realm ${realmString}`, e)
-        }
-      )
-    } else {
-      const realm = changeRealm(realmString)
-
-      if (realm) {
-        response = `Changing to Realm ${realmToString(realm)}...`
-        // TODO: This status should be shown in the chat window
-        catalystRealmConnected().then(
-          () => notifyStatusThroughChat(`Changed realm successfuly. Welcome to the realm ${realmToString(realm)}!`),
-          (e) => {
-            const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-            notifyStatusThroughChat('Could not join realm.' + cause)
-            defaultLogger.error('Error joining realm', e)
-          }
-        )
-      } else {
-        response = `Couldn't find realm ${realmString}`
-      }
-    }
+    changeRealm(realmString).catch((e) => {
+      notifyStatusThroughChat('changerealm: Could not join realm.')
+      defaultLogger.error(e)
+    })
 
     return {
       messageId: uuid(),
@@ -269,16 +223,16 @@ function initChatCommands() {
   })
 
   addChatCommand('players', 'Shows a list of players around you', (_message) => {
-    const users = [...peerMap.entries()]
+    const users = [...getAllPeers().entries()]
 
     const strings = users
-      .filter(([_, value]) => !!(value && value.user && value.user.userId))
-      .filter(([uuid]) => userPose[uuid])
-      .map(function ([uuid, value]) {
+      .filter(([_, value]) => !!(value && value.ethereumAddress))
+      .filter(([_, value]) => value.position)
+      .map(function ([, value]) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
-        const name = getProfile(store.getState(), value.user?.userId!)?.name ?? 'unknown'
+        const name = getProfile(store.getState(), value.ethereumAddress!)?.name ?? 'unknown'
         const pos = { x: 0, y: 0 }
-        worldToGrid(userPose[uuid], pos)
+        worldToGrid({ x: value.position![0], y: value.position![1], z: value.position![2] }, pos)
         return `  ${name}: ${pos.x}, ${pos.y}`
       })
       .join('\n')
@@ -479,7 +433,7 @@ function initChatCommands() {
           body += `${count} ${count > 1 ? 'users' : 'user'} @ ${
             sceneInfo.name.length < 20 ? sceneInfo.name : sceneInfo.name.substring(0, 20) + '...'
           } ${sceneInfo.baseCoords.x},${sceneInfo.baseCoords.y} ${sceneInfo.realms.reduce(
-            (a, b) => a + `\n\t realm: ${realmToString(b)} users: ${b.usersCount}`,
+            (a, b) => a + `\n\t realm: ${b.serverName} users: ${b.usersCount}`,
             ''
           )}\n`
         })

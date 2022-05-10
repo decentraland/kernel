@@ -1,6 +1,7 @@
-import { ReadOnlyColor4 } from '@dcl/ecs-math'
+import { Color3, ReadOnlyColor4 } from '@dcl/ecs-math'
 
 export function convertToRGBObject(colorString: any): ReadOnlyColor4 {
+  if (!colorString) return { r: 1, g: 0, b: 1, a: 1 }
   if (typeof colorString !== 'string') {
     if (colorString === undefined) {
       throw new Error('Unexpected undefined value for color object: ' + JSON.stringify(colorString))
@@ -24,6 +25,10 @@ export function convertToRGBObject(colorString: any): ReadOnlyColor4 {
   const b = convertSection(5, colorString)
   const a = colorString.length > 7 ? convertSection(7, colorString) : 1
   return { r, g, b, a }
+}
+
+export function rgbToHex({ r, g, b }: Omit<ReadOnlyColor4, 'a'>): string {
+  return new Color3(r, g, b).toHexString()
 }
 
 export function convertSection(index: number, colorString: string) {

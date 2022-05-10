@@ -101,23 +101,19 @@ function ensureSingleString(value: string | string[] | null): string | null {
 }
 
 // Comms
-export const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
+const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
 export const COMMS =
-  !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1-local' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2-p2p' // by default
+  !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
 
 export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
 export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('FETCH_CONTENT_SERVICE'))
 export const COMMS_SERVICE = ensureSingleString(qs.get('COMMS_SERVICE'))
-export const RESIZE_SERVICE = ensureSingleString(qs.get('RESIZE_SERVICE'))
 export const HOTSCENES_SERVICE = ensureSingleString(qs.get('HOTSCENES_SERVICE'))
 export const POI_SERVICE = ensureSingleString(qs.get('POI_SERVICE'))
-export const REALM = ensureSingleString(qs.get('realm'))
 export const PREFERED_ISLAND = ensureSingleString(qs.get('island'))
 
 export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
-
-export const AUTO_CHANGE_REALM = location.search.includes('AUTO_CHANGE_REALM')
 
 export const LOS = ensureSingleString(qs.get('LOS'))
 
@@ -214,7 +210,6 @@ export function getTLD() {
 export const WITH_FIXED_COLLECTIONS =
   (qs.get('WITH_COLLECTIONS') && ensureSingleString(qs.get('WITH_COLLECTIONS'))) || ''
 export const ENABLE_EMPTY_SCENES = !location.search.includes('DISABLE_EMPTY_SCENES')
-export const ENABLE_TEST_SCENES = location.search.includes('ENABLE_TEST_SCENES')
 
 export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
   const state = store.getState()
@@ -242,8 +237,7 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   return {
     explorerConfiguration: `${metaConfigBaseUrl}?t=${new Date().getTime()}`,
     explorerFeatureFlags: `${metaFeatureFlagsBaseUrl}?t=${new Date().getTime()}`,
-    questsUrl,
-    fallbackResizeServiceUrl: `${PIN_CATALYST ?? 'https://peer.decentraland.' + tld}/lambdas/images`
+    questsUrl
   }
 }
 
@@ -281,13 +275,13 @@ export namespace ethereumConfigurations {
 
 export const isRunningTest: boolean = (global as any)['isRunningTests'] === true
 
-export const genericAvatarSnapshots: Record<string, string> = {
-  body: '/images/image_not_found.png',
-  face256: '/images/avatar_snapshot_default256.png'
-}
+export const genericAvatarSnapshots = {
+  body: 'QmSav1o6QK37Jj1yhbmhYk9MJc6c2H5DWbWzPVsg9JLYfF',
+  face256: 'QmSqZ2npVD4RLdqe17FzGCFcN29RfvmqmEd2FcQUctxaKk'
+} as const
 
 export function getCatalystNodesDefaultURL() {
-  return `https://peer-lb.decentraland.${getTLD()}/lambdas/contracts/servers`
+  return `https://peer.decentraland.${getTLD()}/lambdas/contracts/servers`
 }
 
 function addHttpsIfNoProtocolIsSet(domain: string): string

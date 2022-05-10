@@ -1,21 +1,35 @@
-import { AvatarShape, engine, Entity, Observable, Transform, EventManager } from '@dcl/legacy-ecs'
 import {
+  AvatarShape,
+  engine,
+  Entity,
+  Observable,
+  Transform,
+  EventManager
+  // BoxShape,
+  // IEntity,
+  // Material,
+  // Color4
+} from '@dcl/legacy-ecs'
+import type {
   AvatarMessage,
-  AvatarMessageType,
   Pose,
   ReceiveUserDataMessage,
   ReceiveUserExpressionMessage,
-  ReceiveUserPoseMessage,
   ReceiveUserTalkingMessage,
   ReceiveUserVisibleMessage,
   UserInformation,
   UserRemovedMessage,
   UUID
 } from 'shared/comms/interface/types'
-import { ProfileForRenderer } from 'shared/profiles/types'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 const avatarMap = new Map<string, AvatarEntity>()
+// const box = new BoxShape()
+// const red = new Material()
+// red.albedoColor = new Color4(1.0, 0.0, 0.0, 1.0)
+// const green = new Material()
+// green.albedoColor = new Color4(0.0, 1.0, 0.0, 1.0)
 
 export class AvatarEntity extends Entity {
   visible = true
@@ -23,9 +37,12 @@ export class AvatarEntity extends Entity {
   transform: Transform
   avatarShape!: AvatarShape
 
-  constructor(uuid?: string, avatarShape = new AvatarShape()) {
-    super(uuid)
+  // sub: IEntity
+
+  constructor(public readonly userId: string, avatarShape = new AvatarShape()) {
+    super()
     this.avatarShape = avatarShape
+    this.avatarShape.useDummyModel = true
 
     this.addComponentOrReplace(this.avatarShape)
     this.eventManager = new EventManager()
@@ -33,15 +50,24 @@ export class AvatarEntity extends Entity {
 
     // we need this component to filter the interpolator system
     this.transform = this.getComponentOrCreate(Transform)
+
+    // this.sub = new Entity()
+    // engine.addEntity(this.sub)
+    // this.sub.addComponent(box)
+    // this.sub.addComponent(this.transform)
+    // this.sub.addComponentOrReplace(red)
   }
 
-  loadProfile(profile: ProfileForRenderer) {
-    if (profile) {
+  loadProfile(profile: Pick<NewProfileForRenderer, 'avatar' | 'name'>) {
+    if (profile && profile.name && profile.avatar.bodyShape) {
+      // this.sub.addComponentOrReplace(green)
       const { avatar } = profile
 
       const shape = this.avatarShape
-      shape.id = profile.userId
+      shape.id = this.userId
       shape.name = profile.name
+
+      this.avatarShape.useDummyModel = false
 
       shape.bodyShape = avatar.bodyShape
       shape.wearables = avatar.wearables
@@ -52,12 +78,17 @@ export class AvatarEntity extends Entity {
         shape.expressionTriggerId = 'Idle'
         shape.expressionTriggerTimestamp = 0
       }
+    } else {
+      this.avatarShape.useDummyModel = true
+      // this.sub.addComponentOrReplace(red)
     }
-    this.setVisible(true)
+    this.updateVisibility()
   }
 
   setVisible(visible: boolean): void {
-    this.visible = visible
+    if (this.visible !== visible) {
+      this.visible = visible
+    }
     this.updateVisibility()
   }
 
@@ -66,10 +97,9 @@ export class AvatarEntity extends Entity {
   }
 
   setUserData(userData: Partial<UserInformation>): void {
-    if (userData.pose) {
-      this.setPose(userData.pose)
+    if (userData.position) {
+      this.setPose(userData.position)
     }
-
     if (userData.expression) {
       this.setExpression(userData.expression.expressionType, userData.expression.expressionTimestamp)
     }
@@ -102,8 +132,8 @@ export class AvatarEntity extends Entity {
   public remove() {
     if (this.isAddedToEngine()) {
       engine.removeEntity(this)
-      avatarMap.delete(this.uuid)
     }
+    // if (this.sub.isAddedToEngine()) engine.removeEntity(this.sub)
   }
 
   private updateVisibility() {
@@ -111,6 +141,7 @@ export class AvatarEntity extends Entity {
       this.remove()
     } else if (this.visible && !this.isAddedToEngine()) {
       engine.addEntity(this)
+      // engine.addEntity(this.sub)
     }
   }
 }
@@ -118,77 +149,65 @@ export class AvatarEntity extends Entity {
 /**
  * For every UUID, ensures synchronously that an avatar exists in the local state.
  * Returns the AvatarEntity instance
- * @param uuid
+ * @param userId
  */
-function ensureAvatar(uuid: UUID): AvatarEntity {
-  let avatar = avatarMap.get(uuid)
+function ensureAvatar(userId: UUID): AvatarEntity {
+  let avatar = avatarMap.get(userId)
 
   if (avatar) {
     return avatar
   }
 
-  avatar = new AvatarEntity(uuid)
-  avatarMap.set(uuid, avatar)
+  avatar = new AvatarEntity(userId)
+  avatarMap.set(userId, avatar)
 
   return avatar
 }
 
-function handleUserData(message: ReceiveUserDataMessage): void {
-  const avatar = ensureAvatar(message.uuid)
-
-  const userData = message.data
-
-  avatar.loadProfile(message.profile)
-  avatar.setUserData(userData)
+function handleUserData({ userId, data, profile }: ReceiveUserDataMessage): void {
+  const avatar = ensureAvatar(userId)
+  avatar.setUserData(data)
+  avatar.loadProfile(profile)
+  avatar.setVisible(data.visible ?? true)
 }
 
-function handleUserPose({ uuid, pose }: ReceiveUserPoseMessage): void {
-  const avatar = ensureAvatar(uuid)
-
-  avatar.setPose(pose)
-}
-
-function handleUserExpression({ uuid, expressionId, timestamp }: ReceiveUserExpressionMessage): void {
-  const avatar = ensureAvatar(uuid)
-
-  avatar.setExpression(expressionId, timestamp)
+function handleUserExpression({ userId, expressionId, timestamp }: ReceiveUserExpressionMessage): void {
+  ensureAvatar(userId).setExpression(expressionId, timestamp)
 }
 
 /**
  * In some cases, like minimizing the window, the user will be invisible to the rest of the world.
  * This function handles those visible changes.
  */
-function handleUserVisible({ uuid, visible }: ReceiveUserVisibleMessage): void {
-  const avatar = ensureAvatar(uuid)
-
-  avatar.setVisible(visible)
+function handleUserVisible({ userId, visible }: ReceiveUserVisibleMessage): void {
+  ensureAvatar(userId).setVisible(visible)
 }
 
-function handleUserTalkingUpdate({ uuid, talking }: ReceiveUserTalkingMessage): void {
-  const avatar = ensureAvatar(uuid)
-
-  avatar.setTalking(talking)
+function handleUserTalkingUpdate({ userId, talking }: ReceiveUserTalkingMessage): void {
+  ensureAvatar(userId).setTalking(talking)
 }
 
-function handleUserRemoved({ uuid }: UserRemovedMessage): void {
-  const avatar = avatarMap.get(uuid)
+function handleUserRemoved({ userId }: UserRemovedMessage): void {
+  const avatar = avatarMap.get(userId)
   if (avatar) {
+    // avatar.transform.translate(new Vector3(0, 100, 0))
+    // setTimeout(() => {
     avatar.remove()
+    // }, 2000)
+    avatarMap.delete(userId)
   }
 }
 
 avatarMessageObservable.add((evt) => {
-  if (evt.type === AvatarMessageType.USER_DATA) {
+  if (evt.type === 'USER_DATA') {
     handleUserData(evt)
-  } else if (evt.type === AvatarMessageType.USER_POSE) {
-    handleUserPose(evt)
-  } else if (evt.type === AvatarMessageType.USER_VISIBLE) {
+  } else if (evt.type === 'USER_VISIBLE') {
     handleUserVisible(evt)
-  } else if (evt.type === AvatarMessageType.USER_EXPRESSION) {
+  } else if (evt.type === 'USER_EXPRESSION') {
     handleUserExpression(evt)
-  } else if (evt.type === AvatarMessageType.USER_REMOVED) {
+  } else if (evt.type === 'USER_REMOVED') {
     handleUserRemoved(evt)
-  } else if (evt.type === AvatarMessageType.USER_TALKING) {
+  } else if (evt.type === 'USER_TALKING') {
     handleUserTalkingUpdate(evt as ReceiveUserTalkingMessage)
   }
 })

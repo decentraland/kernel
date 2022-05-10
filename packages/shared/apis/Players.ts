@@ -4,10 +4,8 @@ import { ParcelIdentity } from './ParcelIdentity'
 
 import { store } from 'shared/store/isolatedStore'
 
-import { UserData } from 'shared/types'
-import { hasConnectedWeb3 as hasConnectedWeb3Selector } from 'shared/profiles/selectors'
-import { Avatar } from 'shared/profiles/types'
-import { getProfileIfExist } from 'shared/profiles/ProfileAsPromise'
+import { AvatarForUserData, UserData } from 'shared/types'
+import { getProfileFromStore } from 'shared/profiles/selectors'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
 import { getVisibleAvatarsUserId } from 'shared/sceneEvents/visibleAvatars'
@@ -15,6 +13,8 @@ import { getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
+import { AvatarInfo } from '@dcl/schemas'
+import { rgbToHex } from 'shared/profiles/transformations/convertToRGBObject'
 
 export interface IPlayers {
   /**
@@ -25,14 +25,19 @@ export interface IPlayers {
   getPlayersInScene(): Promise<{ userId: string }[]>
 }
 
-function backwardsCompatibilityAvatar(avatar: Avatar) {
+export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
   return {
     ...avatar,
+    bodyShape: avatar.bodyShape,
+    wearables: avatar.wearables,
     snapshots: {
       ...avatar.snapshots,
       face: avatar.snapshots.face256,
       face128: avatar.snapshots.face256
-    }
+    } as any,
+    eyeColor: rgbToHex(avatar.eyes.color),
+    hairColor: rgbToHex(avatar.hair.color),
+    skinColor: rgbToHex(avatar.hair.color)
   }
 }
 
@@ -41,21 +46,19 @@ export class Players extends ExposableAPI implements IPlayers {
   @exposeMethod
   async getPlayerData(opt: { userId: string }): Promise<UserData | null> {
     const userId = opt.userId
-    const profile = getProfileIfExist(userId)
+    const profile = getProfileFromStore(store.getState(), userId)
 
-    if (!profile) {
+    if (!profile?.data) {
       return null
     }
 
-    const hasConnectedWeb3 = hasConnectedWeb3Selector(store.getState(), userId)
-
     return {
-      displayName: calculateDisplayName(userId, profile),
-      publicKey: hasConnectedWeb3 ? profile.ethAddress : null,
-      hasConnectedWeb3: hasConnectedWeb3,
+      displayName: calculateDisplayName(profile.data),
+      publicKey: profile.data.hasConnectedWeb3 ? profile.data.userId : null,
+      hasConnectedWeb3: !!profile.data.hasConnectedWeb3,
       userId: userId,
-      version: profile.version,
-      avatar: backwardsCompatibilityAvatar(profile.avatar)
+      version: profile.data.version,
+      avatar: sdkCompatibilityAvatar(profile.data.avatar)
     }
   }
 

@@ -11,7 +11,7 @@ import {
 import { RPCSendableMessage } from 'shared/types'
 import { getUserAccount, requestManager } from 'shared/ethereum/provider'
 import { RestrictedExposableAPI } from './RestrictedExposableAPI'
-import { PermissionItem } from './Permissions'
+import { PermissionItem } from './PermissionItems'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ParcelIdentity } from './ParcelIdentity'
 

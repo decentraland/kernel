@@ -1,12 +1,18 @@
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
 import { sdk } from '@dcl/schemas'
-import defaultLogger, { createLogger } from 'shared/logger'
+import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
-import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
+import {
+  DEBUG_WS_MESSAGES,
+  ETHEREUM_NETWORK,
+  getAssetBundlesBaseUrl,
+  HAS_INITIAL_POSITION_MARK,
+  OPEN_AVATAR_EDITOR
+} from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
 import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
@@ -15,48 +21,29 @@ import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { realmInitialized } from 'shared/dao'
-import { EnsureProfile } from 'shared/profiles/ProfileAsPromise'
-import { ensureMetaConfigurationInitialized, waitForMessageOfTheDay } from 'shared/meta'
+import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { FeatureFlags, WorldConfig } from 'shared/meta/types'
 import { getFeatureFlags, getWorldConfig, isFeatureEnabled } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
-import { startRealmsReportToRenderer } from 'unity-interface/realmsForRenderer'
-import { isWaitingTutorial } from 'shared/loading/selectors'
 import { ensureUnityInterface } from 'shared/renderer'
 import { globalObservable } from 'shared/observables'
 import { initShared } from 'shared'
 import { setResourcesURL } from 'shared/location'
 import { WebSocketProvider } from 'eth-connect'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
-import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { onLoginCompleted } from 'shared/session/sagas'
 import { authenticate, initSession } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
 import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
-import { getSelectedNetwork } from 'shared/dao/selectors'
+import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { clientDebug } from 'unity-interface/ClientDebug'
+import { signalEngineReady } from 'shared/renderer/actions'
+import { IUnityInterface } from 'unity-interface/IUnityInterface'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 
 const logger = createLogger('kernel: ')
-
-function configureTaskbarDependentHUD(i: IUnityInterface, voiceChatEnabled: boolean, builderInWorldEnabled: boolean) {
-  // The elements below, require the taskbar to be active before being activated.
-
-  i.ConfigureHUDElement(
-    HUDElementID.TASKBAR,
-    { active: true, visible: true },
-    {
-      enableVoiceChat: voiceChatEnabled,
-      enableQuestPanel: isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
-    }
-  )
-  i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: true })
-
-  i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
-  i.ConfigureHUDElement(HUDElementID.HELP_AND_SUPPORT_HUD, { active: true, visible: false })
-  i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: builderInWorldEnabled, visible: false })
-}
 
 async function resolveBaseUrl(urn: string): Promise<string> {
   if (urn.startsWith('urn:')) {
@@ -116,8 +103,6 @@ globalThis.DecentralandKernel = {
 
     // initInternal must be called asynchronously, _after_ returning
     async function initInternal() {
-      runCompatibilityChecks()
-
       // Initializes the Session Saga
       store.dispatch(initSession())
 
@@ -165,16 +150,6 @@ globalThis.DecentralandKernel = {
   }
 }
 
-function runCompatibilityChecks() {
-  const qs = new URLSearchParams(document.location.search)
-
-  if (qs.has('NO_ASSET_BUNDLES')) {
-    throw new Error(
-      'NO_ASSET_BUNDLES option was deprecated, it is now a FeatureFlag, use DISABLE_ASSET_BUNDLES or ENABLE_ASSET_BUNDLES instead'
-    )
-  }
-}
-
 async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   const i = (await ensureUnityInterface()).unityInterface
 
@@ -191,7 +166,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   const worldConfig: WorldConfig | undefined = getWorldConfig(store.getState())
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
-  const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
 
   // killswitch, disable asset bundles
   if (!isFeatureEnabled(store.getState(), FeatureFlags.ASSET_BUNDLES, false)) {
@@ -215,51 +189,54 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.TELEPORT_DIALOG, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.QUESTS_PANEL, { active: questEnabled, visible: false })
   i.ConfigureHUDElement(HUDElementID.QUESTS_TRACKER, { active: questEnabled, visible: true })
+  i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
 
-  onLoginCompleted()
-    .then(() => {
-      const identity = getCurrentIdentity(store.getState())!
-
-      const VOICE_CHAT_ENABLED = true
-      const BUILDER_IN_WORLD_ENABLED =
-        identity.hasConnectedWeb3 && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
-
-      const configForRenderer = kernelConfigForRenderer()
-      configForRenderer.comms.voiceChatEnabled = VOICE_CHAT_ENABLED
-      configForRenderer.network = getSelectedNetwork(store.getState())
-
-      i.SetKernelConfiguration(configForRenderer)
-
-      configureTaskbarDependentHUD(i, VOICE_CHAT_ENABLED, BUILDER_IN_WORLD_ENABLED)
-
-      i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
-      i.ConfigureHUDElement(HUDElementID.USERS_AROUND_LIST_HUD, { active: VOICE_CHAT_ENABLED, visible: false })
-      i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: identity.hasConnectedWeb3, visible: false })
-
-      const tutorialConfig = {
-        fromDeepLink: HAS_INITIAL_POSITION_MARK,
-        enableNewTutorialCamera: enableNewTutorialCamera
+  // The elements below, require the taskbar to be active before being activated.
+  {
+    i.ConfigureHUDElement(
+      HUDElementID.TASKBAR,
+      { active: true, visible: true },
+      {
+        enableVoiceChat: true,
+        enableQuestPanel: isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
       }
+    )
+    i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: true })
+    i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
+    i.ConfigureHUDElement(HUDElementID.HELP_AND_SUPPORT_HUD, { active: true, visible: false })
+  }
 
-      EnsureProfile(identity.address)
-        .then((profile) => {
-          i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
-          i.ConfigureHUDElement(HUDElementID.GRAPHIC_CARD_WARNING, { active: true, visible: true })
+  const configForRenderer = kernelConfigForRenderer()
+  configForRenderer.comms.voiceChatEnabled = true
+  configForRenderer.network = getSelectedNetwork(store.getState())
 
-          // NOTE: here we make sure that if signup (tutorial) just finished
-          // the player is set to the correct spawn position plus we make sure that the proper scene is loaded
-          if (isWaitingTutorial(store.getState())) {
-            teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
-          }
-        })
-        .catch((e) => logger.error(`error getting profile ${e}`))
-    })
-    .catch((e) => {
-      logger.error('error on configuring taskbar & friends hud / tutorial. Trying to default to simple taskbar', e)
-      configureTaskbarDependentHUD(i, false, false)
-    })
+  i.SetKernelConfiguration(configForRenderer)
+  i.ConfigureHUDElement(HUDElementID.USERS_AROUND_LIST_HUD, { active: true, visible: false })
+  i.ConfigureHUDElement(HUDElementID.GRAPHIC_CARD_WARNING, { active: true, visible: true })
 
-  startRealmsReportToRenderer()
+  await onLoginCompleted()
+
+  const identity = getCurrentIdentity(store.getState())!
+  const profile = getCurrentUserProfile(store.getState())!
+
+  if (!profile) {
+    ReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
+    return
+  }
+
+  const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
+  const tutorialConfig = {
+    fromDeepLink: HAS_INITIAL_POSITION_MARK,
+    enableNewTutorialCamera: enableNewTutorialCamera
+  }
+
+  i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
+
+  const isGuest = !identity.hasConnectedWeb3
+  const BUILDER_IN_WORLD_ENABLED = !isGuest && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
+
+  i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
+  i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: !isGuest, visible: false })
 
   await realmInitialized()
 
@@ -276,52 +253,47 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   foregroundChangeObservable.add(reportForeground)
   reportForeground()
 
-  waitForMessageOfTheDay()
-    .then((messageOfTheDay) => {
-      i.ConfigureHUDElement(
-        HUDElementID.MESSAGE_OF_THE_DAY,
-        { active: !!messageOfTheDay, visible: false },
-        messageOfTheDay
-      )
-    })
-    .catch(() => {
-      /*noop*/
-    })
-
-  await startUnitySceneWorkers()
+  const state = store.getState()
+  await startUnitySceneWorkers({
+    contentServer: getFetchContentServer(state),
+    catalystServer: getCatalystServer(state),
+    contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
+    worldConfig: getWorldConfig(state)
+  })
 
   teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
 
   if (options.previewMode) {
     i.SetDisableAssetBundles()
-    await startPreview()
+    await startPreview(i)
   }
+
+  setTimeout(() => store.dispatch(signalEngineReady()), 0)
 
   return true
 }
 
-export async function startPreview() {
-  void getPreviewSceneId()
-    .then(async (sceneData) => {
+export async function startPreview(unityInterface: IUnityInterface) {
+  getPreviewSceneId()
+    .then((sceneData) => {
       if (sceneData.sceneId) {
-        const { unityInterface } = await ensureUnityInterface()
         unityInterface.SetKernelConfiguration({
           debugConfig: {
             sceneDebugPanelTargetSceneId: sceneData.sceneId,
             sceneLimitsWarningSceneId: sceneData.sceneId
           }
         })
-        clientDebug.ToggleSceneBoundingBoxes(sceneData.sceneId, false).catch((e) => defaultLogger.error(e))
+        clientDebug.ToggleSceneBoundingBoxes(sceneData.sceneId, false).catch((e) => logger.error(e))
         unityInterface.SendMessageToUnity('Main', 'TogglePreviewMenu', JSON.stringify({ enabled: true }))
       }
     })
     .catch((_err) => {
-      defaultLogger.info('Warning: cannot get preview scene id')
+      logger.info('Warning: cannot get preview scene id')
     })
 
   function handleServerMessage(message: sdk.Messages) {
     if (DEBUG_WS_MESSAGES) {
-      defaultLogger.info('Message received: ', message)
+      logger.info('Message received: ', message)
     }
     if (message.type === sdk.UPDATE || message.type === sdk.SCENE_UPDATE) {
       void loadPreviewScene(message)
@@ -332,7 +304,7 @@ export async function startPreview() {
 
   ws.addEventListener('message', (msg) => {
     if (msg.data.startsWith('{')) {
-      defaultLogger.log('Update message from CLI', msg.data)
+      logger.log('Update message from CLI', msg.data)
       const message: sdk.Messages = JSON.parse(msg.data)
       handleServerMessage(message)
     }

@@ -17,13 +17,12 @@ import {
   BuilderConfiguration,
   RealmsInfoForRenderer,
   ContentMapping,
-  Profile,
   TutorialInitializationMessage,
   WorldPosition,
   HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { createUnityLogger, defaultLogger, ILogger } from 'shared/logger'
+import { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
@@ -32,12 +31,13 @@ import { WearableV2 } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { FeatureFlag } from 'shared/meta/types'
-import { ProfileForRenderer } from 'shared/profiles/types'
 import { getProvider } from 'shared/session/index'
 import { uuid } from 'atomicHelpers/math'
 import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
+import { Avatar } from '@dcl/schemas'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -62,8 +62,10 @@ function resizeCanvas(targetHeight: number) {
   }
 }
 
+const unityLogger: ILogger = createUnityLogger()
+
 export class UnityInterface implements IUnityInterface {
-  public logger: ILogger = createUnityLogger()
+  public logger = unityLogger
   public gameInstance!: UnityGame
   public Module: any
   public currentHeight: number = -1
@@ -111,7 +113,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'SetDebug')
   }
 
-  public LoadProfile(profile: ProfileForRenderer) {
+  public LoadProfile(profile: NewProfileForRenderer) {
     this.SendMessageToUnity('Main', 'LoadProfile', JSON.stringify(profile))
   }
 
@@ -246,7 +248,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'BuilderReady')
   }
 
-  public AddUserProfileToCatalog(peerProfile: ProfileForRenderer) {
+  public AddUserProfileToCatalog(peerProfile: NewProfileForRenderer) {
     this.SendMessageToUnity('Main', 'AddUserProfileToCatalog', JSON.stringify(peerProfile))
   }
 
@@ -321,7 +323,7 @@ export class UnityInterface implements IUnityInterface {
     try {
       message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
     } catch (err: any) {
-      defaultLogger.error(err)
+      unityLogger.error(err)
     }
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
@@ -475,14 +477,15 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddAssets', JSON.stringify(assets))
   }
 
-  public SetENSOwnerQueryResult(searchInput: string, profiles: Profile[] | undefined) {
+  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined) {
     if (!profiles) {
       this.SendMessageToUnity('Bridges', 'SetENSOwnerQueryResult', JSON.stringify({ searchInput, success: false }))
       return
     }
-    const profilesForRenderer: ProfileForRenderer[] = []
+    // TODO: why do we send the whole profile while asking for the ENS???
+    const profilesForRenderer: NewProfileForRenderer[] = []
     for (const profile of profiles) {
-      profilesForRenderer.push(profileToRendererFormat(profile))
+      profilesForRenderer.push(profileToRendererFormat(profile, { address: profile.userId }))
     }
     this.SendMessageToUnity(
       'Bridges',
@@ -607,11 +610,17 @@ export class UnityInterface implements IUnityInterface {
 
     const originalSetThrew = this.Module['setThrew']
     const unityModule = this.Module
-    let isError = false
 
     function overrideSetThrew() {
       unityModule['setThrew'] = function () {
-        isError = true
+        trackEvent('renderer_set_threw', {
+          method,
+          object,
+          payload,
+          stack: new Error().stack || '?'
+        })
+        const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}. Payload: ${payload}.`
+        unityLogger.error(error)
         // eslint-disable-next-line prefer-rest-params
         return originalSetThrew.apply(this, arguments)
       }
@@ -626,11 +635,6 @@ export class UnityInterface implements IUnityInterface {
       this.gameInstance.SendMessage(object, method, payload)
     } finally {
       restoreSetThrew()
-    }
-
-    if (isError) {
-      const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}. Payload: ${payload}.`
-      defaultLogger.error(error)
     }
   }
 }

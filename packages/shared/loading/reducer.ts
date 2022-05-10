@@ -5,7 +5,6 @@ import {
   ExecutionLifecycleEvent,
   EXPERIENCE_STARTED,
   NOT_STARTED,
-  SET_LOADING_WAIT_TUTORIAL,
   TELEPORT_TRIGGERED,
   RENDERING_ACTIVATED,
   RENDERING_DEACTIVATED,
@@ -21,7 +20,6 @@ export type LoadingState = {
   renderingActivated: boolean
   isForeground: boolean
   initialLoad: boolean
-  waitingTutorial?: boolean
   error: string | null
   tldError: {
     tld: string
@@ -78,9 +76,6 @@ export function loadingReducer(state?: LoadingState, action?: AnyAction): Loadin
   }
   if (action.type === UPDATE_STATUS_MESSAGE) {
     return { ...state, message: action.payload.message }
-  }
-  if (action.type === SET_LOADING_WAIT_TUTORIAL) {
-    return { ...state, waitingTutorial: action.payload.waiting }
   }
   if (action.type === FATAL_ERROR) {
     return { ...state, error: action.payload.type }

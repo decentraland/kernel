@@ -1,38 +1,72 @@
 import { analizeColorPart, stripAlpha } from './analizeColorPart'
 import { isValidBodyShape } from './isValidBodyShape'
-import { Profile, Snapshots } from '../types'
 import { WearableId } from '@dcl/legacy-ecs'
+import { Avatar, AvatarInfo, Profile } from '@dcl/schemas'
+import { AvatarForUserData } from 'shared/types'
+import { validateAvatar } from '../schemaValidation'
+import { trackEvent } from 'shared/analytics'
 
-export function ensureServerFormat(profile: Profile): ServerFormatProfile {
-  const { avatar } = profile
-  const eyes = stripAlpha(analizeColorPart(avatar, 'eyeColor', 'eyes'))
-  const hair = stripAlpha(analizeColorPart(avatar, 'hairColor', 'hair'))
-  const skin = stripAlpha(analizeColorPart(avatar, 'skin', 'skinColor'))
+type OldAvatar = Omit<Avatar, 'avatar'> & {
+  avatar: AvatarForUserData
+}
+
+export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAvatar>): Avatar {
+  const avatarInfo: AvatarInfo = {} as any
+
+  // These mappings from legacy id are here just in case they still have the legacy id in local storage
+  avatarInfo.bodyShape = mapLegacyIdToUrn(profile.avatar.bodyShape)
+  avatarInfo.wearables = profile.avatar.wearables.map(mapLegacyIdToUrn)
+  avatarInfo.snapshots = profile.avatar.snapshots
+
+  if ('eyeColor' in profile.avatar) {
+    const eyes = stripAlpha(analizeColorPart(profile.avatar, 'eyeColor', 'eyes'))
+    const hair = stripAlpha(analizeColorPart(profile.avatar, 'hairColor', 'hair'))
+    const skin = stripAlpha(analizeColorPart(profile.avatar, 'skinColor', 'skin'))
+    avatarInfo.eyes = { color: eyes }
+    avatarInfo.hair = { color: hair }
+    avatarInfo.skin = { color: skin }
+  } else {
+    avatarInfo.eyes = profile.avatar.eyes
+    avatarInfo.hair = profile.avatar.hair
+    avatarInfo.skin = profile.avatar.skin
+  }
+
   const invalidWearables =
-    !avatar.wearables ||
-    !Array.isArray(avatar.wearables) ||
-    !avatar.wearables.reduce((prev: boolean, next: any) => prev && typeof next === 'string', true)
+    !avatarInfo.wearables ||
+    !Array.isArray(avatarInfo.wearables) ||
+    !avatarInfo.wearables.reduce((prev: boolean, next: any) => prev && typeof next === 'string', true)
+
   if (invalidWearables) {
-    throw new Error('Invalid Wearables array! Received: ' + JSON.stringify(avatar))
+    throw new Error('Invalid Wearables array! Received: ' + JSON.stringify(avatarInfo))
   }
-  if (!avatar.snapshots || !avatar.snapshots.face256 || !avatar.snapshots.body) {
-    throw new Error('Invalid snapshot data:' + JSON.stringify(avatar.snapshots))
+  const snapshots = avatarInfo.snapshots as any
+  if ('face' in snapshots && !snapshots.face256) {
+    snapshots.face256 = snapshots.face!
+    delete snapshots['face']
   }
-  if (!avatar.bodyShape || !isValidBodyShape(avatar.bodyShape)) {
-    throw new Error('Invalid BodyShape! Received: ' + JSON.stringify(avatar))
+  if (
+    !avatarInfo.snapshots ||
+    typeof avatarInfo.snapshots.face256 !== 'string' ||
+    typeof avatarInfo.snapshots.body !== 'string'
+  ) {
+    throw new Error('Invalid snapshot data:' + JSON.stringify(avatarInfo.snapshots))
+  }
+  if (!avatarInfo.bodyShape || !isValidBodyShape(avatarInfo.bodyShape)) {
+    throw new Error('Invalid BodyShape! Received: ' + JSON.stringify(avatarInfo))
   }
 
-  return {
+  const ret: Avatar = {
     ...profile,
-    avatar: {
-      bodyShape: mapLegacyIdToUrn(avatar.bodyShape), // These mappings from legacy id are here just in case they still have the legacy id in local storage
-      snapshots: avatar.snapshots,
-      eyes: { color: eyes },
-      hair: { color: hair },
-      skin: { color: skin },
-      wearables: avatar.wearables.map(mapLegacyIdToUrn)
-    }
+    name: profile.name || (profile as any).unclaimedName,
+    avatar: avatarInfo
   }
+
+  if (!validateAvatar(ret)) {
+    trackEvent('invalid_schema', { schema: 'avatar', payload: ret })
+    debugger
+  }
+
+  return ret
 }
 
 function mapLegacyIdToUrn(wearableId: WearableId): WearableId {
@@ -48,27 +82,8 @@ function mapLegacyIdToUrn(wearableId: WearableId): WearableId {
   }
 }
 
-export function buildServerMetadata(profile: Profile) {
-  const newProfile = ensureServerFormat(profile)
+export function buildServerMetadata(profile: Avatar): Profile {
+  const newProfile = ensureAvatarCompatibilityFormat(profile)
   const metadata = { avatars: [newProfile] }
   return metadata
-}
-
-export type ServerFormatProfile = Omit<Profile, 'avatar'> & {
-  avatar: ServerProfileAvatar
-}
-
-type Color3 = {
-  r: number
-  g: number
-  b: number
-}
-
-type ServerProfileAvatar = {
-  bodyShape: WearableId
-  eyes: { color: Color3 }
-  hair: { color: Color3 }
-  skin: { color: Color3 }
-  wearables: WearableId[]
-  snapshots: Snapshots
 }

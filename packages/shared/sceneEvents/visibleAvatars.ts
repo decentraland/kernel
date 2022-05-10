@@ -1,5 +1,4 @@
 import { AvatarMessageType } from '../comms/interface/types'
-import { getUser } from '../comms/peers'
 import { avatarMessageObservable } from '../comms/peers'
 import { allScenesEvent } from '../world/parcelSceneManager'
 
@@ -10,36 +9,31 @@ export function getVisibleAvatarsUserId(): string[] {
   return Array.from(visibleAvatars.values())
 }
 
-const visibleAvatars: Map<string, string> = new Map<string, string>()
+const visibleAvatars: Set<string> = new Set<string>()
 
 // Tracks avatar state from comms side.
 // Listen to which avatars are visible or removed to keep track of connected and visible players.
-
 avatarMessageObservable.add((evt) => {
   if (evt.type === AvatarMessageType.USER_VISIBLE) {
-    const visible = visibleAvatars.has(evt.uuid)
-    if (visible !== evt.visible) {
-      const userId = getUser(evt.uuid)?.userId
+    const visible = visibleAvatars.has(evt.userId)
 
-      if (!userId) return
+    if (visible !== evt.visible) {
       allScenesEvent({
         eventType: evt.visible ? avatarConnected : avatarDisconnected,
-        payload: { userId }
+        payload: { userId: evt.userId }
       })
 
       if (!evt.visible) {
-        visibleAvatars.delete(evt.uuid)
+        visibleAvatars.delete(evt.userId)
         return
       }
-      visibleAvatars.set(evt.uuid, userId)
+      visibleAvatars.add(evt.userId)
     }
   } else if (evt.type === AvatarMessageType.USER_REMOVED) {
-    const userId = visibleAvatars.get(evt.uuid)
-
-    if (visibleAvatars.delete(evt.uuid) && userId) {
+    if (visibleAvatars.delete(evt.userId)) {
       allScenesEvent({
         eventType: avatarDisconnected,
-        payload: { userId }
+        payload: { userId: evt.userId }
       })
     }
   }
