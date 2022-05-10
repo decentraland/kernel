@@ -51,8 +51,8 @@ export function isPeerHealthy(peerStatus: Record<string, HealthStatus>) {
   )
 }
 
-export function lambdasStatusUrl(domain: string) {
-  return `${domain}/lambdas/status`
+export function lambdasHealthUrl(domain: string) {
+  return `${domain}/lambdas/health`
 }
 
 export function commsStatusUrl(domain: string, includeUsersParcels: boolean = false) {
@@ -77,7 +77,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promis
     nodes.map(async (node) => {
       const [commsResponse, lambdasResponse] = await Promise.all([
         ping(commsStatusUrl(node.domain, true)),
-        ping(lambdasStatusUrl(node.domain))
+        ping(lambdasHealthUrl(node.domain))
       ])
       const result = commsResponse.result
 
