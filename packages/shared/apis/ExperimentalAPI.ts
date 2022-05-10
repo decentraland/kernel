@@ -1,6 +1,7 @@
 import { PREVIEW } from 'config'
 import { registerAPI, exposeMethod, APIOptions } from 'decentraland-rpc/lib/host'
 import defaultLogger from 'shared/logger'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExposableAPI } from './ExposableAPI'
 import { ParcelIdentity } from './ParcelIdentity'
 
@@ -15,6 +16,7 @@ type ExperimentalMetrics = {
 export class ExperimentalAPI extends ExposableAPI {
   sceneId = this.options.getAPIInstance(ParcelIdentity).cid
   metrics: ExperimentalMetrics
+  unityInterface = getUnityInstance()
 
   constructor(options: APIOptions) {
     super(options)
@@ -55,6 +57,6 @@ export class ExperimentalAPI extends ExposableAPI {
     this.metrics.byteAmount += data.byteLength
     this.metrics.chunksAmount += 1
 
-    // TODO: send the data to the renderer!
+    this.unityInterface.SendBinaryMessage(this.sceneId, data, data.length)
   }
 }
