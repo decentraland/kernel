@@ -8,7 +8,7 @@ import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization, waitForNetworkSelected } from '../meta/sagas'
 import { Candidate, Realm, ServerConnectionStatus } from './types'
-import { fetchCatalystRealms, fetchCatalystStatuses, commsStatusUrl, changeRealmObject } from '.'
+import { fetchCatalystRealms, fetchCatalystStatuses, commsStatusUrl, changeRealmObject, lambdasStatusUrl } from '.'
 import { ping } from './utils/ping'
 import {
   getAddedServers,
@@ -224,31 +224,6 @@ export async function checkValidRealm(realm: Realm) {
     return pingResult.status === ServerConnectionStatus.OK
   }
   return false
-}
-
-export async function fetchPeerHealthStatus(node: CatalystNode) {
-  const abortController = new AbortController()
-
-  const signal = abortController.signal
-  try {
-    setTimeout(() => {
-      abortController.abort()
-    }, 5000)
-
-    function peerHealthStatusUrl(domain: string) {
-      return `${domain}/lambdas/health`
-    }
-
-    const response = await fetch(peerHealthStatusUrl(node.domain), { signal })
-
-    if (!response.ok) return {}
-
-    const json = await response.json()
-
-    return json
-  } catch {
-    return {}
-  }
 }
 
 function* cacheCatalystRealm() {
