@@ -1,11 +1,18 @@
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
+import { ChatMessageType } from '../types'
 
 export type PositionTrackEvents = {
   ['Scene Spawn']: { parcel: string; spawnpoint: ReadOnlyVector3 }
 }
 
 export type TrackEvents = PositionTrackEvents & {
-  // Comms Events
+  // Comms & Chat Events
+  ['USER_MUTED']: { userId: string }
+  ['USER_UNMUTED']: { userId: string }
+  ['USER_BLOCKED']: { userId: string }
+  ['USER_UNBLOCKED']: { userId: string }
+  ['Chat message received']: { length: number; messageType: ChatMessageType }
+  ['Send chat message']: { length: number; messageId: string; messageType: ChatMessageType }
   ['Comms Status v2']: Record<string, any>
 
   // Info logs, such as networks or things we want to track
@@ -57,4 +64,10 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number }
   ['invalid_schema']: { schema: string; payload: any }
+  ['Friend request approved']: Record<string, never> // {}
+  ['Friend request rejected']: Record<string, never> // {}
+  ['Friend request cancelled']: Record<string, never> // {}
+  ['Friend request received']: Record<string, never> // {}
+  ['Friend request sent']: Record<string, never> // {}
+  ['Friend deleted']: Record<string, never> // {}
 }
