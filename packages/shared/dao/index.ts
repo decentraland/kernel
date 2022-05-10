@@ -84,7 +84,7 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promis
       if (
         result &&
         commsResponse.status === ServerConnectionStatus.OK &&
-        lambdasResponse.status == ServerConnectionStatus.OK
+        lambdasResponse.status === ServerConnectionStatus.OK
       ) {
         if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
           results.push({
