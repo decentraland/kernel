@@ -192,5 +192,5 @@ export interface IUnityInterface {
   SetBuilderConfiguration(config: BuilderConfiguration): void
   SendMessageToUnity(object: string, method: string, payload?: any): void
   SendMessageToUnity(object: string, method: string, payload?: any): void
-  SendBinaryMessage(sceneId: string, message: Uint8Array, length: number): void 
+  SendBinaryMessage(sceneId: string, message: Uint8Array, length: number): void
 }
