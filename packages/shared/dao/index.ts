@@ -51,6 +51,10 @@ export function isPeerHealthy(peerStatus: Record<string, HealthStatus>) {
   )
 }
 
+export function lambdasHealthUrl(domain: string) {
+  return `${domain}/lambdas/health`
+}
+
 export function commsStatusUrl(domain: string, includeUsersParcels: boolean = false) {
   let url = `${domain}/comms/status`
   const queryParameters: string[] = []
@@ -71,18 +75,25 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promis
 
   await Promise.all(
     nodes.map(async (node) => {
-      const response = await ping(commsStatusUrl(node.domain, true))
-      const result = response.result
+      const [commsResponse, lambdasResponse] = await Promise.all([
+        ping(commsStatusUrl(node.domain, true)),
+        ping(lambdasHealthUrl(node.domain))
+      ])
+      const result = commsResponse.result
 
-      if (result && response.status === ServerConnectionStatus.OK) {
+      if (
+        result &&
+        commsResponse.status === ServerConnectionStatus.OK &&
+        lambdasResponse.status === ServerConnectionStatus.OK
+      ) {
         if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
           results.push({
             type: 'islands-based',
             protocol: 'v2',
             catalystName: result.name,
             domain: node.domain,
-            status: response.status,
-            elapsed: response.elapsed!,
+            status: commsResponse.status,
+            elapsed: commsResponse.elapsed!,
             lighthouseVersion: result.version,
             usersCount: result.usersCount ?? 0,
             maxUsers: result.maxUsers ?? -1,

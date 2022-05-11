@@ -132,7 +132,6 @@ export class AvatarEntity extends Entity {
   public remove() {
     if (this.isAddedToEngine()) {
       engine.removeEntity(this)
-      avatarMap.delete(this.userId)
     }
     // if (this.sub.isAddedToEngine()) engine.removeEntity(this.sub)
   }
@@ -195,6 +194,7 @@ function handleUserRemoved({ userId }: UserRemovedMessage): void {
     // setTimeout(() => {
     avatar.remove()
     // }, 2000)
+    avatarMap.delete(userId)
   }
 }
 
