@@ -1,7 +1,14 @@
 import { AnyAction } from 'redux'
 
 import { FriendsState, SocialData } from './types'
-import { UPDATE_PRIVATE_MESSAGING, UpdatePrivateMessagingState, UPDATE_USER_DATA, UpdateUserData } from './actions'
+import {
+  UPDATE_PRIVATE_MESSAGING,
+  UpdatePrivateMessagingState,
+  UPDATE_USER_DATA,
+  UpdateUserData,
+  SET_MATRIX_CLIENT,
+  SetMatrixClient
+} from './actions'
 
 const FRIENDS_INITIAL_STATE: FriendsState = {
   client: null,
@@ -23,6 +30,10 @@ export function friendsReducer(state?: State, action?: AnyAction): State {
   switch (action.type) {
     case UPDATE_PRIVATE_MESSAGING: {
       return reducePrivateMessaging(state, action as UpdatePrivateMessagingState)
+    }
+    case SET_MATRIX_CLIENT: {
+      const { socialApi } = (action as SetMatrixClient).payload
+      return { ...state, client: socialApi }
     }
     case UPDATE_USER_DATA: {
       return reduceUpdateUserData(state, action as UpdateUserData)
