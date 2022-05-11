@@ -226,31 +226,6 @@ export async function checkValidRealm(realm: Realm) {
   return false
 }
 
-export async function fetchPeerHealthStatus(node: CatalystNode) {
-  const abortController = new AbortController()
-
-  const signal = abortController.signal
-  try {
-    setTimeout(() => {
-      abortController.abort()
-    }, 5000)
-
-    function peerHealthStatusUrl(domain: string) {
-      return `${domain}/lambdas/health`
-    }
-
-    const response = await fetch(peerHealthStatusUrl(node.domain), { signal })
-
-    if (!response.ok) return {}
-
-    const json = await response.json()
-
-    return json
-  } catch {
-    return {}
-  }
-}
-
 function* cacheCatalystRealm() {
   const network: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
   const realm: Realm | undefined = yield select(getRealm)
