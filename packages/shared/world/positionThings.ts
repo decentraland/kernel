@@ -209,7 +209,8 @@ function computeComponentValue(x: number | number[]) {
   }
 
   if (x.length !== 2) {
-    throw new Error(`array must have two values ${JSON.stringify(x)}`)
+    if (x.length < 2) x = [x[0], x[0]]
+    else x = [x[0], x[1]]
   }
 
   let [min, max] = x
