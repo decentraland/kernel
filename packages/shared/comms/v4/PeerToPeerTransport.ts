@@ -9,7 +9,6 @@ import { Authenticator, AuthIdentity } from 'dcl-crypto'
 import { getIdentity } from 'shared/session'
 
 import { removePeerByUUID } from '../peers'
-import { Position, positionHash } from '../interface/utils'
 import {
   Peer,
   PeerConfig,
@@ -20,7 +19,7 @@ import {
 
 import { createLogger } from 'shared/logger'
 
-const logger = createLogger('Peer2Peer: ')
+const logger = createLogger('CommsV4:Peer2Peer: ')
 
 export class PeerToPeerTransport implements Transport {
   public onDisconnectObservable = new Observable<void>()
@@ -32,7 +31,8 @@ export class PeerToPeerTransport implements Transport {
   private disposed = false
 
   constructor(
-    private lighthouseUrl: string
+    private lighthouseUrl: string,
+    private islandId: string
   ) {
     const commsConfig = getCommsConfig(store.getState())
 
@@ -98,6 +98,9 @@ export class PeerToPeerTransport implements Transport {
         await this.peer.awaitConnectionEstablished(60000)
       }
       logger.log('Lighthouse status: connected')
+
+      this.rooms = [this.islandId]
+
       await this.syncRoomsWithPeer()
     } catch (e: any) {
       logger.error('Error while connecting to layer', e)
@@ -114,23 +117,17 @@ export class PeerToPeerTransport implements Transport {
     this.onDisconnectObservable.notifyObservers()
   }
 
-  async sendIdentity(msg: Message, reliable: boolean, currentPosition?: Position): Promise<void> {
-    if (currentPosition) {
-      return this.send(currentPosition, msg, reliable)
-    } else {
-      //TODO
-      console.log("NO CURRENT POSITION")
-    }
+  async sendIdentity(msg: Message, reliable: boolean): Promise<void> {
+    return this.send(msg, reliable)
   }
 
-  async send(currentPosition: Position, msg: Message, reliable: boolean): Promise<void> {
+  async send(msg: Message, reliable: boolean): Promise<void> {
     if (this.disposed) {
       return
     }
     try {
-      const topic = positionHash(currentPosition)
       const t = reliable ? PeerMessageTypes.reliable('data') : PeerMessageTypes.unreliable('data')
-      await this.peer.sendMessage(topic, msg.serializeBinary(), t)
+      await this.peer.sendMessage(this.islandId, msg.serializeBinary(), t)
     } catch (e: any) {
       const message = e.message
       if (typeof message === 'string' && message.startsWith('cannot send a message in a room not joined')) {
@@ -140,11 +137,6 @@ export class PeerToPeerTransport implements Transport {
         throw e
       }
     }
-  }
-
-  async setTopics(rooms: string[]) {
-    this.rooms = rooms
-    await this.syncRoomsWithPeer()
   }
 
   private async syncRoomsWithPeer() {

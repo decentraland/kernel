@@ -31,7 +31,7 @@ export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
   private logger = createLogger('CommsV4: ')
-  protected transport: Transport = new DummyTransport()
+  private transport: Transport = new DummyTransport()
 
   constructor(private bff: BFFConnection) {
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
@@ -63,39 +63,39 @@ export class InstanceConnection implements RoomConnection {
     d.setRotationZ(p[5])
     d.setRotationW(p[6])
 
-    this.transport.send(p, d, false)
+    this.transport.send(d, false)
   }
 
   async sendParcelUpdateMessage(_: Position, _newPosition: Position) {
   }
 
-  async sendProfileMessage(p: Position, __: string, profileType: ProfileType, version: number) {
+  async sendProfileMessage(_: Position, __: string, profileType: ProfileType, version: number) {
     const d = new ProfileData()
     d.setCategory(Category.PROFILE)
     d.setTime(Date.now())
     d.setProfileType(profileType)
     d.setProfileVersion(`${version}`)
 
-    this.transport.sendIdentity(d, true, p)
+    this.transport.sendIdentity(d, true)
   }
 
-  async sendProfileRequest(p: Position, userId: string, version: number | undefined) {
+  async sendProfileRequest(_: Position, userId: string, version: number | undefined) {
     const d = new ProfileRequestData()
     d.setCategory(Category.PROF_REQ)
     d.setTime(Date.now())
     d.setUserId(userId)
     d.setProfileVersion(`${version}`)
 
-    this.transport.sendIdentity(d, true, p)
+    this.transport.sendIdentity(d, true)
   }
 
-  async sendProfileResponse(p: Position, profile: Avatar) {
+  async sendProfileResponse(_: Position, profile: Avatar) {
     const d = new ProfileResponseData()
     d.setCategory(Category.PROF_RES)
     d.setTime(Date.now())
     d.setSerializedProfile(JSON.stringify(profile))
 
-    this.transport.sendIdentity(d, true, p)
+    this.transport.sendIdentity(d, true)
   }
 
   async sendInitialMessage(_: string, profileType: ProfileType) {
@@ -118,21 +118,17 @@ export class InstanceConnection implements RoomConnection {
     this.bff.sendTopicMessage(sceneId, d)
   }
 
-  async sendChatMessage(p: Position, messageId: string, text: string) {
+  async sendChatMessage(_: Position, messageId: string, text: string) {
     const d = new ChatData()
     d.setCategory(Category.CHAT)
     d.setTime(Date.now())
     d.setMessageId(messageId)
     d.setText(text)
-    this.transport.send(p, d, true)
+    this.transport.send(d, true)
   }
 
   async setTopics(topics: string[]) {
     this.bff.setTopics(topics)
-
-    if (this.transport instanceof PeerToPeerTransport) {
-      await this.transport.setTopics(topics)
-    }
   }
 
   async disconnect(): Promise<void> {
@@ -142,13 +138,13 @@ export class InstanceConnection implements RoomConnection {
     return this.bff.disconnect()
   }
 
-  async sendVoiceMessage(p: Position, frame: EncodedFrame): Promise<void> {
+  async sendVoiceMessage(_: Position, frame: EncodedFrame): Promise<void> {
     const d = new VoiceData()
     d.setCategory(Category.VOICE)
     d.setEncodedSamples(frame.encoded)
     d.setIndex(frame.index)
 
-    return this.transport.send(p, d, true)
+    return this.transport.send(d, true)
   }
 
   protected handleTopicMessage(message: TopicData) {
@@ -307,10 +303,16 @@ export class InstanceConnection implements RoomConnection {
     } else if (islandConnStr.startsWith('livekit:')) {
       transport = new LivekitTransport(islandConnStr.substring('livekit:'.length))
     } else if (islandConnStr.startsWith('lighthouse:')) {
-
       const lighthouseUrl = islandConnStr.substring('lighthouse:'.length)
-      this.logger.log('Using Remote lighthouse service: ', lighthouseUrl)
-      transport = new PeerToPeerTransport(lighthouseUrl)
+
+      const url = new URL(lighthouseUrl)
+      const islandId = url.searchParams.get('island_id')
+      if (islandId) {
+        this.logger.log('Using Remote lighthouse service: ', lighthouseUrl)
+        transport = new PeerToPeerTransport(lighthouseUrl, islandId)
+      } else {
+        this.logger.error(`Lighthhouse connections string is missing island_id parameter ${lighthouseUrl}`)
+      }
     }
     return transport
   }

@@ -1,6 +1,5 @@
 import { Message } from 'google-protobuf'
 import { Observable } from 'mz-observable'
-import { Position } from '../../comms/interface/utils'
 
 export type TransportMessage = {
   data: Uint8Array
@@ -12,7 +11,7 @@ export interface Transport {
   onMessageObservable: Observable<TransportMessage>
 
   connect(): Promise<void>
-  send(p: Position, msg: Message, reliable: boolean): Promise<void>
-  sendIdentity(msg: Message, reliable: boolean, p?: Position): Promise<void>
+  send(msg: Message, reliable: boolean): Promise<void>
+  sendIdentity(msg: Message, reliable: boolean): Promise<void>
   disconnect(): Promise<void>
 }

@@ -3,13 +3,12 @@ import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
 import { Transport, TransportMessage } from './Transport'
 import { LivekitTransport as Livekit } from '@dcl/comms3-livekit-transport'
-import { Position } from '../../comms/interface/utils'
 
 export class LivekitTransport implements Transport {
   public onDisconnectObservable = new Observable<void>()
   public onMessageObservable = new Observable<TransportMessage>()
-  public logger: ILogger = createLogger('LivekitTransport: ')
 
+  private logger: ILogger = createLogger('CommsV4:LivekitTransport: ')
   private livekit: Livekit
 
   constructor(connStr: string) {
@@ -34,11 +33,11 @@ export class LivekitTransport implements Transport {
     this.logger.log('Connected')
   }
 
-  send(_: Position, msg: Message, reliable: boolean): Promise<void> {
+  send(msg: Message, reliable: boolean): Promise<void> {
     return this.sendMessage(msg, reliable)
   }
 
-  sendIdentity(msg: Message, reliable: boolean, _: Position): Promise<void> {
+  sendIdentity(msg: Message, reliable: boolean): Promise<void> {
     return this.sendMessage(msg, reliable)
   }
 
