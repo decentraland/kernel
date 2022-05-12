@@ -8,9 +8,7 @@ import {
   PresenceType,
   CurrentUserStatus,
   UnknownUsersError,
-  UserPosition,
   SocialAPI,
-  Realm as SocialRealm,
   UpdateUserStatus
 } from 'dcl-social-client'
 
@@ -63,18 +61,15 @@ import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
+import { getPeer } from 'shared/comms/peers'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
-const INITIAL_CHAT_SIZE = 50
-
 const receivedMessages: Record<string, number> = {}
-const MESSAGE_LIFESPAN_MILLIS = 1000
 
-const SEND_STATUS_INTERVAL_MILLIS = 5000
-type PresenceMemoization = { realm: SocialRealm | undefined; position: UserPosition | undefined }
-const presenceMap: Record<string, PresenceMemoization | undefined> = {}
-
+const INITIAL_CHAT_SIZE = 50
+const MESSAGE_LIFESPAN_MILLIS = 1_000
+const SEND_STATUS_INTERVAL_MILLIS = 60_000
 const MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 1000
 const MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 256000
 
@@ -164,20 +159,13 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
   // initialize conversations
   client.onStatusChange((socialId, status) => {
-    logger.info(`client.onStatusChange`, socialId, status)
-    const user: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), socialId)
-
-    if (!user) {
-      logger.error(`user not found for status change with social id`, socialId)
-      return
+    const userId = parseUserId(socialId)
+    if (userId) {
+      sendUpdateUserStatus(userId, status)
     }
-
-    sendUpdateUserStatus(user.userId, status)
   })
 
   client.onMessage((conversation, message) => {
-    logger.info(`onMessage`, conversation, message)
-
     if (receivedMessages.hasOwnProperty(message.id)) {
       // message already processed, skipping
       return
@@ -185,18 +173,17 @@ function* configureMatrixClient(action: SetMatrixClient) {
       receivedMessages[message.id] = Date.now()
     }
 
-    const { socialInfo } = store.getState().friends
-    const friend = Object.values(socialInfo).find((friend) => friend.conversationId === conversation.id)
+    const senderUserId = parseUserId(message.sender)
 
-    if (!friend) {
-      logger.warn(`friend not found for conversation`, conversation.id)
+    if (!senderUserId) {
+      logger.error('unknown message', message, conversation)
       return
     }
 
     const profile = getProfile(store.getState(), identity.address)
     const blocked = profile?.blocked ?? []
-    if (blocked.includes(friend.userId)) {
-      logger.warn(`got a message from blocked user`, friend.userId)
+    if (blocked.includes(senderUserId)) {
+      logger.warn(`got a message from blocked user`, message, conversation)
       return
     }
 
@@ -205,8 +192,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
       messageType: ChatMessageType.PRIVATE,
       timestamp: message.timestamp,
       body: message.text,
-      sender: message.sender === ownId ? identity.address : friend.userId,
-      recipient: message.sender === ownId ? friend.userId : identity.address
+      sender: message.sender === ownId ? identity.address : senderUserId,
+      recipient: message.sender === ownId ? senderUserId : identity.address
     }
     addNewChatMessage(chatMessage)
   })
@@ -291,13 +278,16 @@ function* refreshFriends() {
   if (!client) return
 
   const ownId = client.getUserId()
-  logger.info(`initializePrivateMessaging#ownId`, ownId)
 
   // init friends
   const friends: string[] = yield client.getAllFriends()
-  logger.info(`friends`, friends)
 
   const friendsSocial: SocialData[] = yield Promise.all(
+    // TODO: opening the conversations should be a reactive thing
+    // and should only happen after you click in a conversation from the UI
+    // also, the UI should show a bubble whenever the matrix client recevies
+    // an invitation to join to a room.
+    // then the room should be created in renderer and start the conversation that way, after the click
     toSocialData(friends).map(async (friend) => {
       const conversation = await client.createDirectConversation(friend.socialId)
       return { ...friend, conversationId: conversation.id }
@@ -306,7 +296,6 @@ function* refreshFriends() {
 
   // init friend requests
   const friendRequests: FriendshipRequest[] = yield client.getPendingRequests()
-  logger.info(`friendRequests`, friendRequests)
 
   // filter my requests to others
   const toFriendRequests = friendRequests.filter((request) => request.from === ownId).map((request) => request.to)
@@ -328,7 +317,7 @@ function* refreshFriends() {
     {}
   )
 
-  const friendIds = friendsSocial.map(($) => $.userId)
+  const friendIds = friends.map(($) => parseUserId($)).filter(Boolean) as string[]
   const requestedFromIds = fromFriendRequestsSocial.map(($) => $.userId)
   const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
 
@@ -344,9 +333,7 @@ function* refreshFriends() {
 
   // ensure friend profiles are sent to renderer
 
-  const profileIds = Object.values(socialInfo).map((socialData) => socialData.userId)
-
-  yield Promise.all(profileIds.map((userId) => ensureFriendProfile(userId)))
+  yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
 
   const initMessage = {
     currentFriends: friendIds,
@@ -370,36 +357,25 @@ function* initializeReceivedMessagesCleanUp() {
   }
 }
 
-function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
-  logger.info(`sendUpdateUserStatus`, id, status)
-  // treat 'unavailable' status as 'online'
-  const presence: PresenceStatus =
-    status.presence === PresenceType.OFFLINE ? PresenceStatus.OFFLINE : PresenceStatus.ONLINE
+function isPeerAvatarAvailable(userId: string) {
+  return !!getPeer(userId.toLowerCase())
+}
 
+function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
   const userId = parseUserId(id)
 
   if (!userId) return
 
-  if (presence === PresenceStatus.ONLINE) {
-    if (!status.realm && !status.position) {
-      const lastPresence = presenceMap[userId]
-
-      logger.info(`online status with no realm & position, using from map`, userId, lastPresence)
-      status.realm = lastPresence?.realm
-      status.position = lastPresence?.position
-    } else {
-      presenceMap[userId] = { realm: status.realm, position: status.position }
-    }
-  }
+  // treat 'unavailable' status as 'online'
+  const isOnline = isPeerAvatarAvailable(userId) || status.presence != PresenceType.OFFLINE
 
   const updateMessage = {
     userId,
     realm: status.realm,
     position: status.position,
-    presence
+    presence: isOnline ? PresenceStatus.ONLINE : PresenceStatus.OFFLINE
   }
 
-  logger.info(`getUnityInstance().UpdateUserPresence`, updateMessage)
   getUnityInstance().UpdateUserPresence(updateMessage)
   notifyFriendOnlineStatusThroughChat(updateMessage)
 }
@@ -441,23 +417,20 @@ function* initializeStatusUpdateInterval() {
 
     const position = worldToGrid(lastPlayerPosition.clone())
 
-    const shouldSendNewStatus =
-      !lastStatus || !deepEqual(position, lastStatus.position) || !deepEqual(realm, lastStatus.realm)
+    const updateStatus: UpdateUserStatus = {
+      realm: {
+        layer: '',
+        serverName: realm.serverName
+      },
+      position,
+      presence: PresenceType.ONLINE
+    }
+
+    const shouldSendNewStatus = !deepEqual(updateStatus, lastStatus)
 
     if (shouldSendNewStatus) {
-      const updateStatus: UpdateUserStatus = {
-        realm: {
-          layer: '',
-          serverName: realm.serverName
-        },
-        position,
-        presence: PresenceType.ONLINE
-      }
-
-      logger.info(`sending update status`, updateStatus)
-
+      logger.log('Sending new comms status', updateStatus)
       client.setStatus(updateStatus).catch((e) => logger.error(`error while setting status`, e))
-
       lastStatus = updateStatus
     }
   }
@@ -502,8 +475,18 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
     return
   }
 
-  const conversation: Conversation = yield apply(client, client.createDirectConversation, [userData.socialId])
-  yield apply(client, client.sendMessageTo, [conversation.id, message])
+  try {
+    const conversation: Conversation = yield apply(client, client.createDirectConversation, [userData.socialId])
+    yield apply(client, client.sendMessageTo, [conversation.id, message])
+  } catch (e: any) {
+    logger.error(e)
+    trackEvent('error', {
+      context: 'handleSendPrivateMessage',
+      message: e.message,
+      stack: e.stack,
+      saga_stack: e.toString()
+    })
+  }
 }
 
 function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
