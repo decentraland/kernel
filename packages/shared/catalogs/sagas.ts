@@ -99,11 +99,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       const uuidsItems = WITH_FIXED_ITEMS.split(',')
       if (uuidsItems.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(
-          fetchWearableByIdFromBuilder,
-          uuidsItems,
-          identity
-        )
+        const v2Wearables: PartialWearableV2[] = yield call(fetchWearableByIdFromBuilder, uuidsItems, identity)
         result.push(...v2Wearables)
       }
     } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
@@ -152,11 +148,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       const uuidsItems = WITH_FIXED_ITEMS.split(',')
       if (uuidsItems.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(
-          fetchWearableByIdFromBuilder,
-          uuidsItems,
-          identity
-        )
+        const v2Wearables: PartialWearableV2[] = yield call(fetchWearableByIdFromBuilder, uuidsItems, identity)
         result.push(...v2Wearables)
       }
     } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
@@ -210,21 +202,18 @@ async function fetchWearablesByFilters(filters: WearablesRequestFilters, client:
  */
 async function fetchWearableByIdFromBuilder(uuidsItems: string[], identity: ExplorerIdentity): Promise<WearableV2[]> {
   return Promise.all(
-    uuidsItems.map((uuid) => {
+    uuidsItems.map(async (uuid) => {
       const path = `items/${uuid}`
       const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
-      const itemResponse = (await fetchJson(
-        `${BUILDER_SERVER_URL}/${path}`,
-        {
-          headers
-        }
-      )) as { data: UnpublishedWearable; ok: boolean; error?: string }
+      const itemResponse = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
+        headers
+      })) as { data: UnpublishedWearable; ok: boolean; error?: string }
       if (!itemResponse.ok) {
         throw new Error(itemResponse.error)
       }
-    
+
       return mapUnpublishedWearableIntoCatalystWearable(itemResponse.data) as WearableV2
-    }
+    })
   )
 }
 
