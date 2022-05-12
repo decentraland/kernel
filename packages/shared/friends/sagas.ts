@@ -59,7 +59,7 @@ import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
-import { getCurrentIdentity } from 'shared/session/selectors'
+import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 
@@ -98,6 +98,12 @@ function* initializeFriendsSaga() {
     yield call(waitForRendererInstance)
 
     const currentIdentity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
+
+    const isGuest = yield select(getIsGuestLogin)
+
+    // guests must not use the friends & private messaging features
+    if (isGuest) return
+
     const client: SocialAPI | null = yield select(getSocialClient)
     const isLoggedIn: boolean = (currentIdentity && client && (yield apply(client, client.isLoggedIn, []))) || false
 
