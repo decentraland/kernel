@@ -99,7 +99,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       const uuidsItems = WITH_FIXED_ITEMS.split(',')
       if (uuidsItems.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(fetchWearableByIdFromBuilder, uuidsItems, identity)
+        const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, uuidsItems, identity)
         result.push(...v2Wearables)
       }
     } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
@@ -148,7 +148,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       const uuidsItems = WITH_FIXED_ITEMS.split(',')
       if (uuidsItems.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(fetchWearableByIdFromBuilder, uuidsItems, identity)
+        const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, uuidsItems, identity)
         result.push(...v2Wearables)
       }
     } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
@@ -200,7 +200,7 @@ async function fetchWearablesByFilters(filters: WearablesRequestFilters, client:
 /**
  * Fetches a single item from the Builder Server.
  */
-async function fetchWearableByIdFromBuilder(uuidsItems: string[], identity: ExplorerIdentity): Promise<WearableV2[]> {
+async function fetchWearablesByIdFromBuilder(uuidsItems: string[], identity: ExplorerIdentity): Promise<WearableV2[]> {
   return Promise.all(
     uuidsItems.map(async (uuid) => {
       const path = `items/${uuid}`
