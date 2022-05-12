@@ -28,6 +28,7 @@ export type TopicData = {
 }
 
 export type IslandChangeData = {
+  peerId: string
   connStr: string
   islandId: string
   peers: Map<string, Position3D>
@@ -99,6 +100,13 @@ export class BFFConnection {
   async setTopics(rawTopics: string[]) {
     const subscriptionMessage = new SubscriptionMessage()
     subscriptionMessage.setType(MessageType.SUBSCRIPTION)
+
+    // TODO: do this properly
+    if (this.peerId) {
+      rawTopics.push(`peer.${this.peerId}.got_candidate`)
+    }
+
+
     // TODO: use TextDecoder instead of Buffer, it is a native browser API, works faster
     subscriptionMessage.setTopics(Buffer.from(rawTopics.join(' '), 'utf8'))
     const bytes = subscriptionMessage.serializeBinary()
@@ -209,12 +217,11 @@ export class BFFConnection {
 
           this.islandId = islandChangedMessage.getIslandId()
           this.onIslandChangeObservable.notifyObservers({
+            peerId: this.peerId,
             connStr: islandChangedMessage.getConnStr(),
             islandId: this.islandId,
             peers
           })
-
-
         } else if (this.islandId && topic.startsWith(`island.${this.islandId}.peer_join`)) {
           let peerJoinMessage: JoinIslandMessage
           try {

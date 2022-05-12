@@ -39,7 +39,7 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async connect(): Promise<void> {
-    this.bff.onIslandChangeObservable.add(async ({ connStr, islandId, peers }) => {
+    this.bff.onIslandChangeObservable.add(async ({ peerId, connStr, islandId, peers }) => {
       this.logger.info(`Got island change message: ${connStr}`)
 
       let transport: Transport | null = null
@@ -49,7 +49,7 @@ export class InstanceConnection implements RoomConnection {
         transport = new LivekitTransport(connStr.substring('livekit:'.length))
       } else if (connStr.startsWith('lighthouse:')) {
         const lighthouseUrl = connStr.substring('lighthouse:'.length)
-        transport = new PeerToPeerTransport(lighthouseUrl, islandId, peers)
+        transport = new PeerToPeerTransport(peerId, lighthouseUrl, this.bff, islandId, peers)
       }
 
       if (!transport) {
