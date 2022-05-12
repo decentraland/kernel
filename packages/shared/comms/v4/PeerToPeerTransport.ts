@@ -14,7 +14,9 @@ import {
   PeerConfig,
   PacketCallback,
   PeerStatus,
-  PeerMessageTypes
+  PeerMessageTypes,
+  Position3D,
+  MinPeerData
 } from '@dcl/catalyst-peer'
 
 import { createLogger } from 'shared/logger'
@@ -32,7 +34,8 @@ export class PeerToPeerTransport implements Transport {
 
   constructor(
     private lighthouseUrl: string,
-    private islandId: string
+    private islandId: string,
+    private peers: Map<string, Position3D>
   ) {
     const commsConfig = getCommsConfig(store.getState())
 
@@ -102,6 +105,12 @@ export class PeerToPeerTransport implements Transport {
       this.rooms = [this.islandId]
 
       await this.syncRoomsWithPeer()
+
+      const peers: MinPeerData[] = []
+      this.peers.forEach((p: Position3D, peerId: string) => {
+        peers.push({ id: peerId, position: p })
+      })
+      this.peer.setIsland(this.islandId, peers)
     } catch (e: any) {
       logger.error('Error while connecting to layer', e)
       logger.log(`Lighthouse status: ${e.responseJson && e.responseJson.status === 'layer_is_full' ? 'realm-full' : 'error'}`)

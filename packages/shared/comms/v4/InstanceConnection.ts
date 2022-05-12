@@ -39,11 +39,21 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async connect(): Promise<void> {
-    this.bff.onIslandChangeObservable.add(async (islandConnStr) => {
-      this.logger.info(`Got island change message: ${islandConnStr}`)
-      const transport = this.createTransport(islandConnStr)
+    this.bff.onIslandChangeObservable.add(async ({ connStr, islandId, peers }) => {
+      this.logger.info(`Got island change message: ${connStr}`)
+
+      let transport: Transport | null = null
+      if (connStr.startsWith('ws-room:')) {
+        transport = new WsTransport(connStr.substring('ws-room:'.length))
+      } else if (connStr.startsWith('livekit:')) {
+        transport = new LivekitTransport(connStr.substring('livekit:'.length))
+      } else if (connStr.startsWith('lighthouse:')) {
+        const lighthouseUrl = connStr.substring('lighthouse:'.length)
+        transport = new PeerToPeerTransport(lighthouseUrl, islandId, peers)
+      }
+
       if (!transport) {
-        this.logger.error(`Invalid islandConnStr ${islandConnStr}`)
+        this.logger.error(`Invalid islandConnStr ${connStr}`)
         return
       }
       this.changeTransport(transport)
@@ -287,6 +297,7 @@ export class InstanceConnection implements RoomConnection {
     await transport.connect()
     transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
     transport.onDisconnectObservable.add(this.disconnect.bind(this))
+
     this.transport = transport
 
     if (oldTransport) {
@@ -294,26 +305,5 @@ export class InstanceConnection implements RoomConnection {
       oldTransport.onDisconnectObservable.clear()
       await oldTransport.disconnect()
     }
-  }
-
-  private createTransport(islandConnStr: string): Transport | null {
-    let transport: Transport | null = null
-    if (islandConnStr.startsWith('ws-room:')) {
-      transport = new WsTransport(islandConnStr.substring('ws-room:'.length))
-    } else if (islandConnStr.startsWith('livekit:')) {
-      transport = new LivekitTransport(islandConnStr.substring('livekit:'.length))
-    } else if (islandConnStr.startsWith('lighthouse:')) {
-      const lighthouseUrl = islandConnStr.substring('lighthouse:'.length)
-
-      const url = new URL(lighthouseUrl)
-      const islandId = url.searchParams.get('island_id')
-      if (islandId) {
-        this.logger.log('Using Remote lighthouse service: ', lighthouseUrl)
-        transport = new PeerToPeerTransport(lighthouseUrl, islandId)
-      } else {
-        this.logger.error(`Lighthhouse connections string is missing island_id parameter ${lighthouseUrl}`)
-      }
-    }
-    return transport
   }
 }

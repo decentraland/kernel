@@ -10,9 +10,10 @@ import {
   MessageTypeMap,
   OpenMessage,
   ValidationMessage,
-  IslandChangesMessage
+  ValidationOKMessage
 } from './proto/bff_pb'
 import { Category, WorldPositionData } from './proto/comms_pb'
+import { IslandChangedMessage, JoinIslandMessage, LeftIslandMessage, Position3DMessage } from './proto/archipelago_pb'
 import { Position3D } from '@dcl/catalyst-peer'
 import { AuthIdentity, Authenticator } from 'dcl-crypto'
 
@@ -26,15 +27,32 @@ export type TopicData = {
   data: Uint8Array
 }
 
+export type IslandChangeData = {
+  connStr: string
+  islandId: string
+  peers: Map<string, Position3D>
+}
+
+export type PeerChangeData = {
+  islandId: string
+  peerId: string
+}
+
+// TODO: refactor this class to be able to register listener to events
+// get ride of at least islandId 
 export class BFFConnection {
   public logger: ILogger = createLogger('BFF: ')
 
   public onDisconnectObservable = new Observable<void>()
   public onTopicMessageObservable = new Observable<TopicData>()
-  public onIslandChangeObservable = new Observable<string>()
+  public onIslandChangeObservable = new Observable<IslandChangeData>()
+  public onPeerLeftObservable = new Observable<PeerChangeData>()
+  public onPeerJoinObservable = new Observable<PeerChangeData>()
 
   private ws: WebSocket | null = null
   private heartBeatInterval: any = null
+  private peerId: string | null = null
+  private islandId: string | null = null
 
   constructor(public url: string, private config: BFFConfig) { }
 
@@ -140,7 +158,15 @@ export class BFFConnection {
         break
       }
       case MessageType.VALIDATION_OK: {
-        this.logger.log('validation ok')
+        let validationOkMessage: ValidationOKMessage
+        try {
+          validationOkMessage = ValidationOKMessage.deserializeBinary(data)
+          this.peerId = validationOkMessage.getPeerId()
+          this.logger.log(`Validation ok, peer is ${this.peerId}`)
+        } catch (e) {
+          this.logger.error('cannot process topic message', e)
+          break
+        }
         break
       }
       case MessageType.VALIDATION_FAILURE: {
@@ -149,32 +175,73 @@ export class BFFConnection {
         break
       }
       case MessageType.TOPIC: {
-        let dataMessage: TopicMessage
+        let topicMessage: TopicMessage
         try {
-          dataMessage = TopicMessage.deserializeBinary(data)
+          topicMessage = TopicMessage.deserializeBinary(data)
         } catch (e) {
           this.logger.error('cannot process topic message', e)
           break
         }
+        const topic = topicMessage.getTopic()
 
-        const body = dataMessage.getBody() as any
-        this.onTopicMessageObservable.notifyObservers({
-          peerId: dataMessage.getPeerId(),
-          data: body
-        })
-        break
-      }
-      case MessageType.ISLAND_CHANGES: {
-        let dataMessage: IslandChangesMessage
-        try {
-          dataMessage = IslandChangesMessage.deserializeBinary(data)
-        } catch (e) {
-          this.logger.error('cannot process topic message', e)
-          break
+        const fromPeerId = topicMessage.getPeerId()
+        const body = topicMessage.getBody() as any
+        if (fromPeerId) {
+          this.onTopicMessageObservable.notifyObservers({
+            peerId: fromPeerId,
+            data: body
+          })
+        } else if (this.peerId && topic === `peer.${this.peerId}.island_changed`) {
+          let islandChangedMessage: IslandChangedMessage
+          try {
+            islandChangedMessage = IslandChangedMessage.deserializeBinary(body)
+          } catch (e) {
+            this.logger.error('cannot process island change message', e)
+            break
+          }
+
+          const peers = new Map<string, Position3D>()
+          islandChangedMessage.getPeersMap().forEach((p: Position3DMessage, peerId: string) => {
+            if (peerId !== this.peerId) {
+              peers.set(peerId, [p.getX(), p.getY(), p.getZ()])
+            }
+          })
+
+          this.islandId = islandChangedMessage.getIslandId()
+          this.onIslandChangeObservable.notifyObservers({
+            connStr: islandChangedMessage.getConnStr(),
+            islandId: this.islandId,
+            peers
+          })
+
+
+        } else if (this.islandId && topic.startsWith(`island.${this.islandId}.peer_join`)) {
+          let peerJoinMessage: JoinIslandMessage
+          try {
+            peerJoinMessage = JoinIslandMessage.deserializeBinary(body)
+          } catch (e) {
+            this.logger.error('cannot process peer join message', e)
+            break
+          }
+          this.onPeerJoinObservable.notifyObservers({
+            islandId: peerJoinMessage.getIslandId(),
+            peerId: peerJoinMessage.getPeerId()
+          })
+        } else if (this.islandId && topic.startsWith(`island.${this.islandId}.peer_left`)) {
+          let peerLeftMessage: LeftIslandMessage
+          try {
+            peerLeftMessage = LeftIslandMessage.deserializeBinary(body)
+          } catch (e) {
+            this.logger.error('cannot process peer left message', e)
+            break
+          }
+          this.onPeerLeftObservable.notifyObservers({
+            islandId: peerLeftMessage.getIslandId(),
+            peerId: peerLeftMessage.getPeerId()
+          })
+        } else {
+          this.logger.warn(`unhandled system topic message ${topic}, peerid is ${this.peerId}, islandId is ${this.islandId}`)
         }
-
-        const islandConnStr = dataMessage.getConnStr()
-        this.onIslandChangeObservable.notifyObservers(islandConnStr)
         break
       }
       default: {

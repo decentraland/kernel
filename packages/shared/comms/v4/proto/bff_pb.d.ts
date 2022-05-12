@@ -53,30 +53,6 @@ export namespace HeartBeatMessage {
   }
 }
 
-export class IslandChangesMessage extends jspb.Message {
-  getType(): MessageTypeMap[keyof MessageTypeMap];
-  setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
-
-  getConnStr(): string;
-  setConnStr(value: string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): IslandChangesMessage.AsObject;
-  static toObject(includeInstance: boolean, msg: IslandChangesMessage): IslandChangesMessage.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: IslandChangesMessage, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): IslandChangesMessage;
-  static deserializeBinaryFromReader(message: IslandChangesMessage, reader: jspb.BinaryReader): IslandChangesMessage;
-}
-
-export namespace IslandChangesMessage {
-  export type AsObject = {
-    type: MessageTypeMap[keyof MessageTypeMap],
-    connStr: string,
-  }
-}
-
 export class OpenMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
@@ -125,21 +101,45 @@ export namespace ValidationMessage {
   }
 }
 
-export class ValidationResultMessage extends jspb.Message {
+export class ValidationOKMessage extends jspb.Message {
+  getType(): MessageTypeMap[keyof MessageTypeMap];
+  setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
+
+  getPeerId(): string;
+  setPeerId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ValidationOKMessage.AsObject;
+  static toObject(includeInstance: boolean, msg: ValidationOKMessage): ValidationOKMessage.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ValidationOKMessage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ValidationOKMessage;
+  static deserializeBinaryFromReader(message: ValidationOKMessage, reader: jspb.BinaryReader): ValidationOKMessage;
+}
+
+export namespace ValidationOKMessage {
+  export type AsObject = {
+    type: MessageTypeMap[keyof MessageTypeMap],
+    peerId: string,
+  }
+}
+
+export class ValidationFailureMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): ValidationResultMessage.AsObject;
-  static toObject(includeInstance: boolean, msg: ValidationResultMessage): ValidationResultMessage.AsObject;
+  toObject(includeInstance?: boolean): ValidationFailureMessage.AsObject;
+  static toObject(includeInstance: boolean, msg: ValidationFailureMessage): ValidationFailureMessage.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: ValidationResultMessage, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): ValidationResultMessage;
-  static deserializeBinaryFromReader(message: ValidationResultMessage, reader: jspb.BinaryReader): ValidationResultMessage;
+  static serializeBinaryToWriter(message: ValidationFailureMessage, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ValidationFailureMessage;
+  static deserializeBinaryFromReader(message: ValidationFailureMessage, reader: jspb.BinaryReader): ValidationFailureMessage;
 }
 
-export namespace ValidationResultMessage {
+export namespace ValidationFailureMessage {
   export type AsObject = {
     type: MessageTypeMap[keyof MessageTypeMap],
   }
@@ -175,6 +175,8 @@ export class TopicMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
 
+  hasPeerId(): boolean;
+  clearPeerId(): void;
   getPeerId(): string;
   setPeerId(value: string): void;
 
@@ -210,7 +212,6 @@ export interface MessageTypeMap {
   HEARTBEAT: 1;
   SUBSCRIPTION: 2;
   TOPIC: 3;
-  ISLAND_CHANGES: 4;
   OPEN: 5;
   VALIDATION: 6;
   VALIDATION_FAILURE: 7;

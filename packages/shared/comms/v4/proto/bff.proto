@@ -7,7 +7,6 @@ enum MessageType {
   HEARTBEAT = 1;
   SUBSCRIPTION = 2;
   TOPIC = 3;
-  ISLAND_CHANGES = 4;
   OPEN = 5;
   VALIDATION = 6;
   VALIDATION_FAILURE = 7;
@@ -24,33 +23,33 @@ message HeartBeatMessage {
   bytes data = 3;
 }
 
-message IslandChangesMessage {
-  MessageType type = 1;
-  string conn_str = 2;
-}
-
 message OpenMessage {
-    MessageType type = 1;
-    string payload = 2;
+  MessageType type = 1;
+  string payload = 2;
 }
 
 message ValidationMessage {
-    MessageType type = 1;
-    string encoded_payload = 2;
+  MessageType type = 1;
+  string encoded_payload = 2;
 }
 
-message ValidationResultMessage {
-    MessageType type = 1;
+message ValidationOKMessage {
+  MessageType type = 1;
+  string peer_id = 2;
+}
+
+message ValidationFailureMessage {
+  MessageType type = 1;
 }
 
 message SubscriptionMessage {
-    MessageType type = 1;
-    bytes topics = 2;
+  MessageType type = 1;
+  bytes topics = 2;
 }
 
 message TopicMessage {
-    MessageType type = 1;
-    string peer_id = 2;
-    string topic = 3;
-    bytes body = 4;
+  MessageType type = 1;
+  optional string peer_id = 2;
+  string topic = 3;
+  bytes body = 4;
 }
