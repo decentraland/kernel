@@ -367,7 +367,7 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
   if (!userId) return
 
   // treat 'unavailable' status as 'online'
-  const isOnline = isPeerAvatarAvailable(userId) || status.presence != PresenceType.OFFLINE
+  const isOnline = isPeerAvatarAvailable(userId) || status.presence !== PresenceType.OFFLINE
 
   const updateMessage = {
     userId,

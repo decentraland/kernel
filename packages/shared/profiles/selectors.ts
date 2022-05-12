@@ -48,7 +48,7 @@ export const findProfileByName = (store: RootProfileState, userName: string): Av
           (user) =>
             user.data?.name.toLowerCase() === userName.toLowerCase() ||
             user.data?.userId.toLowerCase() === userName.toLowerCase() ||
-            calculateDisplayName(user.data) == userName
+            calculateDisplayName(user.data) === userName
         )?.data || null
     : null
 
