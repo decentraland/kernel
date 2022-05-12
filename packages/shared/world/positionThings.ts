@@ -208,9 +208,13 @@ function computeComponentValue(x: number | number[]) {
     return x
   }
 
-  if (x.length !== 2) {
-    if (x.length < 2) x = [x[0], x[0]]
-    else x = [x[0], x[1]]
+  const length = x.length
+  if (length === 0) {
+    return 0
+  } else if (length < 2) {
+    return x[0]
+  } else if (length > 2) {
+    x = [x[0], x[1]]
   }
 
   let [min, max] = x
