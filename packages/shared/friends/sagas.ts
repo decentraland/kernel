@@ -31,8 +31,7 @@ import {
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { ADDED_PROFILE_TO_CATALOG } from 'shared/profiles/actions'
-import { isAddedToCatalog, getProfile } from 'shared/profiles/selectors'
+import { getProfile } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState } from 'shared/friends/types'
 import {
