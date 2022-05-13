@@ -79,7 +79,9 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
 
     for (const feature in store?.meta?.config?.featureFlagsV2.variants) {
       const featureName = feature.replace('explorer-', '') as FeatureFlagsNames
-      featureFlag.variants[featureName] = store?.meta?.config?.featureFlagsV2.variants[feature as FeatureFlagsNames] || {
+      featureFlag.variants[featureName] = store?.meta?.config?.featureFlagsV2.variants[
+        feature as FeatureFlagsNames
+      ] || {
         enabled: false,
         name: featureName
       }
@@ -89,10 +91,10 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
   if (location.search.length !== 0) {
     const flags = new URLSearchParams(location.search)
     flags.forEach((_, key) => {
-      if (key.includes(`DISABLE_`)) {
+      if (key.startsWith(`DISABLE_`)) {
         const featureName = key.replace('DISABLE_', '').toLowerCase() as FeatureFlagsNames
         featureFlag.flags[featureName] = false
-      } else if (key.includes(`ENABLE_`)) {
+      } else if (key.startsWith(`ENABLE_`)) {
         const featureName = key.replace('ENABLE_', '').toLowerCase() as FeatureFlagsNames
         featureFlag.flags[featureName] = true
       }
@@ -101,26 +103,8 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
   return featureFlag
 }
 
-export const isFeatureEnabled = (store: RootMetaState, featureName: string, ifNotSet: boolean): boolean => {
-  const queryParamFlag = toUrlFlag(featureName)
-  if (location.search.includes(`DISABLE_${queryParamFlag}`)) {
-    return false
-  } else if (location.search.includes(`ENABLE_${queryParamFlag}`)) {
-    return true
-  } else {
-    const featureFlag = store?.meta.config?.featureFlags?.[`explorer-${featureName}`]
-    return featureFlag ?? ifNotSet
-  }
-}
-
 export const getSynapseUrl = (store: RootMetaState): string =>
   store.meta.config.synapseUrl ?? 'https://synapse.decentraland.io'
-
-/** Convert camel case to upper snake case */
-function toUrlFlag(key: string) {
-  const result = key.replace(/([A-Z])/g, ' $1')
-  return result.split(' ').join('_').toUpperCase()
-}
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint

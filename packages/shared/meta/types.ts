@@ -28,6 +28,11 @@ export type FeatureFlagsNames =
   | 'retry_matrix_login' // retry matrix reconnection
   | 'parcel-denylist' // denylist of specific parcels using variants
   | 'matrix_disabled' // disable matrix integration entirely
+  | 'builder_in_world'
+  | 'avatar_lods'
+  | 'asset_bundles'
+  | 'explorev2'
+  | 'unsafe-request'
 
 export type BannedUsers = Record<string, Ban[]>
 
@@ -58,15 +63,6 @@ export type CommsConfig = {
   relaySuspensionInterval?: number
   relaySuspensionDuration?: number
   maxVisiblePeers: number
-}
-
-export enum FeatureFlags {
-  QUESTS = 'quests',
-  BUILDER_IN_WORLD = 'builder_in_world',
-  AVATAR_LODS = 'avatar_lods',
-  ASSET_BUNDLES = 'asset_bundles',
-  EXPLORE_V2_ENABLED = 'explorev2',
-  UNSAFE_FETCH_AND_WEBSOCKET = 'unsafe-request'
 }
 
 export type FeatureFlag = {
