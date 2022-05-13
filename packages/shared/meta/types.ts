@@ -23,7 +23,7 @@ export type MetaConfiguration = {
   featureFlagsV2?: FeatureFlag
 }
 
-export type FeatureFlagsNames =
+export type FeatureFlagsName =
   | 'quests' // quests feature
   | 'retry_matrix_login' // retry matrix reconnection
   | 'parcel-denylist' // denylist of specific parcels using variants
@@ -66,12 +66,12 @@ export type CommsConfig = {
 }
 
 export type FeatureFlag = {
-  flags: Partial<Record<FeatureFlagsNames, boolean>>
-  variants: Partial<Record<FeatureFlagsNames, FeatureFlagVariant>>
+  flags: Partial<Record<FeatureFlagsName, boolean>>
+  variants: Partial<Record<FeatureFlagsName, FeatureFlagVariant>>
 }
 
 export type FeatureFlagVariant = {
-  name: FeatureFlagsNames
+  name: FeatureFlagsName
   enabled: boolean
   payload?: {
     type: string

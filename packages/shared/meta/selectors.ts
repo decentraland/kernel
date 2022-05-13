@@ -1,4 +1,4 @@
-import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsNames, RootMetaState, WorldConfig } from './types'
+import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
 import type { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
@@ -46,7 +46,7 @@ export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmCha
 /**
  * Returns the variant content of a feature flag
  */
-export function getVariantContent(store: RootMetaState, featureName: FeatureFlagsNames): string | undefined {
+export function getVariantContent(store: RootMetaState, featureName: FeatureFlagsName): string | undefined {
   const ff = getFeatureFlags(store)
   if (ff.variants[featureName] && ff.variants[featureName]?.payload) {
     return ff.variants[featureName]?.payload?.value
@@ -57,7 +57,7 @@ export function getVariantContent(store: RootMetaState, featureName: FeatureFlag
 /**
  * Returns the feature flag value
  */
-export function getFeatureFlagActivated(store: RootMetaState, featureName: FeatureFlagsNames): boolean {
+export function getFeatureFlagActivated(store: RootMetaState, featureName: FeatureFlagsName): boolean {
   const ff = getFeatureFlags(store)
   if (ff.flags[featureName]) {
     return ff.flags[featureName] || false
@@ -73,14 +73,14 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
 
   if (store?.meta?.config?.featureFlagsV2 !== undefined) {
     for (const feature in store?.meta?.config?.featureFlagsV2.flags) {
-      const featureName = feature.replace('explorer-', '') as FeatureFlagsNames
-      featureFlag.flags[featureName] = store?.meta?.config?.featureFlagsV2.flags[feature as FeatureFlagsNames]
+      const featureName = feature.replace('explorer-', '') as FeatureFlagsName
+      featureFlag.flags[featureName] = store?.meta?.config?.featureFlagsV2.flags[feature as FeatureFlagsName]
     }
 
     for (const feature in store?.meta?.config?.featureFlagsV2.variants) {
-      const featureName = feature.replace('explorer-', '') as FeatureFlagsNames
+      const featureName = feature.replace('explorer-', '') as FeatureFlagsName
       featureFlag.variants[featureName] = store?.meta?.config?.featureFlagsV2.variants[
-        feature as FeatureFlagsNames
+        feature as FeatureFlagsName
       ] || {
         enabled: false,
         name: featureName
@@ -92,10 +92,10 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
     const flags = new URLSearchParams(location.search)
     flags.forEach((_, key) => {
       if (key.startsWith(`DISABLE_`)) {
-        const featureName = key.replace('DISABLE_', '').toLowerCase() as FeatureFlagsNames
+        const featureName = key.replace('DISABLE_', '').toLowerCase() as FeatureFlagsName
         featureFlag.flags[featureName] = false
       } else if (key.startsWith(`ENABLE_`)) {
-        const featureName = key.replace('ENABLE_', '').toLowerCase() as FeatureFlagsNames
+        const featureName = key.replace('ENABLE_', '').toLowerCase() as FeatureFlagsName
         featureFlag.flags[featureName] = true
       }
     })
