@@ -9,18 +9,15 @@ import { lastPlayerPositionReport } from 'shared/world/positionThings'
 // import { getIdentity } from 'shared/session'
 
 import { JoinIslandMessage, LeftIslandMessage } from './proto/archipelago_pb'
+import { SuspendRelayData, PingData, PongData, PayloadEncoding, Packet, MessageData } from './proto/peer_protobuf'
 
 import { Reader } from 'protobufjs/minimal'
 import { Mesh } from './Mesh'
 
 import { removePeerByUUID } from '../peers'
 import {
-  PongData,
-  PingData,
-  MessageData,
   PeerMessageType,
   PongMessageType,
-  PayloadEncoding,
   PingMessageType,
   PeerMessageTypes,
   Position3D,
@@ -29,8 +26,6 @@ import {
   KnownPeerData,
   // PeerWebRTCHandler,
   discretizedPositionDistanceXZ,
-  Packet,
-  SuspendRelayData,
   SuspendRelayType,
   PingResult
 } from '@dcl/catalyst-peer'
