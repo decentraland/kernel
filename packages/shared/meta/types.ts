@@ -23,6 +23,12 @@ export type MetaConfiguration = {
   featureFlagsV2?: FeatureFlag
 }
 
+export type FeatureFlagsNames =
+  | 'quests' // quests feature
+  | 'retry_matrix_login' // retry matrix reconnection
+  | 'parcel-denylist' // denylist of specific parcels using variants
+  | 'matrix_disabled' // disable matrix integration entirely
+
 export type BannedUsers = Record<string, Ban[]>
 
 export type Ban = {
@@ -64,12 +70,12 @@ export enum FeatureFlags {
 }
 
 export type FeatureFlag = {
-  flags: Record<string, boolean>
-  variants: Record<string, FeatureFlagVariant>
+  flags: Partial<Record<FeatureFlagsNames, boolean>>
+  variants: Partial<Record<FeatureFlagsNames, FeatureFlagVariant>>
 }
 
 export type FeatureFlagVariant = {
-  name: string
+  name: FeatureFlagsNames
   enabled: boolean
   payload?: {
     type: string

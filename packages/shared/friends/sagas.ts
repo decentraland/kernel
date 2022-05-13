@@ -53,7 +53,7 @@ import {
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
-import { getSynapseUrl } from 'shared/meta/selectors'
+import { getFeatureFlagActivated, getSynapseUrl } from 'shared/meta/selectors'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
@@ -62,6 +62,7 @@ import { trackEvent } from '../analytics'
 import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
+import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -88,7 +89,15 @@ export function* friendsSaga() {
 function* initializeFriendsSaga() {
   let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
 
-  while (true) {
+  yield call(waitForMetaConfigurationInitialization)
+
+  // this reconnection breaks the server. setting to false
+  const shouldRetryReconnection = yield select(getFeatureFlagActivated, 'retry_matrix_login')
+  const chatDisabled = yield select(getFeatureFlagActivated, 'matrix_disabled')
+
+  if (chatDisabled) return
+
+  do {
     yield race({
       auth: take(USER_AUTHENTIFIED),
       delay: delay(secondsToRetry)
@@ -107,7 +116,7 @@ function* initializeFriendsSaga() {
     const client: SocialAPI | null = yield select(getSocialClient)
     const isLoggedIn: boolean = (currentIdentity && client && (yield apply(client, client.isLoggedIn, []))) || false
 
-    const shouldRetry = !isLoggedIn
+    const shouldRetry = !isLoggedIn && !isGuest
 
     if (shouldRetry) {
       try {
@@ -130,7 +139,7 @@ function* initializeFriendsSaga() {
         }
       }
     }
-  }
+  } while (shouldRetryReconnection)
 }
 
 async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, socialId: string) {

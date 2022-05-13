@@ -123,6 +123,14 @@ function* waitForCandidates() {
   }
 }
 
+function realmFromPinnedCatalyst(): Realm {
+  return {
+    protocol: 'v2',
+    hostname: PIN_CATALYST || 'peer.decentraland.org',
+    serverName: 'pinned-catalyst'
+  }
+}
+
 function* selectRealm() {
   const network: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
 
@@ -147,13 +155,15 @@ function* selectRealm() {
   }
 
   const realm: Realm | undefined =
-    // 1st priority: query param (dao candidates & cached)
+    // query param (dao candidates & cached)
     (yield call(getConfiguredRealm, [...allCandidates, ...cachedCandidates])) ||
-    // 2nd priority: preview mode
+    // CATALYST from url parameter
+    (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
+    // preview mode
     (PREVIEW ? PREVIEW_REALM : null) ||
-    // 3rd priority: cached in local storage
+    // cached in local storage
     (yield call(getRealmFromLocalStorage, network)) ||
-    // 4th priority: fetch catalysts and select one using the load balancing
+    // fetch catalysts and select one using the load balancing
     (yield call(pickCatalystRealm))
 
   if (!realm) debugger
@@ -195,7 +205,7 @@ function* initializeCatalystCandidates() {
   const catalystsNodesEndpointURL: string | undefined = yield select(getCatalystNodesEndpoint)
 
   const nodes: CatalystNode[] = yield call(fetchCatalystRealms, catalystsNodesEndpointURL)
-  const added: string[] = PIN_CATALYST ? [] : yield select(getAddedServers)
+  const added: string[] = yield select(getAddedServers)
 
   const candidates: Candidate[] = yield call(fetchCatalystStatuses, added.map((url) => ({ domain: url })).concat(nodes))
 
