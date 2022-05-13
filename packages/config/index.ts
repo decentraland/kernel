@@ -228,16 +228,12 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
   const metaConfigBaseUrl = META_CONFIG_URL || `https://config.decentraland.${tld}/explorer.json`
-  const metaFeatureFlagsBaseUrl = PREVIEW
-    ? `${rootURLPreviewMode()}/feature-flags/explorer.json`
-    : `https://feature-flags.decentraland.${tld}/explorer.json`
 
   const questsUrl =
     ensureSingleString(qs.get('QUESTS_SERVER_URL')) ?? `https://quests-api.decentraland.${network ? 'org' : 'io'}`
 
   return {
     explorerConfiguration: `${metaConfigBaseUrl}?t=${new Date().getTime()}`,
-    explorerFeatureFlags: `${metaFeatureFlagsBaseUrl}?t=${new Date().getTime()}`,
     questsUrl
   }
 }
