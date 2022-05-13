@@ -53,7 +53,7 @@ import {
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
-import { getFeatureFlagActivated, getSynapseUrl } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
@@ -92,9 +92,9 @@ function* initializeFriendsSaga() {
   yield call(waitForMetaConfigurationInitialization)
 
   // this reconnection breaks the server. setting to false
-  const shouldRetryReconnection = yield select(getFeatureFlagActivated, 'retry_matrix_login')
-  const chatDisabled = yield select(getFeatureFlagActivated, 'matrix_disabled')
-
+  const shouldRetryReconnection = yield select(getFeatureFlagEnabled, 'retry_matrix_login')
+  const chatDisabled = yield select(getFeatureFlagEnabled, 'matrix_disabled')
+  debugger
   if (chatDisabled) return
 
   do {

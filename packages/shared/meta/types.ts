@@ -1,6 +1,6 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { RenderProfile } from 'shared/types'
-import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
+import { FeatureFlagVariant } from '@dcl/feature-flags'
 
 export type MetaConfiguration = {
   explorer: {
@@ -13,13 +13,10 @@ export type MetaConfiguration = {
     contentWhitelist: string[]
     catalystsNodesEndpoint?: string
   }
-  pickRealmAlgorithmConfig?: AlgorithmChainConfig
-  bannedUsers: BannedUsers
   synapseUrl: string
   world: WorldConfig
   comms: CommsConfig
   minCatalystVersion?: string
-  featureFlags?: Record<string, boolean>
   featureFlagsV2?: FeatureFlag
 }
 
@@ -33,6 +30,9 @@ export type FeatureFlagsName =
   | 'asset_bundles'
   | 'explorev2'
   | 'unsafe-request'
+  | 'pick_realm_algorithm_config'
+  | 'banned_users'
+  | 'max_visible_peers'
 
 export type BannedUsers = Record<string, Ban[]>
 
@@ -68,13 +68,4 @@ export type CommsConfig = {
 export type FeatureFlag = {
   flags: Partial<Record<FeatureFlagsName, boolean>>
   variants: Partial<Record<FeatureFlagsName, FeatureFlagVariant>>
-}
-
-export type FeatureFlagVariant = {
-  name: FeatureFlagsName
-  enabled: boolean
-  payload?: {
-    type: string
-    value: string
-  }
 }

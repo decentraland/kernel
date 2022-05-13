@@ -7,7 +7,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { toRendererQuest } from '@dcl/ecs-quests/@dcl/mappings'
 import { getPreviousQuests, getQuests } from './selectors'
 import { deepEqual } from 'atomicHelpers/deepEqual'
-import { getFeatureFlagActivated } from '../meta/selectors'
+import { getFeatureFlagEnabled } from '../meta/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 
@@ -20,7 +20,7 @@ export function* questsSaga(): any {
 
 function* areQuestsEnabled() {
   yield call(waitForMetaConfigurationInitialization)
-  const ret: boolean = yield select(getFeatureFlagActivated, 'quests')
+  const ret: boolean = yield select(getFeatureFlagEnabled, 'quests')
   return ret
 }
 

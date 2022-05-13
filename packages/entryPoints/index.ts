@@ -23,7 +23,7 @@ import { getCurrentIdentity } from 'shared/session/selectors'
 import { realmInitialized } from 'shared/dao'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { WorldConfig } from 'shared/meta/types'
-import { getFeatureFlagActivated, getFeatureFlags, getWorldConfig } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getFeatureFlags, getWorldConfig } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { ensureUnityInterface } from 'shared/renderer'
 import { globalObservable } from 'shared/observables'
@@ -162,13 +162,13 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   //      For example disable AssetBundles needs a system from FeatureFlag
   i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
 
-  const questEnabled = getFeatureFlagActivated(store.getState(), 'quests')
+  const questEnabled = getFeatureFlagEnabled(store.getState(), 'quests')
   const worldConfig: WorldConfig | undefined = getWorldConfig(store.getState())
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
 
   // killswitch, disable asset bundles
-  if (!getFeatureFlagActivated(store.getState(), 'asset_bundles')) {
+  if (!getFeatureFlagEnabled(store.getState(), 'asset_bundles')) {
     i.SetDisableAssetBundles()
   }
 
@@ -230,8 +230,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
 
   const isGuest = !identity.hasConnectedWeb3
-  const friendsActivated = !isGuest && !getFeatureFlagActivated(store.getState(), 'matrix_disabled')
-  const BUILDER_IN_WORLD_ENABLED = !isGuest && getFeatureFlagActivated(store.getState(), 'builder_in_world')
+  const friendsActivated = !isGuest && !getFeatureFlagEnabled(store.getState(), 'matrix_disabled')
+  const BUILDER_IN_WORLD_ENABLED = !isGuest && getFeatureFlagEnabled(store.getState(), 'builder_in_world')
 
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
   i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: friendsActivated, visible: false })

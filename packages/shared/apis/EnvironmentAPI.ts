@@ -6,7 +6,7 @@ import { getServerConfigurations, PREVIEW, RENDERER_WS } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsIsland, getRealm } from 'shared/comms/selectors'
 import { Realm } from 'shared/dao/types'
-import { getFeatureFlagActivated } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled } from 'shared/meta/selectors'
 import { EnvironmentRealm, ExplorerConfiguration, IEnvironmentAPI, Platform } from './IEnvironmentAPI'
 
 type DecentralandTimeData = {
@@ -55,7 +55,7 @@ export class EnvironmentAPI extends ExposableAPI implements IEnvironmentAPI {
    */
   @exposeMethod
   async areUnsafeRequestAllowed(): Promise<boolean> {
-    return getFeatureFlagActivated(store.getState(), 'unsafe-request')
+    return getFeatureFlagEnabled(store.getState(), 'unsafe-request')
   }
 
   /**
