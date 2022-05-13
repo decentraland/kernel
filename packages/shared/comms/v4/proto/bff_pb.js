@@ -167,7 +167,7 @@ if (goog.DEBUG && !COMPILED) {
  * @constructor
  */
 proto.protocol.SubscriptionMessage = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.protocol.SubscriptionMessage.repeatedFields_, null);
 };
 goog.inherits(proto.protocol.SubscriptionMessage, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -1153,6 +1153,13 @@ proto.protocol.ValidationFailureMessage.prototype.setType = function(value) {
 
 
 
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.protocol.SubscriptionMessage.repeatedFields_ = [2];
+
 
 
 if (jspb.Message.GENERATE_TO_OBJECT) {
@@ -1185,7 +1192,7 @@ proto.protocol.SubscriptionMessage.prototype.toObject = function(opt_includeInst
 proto.protocol.SubscriptionMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
     type: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    topics: msg.getTopics_asB64()
+    topicsList: (f = jspb.Message.getRepeatedField(msg, 2)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -1227,8 +1234,8 @@ proto.protocol.SubscriptionMessage.deserializeBinaryFromReader = function(msg, r
       msg.setType(value);
       break;
     case 2:
-      var value = /** @type {!Uint8Array} */ (reader.readBytes());
-      msg.setTopics(value);
+      var value = /** @type {string} */ (reader.readString());
+      msg.addTopics(value);
       break;
     default:
       reader.skipField();
@@ -1266,9 +1273,9 @@ proto.protocol.SubscriptionMessage.serializeBinaryToWriter = function(message, w
       f
     );
   }
-  f = message.getTopics_asU8();
+  f = message.getTopicsList();
   if (f.length > 0) {
-    writer.writeBytes(
+    writer.writeRepeatedString(
       2,
       f
     );
@@ -1295,44 +1302,39 @@ proto.protocol.SubscriptionMessage.prototype.setType = function(value) {
 
 
 /**
- * optional bytes topics = 2;
- * @return {!(string|Uint8Array)}
+ * repeated string topics = 2;
+ * @return {!Array<string>}
  */
-proto.protocol.SubscriptionMessage.prototype.getTopics = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 2, ""));
+proto.protocol.SubscriptionMessage.prototype.getTopicsList = function() {
+  return /** @type {!Array<string>} */ (jspb.Message.getRepeatedField(this, 2));
 };
 
 
 /**
- * optional bytes topics = 2;
- * This is a type-conversion wrapper around `getTopics()`
- * @return {string}
- */
-proto.protocol.SubscriptionMessage.prototype.getTopics_asB64 = function() {
-  return /** @type {string} */ (jspb.Message.bytesAsB64(
-      this.getTopics()));
-};
-
-
-/**
- * optional bytes topics = 2;
- * Note that Uint8Array is not supported on all browsers.
- * @see http://caniuse.com/Uint8Array
- * This is a type-conversion wrapper around `getTopics()`
- * @return {!Uint8Array}
- */
-proto.protocol.SubscriptionMessage.prototype.getTopics_asU8 = function() {
-  return /** @type {!Uint8Array} */ (jspb.Message.bytesAsU8(
-      this.getTopics()));
-};
-
-
-/**
- * @param {!(string|Uint8Array)} value
+ * @param {!Array<string>} value
  * @return {!proto.protocol.SubscriptionMessage} returns this
  */
-proto.protocol.SubscriptionMessage.prototype.setTopics = function(value) {
-  return jspb.Message.setProto3BytesField(this, 2, value);
+proto.protocol.SubscriptionMessage.prototype.setTopicsList = function(value) {
+  return jspb.Message.setField(this, 2, value || []);
+};
+
+
+/**
+ * @param {string} value
+ * @param {number=} opt_index
+ * @return {!proto.protocol.SubscriptionMessage} returns this
+ */
+proto.protocol.SubscriptionMessage.prototype.addTopics = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 2, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.protocol.SubscriptionMessage} returns this
+ */
+proto.protocol.SubscriptionMessage.prototype.clearTopicsList = function() {
+  return this.setTopicsList([]);
 };
 
 

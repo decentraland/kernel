@@ -44,7 +44,7 @@ message ValidationFailureMessage {
 
 message SubscriptionMessage {
   MessageType type = 1;
-  bytes topics = 2;
+  repeated string topics = 2;
 }
 
 message TopicMessage {

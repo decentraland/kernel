@@ -1,15 +1,17 @@
 import { store } from 'shared/store/isolatedStore'
 import { future, IFuture } from 'fp-future'
 import { getCommsConfig } from 'shared/meta/selectors'
-import { commConfigurations } from 'config'
 import { Message } from 'google-protobuf'
 import { Transport, TransportMessage } from './Transport'
-import { Observable, Observer } from 'mz-observable'
+import { Observable } from 'mz-observable'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
-import { Authenticator, AuthIdentity } from 'dcl-crypto'
-import { getIdentity } from 'shared/session'
+// import { Authenticator, AuthIdentity } from 'dcl-crypto'
+// import { getIdentity } from 'shared/session'
+
+import { JoinIslandMessage, LeftIslandMessage } from './proto/archipelago_pb'
 
 import { Reader } from 'protobufjs/minimal'
+import { Mesh } from './Mesh'
 
 import { removePeerByUUID } from '../peers'
 import {
@@ -25,7 +27,7 @@ import {
   MinPeerData,
   PeerRelayData,
   KnownPeerData,
-  PeerWebRTCHandler,
+  // PeerWebRTCHandler,
   discretizedPositionDistanceXZ,
   Packet,
   SuspendRelayData,
@@ -34,9 +36,9 @@ import {
 } from '@dcl/catalyst-peer'
 
 import { createLogger } from 'shared/logger'
-import { BFFConnection, PeerChangeData } from './BFFConnection'
+import { BFFConnection, TopicListener } from './BFFConnection'
 
-const logger = createLogger('CommsV4:Peer2Peer: ')
+const logger = createLogger('CommsV4:P2P: ')
 
 export const MAX_UINT32 = 4294967295
 export function randomUint32(): number {
@@ -105,11 +107,11 @@ export class PeerToPeerTransport implements Transport {
   public onDisconnectObservable = new Observable<void>()
   public onMessageObservable = new Observable<TransportMessage>()
 
-  private wrtcHandler: PeerWebRTCHandler
+  // private wrtcHandler: PeerWebRTCHandler
+  private mesh: Mesh
   private peerRelayData: Record<string, PeerRelayData> = {}
   private knownPeers: Record<string, KnownPeerData> = {}
   private receivedPackets: Record<string, { timestamp: number; expirationTime: number }> = {}
-  private currentIslandId: string | undefined
   private updatingNetwork: boolean = false
   private currentMessageId: number = 0
   private instanceId: number
@@ -120,12 +122,11 @@ export class PeerToPeerTransport implements Transport {
   private activePings: Record<string, ActivePing> = {}
   private config: Config
 
-  private onPeerJoinedListener: Observer<PeerChangeData> | null
-  private onPeerLeftListener: Observer<PeerChangeData> | null
+  private onPeerJoinedListener: TopicListener | null
+  private onPeerLeftListener: TopicListener | null
 
   constructor(
     private peerId: string,
-    private lighthouseUrl: string,
     private bffConnection: BFFConnection,
     private islandId: string,
     peers: Map<string, Position3D>
@@ -147,39 +148,42 @@ export class PeerToPeerTransport implements Transport {
 
     this.instanceId = randomUint32()
 
-    this.wrtcHandler = new PeerWebRTCHandler({
-      peerId: this.peerId,
-      // wrtc: this.config.wrtc,
-      // socketBuilder: this.config.socketBuilder,
-      authHandler: async (msg: string) => {
-        try {
-          return Authenticator.signPayload(getIdentity() as AuthIdentity, msg)
-        } catch (e) {
-          logger.info(`error while trying to sign message from lighthouse '${msg}'`)
-        }
-        // if any error occurs
-        return getIdentity()
-      },
-      // isReadyToEmitSignals: () => !!this.currentIslandId,
-      handshakePayloadExtras: () => ({
-        protocolVersion: 5,
-        lighthouseUrl: this.lighthouseUrl,
-        islandId: this.currentIslandId,
-        position: this.selfPosition()
-      }),
-      // connectionToken: this.config.token,
-      rtcConnectionConfig: {
-        iceServers: commConfigurations.defaultIceServers
-      },
-      // serverMessageHandler: this.handleServerMessage.bind(this),
-      packetHandler: this.handlePeerPacket.bind(this),
-      // handshakeValidator: this.validateHandshake.bind(this),
-      // oldConnectionsTimeout: this.config.oldConnectionsTimeout,
-      // peerConnectTimeout: this.config.peerConnectTimeout,
-      // receivedOfferValidator: this.validateReceivedOffer.bind(this),
-      // heartbeatInterval: this.config.heartbeatInterval
+    this.mesh = new Mesh(this.bffConnection, this.peerId, {
+      packetHandler: this.handlePeerPacket.bind(this)
     })
-    this.wrtcHandler.setPeerServerUrl(lighthouseUrl)
+    // this.wrtcHandler = new PeerWebRTCHandler({
+    //   peerId: this.peerId,
+    //   // wrtc: this.config.wrtc,
+    //   // socketBuilder: this.config.socketBuilder,
+    //   authHandler: async (msg: string) => {
+    //     try {
+    //       return Authenticator.signPayload(getIdentity() as AuthIdentity, msg)
+    //     } catch (e) {
+    //       logger.info(`error while trying to sign message from lighthouse '${msg}'`)
+    //     }
+    //     // if any error occurs
+    //     return getIdentity()
+    //   },
+    //   // isReadyToEmitSignals: () => !!this.IslandId,
+    //   handshakePayloadExtras: () => ({
+    //     protocolVersion: 5,
+    //     lighthouseUrl: this.lighthouseUrl,
+    //     islandId: this.IslandId,
+    //     position: this.selfPosition()
+    //   }),
+    //   // connectionToken: this.config.token,
+    //   rtcConnectionConfig: {
+    //     iceServers: commConfigurations.defaultIceServers
+    //   },
+    //   // serverMessageHandler: this.handleServerMessage.bind(this),
+    //   packetHandler: this.handlePeerPacket.bind(this),
+    //   // handshakeValidator: this.validateHandshake.bind(this),
+    //   // oldConnectionsTimeout: this.config.oldConnectionsTimeout,
+    //   // peerConnectTimeout: this.config.peerConnectTimeout,
+    //   // receivedOfferValidator: this.validateReceivedOffer.bind(this),
+    //   // heartbeatInterval: this.config.heartbeatInterval
+    // })
+    // this.wrtcHandler.setPeerServerUrl(lighthouseUrl)
 
     // this.wrtcHandler.on(PeerWebRTCEvent.ConnectionRequestRejected, this.handleConnectionRequestRejected.bind(this))
 
@@ -229,8 +233,9 @@ export class PeerToPeerTransport implements Transport {
     //   this.pingTimeoutId = schedulePing()
     // }
 
-    this.onPeerJoinedListener = this.bffConnection.onPeerJoinObservable.add(this.onPeerJoined.bind(this))
-    this.onPeerLeftListener = this.bffConnection.onPeerLeftObservable.add(this.onPeerLeft.bind(this))
+    this.onPeerJoinedListener = this.bffConnection.addListener(`island.${this.islandId}.peer_join`, this.onPeerJoined.bind(this))
+    this.onPeerLeftListener = this.bffConnection.addListener(`island.${this.islandId}.peer_left`, this.onPeerLeft.bind(this))
+    this.bffConnection.refreshTopics()
 
     peers.forEach((p: Position3D, peerId: string) => {
       if (peerId !== this.peerId) {
@@ -242,30 +247,54 @@ export class PeerToPeerTransport implements Transport {
     })
 
 
-
     // this.bff.sendTopicMessage(`peer.${peerId}.got_candidate`)
-
-
 
     globalThis.__DEBUG_PEER = this
   }
 
-  onPeerJoined({ islandId, peerId }: PeerChangeData) {
-    logger.log(`peer ${peerId} join ${islandId}, current island is ${this.islandId}`)
-    if (islandId === this.currentIslandId) {
+  private onPeerJoined(data: Uint8Array) {
+    let peerJoinMessage: JoinIslandMessage
+    try {
+      peerJoinMessage = JoinIslandMessage.deserializeBinary(data)
+    } catch (e) {
+      logger.error('cannot process peer join message', e)
+      return
+    }
+
+    const islandId = peerJoinMessage.getIslandId()
+    const peerId = peerJoinMessage.getPeerId()
+
+    if (islandId === this.islandId) {
+      logger.log(`peer ${peerId} joined ${islandId}`)
+
       // TODO: do we have the positions as well?
       this.addKnownPeerIfNotExists({ id: peerId })
       this.triggerUpdateNetwork(`peer ${peerId} joined island`)
+    } else {
+      logger.warn(`peer ${peerId} join ${islandId}, but our current island is ${this.islandId}`)
     }
   }
 
-  onPeerLeft({ islandId, peerId }: PeerChangeData) {
-    logger.log(`peer ${peerId} left ${islandId}, current island is ${this.islandId}`)
-    if (islandId === this.currentIslandId) {
-      if (this.isConnectedTo(peerId)) this.disconnectFrom(peerId)
+  private onPeerLeft(data: Uint8Array) {
+    let peerLeftMessage: LeftIslandMessage
+    try {
+      peerLeftMessage = LeftIslandMessage.deserializeBinary(data)
+    } catch (e) {
+      logger.error('cannot process peer left message', e)
+      return
+    }
+
+    const islandId = peerLeftMessage.getIslandId()
+    const peerId = peerLeftMessage.getPeerId()
+
+    if (islandId === this.islandId) {
+      logger.log(`peer ${peerId} left ${this.islandId}`)
+      this.disconnectFrom(peerId)
       this.removeKnownPeer(peerId)
       this.triggerUpdateNetwork(`peer ${peerId} left island`)
       removePeerByUUID(peerId)
+    } else {
+      logger.warn(`peer ${peerId} left ${islandId}, but our current island is ${this.islandId}`)
     }
   }
 
@@ -302,15 +331,16 @@ export class PeerToPeerTransport implements Transport {
     clearTimeout(this.updateNetworkTimeoutId as any)
     clearTimeout(this.expireTimeoutId as any)
     clearTimeout(this.pingTimeoutId as any)
+
     if (this.onPeerJoinedListener) {
-      this.bffConnection.onPeerJoinObservable.remove(this.onPeerJoinedListener)
+      this.bffConnection.removeListener(this.onPeerJoinedListener)
+    }
+    if (this.onPeerLeftListener) {
+      this.bffConnection.removeListener(this.onPeerLeftListener)
     }
 
-    if (this.onPeerLeftListener) {
-      this.bffConnection.onPeerLeftObservable.remove(this.onPeerLeftListener)
-    }
-    this.cleanStateAndConnections()
-    await this.wrtcHandler.dispose()
+    this.knownPeers = {}
+    await this.mesh.dispose()
     this.onDisconnectObservable.notifyObservers()
 
   }
@@ -386,7 +416,7 @@ export class PeerToPeerTransport implements Transport {
     }
 
     const messageData = packet.messageData
-    if (messageData && messageData.room === this.currentIslandId) {
+    if (messageData && messageData.room === this.islandId) {
       this.onMessageObservable.notifyObservers({
         peer: packet.src,
         data: this.decodePayload(messageData.payload, messageData.encoding)
@@ -472,18 +502,9 @@ export class PeerToPeerTransport implements Transport {
     })
   }
 
-
   private connectedCount() {
-    return this.wrtcHandler.connectedCount()
+    return this.mesh.connectedCount()
   }
-
-
-  private cleanStateAndConnections() {
-    this.knownPeers = {}
-    this.wrtcHandler.cleanConnections()
-  }
-
-
 
   private updateTimeStamp(peerId: string, subtype: string | undefined, timestamp: number, sequenceId: number) {
     const knownPeer = this.knownPeers[peerId]
@@ -497,7 +518,6 @@ export class PeerToPeerTransport implements Transport {
       }
     }
   }
-
 
   private getPeerRelayData(peerId: string) {
     if (!this.peerRelayData[peerId]) {
@@ -513,7 +533,7 @@ export class PeerToPeerTransport implements Transport {
   }
 
   private processSuspensionRequest(peerId: string, suspendRelayData: SuspendRelayData) {
-    if (this.wrtcHandler.hasConnectionsFor(peerId)) {
+    if (this.mesh.hasConnectionsFor(peerId)) {
       const relayData = this.getPeerRelayData(peerId)
       suspendRelayData.relayedPeers.forEach(
         (it) => (relayData.ownSuspendedRelays[it] = Date.now() + suspendRelayData.durationMillis)
@@ -790,7 +810,7 @@ export class PeerToPeerTransport implements Transport {
       packet.receivedBy.push(this.peerId)
 
 
-    const peersToSend = this.wrtcHandler.fullyConnectedPeerIds().filter(
+    const peersToSend = this.mesh.fullyConnectedPeerIds().filter(
       (it) =>
         !packet.receivedBy.includes(it) && (packet.hops === 0 || !this.isRelayToConnectionSuspended(it, packet.src))
     )
@@ -814,7 +834,7 @@ export class PeerToPeerTransport implements Transport {
     if (this.isConnectedTo(peer)) {
       try {
         const data = Packet.encode(packet).finish()
-        this.wrtcHandler.sendPacketToPeer(peer, data)
+        this.mesh.sendPacketToPeer(peer, data)
       } catch (e) {
         logger.warn('Error sending data to peer ${peer} ${e}')
       }
@@ -829,12 +849,12 @@ export class PeerToPeerTransport implements Transport {
 
 
   private isConnectedTo(peerId: string): boolean {
-    return this.wrtcHandler.isConnectedTo(peerId)
+    return this.mesh.isConnectedTo(peerId)
   }
 
 
   private getWorstConnectedPeerByDistance(): [number, string] | undefined {
-    return this.wrtcHandler.connectedPeerIds().reduce<[number, string] | undefined>((currentWorst, peer) => {
+    return this.mesh.connectedPeerIds().reduce<[number, string] | undefined>((currentWorst, peer) => {
       const currentDistance = this.distanceTo(peer)
       if (typeof currentDistance !== 'undefined') {
         return typeof currentWorst !== 'undefined' && currentWorst[0] >= currentDistance
@@ -854,7 +874,7 @@ export class PeerToPeerTransport implements Transport {
 
       logger.log(`Updating network because of event "${event}"...`)
 
-      this.wrtcHandler.checkConnectionsSanity()
+      this.mesh.checkConnectionsSanity()
 
       let connectionCandidates = Object.values(this.knownPeers).filter((it) => this.isValidConnectionCandidate(it))
 
@@ -905,7 +925,7 @@ export class PeerToPeerTransport implements Transport {
   }
 
   private calculateNextNetworkOperation(connectionCandidates: KnownPeerData[]): NetworkOperation | undefined {
-    logger.log(`Calculating network operation with candidates ${connectionCandidates} `)
+    logger.log(`Calculating network operation with candidates ${JSON.stringify(connectionCandidates)}`)
 
     const peerSortCriteria = this.peerSortCriteria()
 
@@ -923,7 +943,7 @@ export class PeerToPeerTransport implements Transport {
       return async () => {
         const [candidates, remaining] = pickCandidates(neededConnections)
 
-        logger.log(`Picked connection candidates ${candidates} `)
+        logger.log(`Picked connection candidates ${JSON.stringify(candidates)} `)
 
         await Promise.all(
           candidates.map((candidate) =>
@@ -977,7 +997,7 @@ export class PeerToPeerTransport implements Transport {
 
     // We drop those connections too far away
     if (this.config.disconnectDistance) {
-      const connectionsToDrop = this.wrtcHandler.connectedPeerIds().filter((it) => {
+      const connectionsToDrop = this.mesh.connectedPeerIds().filter((it) => {
         const distance = this.distanceTo(it)
         // We need to check that we are actually connected to the peer, and also only disconnect to it if we know we are far away and we don't have any rooms in common
         return this.isConnectedTo(it) && distance && distance >= this.config.disconnectDistance!
@@ -1005,12 +1025,11 @@ export class PeerToPeerTransport implements Transport {
   }
 
   async connectTo(known: KnownPeerData) {
-    return await this.wrtcHandler.connectTo(known.id)
+    return await this.mesh.connectTo(known.id)
   }
 
-
-  private disconnectFrom(peerId: string, removeListener: boolean = true) {
-    this.wrtcHandler.disconnectFrom(peerId, removeListener)
+  private disconnectFrom(peerId: string) {
+    this.mesh.disconnectFrom(peerId)
     delete this.peerRelayData[peerId]
   }
 

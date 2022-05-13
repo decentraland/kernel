@@ -1,6 +1,5 @@
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
-import { Message } from 'google-protobuf'
 import {
   MessageType,
   HeartBeatMessage,
@@ -13,7 +12,7 @@ import {
   ValidationOKMessage
 } from './proto/bff_pb'
 import { Category, WorldPositionData } from './proto/comms_pb'
-import { IslandChangedMessage, JoinIslandMessage, LeftIslandMessage, Position3DMessage } from './proto/archipelago_pb'
+import { IslandChangedMessage, Position3DMessage } from './proto/archipelago_pb'
 import { Position3D } from '@dcl/catalyst-peer'
 import { AuthIdentity, Authenticator } from 'dcl-crypto'
 
@@ -34,26 +33,25 @@ export type IslandChangeData = {
   peers: Map<string, Position3D>
 }
 
-export type PeerChangeData = {
-  islandId: string
-  peerId: string
+export type TopicListener = {
+  topic: string
+  handler: (data: Uint8Array, peerId?: string) => void
 }
 
-// TODO: refactor this class to be able to register listener to events
-// get ride of at least islandId 
 export class BFFConnection {
   public logger: ILogger = createLogger('BFF: ')
 
   public onDisconnectObservable = new Observable<void>()
   public onTopicMessageObservable = new Observable<TopicData>()
   public onIslandChangeObservable = new Observable<IslandChangeData>()
-  public onPeerLeftObservable = new Observable<PeerChangeData>()
-  public onPeerJoinObservable = new Observable<PeerChangeData>()
 
   private ws: WebSocket | null = null
   private heartBeatInterval: any = null
   private peerId: string | null = null
   private islandId: string | null = null
+  private listeners = new Map<string, Set<TopicListener>>()
+
+  private rawTopics: string[] = []
 
   constructor(public url: string, private config: BFFConfig) { }
 
@@ -85,38 +83,48 @@ export class BFFConnection {
     }
   }
 
+  public addListener(topic: string, handler: (data: Uint8Array, peerId?: string) => void): TopicListener {
+    const l = { topic, handler }
+    const listeners = this.listeners.get(topic) || new Set<TopicListener>()
+    listeners.add(l)
+    this.listeners.set(topic, listeners)
+    return l
+  }
 
-  sendTopicMessage(topic: string, body: Message) {
-    const encodedBody = body.serializeBinary()
+  public removeListener(l: TopicListener): void {
+    const listeners = this.listeners.get(l.topic)
+    if (listeners) {
+      listeners.delete(l)
+    }
+  }
 
+  public sendMessage(topic: string, body: Uint8Array) {
     const message = new TopicMessage()
     message.setType(MessageType.TOPIC)
     message.setTopic(topic)
-    message.setBody(encodedBody)
+    message.setBody(body)
 
     this.send(message.serializeBinary())
   }
 
-  async setTopics(rawTopics: string[]) {
+  // TODO: replace this method with a listener
+  public async setTopics(rawTopics: string[]) {
+    this.rawTopics = rawTopics
+    this.refreshTopics()
+  }
+
+  public refreshTopics(): Promise<void> {
     const subscriptionMessage = new SubscriptionMessage()
     subscriptionMessage.setType(MessageType.SUBSCRIPTION)
 
-    // TODO: do this properly
-    if (this.peerId) {
-      rawTopics.push(`peer.${this.peerId}.got_candidate`)
-    }
+    const topics = new Set(this.rawTopics)
+    this.listeners.forEach((_, topic) => {
+      topics.add(topic)
+    })
 
-
-    // TODO: use TextDecoder instead of Buffer, it is a native browser API, works faster
-    subscriptionMessage.setTopics(Buffer.from(rawTopics.join(' '), 'utf8'))
+    subscriptionMessage.setTopicsList(Array.from(topics))
     const bytes = subscriptionMessage.serializeBinary()
-    this.send(bytes)
-  }
-
-  async send(data: Uint8Array): Promise<void> {
-    if (!this.ws) throw new Error('This transport is closed')
-
-    this.ws.send(data)
+    return this.send(bytes)
   }
 
   async disconnect() {
@@ -133,7 +141,14 @@ export class BFFConnection {
     }
   }
 
-  async onWsMessage(event: MessageEvent) {
+  private async send(data: Uint8Array): Promise<void> {
+    if (!this.ws) throw new Error('This transport is closed')
+
+    this.ws.send(data)
+  }
+
+
+  private async onWsMessage(event: MessageEvent) {
     const data = new Uint8Array(event.data)
 
     let msgType = MessageType.UNKNOWN_MESSAGE_TYPE as MessageTypeMap[keyof MessageTypeMap]
@@ -194,12 +209,7 @@ export class BFFConnection {
 
         const fromPeerId = topicMessage.getPeerId()
         const body = topicMessage.getBody() as any
-        if (fromPeerId) {
-          this.onTopicMessageObservable.notifyObservers({
-            peerId: fromPeerId,
-            data: body
-          })
-        } else if (this.peerId && topic === `peer.${this.peerId}.island_changed`) {
+        if (this.peerId && topic === `peer.${this.peerId}.island_changed`) {
           let islandChangedMessage: IslandChangedMessage
           try {
             islandChangedMessage = IslandChangedMessage.deserializeBinary(body)
@@ -215,36 +225,22 @@ export class BFFConnection {
             }
           })
 
-          this.islandId = islandChangedMessage.getIslandId()
           this.onIslandChangeObservable.notifyObservers({
             peerId: this.peerId,
             connStr: islandChangedMessage.getConnStr(),
-            islandId: this.islandId,
+            islandId: islandChangedMessage.getIslandId(),
             peers
           })
-        } else if (this.islandId && topic.startsWith(`island.${this.islandId}.peer_join`)) {
-          let peerJoinMessage: JoinIslandMessage
-          try {
-            peerJoinMessage = JoinIslandMessage.deserializeBinary(body)
-          } catch (e) {
-            this.logger.error('cannot process peer join message', e)
-            break
-          }
-          this.onPeerJoinObservable.notifyObservers({
-            islandId: peerJoinMessage.getIslandId(),
-            peerId: peerJoinMessage.getPeerId()
+        } else if (this.listeners.has(topic)) {
+          const listeners = this.listeners.get(topic)!
+          listeners.forEach((listener) => {
+            listener.handler(body, fromPeerId)
           })
-        } else if (this.islandId && topic.startsWith(`island.${this.islandId}.peer_left`)) {
-          let peerLeftMessage: LeftIslandMessage
-          try {
-            peerLeftMessage = LeftIslandMessage.deserializeBinary(body)
-          } catch (e) {
-            this.logger.error('cannot process peer left message', e)
-            break
-          }
-          this.onPeerLeftObservable.notifyObservers({
-            islandId: peerLeftMessage.getIslandId(),
-            peerId: peerLeftMessage.getPeerId()
+        } else if (fromPeerId) {
+          // TODO replace this with listeners
+          this.onTopicMessageObservable.notifyObservers({
+            peerId: fromPeerId,
+            data: body
           })
         } else {
           this.logger.warn(`unhandled system topic message ${topic}, peerid is ${this.peerId}, islandId is ${this.islandId}`)

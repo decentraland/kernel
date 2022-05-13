@@ -48,8 +48,7 @@ export class InstanceConnection implements RoomConnection {
       } else if (connStr.startsWith('livekit:')) {
         transport = new LivekitTransport(connStr.substring('livekit:'.length))
       } else if (connStr.startsWith('lighthouse:')) {
-        const lighthouseUrl = connStr.substring('lighthouse:'.length)
-        transport = new PeerToPeerTransport(peerId, lighthouseUrl, this.bff, islandId, peers)
+        transport = new PeerToPeerTransport(peerId, this.bff, islandId, peers)
       }
 
       if (!transport) {
@@ -125,7 +124,7 @@ export class InstanceConnection implements RoomConnection {
     d.setSceneId(sceneId)
     d.setData(message)
 
-    this.bff.sendTopicMessage(sceneId, d)
+    this.bff.sendMessage(sceneId, d.serializeBinary())
   }
 
   async sendChatMessage(_: Position, messageId: string, text: string) {

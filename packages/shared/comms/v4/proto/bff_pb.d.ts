@@ -149,10 +149,10 @@ export class SubscriptionMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
 
-  getTopics(): Uint8Array | string;
-  getTopics_asU8(): Uint8Array;
-  getTopics_asB64(): string;
-  setTopics(value: Uint8Array | string): void;
+  clearTopicsList(): void;
+  getTopicsList(): Array<string>;
+  setTopicsList(value: Array<string>): void;
+  addTopics(value: string, index?: number): string;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SubscriptionMessage.AsObject;
@@ -167,7 +167,7 @@ export class SubscriptionMessage extends jspb.Message {
 export namespace SubscriptionMessage {
   export type AsObject = {
     type: MessageTypeMap[keyof MessageTypeMap],
-    topics: Uint8Array | string,
+    topicsList: Array<string>,
   }
 }
 
