@@ -79,9 +79,7 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
 
     for (const feature in store?.meta?.config?.featureFlagsV2.variants) {
       const featureName = feature.replace('explorer-', '') as FeatureFlagsName
-      featureFlag.variants[featureName] = store?.meta?.config?.featureFlagsV2.variants[
-        feature as FeatureFlagsName
-      ] || {
+      featureFlag.variants[featureName] = store?.meta?.config?.featureFlagsV2.variants[feature as FeatureFlagsName] || {
         enabled: false,
         name: featureName
       }
