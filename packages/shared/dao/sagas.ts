@@ -157,10 +157,10 @@ function* selectRealm() {
   const realm: Realm | undefined =
     // query param (dao candidates & cached)
     (yield call(getConfiguredRealm, [...allCandidates, ...cachedCandidates])) ||
-    // CATALYST from url parameter
-    (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
     // preview mode
     (PREVIEW ? PREVIEW_REALM : null) ||
+    // CATALYST from url parameter
+    (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
     // cached in local storage
     (yield call(getRealmFromLocalStorage, network)) ||
     // fetch catalysts and select one using the load balancing

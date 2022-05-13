@@ -66,7 +66,7 @@ async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
   const explorerFeatureFlags = PREVIEW
-    ? `${rootURLPreviewMode()}/feature-flags`
+    ? `${rootURLPreviewMode()}/feature-flags/`
     : `https://feature-flags.decentraland.${tld}`
 
   const flagsAndVariants = await fetchFlags({ applicationName: 'explorer', featureFlagsUrl: explorerFeatureFlags })

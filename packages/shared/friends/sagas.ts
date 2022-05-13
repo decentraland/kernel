@@ -94,7 +94,7 @@ function* initializeFriendsSaga() {
   // this reconnection breaks the server. setting to false
   const shouldRetryReconnection = yield select(getFeatureFlagEnabled, 'retry_matrix_login')
   const chatDisabled = yield select(getFeatureFlagEnabled, 'matrix_disabled')
-  debugger
+
   if (chatDisabled) return
 
   do {
