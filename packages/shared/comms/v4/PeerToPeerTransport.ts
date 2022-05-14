@@ -5,13 +5,10 @@ import { Message } from 'google-protobuf'
 import { Transport, TransportMessage } from './Transport'
 import { Observable } from 'mz-observable'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
-// import { Authenticator, AuthIdentity } from 'dcl-crypto'
-// import { getIdentity } from 'shared/session'
 
 import { JoinIslandMessage, LeftIslandMessage } from './proto/archipelago_pb'
-import { SuspendRelayData, PingData, PongData, PayloadEncoding, Packet, MessageData } from './proto/peer_protobuf'
+import { SuspendRelayData, PingData, PongData, Packet, MessageData } from './proto/p2p_pb'
 
-import { Reader } from 'protobufjs/minimal'
 import { Mesh } from './Mesh'
 
 import { removePeerByUUID } from '../peers'
@@ -24,7 +21,6 @@ import {
   MinPeerData,
   PeerRelayData,
   KnownPeerData,
-  // PeerWebRTCHandler,
   discretizedPositionDistanceXZ,
   SuspendRelayType,
   PingResult
@@ -54,11 +50,12 @@ function pickBy<T>(array: T[], count: number, criteria: (t1: T, t2: T) => number
 
 type NetworkOperation = () => Promise<KnownPeerData[]>
 
-type PacketData =
-  | { messageData: MessageData }
-  | { pingData: PingData }
-  | { pongData: PongData }
-  | { suspendRelayData: SuspendRelayData }
+type PacketData = {
+  messageData?: MessageData,
+  pingData?: PingData,
+  pongData?: PongData,
+  suspendRelayData?: SuspendRelayData
+}
 
 type ActivePing = {
   results: PingResult[]
@@ -80,8 +77,6 @@ export const CONSTANTS = {
   DEFAULT_MAX_CONNECTIONS: 6,
   DEFAULT_PEER_CONNECT_TIMEOUT: 3500,
   DEFAULT_MESSAGE_EXPIRATION_TIME: 10000,
-  // DEFAULT_RECONNECTIONS_ATTEMPTS: 10,
-  // DEFAULT_RECONNECTION_BACKOFF_MS: 2000,
   DEFAULT_HEARTBEAT_INTERVAL: 2000
 }
 
@@ -146,53 +141,6 @@ export class PeerToPeerTransport implements Transport {
     this.mesh = new Mesh(this.bffConnection, this.peerId, {
       packetHandler: this.handlePeerPacket.bind(this)
     })
-    // this.wrtcHandler = new PeerWebRTCHandler({
-    //   peerId: this.peerId,
-    //   // wrtc: this.config.wrtc,
-    //   // socketBuilder: this.config.socketBuilder,
-    //   authHandler: async (msg: string) => {
-    //     try {
-    //       return Authenticator.signPayload(getIdentity() as AuthIdentity, msg)
-    //     } catch (e) {
-    //       logger.info(`error while trying to sign message from lighthouse '${msg}'`)
-    //     }
-    //     // if any error occurs
-    //     return getIdentity()
-    //   },
-    //   // isReadyToEmitSignals: () => !!this.IslandId,
-    //   handshakePayloadExtras: () => ({
-    //     protocolVersion: 5,
-    //     lighthouseUrl: this.lighthouseUrl,
-    //     islandId: this.IslandId,
-    //     position: this.selfPosition()
-    //   }),
-    //   // connectionToken: this.config.token,
-    //   rtcConnectionConfig: {
-    //     iceServers: commConfigurations.defaultIceServers
-    //   },
-    //   // serverMessageHandler: this.handleServerMessage.bind(this),
-    //   packetHandler: this.handlePeerPacket.bind(this),
-    //   // handshakeValidator: this.validateHandshake.bind(this),
-    //   // oldConnectionsTimeout: this.config.oldConnectionsTimeout,
-    //   // peerConnectTimeout: this.config.peerConnectTimeout,
-    //   // receivedOfferValidator: this.validateReceivedOffer.bind(this),
-    //   // heartbeatInterval: this.config.heartbeatInterval
-    // })
-    // this.wrtcHandler.setPeerServerUrl(lighthouseUrl)
-
-    // this.wrtcHandler.on(PeerWebRTCEvent.ConnectionRequestRejected, this.handleConnectionRequestRejected.bind(this))
-
-    // this.wrtcHandler.on(PeerWebRTCEvent.PeerConnectionLost, this.handlePeerConnectionLost.bind(this))
-
-    // this.wrtcHandler.on(PeerWebRTCEvent.PeerConnectionEstablished, this.handlePeerConnectionEstablished.bind(this))
-
-    // this.wrtcHandler.on(PeerWebRTCEvent.ServerConnectionError, async (err) => {
-    //   if (err.type === PeerErrorType.UnavailableID) {
-    //     this.config.eventsHandler.statusHandler?.('id-taken')
-    //   } else {
-    //     if (!this.retryingConnection) await this.retryConnection()
-    //   }
-    // })
 
     const scheduleExpiration = () =>
       setTimeout(() => {
@@ -240,9 +188,6 @@ export class PeerToPeerTransport implements Transport {
         }
       }
     })
-
-
-    // this.bff.sendTopicMessage(`peer.${peerId}.got_candidate`)
 
     globalThis.__DEBUG_PEER = this
   }
@@ -365,15 +310,15 @@ export class PeerToPeerTransport implements Transport {
   private handlePeerPacket(data: Uint8Array, peerId: string) {
     if (this.disposed) return
     try {
-      const packet = Packet.decode(Reader.create(data))
 
+      const packet = Packet.deserializeBinary(data)
 
-      const packetKey = `${packet.src}_${packet.instanceId}_${packet.sequenceId}`
+      const packetKey = `${packet.getSrc()}_${packet.getInstanceId()}_${packet.getSequenceId()}`
       const alreadyReceived = !!this.receivedPackets[packetKey]
 
       this.ensureAndUpdateKnownPeer(packet, peerId)
 
-      if (packet.discardOlderThan !== 0) {
+      if (packet.getDiscardOlderThan() !== 0) {
         // If discardOlderThan is zero, then we don't need to store the package.
         // Same or older packages will be instantly discarded
         this.receivedPackets[packetKey] = {
@@ -384,7 +329,7 @@ export class PeerToPeerTransport implements Transport {
 
       const expired = this.checkExpired(packet)
 
-      if (packet.hops >= 1) {
+      if (packet.getHops() >= 1) {
         this.countRelay(peerId, packet, expired, alreadyReceived)
       }
 
@@ -393,44 +338,44 @@ export class PeerToPeerTransport implements Transport {
       } else {
         this.requestRelaySuspension(packet, peerId)
       }
-    } catch (e) {
-      logger.warn(`Failed to process message from: ${peerId} ${e}`)
-      return
+    } catch (e: any) {
+      logger.warn(`Failed to process message from: ${peerId} ${e.toString()}`)
     }
   }
 
   private processPacket(packet: Packet) {
-    this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId)
+    this.updateTimeStamp(packet.getSrc(), packet.getSubtype(), packet.getTimestamp(), packet.getSequenceId())
 
-    packet.hops += 1
+    const hops = packet.getHops() + 1
+    packet.setHops(hops)
 
-    this.knownPeers[packet.src].hops = packet.hops
+    this.knownPeers[packet.getSrc()].hops = hops
 
-    if (packet.hops < packet.ttl) {
+    if (hops < packet.getTtl()) {
       this.sendPacket(packet)
     }
 
-    const messageData = packet.messageData
-    if (messageData && messageData.room === this.islandId) {
+    const messageData = packet.getMessageData()
+    if (messageData && messageData.getRoom() === this.islandId) {
       this.onMessageObservable.notifyObservers({
-        peer: packet.src,
-        data: this.decodePayload(messageData.payload, messageData.encoding)
+        peer: packet.getSrc(),
+        data: messageData.getPayload() as any
       })
     }
 
-    const pingData = packet.pingData
+    const pingData = packet.getPingData()
     if (pingData) {
-      this.respondPing(pingData.pingId)
+      this.respondPing(pingData.getPingId())
     }
 
-    const pongData = packet.pongData
+    const pongData = packet.getPongData()
     if (pongData) {
-      this.processPong(packet.src, pongData.pingId)
+      this.processPong(packet.getSrc(), pongData.getPingId())
     }
 
-    const suspendRelayData = packet.suspendRelayData
+    const suspendRelayData = packet.getSuspendRelayData()
     if (suspendRelayData) {
-      this.processSuspensionRequest(packet.src, suspendRelayData)
+      this.processSuspensionRequest(packet.getSrc(), suspendRelayData)
     }
   }
 
@@ -530,8 +475,8 @@ export class PeerToPeerTransport implements Transport {
   private processSuspensionRequest(peerId: string, suspendRelayData: SuspendRelayData) {
     if (this.mesh.hasConnectionsFor(peerId)) {
       const relayData = this.getPeerRelayData(peerId)
-      suspendRelayData.relayedPeers.forEach(
-        (it) => (relayData.ownSuspendedRelays[it] = Date.now() + suspendRelayData.durationMillis)
+      suspendRelayData.getRelayedPeersList().forEach(
+        (it) => (relayData.ownSuspendedRelays[it] = Date.now() + suspendRelayData.getDurationMillis())
       )
     }
   }
@@ -550,10 +495,9 @@ export class PeerToPeerTransport implements Transport {
 
       // We only send suspensions requests if more time than the configured interval has passed since last time
       if (lastSuspension && now - lastSuspension > suspensionConfig.relaySuspensionInterval) {
-        const suspendRelayData: SuspendRelayData = {
-          relayedPeers: relayData.pendingSuspensionRequests,
-          durationMillis: suspensionConfig.relaySuspensionDuration
-        }
+        const suspendRelayData = new SuspendRelayData()
+        suspendRelayData.setRelayedPeersList(relayData.pendingSuspensionRequests)
+        suspendRelayData.setDurationMillis(suspensionConfig.relaySuspensionDuration)
 
         logger.log(`Requesting relay suspension to ${peerId} ${suspendRelayData}`)
 
@@ -563,7 +507,7 @@ export class PeerToPeerTransport implements Transport {
 
         this.sendPacketToPeer(peerId, packet)
 
-        suspendRelayData.relayedPeers.forEach((relayedPeerId) => {
+        suspendRelayData.getRelayedPeersList().forEach((relayedPeerId) => {
           relayData.theirSuspendedRelays[relayedPeerId] = Date.now() + suspensionConfig.relaySuspensionDuration
         })
 
@@ -578,29 +522,29 @@ export class PeerToPeerTransport implements Transport {
 
   private consolidateSuspensionRequest(packet: Packet, connectedPeerId: string) {
     const relayData = this.getPeerRelayData(connectedPeerId)
-    if (relayData.pendingSuspensionRequests.includes(packet.src)) {
+    if (relayData.pendingSuspensionRequests.includes(packet.getSrc())) {
       // If there is already a pending suspension for this src through this connection, we don't do anything
       return
     }
 
-    logger.log(`Consolidating suspension for ${packet.src}->${connectedPeerId}`)
+    logger.log(`Consolidating suspension for ${packet.getSrc()}->${connectedPeerId}`)
 
     const now = Date.now()
 
     // We get a list of through which connected peers is this src reachable and are not suspended
-    const reachableThrough = Object.values(this.knownPeers[packet.src].reachableThrough).filter(
+    const reachableThrough = Object.values(this.knownPeers[packet.getSrc()].reachableThrough).filter(
       (it) =>
         this.isConnectedTo(it.id) &&
         now - it.timestamp < CONSTANTS.KNOWN_PEER_RELAY_EXPIRE_TIME &&
-        !this.isRelayFromConnectionSuspended(it.id, packet.src, now)
+        !this.isRelayFromConnectionSuspended(it.id, packet.getSrc(), now)
     )
 
-    logger.log(`${packet.src} is reachable through ${reachableThrough}`)
+    logger.log(`${packet.getSrc()} is reachable through ${reachableThrough}`)
 
     // We only suspend if we will have at least 1 path of connection for this peer after suspensions
     if (reachableThrough.length > 1 || (reachableThrough.length === 1 && reachableThrough[0].id !== connectedPeerId)) {
-      logger.log(`Will add suspension for ${packet.src} -> ${connectedPeerId}`)
-      relayData.pendingSuspensionRequests.push(packet.src)
+      logger.log(`Will add suspension for ${packet.getSrc()} -> ${connectedPeerId}`)
+      relayData.pendingSuspensionRequests.push(packet.getSrc())
     }
   }
 
@@ -628,15 +572,15 @@ export class PeerToPeerTransport implements Transport {
 
   private countRelay(peerId: string, packet: Packet, expired: boolean, alreadyReceived: boolean) {
     const relayData = this.getPeerRelayData(peerId)
-    let receivedRelayData = relayData.receivedRelayData[packet.src]
+    let receivedRelayData = relayData.receivedRelayData[packet.getSrc()]
     if (!receivedRelayData) {
-      receivedRelayData = relayData.receivedRelayData[packet.src] = {
-        hops: packet.hops,
+      receivedRelayData = relayData.receivedRelayData[packet.getSrc()] = {
+        hops: packet.getHops(),
         discarded: 0,
         total: 0
       }
     } else {
-      receivedRelayData.hops = packet.hops
+      receivedRelayData.hops = packet.getHops()
     }
 
     receivedRelayData.total += 1
@@ -660,23 +604,13 @@ export class PeerToPeerTransport implements Transport {
   }
 
   private respondPing(pingId: number) {
-    const pongData: PongData = { pingId }
+    const pongData = new PongData()
+    pongData.setPingId(pingId)
 
     // TODO: Maybe we should add a destination and handle this message as unicast
-    this.sendPacketWithData({ pongData }, PongMessageType, {
-      expireTime: CONSTANTS.DEFAULT_PING_TIMEOUT
-    })
-  }
-
-  private decodePayload(payload: Uint8Array, encoding: number): any {
-    switch (encoding) {
-      case PayloadEncoding.BYTES:
-        return payload as Uint8Array
-      case PayloadEncoding.STRING:
-        return new TextDecoder('utf-8').decode(payload)
-      case PayloadEncoding.JSON:
-        return JSON.parse(new TextDecoder('utf-8').decode(payload))
-    }
+    const packet = this.buildPacketWithData(PongMessageType, { pongData })
+    packet.setExpireTime(CONSTANTS.DEFAULT_PING_TIMEOUT)
+    this.sendPacket(packet)
   }
 
   private checkExpired(packet: Packet) {
@@ -685,20 +619,20 @@ export class PeerToPeerTransport implements Transport {
     let discardedByExpireTime: boolean = false
     const expireTime = this.getExpireTime(packet)
 
-    if (this.knownPeers[packet.src].timestamp) {
-      discardedByExpireTime = this.knownPeers[packet.src].timestamp! - packet.timestamp > expireTime
+    if (this.knownPeers[packet.getSrc()].timestamp) {
+      discardedByExpireTime = this.knownPeers[packet.getSrc()].timestamp! - packet.getTimestamp() > expireTime
     }
 
     return discardedByOlderThan || discardedByExpireTime
   }
 
   private isDiscardedByOlderThanReceivedPackages(packet: Packet) {
-    if (packet.discardOlderThan >= 0 && packet.subtype) {
-      const subtypeData = this.knownPeers[packet.src]?.subtypeData[packet.subtype]
+    if (packet.getDiscardOlderThan() >= 0 && packet.getSubtype()) {
+      const subtypeData = this.knownPeers[packet.getSrc()]?.subtypeData[packet.getSubtype()]
       return (
         subtypeData &&
-        subtypeData.lastTimestamp - packet.timestamp > packet.discardOlderThan &&
-        subtypeData.lastSequenceId >= packet.sequenceId
+        subtypeData.lastTimestamp - packet.getTimestamp() > packet.getDiscardOlderThan() &&
+        subtypeData.lastSequenceId >= packet.getSequenceId()
       )
     }
 
@@ -711,66 +645,40 @@ export class PeerToPeerTransport implements Transport {
     return this.currentMessageId
   }
 
-  private getEncodedPayload(payload: any): [PayloadEncoding, Uint8Array] {
-    if (payload instanceof Uint8Array) {
-      return [PayloadEncoding.BYTES, payload]
-    } else if (typeof payload === 'string') {
-      return [PayloadEncoding.STRING, new TextEncoder().encode(payload)]
-    } else {
-      return [PayloadEncoding.JSON, new TextEncoder().encode(JSON.stringify(payload))]
-    }
-  }
-
-  sendMessage(roomId: string, payload: any, type: PeerMessageType) {
+  sendMessage(roomId: string, payload: Uint8Array, type: PeerMessageType) {
     if (roomId !== this.islandId) {
       return Promise.reject(new Error(`cannot send a message in a room not joined(${roomId})`))
     }
 
-    const [encoding, encodedPayload] = this.getEncodedPayload(payload)
-
-    const messageData: MessageData = {
-      room: roomId,
-      encoding,
-      payload: encodedPayload,
-      dst: []
-    }
-
-    return this.sendPacketWithData({ messageData }, type)
-  }
-
-  private sendPacketWithData(data: PacketData, type: PeerMessageType, packetProperties: Partial<Packet> = {}) {
-    const packet: Packet = this.buildPacketWithData(type, data, packetProperties)
-
+    const messageData = new MessageData()
+    messageData.setRoom(roomId)
+    messageData.setPayload(payload)
+    const packet = this.buildPacketWithData(type, { messageData })
     this.sendPacket(packet)
-
-    return Promise.resolve()
   }
 
-  private buildPacketWithData(type: PeerMessageType, data: PacketData, packetProperties: Partial<Packet> = {}) {
+  private buildPacketWithData(type: PeerMessageType, data: PacketData) {
     const sequenceId = this.generateMessageId()
 
     const ttl = typeof type.ttl !== 'undefined' ? typeof type.ttl === 'number' ? type.ttl : type.ttl(sequenceId, type) : CONSTANTS.DEFAULT_TTL
     const optimistic = typeof type.optimistic === 'boolean' ? type.optimistic : type.optimistic(sequenceId, type)
 
-    const packet: Packet = {
-      sequenceId,
-      instanceId: this.instanceId,
-      subtype: type.name,
-      expireTime: type.expirationTime ?? -1,
-      discardOlderThan: type.discardOlderThan ?? -1,
-      timestamp: Date.now(),
-      src: this.peerId,
-      hops: 0,
-      ttl,
-      receivedBy: [],
-      optimistic,
-      pingData: undefined,
-      pongData: undefined,
-      suspendRelayData: undefined,
-      messageData: undefined,
-      ...data,
-      ...packetProperties
-    }
+    const packet = new Packet()
+    packet.setSequenceId(sequenceId)
+    packet.setInstanceId(this.instanceId)
+    packet.setSubtype(type.name)
+    packet.setExpireTime(type.expirationTime ?? -1)
+    packet.setDiscardOlderThan(type.discardOlderThan ?? -1)
+    packet.setTimestamp(Date.now())
+    packet.setSrc(this.peerId)
+    packet.setHops(0)
+    packet.setTtl(ttl)
+    packet.setReceivedByList([])
+    packet.setOptimistic(optimistic)
+    packet.setMessageData(data.messageData)
+    packet.setPingData(data.pingData)
+    packet.setPongData(data.pongData)
+    packet.setSuspendRelayData(data.suspendRelayData)
     return packet
   }
 
@@ -783,9 +691,12 @@ export class PeerToPeerTransport implements Transport {
         future: pingFuture
       }
 
-      await this.sendPacketWithData({ pingData: { pingId } }, PingMessageType, {
-        expireTime: CONSTANTS.DEFAULT_PING_TIMEOUT
-      })
+
+      const pingData = new PingData()
+      pingData.setPingId(pingId)
+      const packet = this.buildPacketWithData(PingMessageType, { pingData })
+      packet.setExpireTime(CONSTANTS.DEFAULT_PING_TIMEOUT)
+      this.sendPacket(packet)
 
       setTimeout(() => {
         const activePing = this.activePings[pingId]
@@ -801,22 +712,26 @@ export class PeerToPeerTransport implements Transport {
 
 
   private sendPacket(packet: Packet) {
-    if (!packet.receivedBy.includes(this.peerId))
-      packet.receivedBy.push(this.peerId)
+    const receivedBy = packet.getReceivedByList()
+    if (!receivedBy.includes(this.peerId)) {
+      receivedBy.push(this.peerId)
+      packet.setReceivedByList(receivedBy)
+    }
 
 
     const peersToSend = this.mesh.fullyConnectedPeerIds().filter(
       (it) =>
-        !packet.receivedBy.includes(it) && (packet.hops === 0 || !this.isRelayToConnectionSuspended(it, packet.src))
+        !packet.getReceivedByList().includes(it) && (packet.getHops() === 0 || !this.isRelayToConnectionSuspended(it, packet.getSrc()))
     )
 
-    if (packet.optimistic) {
-      packet.receivedBy = [...packet.receivedBy, ...peersToSend]
+    if (packet.getOptimistic()) {
+      packet.setReceivedByList([...packet.getReceivedByList(), ...peersToSend])
     }
 
     // This is a little specific also, but is here in order to make the measurement as accurate as possible
-    if (packet.pingData && packet.src === this.peerId) {
-      const activePing = this.activePings[packet.pingData.pingId]
+    const pingData = packet.getPingData()
+    if (pingData && packet.getSrc() === this.peerId) {
+      const activePing = this.activePings[pingData.getPingId()]
       if (activePing) {
         activePing.startTime = performance.now()
       }
@@ -828,10 +743,9 @@ export class PeerToPeerTransport implements Transport {
   private sendPacketToPeer(peer: string, packet: Packet) {
     if (this.isConnectedTo(peer)) {
       try {
-        const data = Packet.encode(packet).finish()
-        this.mesh.sendPacketToPeer(peer, data)
-      } catch (e) {
-        logger.warn('Error sending data to peer ${peer} ${e}')
+        this.mesh.sendPacketToPeer(peer, packet.serializeBinary())
+      } catch (e: any) {
+        logger.warn(`Error sending data to peer ${peer} ${e.toString()}`)
       }
     }
   }
@@ -1016,7 +930,7 @@ export class PeerToPeerTransport implements Transport {
   }
 
   private getExpireTime(packet: Packet): number {
-    return packet.expireTime > 0 ? packet.expireTime : CONSTANTS.DEFAULT_MESSAGE_EXPIRATION_TIME
+    return packet.getExpireTime() > 0 ? packet.getExpireTime() : CONSTANTS.DEFAULT_MESSAGE_EXPIRATION_TIME
   }
 
   async connectTo(known: KnownPeerData) {
@@ -1029,12 +943,12 @@ export class PeerToPeerTransport implements Transport {
   }
 
   private ensureAndUpdateKnownPeer(packet: Packet, connectedPeerId: string) {
-    const minPeerData = { id: packet.src }
+    const minPeerData = { id: packet.getSrc() }
     this.addKnownPeerIfNotExists(minPeerData)
 
-    this.knownPeers[packet.src].reachableThrough[connectedPeerId] = {
+    this.knownPeers[packet.getSrc()].reachableThrough[connectedPeerId] = {
       id: connectedPeerId,
-      hops: packet.hops + 1,
+      hops: packet.getHops() + 1,
       timestamp: Date.now()
     }
   }

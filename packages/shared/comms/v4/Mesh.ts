@@ -25,17 +25,7 @@ export class Mesh {
   constructor(private bff: BFFConnection, peerId: string, { packetHandler }: Config) {
     this.packetHandler = packetHandler
 
-    this.candidatesListener = this.bff.addListener(`peer.${peerId}.candidate`, (data: Uint8Array, peerId?: string) => {
-      this.logger.log('Got candidate message')
-
-      const conn = peerId && this.peerConnections.get(peerId)
-      if (!conn) {
-        return
-      }
-
-      const candidate = JSON.parse(this.decoder.decode(data))
-      conn.instance.addIceCandidate(candidate)
-    })
+    this.candidatesListener = this.bff.addListener(`peer.${peerId}.candidate`, this.onCandidateMessage.bind(this))
 
     this.offerListener = this.bff.addListener(`peer.${peerId}.offer`, async (data: Uint8Array, peerId?: string) => {
       if (!peerId) {
@@ -57,8 +47,15 @@ export class Mesh {
       this.peerConnections.set(peerId, conn)
 
       instance.addEventListener('datachannel', event => {
-        this.logger.log(`Data channel created`)
-        conn.dc = event.channel
+        this.logger.log(`Got data channel from ${peerId}`)
+        const dc = event.channel
+        dc.addEventListener('open', () => {
+          conn.dc = dc
+        })
+
+        dc.addEventListener('message', (event) => {
+          this.packetHandler(event.data, peerId)
+        });
       });
 
       try {
@@ -103,23 +100,27 @@ export class Mesh {
     this.logger.log(`Connecting to ${peerId}`)
 
     const instance = this.createConnection(peerId)
-    try {
-      const offer = await instance.createOffer({ offerToReceiveAudio: false, offerToReceiveVideo: false });
-      await instance.setLocalDescription(offer);
-      this.logger.log(`Set local description for ${peerId}`)
-      this.logger.log(`Sending offer to ${peerId}`)
-      this.bff.sendMessage(`peer.${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
-    } catch (e: any) {
-      this.logger.error(`Failed to create session description: ${e.toString()}`);
-      throw e
-    }
+    const conn: Connection = { instance, start: Date.now() }
 
+    this.logger.log(`Opening dc for ${peerId}`)
     const dc = instance.createDataChannel('data');
+    dc.addEventListener('open', () => {
+      conn.dc = dc
+    })
     dc.addEventListener('message', (event) => {
       this.packetHandler(event.data, peerId)
     });
 
-    this.peerConnections.set(peerId, { instance, start: Date.now() })
+    const offer = await instance.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: false,
+    })
+    await instance.setLocalDescription(offer);
+    this.logger.log(`Set local description for ${peerId}`)
+    this.logger.log(`Sending offer to ${peerId}`)
+    this.bff.sendMessage(`peer.${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
+
+    this.peerConnections.set(peerId, conn)
   }
 
   public connectedCount(): number {
@@ -179,6 +180,7 @@ export class Mesh {
     if (!conn || !conn.dc) {
       return
     }
+
     conn.dc.send(data)
   }
 
@@ -200,10 +202,7 @@ export class Mesh {
     })
 
     instance.addEventListener('icecandidate', event => {
-      this.logger.log('ICE')
       if (event.candidate) {
-        this.logger.log('Candidate found')
-        this.logger.log(`Sending candidate to ${peerId}`)
         this.bff.sendMessage(`peer.${peerId}.candidate`, this.encoder.encode(JSON.stringify(event.candidate)))
       }
     })
@@ -219,5 +218,14 @@ export class Mesh {
     return instance
   }
 
+  private onCandidateMessage(data: Uint8Array, peerId?: string) {
+    const conn = peerId && this.peerConnections.get(peerId)
+    if (!conn) {
+      return
+    }
+
+    const candidate = JSON.parse(this.decoder.decode(data))
+    conn.instance.addIceCandidate(candidate)
+  }
 
 }
