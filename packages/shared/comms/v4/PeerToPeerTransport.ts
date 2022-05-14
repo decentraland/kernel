@@ -97,7 +97,6 @@ export class PeerToPeerTransport implements Transport {
   public onDisconnectObservable = new Observable<void>()
   public onMessageObservable = new Observable<TransportMessage>()
 
-  // private wrtcHandler: PeerWebRTCHandler
   private mesh: Mesh
   private peerRelayData: Record<string, PeerRelayData> = {}
   private knownPeers: Record<string, KnownPeerData> = {}
@@ -240,22 +239,9 @@ export class PeerToPeerTransport implements Transport {
 
   async connect() {
     try {
-      // if (!this.connectedCount()) {
-      //   await this.wrtcHandler.awaitConnectionEstablished(60000)
-      // }
 
       logger.log('Lighthouse status: connected')
 
-      // this.knownPeers = {}
-
-      //We don't need to remove existing peers since they will eventually expire
-
-      // disconnect from unknown peers
-      // for (const peerId of this.wrtcHandler.connectedPeerIds()) {
-      //   if (!(peerId in this.knownPeers)) {
-      //     this.wrtcHandler.disconnectFrom(peerId)
-      //   }
-      // }
       this.triggerUpdateNetwork(`changed to island ${this.islandId}`)
     } catch (e: any) {
       logger.error('Error while connecting to layer', e)
@@ -379,8 +365,6 @@ export class PeerToPeerTransport implements Transport {
     }
   }
 
-
-
   private expireMessages() {
     const currentTimestamp = Date.now()
 
@@ -440,10 +424,6 @@ export class PeerToPeerTransport implements Transport {
         })
       }
     })
-  }
-
-  private connectedCount() {
-    return this.mesh.connectedCount()
   }
 
   private updateTimeStamp(peerId: string, subtype: string | undefined, timestamp: number, sequenceId: number) {
@@ -844,7 +824,7 @@ export class PeerToPeerTransport implements Transport {
       return pickBy(connectionCandidates, count, peerSortCriteria)
     }
 
-    const neededConnections = CONSTANTS.DEFAULT_TARGET_CONNECTIONS - this.connectedCount()
+    const neededConnections = CONSTANTS.DEFAULT_TARGET_CONNECTIONS - this.mesh.connectedCount()
 
     // If we need to establish new connections because we are below the target, we do that
     if (neededConnections > 0 && connectionCandidates.length > 0) {
@@ -866,7 +846,7 @@ export class PeerToPeerTransport implements Transport {
     }
 
     // If we are over the max amount of connections, we discard the "worst"
-    const toDisconnect = this.connectedCount() - CONSTANTS.DEFAULT_MAX_CONNECTIONS
+    const toDisconnect = this.mesh.connectedCount() - CONSTANTS.DEFAULT_MAX_CONNECTIONS
 
     if (toDisconnect > 0) {
       logger.log(`Too many connections.Need to disconnect from: ${toDisconnect} `)

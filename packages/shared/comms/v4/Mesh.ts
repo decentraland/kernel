@@ -124,7 +124,7 @@ export class Mesh {
   }
 
   public connectedCount(): number {
-    let count = 1
+    let count = 0
     this.peerConnections.forEach(({ instance }: Connection) => {
       if (instance.connectionState === 'connected') {
         count++
