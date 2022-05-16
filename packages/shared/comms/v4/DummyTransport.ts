@@ -1,10 +1,6 @@
-import { Observable } from 'mz-observable'
-import { Transport, TransportMessage } from './Transport'
+import { Transport } from './Transport'
 
-export class DummyTransport implements Transport {
-  public onDisconnectObservable = new Observable<void>()
-  public onMessageObservable = new Observable<TransportMessage>()
-
+export class DummyTransport extends Transport {
   async connect(): Promise<void> { }
   async send(): Promise<void> { }
   async disconnect(): Promise<void> { }

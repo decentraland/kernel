@@ -1,17 +1,14 @@
 import { Message } from 'google-protobuf'
 import { ILogger, createLogger } from 'shared/logger'
-import { Observable } from 'mz-observable'
-import { SendOpts, Transport, TransportMessage } from './Transport'
+import { SendOpts, Transport } from './Transport'
 import { LivekitTransport as Livekit } from '@dcl/comms3-livekit-transport'
 
-export class LivekitTransport implements Transport {
-  public onDisconnectObservable = new Observable<void>()
-  public onMessageObservable = new Observable<TransportMessage>()
-
+export class LivekitTransport extends Transport {
   private logger: ILogger = createLogger('CommsV4:LivekitTransport: ')
   private livekit: Livekit
 
   constructor(connStr: string) {
+    super()
     const [url, params] = connStr.split('?')
     const token = new URLSearchParams(params).get('access_token')
     if (!token) {

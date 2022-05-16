@@ -23,36 +23,6 @@ export namespace MessageHeader {
   }
 }
 
-export class HeartBeatMessage extends jspb.Message {
-  getType(): MessageTypeMap[keyof MessageTypeMap];
-  setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
-
-  getTime(): number;
-  setTime(value: number): void;
-
-  getData(): Uint8Array | string;
-  getData_asU8(): Uint8Array;
-  getData_asB64(): string;
-  setData(value: Uint8Array | string): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): HeartBeatMessage.AsObject;
-  static toObject(includeInstance: boolean, msg: HeartBeatMessage): HeartBeatMessage.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: HeartBeatMessage, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): HeartBeatMessage;
-  static deserializeBinaryFromReader(message: HeartBeatMessage, reader: jspb.BinaryReader): HeartBeatMessage;
-}
-
-export namespace HeartBeatMessage {
-  export type AsObject = {
-    type: MessageTypeMap[keyof MessageTypeMap],
-    time: number,
-    data: Uint8Array | string,
-  }
-}
-
 export class OpenMessage extends jspb.Message {
   getType(): MessageTypeMap[keyof MessageTypeMap];
   setType(value: MessageTypeMap[keyof MessageTypeMap]): void;
@@ -209,13 +179,12 @@ export namespace TopicMessage {
 
 export interface MessageTypeMap {
   UNKNOWN_MESSAGE_TYPE: 0;
-  HEARTBEAT: 1;
-  SUBSCRIPTION: 2;
-  TOPIC: 3;
-  OPEN: 5;
-  VALIDATION: 6;
-  VALIDATION_FAILURE: 7;
-  VALIDATION_OK: 8;
+  SUBSCRIPTION: 1;
+  TOPIC: 2;
+  OPEN: 3;
+  VALIDATION: 4;
+  VALIDATION_FAILURE: 5;
+  VALIDATION_OK: 6;
 }
 
 export const MessageType: MessageTypeMap;

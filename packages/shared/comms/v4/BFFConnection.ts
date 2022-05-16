@@ -2,7 +2,6 @@ import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
 import {
   MessageType,
-  HeartBeatMessage,
   SubscriptionMessage,
   TopicMessage,
   MessageHeader,
@@ -11,9 +10,8 @@ import {
   ValidationMessage,
   ValidationOKMessage
 } from './proto/bff_pb'
-import { Category, WorldPositionData } from './proto/comms_pb'
-import { IslandChangedMessage, Position3DMessage } from './proto/archipelago_pb'
-import { Position3D } from '@dcl/catalyst-peer'
+import { HeartbeatMessage, IslandChangedMessage, Position3DMessage } from './proto/archipelago_pb'
+import { Position3D } from './types'
 import { AuthIdentity, Authenticator } from 'dcl-crypto'
 
 export declare type BFFConfig = {
@@ -57,30 +55,7 @@ export class BFFConnection {
 
   async connect(): Promise<void> {
     await this.connectWS()
-    this.heartBeatInterval = setInterval(() => {
-      this.sendHeartBeat()
-    }, 10000)
     this.logger.log('Connected')
-  }
-
-  async sendHeartBeat() {
-    const msg = new HeartBeatMessage()
-    msg.setType(MessageType.HEARTBEAT)
-    msg.setTime(Date.now())
-
-    const data = new WorldPositionData()
-    data.setCategory(Category.WORLD_POSITION)
-    data.setTime(Date.now())
-
-    const position = this.config.selfPosition()
-    if (position) {
-      data.setPositionX(position[0])
-      data.setPositionY(position[1])
-      data.setPositionZ(position[2])
-
-      msg.setData(data.serializeBinary())
-      return this.send(msg.serializeBinary())
-    }
   }
 
   public addListener(topic: string, handler: (data: Uint8Array, peerId?: string) => void): TopicListener {
@@ -147,7 +122,6 @@ export class BFFConnection {
     this.ws.send(data)
   }
 
-
   private async onWsMessage(event: MessageEvent) {
     const data = new Uint8Array(event.data)
 
@@ -184,12 +158,28 @@ export class BFFConnection {
         let validationOkMessage: ValidationOKMessage
         try {
           validationOkMessage = ValidationOKMessage.deserializeBinary(data)
-          this.peerId = validationOkMessage.getPeerId()
-          this.logger.log(`Validation ok, peer is ${this.peerId}`)
         } catch (e) {
           this.logger.error('cannot process topic message', e)
           break
         }
+
+        this.peerId = validationOkMessage.getPeerId()
+        this.logger.log(`Validation ok, peer is ${this.peerId}`)
+
+        const topic = `peer.${this.peerId}.heartbeat`
+        this.heartBeatInterval = setInterval(() => {
+          const positionMessage = new Position3DMessage()
+
+          const position = this.config.selfPosition()
+          if (position) {
+            positionMessage.setX(position[0])
+            positionMessage.setY(position[1])
+            positionMessage.setZ(position[2])
+            const msg = new HeartbeatMessage()
+            msg.setPosition(positionMessage)
+            return this.sendMessage(topic, msg.serializeBinary())
+          }
+        }, 10000)
         break
       }
       case MessageType.VALIDATION_FAILURE: {

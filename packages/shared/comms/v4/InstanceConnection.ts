@@ -47,7 +47,7 @@ export class InstanceConnection implements RoomConnection {
         transport = new WsTransport(connStr.substring('ws-room:'.length))
       } else if (connStr.startsWith('livekit:')) {
         transport = new LivekitTransport(connStr.substring('livekit:'.length))
-      } else if (connStr.startsWith('lighthouse:')) {
+      } else if (connStr.startsWith('p2p:')) {
         transport = new PeerToPeerTransport(peerId, this.bff, islandId, peers)
       }
 
@@ -75,8 +75,7 @@ export class InstanceConnection implements RoomConnection {
     this.transport.send(d, { reliable: false })
   }
 
-  async sendParcelUpdateMessage(_: Position, _newPosition: Position) {
-  }
+  async sendParcelUpdateMessage(_: Position, _newPosition: Position) { }
 
   async sendProfileMessage(_: Position, __: string, profileType: ProfileType, version: number) {
     const d = new ProfileData()
@@ -200,9 +199,6 @@ export class InstanceConnection implements RoomConnection {
 
     switch (category) {
       case Category.POSITION: {
-
-        // TODO
-        // this.peer.setPeerPosition(sender, positionMessage.slice(0, 3) as [number, number, number])
         const positionData = PositionData.deserializeBinary(data)
         this.events.emit('position', {
           sender: peer,
@@ -218,6 +214,12 @@ export class InstanceConnection implements RoomConnection {
             false
           ]
         })
+
+        this.transport.onPeerPositionChange(peer, [
+          positionData.getPositionX(),
+          positionData.getPositionY(),
+          positionData.getPositionZ()
+        ])
         break
       }
       case Category.CHAT: {

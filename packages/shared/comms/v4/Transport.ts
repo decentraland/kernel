@@ -1,5 +1,6 @@
 import { Message } from 'google-protobuf'
 import { Observable } from 'mz-observable'
+import { Position3D } from './types'
 
 export type TransportMessage = {
   data: Uint8Array
@@ -17,11 +18,13 @@ export type SendOpts = {
   identity?: boolean
 }
 
-export interface Transport {
-  onDisconnectObservable: Observable<void>
-  onMessageObservable: Observable<TransportMessage>
+export abstract class Transport {
+  public onDisconnectObservable = new Observable<void>()
+  public onMessageObservable = new Observable<TransportMessage>()
 
-  connect(): Promise<void>
-  send(msg: Message, opts: SendOpts): Promise<void>
-  disconnect(): Promise<void>
+  abstract connect(): Promise<void>
+  abstract send(msg: Message, opts: SendOpts): Promise<void>
+  abstract disconnect(): Promise<void>
+
+  onPeerPositionChange(_: string, __: Position3D): void { }
 }

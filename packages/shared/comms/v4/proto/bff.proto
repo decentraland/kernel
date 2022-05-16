@@ -4,23 +4,16 @@ package protocol;
 
 enum MessageType {
   UNKNOWN_MESSAGE_TYPE = 0;
-  HEARTBEAT = 1;
-  SUBSCRIPTION = 2;
-  TOPIC = 3;
-  OPEN = 5;
-  VALIDATION = 6;
-  VALIDATION_FAILURE = 7;
-  VALIDATION_OK = 8;
+  SUBSCRIPTION = 1;
+  TOPIC = 2;
+  OPEN = 3;
+  VALIDATION = 4;
+  VALIDATION_FAILURE = 5;
+  VALIDATION_OK = 6;
 }
 
 message MessageHeader {
   MessageType type = 1;
-}
-
-message HeartBeatMessage {
-  MessageType type = 1;
-  double time = 2;
-  bytes data = 3;
 }
 
 message OpenMessage {

@@ -2,8 +2,7 @@ import { store } from 'shared/store/isolatedStore'
 import { future, IFuture } from 'fp-future'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { Message } from 'google-protobuf'
-import { SendOpts, Transport, TransportMessage } from './Transport'
-import { Observable } from 'mz-observable'
+import { SendOpts, Transport } from './Transport'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 
 import { JoinIslandMessage, LeftIslandMessage } from './proto/archipelago_pb'
@@ -17,22 +16,22 @@ import {
   PongMessageType,
   PingMessageType,
   PeerMessageTypes,
-  Position3D,
-  MinPeerData,
-  PeerRelayData,
-  KnownPeerData,
-  discretizedPositionDistanceXZ,
   SuspendRelayType,
+  PeerRelayData,
+  discretizedPositionDistanceXZ,
   PingResult
 } from '@dcl/catalyst-peer'
+
+import { Position3D } from './types'
 
 import { createLogger } from 'shared/logger'
 import { BFFConnection, TopicListener } from './BFFConnection'
 
 const logger = createLogger('CommsV4:P2P: ')
 
-export const MAX_UINT32 = 4294967295
-export function randomUint32(): number {
+const MAX_UINT32 = 4294967295
+
+function randomUint32(): number {
   return Math.floor(Math.random() * MAX_UINT32)
 }
 
@@ -47,6 +46,26 @@ function pickBy<T>(array: T[], count: number, criteria: (t1: T, t2: T) => number
 
   return [selected, sorted]
 }
+
+type PacketSubtypeData = {
+  lastTimestamp: number
+  lastSequenceId: number
+}
+
+type PeerRelay = { id: string; hops: number; timestamp: number }
+
+type KnownPeerData = {
+  id: string
+  lastUpdated?: number // Local timestamp used for registering if the peer is alive
+  timestamp?: number // Their local timestamp used for handling packets
+  subtypeData: Record<string, PacketSubtypeData>
+  position?: Position3D
+  latency?: number
+  hops?: number
+  reachableThrough: Record<string, PeerRelay>
+}
+
+type MinPeerData = { id: string; position?: Position3D }
 
 type NetworkOperation = () => Promise<KnownPeerData[]>
 
@@ -93,10 +112,7 @@ type Config = {
   relaySuspensionConfig?: RelaySuspensionConfig
 }
 
-export class PeerToPeerTransport implements Transport {
-  public onDisconnectObservable = new Observable<void>()
-  public onMessageObservable = new Observable<TransportMessage>()
-
+export class PeerToPeerTransport extends Transport {
   private mesh: Mesh
   private peerRelayData: Record<string, PeerRelayData> = {}
   private knownPeers: Record<string, KnownPeerData> = {}
@@ -120,6 +136,7 @@ export class PeerToPeerTransport implements Transport {
     private islandId: string,
     peers: Map<string, Position3D>
   ) {
+    super()
     const commsConfig = getCommsConfig(store.getState())
     this.config = {
       maxConnectionDistance: 4,
@@ -191,6 +208,13 @@ export class PeerToPeerTransport implements Transport {
     globalThis.__DEBUG_PEER = this
   }
 
+  onPeerPositionChange(peerId: string, p: Position3D) {
+    const peer = this.knownPeers[peerId]
+    if (peer) {
+      peer.position = p
+    }
+  }
+
   private onPeerJoined(data: Uint8Array) {
     let peerJoinMessage: JoinIslandMessage
     try {
@@ -206,7 +230,6 @@ export class PeerToPeerTransport implements Transport {
     if (islandId === this.islandId) {
       logger.log(`peer ${peerId} joined ${islandId}`)
 
-      // TODO: do we have the positions as well?
       this.addKnownPeerIfNotExists({ id: peerId })
       this.triggerUpdateNetwork(`peer ${peerId} joined island`)
     } else {
@@ -238,16 +261,7 @@ export class PeerToPeerTransport implements Transport {
   }
 
   async connect() {
-    try {
-
-      logger.log('Lighthouse status: connected')
-
-      this.triggerUpdateNetwork(`changed to island ${this.islandId}`)
-    } catch (e: any) {
-      logger.error('Error while connecting to layer', e)
-      logger.log(`Lighthouse status: ${e.responseJson && e.responseJson.status === 'layer_is_full' ? 'realm-full' : 'error'}`)
-      await this.disconnect()
-    }
+    this.triggerUpdateNetwork(`changed to island ${this.islandId}`)
   }
 
   async disconnect() {
@@ -268,7 +282,6 @@ export class PeerToPeerTransport implements Transport {
     this.knownPeers = {}
     await this.mesh.dispose()
     this.onDisconnectObservable.notifyObservers()
-
   }
 
   async send(msg: Message, { reliable }: SendOpts): Promise<void> {
@@ -341,7 +354,7 @@ export class PeerToPeerTransport implements Transport {
     if (messageData && messageData.getRoom() === this.islandId) {
       this.onMessageObservable.notifyObservers({
         peer: packet.getSrc(),
-        data: messageData.getPayload() as any
+        data: messageData.getPayload_asU8()
       })
     }
 

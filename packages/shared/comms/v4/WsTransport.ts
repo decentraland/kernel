@@ -1,19 +1,16 @@
 import { Message } from 'google-protobuf'
 import { ILogger, createLogger } from 'shared/logger'
-import { Observable } from 'mz-observable'
-import { Transport, TransportMessage, SendOpts } from './Transport'
+import { Transport, SendOpts } from './Transport'
 import { MessageType, MessageHeader, MessageTypeMap, SystemMessage, IdentityMessage } from './proto/ws_pb'
 
-export class WsTransport implements Transport {
-  aliases: Record<number, string> = {}
-
-  public onDisconnectObservable = new Observable<void>()
-  public onMessageObservable = new Observable<TransportMessage>()
-  public logger: ILogger = createLogger('WsTransport: ')
-
+export class WsTransport extends Transport {
+  private logger: ILogger = createLogger('WsTransport: ')
+  private aliases: Record<number, string> = {}
   private ws: WebSocket | null = null
 
-  constructor(public url: string) { }
+  constructor(public url: string) {
+    super()
+  }
 
   async connect(): Promise<void> {
     await this.connectWS()
@@ -83,7 +80,7 @@ export class WsTransport implements Transport {
           return
         }
 
-        const body = dataMessage.getBody() as any
+        const body = dataMessage.getBody_asU8()
         this.onMessageObservable.notifyObservers({
           peer: userId,
           data: body
@@ -102,7 +99,7 @@ export class WsTransport implements Transport {
         const userId = dataMessage.getIdentity()
         this.aliases[dataMessage.getFromAlias()] = userId
 
-        const body = dataMessage.getBody() as any
+        const body = dataMessage.getBody_asU8()
         this.onMessageObservable.notifyObservers({
           peer: userId,
           data: body
