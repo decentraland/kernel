@@ -22,8 +22,8 @@ import { foregroundChangeObservable, isForeground } from 'shared/world/worldStat
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { realmInitialized } from 'shared/dao'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
-import { FeatureFlags, WorldConfig } from 'shared/meta/types'
-import { getFeatureFlags, getWorldConfig, isFeatureEnabled } from 'shared/meta/selectors'
+import { WorldConfig } from 'shared/meta/types'
+import { getFeatureFlagEnabled, getFeatureFlags, getWorldConfig } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { ensureUnityInterface } from 'shared/renderer'
 import { globalObservable } from 'shared/observables'
@@ -162,13 +162,13 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   //      For example disable AssetBundles needs a system from FeatureFlag
   i.SetFeatureFlagsConfiguration(getFeatureFlags(store.getState()))
 
-  const questEnabled = isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
+  const questEnabled = getFeatureFlagEnabled(store.getState(), 'quests')
   const worldConfig: WorldConfig | undefined = getWorldConfig(store.getState())
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
 
   // killswitch, disable asset bundles
-  if (!isFeatureEnabled(store.getState(), FeatureFlags.ASSET_BUNDLES, false)) {
+  if (!getFeatureFlagEnabled(store.getState(), 'asset_bundles')) {
     i.SetDisableAssetBundles()
   }
 
@@ -196,10 +196,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     i.ConfigureHUDElement(
       HUDElementID.TASKBAR,
       { active: true, visible: true },
-      {
-        enableVoiceChat: true,
-        enableQuestPanel: isFeatureEnabled(store.getState(), FeatureFlags.QUESTS, false)
-      }
+      { enableVoiceChat: true, enableQuestPanel: questEnabled }
     )
     i.ConfigureHUDElement(HUDElementID.WORLD_CHAT_WINDOW, { active: true, visible: false })
     i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
@@ -233,10 +230,11 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
 
   const isGuest = !identity.hasConnectedWeb3
-  const BUILDER_IN_WORLD_ENABLED = !isGuest && isFeatureEnabled(store.getState(), FeatureFlags.BUILDER_IN_WORLD, false)
+  const friendsActivated = !isGuest && !getFeatureFlagEnabled(store.getState(), 'matrix_disabled')
+  const BUILDER_IN_WORLD_ENABLED = !isGuest && getFeatureFlagEnabled(store.getState(), 'builder_in_world')
 
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
-  i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: !isGuest, visible: false })
+  i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: friendsActivated, visible: false })
 
   await realmInitialized()
 
