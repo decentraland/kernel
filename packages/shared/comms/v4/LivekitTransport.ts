@@ -1,7 +1,7 @@
 import { Message } from 'google-protobuf'
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
-import { Transport, TransportMessage } from './Transport'
+import { SendOpts, Transport, TransportMessage } from './Transport'
 import { LivekitTransport as Livekit } from '@dcl/comms3-livekit-transport'
 
 export class LivekitTransport implements Transport {
@@ -33,15 +33,7 @@ export class LivekitTransport implements Transport {
     this.logger.log('Connected')
   }
 
-  send(msg: Message, reliable: boolean): Promise<void> {
-    return this.sendMessage(msg, reliable)
-  }
-
-  sendIdentity(msg: Message, reliable: boolean): Promise<void> {
-    return this.sendMessage(msg, reliable)
-  }
-
-  sendMessage(msg: Message, reliable: boolean): Promise<void> {
+  send(msg: Message, { reliable }: SendOpts): Promise<void> {
     const data = msg.serializeBinary()
     if (reliable) {
       return this.livekit.publishReliableData(data)

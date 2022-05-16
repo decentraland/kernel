@@ -72,7 +72,7 @@ export class InstanceConnection implements RoomConnection {
     d.setRotationZ(p[5])
     d.setRotationW(p[6])
 
-    this.transport.send(d, false)
+    this.transport.send(d, { reliable: false })
   }
 
   async sendParcelUpdateMessage(_: Position, _newPosition: Position) {
@@ -85,7 +85,7 @@ export class InstanceConnection implements RoomConnection {
     d.setProfileType(profileType)
     d.setProfileVersion(`${version}`)
 
-    this.transport.sendIdentity(d, true)
+    this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendProfileRequest(_: Position, userId: string, version: number | undefined) {
@@ -95,7 +95,7 @@ export class InstanceConnection implements RoomConnection {
     d.setUserId(userId)
     d.setProfileVersion(`${version}`)
 
-    this.transport.sendIdentity(d, true)
+    this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendProfileResponse(_: Position, profile: Avatar) {
@@ -104,7 +104,7 @@ export class InstanceConnection implements RoomConnection {
     d.setTime(Date.now())
     d.setSerializedProfile(JSON.stringify(profile))
 
-    this.transport.sendIdentity(d, true)
+    this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendInitialMessage(_: string, profileType: ProfileType) {
@@ -114,7 +114,7 @@ export class InstanceConnection implements RoomConnection {
     d.setProfileType(profileType)
     d.setProfileVersion('')
 
-    this.transport.sendIdentity(d, true)
+    this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendParcelSceneCommsMessage(sceneId: string, message: string) {
@@ -133,7 +133,7 @@ export class InstanceConnection implements RoomConnection {
     d.setTime(Date.now())
     d.setMessageId(messageId)
     d.setText(text)
-    this.transport.send(d, true)
+    this.transport.send(d, { reliable: true })
   }
 
   async setTopics(topics: string[]) {
@@ -153,7 +153,7 @@ export class InstanceConnection implements RoomConnection {
     d.setEncodedSamples(frame.encoded)
     d.setIndex(frame.index)
 
-    return this.transport.send(d, true)
+    return this.transport.send(d, { reliable: true })
   }
 
   protected handleTopicMessage(message: TopicData) {

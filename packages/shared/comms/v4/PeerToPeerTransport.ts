@@ -2,7 +2,7 @@ import { store } from 'shared/store/isolatedStore'
 import { future, IFuture } from 'fp-future'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { Message } from 'google-protobuf'
-import { Transport, TransportMessage } from './Transport'
+import { SendOpts, Transport, TransportMessage } from './Transport'
 import { Observable } from 'mz-observable'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 
@@ -271,11 +271,7 @@ export class PeerToPeerTransport implements Transport {
 
   }
 
-  async sendIdentity(msg: Message, reliable: boolean): Promise<void> {
-    return this.send(msg, reliable)
-  }
-
-  async send(msg: Message, reliable: boolean): Promise<void> {
+  async send(msg: Message, { reliable }: SendOpts): Promise<void> {
     if (this.disposed) {
       return
     }
@@ -619,12 +615,6 @@ export class PeerToPeerTransport implements Transport {
     return false
   }
 
-
-  private generateMessageId() {
-    this.currentMessageId += 1
-    return this.currentMessageId
-  }
-
   sendMessage(roomId: string, payload: Uint8Array, type: PeerMessageType) {
     if (roomId !== this.islandId) {
       return Promise.reject(new Error(`cannot send a message in a room not joined(${roomId})`))
@@ -638,7 +628,8 @@ export class PeerToPeerTransport implements Transport {
   }
 
   private buildPacketWithData(type: PeerMessageType, data: PacketData) {
-    const sequenceId = this.generateMessageId()
+    this.currentMessageId += 1
+    const sequenceId = this.currentMessageId
 
     const ttl = typeof type.ttl !== 'undefined' ? typeof type.ttl === 'number' ? type.ttl : type.ttl(sequenceId, type) : CONSTANTS.DEFAULT_TTL
     const optimistic = typeof type.optimistic === 'boolean' ? type.optimistic : type.optimistic(sequenceId, type)

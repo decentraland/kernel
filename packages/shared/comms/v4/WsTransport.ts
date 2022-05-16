@@ -1,7 +1,7 @@
 import { Message } from 'google-protobuf'
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
-import { Transport, TransportMessage } from './Transport'
+import { Transport, TransportMessage, SendOpts } from './Transport'
 import { MessageType, MessageHeader, MessageTypeMap, SystemMessage, IdentityMessage } from './proto/ws_pb'
 
 export class WsTransport implements Transport {
@@ -21,22 +21,21 @@ export class WsTransport implements Transport {
     this.logger.log('Connected')
   }
 
-  async send(msg: Message, __: boolean): Promise<void> {
+  async send(msg: Message, { identity }: SendOpts): Promise<void> {
     if (!this.ws) throw new Error('This transport is closed')
 
-    const d = new SystemMessage()
-    d.setType(MessageType.SYSTEM)
-    d.setBody(msg.serializeBinary())
-    this.ws.send(d.serializeBinary())
-  }
+    if (identity) {
+      const d = new IdentityMessage()
+      d.setType(MessageType.IDENTITY)
+      d.setBody(msg.serializeBinary())
+      this.ws.send(d.serializeBinary())
+    } else {
 
-  async sendIdentity(msg: Message, _: boolean): Promise<void> {
-    if (!this.ws) throw new Error('This transport is closed')
-
-    const d = new IdentityMessage()
-    d.setType(MessageType.IDENTITY)
-    d.setBody(msg.serializeBinary())
-    this.ws.send(d.serializeBinary())
+      const d = new SystemMessage()
+      d.setType(MessageType.SYSTEM)
+      d.setBody(msg.serializeBinary())
+      this.ws.send(d.serializeBinary())
+    }
   }
 
   async disconnect() {
