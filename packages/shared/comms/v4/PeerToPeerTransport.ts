@@ -31,7 +31,7 @@ const logger = createLogger('CommsV4:P2P: ')
 
 const MAX_UINT32 = 4294967295
 
-function randomUint32(): number {
+function randomUint32() {
   return Math.floor(Math.random() * MAX_UINT32)
 }
 
@@ -82,22 +82,15 @@ type ActivePing = {
   future: IFuture<PingResult[]>
 }
 
-export const CONSTANTS = {
-  EXPIRATION_LOOP_INTERVAL: 2000,
-  KNOWN_PEERS_EXPIRE_TIME: 90000,
-  KNOWN_PEER_RELAY_EXPIRE_TIME: 30000,
-  OVERCONNECTED_NETWORK_UPDATE_DELAY: 500,
-  UPDATE_NETWORK_INTERVAL: 30000,
-  DEFAULT_TTL: 10,
-  DEFAULT_PING_TIMEOUT: 7000,
-  OLD_POSITION_THRESHOLD: 30000,
-  DEFAULT_STATS_UPDATE_INTERVAL: 1000,
-  DEFAULT_TARGET_CONNECTIONS: 4,
-  DEFAULT_MAX_CONNECTIONS: 6,
-  DEFAULT_PEER_CONNECT_TIMEOUT: 3500,
-  DEFAULT_MESSAGE_EXPIRATION_TIME: 10000,
-  DEFAULT_HEARTBEAT_INTERVAL: 2000
-}
+const EXPIRATION_LOOP_INTERVAL = 2000
+const KNOWN_PEERS_EXPIRE_TIME = 90000
+const KNOWN_PEER_RELAY_EXPIRE_TIME = 30000
+const UPDATE_NETWORK_INTERVAL = 30000
+const DEFAULT_TTL = 10
+const DEFAULT_PING_TIMEOUT = 7000
+const DEFAULT_TARGET_CONNECTIONS = 4
+const DEFAULT_MAX_CONNECTIONS = 6
+const DEFAULT_MESSAGE_EXPIRATION_TIME = 10000
 
 type RelaySuspensionConfig = {
   relaySuspensionInterval: number
@@ -144,7 +137,6 @@ export class PeerToPeerTransport extends Transport {
       disconnectDistance: 5,
       distance: discretizedPositionDistanceXZ()
     }
-    // relaySuspensionDisabled: RelaySuspensionConfig
     if (!commsConfig.relaySuspensionDisabled) {
       this.config.relaySuspensionConfig = {
         relaySuspensionInterval: commsConfig.relaySuspensionInterval ?? 750,
@@ -155,7 +147,8 @@ export class PeerToPeerTransport extends Transport {
     this.instanceId = randomUint32()
 
     this.mesh = new Mesh(this.bffConnection, this.peerId, {
-      packetHandler: this.handlePeerPacket.bind(this)
+      packetHandler: this.handlePeerPacket.bind(this),
+      isKnownPeer: (peerId: string) => !!this.knownPeers[peerId]
     })
 
     const scheduleExpiration = () =>
@@ -168,13 +161,13 @@ export class PeerToPeerTransport extends Transport {
         } finally {
           this.expireTimeoutId = scheduleExpiration()
         }
-      }, CONSTANTS.EXPIRATION_LOOP_INTERVAL)
+      }, EXPIRATION_LOOP_INTERVAL)
 
     const scheduleUpdateNetwork = () =>
       setTimeout(() => {
         this.triggerUpdateNetwork('scheduled network update')
         this.updateNetworkTimeoutId = scheduleUpdateNetwork()
-      }, CONSTANTS.UPDATE_NETWORK_INTERVAL)
+      }, UPDATE_NETWORK_INTERVAL)
 
     this.expireTimeoutId = scheduleExpiration()
     this.updateNetworkTimeoutId = scheduleUpdateNetwork()
@@ -416,7 +409,7 @@ export class PeerToPeerTransport extends Transport {
   private expireKnownPeers(currentTimestamp: number) {
     Object.keys(this.knownPeers).forEach((id) => {
       const lastUpdate = this.knownPeers[id].lastUpdated
-      if (lastUpdate && currentTimestamp - lastUpdate > CONSTANTS.KNOWN_PEERS_EXPIRE_TIME) {
+      if (lastUpdate && currentTimestamp - lastUpdate > KNOWN_PEERS_EXPIRE_TIME) {
         if (this.isConnectedTo(id)) {
           this.disconnectFrom(id)
         }
@@ -426,7 +419,7 @@ export class PeerToPeerTransport extends Transport {
         Object.keys(this.knownPeers[id].reachableThrough).forEach((relayId) => {
           if (
             currentTimestamp - this.knownPeers[id].reachableThrough[relayId].timestamp >
-            CONSTANTS.KNOWN_PEER_RELAY_EXPIRE_TIME
+            KNOWN_PEER_RELAY_EXPIRE_TIME
           ) {
             delete this.knownPeers[id].reachableThrough[relayId]
           }
@@ -524,7 +517,7 @@ export class PeerToPeerTransport extends Transport {
     const reachableThrough = Object.values(this.knownPeers[packet.getSrc()].reachableThrough).filter(
       (it) =>
         this.isConnectedTo(it.id) &&
-        now - it.timestamp < CONSTANTS.KNOWN_PEER_RELAY_EXPIRE_TIME &&
+        now - it.timestamp < KNOWN_PEER_RELAY_EXPIRE_TIME &&
         !this.isRelayFromConnectionSuspended(it.id, packet.getSrc(), now)
     )
 
@@ -598,7 +591,7 @@ export class PeerToPeerTransport extends Transport {
 
     // TODO: Maybe we should add a destination and handle this message as unicast
     const packet = this.buildPacketWithData(PongMessageType, { pongData })
-    packet.setExpireTime(CONSTANTS.DEFAULT_PING_TIMEOUT)
+    packet.setExpireTime(DEFAULT_PING_TIMEOUT)
     this.sendPacket(packet)
   }
 
@@ -644,7 +637,7 @@ export class PeerToPeerTransport extends Transport {
     this.currentMessageId += 1
     const sequenceId = this.currentMessageId
 
-    const ttl = typeof type.ttl !== 'undefined' ? typeof type.ttl === 'number' ? type.ttl : type.ttl(sequenceId, type) : CONSTANTS.DEFAULT_TTL
+    const ttl = typeof type.ttl !== 'undefined' ? typeof type.ttl === 'number' ? type.ttl : type.ttl(sequenceId, type) : DEFAULT_TTL
     const optimistic = typeof type.optimistic === 'boolean' ? type.optimistic : type.optimistic(sequenceId, type)
 
     const packet = new Packet()
@@ -679,7 +672,7 @@ export class PeerToPeerTransport extends Transport {
       const pingData = new PingData()
       pingData.setPingId(pingId)
       const packet = this.buildPacketWithData(PingMessageType, { pingData })
-      packet.setExpireTime(CONSTANTS.DEFAULT_PING_TIMEOUT)
+      packet.setExpireTime(DEFAULT_PING_TIMEOUT)
       this.sendPacket(packet)
 
       setTimeout(() => {
@@ -688,7 +681,7 @@ export class PeerToPeerTransport extends Transport {
           activePing.future.resolve(activePing.results)
           delete this.activePings[pingId]
         }
-      }, CONSTANTS.DEFAULT_PING_TIMEOUT)
+      }, DEFAULT_PING_TIMEOUT)
 
       return await pingFuture
     }
@@ -701,7 +694,6 @@ export class PeerToPeerTransport extends Transport {
       receivedBy.push(this.peerId)
       packet.setReceivedByList(receivedBy)
     }
-
 
     const peersToSend = this.mesh.fullyConnectedPeerIds().filter(
       (it) =>
@@ -828,7 +820,7 @@ export class PeerToPeerTransport extends Transport {
       return pickBy(connectionCandidates, count, peerSortCriteria)
     }
 
-    const neededConnections = CONSTANTS.DEFAULT_TARGET_CONNECTIONS - this.mesh.connectedCount()
+    const neededConnections = DEFAULT_TARGET_CONNECTIONS - this.mesh.connectedCount()
 
     // If we need to establish new connections because we are below the target, we do that
     if (neededConnections > 0 && connectionCandidates.length > 0) {
@@ -850,7 +842,7 @@ export class PeerToPeerTransport extends Transport {
     }
 
     // If we are over the max amount of connections, we discard the "worst"
-    const toDisconnect = this.mesh.connectedCount() - CONSTANTS.DEFAULT_MAX_CONNECTIONS
+    const toDisconnect = this.mesh.connectedCount() - DEFAULT_MAX_CONNECTIONS
 
     if (toDisconnect > 0) {
       logger.log(`Too many connections.Need to disconnect from: ${toDisconnect} `)
@@ -914,7 +906,7 @@ export class PeerToPeerTransport extends Transport {
   }
 
   private getExpireTime(packet: Packet): number {
-    return packet.getExpireTime() > 0 ? packet.getExpireTime() : CONSTANTS.DEFAULT_MESSAGE_EXPIRATION_TIME
+    return packet.getExpireTime() > 0 ? packet.getExpireTime() : DEFAULT_MESSAGE_EXPIRATION_TIME
   }
 
   async connectTo(known: KnownPeerData) {

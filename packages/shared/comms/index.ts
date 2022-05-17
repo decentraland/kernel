@@ -170,7 +170,6 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       break
     }
     case 'v4': {
-      // TODO Refactor DRY
       await ensureMetaConfigurationInitialized()
 
       const { wsUrl } = resolveCommsV4Urls(realm)!

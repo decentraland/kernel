@@ -4,13 +4,16 @@ import { BFFConnection, TopicListener } from './BFFConnection'
 
 type Config = {
   packetHandler: (data: Uint8Array, peerId: string) => void
+  isKnownPeer(peerId: string): boolean
 }
 
 type Connection = {
   instance: RTCPeerConnection
-  start: number
+  createTimestamp: number
   dc?: RTCDataChannel
 }
+
+const PEER_CONNECT_TIMEOUT = 3500
 
 export class Mesh {
   private logger = createLogger('CommsV4:P2P:Mesh:')
@@ -22,7 +25,7 @@ export class Mesh {
   private encoder = new TextEncoder()
   private decoder = new TextDecoder()
 
-  constructor(private bff: BFFConnection, peerId: string, { packetHandler }: Config) {
+  constructor(private bff: BFFConnection, private peerId: string, { packetHandler, isKnownPeer }: Config) {
     this.packetHandler = packetHandler
 
     this.candidatesListener = this.bff.addListener(`peer.${peerId}.candidate`, this.onCandidateMessage.bind(this))
@@ -31,19 +34,23 @@ export class Mesh {
       if (!peerId) {
         return
       }
-      //TODO check if it's a known peer
+      if (!isKnownPeer(peerId)) {
+        this.logger.log(`Reject offer from unkown peer ${peerId}`)
+      }
 
       this.logger.log(`Got offer message from ${peerId}`)
 
       if (this.peerConnections.has(peerId)) {
-        // TODO maybe we can do something smart about this
-        this.logger.error(`Both peers try to establish connection with each other ${peerId}`)
-        return
+        if (this.peerId < peerId) {
+          this.logger.warn(`Both peers try to establish connection with each other ${peerId}, ignoring ofer`)
+          return
+        }
+        this.logger.warn(`Both peers try to establish connection with each other ${peerId}, keeping this offer`)
       }
 
       const offer = JSON.parse(this.decoder.decode(data))
       const instance = this.createConnection(peerId)
-      const conn: Connection = { instance, start: Date.now() }
+      const conn: Connection = { instance, createTimestamp: Date.now() }
       this.peerConnections.set(peerId, conn)
 
       instance.addEventListener('datachannel', event => {
@@ -100,7 +107,7 @@ export class Mesh {
     this.logger.log(`Connecting to ${peerId}`)
 
     const instance = this.createConnection(peerId)
-    const conn: Connection = { instance, start: Date.now() }
+    const conn: Connection = { instance, createTimestamp: Date.now() }
 
     this.logger.log(`Opening dc for ${peerId}`)
     const dc = instance.createDataChannel('data');
@@ -172,7 +179,15 @@ export class Mesh {
   }
 
   public checkConnectionsSanity(): void {
-    // TODO
+    this.peerConnections.forEach((conn: Connection, peerId: string) => {
+      if (
+        conn.instance.connectionState !== 'connected' &&
+        Date.now() - conn.createTimestamp > PEER_CONNECT_TIMEOUT
+      ) {
+        this.logger.warn(`The connection to ${peerId} is not in a sane state. Discarding it.`)
+        this.disconnectFrom(peerId)
+      }
+    })
   }
 
   public sendPacketToPeer(peerId: string, data: Uint8Array): void {

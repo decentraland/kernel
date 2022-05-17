@@ -79,13 +79,13 @@ export class BFFConnection {
     message.setTopic(topic)
     message.setBody(body)
 
-    this.send(message.serializeBinary())
+    return this.send(message.serializeBinary())
   }
 
   // TODO: replace this method with a listener
-  public async setTopics(rawTopics: string[]) {
+  public async setTopics(rawTopics: string[]): Promise<void> {
     this.rawTopics = rawTopics
-    this.refreshTopics()
+    return this.refreshTopics()
   }
 
   public refreshTopics(): Promise<void> {
@@ -151,7 +151,7 @@ export class BFFConnection {
         const validationMessage = new ValidationMessage()
         validationMessage.setType(MessageType.VALIDATION)
         validationMessage.setEncodedPayload(JSON.stringify(signedPayload))
-        this.send(validationMessage.serializeBinary())
+        await this.send(validationMessage.serializeBinary())
         break
       }
       case MessageType.VALIDATION_OK: {
@@ -179,12 +179,12 @@ export class BFFConnection {
             msg.setPosition(positionMessage)
             return this.sendMessage(topic, msg.serializeBinary())
           }
-        }, 10000)
+        }, 2000)
         break
       }
       case MessageType.VALIDATION_FAILURE: {
         this.logger.log('validation failure, disconnecting bff')
-        this.disconnect()
+        await this.disconnect()
         break
       }
       case MessageType.TOPIC: {
