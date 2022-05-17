@@ -76,7 +76,7 @@ export class Mesh {
         await instance.setLocalDescription(answer)
 
         this.logger.log(`Sending answer to ${peerId}`)
-        this.bff.sendMessage(`peer.${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
+        await this.bff.sendMessage(`peer.${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
       } catch (e: any) {
         this.logger.error(`Failed to create answer: ${e.toString()}`)
         throw e
@@ -124,7 +124,7 @@ export class Mesh {
     await instance.setLocalDescription(offer)
     this.logger.log(`Set local description for ${peerId}`)
     this.logger.log(`Sending offer to ${peerId}`)
-    this.bff.sendMessage(`peer.${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
+    await this.bff.sendMessage(`peer.${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
 
     this.peerConnections.set(peerId, conn)
   }
@@ -212,9 +212,13 @@ export class Mesh {
       iceServers: commConfigurations.defaultIceServers
     })
 
-    instance.addEventListener('icecandidate', (event) => {
+    instance.addEventListener('icecandidate', async (event) => {
       if (event.candidate) {
-        this.bff.sendMessage(`peer.${peerId}.candidate`, this.encoder.encode(JSON.stringify(event.candidate)))
+        try {
+          await this.bff.sendMessage(`peer.${peerId}.candidate`, this.encoder.encode(JSON.stringify(event.candidate)))
+        } catch (err: any) {
+          this.logger.error(`cannot publish ice candidate: ${err.toString()}`)
+        }
       }
     })
 

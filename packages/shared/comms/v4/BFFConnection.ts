@@ -15,7 +15,7 @@ import { Position3D } from './types'
 import { AuthIdentity, Authenticator } from 'dcl-crypto'
 
 export declare type BFFConfig = {
-  selfPosition: () => Position3D | undefined,
+  selfPosition: () => Position3D | undefined
   getIdentity: () => AuthIdentity
 }
 
@@ -51,7 +51,7 @@ export class BFFConnection {
 
   private rawTopics: string[] = []
 
-  constructor(public url: string, private config: BFFConfig) { }
+  constructor(public url: string, private config: BFFConfig) {}
 
   async connect(): Promise<void> {
     await this.connectWS()
@@ -233,7 +233,9 @@ export class BFFConnection {
             data: body
           })
         } else {
-          this.logger.warn(`unhandled system topic message ${topic}, peerid is ${this.peerId}, islandId is ${this.islandId}`)
+          this.logger.warn(
+            `unhandled system topic message ${topic}, peerid is ${this.peerId}, islandId is ${this.islandId}`
+          )
         }
         break
       }

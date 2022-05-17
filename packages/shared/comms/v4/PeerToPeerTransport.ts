@@ -185,16 +185,6 @@ export class PeerToPeerTransport extends Transport {
     //   this.pingTimeoutId = schedulePing()
     // }
 
-    this.onPeerJoinedListener = this.bffConnection.addListener(
-      `island.${this.islandId}.peer_join`,
-      this.onPeerJoined.bind(this)
-    )
-    this.onPeerLeftListener = this.bffConnection.addListener(
-      `island.${this.islandId}.peer_left`,
-      this.onPeerLeft.bind(this)
-    )
-    this.bffConnection.refreshTopics()
-
     peers.forEach((p: Position3D, peerId: string) => {
       if (peerId !== this.peerId) {
         this.addKnownPeerIfNotExists({ id: peerId, position: p })
@@ -260,6 +250,16 @@ export class PeerToPeerTransport extends Transport {
   }
 
   async connect() {
+    this.onPeerJoinedListener = this.bffConnection.addListener(
+      `island.${this.islandId}.peer_join`,
+      this.onPeerJoined.bind(this)
+    )
+    this.onPeerLeftListener = this.bffConnection.addListener(
+      `island.${this.islandId}.peer_left`,
+      this.onPeerLeft.bind(this)
+    )
+    await this.bffConnection.refreshTopics()
+
     this.triggerUpdateNetwork(`changed to island ${this.islandId}`)
   }
 

@@ -26,7 +26,6 @@ import mitt from 'mitt'
 import { DummyTransport } from './DummyTransport'
 import { Avatar } from '@dcl/schemas'
 
-
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
@@ -75,7 +74,7 @@ export class InstanceConnection implements RoomConnection {
     this.transport.send(d, { reliable: false })
   }
 
-  async sendParcelUpdateMessage(_: Position, _newPosition: Position) { }
+  async sendParcelUpdateMessage(_: Position, _newPosition: Position) {}
 
   async sendProfileMessage(_: Position, __: string, profileType: ProfileType, version: number) {
     const d = new ProfileData()
