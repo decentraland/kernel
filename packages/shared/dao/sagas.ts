@@ -148,11 +148,10 @@ function* selectRealm() {
   const cachedCandidates: Candidate[] = yield call(getFromPersistentStorage, getLastRealmCandidatesCacheKey(network)) ??
     []
 
-  const PREVIEW_REALM: Realm = {
-    protocol: 'v1',
-    hostname: rootURLPreviewMode(),
-    serverName: 'localhost'
-  }
+  const PREVIEW_REALM: Realm = yield call(resolveCommsConnectionString, `v1~${rootURLPreviewMode()}`, [
+    ...allCandidates,
+    ...cachedCandidates
+  ])
 
   const realm: Realm | undefined =
     // query param (dao candidates & cached)
