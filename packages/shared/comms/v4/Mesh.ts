@@ -53,7 +53,7 @@ export class Mesh {
       const conn: Connection = { instance, createTimestamp: Date.now() }
       this.peerConnections.set(peerId, conn)
 
-      instance.addEventListener('datachannel', event => {
+      instance.addEventListener('datachannel', (event) => {
         this.logger.log(`Got data channel from ${peerId}`)
         const dc = event.channel
         dc.addEventListener('open', () => {
@@ -62,8 +62,8 @@ export class Mesh {
 
         dc.addEventListener('message', (event) => {
           this.packetHandler(event.data, peerId)
-        });
-      });
+        })
+      })
 
       try {
         this.logger.log(`Setting remote description for ${peerId}`)
@@ -78,7 +78,7 @@ export class Mesh {
         this.logger.log(`Sending answer to ${peerId}`)
         this.bff.sendMessage(`peer.${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
       } catch (e: any) {
-        this.logger.error(`Failed to create answer: ${e.toString()}`);
+        this.logger.error(`Failed to create answer: ${e.toString()}`)
         throw e
       }
     })
@@ -98,7 +98,6 @@ export class Mesh {
     this.bff.refreshTopics()
   }
 
-
   public async connectTo(peerId: string): Promise<void> {
     if (this.peerConnections.has(peerId)) {
       return
@@ -110,19 +109,19 @@ export class Mesh {
     const conn: Connection = { instance, createTimestamp: Date.now() }
 
     this.logger.log(`Opening dc for ${peerId}`)
-    const dc = instance.createDataChannel('data');
+    const dc = instance.createDataChannel('data')
     dc.addEventListener('open', () => {
       conn.dc = dc
     })
     dc.addEventListener('message', (event) => {
       this.packetHandler(event.data, peerId)
-    });
+    })
 
     const offer = await instance.createOffer({
       offerToReceiveAudio: true,
-      offerToReceiveVideo: false,
+      offerToReceiveVideo: false
     })
-    await instance.setLocalDescription(offer);
+    await instance.setLocalDescription(offer)
     this.logger.log(`Set local description for ${peerId}`)
     this.logger.log(`Sending offer to ${peerId}`)
     this.bff.sendMessage(`peer.${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
@@ -180,10 +179,7 @@ export class Mesh {
 
   public checkConnectionsSanity(): void {
     this.peerConnections.forEach((conn: Connection, peerId: string) => {
-      if (
-        conn.instance.connectionState !== 'connected' &&
-        Date.now() - conn.createTimestamp > PEER_CONNECT_TIMEOUT
-      ) {
+      if (conn.instance.connectionState !== 'connected' && Date.now() - conn.createTimestamp > PEER_CONNECT_TIMEOUT) {
         this.logger.warn(`The connection to ${peerId} is not in a sane state. Discarding it.`)
         this.disconnectFrom(peerId)
       }
@@ -216,7 +212,7 @@ export class Mesh {
       iceServers: commConfigurations.defaultIceServers
     })
 
-    instance.addEventListener('icecandidate', event => {
+    instance.addEventListener('icecandidate', (event) => {
       if (event.candidate) {
         this.bff.sendMessage(`peer.${peerId}.candidate`, this.encoder.encode(JSON.stringify(event.candidate)))
       }
@@ -224,12 +220,12 @@ export class Mesh {
 
     instance.addEventListener('connectionstatechange', () => {
       this.logger.log(`Connection with ${peerId}, status changed: ${instance.connectionState}`)
-    });
+    })
 
     instance.addEventListener('iceconnectionstatechange', (event) => {
       this.logger.log(`Connection with ${peerId}, ice status changed: ${instance.iceConnectionState}`)
       console.log(event)
-    });
+    })
     return instance
   }
 
@@ -242,5 +238,4 @@ export class Mesh {
     const candidate = JSON.parse(this.decoder.decode(data))
     conn.instance.addIceCandidate(candidate)
   }
-
 }

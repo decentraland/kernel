@@ -70,9 +70,9 @@ type MinPeerData = { id: string; position?: Position3D }
 type NetworkOperation = () => Promise<KnownPeerData[]>
 
 type PacketData = {
-  messageData?: MessageData,
-  pingData?: PingData,
-  pongData?: PongData,
+  messageData?: MessageData
+  pingData?: PingData
+  pongData?: PongData
   suspendRelayData?: SuspendRelayData
 }
 
@@ -185,8 +185,14 @@ export class PeerToPeerTransport extends Transport {
     //   this.pingTimeoutId = schedulePing()
     // }
 
-    this.onPeerJoinedListener = this.bffConnection.addListener(`island.${this.islandId}.peer_join`, this.onPeerJoined.bind(this))
-    this.onPeerLeftListener = this.bffConnection.addListener(`island.${this.islandId}.peer_left`, this.onPeerLeft.bind(this))
+    this.onPeerJoinedListener = this.bffConnection.addListener(
+      `island.${this.islandId}.peer_join`,
+      this.onPeerJoined.bind(this)
+    )
+    this.onPeerLeftListener = this.bffConnection.addListener(
+      `island.${this.islandId}.peer_left`,
+      this.onPeerLeft.bind(this)
+    )
     this.bffConnection.refreshTopics()
 
     peers.forEach((p: Position3D, peerId: string) => {
@@ -298,7 +304,6 @@ export class PeerToPeerTransport extends Transport {
   private handlePeerPacket(data: Uint8Array, peerId: string) {
     if (this.disposed) return
     try {
-
       const packet = Packet.deserializeBinary(data)
 
       const packetKey = `${packet.getSrc()}_${packet.getInstanceId()}_${packet.getSequenceId()}`
@@ -387,7 +392,6 @@ export class PeerToPeerTransport extends Transport {
     this.expirePeerRelayData(currentTimestamp)
   }
 
-
   private expirePeerRelayData(currentTimestamp: number) {
     Object.keys(this.peerRelayData).forEach((id) => {
       const connected = this.peerRelayData[id]
@@ -457,9 +461,9 @@ export class PeerToPeerTransport extends Transport {
   private processSuspensionRequest(peerId: string, suspendRelayData: SuspendRelayData) {
     if (this.mesh.hasConnectionsFor(peerId)) {
       const relayData = this.getPeerRelayData(peerId)
-      suspendRelayData.getRelayedPeersList().forEach(
-        (it) => (relayData.ownSuspendedRelays[it] = Date.now() + suspendRelayData.getDurationMillis())
-      )
+      suspendRelayData
+        .getRelayedPeersList()
+        .forEach((it) => (relayData.ownSuspendedRelays[it] = Date.now() + suspendRelayData.getDurationMillis()))
     }
   }
 
@@ -530,11 +534,7 @@ export class PeerToPeerTransport extends Transport {
     }
   }
 
-  private isRelayFromConnectionSuspended(
-    connectedPeerId: string,
-    srcId: string,
-    now: number = Date.now()
-  ): boolean {
+  private isRelayFromConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()): boolean {
     const relayData = this.getPeerRelayData(connectedPeerId)
     return !!(
       relayData.pendingSuspensionRequests.includes(srcId) ||
@@ -543,11 +543,7 @@ export class PeerToPeerTransport extends Transport {
     )
   }
 
-  private isRelayToConnectionSuspended(
-    connectedPeerId: string,
-    srcId: string,
-    now: number = Date.now()
-  ): boolean {
+  private isRelayToConnectionSuspended(connectedPeerId: string, srcId: string, now: number = Date.now()): boolean {
     const relayData = this.getPeerRelayData(connectedPeerId)
     return !!relayData.ownSuspendedRelays[srcId] && now < relayData.ownSuspendedRelays[srcId]
   }
@@ -637,7 +633,12 @@ export class PeerToPeerTransport extends Transport {
     this.currentMessageId += 1
     const sequenceId = this.currentMessageId
 
-    const ttl = typeof type.ttl !== 'undefined' ? typeof type.ttl === 'number' ? type.ttl : type.ttl(sequenceId, type) : DEFAULT_TTL
+    const ttl =
+      typeof type.ttl !== 'undefined'
+        ? typeof type.ttl === 'number'
+          ? type.ttl
+          : type.ttl(sequenceId, type)
+        : DEFAULT_TTL
     const optimistic = typeof type.optimistic === 'boolean' ? type.optimistic : type.optimistic(sequenceId, type)
 
     const packet = new Packet()
@@ -668,7 +669,6 @@ export class PeerToPeerTransport extends Transport {
         future: pingFuture
       }
 
-
       const pingData = new PingData()
       pingData.setPingId(pingId)
       const packet = this.buildPacketWithData(PingMessageType, { pingData })
@@ -687,7 +687,6 @@ export class PeerToPeerTransport extends Transport {
     }
   }
 
-
   private sendPacket(packet: Packet) {
     const receivedBy = packet.getReceivedByList()
     if (!receivedBy.includes(this.peerId)) {
@@ -695,10 +694,13 @@ export class PeerToPeerTransport extends Transport {
       packet.setReceivedByList(receivedBy)
     }
 
-    const peersToSend = this.mesh.fullyConnectedPeerIds().filter(
-      (it) =>
-        !packet.getReceivedByList().includes(it) && (packet.getHops() === 0 || !this.isRelayToConnectionSuspended(it, packet.getSrc()))
-    )
+    const peersToSend = this.mesh
+      .fullyConnectedPeerIds()
+      .filter(
+        (it) =>
+          !packet.getReceivedByList().includes(it) &&
+          (packet.getHops() === 0 || !this.isRelayToConnectionSuspended(it, packet.getSrc()))
+      )
 
     if (packet.getOptimistic()) {
       packet.setReceivedByList([...packet.getReceivedByList(), ...peersToSend])
@@ -732,11 +734,9 @@ export class PeerToPeerTransport extends Transport {
     })
   }
 
-
   private isConnectedTo(peerId: string): boolean {
     return this.mesh.isConnectedTo(peerId)
   }
-
 
   private getWorstConnectedPeerByDistance(): [number, string] | undefined {
     return this.mesh.connectedPeerIds().reduce<[number, string] | undefined>((currentWorst, peer) => {
@@ -780,11 +780,7 @@ export class PeerToPeerTransport extends Transport {
   }
 
   private isValidConnectionCandidate(it: KnownPeerData): boolean {
-    return (
-      !this.isConnectedTo(it.id) &&
-
-      (!this.config.maxConnectionDistance || this.isValidConnectionByDistance(it))
-    )
+    return !this.isConnectedTo(it.id) && (!this.config.maxConnectionDistance || this.isValidConnectionByDistance(it))
   }
 
   private isValidConnectionByDistance(peer: KnownPeerData) {
@@ -832,9 +828,7 @@ export class PeerToPeerTransport extends Transport {
 
         await Promise.all(
           candidates.map((candidate) =>
-            this.connectTo(candidate).catch((e) =>
-              logger.log(`Error connecting to candidate ${candidate} ${e} `)
-            )
+            this.connectTo(candidate).catch((e) => logger.log(`Error connecting to candidate ${candidate} ${e} `))
           )
         )
         return remaining
@@ -871,7 +865,9 @@ export class PeerToPeerTransport extends Transport {
         if (typeof bestCandidateDistance !== 'undefined' && (!worstPeer || bestCandidateDistance < worstPeer[0])) {
           // If the best candidate is better than the worst connection, we connect to that candidate.
           // The next operation should handle the disconnection of the worst
-          logger.log(`Found a better candidate for connection: ${bestCandidateDistance} distance: ${bestCandidateDistance} worst: ${worstPeer} `)
+          logger.log(
+            `Found a better candidate for connection: ${bestCandidateDistance} distance: ${bestCandidateDistance} worst: ${worstPeer} `
+          )
           return async () => {
             await this.connectTo(bestCandidate)
             return sortedCandidates
@@ -889,7 +885,9 @@ export class PeerToPeerTransport extends Transport {
       })
 
       if (connectionsToDrop.length > 0) {
-        logger.log(`Dropping connections because they are too far away and don't have rooms in common: ${connectionsToDrop}`)
+        logger.log(
+          `Dropping connections because they are too far away and don't have rooms in common: ${connectionsToDrop}`
+        )
         return async () => {
           connectionsToDrop.forEach((it) => this.disconnectFrom(it))
           return connectionCandidates
