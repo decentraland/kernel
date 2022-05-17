@@ -181,7 +181,7 @@ export class Mesh {
     return instance
   }
 
-  private onCandidateMessage(data: Uint8Array, peerId?: string) {
+  private async onCandidateMessage(data: Uint8Array, peerId?: string) {
     const conn = peerId && this.peerConnections.get(peerId)
     if (!conn) {
       return
@@ -189,7 +189,7 @@ export class Mesh {
 
     try {
       const candidate = JSON.parse(this.decoder.decode(data))
-      conn.instance.addIceCandidate(candidate)
+      await conn.instance.addIceCandidate(candidate)
     } catch (e: any) {
       this.logger.error(`Failed to add ice candidate: ${e.toString()}`)
     }
