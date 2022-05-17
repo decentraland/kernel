@@ -54,7 +54,7 @@ export class InstanceConnection implements RoomConnection {
         this.logger.error(`Invalid islandConnStr ${connStr}`)
         return
       }
-      this.changeTransport(transport)
+      await this.changeTransport(transport)
     })
     await this.bff.connect()
   }
@@ -71,7 +71,7 @@ export class InstanceConnection implements RoomConnection {
     d.setRotationZ(p[5])
     d.setRotationW(p[6])
 
-    this.transport.send(d, { reliable: false })
+    return this.transport.send(d, { reliable: false })
   }
 
   async sendParcelUpdateMessage(_: Position, _newPosition: Position) {}
@@ -83,7 +83,7 @@ export class InstanceConnection implements RoomConnection {
     d.setProfileType(profileType)
     d.setProfileVersion(`${version}`)
 
-    this.transport.send(d, { reliable: true, identity: true })
+    return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendProfileRequest(_: Position, userId: string, version: number | undefined) {
@@ -93,7 +93,7 @@ export class InstanceConnection implements RoomConnection {
     d.setUserId(userId)
     d.setProfileVersion(`${version}`)
 
-    this.transport.send(d, { reliable: true, identity: true })
+    return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendProfileResponse(_: Position, profile: Avatar) {
@@ -102,7 +102,7 @@ export class InstanceConnection implements RoomConnection {
     d.setTime(Date.now())
     d.setSerializedProfile(JSON.stringify(profile))
 
-    this.transport.send(d, { reliable: true, identity: true })
+    return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendInitialMessage(_: string, profileType: ProfileType) {
@@ -112,7 +112,7 @@ export class InstanceConnection implements RoomConnection {
     d.setProfileType(profileType)
     d.setProfileVersion('')
 
-    this.transport.send(d, { reliable: true, identity: true })
+    return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendParcelSceneCommsMessage(sceneId: string, message: string) {
@@ -122,7 +122,7 @@ export class InstanceConnection implements RoomConnection {
     d.setSceneId(sceneId)
     d.setData(message)
 
-    this.bff.sendMessage(sceneId, d.serializeBinary())
+    return this.bff.sendMessage(sceneId, d.serializeBinary())
   }
 
   async sendChatMessage(_: Position, messageId: string, text: string) {
@@ -131,11 +131,11 @@ export class InstanceConnection implements RoomConnection {
     d.setTime(Date.now())
     d.setMessageId(messageId)
     d.setText(text)
-    this.transport.send(d, { reliable: true })
+    return this.transport.send(d, { reliable: true })
   }
 
   async setTopics(topics: string[]) {
-    this.bff.setTopics(topics)
+    return this.bff.setTopics(topics)
   }
 
   async disconnect(): Promise<void> {

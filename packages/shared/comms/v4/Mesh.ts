@@ -18,84 +18,24 @@ const PEER_CONNECT_TIMEOUT = 3500
 export class Mesh {
   private logger = createLogger('CommsV4:P2P:Mesh:')
   private packetHandler: (data: Uint8Array, peerId: string) => void
+  private isKnownPeer: (peerId: string) => boolean
   private peerConnections = new Map<string, Connection>()
-  private candidatesListener: TopicListener
-  private answerListener: TopicListener
-  private offerListener: TopicListener
+  private candidatesListener: TopicListener | null = null
+  private answerListener: TopicListener | null = null
+  private offerListener: TopicListener | null = null
   private encoder = new TextEncoder()
   private decoder = new TextDecoder()
 
   constructor(private bff: BFFConnection, private peerId: string, { packetHandler, isKnownPeer }: Config) {
     this.packetHandler = packetHandler
+    this.isKnownPeer = isKnownPeer
+  }
 
-    this.candidatesListener = this.bff.addListener(`peer.${peerId}.candidate`, this.onCandidateMessage.bind(this))
-
-    this.offerListener = this.bff.addListener(`peer.${peerId}.offer`, async (data: Uint8Array, peerId?: string) => {
-      if (!peerId) {
-        return
-      }
-      if (!isKnownPeer(peerId)) {
-        this.logger.log(`Reject offer from unkown peer ${peerId}`)
-      }
-
-      this.logger.log(`Got offer message from ${peerId}`)
-
-      if (this.peerConnections.has(peerId)) {
-        if (this.peerId < peerId) {
-          this.logger.warn(`Both peers try to establish connection with each other ${peerId}, ignoring ofer`)
-          return
-        }
-        this.logger.warn(`Both peers try to establish connection with each other ${peerId}, keeping this offer`)
-      }
-
-      const offer = JSON.parse(this.decoder.decode(data))
-      const instance = this.createConnection(peerId)
-      const conn: Connection = { instance, createTimestamp: Date.now() }
-      this.peerConnections.set(peerId, conn)
-
-      instance.addEventListener('datachannel', (event) => {
-        this.logger.log(`Got data channel from ${peerId}`)
-        const dc = event.channel
-        dc.addEventListener('open', () => {
-          conn.dc = dc
-        })
-
-        dc.addEventListener('message', (event) => {
-          this.packetHandler(event.data, peerId)
-        })
-      })
-
-      try {
-        this.logger.log(`Setting remote description for ${peerId}`)
-        await instance.setRemoteDescription(offer)
-
-        this.logger.log(`Creating answer for ${peerId}`)
-        const answer = await instance.createAnswer()
-
-        this.logger.log(`Setting local description for ${peerId}`)
-        await instance.setLocalDescription(answer)
-
-        this.logger.log(`Sending answer to ${peerId}`)
-        await this.bff.sendMessage(`peer.${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
-      } catch (e: any) {
-        this.logger.error(`Failed to create answer: ${e.toString()}`)
-        throw e
-      }
-    })
-
-    this.answerListener = this.bff.addListener(`peer.${peerId}.answer`, async (data: Uint8Array, peerId?: string) => {
-      this.logger.log(`Got answer message from ${peerId}`)
-      const conn = peerId && this.peerConnections.get(peerId)
-      if (!conn) {
-        return
-      }
-
-      const answer = JSON.parse(this.decoder.decode(data))
-      this.logger.log(`Setting remote description for ${peerId}`)
-      await conn.instance.setRemoteDescription(answer)
-    })
-
-    this.bff.refreshTopics()
+  public async connect() {
+    this.candidatesListener = this.bff.addListener(`peer.${this.peerId}.candidate`, this.onCandidateMessage.bind(this))
+    this.offerListener = this.bff.addListener(`peer.${this.peerId}.offer`, this.onOfferMessage.bind(this))
+    this.answerListener = this.bff.addListener(`peer.${this.peerId}.answer`, this.onAnswerListener.bind(this))
+    await this.bff.refreshTopics()
   }
 
   public async connectTo(peerId: string): Promise<void> {
@@ -196,9 +136,17 @@ export class Mesh {
   }
 
   async dispose(): Promise<void> {
-    this.bff.removeListener(this.candidatesListener)
-    this.bff.removeListener(this.answerListener)
-    this.bff.removeListener(this.offerListener)
+    if (this.candidatesListener) {
+      this.bff.removeListener(this.candidatesListener)
+    }
+
+    if (this.answerListener) {
+      this.bff.removeListener(this.answerListener)
+    }
+
+    if (this.offerListener) {
+      this.bff.removeListener(this.offerListener)
+    }
 
     this.peerConnections.forEach(({ instance }: Connection) => {
       instance.close()
@@ -239,7 +187,79 @@ export class Mesh {
       return
     }
 
-    const candidate = JSON.parse(this.decoder.decode(data))
-    conn.instance.addIceCandidate(candidate)
+    try {
+      const candidate = JSON.parse(this.decoder.decode(data))
+      conn.instance.addIceCandidate(candidate)
+    } catch (e: any) {
+      this.logger.error(`Failed to add ice candidate: ${e.toString()}`)
+    }
+  }
+
+  private async onOfferMessage(data: Uint8Array, peerId?: string) {
+    if (!peerId) {
+      return
+    }
+    if (!this.isKnownPeer(peerId)) {
+      this.logger.log(`Reject offer from unkown peer ${peerId}`)
+    }
+
+    this.logger.log(`Got offer message from ${peerId}`)
+
+    if (this.peerConnections.has(peerId)) {
+      if (this.peerId < peerId) {
+        this.logger.warn(`Both peers try to establish connection with each other ${peerId}, ignoring ofer`)
+        return
+      }
+      this.logger.warn(`Both peers try to establish connection with each other ${peerId}, keeping this offer`)
+    }
+
+    const offer = JSON.parse(this.decoder.decode(data))
+    const instance = this.createConnection(peerId)
+    const conn: Connection = { instance, createTimestamp: Date.now() }
+    this.peerConnections.set(peerId, conn)
+
+    instance.addEventListener('datachannel', (event) => {
+      this.logger.log(`Got data channel from ${peerId}`)
+      const dc = event.channel
+      dc.addEventListener('open', () => {
+        conn.dc = dc
+      })
+
+      dc.addEventListener('message', (event) => {
+        this.packetHandler(event.data, peerId)
+      })
+    })
+
+    try {
+      this.logger.log(`Setting remote description for ${peerId}`)
+      await instance.setRemoteDescription(offer)
+
+      this.logger.log(`Creating answer for ${peerId}`)
+      const answer = await instance.createAnswer()
+
+      this.logger.log(`Setting local description for ${peerId}`)
+      await instance.setLocalDescription(answer)
+
+      this.logger.log(`Sending answer to ${peerId}`)
+      await this.bff.sendMessage(`peer.${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
+    } catch (e: any) {
+      this.logger.error(`Failed to create answer: ${e.toString()}`)
+    }
+  }
+
+  private async onAnswerListener(data: Uint8Array, peerId?: string) {
+    this.logger.log(`Got answer message from ${peerId}`)
+    const conn = peerId && this.peerConnections.get(peerId)
+    if (!conn) {
+      return
+    }
+
+    try {
+      const answer = JSON.parse(this.decoder.decode(data))
+      this.logger.log(`Setting remote description for ${peerId}`)
+      await conn.instance.setRemoteDescription(answer)
+    } catch (e: any) {
+      this.logger.error(`Failed to set remote description: ${e.toString()}`)
+    }
   }
 }
