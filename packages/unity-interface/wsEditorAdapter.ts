@@ -53,17 +53,9 @@ export async function initializeUnityEditor(
         if (ev.data instanceof ArrayBuffer) {
           const buffer = ev.data
           const dataView = new DataView(buffer)
-
-          const messageLength = dataView.getInt32(0)
-          const sceneIdStartingIndex = 4
-          const sceneIdLength = buffer.byteLength - messageLength - sceneIdStartingIndex
-
-          const sceneIdBuffer = new Uint8Array(buffer, sceneIdStartingIndex, sceneIdLength)
-          const sceneId: string = new TextDecoder().decode(sceneIdBuffer)
-
-          const dataStartingIndex = sceneIdStartingIndex + sceneIdLength
-          const data = new Uint8Array(buffer, dataStartingIndex, buffer.byteLength - dataStartingIndex)
-
+          const sceneIdStringLength = dataView.getInt32(0)
+          const sceneId: string = new TextDecoder().decode(new Uint8Array(buffer, 4, sceneIdStringLength))
+          const data = new Uint8Array(buffer, 4 + sceneIdStringLength, buffer.byteLength - 4 - sceneIdStringLength)
           options.onBinaryMessage(sceneId, data)
         } else {
           const m = JSON.parse(ev.data)
