@@ -26,5 +26,5 @@ export abstract class Transport {
   abstract send(msg: Message, opts: SendOpts): Promise<void>
   abstract disconnect(): Promise<void>
 
-  onPeerPositionChange(_: string, __: Position3D): void { }
+  onPeerPositionChange(_: string, __: Position3D): void {}
 }

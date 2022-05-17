@@ -27,7 +27,6 @@ export class WsTransport extends Transport {
       d.setBody(msg.serializeBinary())
       this.ws.send(d.serializeBinary())
     } else {
-
       const d = new SystemMessage()
       d.setType(MessageType.SYSTEM)
       d.setBody(msg.serializeBinary())
