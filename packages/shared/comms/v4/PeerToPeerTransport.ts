@@ -120,8 +120,8 @@ export class PeerToPeerTransport extends Transport {
   private activePings: Record<string, ActivePing> = {}
   private config: Config
 
-  private onPeerJoinedListener: TopicListener | null
-  private onPeerLeftListener: TopicListener | null
+  private onPeerJoinedListener: TopicListener | null = null
+  private onPeerLeftListener: TopicListener | null = null
 
   constructor(
     private peerId: string,
