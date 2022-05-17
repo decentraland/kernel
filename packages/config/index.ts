@@ -207,6 +207,7 @@ export function getTLD() {
   return 'org'
 }
 
+export const WITH_FIXED_ITEMS = (qs.get('WITH_ITEMS') && ensureSingleString(qs.get('WITH_ITEMS'))) || ''
 export const WITH_FIXED_COLLECTIONS =
   (qs.get('WITH_COLLECTIONS') && ensureSingleString(qs.get('WITH_COLLECTIONS'))) || ''
 export const ENABLE_EMPTY_SCENES = !location.search.includes('DISABLE_EMPTY_SCENES')
@@ -227,16 +228,12 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
   const metaConfigBaseUrl = META_CONFIG_URL || `https://config.decentraland.${tld}/explorer.json`
-  const metaFeatureFlagsBaseUrl = PREVIEW
-    ? `${rootURLPreviewMode()}/feature-flags/explorer.json`
-    : `https://feature-flags.decentraland.${tld}/explorer.json`
 
   const questsUrl =
     ensureSingleString(qs.get('QUESTS_SERVER_URL')) ?? `https://quests-api.decentraland.${network ? 'org' : 'io'}`
 
   return {
     explorerConfiguration: `${metaConfigBaseUrl}?t=${new Date().getTime()}`,
-    explorerFeatureFlags: `${metaFeatureFlagsBaseUrl}?t=${new Date().getTime()}`,
     questsUrl
   }
 }

@@ -1,6 +1,6 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { RenderProfile } from 'shared/types'
-import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
+import { FeatureFlagVariant } from '@dcl/feature-flags'
 
 export type MetaConfiguration = {
   explorer: {
@@ -13,15 +13,26 @@ export type MetaConfiguration = {
     contentWhitelist: string[]
     catalystsNodesEndpoint?: string
   }
-  pickRealmAlgorithmConfig?: AlgorithmChainConfig
-  bannedUsers: BannedUsers
   synapseUrl: string
   world: WorldConfig
   comms: CommsConfig
   minCatalystVersion?: string
-  featureFlags?: Record<string, boolean>
   featureFlagsV2?: FeatureFlag
 }
+
+export type FeatureFlagsName =
+  | 'quests' // quests feature
+  | 'retry_matrix_login' // retry matrix reconnection
+  | 'parcel-denylist' // denylist of specific parcels using variants
+  | 'matrix_disabled' // disable matrix integration entirely
+  | 'builder_in_world'
+  | 'avatar_lods'
+  | 'asset_bundles'
+  | 'explorev2'
+  | 'unsafe-request'
+  | 'pick_realm_algorithm_config'
+  | 'banned_users'
+  | 'max_visible_peers'
 
 export type BannedUsers = Record<string, Ban[]>
 
@@ -54,25 +65,7 @@ export type CommsConfig = {
   maxVisiblePeers: number
 }
 
-export enum FeatureFlags {
-  QUESTS = 'quests',
-  BUILDER_IN_WORLD = 'builder_in_world',
-  AVATAR_LODS = 'avatar_lods',
-  ASSET_BUNDLES = 'asset_bundles',
-  EXPLORE_V2_ENABLED = 'explorev2',
-  UNSAFE_FETCH_AND_WEBSOCKET = 'unsafe-request'
-}
-
 export type FeatureFlag = {
-  flags: Record<string, boolean>
-  variants: Record<string, FeatureFlagVariant>
-}
-
-export type FeatureFlagVariant = {
-  name: string
-  enabled: boolean
-  payload?: {
-    type: string
-    value: string
-  }
+  flags: Partial<Record<FeatureFlagsName, boolean>>
+  variants: Partial<Record<FeatureFlagsName, FeatureFlagVariant>>
 }

@@ -26,7 +26,7 @@ import { StatefulWorker } from './StatefulWorker'
 import { UnityScene } from 'unity-interface/UnityScene'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { PositionTrackEvents } from 'shared/analytics/types'
-import { getVariantContent } from 'shared/meta/selectors'
+import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { activateAllPortableExperiences, killAllPortableExperiences } from '../portableExperiences/actions'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 
@@ -45,7 +45,7 @@ declare const globalThis: any
 
 const PARCEL_DENY_LISTED_FEATURE_FLAG = 'parcel-denylist'
 export function isParcelDenyListed(coordinates: string[]) {
-  const denylist = getVariantContent(store.getState(), PARCEL_DENY_LISTED_FEATURE_FLAG)
+  const denylist = getFeatureFlagVariantValue(store.getState(), PARCEL_DENY_LISTED_FEATURE_FLAG) as string
 
   const setOfCoordinates = new Set(coordinates)
 

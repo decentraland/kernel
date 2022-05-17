@@ -229,6 +229,7 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
 
   async disconnect() {
     if (this.pingInterval) {
+      this.events.emit('DISCONNECTION')
       clearInterval(this.pingInterval)
     }
     await this.broker.disconnect()
