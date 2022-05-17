@@ -37,6 +37,9 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
     // this is outside of the try-catch to enable V8 path optimizations
     // keep the following line outside the `try`
     browserInterface.handleUnityMessage(type, parsedJson)
+  },
+  onBinaryMessage(sceneId: string, data: Uint8Array) {
+    // TODO: implement binary message
   }
 })
 

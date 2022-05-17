@@ -24,6 +24,7 @@ export type LoadRendererResult = {
  */
 export type CommonRendererOptions = {
   onMessage: (type: string, payload: string) => void
+  onBinaryMessage: (sceneId: string, data: Uint8Array) => void
 }
 
 function extractSemver(url: string): string | null {
@@ -97,6 +98,7 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
         versionQueryParam: rendererVersion === 'dynamic' ? Date.now().toString() : rendererVersion,
         onProgress,
         onMessageLegacy: options.onMessage,
+        onBinaryMessage: options.onBinaryMessage,
         onError: (error) => {
           ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_NEWERRORHANDLER)
           BringDownClientAndShowError(UNEXPECTED_ERROR)

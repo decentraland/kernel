@@ -21,6 +21,7 @@ export async function initializeUnityEditor(
     logger.info(`Connecting WS to ${webSocketUrl}`)
     container.innerHTML = `<h3>Connecting...</h3>`
     const ws = new WebSocket(webSocketUrl)
+    ws.binaryType = 'arraybuffer'
 
     globalObservable.on('error', (_error) => {
       ws.close()
@@ -49,11 +50,28 @@ export async function initializeUnityEditor(
       }
 
       try {
-        const m = JSON.parse(ev.data)
-        if (m.type && m.payload) {
-          options.onMessage(m.type, m.payload)
+        if (ev.data instanceof ArrayBuffer) {
+          const buffer = ev.data
+          const dataView = new DataView(buffer)
+
+          const messageLength = dataView.getInt32(0)
+          const sceneIdStartingIndex = 4
+          const sceneIdLength = buffer.byteLength - messageLength - sceneIdStartingIndex
+
+          const sceneIdBuffer = new Uint8Array(buffer, sceneIdStartingIndex, sceneIdLength)
+          const sceneId: string = new TextDecoder().decode(sceneIdBuffer)
+
+          const dataStartingIndex = sceneIdStartingIndex + sceneIdLength
+          const data = new Uint8Array(buffer, dataStartingIndex, buffer.byteLength - dataStartingIndex)
+
+          options.onBinaryMessage(sceneId, data)
         } else {
-          logger.error('Unexpected message: ', m)
+          const m = JSON.parse(ev.data)
+          if (m.type && m.payload) {
+            options.onMessage(m.type, m.payload)
+          } else {
+            logger.error('Unexpected message: ', m)
+          }
         }
       } catch (e: any) {
         logger.error(e)
