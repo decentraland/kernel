@@ -44,7 +44,7 @@ export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: stri
   } else if (realm.hostname === 'remote') {
     server = 'https://explorer-bff.decentraland.io'
   } else {
-    server = realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname + '/bff'
+    server = (realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname) + '/bff'
   }
 
   const pingUrl = `${server}/status`
