@@ -16,6 +16,7 @@ type Connection = {
 const PEER_CONNECT_TIMEOUT = 3500
 
 export class Mesh {
+  private debugWebRtcEnabled = false
   private logger = createLogger('CommsV4:P2P:Mesh:')
   private packetHandler: (data: Uint8Array, peerId: string) => void
   private isKnownPeer: (peerId: string) => boolean
@@ -47,7 +48,7 @@ export class Mesh {
     const instance = this.createConnection(peerId)
     const conn: Connection = { instance, createTimestamp: Date.now() }
 
-    this.logger.log(`Opening dc for ${peerId}`)
+    this.debugWebRtc(`Opening dc for ${peerId}`)
     const dc = instance.createDataChannel('data')
     dc.addEventListener('open', () => {
       conn.dc = dc
@@ -61,8 +62,8 @@ export class Mesh {
       offerToReceiveVideo: false
     })
     await instance.setLocalDescription(offer)
-    this.logger.log(`Set local description for ${peerId}`)
-    this.logger.log(`Sending offer to ${peerId}`)
+    this.debugWebRtc(`Set local description for ${peerId}`)
+    this.debugWebRtc(`Sending offer to ${peerId}`)
     await this.bff.sendMessage(`peer.${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
 
     this.peerConnections.set(peerId, conn)
@@ -170,12 +171,11 @@ export class Mesh {
     })
 
     instance.addEventListener('connectionstatechange', () => {
-      this.logger.log(`Connection with ${peerId}, status changed: ${instance.connectionState}`)
+      this.debugWebRtc(`Connection with ${peerId}, status changed: ${instance.connectionState}`)
     })
 
-    instance.addEventListener('iceconnectionstatechange', (event) => {
-      this.logger.log(`Connection with ${peerId}, ice status changed: ${instance.iceConnectionState}`)
-      console.log(event)
+    instance.addEventListener('iceconnectionstatechange', () => {
+      this.debugWebRtc(`Connection with ${peerId}, ice status changed: ${instance.iceConnectionState}`)
     })
     return instance
   }
@@ -202,7 +202,7 @@ export class Mesh {
       this.logger.log(`Reject offer from unkown peer ${peerId}`)
     }
 
-    this.logger.log(`Got offer message from ${peerId}`)
+    this.debugWebRtc(`Got offer message from ${peerId}`)
 
     if (this.peerConnections.has(peerId)) {
       if (this.peerId < peerId) {
@@ -218,7 +218,7 @@ export class Mesh {
     this.peerConnections.set(peerId, conn)
 
     instance.addEventListener('datachannel', (event) => {
-      this.logger.log(`Got data channel from ${peerId}`)
+      this.debugWebRtc(`Got data channel from ${peerId}`)
       const dc = event.channel
       dc.addEventListener('open', () => {
         conn.dc = dc
@@ -230,16 +230,16 @@ export class Mesh {
     })
 
     try {
-      this.logger.log(`Setting remote description for ${peerId}`)
+      this.debugWebRtc(`Setting remote description for ${peerId}`)
       await instance.setRemoteDescription(offer)
 
-      this.logger.log(`Creating answer for ${peerId}`)
+      this.debugWebRtc(`Creating answer for ${peerId}`)
       const answer = await instance.createAnswer()
 
-      this.logger.log(`Setting local description for ${peerId}`)
+      this.debugWebRtc(`Setting local description for ${peerId}`)
       await instance.setLocalDescription(answer)
 
-      this.logger.log(`Sending answer to ${peerId}`)
+      this.debugWebRtc(`Sending answer to ${peerId}`)
       await this.bff.sendMessage(`peer.${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
     } catch (e: any) {
       this.logger.error(`Failed to create answer: ${e.toString()}`)
@@ -247,7 +247,7 @@ export class Mesh {
   }
 
   private async onAnswerListener(data: Uint8Array, peerId?: string) {
-    this.logger.log(`Got answer message from ${peerId}`)
+    this.debugWebRtc(`Got answer message from ${peerId}`)
     const conn = peerId && this.peerConnections.get(peerId)
     if (!conn) {
       return
@@ -255,10 +255,16 @@ export class Mesh {
 
     try {
       const answer = JSON.parse(this.decoder.decode(data))
-      this.logger.log(`Setting remote description for ${peerId}`)
+      this.debugWebRtc(`Setting remote description for ${peerId}`)
       await conn.instance.setRemoteDescription(answer)
     } catch (e: any) {
       this.logger.error(`Failed to set remote description: ${e.toString()}`)
+    }
+  }
+
+  private debugWebRtc(message: string) {
+    if (this.debugWebRtcEnabled) {
+      this.logger.log(message)
     }
   }
 }
