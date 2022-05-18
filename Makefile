@@ -1,10 +1,10 @@
 # General setup
 
+UNAME := $(shell uname)
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
 CWD = $(shell pwd)
-PROTOC = protoc
 
 # Remove default Makefile rules
 
@@ -23,6 +23,13 @@ INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
 VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
 
 EMPTY_SCENES := public/empty-scenes/common
+
+PROTOBUF_VERSION = 3.19.1
+ifeq ($(UNAME), Darwin)
+PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-osx-x86_64.zip
+else
+PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
+endif
 
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
 	@node_modules/.bin/tsc --build scripts/tsconfig.json
@@ -52,8 +59,24 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-proto:
-	${PROTOC} \
+
+install-protoc:
+	@# remove local folder
+	rm -rf protoc3 || true
+
+	@# Make sure you grab the latest version
+	curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/$(PROTOBUF_ZIP)
+
+	@# Unzip
+	unzip $(PROTOBUF_ZIP) -d protoc3
+	@# delete the files
+	rm $(PROTOBUF_ZIP)
+
+	@# move protoc to /usr/local/bin/
+	chmod +x protoc3/bin/protoc
+
+build-proto: install-protoc
+	protoc3/bin/protoc \
 		--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		--ts_proto_opt=esModuleInterop=true,oneof=unions \
 		--ts_proto_out="$(PWD)/packages/shared/comms/v4/proto" \
