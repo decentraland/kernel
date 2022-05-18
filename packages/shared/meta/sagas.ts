@@ -1,4 +1,4 @@
-import { call, put, select, take } from 'redux-saga/effects'
+import { call, put, select, take, all } from 'redux-saga/effects'
 import {
   ETHEREUM_NETWORK,
   FORCE_RENDERING_STYLE,
@@ -10,7 +10,7 @@ import {
 import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized } from './actions'
 import defaultLogger from '../logger'
 import { FeatureFlagsName, MetaConfiguration, WorldConfig } from './types'
-import { getMaxVisiblePeers, isMetaConfigurationInitiazed } from './selectors'
+import { isMetaConfigurationInitiazed } from './selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
 import { RootState } from 'shared/store/rootTypes'
@@ -34,16 +34,14 @@ export function* waitForNetworkSelected() {
 function* initMeta() {
   const net: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
 
-  const config: Partial<MetaConfiguration> = yield call(fetchMetaConfiguration, net)
-  const flagsAndVariants: FeatureFlagsResult = yield call(fetchFeatureFlagsAndVariants, net)
-  const maxVisiblePeers: number = yield select(getMaxVisiblePeers)
+  const [config, flagsAndVariants]: [Partial<MetaConfiguration>, FeatureFlagsResult] = yield all([
+    call(fetchMetaConfiguration, net),
+    call(fetchFeatureFlagsAndVariants, net)
+  ])
 
   const merge: Partial<MetaConfiguration> = {
     ...config,
-    comms: {
-      ...config.comms,
-      maxVisiblePeers
-    },
+    comms: config.comms,
     featureFlagsV2: flagsAndVariants
   }
 

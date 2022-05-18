@@ -27,6 +27,8 @@ import { getIdentity } from 'shared/session'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
 import { realmToConnectionString } from './v3/resolver'
+import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
+import { getMaxVisiblePeers } from 'shared/meta/selectors'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -56,9 +58,22 @@ export function* commsSaga() {
 }
 
 function* initAvatarVisibilityProcess() {
-  const interval = setInterval(processAvatarVisibility, 100)
-  yield take(BEFORE_UNLOAD)
-  clearInterval(interval)
+  yield call(waitForMetaConfigurationInitialization)
+  const maxVisiblePeers = yield select(getMaxVisiblePeers)
+
+  while (true) {
+    const reason = yield race({
+      delay: delay(100),
+      unload: take(BEFORE_UNLOAD)
+    })
+
+    if (reason.unload) break
+
+    const context: CommsContext | null = yield select(getCommsContext)
+    const account: ExplorerIdentity | undefined = yield select(getIdentity)
+
+    processAvatarVisibility(maxVisiblePeers, context, account?.address)
+  }
 }
 
 /**
