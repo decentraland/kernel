@@ -206,7 +206,11 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   return currentPeer
 }
 
-export function processAvatarVisibility(maxVisiblePeers: number, context: CommsContext | null, myAddress: string | undefined) {
+export function processAvatarVisibility(
+  maxVisiblePeers: number,
+  context: CommsContext | null,
+  myAddress: string | undefined
+) {
   if (!lastPlayerPositionReport) return
   const pos = positionReportToCommsPosition(lastPlayerPositionReport)
   const now = Date.now()
