@@ -1,4 +1,3 @@
-import { Message } from 'google-protobuf'
 import { ILogger, createLogger } from 'shared/logger'
 import { Transport, SendOpts } from './Transport'
 import { MessageType, MessageHeader, MessageTypeMap, SystemMessage, IdentityMessage } from './proto/ws_pb'
@@ -18,18 +17,18 @@ export class WsTransport extends Transport {
     this.logger.log('Connected')
   }
 
-  async send(msg: Message, { identity }: SendOpts): Promise<void> {
+  async send(msg: Uint8Array, { identity }: SendOpts): Promise<void> {
     if (!this.ws) throw new Error('This transport is closed')
 
     if (identity) {
       const d = new IdentityMessage()
       d.setType(MessageType.IDENTITY)
-      d.setBody(msg.serializeBinary())
+      d.setBody(msg)
       this.ws.send(d.serializeBinary())
     } else {
       const d = new SystemMessage()
       d.setType(MessageType.SYSTEM)
-      d.setBody(msg.serializeBinary())
+      d.setBody(msg)
       this.ws.send(d.serializeBinary())
     }
   }
@@ -82,7 +81,7 @@ export class WsTransport extends Transport {
         const body = dataMessage.getBody_asU8()
         this.onMessageObservable.notifyObservers({
           peer: userId,
-          data: body
+          payload: body
         })
         break
       }
@@ -101,7 +100,7 @@ export class WsTransport extends Transport {
         const body = dataMessage.getBody_asU8()
         this.onMessageObservable.notifyObservers({
           peer: userId,
-          data: body
+          payload: body
         })
         break
       }

@@ -1,7 +1,6 @@
 import { store } from 'shared/store/isolatedStore'
 import { future, IFuture } from 'fp-future'
 import { getCommsConfig } from 'shared/meta/selectors'
-import { Message } from 'google-protobuf'
 import { SendOpts, Transport } from './Transport'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 
@@ -258,6 +257,7 @@ export class PeerToPeerTransport extends Transport {
       `island.${this.islandId}.peer_left`,
       this.onPeerLeft.bind(this)
     )
+    this.mesh.registerSubscriptions()
     await this.bffConnection.refreshTopics()
 
     this.triggerUpdateNetwork(`changed to island ${this.islandId}`)
@@ -280,16 +280,17 @@ export class PeerToPeerTransport extends Transport {
 
     this.knownPeers = {}
     await this.mesh.dispose()
+    await this.bffConnection.refreshTopics()
     this.onDisconnectObservable.notifyObservers()
   }
 
-  async send(msg: Message, { reliable }: SendOpts): Promise<void> {
+  async send(msg: Uint8Array, { reliable }: SendOpts): Promise<void> {
     if (this.disposed) {
       return
     }
     try {
       const t = reliable ? PeerMessageTypes.reliable('data') : PeerMessageTypes.unreliable('data')
-      await this.sendMessage(this.islandId, msg.serializeBinary(), t)
+      await this.sendMessage(this.islandId, msg, t)
     } catch (e: any) {
       const message = e.message
       if (typeof message === 'string' && message.startsWith('cannot send a message in a room not joined')) {
@@ -352,7 +353,7 @@ export class PeerToPeerTransport extends Transport {
     if (messageData && messageData.getRoom() === this.islandId) {
       this.onMessageObservable.notifyObservers({
         peer: packet.getSrc(),
-        data: messageData.getPayload_asU8()
+        payload: messageData.getPayload_asU8()
       })
     }
 

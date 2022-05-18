@@ -1,16 +1,6 @@
 /// <reference lib="dom" />
 
-import {
-  ProfileResponseData,
-  ProfileRequestData,
-  Category,
-  ChatData,
-  PositionData,
-  ProfileData,
-  DataHeader,
-  SceneData,
-  VoiceData
-} from './proto/comms_pb'
+import { Data, Profile_ProfileType } from './proto/comms'
 import { Position } from '../../comms/interface/utils'
 import { BFFConnection, TopicData } from './BFFConnection'
 import { WsTransport } from './WsTransport'
@@ -25,6 +15,7 @@ import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
 import { DummyTransport } from './DummyTransport'
 import { Avatar } from '@dcl/schemas'
+import { Reader } from 'protobufjs/minimal'
 
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
@@ -60,16 +51,21 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async sendPositionMessage(p: Position) {
-    const d = new PositionData()
-    d.setCategory(Category.POSITION)
-    d.setTime(Date.now())
-    d.setPositionX(p[0])
-    d.setPositionY(p[1])
-    d.setPositionZ(p[2])
-    d.setRotationX(p[3])
-    d.setRotationY(p[4])
-    d.setRotationZ(p[5])
-    d.setRotationW(p[6])
+    const d = Data.encode({
+      message: {
+        $case: 'position',
+        position: {
+          time: Date.now(),
+          positionX: p[0],
+          positionY: p[1],
+          positionZ: p[2],
+          rotationX: p[3],
+          rotationY: p[4],
+          rotationZ: p[5],
+          rotationW: p[6]
+        }
+      }
+    }).finish()
 
     return this.transport.send(d, { reliable: false })
   }
@@ -77,60 +73,90 @@ export class InstanceConnection implements RoomConnection {
   async sendParcelUpdateMessage(_: Position, _newPosition: Position) {}
 
   async sendProfileMessage(_: Position, __: string, profileType: ProfileType, version: number) {
-    const d = new ProfileData()
-    d.setCategory(Category.PROFILE)
-    d.setTime(Date.now())
-    d.setProfileType(profileType)
-    d.setProfileVersion(`${version}`)
+    const d = Data.encode({
+      message: {
+        $case: 'profile',
+        profile: {
+          time: Date.now(),
+          profileType: profileType === ProfileType.LOCAL ? Profile_ProfileType.LOCAL : Profile_ProfileType.DEPLOYED,
+          profileVersion: `${version}`
+        }
+      }
+    }).finish()
 
     return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendProfileRequest(_: Position, userId: string, version: number | undefined) {
-    const d = new ProfileRequestData()
-    d.setCategory(Category.PROF_REQ)
-    d.setTime(Date.now())
-    d.setUserId(userId)
-    d.setProfileVersion(`${version}`)
+    const d = Data.encode({
+      message: {
+        $case: 'profileRequest',
+        profileRequest: {
+          time: Date.now(),
+          userId: userId,
+          profileVersion: `${version}`
+        }
+      }
+    }).finish()
 
     return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendProfileResponse(_: Position, profile: Avatar) {
-    const d = new ProfileResponseData()
-    d.setCategory(Category.PROF_RES)
-    d.setTime(Date.now())
-    d.setSerializedProfile(JSON.stringify(profile))
+    const d = Data.encode({
+      message: {
+        $case: 'profileResponse',
+        profileResponse: {
+          time: Date.now(),
+          serializedProfile: JSON.stringify(profile)
+        }
+      }
+    }).finish()
 
     return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendInitialMessage(_: string, profileType: ProfileType) {
-    const d = new ProfileData()
-    d.setCategory(Category.PROFILE)
-    d.setTime(Date.now())
-    d.setProfileType(profileType)
-    d.setProfileVersion('')
+    const d = Data.encode({
+      message: {
+        $case: 'profile',
+        profile: {
+          time: Date.now(),
+          profileType: profileType === ProfileType.LOCAL ? Profile_ProfileType.LOCAL : Profile_ProfileType.DEPLOYED,
+          profileVersion: ''
+        }
+      }
+    }).finish()
 
     return this.transport.send(d, { reliable: true, identity: true })
   }
 
   async sendParcelSceneCommsMessage(sceneId: string, message: string) {
-    const d = new SceneData()
-    d.setCategory(Category.SCENE_MESSAGE)
-    d.setTime(Date.now())
-    d.setSceneId(sceneId)
-    d.setData(message)
+    const d = Data.encode({
+      message: {
+        $case: 'scene',
+        scene: {
+          time: Date.now(),
+          sceneId: sceneId,
+          data: message
+        }
+      }
+    }).finish()
 
-    return this.bff.sendMessage(sceneId, d.serializeBinary())
+    return this.bff.sendMessage(sceneId, d)
   }
 
   async sendChatMessage(_: Position, messageId: string, text: string) {
-    const d = new ChatData()
-    d.setCategory(Category.CHAT)
-    d.setTime(Date.now())
-    d.setMessageId(messageId)
-    d.setText(text)
+    const d = Data.encode({
+      message: {
+        $case: 'chat',
+        chat: {
+          time: Date.now(),
+          messageId,
+          text
+        }
+      }
+    }).finish()
     return this.transport.send(d, { reliable: true })
   }
 
@@ -146,146 +172,150 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async sendVoiceMessage(_: Position, frame: EncodedFrame): Promise<void> {
-    const d = new VoiceData()
-    d.setCategory(Category.VOICE)
-    d.setEncodedSamples(frame.encoded)
-    d.setIndex(frame.index)
+    const d = Data.encode({
+      message: {
+        $case: 'voice',
+        voice: {
+          encodedSamples: frame.encoded,
+          index: frame.index
+        }
+      }
+    }).finish()
 
     return this.transport.send(d, { reliable: true })
   }
 
   protected handleTopicMessage(message: TopicData) {
-    let dataHeader: DataHeader
+    let data: Data
     try {
-      dataHeader = DataHeader.deserializeBinary(message.data)
-    } catch (e) {
-      this.logger.error('cannot process topic message, data header', e)
+      data = Data.decode(Reader.create(message.data))
+    } catch (e: any) {
+      this.logger.error(`cannot decode topic message data ${e.toString()}`)
       return
     }
 
-    const category = dataHeader.getCategory()
-    switch (category) {
-      case Category.SCENE_MESSAGE: {
-        const sceneData = SceneData.deserializeBinary(message.data)
+    switch (data.message?.$case) {
+      case 'scene': {
+        const sceneData = data.message?.scene
 
         this.events.emit('sceneMessageBus', {
           sender: message.peerId,
-          time: sceneData.getTime(),
+          time: sceneData.time,
           data: {
-            id: sceneData.getSceneId(),
-            text: sceneData.getData() as string
+            id: sceneData.sceneId,
+            text: sceneData.data
           }
         })
         break
       }
       default: {
-        this.logger.log('ignoring category', category)
+        this.logger.log(`Ignoring category ${data.message?.$case}`)
         break
       }
     }
   }
 
-  protected handleTransportMessage({ peer, data }: TransportMessage) {
-    let dataHeader: DataHeader
+  protected handleTransportMessage({ peer, payload }: TransportMessage) {
+    let data: Data
     try {
-      dataHeader = DataHeader.deserializeBinary(data)
-    } catch (e) {
-      this.logger.error('cannot process data header', e)
+      data = Data.decode(Reader.create(payload))
+    } catch (e: any) {
+      this.logger.error(`cannot decode topic message data ${e.toString()}`)
       return
     }
 
-    const category = dataHeader.getCategory()
+    if (!data.message) {
+      this.logger.error(`Transport message has no content`)
+      return
+    }
 
-    switch (category) {
-      case Category.POSITION: {
-        const positionData = PositionData.deserializeBinary(data)
+    const { $case } = data.message
+
+    switch ($case) {
+      case 'position': {
+        const { position } = data.message
         this.events.emit('position', {
           sender: peer,
-          time: positionData.getTime(),
+          time: position.time,
           data: [
-            positionData.getPositionX(),
-            positionData.getPositionY(),
-            positionData.getPositionZ(),
-            positionData.getRotationX(),
-            positionData.getRotationY(),
-            positionData.getRotationZ(),
-            positionData.getRotationW(),
+            position.positionX,
+            position.positionY,
+            position.positionZ,
+            position.rotationX,
+            position.rotationY,
+            position.rotationZ,
+            position.rotationW,
             false
           ]
         })
 
-        this.transport.onPeerPositionChange(peer, [
-          positionData.getPositionX(),
-          positionData.getPositionY(),
-          positionData.getPositionZ()
-        ])
+        this.transport.onPeerPositionChange(peer, [position.positionX, position.positionY, position.positionZ])
         break
       }
-      case Category.CHAT: {
-        const chatData = ChatData.deserializeBinary(data)
+      case 'chat': {
+        const { time, messageId, text } = data.message.chat
 
         this.events.emit('chatMessage', {
           sender: peer,
-          time: chatData.getTime(),
+          time: time,
           data: {
-            id: chatData.getMessageId(),
-            text: chatData.getText()
+            id: messageId,
+            text: text
           }
         })
         break
       }
-      case Category.VOICE: {
-        const voiceData = VoiceData.deserializeBinary(data)
+      case 'voice': {
+        const { encodedSamples, index } = data.message.voice
 
         this.events.emit('voiceMessage', {
           sender: peer,
           time: new Date().getTime(),
           data: {
-            encoded: voiceData.getEncodedSamples_asU8(),
-            index: voiceData.getIndex()
+            encoded: encodedSamples,
+            index
           }
         })
         break
       }
-      case Category.PROFILE: {
-        const profileData = ProfileData.deserializeBinary(data)
+      case 'profile': {
+        const { time, profileVersion, profileType } = data.message.profile
         this.events.emit('profileMessage', {
           sender: peer,
-          time: profileData.getTime(),
+          time: time,
           data: {
             user: peer,
-            version: profileData.getProfileVersion(),
-            type:
-              profileData.getProfileType() === ProfileData.ProfileType.LOCAL ? ProfileType.LOCAL : ProfileType.DEPLOYED
+            version: profileVersion,
+            type: profileType === Profile_ProfileType.LOCAL ? ProfileType.LOCAL : ProfileType.DEPLOYED
           } // We use deployed as default because that way we can emulate the old behaviour
         })
         break
       }
-      case Category.PROF_REQ: {
-        const profileRequestData = ProfileRequestData.deserializeBinary(data)
+      case 'profileRequest': {
+        const { userId, time, profileVersion } = data.message.profileRequest
         this.events.emit('profileRequest', {
           sender: peer,
-          time: profileRequestData.getTime(),
+          time: time,
           data: {
-            userId: profileRequestData.getUserId(),
-            version: profileRequestData.getProfileVersion()
+            userId: userId,
+            version: profileVersion
           }
         })
         break
       }
-      case Category.PROF_RES: {
-        const profileResponseData = ProfileResponseData.deserializeBinary(data)
+      case 'profileResponse': {
+        const { time, serializedProfile } = data.message.profileResponse
         this.events.emit('profileResponse', {
           sender: peer,
-          time: profileResponseData.getTime(),
+          time: time,
           data: {
-            profile: JSON.parse(profileResponseData.getSerializedProfile()) as Avatar
+            profile: JSON.parse(serializedProfile) as Avatar
           }
         })
         break
       }
       default: {
-        this.logger.log('ignoring category', category)
+        this.logger.log(`Ignoring category ${$case}`)
         break
       }
     }

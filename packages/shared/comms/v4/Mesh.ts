@@ -31,11 +31,10 @@ export class Mesh {
     this.isKnownPeer = isKnownPeer
   }
 
-  public async connect() {
+  public registerSubscriptions() {
     this.candidatesListener = this.bff.addListener(`peer.${this.peerId}.candidate`, this.onCandidateMessage.bind(this))
     this.offerListener = this.bff.addListener(`peer.${this.peerId}.offer`, this.onOfferMessage.bind(this))
     this.answerListener = this.bff.addListener(`peer.${this.peerId}.answer`, this.onAnswerListener.bind(this))
-    await this.bff.refreshTopics()
   }
 
   public async connectTo(peerId: string): Promise<void> {

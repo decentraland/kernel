@@ -59,6 +59,8 @@ packages/config/contracts.ts
 .decentraland
 **/.decentraland
 
+packages/shared/comms/v4/proto/comms.ts
+
 test/tmp
 test/diff
 test/out
