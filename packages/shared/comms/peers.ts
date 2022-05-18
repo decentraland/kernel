@@ -4,15 +4,13 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { MinPeerData } from '@dcl/catalyst-peer'
 import { CommunicationArea, position2parcel, positionReportToCommsPosition, squareDistance } from './interface/utils'
 import { commConfigurations } from 'config'
-import { getCommsConfig } from 'shared/meta/selectors'
-import { getIdentity } from 'shared/session'
 import { MORDOR_POSITION, ProcessingPeerInfo } from './const'
 import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
-import { getCommsContext } from './selectors'
 import { Avatar } from '@dcl/schemas'
 import { getProfileFromStore } from 'shared/profiles/selectors'
 import { deepEqual } from 'atomicHelpers/deepEqual'
+import { CommsContext } from './context'
 
 const peerMap = new Map<UUID, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
@@ -208,14 +206,15 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   return currentPeer
 }
 
-export function processAvatarVisibility() {
+export function processAvatarVisibility(
+  maxVisiblePeers: number,
+  context: CommsContext | null,
+  myAddress: string | undefined
+) {
   if (!lastPlayerPositionReport) return
   const pos = positionReportToCommsPosition(lastPlayerPositionReport)
   const now = Date.now()
   const visiblePeers: ProcessingPeerInfo[] = []
-  const commsMetaConfig = getCommsConfig(store.getState())
-  const context = getCommsContext(store.getState())
-  const address = getIdentity()?.address
   const commArea = new CommunicationArea(position2parcel(pos), commConfigurations.commRadius)
 
   for (const [peerAlias, trackingInfo] of getAllPeers()) {
@@ -227,7 +226,7 @@ export function processAvatarVisibility() {
       continue
     }
 
-    if (address && trackingInfo.ethereumAddress === address) {
+    if (myAddress && trackingInfo.ethereumAddress === myAddress) {
       // If we are tracking a peer that is ourselves, we remove it
       removePeerByUUID(peerAlias)
       continue
@@ -248,7 +247,7 @@ export function processAvatarVisibility() {
     })
   }
 
-  if (visiblePeers.length <= commsMetaConfig.maxVisiblePeers) {
+  if (visiblePeers.length <= maxVisiblePeers) {
     for (const peerInfo of visiblePeers) {
       receiveUserVisible(peerInfo.alias, true)
     }
@@ -257,7 +256,7 @@ export function processAvatarVisibility() {
     for (let i = 0; i < sortedBySqDistanceVisiblePeers.length; ++i) {
       const peer = sortedBySqDistanceVisiblePeers[i]
 
-      if (i < commsMetaConfig.maxVisiblePeers) {
+      if (i < maxVisiblePeers) {
         receiveUserVisible(peer.alias, true)
       } else {
         receiveUserVisible(peer.alias, false)
