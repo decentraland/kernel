@@ -86,7 +86,7 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
 }
 
 export const getSynapseUrl = (store: RootMetaState): string =>
-  store.meta.config.synapseUrl ?? 'https://synapse.decentraland.io'
+  store.meta.config.synapseUrl ?? 'https://synapse.decentraland.zone'
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint
