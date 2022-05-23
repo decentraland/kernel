@@ -60,6 +60,7 @@ packages/config/contracts.ts
 **/.decentraland
 
 packages/shared/comms/v4/proto/comms.ts
+packages/shared/comms/v4/proto/bff/*.ts
 protoc3/
 protoc*.zip
 

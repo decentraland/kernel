@@ -24,7 +24,7 @@ import {
 import { Position3D } from './types'
 
 import { createLogger } from 'shared/logger'
-import { BFFConnection, TopicListener } from './BFFConnection'
+import { BFFConnection, SystemTopicListener } from './BFFConnection'
 
 const logger = createLogger('CommsV4:P2P: ')
 
@@ -119,8 +119,8 @@ export class PeerToPeerTransport extends Transport {
   private activePings: Record<string, ActivePing> = {}
   private config: Config
 
-  private onPeerJoinedListener: TopicListener | null = null
-  private onPeerLeftListener: TopicListener | null = null
+  private onPeerJoinedListener: SystemTopicListener | null = null
+  private onPeerLeftListener: SystemTopicListener | null = null
 
   constructor(
     private peerId: string,
@@ -249,16 +249,15 @@ export class PeerToPeerTransport extends Transport {
   }
 
   async connect() {
-    this.onPeerJoinedListener = this.bffConnection.addListener(
+    this.onPeerJoinedListener = this.bffConnection.addSystemTopicListener(
       `island.${this.islandId}.peer_join`,
       this.onPeerJoined.bind(this)
     )
-    this.onPeerLeftListener = this.bffConnection.addListener(
+    this.onPeerLeftListener = this.bffConnection.addSystemTopicListener(
       `island.${this.islandId}.peer_left`,
       this.onPeerLeft.bind(this)
     )
     this.mesh.registerSubscriptions()
-    await this.bffConnection.refreshTopics()
 
     this.triggerUpdateNetwork(`changed to island ${this.islandId}`)
   }
@@ -272,15 +271,14 @@ export class PeerToPeerTransport extends Transport {
     clearTimeout(this.pingTimeoutId as any)
 
     if (this.onPeerJoinedListener) {
-      this.bffConnection.removeListener(this.onPeerJoinedListener)
+      this.bffConnection.removeSystemTopicListener(this.onPeerJoinedListener)
     }
     if (this.onPeerLeftListener) {
-      this.bffConnection.removeListener(this.onPeerLeftListener)
+      this.bffConnection.removeSystemTopicListener(this.onPeerLeftListener)
     }
 
     this.knownPeers = {}
     await this.mesh.dispose()
-    await this.bffConnection.refreshTopics()
     this.onDisconnectObservable.notifyObservers()
   }
 
@@ -945,7 +943,7 @@ export class PeerToPeerTransport extends Transport {
   }
 
   private selfPosition(): Position3D | undefined {
-    // TODO we also use this for the BFF, maybe receive this as part of the config
+    // TODO we also use this for the InstanceConnection, maybe receive this as part of the config
     if (lastPlayerPositionReport) {
       const { x, y, z } = lastPlayerPositionReport.position
       return [x, y, z]

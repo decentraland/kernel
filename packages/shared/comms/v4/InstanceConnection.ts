@@ -1,12 +1,14 @@
 /// <reference lib="dom" />
 
+import { Position3D } from './types'
 import { Data, Profile_ProfileType } from './proto/comms'
 import { Position } from '../../comms/interface/utils'
-import { BFFConnection, TopicData } from './BFFConnection'
+import { BFFConnection, TopicData, SystemTopicListener } from './BFFConnection'
 import { WsTransport } from './WsTransport'
 import { LivekitTransport } from './LivekitTransport'
 import { Transport, TransportMessage } from './Transport'
 import { createLogger } from 'shared/logger'
+import { lastPlayerPositionReport } from 'shared/world/positionThings'
 
 import { PeerToPeerTransport } from './PeerToPeerTransport'
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
@@ -16,12 +18,15 @@ import mitt from 'mitt'
 import { DummyTransport } from './DummyTransport'
 import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
+import { HeartbeatMessage, IslandChangedMessage, Position3DMessage } from './proto/archipelago_pb'
 
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
   private logger = createLogger('CommsV4: ')
   private transport: Transport = new DummyTransport()
+  private heartBeatInterval: any = null
+  private islandChangedListener: SystemTopicListener | null = null
 
   constructor(private bff: BFFConnection) {
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
@@ -29,25 +34,65 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async connect(): Promise<void> {
-    this.bff.onIslandChangeObservable.add(async ({ peerId, connStr, islandId, peers }) => {
-      this.logger.info(`Got island change message: ${connStr}`)
+    const peerId = await this.bff.connect()
 
-      let transport: Transport | null = null
-      if (connStr.startsWith('ws-room:')) {
-        transport = new WsTransport(connStr.substring('ws-room:'.length))
-      } else if (connStr.startsWith('livekit:')) {
-        transport = new LivekitTransport(connStr.substring('livekit:'.length))
-      } else if (connStr.startsWith('p2p:')) {
-        transport = new PeerToPeerTransport(peerId, this.bff, islandId, peers)
-      }
+    this.heartBeatInterval = setInterval(async () => {
+      const positionMessage = new Position3DMessage()
 
-      if (!transport) {
-        this.logger.error(`Invalid islandConnStr ${connStr}`)
-        return
+      const position = this.selfPosition()
+      if (position) {
+        positionMessage.setX(position[0])
+        positionMessage.setY(position[1])
+        positionMessage.setZ(position[2])
+        const msg = new HeartbeatMessage()
+        msg.setPosition(positionMessage)
+        try {
+          await this.bff.publishToTopic('heartbeat', msg.serializeBinary())
+        } catch (err: any) {
+          this.logger.error(`Heartbeat failed ${err.toString()}`)
+          this.disconnect()
+        }
       }
-      await this.changeTransport(transport)
-    })
-    await this.bff.connect()
+    }, 2000)
+
+    this.islandChangedListener = this.bff.addSystemTopicListener(
+      `${peerId}.island_changed`,
+      async (data: Uint8Array) => {
+        let islandChangedMessage: IslandChangedMessage
+
+        try {
+          islandChangedMessage = IslandChangedMessage.deserializeBinary(data)
+        } catch (e) {
+          this.logger.error('cannot process island change message', e)
+          return
+        }
+        const connStr = islandChangedMessage.getConnStr()
+        this.logger.info(`Got island change message: ${connStr}`)
+
+        let transport: Transport | null = null
+        if (connStr.startsWith('ws-room:')) {
+          transport = new WsTransport(connStr.substring('ws-room:'.length))
+        } else if (connStr.startsWith('livekit:')) {
+          transport = new LivekitTransport(connStr.substring('livekit:'.length))
+        } else if (connStr.startsWith('p2p:')) {
+          const islandId = islandChangedMessage.getIslandId()
+
+          const peers = new Map<string, Position3D>()
+          islandChangedMessage.getPeersMap().forEach((p: Position3DMessage, id: string) => {
+            if (peerId !== id) {
+              peers.set(id, [p.getX(), p.getY(), p.getZ()])
+            }
+          })
+          transport = new PeerToPeerTransport(peerId, this.bff, islandId, peers)
+        }
+
+        if (!transport) {
+          this.logger.error(`Invalid islandConnStr ${connStr}`)
+          return
+        }
+        await this.changeTransport(transport)
+      }
+    )
   }
 
   async sendPositionMessage(p: Position) {
@@ -143,7 +188,7 @@ export class InstanceConnection implements RoomConnection {
       }
     }).finish()
 
-    return this.bff.sendMessage(sceneId, d)
+    return this.bff.publishToTopic(sceneId, d)
   }
 
   async sendChatMessage(_: Position, messageId: string, text: string) {
@@ -165,6 +210,14 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async disconnect(): Promise<void> {
+    if (this.islandChangedListener) {
+      this.bff.removeSystemTopicListener(this.islandChangedListener)
+    }
+
+    if (this.heartBeatInterval) {
+      clearInterval(this.heartBeatInterval)
+    }
+
     if (this.transport) {
       await this.transport.disconnect()
     }
@@ -334,6 +387,14 @@ export class InstanceConnection implements RoomConnection {
       oldTransport.onMessageObservable.clear()
       oldTransport.onDisconnectObservable.clear()
       await oldTransport.disconnect()
+    }
+  }
+
+  private selfPosition(): Position3D | undefined {
+    // TODO we also use this for the PeerToPeerTransport, maybe receive this as part of the config
+    if (lastPlayerPositionReport) {
+      const { x, y, z } = lastPlayerPositionReport.position
+      return [x, y, z]
     }
   }
 }

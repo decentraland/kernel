@@ -48,7 +48,7 @@ export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: stri
   }
 
   const pingUrl = `${server}/status`
-  const wsUrl = httpToWs(`${server}/ws-bff`)
+  const wsUrl = httpToWs(`${server}/rpc`)
 
   return { pingUrl, wsUrl }
 }

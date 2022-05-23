@@ -173,13 +173,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       const { wsUrl } = resolveCommsV4Urls(realm)!
       const bffConfig: BFFConfig = {
-        getIdentity: () => getIdentity() as AuthIdentity,
-        selfPosition: () => {
-          if (lastPlayerPositionReport) {
-            const { x, y, z } = lastPlayerPositionReport.position
-            return [x, y, z]
-          }
-        }
+        getIdentity: () => getIdentity() as AuthIdentity
       }
 
       commsLogger.log('Using BFF service: ', wsUrl)

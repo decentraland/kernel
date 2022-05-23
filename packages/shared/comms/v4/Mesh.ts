@@ -1,6 +1,6 @@
 import { commConfigurations } from 'config'
 import { createLogger } from 'shared/logger'
-import { BFFConnection, TopicListener } from './BFFConnection'
+import { BFFConnection, PeerTopicListener } from './BFFConnection'
 
 type Config = {
   packetHandler: (data: Uint8Array, peerId: string) => void
@@ -16,14 +16,14 @@ type Connection = {
 const PEER_CONNECT_TIMEOUT = 3500
 
 export class Mesh {
-  private debugWebRtcEnabled = false
+  private debugWebRtcEnabled = true
   private logger = createLogger('CommsV4:P2P:Mesh:')
   private packetHandler: (data: Uint8Array, peerId: string) => void
   private isKnownPeer: (peerId: string) => boolean
   private peerConnections = new Map<string, Connection>()
-  private candidatesListener: TopicListener | null = null
-  private answerListener: TopicListener | null = null
-  private offerListener: TopicListener | null = null
+  private candidatesListener: PeerTopicListener | null = null
+  private answerListener: PeerTopicListener | null = null
+  private offerListener: PeerTopicListener | null = null
   private encoder = new TextEncoder()
   private decoder = new TextDecoder()
 
@@ -33,9 +33,12 @@ export class Mesh {
   }
 
   public registerSubscriptions() {
-    this.candidatesListener = this.bff.addListener(`peer.${this.peerId}.candidate`, this.onCandidateMessage.bind(this))
-    this.offerListener = this.bff.addListener(`peer.${this.peerId}.offer`, this.onOfferMessage.bind(this))
-    this.answerListener = this.bff.addListener(`peer.${this.peerId}.answer`, this.onAnswerListener.bind(this))
+    this.candidatesListener = this.bff.addPeerTopicListener(
+      `${this.peerId}.candidate`,
+      this.onCandidateMessage.bind(this)
+    )
+    this.offerListener = this.bff.addPeerTopicListener(`${this.peerId}.offer`, this.onOfferMessage.bind(this))
+    this.answerListener = this.bff.addPeerTopicListener(`${this.peerId}.answer`, this.onAnswerListener.bind(this))
   }
 
   public async connectTo(peerId: string): Promise<void> {
@@ -64,7 +67,7 @@ export class Mesh {
     await instance.setLocalDescription(offer)
     this.debugWebRtc(`Set local description for ${peerId}`)
     this.debugWebRtc(`Sending offer to ${peerId}`)
-    await this.bff.sendMessage(`peer.${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
+    await this.bff.publishToTopic(`${peerId}.offer`, this.encoder.encode(JSON.stringify(offer)))
 
     this.peerConnections.set(peerId, conn)
   }
@@ -137,15 +140,15 @@ export class Mesh {
 
   async dispose(): Promise<void> {
     if (this.candidatesListener) {
-      this.bff.removeListener(this.candidatesListener)
+      this.bff.removePeerTopicListener(this.candidatesListener)
     }
 
     if (this.answerListener) {
-      this.bff.removeListener(this.answerListener)
+      this.bff.removePeerTopicListener(this.answerListener)
     }
 
     if (this.offerListener) {
-      this.bff.removeListener(this.offerListener)
+      this.bff.removePeerTopicListener(this.offerListener)
     }
 
     this.peerConnections.forEach(({ instance }: Connection) => {
@@ -163,7 +166,7 @@ export class Mesh {
     instance.addEventListener('icecandidate', async (event) => {
       if (event.candidate) {
         try {
-          await this.bff.sendMessage(`peer.${peerId}.candidate`, this.encoder.encode(JSON.stringify(event.candidate)))
+          await this.bff.publishToTopic(`${peerId}.candidate`, this.encoder.encode(JSON.stringify(event.candidate)))
         } catch (err: any) {
           this.logger.error(`cannot publish ice candidate: ${err.toString()}`)
         }
@@ -180,8 +183,8 @@ export class Mesh {
     return instance
   }
 
-  private async onCandidateMessage(data: Uint8Array, peerId?: string) {
-    const conn = peerId && this.peerConnections.get(peerId)
+  private async onCandidateMessage(data: Uint8Array, peerId: string) {
+    const conn = this.peerConnections.get(peerId)
     if (!conn) {
       return
     }
@@ -194,10 +197,7 @@ export class Mesh {
     }
   }
 
-  private async onOfferMessage(data: Uint8Array, peerId?: string) {
-    if (!peerId) {
-      return
-    }
+  private async onOfferMessage(data: Uint8Array, peerId: string) {
     if (!this.isKnownPeer(peerId)) {
       this.logger.log(`Reject offer from unkown peer ${peerId}`)
     }
@@ -240,15 +240,15 @@ export class Mesh {
       await instance.setLocalDescription(answer)
 
       this.debugWebRtc(`Sending answer to ${peerId}`)
-      await this.bff.sendMessage(`peer.${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
+      await this.bff.publishToTopic(`${peerId}.answer`, this.encoder.encode(JSON.stringify(answer)))
     } catch (e: any) {
       this.logger.error(`Failed to create answer: ${e.toString()}`)
     }
   }
 
-  private async onAnswerListener(data: Uint8Array, peerId?: string) {
+  private async onAnswerListener(data: Uint8Array, peerId: string) {
     this.debugWebRtc(`Got answer message from ${peerId}`)
-    const conn = peerId && this.peerConnections.get(peerId)
+    const conn = this.peerConnections.get(peerId)
     if (!conn) {
       return
     }
