@@ -1,6 +1,7 @@
 import { ILogger, createLogger } from 'shared/logger'
 import { Transport, SendOpts } from './Transport'
-import { MessageType, MessageHeader, MessageTypeMap, SystemMessage, IdentityMessage } from './proto/ws_pb'
+import { Reader } from 'protobufjs/minimal'
+import { WsMessage } from './proto/ws'
 
 export class WsTransport extends Transport {
   private logger: ILogger = createLogger('WsTransport: ')
@@ -17,20 +18,20 @@ export class WsTransport extends Transport {
     this.logger.log('Connected')
   }
 
-  async send(msg: Uint8Array, { identity }: SendOpts): Promise<void> {
+  async send(body: Uint8Array, { identity }: SendOpts): Promise<void> {
     if (!this.ws) throw new Error('This transport is closed')
 
+    let message: WsMessage = { data: undefined }
+
+    const fromAlias = 0 // NOTE: this will be overriden by the server
     if (identity) {
-      const d = new IdentityMessage()
-      d.setType(MessageType.IDENTITY)
-      d.setBody(msg)
-      this.ws.send(d.serializeBinary())
+      message.data = { $case: 'identityMessage', identityMessage: { body, fromAlias, identity: '' } }
     } else {
-      const d = new SystemMessage()
-      d.setType(MessageType.SYSTEM)
-      d.setBody(msg)
-      this.ws.send(d.serializeBinary())
+      message.data = { $case: 'systemMessage', systemMessage: { body, fromAlias } }
     }
+
+    const d = WsMessage.encode(message).finish()
+    this.ws.send(d)
   }
 
   async disconnect() {
@@ -45,67 +46,48 @@ export class WsTransport extends Transport {
   }
 
   async onWsMessage(event: MessageEvent) {
-    const data = new Uint8Array(event.data)
-
-    let msgType = MessageType.UNKNOWN_MESSAGE_TYPE as MessageTypeMap[keyof MessageTypeMap]
+    let message: WsMessage
     try {
-      msgType = MessageHeader.deserializeBinary(data).getType()
-    } catch (err) {
-      this.logger.error('cannot deserialize message header')
+      message = WsMessage.decode(Reader.create(event.data))
+    } catch (e: any) {
+      this.logger.error(`cannot process message ${e.toString()}`)
       return
     }
 
-    switch (msgType) {
-      case MessageType.UNKNOWN_MESSAGE_TYPE: {
-        this.logger.log('unsupported message')
-        break
-      }
-      case MessageType.WELCOME: {
-        // TODO: not used?
-      }
-      case MessageType.SYSTEM: {
-        let dataMessage: SystemMessage
-        try {
-          dataMessage = SystemMessage.deserializeBinary(data)
-        } catch (e) {
-          this.logger.error('cannot process system message', e)
-          break
-        }
+    if (!message.data) {
+      return
+    }
 
-        const userId = this.aliases[dataMessage.getFromAlias()]
+    const { $case } = message.data
+
+    switch ($case) {
+      case 'systemMessage': {
+        const { systemMessage } = message.data
+        const userId = this.aliases[systemMessage.fromAlias]
         if (!userId) {
           this.logger.log('Ignoring system message from unkown peer')
           return
         }
 
-        const body = dataMessage.getBody_asU8()
         this.onMessageObservable.notifyObservers({
           peer: userId,
-          payload: body
+          payload: systemMessage.body
         })
         break
       }
-      case MessageType.IDENTITY: {
-        let dataMessage: IdentityMessage
-        try {
-          dataMessage = IdentityMessage.deserializeBinary(data)
-        } catch (e) {
-          this.logger.error('cannot process identity message', e)
-          break
-        }
+      case 'identityMessage': {
+        const { identityMessage } = message.data
+        const userId = identityMessage.identity
+        this.aliases[identityMessage.fromAlias] = userId
 
-        const userId = dataMessage.getIdentity()
-        this.aliases[dataMessage.getFromAlias()] = userId
-
-        const body = dataMessage.getBody_asU8()
         this.onMessageObservable.notifyObservers({
           peer: userId,
-          payload: body
+          payload: identityMessage.body
         })
         break
       }
       default: {
-        this.logger.log('ignoring msgType', msgType)
+        this.logger.log(`ignoring msg ${$case}`)
         break
       }
     }

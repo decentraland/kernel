@@ -16,14 +16,9 @@ export type TopicData = {
   data: Uint8Array
 }
 
-export type PeerTopicListener = {
-  topic: string
-  handler: (data: Uint8Array, peerId: string) => void
-}
-
-export type SystemTopicListener = {
-  topic: string
-  handler: (data: Uint8Array) => void
+export type TopicListener = {
+  subscriptionId: number
+  fromPeers: boolean
 }
 
 export class BFFConnection {
@@ -34,7 +29,7 @@ export class BFFConnection {
 
   private wsTransport: Transport | null = null
 
-  private sceneTopics = new Map<string, PeerTopicListener>()
+  private sceneTopics = new Map<string, TopicListener>()
 
   private commsService: RpcClientModule<CommsServiceDefinition, any> | null = null
 
@@ -56,53 +51,62 @@ export class BFFConnection {
 
     this.commsService = loadService(port, CommsServiceDefinition)
     this.logger.log('Connected')
+
     return peerId
   }
 
-  public addPeerTopicListener(topic: string, handler: (data: Uint8Array, peerId: string) => void): PeerTopicListener {
+  public async addPeerTopicListener(
+    topic: string,
+    handler: (data: Uint8Array, peerId: string) => void
+  ): Promise<TopicListener> {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    const l = { topic, handler }
+    this.logger.log('subscribing')
+    const { id } = await this.commsService.subscribe({ topic, fromPeers: true })
+    this.logger.log('subscribed')
+
+    const l = { subscriptionId: id, fromPeers: true }
     ;(async (commsService) => {
-      for await (const { payload, sender } of commsService.subscribeToPeerTopic({ topic })) {
-        l.handler(payload, sender)
+      for await (const { payload, sender } of commsService.getPeerMessages({ id })) {
+        handler(payload, sender)
       }
     })(this.commsService)
 
     return l
   }
 
-  public addSystemTopicListener(topic: string, handler: (data: Uint8Array) => void): SystemTopicListener {
+  public async addSystemTopicListener(topic: string, handler: (data: Uint8Array) => void): Promise<TopicListener> {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    const l = { topic, handler }
+    const { id } = await this.commsService.subscribe({ topic, fromPeers: false })
+
+    const l = { subscriptionId: id, fromPeers: false }
     ;(async (commsService) => {
-      for await (const { payload } of commsService.subscribeToSystemTopic({ topic })) {
-        l.handler(payload)
+      for await (const { payload } of commsService.getSystemMessages({ id })) {
+        handler(payload)
       }
     })(this.commsService)
-
     return l
   }
 
-  public removePeerTopicListener({ topic }: PeerTopicListener): void {
+  public removePeerTopicListener({ subscriptionId, fromPeers }: TopicListener): void {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    this.commsService.unsubscribeToTopic({ topic, system: false })
+    this.commsService.unsubscribe({ id: subscriptionId, fromPeers })
   }
 
-  public removeSystemTopicListener({ topic }: SystemTopicListener): void {
+  public removeSystemTopicListener({ subscriptionId, fromPeers }: TopicListener): void {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    this.commsService.unsubscribeToTopic({ topic, system: true })
+    this.commsService.unsubscribe({ id: subscriptionId, fromPeers })
   }
 
   public async publishToTopic(topic: string, payload: Uint8Array): Promise<void> {
@@ -138,8 +142,9 @@ export class BFFConnection {
       this.sceneTopics.delete(topic)
     })
 
-    topicsToAdd.forEach((topic) => {
-      this.sceneTopics.set(topic, this.addPeerTopicListener(topic, this.onSceneMessage))
+    topicsToAdd.forEach(async (topic) => {
+      const l = await this.addPeerTopicListener(topic, this.onSceneMessage)
+      this.sceneTopics.set(topic, l)
     })
   }
 

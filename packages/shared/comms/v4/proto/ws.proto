@@ -2,31 +2,25 @@ syntax = "proto3";
 
 package protocol;
 
-enum MessageType {
-  UNKNOWN_MESSAGE_TYPE = 0;
-  WELCOME = 1;
-  SYSTEM = 2;
-  IDENTITY = 3;
+message WsWelcome {
+  uint64 alias = 1;
 }
 
-message WelcomeMessage {
-  MessageType type = 1;
-  uint64 alias = 2;
+message WsSystem {
+  uint64 from_alias = 1;
+  bytes body = 2;
 }
 
-message MessageHeader {
-  MessageType type = 1;
-}
-
-message SystemMessage {
-  MessageType type = 1;
-  uint64 from_alias = 2;
+message WsIdentity {
+  uint64 from_alias = 1;
+  string identity = 2;
   bytes body = 3;
 }
 
-message IdentityMessage {
-  MessageType type = 1;
-  uint64 from_alias = 2;
-  string identity = 3;
-  bytes body = 4;
+message WsMessage {
+  oneof data {
+    WsWelcome welcomeMessage = 1;
+    WsSystem systemMessage = 2;
+    WsIdentity identityMessage = 3;
+  }
 }

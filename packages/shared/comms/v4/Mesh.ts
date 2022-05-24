@@ -1,6 +1,6 @@
 import { commConfigurations } from 'config'
 import { createLogger } from 'shared/logger'
-import { BFFConnection, PeerTopicListener } from './BFFConnection'
+import { BFFConnection, TopicListener } from './BFFConnection'
 
 type Config = {
   packetHandler: (data: Uint8Array, peerId: string) => void
@@ -21,9 +21,9 @@ export class Mesh {
   private packetHandler: (data: Uint8Array, peerId: string) => void
   private isKnownPeer: (peerId: string) => boolean
   private peerConnections = new Map<string, Connection>()
-  private candidatesListener: PeerTopicListener | null = null
-  private answerListener: PeerTopicListener | null = null
-  private offerListener: PeerTopicListener | null = null
+  private candidatesListener: TopicListener | null = null
+  private answerListener: TopicListener | null = null
+  private offerListener: TopicListener | null = null
   private encoder = new TextEncoder()
   private decoder = new TextDecoder()
 
@@ -32,13 +32,13 @@ export class Mesh {
     this.isKnownPeer = isKnownPeer
   }
 
-  public registerSubscriptions() {
-    this.candidatesListener = this.bff.addPeerTopicListener(
+  public async registerSubscriptions() {
+    this.candidatesListener = await this.bff.addPeerTopicListener(
       `${this.peerId}.candidate`,
       this.onCandidateMessage.bind(this)
     )
-    this.offerListener = this.bff.addPeerTopicListener(`${this.peerId}.offer`, this.onOfferMessage.bind(this))
-    this.answerListener = this.bff.addPeerTopicListener(`${this.peerId}.answer`, this.onAnswerListener.bind(this))
+    this.offerListener = await this.bff.addPeerTopicListener(`${this.peerId}.offer`, this.onOfferMessage.bind(this))
+    this.answerListener = await this.bff.addPeerTopicListener(`${this.peerId}.answer`, this.onAnswerListener.bind(this))
   }
 
   public async connectTo(peerId: string): Promise<void> {

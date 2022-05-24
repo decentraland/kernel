@@ -3,7 +3,7 @@
 import { Position3D } from './types'
 import { Data, Profile_ProfileType } from './proto/comms'
 import { Position } from '../../comms/interface/utils'
-import { BFFConnection, TopicData, SystemTopicListener } from './BFFConnection'
+import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
 import { WsTransport } from './WsTransport'
 import { LivekitTransport } from './LivekitTransport'
 import { Transport, TransportMessage } from './Transport'
@@ -18,7 +18,7 @@ import mitt from 'mitt'
 import { DummyTransport } from './DummyTransport'
 import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
-import { HeartbeatMessage, IslandChangedMessage, Position3DMessage } from './proto/archipelago_pb'
+import { HeartbeatMessage, IslandChangedMessage } from './proto/archipelago'
 
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
@@ -26,7 +26,7 @@ export class InstanceConnection implements RoomConnection {
   private logger = createLogger('CommsV4: ')
   private transport: Transport = new DummyTransport()
   private heartBeatInterval: any = null
-  private islandChangedListener: SystemTopicListener | null = null
+  private islandChangedListener: TopicListener | null = null
 
   constructor(private bff: BFFConnection) {
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
@@ -34,20 +34,21 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async connect(): Promise<void> {
+    this.logger.info(`CONNECT`)
     const peerId = await this.bff.connect()
 
     this.heartBeatInterval = setInterval(async () => {
-      const positionMessage = new Position3DMessage()
-
       const position = this.selfPosition()
       if (position) {
-        positionMessage.setX(position[0])
-        positionMessage.setY(position[1])
-        positionMessage.setZ(position[2])
-        const msg = new HeartbeatMessage()
-        msg.setPosition(positionMessage)
+        const d = HeartbeatMessage.encode({
+          position: {
+            x: position[0],
+            y: position[1],
+            z: position[2]
+          }
+        }).finish()
         try {
-          await this.bff.publishToTopic('heartbeat', msg.serializeBinary())
+          await this.bff.publishToTopic('heartbeat', d)
         } catch (err: any) {
           this.logger.error(`Heartbeat failed ${err.toString()}`)
           this.disconnect()
@@ -55,18 +56,19 @@ export class InstanceConnection implements RoomConnection {
       }
     }, 2000)
 
-    this.islandChangedListener = this.bff.addSystemTopicListener(
+    this.logger.info(`HERE - top`)
+    this.islandChangedListener = await this.bff.addSystemTopicListener(
       `${peerId}.island_changed`,
       async (data: Uint8Array) => {
+        this.logger.info(`HERE - island`)
         let islandChangedMessage: IslandChangedMessage
-
         try {
-          islandChangedMessage = IslandChangedMessage.deserializeBinary(data)
+          islandChangedMessage = IslandChangedMessage.decode(Reader.create(data))
         } catch (e) {
           this.logger.error('cannot process island change message', e)
           return
         }
-        const connStr = islandChangedMessage.getConnStr()
+        const connStr = islandChangedMessage.connStr
         this.logger.info(`Got island change message: ${connStr}`)
 
         let transport: Transport | null = null
@@ -75,15 +77,13 @@ export class InstanceConnection implements RoomConnection {
         } else if (connStr.startsWith('livekit:')) {
           transport = new LivekitTransport(connStr.substring('livekit:'.length))
         } else if (connStr.startsWith('p2p:')) {
-          const islandId = islandChangedMessage.getIslandId()
-
           const peers = new Map<string, Position3D>()
-          islandChangedMessage.getPeersMap().forEach((p: Position3DMessage, id: string) => {
+          for (const [id, p] of Object.entries(islandChangedMessage.peers)) {
             if (peerId !== id) {
-              peers.set(id, [p.getX(), p.getY(), p.getZ()])
+              peers.set(id, [p.x, p.y, p.z])
             }
-          })
-          transport = new PeerToPeerTransport(peerId, this.bff, islandId, peers)
+          }
+          transport = new PeerToPeerTransport(peerId, this.bff, islandChangedMessage.islandId, peers)
         }
 
         if (!transport) {
@@ -93,6 +93,8 @@ export class InstanceConnection implements RoomConnection {
         await this.changeTransport(transport)
       }
     )
+
+    this.logger.info(`HERE - done`)
   }
 
   async sendPositionMessage(p: Position) {
