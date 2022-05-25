@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 message EntityAction {
-    string entity_action_type = 1;
+    string type = 1;
     optional string tag = 2;
     string payload = 3;
 }
@@ -18,7 +18,9 @@ message EventId {
     string id = 1;
 }
 
-message Empty {}
+message Empty {
+    string test = 1;
+}
 
 service EngineAPIService {
   rpc SendBatch(ManyEntityAction) returns (Empty) {}

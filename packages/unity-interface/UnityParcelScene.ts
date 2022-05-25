@@ -20,14 +20,16 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   registerWorker(worker: SceneWorker): void {
     super.registerWorker(worker)
 
-    if (!worker.useOldRpc) {
-      debugger
-      worker.patchContext({ EnvironmentAPI: { data: this.data } })
-    } else {
-      const aux: Vector3 = new Vector3()
-      gridToWorld(this.data.data.basePosition.x, this.data.data.basePosition.y, aux)
-      worker.setPosition(aux)
+    const aux: Vector3 = new Vector3()
+    gridToWorld(this.data.data.basePosition.x, this.data.data.basePosition.y, aux)
+    worker.setPosition(aux)
 
+    if (!worker.useOldRpc) {
+      worker.patchContext({
+        EnvironmentAPI: { data: this.data },
+        EngineAPI: { parcelSceneAPI: this, didStart: false, subscribedEvents: {} }
+      })
+    } else {
       this.worker
         .getAPIInstance(DevTools)
         .then((devTools) => (devTools.logger = this.logger))

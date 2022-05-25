@@ -25,34 +25,13 @@ import type {
   LoadableParcelScene,
   OpenNFTDialogPayload
 } from 'shared/types'
-import { generatePBObject } from './Utils'
+import { generatePBObject, resolveMapping } from './Utils'
 import { createWebSocket } from './WebSocket'
 import { createFetch } from './Fetch'
 import { PermissionItem } from 'shared/apis/PermissionItems'
 
-const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
-const blobRE = /^blob:http/
-
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
-
-function resolveMapping(mapping: string | undefined, mappingName: string, baseUrl: string) {
-  let url = mappingName
-
-  if (mapping) {
-    url = mapping
-  }
-
-  if (dataUrlRE.test(url)) {
-    return url
-  }
-
-  if (blobRE.test(url)) {
-    return url
-  }
-
-  return (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + url
-}
 
 // NOTE(Brian): The idea is to map all string ids used by this scene to ints
 //              so we avoid sending/processing big ids like "xxxxx-xxxxx-xxxxx-xxxxx"

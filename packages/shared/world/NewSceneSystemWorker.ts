@@ -121,9 +121,9 @@ export class NewSceneSystemWorker extends SceneWorker {
       const userId = getCurrentUserId(store.getState())
       if (userId) {
         if (report.newScene?.sceneId === this.getSceneId()) {
-          this.engineAPI!.sendSubscriptionEvent('onEnterScene', { userId })
+          this.engineAPI?.sendSubscriptionEvent('onEnterScene', { userId })
         } else if (report.previousScene?.sceneId === this.getSceneId()) {
-          this.engineAPI!.sendSubscriptionEvent('onLeaveScene', { userId })
+          this.engineAPI?.sendSubscriptionEvent('onLeaveScene', { userId })
         }
       }
     })
@@ -148,7 +148,7 @@ export class NewSceneSystemWorker extends SceneWorker {
   private sendSceneReadyIfNecessary() {
     if (!this.sceneStarted && isRendererEnabled() && this.sceneReady) {
       this.sceneStarted = true
-      this.engineAPI!.sendSubscriptionEvent('sceneStart', {})
+      this.engineAPI?.sendSubscriptionEvent('sceneStart', {})
       renderStateObservable.remove(this.renderStateObserver)
     }
   }
