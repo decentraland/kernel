@@ -52,7 +52,7 @@ message GetDecentralandTimeResponse {
 }
 message Empty {}
 
-service EnvirnmentAPIService {
+service EnvironmentAPIService {
     rpc getBootstrapData(Empty) returns (BootstrapDataResponse) {}
     rpc isPreviewMode(Empty) returns (PreviewModeResponse) {}
     rpc getPlatform(Empty) returns (GetPlatformResponse) {}

@@ -6,7 +6,7 @@ else
 PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
 endif
 
-APIS = EngineAPI EnvironmentAPI
+APIS = EngineAPI EnvironmentAPI DevTools
 
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
@@ -201,6 +201,8 @@ compile_apis:
 	@echo "Generating APIs .proto ..." 
 	@for file in $(APIS); do \
 		echo "Processing" $${file}; \
+		rm -rf ./packages/shared/apis/$${file}/gen; \
+		mkdir ./packages/shared/apis/$${file}/gen; \
 		./node_modules/.bin/protobuf/bin/protoc \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \

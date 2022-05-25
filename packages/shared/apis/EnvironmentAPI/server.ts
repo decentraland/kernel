@@ -5,14 +5,14 @@ import { store } from './../../store/isolatedStore'
 import { getCommsIsland, getRealm } from './../../comms/selectors'
 import { Realm } from './../../dao/types'
 import { getFeatureFlagEnabled } from './../../meta/selectors'
-import { EnvironmentRealm, ExplorerConfiguration, IEnvironmentAPI, Platform } from './IEnvironmentAPI'
+import { EnvironmentRealm, Platform } from './IEnvironmentAPI'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   AreUnsafeRequestAllowedResponse,
   BootstrapDataResponse,
   Empty,
-  EnvirnmentAPIServiceDefinition,
+  EnvironmentAPIServiceDefinition,
   GetCurrentRealmResponse,
   GetDecentralandTimeResponse,
   GetExplorerConfigurationResponse,
@@ -24,7 +24,7 @@ export type EngineAPIContext = {
   data: EnvironmentData<any>
 }
 export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<EngineAPIContext>) {
-  codegen.registerService(port, EnvirnmentAPIServiceDefinition, async () => ({
+  codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
     async getBootstrapData(_req: Empty, context): Promise<BootstrapDataResponse> {
       return { ...context.data, jsonPayload: JSON.stringify(context.data.data) }
     },
