@@ -76,6 +76,8 @@ function capVector(targetVector: Vector3, cap: number) {
 const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
 const blobRE = /^blob:http/
 
+export const componentNameRE = /^(engine\.)/
+
 export function resolveMapping(mapping: string | undefined, mappingName: string, baseUrl: string) {
   let url = mappingName
 
@@ -92,4 +94,26 @@ export function resolveMapping(mapping: string | undefined, mappingName: string,
   }
 
   return (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + url
+}
+
+// NOTE(Brian): The idea is to map all string ids used by this scene to ints
+//              so we avoid sending/processing big ids like "xxxxx-xxxxx-xxxxx-xxxxx"
+//              that are used by i.e. raycasting queries.
+const idToNumberStore: Record<string, number> = {}
+export const numberToIdStore: Record<number, string> = {}
+let idToNumberStoreCounter: number = 10 // Starting in 10, to leave room for special cases (such as the root entity)
+
+function addIdToStorage(id: string, idAsNumber: number) {
+  idToNumberStore[id] = idAsNumber
+  numberToIdStore[idAsNumber] = id
+}
+
+export function getIdAsNumber(id: string): number {
+  if (!idToNumberStore.hasOwnProperty(id)) {
+    idToNumberStoreCounter++
+    addIdToStorage(id, idToNumberStoreCounter)
+    return idToNumberStoreCounter
+  } else {
+    return idToNumberStore[id]
+  }
 }

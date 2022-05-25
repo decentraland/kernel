@@ -25,37 +25,13 @@ import type {
   LoadableParcelScene,
   OpenNFTDialogPayload
 } from 'shared/types'
-import { generatePBObject, resolveMapping } from './Utils'
+import { componentNameRE, generatePBObject, getIdAsNumber, numberToIdStore, resolveMapping } from './Utils'
 import { createWebSocket } from './WebSocket'
 import { createFetch } from './Fetch'
 import { PermissionItem } from 'shared/apis/PermissionItems'
 
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
-
-// NOTE(Brian): The idea is to map all string ids used by this scene to ints
-//              so we avoid sending/processing big ids like "xxxxx-xxxxx-xxxxx-xxxxx"
-//              that are used by i.e. raycasting queries.
-const idToNumberStore: Record<string, number> = {}
-const numberToIdStore: Record<number, string> = {}
-let idToNumberStoreCounter: number = 10 // Starting in 10, to leave room for special cases (such as the root entity)
-
-function addIdToStorage(id: string, idAsNumber: number) {
-  idToNumberStore[id] = idAsNumber
-  numberToIdStore[idAsNumber] = id
-}
-
-function getIdAsNumber(id: string): number {
-  if (!idToNumberStore.hasOwnProperty(id)) {
-    idToNumberStoreCounter++
-    addIdToStorage(id, idToNumberStoreCounter)
-    return idToNumberStoreCounter
-  } else {
-    return idToNumberStore[id]
-  }
-}
-
-const componentNameRE = /^(engine\.)/
 
 export abstract class SceneRuntime extends Script {
   @inject('EngineAPI')

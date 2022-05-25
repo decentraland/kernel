@@ -2,7 +2,6 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import { Empty, EngineAPIServiceDefinition, EventId, ManyEntityAction } from './gen/EngineAPI'
 import { ParcelSceneAPI } from '../../../shared/world/ParcelSceneAPI'
-import { future } from 'fp-future'
 
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 import defaultLogger from 'shared/logger'
