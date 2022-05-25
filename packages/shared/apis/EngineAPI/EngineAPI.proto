@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+message EntityAction {
+    string entity_action_type = 1;
+    optional string tag = 2;
+    string payload = 3;
+}
+
+message ManyEntityAction {
+    repeated EntityAction actions = 1;
+}
+
+message EventData {
+    string payload = 1;
+}
+
+message EventId {
+    string id = 1;
+}
+
+message Empty {}
+
+service EngineAPIService {
+  rpc SendBatch(ManyEntityAction) returns (Empty) {}
+  rpc StartSignal(Empty) returns (Empty) {}
+
+  rpc Subscribe(EventId) returns (stream EventData) {}
+  rpc Unsubscribe(EventId) returns (Empty) {}
+}

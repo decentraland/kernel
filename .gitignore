@@ -94,3 +94,5 @@ public/local-ipfs
 static/package-lock.json
 **/*.dot.pdf
 **/*.dot
+
+**/*/gen

@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+
+message ContentMapping {
+    string file = 1;
+    string hash = 2;
+}
+
+message BootstrapDataResponse {
+    string scene_id = 1;
+    string name = 2;
+    string main = 3;
+    string base_url = 4;
+    bool use_f_p_s_throttling = 5;
+    repeated ContentMapping mappings = 6;
+    string json_payload = 7;
+}
+
+message PreviewModeResponse {
+    bool is_preview = 1;
+}
+
+message AreUnsafeRequestAllowedResponse {
+    bool status = 1;
+}
+
+message GetPlatformResponse {
+    string platform = 1;
+}
+
+message EnvironmentRealm {
+    string domain = 1;
+    string layer = 2;
+    string room = 3;
+    string server_name = 4;
+    string display_name = 5;
+    string protocol = 6;
+}
+
+message GetCurrentRealmResponse {
+    optional EnvironmentRealm current_realm = 1;
+}
+
+message GetExplorerConfigurationResponse {
+    string clientUri = 1;
+    map<string, google.protobuf.Any> configurations = 2;
+}
+ 
+message GetDecentralandTimeResponse {
+    int32 seconds = 1;
+}
+message Empty {}
+
+service EnvirnmentAPIService {
+    rpc getBootstrapData(Empty) returns (BootstrapDataResponse) {}
+    rpc isPreviewMode(Empty) returns (PreviewModeResponse) {}
+    rpc getPlatform(Empty) returns (GetPlatformResponse) {}
+    rpc areUnsafeRequestAllowed(Empty) returns (AreUnsafeRequestAllowedResponse) {}
+
+    rpc getCurrentRealm(Empty) returns (GetCurrentRealmResponse) {}
+    rpc getExplorerConfiguration(Empty) returns (GetExplorerConfigurationResponse) {}
+    rpc getDecentralandTime(Empty) returns (GetDecentralandTimeResponse) {}
+}

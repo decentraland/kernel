@@ -1,4 +1,12 @@
 # General setup
+PROTOBUF_VERSION = 3.20.1
+ifeq ($(shell uname),Darwin)
+PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-osx-x86_64.zip
+else
+PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
+endif
+
+APIS = EngineAPI EnvironmentAPI
 
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
@@ -141,6 +149,7 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 # Development
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
+	make compile_apis
 	@NODE_ENV=development $(CONCURRENTLY) \
 		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,simulator,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
@@ -181,3 +190,20 @@ madge: scripts/deps.js
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
+
+install_protoc:
+	curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/$(PROTOBUF_ZIP)
+	unzip -o $(PROTOBUF_ZIP) -d node_modules/.bin/protobuf
+	rm $(PROTOBUF_ZIP)
+	chmod +x ./node_modules/.bin/protobuf/bin/protoc
+
+compile_apis: 
+	@echo "Generating APIs .proto ..." 
+	@for file in $(APIS); do \
+		echo "Processing" $${file}; \
+		./node_modules/.bin/protobuf/bin/protoc \
+			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
+			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+			--ts_proto_out="./packages/shared/apis/$${file}/gen" -I="./packages/shared/apis/$${file}" \
+			"./packages/shared/apis/$${file}/$${file}.proto"; \
+	done
