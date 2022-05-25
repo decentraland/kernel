@@ -1,4 +1,4 @@
-import { call, put, select, takeEvery } from 'redux-saga/effects'
+import { apply, call, put, select, takeEvery } from 'redux-saga/effects'
 
 import {
   WITH_FIXED_COLLECTIONS,
@@ -120,7 +120,9 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       // Fetch published collections
       const urnCollections = collectionIds.filter((collectionId) => collectionId.startsWith('urn'))
       if (urnCollections.length > 0) {
-        const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
+        const zoneWearables: PartialWearableV2[] = yield apply(client, client.fetchWearables, [
+          { collectionIds: urnCollections }
+        ])
         result.push(...zoneWearables)
       }
 
@@ -167,7 +169,9 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
         }
 
         if (itemURNs.length > 0) {
-          const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ wearableIds: itemURNs })
+          const zoneWearables: PartialWearableV2[] = yield apply(client, client.fetchWearables, [
+            { wearableIds: itemURNs }
+          ])
           result.push(...zoneWearables)
         }
       }
