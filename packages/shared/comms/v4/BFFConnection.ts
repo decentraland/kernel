@@ -63,9 +63,7 @@ export class BFFConnection {
       throw new Error('BFF is not connected')
     }
 
-    this.logger.log('subscribing')
     const { id } = await this.commsService.subscribe({ topic, fromPeers: true })
-    this.logger.log('subscribed')
 
     const l = { subscriptionId: id, fromPeers: true }
     ;(async (commsService) => {
@@ -143,7 +141,7 @@ export class BFFConnection {
     })
 
     topicsToAdd.forEach(async (topic) => {
-      const l = await this.addPeerTopicListener(topic, this.onSceneMessage)
+      const l = await this.addPeerTopicListener(topic, this.onSceneMessage.bind(this))
       this.sceneTopics.set(topic, l)
     })
   }

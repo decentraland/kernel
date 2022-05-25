@@ -3,9 +3,10 @@ import { future, IFuture } from 'fp-future'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { SendOpts, Transport } from './Transport'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
-import { Reader } from 'protobufjs/minimal'
 
 import { JoinIslandMessage, LeftIslandMessage } from './proto/archipelago'
+
+import { Reader } from 'protobufjs/minimal'
 import { SuspendRelayData, PingData, PongData, Packet, MessageData } from './proto/p2p'
 
 import { Mesh } from './Mesh'
@@ -302,7 +303,7 @@ export class PeerToPeerTransport extends Transport {
   private handlePeerPacket(data: Uint8Array, peerId: string) {
     if (this.disposed) return
     try {
-      const packet = Packet.decode(Reader.create(data))
+      const packet = Packet.decode(Reader.create(new Uint8Array(data)))
 
       const packetKey = `${packet.src}_${packet.instanceId}_${packet.sequenceId}`
       const alreadyReceived = !!this.receivedPackets[packetKey]
@@ -335,7 +336,7 @@ export class PeerToPeerTransport extends Transport {
   }
 
   private processPacket(packet: Packet) {
-    this.updateTimeStamp(packet.src, packet.subtype, packet.timestamp, packet.sequenceId)
+    this.updateTimeStamp(packet.src, packet.subtype, this.getTimestamp(packet), packet.sequenceId)
 
     packet.hops += 1
 
@@ -599,7 +600,7 @@ export class PeerToPeerTransport extends Transport {
     const expireTime = this.getExpireTime(packet)
 
     if (this.knownPeers[packet.src].timestamp) {
-      discardedByExpireTime = this.knownPeers[packet.src].timestamp! - packet.timestamp > expireTime
+      discardedByExpireTime = this.knownPeers[packet.src].timestamp! - this.getTimestamp(packet) > expireTime
     }
 
     return discardedByOlderThan || discardedByExpireTime
@@ -610,7 +611,7 @@ export class PeerToPeerTransport extends Transport {
       const subtypeData = this.knownPeers[packet.src]?.subtypeData[packet.subtype]
       return (
         subtypeData &&
-        subtypeData.lastTimestamp - packet.timestamp > packet.discardOlderThan &&
+        subtypeData.lastTimestamp - this.getTimestamp(packet) > packet.discardOlderThan &&
         subtypeData.lastSequenceId >= packet.sequenceId
       )
     }
@@ -646,7 +647,7 @@ export class PeerToPeerTransport extends Transport {
       subtype: type.name,
       expireTime: type.expirationTime ?? -1,
       discardOlderThan: type.discardOlderThan ?? -1,
-      timestamp: Date.now(),
+      timestamp: Date.now().toString(),
       src: this.peerId,
       hops: 0,
       ttl: ttl,
@@ -726,9 +727,11 @@ export class PeerToPeerTransport extends Transport {
   }
 
   private sendPacketToPeer(peer: string, packet: Packet) {
+    const d = Packet.encode(packet).finish()
+
     if (this.isConnectedTo(peer)) {
       try {
-        this.mesh.sendPacketToPeer(peer, Packet.encode(packet).finish())
+        this.mesh.sendPacketToPeer(peer, d)
       } catch (e: any) {
         logger.warn(`Error sending data to peer ${peer} ${e.toString()}`)
       }
@@ -956,5 +959,9 @@ export class PeerToPeerTransport extends Transport {
       const { x, y, z } = lastPlayerPositionReport.position
       return [x, y, z]
     }
+  }
+
+  private getTimestamp(packet: Packet) {
+    return Number.parseInt(packet.timestamp, 10)
   }
 }

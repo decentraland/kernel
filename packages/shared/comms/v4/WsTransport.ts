@@ -5,7 +5,7 @@ import { WsMessage } from './proto/ws'
 
 export class WsTransport extends Transport {
   private logger: ILogger = createLogger('WsTransport: ')
-  private aliases: Record<number, string> = {}
+  private aliases: Record<string, string> = {}
   private ws: WebSocket | null = null
 
   constructor(public url: string) {
@@ -23,7 +23,7 @@ export class WsTransport extends Transport {
 
     let message: WsMessage = { data: undefined }
 
-    const fromAlias = 0 // NOTE: this will be overriden by the server
+    const fromAlias = '' // NOTE: this will be overriden by the server
     if (identity) {
       message.data = { $case: 'identityMessage', identityMessage: { body, fromAlias, identity: '' } }
     } else {

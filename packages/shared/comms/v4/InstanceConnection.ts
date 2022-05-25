@@ -34,7 +34,6 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async connect(): Promise<void> {
-    this.logger.info(`CONNECT`)
     const peerId = await this.bff.connect()
 
     this.heartBeatInterval = setInterval(async () => {
@@ -56,11 +55,9 @@ export class InstanceConnection implements RoomConnection {
       }
     }, 2000)
 
-    this.logger.info(`HERE - top`)
     this.islandChangedListener = await this.bff.addSystemTopicListener(
       `${peerId}.island_changed`,
       async (data: Uint8Array) => {
-        this.logger.info(`HERE - island`)
         let islandChangedMessage: IslandChangedMessage
         try {
           islandChangedMessage = IslandChangedMessage.decode(Reader.create(data))
@@ -93,8 +90,6 @@ export class InstanceConnection implements RoomConnection {
         await this.changeTransport(transport)
       }
     )
-
-    this.logger.info(`HERE - done`)
   }
 
   async sendPositionMessage(p: Position) {
