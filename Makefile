@@ -173,6 +173,7 @@ update-renderer:  ## Update the renderer
 
 madge: scripts/deps.js
 	@node scripts/deps.js
+	dot packages/scene-system/newecs.scene.system.ts.dot -T pdf -O
 	dot packages/scene-system/cli.scene.system.ts.dot -T pdf -O
 	dot packages/scene-system/scene.system.ts.dot -T pdf -O
 	dot packages/scene-system/stateful.scene.system.ts.dot -T pdf -O

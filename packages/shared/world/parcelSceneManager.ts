@@ -4,7 +4,7 @@ import {
   LifecycleManager,
   ParcelSceneLoadingParams
 } from 'decentraland-loader/lifecycle/manager'
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
+// import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import {
   sceneLifeCycleObservable,
   renderDistanceObservable,
@@ -17,6 +17,7 @@ import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { parcelObservable, teleportObservable } from './positionThings'
 import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
 import { SceneSystemWorker } from './SceneSystemWorker'
+import { NewSceneSystemWorker } from './NewSceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from '@dcl/legacy-ecs'
@@ -29,6 +30,7 @@ import { PositionTrackEvents } from 'shared/analytics/types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { activateAllPortableExperiences, killAllPortableExperiences } from '../portableExperiences/actions'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
+import { Transport } from '@dcl/rpc'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -109,17 +111,19 @@ export function forceStopSceneWorker(worker: SceneWorker) {
 /**
  * Creates a worker for the ParcelSceneAPI
  */
-export function loadParcelScene(
-  parcelScene: ParcelSceneAPI,
-  transport?: ScriptingTransport,
-  persistent: boolean = false
-) {
+export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transport, persistent: boolean = false) {
   const sceneId = parcelScene.getSceneId()
 
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
+  console.log(`[newecs] loading ${sceneId}`)
+
   if (!parcelSceneWorker) {
-    parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
+    if (sceneId.startsWith('b64')) {
+      parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)
+    } else {
+      parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
+    }
 
     setNewParcelScene(sceneId, parcelSceneWorker)
   }

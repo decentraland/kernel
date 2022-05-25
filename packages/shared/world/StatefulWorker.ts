@@ -14,7 +14,7 @@ const gamekitWorkerUrl = URL.createObjectURL(gamekitWorkerBLOB)
 
 export class StatefulWorker extends SceneWorker {
   constructor(parcelScene: ParcelSceneAPI, options: StatefulWorkerOptions) {
-    super(parcelScene, StatefulWorker.buildWebWorkerTransport(parcelScene))
+    super(parcelScene, true, StatefulWorker.buildWebWorkerTransport(parcelScene))
 
     this.getAPIInstance(SceneStateStorageController).catch((error) =>
       defaultLogger.error('Failed to load the SceneStateStorageController', error)

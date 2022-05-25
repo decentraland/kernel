@@ -9,6 +9,7 @@ import { EngineAPI } from 'shared/apis/EngineAPI'
 import { PREVIEW } from 'config'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { createRpcServer, Transport } from '@dcl/rpc'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -21,17 +22,57 @@ export enum SceneWorkerReadyState {
   DISPOSED = 1 << 8
 }
 
+import { EngineAPIContext, registerEngineAPIServiceServerImplementation } from 'shared/apis/EngineAPI/server'
+import {
+  EnvironmentAPIContext,
+  registerEnvironmentAPIServiceServerImplementation
+} from 'shared/apis/EnvironmentAPI/server'
+import { DevToolsContext, registerDevToolsServiceServerImplementation } from 'shared/apis/DevTools/server'
+// import Protocol from 'devtools-protocol'
+
+type SceneContext = EngineAPIContext & EnvironmentAPIContext & DevToolsContext
+
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
   protected engineAPI: EngineAPI | null = null
   private readonly system = future<ScriptingHost>()
 
-  constructor(private readonly parcelScene: ParcelSceneAPI, transport: ScriptingTransport) {
+  private rpcContext!: SceneContext
+
+  public patchContext(ctx: Partial<SceneContext>) {
+    this.rpcContext = { ...this.rpcContext, ...ctx }
+  }
+  public get getRpcContext() {
+    return this.rpcContext
+  }
+
+  public get useOldRpc() {
+    return this.oldRpc
+  }
+
+  constructor(
+    private readonly parcelScene: ParcelSceneAPI,
+    private oldRpc: boolean,
+    transport: Transport | ScriptingTransport
+  ) {
     parcelScene.registerWorker(this)
 
-    this.startSystem(transport)
-      .then(($) => this.system.resolve($))
-      .catch(($) => this.system.reject($))
+    if (oldRpc) {
+      this.startSystem(transport as ScriptingTransport)
+        .then(($) => this.system.resolve($))
+        .catch(($) => this.system.reject($))
+    } else {
+      const rpcServer = createRpcServer<SceneContext>({})
+
+      rpcServer.setHandler(async function handler(port) {
+        console.log('  Creating server port: ' + port.portName)
+        registerDevToolsServiceServerImplementation(port)
+        registerEngineAPIServiceServerImplementation(port)
+        registerEnvironmentAPIServiceServerImplementation(port)
+      })
+
+      rpcServer.attachTransport(transport as Transport, this.rpcContext)
+    }
   }
 
   abstract setPosition(position: Vector3): void
@@ -91,34 +132,24 @@ export abstract class SceneWorker {
 
   private async startSystem(transport: ScriptingTransport) {
     const system = await ScriptingHost.fromTransport(transport)
-
     this.engineAPI = system.getAPIInstance('EngineAPI') as EngineAPI
     this.engineAPI.parcelSceneAPI = this.parcelScene
-
     system.getAPIInstance(EnvironmentAPI).data = this.parcelScene.data
-
     // TODO: track this errors using rollbar because this kind of event are usually triggered due to setInterval() or unreliable code in scenes, that is not sandboxed
     system.on('error', (e) => {
       // @ts-ignore
       console['log']('Unloading scene because of unhandled exception in the scene worker: ')
-
       // @ts-ignore
       console['error'](e)
-
       // These errors should be handled in development time
       if (PREVIEW) {
         eval('debu' + 'gger')
       }
-
       transport.close()
-
       this.ready |= SceneWorkerReadyState.SYSTEM_FAILED
     })
-
     system.enable()
-
     this.ready |= SceneWorkerReadyState.LOADED
-
     return system
   }
 }

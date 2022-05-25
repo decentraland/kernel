@@ -20,23 +20,28 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   registerWorker(worker: SceneWorker): void {
     super.registerWorker(worker)
 
-    const aux: Vector3 = new Vector3()
-    gridToWorld(this.data.data.basePosition.x, this.data.data.basePosition.y, aux)
-    worker.setPosition(aux)
+    if (!worker.useOldRpc) {
+      debugger
+      worker.patchContext({ EnvironmentAPI: { data: this.data } })
+    } else {
+      const aux: Vector3 = new Vector3()
+      gridToWorld(this.data.data.basePosition.x, this.data.data.basePosition.y, aux)
+      worker.setPosition(aux)
 
-    this.worker
-      .getAPIInstance(DevTools)
-      .then((devTools) => (devTools.logger = this.logger))
-      .catch((e) => this.logger.error('Error initializing system DevTools', e))
+      this.worker
+        .getAPIInstance(DevTools)
+        .then((devTools) => (devTools.logger = this.logger))
+        .catch((e) => this.logger.error('Error initializing system DevTools', e))
 
-    this.worker
-      .getAPIInstance(ParcelIdentity)
-      .then((parcelIdentity) => {
-        parcelIdentity.land = this.data.data.land!
-        parcelIdentity.cid = worker.getSceneId()
-        parcelIdentity.isPortableExperience = false
-      })
-      .catch((e) => this.logger.error('Error initializing system ParcelIdentity', e))
+      this.worker
+        .getAPIInstance(ParcelIdentity)
+        .then((parcelIdentity) => {
+          parcelIdentity.land = this.data.data.land!
+          parcelIdentity.cid = worker.getSceneId()
+          parcelIdentity.isPortableExperience = false
+        })
+        .catch((e) => this.logger.error('Error initializing system ParcelIdentity', e))
+    }
   }
 }
 

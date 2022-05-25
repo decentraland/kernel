@@ -1,4 +1,3 @@
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import { Vector3, Quaternion } from '@dcl/ecs-math'
 
 import { playerConfigurations } from 'config'
@@ -8,19 +7,19 @@ import { Observer } from 'mz-observable'
 import { sceneLifeCycleObservable } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { renderStateObservable, isRendererEnabled } from './worldState'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
-import { CustomWebWorkerTransport } from './CustomWebWorkerTransport'
 import { sceneObservable } from 'shared/world/sceneState'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 
 import { Transport } from '@dcl/rpc'
+import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const gamekitWorkerRaw = require('raw-loader!../../../static/systems/scene.system.js')
+const gamekitWorkerRaw = require('raw-loader!../../../static/systems/newecs.scene.system.js')
 const gamekitWorkerBLOB = new Blob([gamekitWorkerRaw])
 const gamekitWorkerUrl = URL.createObjectURL(gamekitWorkerBLOB)
 
-export class SceneSystemWorker extends SceneWorker {
+export class NewSceneSystemWorker extends SceneWorker {
   private sceneStarted: boolean = false
 
   private position!: Vector3
@@ -34,7 +33,7 @@ export class SceneSystemWorker extends SceneWorker {
   private sceneReady: boolean = false
 
   constructor(parcelScene: ParcelSceneAPI, transport?: Transport, private readonly persistent: boolean = false) {
-    super(parcelScene, true, transport ?? SceneSystemWorker.buildWebWorkerTransport(parcelScene))
+    super(parcelScene, false, transport ?? NewSceneSystemWorker.buildWebWorkerTransport(parcelScene))
 
     this.subscribeToSceneLifeCycleEvents()
     this.subscribeToWorldRunningEvents()
@@ -42,12 +41,12 @@ export class SceneSystemWorker extends SceneWorker {
     this.subscribeToSceneChangeEvents()
   }
 
-  private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): ScriptingTransport {
+  private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): Transport {
     const worker = new Worker(gamekitWorkerUrl, {
       name: `ParcelSceneWorker(${parcelScene.data.sceneId})`
     })
 
-    return CustomWebWorkerTransport(worker)
+    return WebWorkerTransport(worker)
   }
 
   setPosition(position: Vector3) {

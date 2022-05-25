@@ -5,7 +5,6 @@ import { store } from './../../store/isolatedStore'
 import { getCommsIsland, getRealm } from './../../comms/selectors'
 import { Realm } from './../../dao/types'
 import { getFeatureFlagEnabled } from './../../meta/selectors'
-import { EnvironmentRealm, Platform } from './IEnvironmentAPI'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
@@ -19,14 +18,18 @@ import {
   GetPlatformResponse,
   PreviewModeResponse
 } from './gen/EnvironmentAPI'
+import { EnvironmentRealm, Platform } from '../IEnvironmentAPI'
 
-export type EngineAPIContext = {
-  data: EnvironmentData<any>
+export type EnvironmentAPIContext = {
+  EnvironmentAPI: {
+    data: EnvironmentData<any>
+  }
 }
-export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<EngineAPIContext>) {
+
+export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<EnvironmentAPIContext>) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
     async getBootstrapData(_req: Empty, context): Promise<BootstrapDataResponse> {
-      return { ...context.data, jsonPayload: JSON.stringify(context.data.data) }
+      return { ...context.EnvironmentAPI.data, jsonPayload: JSON.stringify(context.EnvironmentAPI.data.data) }
     },
     async isPreviewMode(): Promise<PreviewModeResponse> {
       return { isPreview: PREVIEW }
@@ -49,7 +52,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
         return {}
       }
 
-      return toEnvironmentRealmType(realm, island)
+      return { currentRealm: toEnvironmentRealmType(realm, island) }
     },
     async getExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
       return {
