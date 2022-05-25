@@ -53,13 +53,13 @@ empty-parcels:
 
 build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
-# Entry points
-static/%.js: build-essentials packages/entryPoints/%.ts
-	@$(COMPILER) $(word 2,$^)
+
+static/index.js:
+	node_modules/.bin/webpack --progress
 
 # Release
 
-DIST_ENTRYPOINTS := static/editor.js static/index.js
+DIST_ENTRYPOINTS := static/index.js
 DIST_STATIC_FILES := static/export.html static/preview.html static/default-profile/contents
 
 build-deploy: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) ## Build all the entrypoints needed for a deployment
@@ -74,7 +74,7 @@ TEST_SOURCE_FILES := $(wildcard test/**/*.ts)
 test/out/index.js: build-essentials $(TEST_SOURCE_FILES)
 	@$(COMPILER) ./targets/test.json
 
-test: build-essentials test/out/index.js ## Run all the tests
+test: build-essentials test/out/index.js build-tests ## Run all the tests
 	@node scripts/runTestServer.js
 
 test-docker: ## Run all the tests using a docker container
@@ -140,6 +140,12 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 
 # Development
 
+build-tests:
+	cd test; ../node_modules/.bin/webpack
+
+watch-tests:
+	cd test; ../node_modules/.bin/webpack --watch
+
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
 	@NODE_ENV=development $(CONCURRENTLY) \
 		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,simulator,server" \
@@ -147,8 +153,8 @@ watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files requ
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
 			"$(COMPILER) targets/engine/loader.json --watch" \
 			"$(COMPILER) targets/scenes/basic-scenes.json --watch" \
-			"$(COMPILER) targets/entryPoints/index.json --watch" \
-			"$(COMPILER) targets/test.json --watch" \
+			"node_modules/.bin/webpack --watch" \
+			"make watch-tests" \
 			"$(COMPILER) targets/engine/gif-processor.json --watch" \
 			"node ./scripts/runPathSimulator.js" \
 			"node ./scripts/runTestServer.js --keep-open"
@@ -176,7 +182,7 @@ madge: scripts/deps.js
 
 # Makefile
 
-.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
+.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer madge static/index.js build-tests watch-tests
 .DEFAULT_GOAL := help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

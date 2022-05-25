@@ -4,7 +4,7 @@ import * as sinon from 'sinon'
 import { sleep } from 'atomicHelpers/sleep'
 import { createFetch, FetchFunction } from 'scene-system/sdk/Fetch'
 
-const originalFetch: FetchFunction = async (resource: RequestInfo, init?: RequestInit) => {
+const originalFetch: FetchFunction = async (resource, init?) => {
   return new Response()
 }
 
@@ -34,7 +34,7 @@ describe('Fetch Wrapped for scenes', () => {
   const wrappedDelayFetch = createFetch({
     canUseFetch: true,
     log,
-    originalFetch: async (_resource: RequestInfo, init?: RequestInit) => {
+    originalFetch: async (_resource, init?: RequestInit) => {
       await sleep(timePerFetchSleep)
 
       if (init.signal?.aborted) {
