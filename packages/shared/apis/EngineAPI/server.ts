@@ -1,27 +1,31 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import { Empty, EngineAPIServiceDefinition, EventId, ManyEntityAction } from './gen/EngineAPI'
-import { ParcelSceneAPI } from '../../../shared/world/ParcelSceneAPI'
 
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 import defaultLogger from 'shared/logger'
+import { PortContext } from './../context'
+import { EntityAction, EntityActionType } from 'shared/types'
 
-export type EngineAPIContext = {
-  EngineAPI: {
-    didStart: boolean
-    parcelSceneAPI: ParcelSceneAPI
-    subscribedEvents: { [event: string]: boolean }
-  }
-}
-export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<EngineAPIContext>) {
+export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EngineAPIServiceDefinition, async () => ({
     async sendBatch(req: ManyEntityAction, context) {
-      context.EngineAPI.parcelSceneAPI.sendBatch(req.actions as any)
-      return { test: 't323e23e2rue' }
+      const actions: EntityAction[] = []
+      for (const action of req.actions) {
+        if (action.payload) {
+          actions.push({
+            type: action.type as EntityActionType,
+            tag: action.tag,
+            payload: JSON.parse(action.payload)
+          })
+        }
+      }
+      context.EngineAPI.parcelSceneAPI.sendBatch(actions)
+      return {}
     },
     async startSignal(req: Empty, context) {
       context.EngineAPI.didStart = true
-      return { test: 'true' }
+      return {}
     },
     async *subscribe(req: EventId, context) {
       const channel = pushableChannel<any>(function deferCloseChannel() {
@@ -31,7 +35,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       if (!(req.id in context.EngineAPI.subscribedEvents)) {
         context.EngineAPI.parcelSceneAPI.on(req.id, (data: any) => {
           if (context.EngineAPI.subscribedEvents[req.id]) {
-            channel.push(data).catch((error) => defaultLogger.error(error))
+            channel.push(JSON.stringify(data)).catch((error) => defaultLogger.error(error))
           }
         })
       }
@@ -39,7 +43,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       context.EngineAPI.subscribedEvents[req.id] = true
 
       for await (const message of channel) {
-        yield message
+        yield { payload: message }
 
         if (!context.EngineAPI.subscribedEvents[req.id]) {
           break
@@ -50,7 +54,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
     },
     async unsubscribe(req: EventId, context) {
       context.EngineAPI.subscribedEvents[req.id] = false
-      return { test: 'true' }
+      return {}
     }
   }))
 }

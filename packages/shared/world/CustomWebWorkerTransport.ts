@@ -22,10 +22,12 @@ export function CustomWebWorkerTransport(worker: Worker): ScriptingTransport {
     },
     onMessage(handler) {
       worker.addEventListener('message', (message: MessageEvent) => {
+        console.log('[oldrpc] onMessage', message)
         handler(message.data)
       })
     },
     sendMessage(message) {
+      console.log('[oldrpc] sendMessage', message)
       worker.postMessage(message)
     },
     close() {

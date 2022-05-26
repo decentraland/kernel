@@ -18,9 +18,7 @@ message EventId {
     string id = 1;
 }
 
-message Empty {
-    string test = 1;
-}
+message Empty { }
 
 service EngineAPIService {
   rpc SendBatch(ManyEntityAction) returns (Empty) {}

@@ -1,4 +1,3 @@
-import { EnvironmentData } from './../../types'
 import { getSelectedNetwork } from './../../dao/selectors'
 import { getServerConfigurations, PREVIEW, RENDERER_WS } from './../../../config'
 import { store } from './../../store/isolatedStore'
@@ -19,14 +18,9 @@ import {
   PreviewModeResponse
 } from './gen/EnvironmentAPI'
 import { EnvironmentRealm, Platform } from '../IEnvironmentAPI'
+import { PortContext } from './../context'
 
-export type EnvironmentAPIContext = {
-  EnvironmentAPI: {
-    data: EnvironmentData<any>
-  }
-}
-
-export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<EnvironmentAPIContext>) {
+export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
     async getBootstrapData(_req: Empty, context): Promise<BootstrapDataResponse> {
       return { ...context.EnvironmentAPI.data, jsonPayload: JSON.stringify(context.EnvironmentAPI.data.data) }

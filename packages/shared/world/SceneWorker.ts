@@ -22,24 +22,20 @@ export enum SceneWorkerReadyState {
   DISPOSED = 1 << 8
 }
 
-import { EngineAPIContext, registerEngineAPIServiceServerImplementation } from 'shared/apis/EngineAPI/server'
-import {
-  EnvironmentAPIContext,
-  registerEnvironmentAPIServiceServerImplementation
-} from 'shared/apis/EnvironmentAPI/server'
-import { DevToolsContext, registerDevToolsServiceServerImplementation } from 'shared/apis/DevTools/server'
+import { registerEngineAPIServiceServerImplementation } from 'shared/apis/EngineAPI/server'
+import { registerEnvironmentAPIServiceServerImplementation } from 'shared/apis/EnvironmentAPI/server'
+import { registerDevToolsServiceServerImplementation } from 'shared/apis/DevTools/server'
+import { PortContext } from 'shared/apis/context'
 // import Protocol from 'devtools-protocol'
-
-type SceneContext = EngineAPIContext & EnvironmentAPIContext & DevToolsContext
 
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
   protected engineAPI: EngineAPI | null = null
   private readonly system = future<ScriptingHost>()
 
-  private rpcContext!: SceneContext
+  private rpcContext!: PortContext
 
-  public patchContext(ctx: Partial<SceneContext>) {
+  public patchContext(ctx: Partial<PortContext>) {
     this.rpcContext = { ...this.rpcContext, ...ctx }
   }
   public get getRpcContext() {
@@ -62,7 +58,7 @@ export abstract class SceneWorker {
         .then(($) => this.system.resolve($))
         .catch(($) => this.system.reject($))
     } else {
-      const rpcServer = createRpcServer<SceneContext>({})
+      const rpcServer = createRpcServer<PortContext>({})
 
       rpcServer.setHandler(async function handler(port) {
         console.log('  Creating server port: ' + port.portName)

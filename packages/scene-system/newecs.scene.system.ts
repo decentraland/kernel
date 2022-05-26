@@ -18,6 +18,9 @@ import {
   UpdateEntityComponentPayload
 } from 'shared/types'
 import { QueryType } from '@dcl/legacy-ecs'
+import { customEval, getES5Context } from './sdk/sandbox'
+import { createFetch } from './sdk/Fetch'
+import { createWebSocket } from './sdk/WebSocket'
 
 interface DecentralandInterfaceOptions {
   onLog: (...args: any[]) => void
@@ -29,6 +32,8 @@ interface DecentralandInterfaceOptions {
   onStartFunctions: any[]
   sceneId: string
   subscribedEvents: Map<string, boolean>
+  subscribe: (id: string, cb: (data: any) => void) => Promise<void>
+  fireEvent: (event: any) => void
 }
 
 function getDecentralandInterface(options: DecentralandInterfaceOptions): DecentralandInterface {
@@ -41,7 +46,9 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
     sceneId,
     onEventFunctions,
     subscribedEvents,
-    onStartFunctions
+    onStartFunctions,
+    subscribe,
+    fireEvent
   } = options
 
   return {
@@ -60,7 +67,7 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
         events.push({
           type: 'OpenExternalUrl',
           tag: '',
-          payload: url
+          payload: JSON.stringify(url)
         })
       } else {
         this.error('openExternalUrl can only be used inside a pointerEvent')
@@ -79,7 +86,7 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
         events.push({
           type: 'OpenNFTDialog',
           tag: '',
-          payload: payload as OpenNFTDialogPayload
+          payload: JSON.stringify(payload as OpenNFTDialogPayload)
         })
       } else {
         this.error('openNFTDialog can only be used inside a pointerEvent')
@@ -93,14 +100,14 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
       }
       events.push({
         type: 'CreateEntity',
-        payload: { id: entityId } as CreateEntityPayload
+        payload: JSON.stringify({ id: entityId } as CreateEntityPayload)
       })
     },
 
     removeEntity(entityId: string) {
       events.push({
         type: 'RemoveEntity',
-        payload: { id: entityId } as RemoveEntityPayload
+        payload: JSON.stringify({ id: entityId } as RemoveEntityPayload)
       })
     },
 
@@ -133,12 +140,12 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
         events.push({
           type: 'UpdateEntityComponent',
           tag: sceneId + '_' + entityId + '_' + classId,
-          payload: {
+          payload: JSON.stringify({
             entityId,
             classId,
             name: componentName.replace(componentNameRE, ''),
             json: generatePBObject(classId, json)
-          } as UpdateEntityComponentPayload
+          } as UpdateEntityComponentPayload)
         })
       }
     },
@@ -149,11 +156,11 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
         events.push({
           type: 'AttachEntityComponent',
           tag: entityId,
-          payload: {
+          payload: JSON.stringify({
             entityId,
             name: componentName.replace(componentNameRE, ''),
             id
-          } as AttachEntityComponentPayload
+          } as AttachEntityComponentPayload)
         })
       }
     },
@@ -164,10 +171,10 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
         events.push({
           type: 'ComponentRemoved',
           tag: entityId,
-          payload: {
+          payload: JSON.stringify({
             entityId,
             name: componentName.replace(componentNameRE, '')
-          } as ComponentRemovedPayload
+          } as ComponentRemovedPayload)
         })
       }
     },
@@ -177,10 +184,10 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
       events.push({
         type: 'SetEntityParent',
         tag: entityId,
-        payload: {
+        payload: JSON.stringify({
           entityId,
           parentId
-        } as SetEntityParentPayload
+        } as SetEntityParentPayload)
       })
     },
 
@@ -190,10 +197,10 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
       events.push({
         type: 'Query',
         tag: sceneId + '_' + payload.queryId,
-        payload: {
+        payload: JSON.stringify({
           queryId: queryType,
           payload
-        } as QueryPayload
+        } as QueryPayload)
       })
     },
 
@@ -202,15 +209,15 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
       if (!subscribedEvents.has(eventName)) {
         subscribedEvents.set(eventName, true)
 
-        // eventSubscriber.on(eventName, (event) => {
-        //   if (eventName === 'raycastResponse') {
-        //     const idAsNumber = parseInt(event.data.queryId, 10)
-        //     if (numberToIdStore[idAsNumber]) {
-        //       event.data.queryId = numberToIdStore[idAsNumber].toString()
-        //     }
-        //   }
-        //   that.fireEvent({ type: eventName, data: event.data })
-        // })
+        subscribe(eventName, (event) => {
+          if (eventName === 'raycastResponse') {
+            const idAsNumber = parseInt(event.data.queryId, 10)
+            if (numberToIdStore[idAsNumber]) {
+              event.data.queryId = numberToIdStore[idAsNumber].toString()
+            }
+          }
+          fireEvent({ type: eventName, data: event })
+        }).catch((error) => console.error(error))
       }
     },
 
@@ -225,11 +232,11 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
         events.push({
           type: 'ComponentCreated',
           tag: id,
-          payload: {
+          payload: JSON.stringify({
             id,
             classId,
             name: componentName.replace(componentNameRE, '')
-          } as ComponentCreatedPayload
+          } as ComponentCreatedPayload)
         })
       }
     },
@@ -238,7 +245,7 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
       events.push({
         type: 'ComponentDisposed',
         tag: id,
-        payload: { id } as ComponentDisposedPayload
+        payload: JSON.stringify({ id } as ComponentDisposedPayload)
       })
     },
 
@@ -246,10 +253,10 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
       events.push({
         type: 'ComponentUpdated',
         tag: id,
-        payload: {
+        payload: JSON.stringify({
           id,
           json
-        } as ComponentUpdatedPayload
+        } as ComponentUpdatedPayload)
       })
     },
 
@@ -301,13 +308,21 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
   }
 }
 
+function initMessagesFinished() {
+  return {
+    type: 'InitMessagesFinished',
+    tag: 'scene',
+    payload: '{}'
+  }
+}
+
 async function start(client: RpcClient) {
   const clientPort = await client.createPort('new-ecs-scene-worker')
   const environmentApiService = await createEnvironmentAPIServiceClient(clientPort)
   const engineApiService = await createEngineAPIServiceClient(clientPort)
 
   const bootstrapData = await environmentApiService.getBootstrapData({})
-  const isPreview = await environmentApiService.isPreviewMode({})
+  const isPreview = (await environmentApiService.isPreviewMode({})).isPreview
 
   if (!bootstrapData || !bootstrapData.main) {
     throw new Error(`No boostrap data`)
@@ -325,10 +340,30 @@ async function start(client: RpcClient) {
   const sourceCode = await codeRequest.text()
 
   const events: any = []
-  const allowOpenExternalUrl = false
+  let allowOpenExternalUrl = false
   const onUpdateFunctions: ((dt: number) => void)[] = []
-  const onEventFunctions: (() => void)[] = []
+  const onEventFunctions: ((event: any) => void)[] = []
   const onStartFunctions: (() => void)[] = []
+
+  async function subscribe(id: string, cb: (data: any) => void) {
+    for await (const notif of engineApiService.subscribe({ id })) {
+      cb(JSON.parse(notif.payload || '{}'))
+    }
+  }
+
+  function fireEvent(event: any) {
+    try {
+      if (isPointerEvent(event)) {
+        allowOpenExternalUrl = true
+      }
+      for (const trigger of onEventFunctions) {
+        trigger(event)
+      }
+    } catch (e: any) {
+      console.error(e)
+    }
+    allowOpenExternalUrl = false
+  }
 
   const dcl = getDecentralandInterface({
     onLog: (...args: any[]) => {
@@ -343,25 +378,110 @@ async function start(client: RpcClient) {
     onEventFunctions,
     onStartFunctions,
     sceneId: bootstrapData.sceneId,
-    subscribedEvents: new Map<string, boolean>()
+    subscribedEvents: new Map<string, boolean>(),
+    subscribe,
+    fireEvent
   })
-  // console.log('from worker', { bootstrapData, isPreview, sourceCode })
 
-  // const result = await engineApiService.sendBatch({
-  //   actions: [
-  //     {
-  //       type: 'InitMessagesFinished',
-  //       tag: 'scene',
-  //       payload: '{}'
-  //     }
-  //   ]
-  // })
+  dcl.callRpc = async (rpcHandle: string, methodName: string, args: any[]) => {
+    console.log({ rpcHandle, methodName, args })
+  }
+  dcl.loadModule = async (moduleName: string, exportsRef: any): Promise<ModuleDescriptor> => {
+    console.log({ moduleName, exportsRef })
+    return {
+      rpcHandle: 'module',
+      methods: [{ name: 'hello-world' }]
+    }
+  }
 
-  // console.log('result', result)
+  // const { Permissions } = await this.loadAPIs(['Permissions'])
+  const canUseWebsocket = true // await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
+  const canUseFetch = true // await Permissions.hasPermission(PermissionItem.USE_FETCH)
+  // const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: IEnvironmentAPI }
+  const unsafeAllowed = (await environmentApiService.areUnsafeRequestAllowed({})).status
 
+  const originalFetch = fetch
+
+  const restrictedWebSocket = createWebSocket({
+    canUseWebsocket,
+    previewMode: isPreview || unsafeAllowed,
+    log: dcl.log
+  })
+  const restrictedFetch = createFetch({
+    canUseFetch,
+    originalFetch: originalFetch,
+    previewMode: isPreview || unsafeAllowed,
+    log: dcl.log
+  })
+
+  globalThis.fetch = restrictedFetch
+  globalThis.WebSocket = restrictedWebSocket
+
+  const env = { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch }
+
+  async function onStart() {
+    await engineApiService.subscribe({ id: 'sceneStart' })
+    startLoop().catch((err) => console.error(err))
+
+    onStartFunctions.forEach(($) => {
+      try {
+        $()
+      } catch (e: any) {
+        console.error(e)
+      }
+    })
+  }
+
+  onStart().catch((err) => console.error(err))
+
+  await customEval(sourceCode, getES5Context(env))
+
+  events.push(initMessagesFinished())
+
+  onStartFunctions.push(() => {
+    engineApiService.startSignal({}).catch((e) => {
+      console.error(e)
+    })
+  })
+
+  await engineApiService.sendBatch({ actions: events })
+
+  async function startLoop() {
+    let start = performance.now()
+
+    const update = () => {
+      const now = performance.now()
+      const dt = now - start
+      start = now
+
+      setTimeout(update, 100)
+
+      const time = dt / 1000
+
+      for (const trigger of onUpdateFunctions) {
+        try {
+          trigger(time)
+        } catch (e: any) {
+          console.error(e)
+        }
+      }
+
+      engineApiService.sendBatch({ actions: events }).catch((err) => console.error(err))
+    }
+
+    update()
+  }
   while (true) {
     await sleep(100)
   }
+}
+
+function isPointerEvent(event: any): boolean {
+  switch (event.type) {
+    case 'uuidEvent':
+      return event.data.payload.buttonId !== undefined
+  }
+  return false
 }
 
 createRpcClient(WebWorkerTransport(self))
