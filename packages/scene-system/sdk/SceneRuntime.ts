@@ -618,18 +618,21 @@ export abstract class SceneRuntime extends Script {
       const playerPos = playerPosition as Vector2
       const scenePos = this.scenePosition
 
-      let sqrDistanceToPlayer = 10 * 10
+      let sqrDistanceToPlayerInParcels = 10 * 10
       let isInsideScene = false
 
       if (!!this.parcels) {
         for (const parcel of this.parcels) {
-          sqrDistanceToPlayer = Math.min(sqrDistanceToPlayer, Vector2.DistanceSquared(playerPos, parcel))
+          sqrDistanceToPlayerInParcels = Math.min(
+            sqrDistanceToPlayerInParcels,
+            Vector2.DistanceSquared(playerPos, parcel)
+          )
           if (parcel.x === playerPos.x && parcel.y === playerPos.y) {
             isInsideScene = true
           }
         }
       } else {
-        sqrDistanceToPlayer = Vector2.DistanceSquared(playerPos, scenePos)
+        sqrDistanceToPlayerInParcels = Vector2.DistanceSquared(playerPos, scenePos)
         isInsideScene = scenePos.x === playerPos.x && scenePos.y === playerPos.y
       }
 
@@ -637,13 +640,13 @@ export abstract class SceneRuntime extends Script {
 
       if (isInsideScene) {
         fps = 30
-      } else if (sqrDistanceToPlayer <= 2 * 2) {
+      } else if (sqrDistanceToPlayerInParcels <= 2 * 2) {
         // NOTE(Brian): Yes, this could be a formula, but I prefer this pedestrian way as
         //              its easier to read and tweak (i.e. if we find out its better as some arbitrary curve, etc).
         fps = 20
-      } else if (sqrDistanceToPlayer <= 3 * 3) {
+      } else if (sqrDistanceToPlayerInParcels <= 3 * 3) {
         fps = 10
-      } else if (sqrDistanceToPlayer <= 4 * 4) {
+      } else if (sqrDistanceToPlayerInParcels <= 4 * 4) {
         fps = 5
       }
 
