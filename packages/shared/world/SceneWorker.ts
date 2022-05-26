@@ -9,7 +9,7 @@ import { EngineAPI } from 'shared/apis/EngineAPI'
 import { PREVIEW } from 'config'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { createRpcServer, Transport } from '@dcl/rpc'
+import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -33,6 +33,7 @@ export abstract class SceneWorker {
   protected engineAPI: EngineAPI | null = null
   private readonly system = future<ScriptingHost>()
 
+  private rpcServer: RpcServer<PortContext> | null = null
   private rpcContext!: PortContext
 
   public patchContext(ctx: Partial<PortContext>) {
@@ -49,7 +50,7 @@ export abstract class SceneWorker {
   constructor(
     private readonly parcelScene: ParcelSceneAPI,
     private oldRpc: boolean,
-    transport: Transport | ScriptingTransport
+    public transport: Transport | ScriptingTransport
   ) {
     parcelScene.registerWorker(this)
 
@@ -58,16 +59,17 @@ export abstract class SceneWorker {
         .then(($) => this.system.resolve($))
         .catch(($) => this.system.reject($))
     } else {
-      const rpcServer = createRpcServer<PortContext>({})
+      this.rpcServer = createRpcServer<PortContext>({})
 
-      rpcServer.setHandler(async function handler(port) {
+      this.rpcServer.setHandler(async function handler(port) {
         console.log('  Creating server port: ' + port.portName)
         registerDevToolsServiceServerImplementation(port)
         registerEngineAPIServiceServerImplementation(port)
         registerEnvironmentAPIServiceServerImplementation(port)
       })
 
-      rpcServer.attachTransport(transport as Transport, this.rpcContext)
+      this.rpcServer.attachTransport(transport as Transport, this.rpcContext)
+      this.ready |= SceneWorkerReadyState.LOADED
     }
   }
 
@@ -122,6 +124,11 @@ export abstract class SceneWorker {
     }
 
     getUnityInstance().UnloadScene(this.getSceneId())
+
+    if (!this.useOldRpc) {
+      this.transport.close()
+      this.ready |= SceneWorkerReadyState.DISPOSED
+    }
   }
 
   protected abstract childDispose(): void

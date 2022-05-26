@@ -3,7 +3,6 @@ import { createRpcClient, RpcClient } from '@dcl/rpc'
 import { createEnvironmentAPIServiceClient } from 'shared/apis/EnvironmentAPI/client'
 import { createEngineAPIServiceClient } from 'shared/apis/EngineAPI/client'
 import { componentNameRE, generatePBObject, getIdAsNumber, numberToIdStore, resolveMapping } from './sdk/Utils'
-import { sleep } from 'atomicHelpers/sleep'
 import {
   AttachEntityComponentPayload,
   ComponentCreatedPayload,
@@ -470,9 +469,6 @@ async function start(client: RpcClient) {
     }
 
     update()
-  }
-  while (true) {
-    await sleep(100)
   }
 }
 

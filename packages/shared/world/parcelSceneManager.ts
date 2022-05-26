@@ -16,7 +16,7 @@ import { EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene } from
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { parcelObservable, teleportObservable } from './positionThings'
 import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
-import { SceneSystemWorker } from './SceneSystemWorker'
+// import { SceneSystemWorker } from './SceneSystemWorker'
 import { NewSceneSystemWorker } from './NewSceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
@@ -119,12 +119,12 @@ export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transpo
   console.log(`[newecs] loading ${sceneId}`)
 
   if (!parcelSceneWorker) {
-    if (sceneId.startsWith('b64')) {
-      // if (sceneId.startsWith('never')) {
-      parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)
-    } else {
-      parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
-    }
+    // if (sceneId.startsWith('b64')) {
+    // if (sceneId.startsWith('never')) {
+    parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)
+    // } else {
+    // parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
+    // }
 
     setNewParcelScene(sceneId, parcelSceneWorker)
   }
