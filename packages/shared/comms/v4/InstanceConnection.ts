@@ -50,7 +50,7 @@ export class InstanceConnection implements RoomConnection {
           await this.bff.publishToTopic('heartbeat', d)
         } catch (err: any) {
           this.logger.error(`Heartbeat failed ${err.toString()}`)
-          this.disconnect()
+          await this.disconnect()
         }
       }
     }, 2000)

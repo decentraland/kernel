@@ -132,7 +132,9 @@ export class BFFConnection {
     topicsToRemove.forEach((topic) => {
       const l = this.sceneTopics.get(topic)
       if (l) {
-        this.removePeerTopicListener(l)
+        this.removePeerTopicListener(l).catch((err) => {
+          this.logger.error(`Error removing peer topic listener for ${topic}: ${err.toString()}`)
+        })
       }
       this.sceneTopics.delete(topic)
     })

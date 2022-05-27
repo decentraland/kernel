@@ -21,7 +21,7 @@ export class WsTransport extends Transport {
   async send(body: Uint8Array, { identity }: SendOpts): Promise<void> {
     if (!this.ws) throw new Error('This transport is closed')
 
-    let message: WsMessage = { data: undefined }
+    const message: WsMessage = { data: undefined }
 
     const fromAlias = '' // NOTE: this will be overriden by the server
     if (identity) {
