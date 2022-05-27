@@ -208,7 +208,7 @@ export class InstanceConnection implements RoomConnection {
 
   async disconnect(): Promise<void> {
     if (this.islandChangedListener) {
-      this.bff.removeSystemTopicListener(this.islandChangedListener)
+      await this.bff.removeSystemTopicListener(this.islandChangedListener)
     }
 
     if (this.heartBeatInterval) {

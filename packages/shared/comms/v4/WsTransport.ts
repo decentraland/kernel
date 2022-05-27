@@ -48,7 +48,7 @@ export class WsTransport extends Transport {
   async onWsMessage(event: MessageEvent) {
     let message: WsMessage
     try {
-      message = WsMessage.decode(Reader.create(event.data))
+      message = WsMessage.decode(Reader.create(new Uint8Array(event.data)))
     } catch (e: any) {
       this.logger.error(`cannot process message ${e.toString()}`)
       return

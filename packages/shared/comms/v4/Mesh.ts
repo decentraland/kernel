@@ -140,15 +140,15 @@ export class Mesh {
 
   async dispose(): Promise<void> {
     if (this.candidatesListener) {
-      this.bff.removePeerTopicListener(this.candidatesListener)
+      await this.bff.removePeerTopicListener(this.candidatesListener)
     }
 
     if (this.answerListener) {
-      this.bff.removePeerTopicListener(this.answerListener)
+      await this.bff.removePeerTopicListener(this.answerListener)
     }
 
     if (this.offerListener) {
-      this.bff.removePeerTopicListener(this.offerListener)
+      await this.bff.removePeerTopicListener(this.offerListener)
     }
 
     this.peerConnections.forEach(({ instance }: Connection) => {

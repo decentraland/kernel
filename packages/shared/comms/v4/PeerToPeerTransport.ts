@@ -271,10 +271,10 @@ export class PeerToPeerTransport extends Transport {
     clearTimeout(this.pingTimeoutId as any)
 
     if (this.onPeerJoinedListener) {
-      this.bffConnection.removeSystemTopicListener(this.onPeerJoinedListener)
+      await this.bffConnection.removeSystemTopicListener(this.onPeerJoinedListener)
     }
     if (this.onPeerLeftListener) {
-      this.bffConnection.removeSystemTopicListener(this.onPeerLeftListener)
+      await this.bffConnection.removeSystemTopicListener(this.onPeerLeftListener)
     }
 
     this.knownPeers = {}

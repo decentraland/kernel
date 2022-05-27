@@ -68,7 +68,7 @@ export class BFFConnection {
       for await (const { payload, sender } of commsService.getPeerMessages(subscription)) {
         handler(payload, sender)
       }
-    })(this.commsService)
+    })(this.commsService).catch((err) => this.logger.error(`Peer topic handler error: ${err.toString()}`))
 
     return subscription
   }
@@ -84,24 +84,24 @@ export class BFFConnection {
       for await (const { payload } of commsService.getSystemMessages(subscription)) {
         handler(payload)
       }
-    })(this.commsService)
+    })(this.commsService).catch((err) => this.logger.error(`System topic handler error: ${err.toString()}`))
     return subscription
   }
 
-  public removePeerTopicListener({ subscriptionId }: TopicListener): void {
+  public async removePeerTopicListener({ subscriptionId }: TopicListener): Promise<void> {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    this.commsService.unsubscribeToPeerMessages({ subscriptionId })
+    await this.commsService.unsubscribeToPeerMessages({ subscriptionId })
   }
 
-  public removeSystemTopicListener({ subscriptionId }: TopicListener): void {
+  public async removeSystemTopicListener({ subscriptionId }: TopicListener): Promise<void> {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    this.commsService.unsubscribeToSystemMessages({ subscriptionId })
+    await this.commsService.unsubscribeToSystemMessages({ subscriptionId })
   }
 
   public async publishToTopic(topic: string, payload: Uint8Array): Promise<void> {
