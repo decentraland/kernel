@@ -18,7 +18,6 @@ export type TopicData = {
 
 export type TopicListener = {
   subscriptionId: number
-  fromPeers: boolean
 }
 
 export class BFFConnection {
@@ -63,16 +62,15 @@ export class BFFConnection {
       throw new Error('BFF is not connected')
     }
 
-    const { id } = await this.commsService.subscribe({ topic, fromPeers: true })
+    const subscription = await this.commsService.subscribeToPeerMessages({ topic })
 
-    const l = { subscriptionId: id, fromPeers: true }
     ;(async (commsService) => {
-      for await (const { payload, sender } of commsService.getPeerMessages({ id })) {
+      for await (const { payload, sender } of commsService.getPeerMessages(subscription)) {
         handler(payload, sender)
       }
     })(this.commsService)
 
-    return l
+    return subscription
   }
 
   public async addSystemTopicListener(topic: string, handler: (data: Uint8Array) => void): Promise<TopicListener> {
@@ -80,31 +78,30 @@ export class BFFConnection {
       throw new Error('BFF is not connected')
     }
 
-    const { id } = await this.commsService.subscribe({ topic, fromPeers: false })
+    const subscription = await this.commsService.subscribeToSystemMessages({ topic })
 
-    const l = { subscriptionId: id, fromPeers: false }
     ;(async (commsService) => {
-      for await (const { payload } of commsService.getSystemMessages({ id })) {
+      for await (const { payload } of commsService.getSystemMessages(subscription)) {
         handler(payload)
       }
     })(this.commsService)
-    return l
+    return subscription
   }
 
-  public removePeerTopicListener({ subscriptionId, fromPeers }: TopicListener): void {
+  public removePeerTopicListener({ subscriptionId }: TopicListener): void {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    this.commsService.unsubscribe({ id: subscriptionId, fromPeers })
+    this.commsService.unsubscribeToPeerMessages({ subscriptionId })
   }
 
-  public removeSystemTopicListener({ subscriptionId, fromPeers }: TopicListener): void {
+  public removeSystemTopicListener({ subscriptionId }: TopicListener): void {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
 
-    this.commsService.unsubscribe({ id: subscriptionId, fromPeers })
+    this.commsService.unsubscribeToSystemMessages({ subscriptionId })
   }
 
   public async publishToTopic(topic: string, payload: Uint8Array): Promise<void> {
