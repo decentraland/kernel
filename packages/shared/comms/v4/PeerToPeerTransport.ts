@@ -647,7 +647,7 @@ export class PeerToPeerTransport extends Transport {
       subtype: type.name,
       expireTime: type.expirationTime ?? -1,
       discardOlderThan: type.discardOlderThan ?? -1,
-      timestamp: Date.now().toString(),
+      timestamp: Date.now(),
       src: this.peerId,
       hops: 0,
       ttl: ttl,
@@ -962,6 +962,6 @@ export class PeerToPeerTransport extends Transport {
   }
 
   private getTimestamp(packet: Packet) {
-    return Number.parseInt(packet.timestamp, 10)
+    return packet.timestamp
   }
 }

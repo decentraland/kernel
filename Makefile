@@ -77,7 +77,7 @@ protoc3/bin/protoc:
 build-proto: protoc3/bin/protoc
 	protoc3/bin/protoc \
 		--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-		--ts_proto_opt=esModuleInterop=true,oneof=unions,forceLong=string\
+		--ts_proto_opt=esModuleInterop=true,oneof=unions\
 		--ts_proto_out="$(PWD)/packages/shared/comms/v4/proto" \
 		-I="$(PWD)/packages/shared/comms/v4/proto" \
 		"$(PWD)/packages/shared/comms/v4/proto/comms.proto"  \
