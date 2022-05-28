@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+message Empty {}
+
+message ContentMapping { 
+    string file = 1;
+    string hash = 2;
+}
+
+message MappingsResponse  {
+    string parcel_id = 1; 
+    string root_cid = 2; 
+    repeated ContentMapping contents = 3; 
+}
+
+message Land {
+    string scene_id = 1;
+    string scene_json_data = 2;
+    string base_url = 3;
+    string base_url_bundles = 4;
+    MappingsResponse mappings_response = 5;
+}
+
+message GetParcelResponse {
+    Land land = 1;
+    string cid = 2;
+}
+
+message GetSceneIdResponse {
+    string scene_id = 1;
+}
+
+message GetIsEmptyResponse {
+    bool is_empty = 1;
+}
+
+service ParcelIdentityService {
+    rpc getParcel(Empty) returns (GetParcelResponse) {}
+    rpc getSceneId(Empty) returns (GetSceneIdResponse) {} 
+    rpc getIsEmpty(Empty) returns (GetIsEmptyResponse) {} 
+}

@@ -1,4 +1,3 @@
-
 import Protocol from 'devtools-protocol'
 import { ILogger } from './../logger'
 import { EnvironmentData } from './../types'

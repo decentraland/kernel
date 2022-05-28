@@ -67,7 +67,7 @@ export class EthereumController extends RestrictedExposableAPI implements IEther
   }
 
   @exposeMethod
-  async signMessage(message: MessageDict) {
+  async signMessage(message: MessageDict) : Promise<{ message: string, hexEncodedMessage: string, signature: string }> {
     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
     await getUnityInstance().RequestWeb3ApiUse('signMessage', {
       message: await messageToString(message),

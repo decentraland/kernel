@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+message Empty {}
+
+// todo
+message FlatFetchInit {
+
+}
+
+// todo
+message FlatFetchResponse {
+
+}
+
+message SignedFetchRequest {
+    string url = 1;
+    optional FlatFetchInit init = 2;
+}
+
+service SignedFetchService {
+    rpc signedFetch(Empty) returns (FlatFetchResponse) {}
+}

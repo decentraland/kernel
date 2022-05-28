@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "Empty.proto";
+
 message EntityAction {
     string type = 1;
     optional string tag = 2;
@@ -17,8 +19,6 @@ message EventData {
 message EventId {
     string id = 1;
 }
-
-message Empty { }
 
 service EngineAPIService {
   rpc SendBatch(ManyEntityAction) returns (Empty) {}

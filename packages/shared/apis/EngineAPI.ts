@@ -1,73 +1,63 @@
-import { APIOptions, exposeMethod, registerAPI } from 'decentraland-rpc/lib/host'
-import { ParcelSceneAPI } from '../../shared/world/ParcelSceneAPI'
-import { EntityAction } from '../types'
-import { ExposableAPI } from './ExposableAPI'
-import { IEngineAPI } from './IEngineAPI'
+import * as codegen from '@dcl/rpc/dist/codegen'
+import { RpcServerPort, RpcClientPort } from '@dcl/rpc/dist/types'
+import { Empty, EngineAPIServiceDefinition, EventId, ManyEntityAction } from './gen/EngineAPI'
 
-@registerAPI('EngineAPI')
-export class EngineAPI extends ExposableAPI implements IEngineAPI {
-  didStart: boolean = false
-  parcelSceneAPI!: ParcelSceneAPI
+import { pushableChannel } from '@dcl/rpc/dist/push-channel'
+import defaultLogger from 'shared/logger'
+import { PortContext } from './context'
+import { EntityAction, EntityActionType } from 'shared/types'
 
-  // this dictionary contains the list of subscriptions.
-  // the boolean value indicates if the client is actively
-  // listenting to that event
-  subscribedEvents: { [event: string]: boolean } = {}
+export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, EngineAPIServiceDefinition, async () => ({
+    async sendBatch(req: ManyEntityAction, context) {
+      const actions: EntityAction[] = []
+      for (const action of req.actions) {
+        if (action.payload) {
+          actions.push({
+            type: action.type as EntityActionType,
+            tag: action.tag,
+            payload: JSON.parse(action.payload)
+          })
+        }
+      }
+      context.EngineAPI.parcelSceneAPI.sendBatch(actions)
+      return {}
+    },
+    async startSignal(req: Empty, context) {
+      context.EngineAPI.didStart = true
+      return {}
+    },
+    async *subscribe(req: EventId, context) {
+      const channel = pushableChannel<any>(function deferCloseChannel() {
+        context.EngineAPI.subscribedEvents[req.id] = false
+      })
 
-  constructor(options: APIOptions) {
-    super(options)
-  }
-
-  @exposeMethod
-  async subscribe(event: IEventNames) {
-    if (typeof (event as any) === 'string') {
-      if (!(event in this.subscribedEvents)) {
-        this.parcelSceneAPI.on(event, (data: any) => {
-          if (this.subscribedEvents[event]) {
-            this.sendSubscriptionEvent(event, data)
+      if (!(req.id in context.EngineAPI.subscribedEvents)) {
+        context.EngineAPI.parcelSceneAPI.on(req.id, (data: any) => {
+          if (context.EngineAPI.subscribedEvents[req.id]) {
+            channel.push(JSON.stringify(data)).catch((error) => defaultLogger.error(error))
           }
         })
       }
-      this.subscribedEvents[event] = true
+
+      context.EngineAPI.subscribedEvents[req.id] = true
+
+      for await (const message of channel) {
+        yield { payload: message }
+
+        if (!context.EngineAPI.subscribedEvents[req.id]) {
+          break
+        }
+      }
+
+      channel.close()
+    },
+    async unsubscribe(req: EventId, context) {
+      context.EngineAPI.subscribedEvents[req.id] = false
+      return {}
     }
-  }
-
-  @exposeMethod
-  async unsubscribe(event: string) {
-    if (typeof (event as any) === 'string') {
-      this.subscribedEvents[event] = false
-    }
-  }
-
-  @exposeMethod
-  async sendBatch(actions: EntityAction[]): Promise<void> {
-    this.parcelSceneAPI.sendBatch(actions)
-  }
-
-  @exposeMethod
-  async startSignal(): Promise<void> {
-    this.didStart = true
-  }
-
-  // TODO: add getAttributes so we can load scenes
-
-  sendSubscriptionEvent<K extends IEventNames>(event: K, data: IEvents[K]) {
-    if (this.subscribedEvents[event]) {
-      this.options.notify('SubscribedEvent', {
-        event,
-        data
-      })
-    }
-  }
-
-  /**
-   * Releases the resources of the rendered scene
-   */
-  apiWillUnmount() {
-    // stub
-  }
-
-  onSubscribedEvent(_fn: any): void {
-    // stub, we implement this function here to fulfill the interface of EngineAPI
-  }
+  }))
 }
+
+export const createEngineAPIServiceClient = <Context>(clientPort: RpcClientPort) =>
+  codegen.loadService<Context, EngineAPIServiceDefinition>(clientPort, EngineAPIServiceDefinition)

@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+message Empty {}
+
+message RequirePaymentRequest {
+
+}
+
+message RequirePaymentResponse {
+
+}
+
+message SignMessageRequest {
+
+}
+
+message SignMessageResponse {
+
+}
+
+message ConvertMessageToObjectRequest {
+
+}
+
+message ConvertMessageToObjectResponse {
+
+}
+
+message SendAsyncRequest {
+
+}
+
+message SendAsyncResponse {
+    string object_response = 1;
+}
+
+message GetUserAccountResponse {
+    optional string address = 1;
+}
+
+
+// rpc requirePayment(toAddress: string, amount: number, currency: string): Promise<any>
+// rpc signMessage(message: MessageDict) : Promise<{ message: string, hexEncodedMessage: string, signature: string }>
+// rpc convertMessageToObject(message: string): Promise<MessageDict>
+// rpc sendAsync(message: RPCSendableMessage): Promise<any> 
+
+service EthereumControllerService {
+    rpc requirePayment(RequirePaymentRequest) returns (RequirePaymentResponse) {}
+    rpc signMessage(SignMessageRequest) returns (SignMessageResponse) {}
+    rpc convertMessageToObject(ConvertMessageToObjectRequest) returns (ConvertMessageToObjectResponse) {}
+    rpc sendAsync(SendAsyncRequest) returns (SendAsyncResponse) {}
+    rpc getUserAccount(Empty) returns (GetUserAccountResponse) {}
+}

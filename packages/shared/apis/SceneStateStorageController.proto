@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+message Empty {}
+
+service DevToolsService {
+    rpc test(Empty) returns (Empty) {}
+}

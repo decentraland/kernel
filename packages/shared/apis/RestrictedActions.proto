@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+message Vector3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message MovePlayerToRequest {
+    Vector3 new_relative_position = 1;
+    optional Vector3 camera_target = 2;
+}
+
+message TriggerEmoteRequest {
+    string predefined_emote = 1;
+}
+
+message Empty {}
+
+service RestrictedActionsService {
+    rpc movePlayerTo(MovePlayerToRequest) returns (Empty) {}
+    rpc triggerEmote(TriggerEmoteRequest) returns (Empty) {}
+}

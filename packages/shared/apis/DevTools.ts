@@ -1,53 +1,47 @@
-import { registerAPI, exposeMethod, API } from 'decentraland-rpc/lib/host'
-
-// THIS INTERFACE MOCKS THE chromedevtools API
+import { RpcClientPort, RpcServerPort } from '@dcl/rpc/dist/types'
+import * as codegen from '@dcl/rpc/dist/codegen'
+import { DevToolsBody, DevToolsServiceDefinition, Empty } from './gen/DevTools'
 import { ProtocolMapping } from 'devtools-protocol/types/protocol-mapping'
-import Protocol from 'devtools-protocol'
-import { DEBUG } from 'config'
-import { ILogger, defaultLogger } from 'shared/logger'
+import { DEBUG } from './../../config'
+import { PortContext } from './context'
 
-export interface DevToolsServer {
-  event<T extends keyof ProtocolMapping.Events>(type: T, params: ProtocolMapping.Events[T]): Promise<void>
-}
+export function registerDevToolsServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, DevToolsServiceDefinition, async () => ({
+    async event(req: DevToolsBody, context): Promise<Empty> {
+      const params = JSON.parse(req.jsonPayload)
+      switch (req.type) {
+        case 'Runtime.consoleAPICalled': {
+          const [event] = params as ProtocolMapping.Events['Runtime.consoleAPICalled']
 
-@registerAPI('DevTools')
-export class DevTools extends API implements DevToolsServer {
-  exceptions = new Map<number, Protocol.Runtime.ExceptionDetails>()
+          if (DEBUG) {
+            context.DevTools.logs.push(event)
+          }
 
-  logger: ILogger = defaultLogger
+          context.DevTools.logger.log('', ...event.args.map(($) => ('value' in $ ? $.value : $.unserializableValue)))
 
-  // ONLY AVAILABLE IN DEBUG MODE
-  logs: Protocol.Runtime.ConsoleAPICalledEvent[] = []
-
-  @exposeMethod
-  async event<T extends keyof ProtocolMapping.Events>(type: T, params: ProtocolMapping.Events[T]): Promise<void> {
-    switch (type) {
-      case 'Runtime.consoleAPICalled': {
-        const [event] = params as ProtocolMapping.Events['Runtime.consoleAPICalled']
-
-        if (DEBUG) {
-          this.logs.push(event)
+          break
         }
 
-        this.logger.log('', ...event.args.map(($) => ('value' in $ ? $.value : $.unserializableValue)))
+        case 'Runtime.exceptionThrown': {
+          const [payload] = params as ProtocolMapping.Events['Runtime.exceptionThrown']
+          context.DevTools.exceptions.set(payload.exceptionDetails.exceptionId, payload.exceptionDetails)
 
-        break
-      }
-
-      case 'Runtime.exceptionThrown': {
-        const [payload] = params as ProtocolMapping.Events['Runtime.exceptionThrown']
-        this.exceptions.set(payload.exceptionDetails.exceptionId, payload.exceptionDetails)
-
-        if (payload.exceptionDetails.exception) {
-          this.logger.error(
-            payload.exceptionDetails.text,
-            payload.exceptionDetails.exception.value || payload.exceptionDetails.exception.unserializableValue
-          )
-        } else {
-          this.logger.error(payload.exceptionDetails.text)
+          if (payload.exceptionDetails.exception) {
+            context.DevTools.logger.error(
+              payload.exceptionDetails.text,
+              payload.exceptionDetails.exception.value || payload.exceptionDetails.exception.unserializableValue
+            )
+          } else {
+            context.DevTools.logger.error(payload.exceptionDetails.text)
+          }
+          break
         }
-        break
       }
+
+      return {}
     }
-  }
+  }))
 }
+
+export const createDevToolsServiceClient = <Context>(clientPort: RpcClientPort) =>
+  codegen.loadService<Context, DevToolsServiceDefinition>(clientPort, DevToolsServiceDefinition)

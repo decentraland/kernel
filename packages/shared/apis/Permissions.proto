@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+message Empty {}
+
+message PermissionResponse {
+    bool has_permission = 1;
+}
+
+message HasPermissionRequest {
+    string permission = 1;
+}
+
+message HasManyPermissionRequest {
+    repeated string permission = 1;
+}
+
+service PermissionsService {
+    rpc hasPermission(HasPermissionRequest) returns (PermissionResponse) {}
+    rpc hasManyPermissions(HasManyPermissionRequest) returns (PermissionResponse) {}
+}
