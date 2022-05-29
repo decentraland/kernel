@@ -144,7 +144,7 @@ build-tests:
 	cd test; ../node_modules/.bin/webpack
 
 watch-tests:
-	cd test; ../node_modules/.bin/webpack --watch
+	cd test; ../node_modules/.bin/webpack --watch --stats-error-details
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
 	@NODE_ENV=development $(CONCURRENTLY) \
