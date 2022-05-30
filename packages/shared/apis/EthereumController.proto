@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "Empty.proto";
+
 message RequirePaymentRequest {
     string toAddress = 1;
     float amount = 2;

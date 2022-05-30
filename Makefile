@@ -149,7 +149,6 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 # Development
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
-	make compile_apis
 	@NODE_ENV=development $(CONCURRENTLY) \
 		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,simulator,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
