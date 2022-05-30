@@ -6,18 +6,20 @@ message Vector3 {
     float z = 3;
 }
 
+message MovePlayerToResponse { }
+
 message MovePlayerToRequest {
     Vector3 new_relative_position = 1;
     optional Vector3 camera_target = 2;
 }
 
+message TriggerEmoteResponse { }
+
 message TriggerEmoteRequest {
     string predefined_emote = 1;
 }
 
-message Empty {}
-
 service RestrictedActionsService {
-    rpc movePlayerTo(MovePlayerToRequest) returns (Empty) {}
-    rpc triggerEmote(TriggerEmoteRequest) returns (Empty) {}
+    rpc movePlayerTo(MovePlayerToRequest) returns (MovePlayerToResponse) {}
+    rpc triggerEmote(TriggerEmoteRequest) returns (TriggerEmoteResponse) {}
 }

@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-message Empty {}
-
 message PermissionResponse {
     bool has_permission = 1;
 }

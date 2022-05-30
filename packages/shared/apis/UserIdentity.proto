@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "Empty.proto";
-
 message Snapshots { 
     string face256 = 1;
     string body = 2;
@@ -25,15 +23,20 @@ message UserData {
     AvatarForUserData avatar = 6; 
 }
 
+message GetUserDataRequest {}
+
 message GetUserDataResponse {
     optional UserData data = 1;
 }
+
+message GetUserPublicKeyRequest {}
 
 message GetUserPublicKeyResponse {
     optional string address = 1;
 }
 
+
 service UserIdentityService {
-    rpc realGetUserPublicKey(Empty) returns (GetUserPublicKeyResponse) {}
-    rpc realGetUserData(Empty) returns (GetUserDataResponse) {}
+    rpc realGetUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse) {}
+    rpc realGetUserData(GetUserDataRequest) returns (GetUserDataResponse) {}
 }

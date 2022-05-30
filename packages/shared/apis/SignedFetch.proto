@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-message Empty {}
-
 // todo
 message FlatFetchInit {
 
@@ -18,5 +16,5 @@ message SignedFetchRequest {
 }
 
 service SignedFetchService {
-    rpc signedFetch(Empty) returns (FlatFetchResponse) {}
+    rpc signedFetch(SignedFetchRequest) returns (FlatFetchResponse) {}
 }

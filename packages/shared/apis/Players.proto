@@ -1,8 +1,6 @@
 syntax = "proto3";
 
 import "UserIdentity.proto";
-import "Empty.proto";
-
 
 message Player {
     string user_id = 1;
@@ -20,8 +18,11 @@ message GetPlayerDataRequest {
     string userId = 1;
 }
 
+message GetPlayersInSceneRequest {}
+message GetConnectedPlayersRequest {}
+
 service PlayersService {
     rpc getPlayerData(GetPlayerDataRequest) returns (PlayersGetUserDataResponse) {}
-    rpc getPlayersInScene(Empty) returns (PlayerListResponse) {}
-    rpc getConnectedPlayers(Empty)  returns (PlayerListResponse) {}
+    rpc getPlayersInScene(GetPlayersInSceneRequest) returns (PlayerListResponse) {}
+    rpc getConnectedPlayers(GetConnectedPlayersRequest)  returns (PlayerListResponse) {}
 }

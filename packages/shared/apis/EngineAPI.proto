@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "Empty.proto";
-
 message EntityAction {
     string type = 1;
     optional string tag = 2;
@@ -20,10 +18,16 @@ message EventId {
     string id = 1;
 }
 
+message StartSignalRequest {}
+message StartSignalResponse {}
+
+message SendBatchResponse {}
+message UnsubscribeResponse {}
+
 service EngineAPIService {
-  rpc SendBatch(ManyEntityAction) returns (Empty) {}
-  rpc StartSignal(Empty) returns (Empty) {}
+  rpc SendBatch(ManyEntityAction) returns (SendBatchResponse) {}
+  rpc StartSignal(StartSignalRequest) returns (StartSignalResponse) {}
 
   rpc Subscribe(EventId) returns (stream EventData) {}
-  rpc Unsubscribe(EventId) returns (Empty) {}
+  rpc Unsubscribe(EventId) returns (UnsubscribeResponse) {}
 }

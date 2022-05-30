@@ -1,7 +1,11 @@
 syntax = "proto3";
 
-message Empty {}
+message RealSendRequest {
+    string message = 1;
+}
+
+message RealSendResponse {}
 
 service DevToolsService {
-    rpc test(Empty) returns (Empty) {}
+    rpc realSend(RealSendRequest) returns (RealSendResponse) {}
 }

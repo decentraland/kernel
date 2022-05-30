@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-message Empty {}
-
 message ContentMapping { 
     string file = 1;
     string hash = 2;
@@ -21,21 +19,24 @@ message Land {
     MappingsResponse mappings_response = 5;
 }
 
+message GetParcelRequest {}
 message GetParcelResponse {
     Land land = 1;
     string cid = 2;
 }
 
+message GetSceneIdRequest {}
 message GetSceneIdResponse {
     string scene_id = 1;
 }
 
+message GetIsEmptyRequest {}
 message GetIsEmptyResponse {
     bool is_empty = 1;
 }
 
 service ParcelIdentityService {
-    rpc getParcel(Empty) returns (GetParcelResponse) {}
-    rpc getSceneId(Empty) returns (GetSceneIdResponse) {} 
-    rpc getIsEmpty(Empty) returns (GetIsEmptyResponse) {} 
+    rpc getParcel(GetParcelRequest) returns (GetParcelResponse) {}
+    rpc getSceneId(GetSceneIdRequest) returns (GetSceneIdResponse) {} 
+    rpc getIsEmpty(GetIsEmptyRequest) returns (GetIsEmptyResponse) {} 
 }

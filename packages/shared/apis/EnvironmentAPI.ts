@@ -9,7 +9,6 @@ import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   AreUnsafeRequestAllowedResponse,
   BootstrapDataResponse,
-  Empty,
   EnvironmentAPIServiceDefinition,
   GetCurrentRealmResponse,
   GetDecentralandTimeResponse,
@@ -22,7 +21,7 @@ import { PortContext } from './context'
 
 export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
-    async getBootstrapData(_req: Empty, context): Promise<BootstrapDataResponse> {
+    async getBootstrapData(req, context): Promise<BootstrapDataResponse> {
       return { ...context.EnvironmentAPI.data, jsonPayload: JSON.stringify(context.EnvironmentAPI.data.data) }
     },
     async isPreviewMode(): Promise<PreviewModeResponse> {
@@ -52,7 +51,7 @@ export function registerEnvironmentAPIServiceServerImplementation(port: RpcServe
       return {
         clientUri: location.href,
         configurations: {
-          questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl as any
+          questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl
         }
       }
     },

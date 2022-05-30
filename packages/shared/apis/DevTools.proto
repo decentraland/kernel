@@ -5,8 +5,8 @@ message DevToolsBody {
     string json_payload = 2;
 }
 
-message Empty {}
+message EventResponse {}
 
 service DevToolsService {
-    rpc event(DevToolsBody) returns (Empty) {}
+    rpc event(DevToolsBody) returns (EventResponse) {}
 }

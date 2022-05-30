@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "google/protobuf/any.proto";
-
 message ContentMapping {
     string file = 1;
     string hash = 2;
@@ -44,21 +42,27 @@ message GetCurrentRealmResponse {
 
 message GetExplorerConfigurationResponse {
     string clientUri = 1;
-    map<string, google.protobuf.Any> configurations = 2;
+    map<string, string> configurations = 2;
 }
  
 message GetDecentralandTimeResponse {
     int32 seconds = 1;
 }
-message Empty {}
+
+message GetBootstrapDataRequest {}
+message IsPreviewModeRequest {}
+message GetPlatformRequest {}
+message AreUnsafeRequestAllowedRequest {}
+message GetCurrentRealmRequest {}
+message GetExplorerConfigurationRequest {}
+message GetDecentralandTimeRequest {}
 
 service EnvironmentAPIService {
-    rpc getBootstrapData(Empty) returns (BootstrapDataResponse) {}
-    rpc isPreviewMode(Empty) returns (PreviewModeResponse) {}
-    rpc getPlatform(Empty) returns (GetPlatformResponse) {}
-    rpc areUnsafeRequestAllowed(Empty) returns (AreUnsafeRequestAllowedResponse) {}
-
-    rpc getCurrentRealm(Empty) returns (GetCurrentRealmResponse) {}
-    rpc getExplorerConfiguration(Empty) returns (GetExplorerConfigurationResponse) {}
-    rpc getDecentralandTime(Empty) returns (GetDecentralandTimeResponse) {}
+    rpc getBootstrapData(GetBootstrapDataRequest) returns (BootstrapDataResponse) {}
+    rpc isPreviewMode(IsPreviewModeRequest) returns (PreviewModeResponse) {}
+    rpc getPlatform(GetPlatformRequest) returns (GetPlatformResponse) {}
+    rpc areUnsafeRequestAllowed(AreUnsafeRequestAllowedRequest) returns (AreUnsafeRequestAllowedResponse) {}
+    rpc getCurrentRealm(GetCurrentRealmRequest) returns (GetCurrentRealmResponse) {}
+    rpc getExplorerConfiguration(GetExplorerConfigurationRequest) returns (GetExplorerConfigurationResponse) {}
+    rpc getDecentralandTime(GetDecentralandTimeRequest) returns (GetDecentralandTimeResponse) {}
 }

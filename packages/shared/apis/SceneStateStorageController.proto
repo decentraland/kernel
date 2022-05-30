@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-message Empty {}
-
     // async sendAssetsToRenderer(state: SerializedSceneState): Promise<string> {
     // async createProjectFromStateDefinition(): Promise<SerializedSceneState | undefined> {
     // async getStoredState(sceneId: string): Promise<SerializedSceneState | undefined> {
