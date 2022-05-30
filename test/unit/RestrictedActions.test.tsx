@@ -1,10 +1,10 @@
 import * as sinon from 'sinon'
-import { Vector3 } from '@dcl/ecs-math'
+// import { Vector3 } from '@dcl/ecs-math'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import defaultLogger from '../../packages/shared/logger'
-import { RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
+// import { RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
-import { Permissions } from 'shared/apis/Permissions'
+// import { Permissions } from 'shared/apis/Permissions'
 import { PermissionItem } from 'shared/apis/PermissionItems'
 
 describe('RestrictedActions tests', () => {
@@ -16,7 +16,7 @@ describe('RestrictedActions tests', () => {
     expose: sinon.stub(),
     notify: sinon.stub(),
     on: sinon.stub(),
-    getAPIInstance(name): any {}
+    getAPIInstance(name): any { }
   }
 
   describe('TriggerEmote tests', () => {
@@ -27,9 +27,9 @@ describe('RestrictedActions tests', () => {
       mockPermissionsWith(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').once().withExactArgs(emote)
 
-      const module = new RestrictedActions(options)
-      module.permissions = new Permissions(options)
-      await module.triggerEmote({ predefined: emote })
+      // const module = new RestrictedActions(options)
+      // module.permissions = new Permissions(options)
+      // await module.triggerEmote({ predefined: emote })
       sinon.verify()
     })
 
@@ -38,14 +38,14 @@ describe('RestrictedActions tests', () => {
       mockPermissionsWith()
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
 
-      const module = new RestrictedActions(options)
-      module.permissions = new Permissions(options)
-      try{
-        await module.triggerEmote({ predefined: 'emote' })
-      }catch(err){
+      // const module = new RestrictedActions(options)
+      // module.permissions = new Permissions(options)
+      // try {
+      //   await module.triggerEmote({ predefined: 'emote' })
+      // } catch (err) {
 
-      }
-      sinon.stub(module, 'assertHasPermissions').threw()
+      // }
+      // sinon.stub(module, 'assertHasPermissions').threw()
       sinon.verify()
     })
 
@@ -61,9 +61,9 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
-      const module = new RestrictedActions(options)
-      module.permissions = new Permissions(options)
-      await module.triggerEmote({ predefined: emote })
+      // const module = new RestrictedActions(options)
+      // module.permissions = new Permissions(options)
+      // await module.triggerEmote({ predefined: emote })
       sinon.verify()
     })
   })
@@ -78,10 +78,10 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs({ position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined }, false)
 
-      const module = new RestrictedActions(options)
-      module.permissions = new Permissions(options)
+      // const module = new RestrictedActions(options)
+      // module.permissions = new Permissions(options)
 
-      await module.movePlayerTo(new Vector3(8, 0, 8))
+      // await module.movePlayerTo(new Vector3(8, 0, 8))
       sinon.verify()
     })
 
@@ -96,10 +96,10 @@ describe('RestrictedActions tests', () => {
 
       sinon.mock(getUnityInstance()).expects('Teleport').never()
 
-      const module = new RestrictedActions(options)
-      module.permissions = new Permissions(options)
+      // const module = new RestrictedActions(options)
+      // module.permissions = new Permissions(options)
 
-      await module.movePlayerTo(new Vector3(21, 0, 32))
+      // await module.movePlayerTo(new Vector3(21, 0, 32))
       sinon.verify()
     })
 
@@ -108,16 +108,16 @@ describe('RestrictedActions tests', () => {
       mockPermissionsWith()
       sinon.mock(getUnityInstance()).expects('Teleport').never()
 
-      const module = new RestrictedActions(options)
-      module.permissions = new Permissions(options)
+      // const module = new RestrictedActions(options)
+      // module.permissions = new Permissions(options)
 
-      try{
-        await module.movePlayerTo(new Vector3(8, 0, 8))
-      }catch(err){
+      // try {
+      //   await module.movePlayerTo(new Vector3(8, 0, 8))
+      // } catch (err) {
 
-      }
+      // }
 
-      sinon.stub(module, 'assertHasPermissions').threw()
+      // sinon.stub(module, 'assertHasPermissions').threw()
       sinon.verify()
     })
 
@@ -133,10 +133,10 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
-      const module = new RestrictedActions(options)
-      module.permissions = new Permissions(options)
+      // const module = new RestrictedActions(options)
+      // module.permissions = new Permissions(options)
 
-      await module.movePlayerTo(new Vector3(8, 0, 8))
+      // await module.movePlayerTo(new Vector3(8, 0, 8))
       sinon.verify()
     })
   })

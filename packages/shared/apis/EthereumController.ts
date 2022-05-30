@@ -1,102 +1,102 @@
-import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
-import {
-  MessageDict,
-  requirePayment,
-  sendAsync,
-  convertMessageToObject,
-  signMessage,
-  messageToString,
-  rpcRequireSign
-} from 'shared/ethereum/EthereumService'
-import { RPCSendableMessage } from 'shared/types'
-import { getUserAccount, requestManager } from 'shared/ethereum/provider'
-import { RestrictedExposableAPI } from './RestrictedExposableAPI'
-import { PermissionItem } from './PermissionItems'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { ParcelIdentity } from './ParcelIdentity'
+// import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
+// import {
+//   MessageDict,
+//   requirePayment,
+//   sendAsync,
+//   convertMessageToObject,
+//   signMessage,
+//   messageToString,
+//   rpcRequireSign
+// } from 'shared/ethereum/EthereumService'
+// import { RPCSendableMessage } from 'shared/types'
+// import { getUserAccount, requestManager } from 'shared/ethereum/provider'
+// import { RestrictedExposableAPI } from './RestrictedExposableAPI'
+// import { PermissionItem } from './PermissionItems'
+// import { getUnityInstance } from 'unity-interface/IUnityInterface'
+// import { ParcelIdentity } from './ParcelIdentity'
 
-export interface IEthereumController {
-  /**
-   * Requires a generic payment in ETH or ERC20.
-   * @param  {string} [toAddress] - NFT asset id.
-   * @param  {number} [amount] - Exact amount of the order.
-   * @param  {string} [currency] - ETH or ERC20 supported token symbol
-   */
-  requirePayment(toAddress: string, amount: number, currency: string): Promise<any>
+// export interface IEthereumController {
+//   /**
+//    * Requires a generic payment in ETH or ERC20.
+//    * @param  {string} [toAddress] - NFT asset id.
+//    * @param  {number} [amount] - Exact amount of the order.
+//    * @param  {string} [currency] - ETH or ERC20 supported token symbol
+//    */
+//   requirePayment(toAddress: string, amount: number, currency: string): Promise<any>
 
-  /**
-   * Takes a dictionary, converts it to string with correct format and signs it.
-   * @param  {messageToSign} [MessageDict] - Message in an object format.
-   * @return {object} - Promise of message and signature in an object.
-   */
-  signMessage(message: MessageDict): Promise<{ message: string; hexEncodedMessage: string; signature: string }>
+//   /**
+//    * Takes a dictionary, converts it to string with correct format and signs it.
+//    * @param  {messageToSign} [MessageDict] - Message in an object format.
+//    * @return {object} - Promise of message and signature in an object.
+//    */
+//   signMessage(message: MessageDict): Promise<{ message: string; hexEncodedMessage: string; signature: string }>
 
-  /**
-   * Takes a message string, parses it and converts to object.
-   * @param  {message} [string] - Message in a string format.
-   * @return {object} - Promise of message as a MessageDict.
-   * @internal
-   */
-  convertMessageToObject(message: string): Promise<MessageDict>
+//   /**
+//    * Takes a message string, parses it and converts to object.
+//    * @param  {message} [string] - Message in a string format.
+//    * @return {object} - Promise of message as a MessageDict.
+//    * @internal
+//    */
+//   convertMessageToObject(message: string): Promise<MessageDict>
 
-  /**
-   * Used to build a Ethereum provider
-   */
-  sendAsync(message: RPCSendableMessage): Promise<any>
+//   /**
+//    * Used to build a Ethereum provider
+//    */
+//   sendAsync(message: RPCSendableMessage): Promise<any>
 
-  /**
-   * Gets the user's public key
-   */
-  getUserAccount(): Promise<string | undefined>
-}
+//   /**
+//    * Gets the user's public key
+//    */
+//   getUserAccount(): Promise<string | undefined>
+// }
 
-@registerAPI('EthereumController')
-export class EthereumController extends RestrictedExposableAPI implements IEthereumController {
-  parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
+// @registerAPI('EthereumController')
+// export class EthereumController extends RestrictedExposableAPI implements IEthereumController {
+//   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
 
-  @exposeMethod
-  async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
-    await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
-    await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
-      toAddress,
-      amount,
-      currency,
-      sceneId: await this.parcelIdentity.getSceneId()
-    })
-    return requirePayment(toAddress, amount, currency)
-  }
+//   @exposeMethod
+//   async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
+//     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+//     await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
+//       toAddress,
+//       amount,
+//       currency,
+//       sceneId: await this.parcelIdentity.getSceneId()
+//     })
+//     return requirePayment(toAddress, amount, currency)
+//   }
 
-  @exposeMethod
-  async signMessage(message: MessageDict) : Promise<{ message: string, hexEncodedMessage: string, signature: string }> {
-    await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
-    await getUnityInstance().RequestWeb3ApiUse('signMessage', {
-      message: await messageToString(message),
-      sceneId: await this.parcelIdentity.getSceneId()
-    })
-    return signMessage(message)
-  }
+//   @exposeMethod
+//   async signMessage(message: MessageDict): Promise<{ message: string; hexEncodedMessage: string; signature: string }> {
+//     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+//     await getUnityInstance().RequestWeb3ApiUse('signMessage', {
+//       message: await messageToString(message),
+//       sceneId: await this.parcelIdentity.getSceneId()
+//     })
+//     return signMessage(message)
+//   }
 
-  @exposeMethod
-  async convertMessageToObject(message: string): Promise<MessageDict> {
-    await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
-    return convertMessageToObject(message)
-  }
+//   @exposeMethod
+//   async convertMessageToObject(message: string): Promise<MessageDict> {
+//     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+//     return convertMessageToObject(message)
+//   }
 
-  @exposeMethod
-  async sendAsync(message: RPCSendableMessage): Promise<any> {
-    await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
-    if (rpcRequireSign(message)) {
-      await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
-        message: `${message.method}(${message.params.join(',')})`,
-        sceneId: await this.parcelIdentity.getSceneId()
-      })
-    }
-    return sendAsync(message)
-  }
+//   @exposeMethod
+//   async sendAsync(message: RPCSendableMessage): Promise<any> {
+//     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+//     if (rpcRequireSign(message)) {
+//       await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
+//         message: `${message.method}(${message.params.join(',')})`,
+//         sceneId: await this.parcelIdentity.getSceneId()
+//       })
+//     }
+//     return sendAsync(message)
+//   }
 
-  @exposeMethod
-  async getUserAccount(): Promise<string | undefined> {
-    await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
-    return getUserAccount(requestManager)
-  }
-}
+//   @exposeMethod
+//   async getUserAccount(): Promise<string | undefined> {
+//     await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+//     return getUserAccount(requestManager)
+//   }
+// }

@@ -1,48 +1,46 @@
 syntax = "proto3";
 
-message Empty {}
-
 message RequirePaymentRequest {
-
+    string toAddress = 1;
+    float amount = 2;
+    string currency = 3;
 }
 
 message RequirePaymentResponse {
-
+    string json_any_response = 1;
 }
 
 message SignMessageRequest {
-
+    map<string, string> message = 1;
 }
 
 message SignMessageResponse {
-
+    string message = 1;
+    string hexEncodedMessage = 2;
+    string signature = 3;
 }
 
 message ConvertMessageToObjectRequest {
-
+    string message = 1;
 }
 
 message ConvertMessageToObjectResponse {
-
+    map<string, string> dict = 1;
 }
 
 message SendAsyncRequest {
-
+    int32 id = 1;
+    string method = 2;
+    string json_params = 3;
 }
 
 message SendAsyncResponse {
-    string object_response = 1;
+    string json_any_response = 1;
 }
 
 message GetUserAccountResponse {
     optional string address = 1;
 }
-
-
-// rpc requirePayment(toAddress: string, amount: number, currency: string): Promise<any>
-// rpc signMessage(message: MessageDict) : Promise<{ message: string, hexEncodedMessage: string, signature: string }>
-// rpc convertMessageToObject(message: string): Promise<MessageDict>
-// rpc sendAsync(message: RPCSendableMessage): Promise<any> 
 
 service EthereumControllerService {
     rpc requirePayment(RequirePaymentRequest) returns (RequirePaymentResponse) {}

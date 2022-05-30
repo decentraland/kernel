@@ -3,5 +3,4 @@ syntax = "proto3";
 message Empty {}
 
 service SocialControllerService {
-    rpc test(Empty) returns (Empty) {}
 }

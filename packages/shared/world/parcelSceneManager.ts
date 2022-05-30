@@ -121,11 +121,11 @@ export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transpo
   if (!parcelSceneWorker) {
     // if (sceneId.startsWith('b64')) {
     // if (sceneId.startsWith('never')) {
-    parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)
     // } else {
     // parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
     // }
 
+    parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)
     setNewParcelScene(sceneId, parcelSceneWorker)
   }
 

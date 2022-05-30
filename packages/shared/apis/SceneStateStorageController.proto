@@ -2,6 +2,108 @@ syntax = "proto3";
 
 message Empty {}
 
-service DevToolsService {
-    rpc test(Empty) returns (Empty) {}
+    // async sendAssetsToRenderer(state: SerializedSceneState): Promise<string> {
+    // async createProjectFromStateDefinition(): Promise<SerializedSceneState | undefined> {
+    // async getStoredState(sceneId: string): Promise<SerializedSceneState | undefined> {
+    // async getProjectManifest(projectId: string): Promise<SerializedSceneState | undefined> {
+    // async getProjectManifestByCoordinates(land: string): Promise<SerializedSceneState | undefined> {
+    // async createProjectWithCoords(coordinates: string): Promise<boolean> {
+    // async saveSceneState(serializedSceneState: SerializedSceneState): Promise<DeploymentResult> {
+    // async saveProjectInfo(
+    //     sceneState: SerializedSceneState,
+    //     projectName: string,
+    //     projectDescription: string,
+    //     projectScreenshot: string
+    // ): Promise<boolean> {
+    // async publishSceneState(
+//     sceneId: string,
+//     sceneName: string,
+//     sceneDescription: string,
+//     sceneScreenshot: string,
+//     sceneState: SerializedSceneState
+// ): Promise<DeploymentResult> {
+
+message SendAssetsToRendererRequest {
+
+}
+
+message SendAssetsToRendererResponse {
+
+}
+
+message CreateProjectFromStateDefinitionRequest {
+
+}
+
+message CreateProjectFromStateDefinitionResponse {
+
+}
+
+message GetStoredStateRequest {
+
+}
+
+message GetStoredStateResponse {
+
+}
+
+message GetProjectManifestRequest {
+
+}
+
+message GetProjectManifestResponse {
+
+}
+
+message GetProjectManifestByCoordinatesRequest {
+
+}
+
+message GetProjectManifestByCoordinatesResponse {
+
+}
+
+message CreateProjectWithCoordsRequest {
+
+}
+
+message CreateProjectWithCoordsResponse {
+
+}
+
+message SaveSceneStateRequest {
+
+}
+
+message SaveSceneStateResponse {
+
+}
+
+message SaveProjectInfoRequest {
+
+}
+
+message SaveProjectInfoResponse {
+
+}
+
+message PublishSceneStateRequest {
+
+}
+
+message PublishSceneStateResponse {
+
+}
+
+
+service SceneStateStorageControllerService {
+    rpc sendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
+    rpc createProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
+    rpc getStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
+    rpc getProjectManifest(GetProjectManifestRequest) returns (GetProjectManifestResponse) {}
+    rpc getProjectManifestByCoordinates(GetProjectManifestByCoordinatesRequest) returns (GetProjectManifestByCoordinatesResponse) {}
+    rpc createProjectWithCoords(CreateProjectWithCoordsRequest) returns (CreateProjectWithCoordsResponse) {}
+    rpc saveSceneState(SaveSceneStateRequest) returns (SaveSceneStateResponse) {}
+    rpc saveProjectInfo(SaveProjectInfoRequest) returns (SaveProjectInfoResponse) {}
+    rpc publishSceneState(PublishSceneStateRequest) returns (PublishSceneStateResponse) {}
 }

@@ -1,8 +1,8 @@
 import type { ILogOpts, ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import type { IEngineAPI } from 'shared/apis/IEngineAPI'
-import type { ParcelIdentity } from 'shared/apis/ParcelIdentity'
+// import type { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
-import type { Permissions } from 'shared/apis/Permissions'
+// import type { Permissions } from 'shared/apis/Permissions'
 import type { IEnvironmentAPI } from 'shared/apis/IEnvironmentAPI'
 import { EventSubscriber, WebWorkerTransport } from 'decentraland-rpc'
 import { inject, Script } from 'decentraland-rpc/lib/client/Script'
@@ -23,8 +23,8 @@ class StatefulWebWorkerScene extends Script {
   @inject('EnvironmentAPI')
   environmentAPI!: IEnvironmentAPI
 
-  @inject('ParcelIdentity')
-  parcelIdentity!: ParcelIdentity
+  // @inject('ParcelIdentity')
+  // parcelIdentity!: ParcelIdentity
 
   @inject('Permissions')
   permissions!: Permissions
@@ -43,13 +43,18 @@ class StatefulWebWorkerScene extends Script {
   }
 
   async systemDidEnable(): Promise<void> {
-    this.devToolsAdapter = new DevToolsAdapter(this.devTools)
-    const { cid: sceneId, land: land } = await this.parcelIdentity.getParcel()
+    // this.devToolsAdapter = new DevToolsAdapter(this.devTools)
+    // todo: rpc
+    // const { cid: sceneId, land: land } = await this.parcelIdentity.getParcel()
+    const sceneId = ''
+    const land: any = {}
+
     this.rendererActor = new RendererStatefulActor(this.engine, sceneId)
     this.eventSubscriber = new EventSubscriber(this.engine)
     this.builderActor = new BuilderStatefulActor(land, this.sceneStateStorage)
 
-    const isEmpty: boolean = await this.parcelIdentity.getIsEmpty()
+    // TODO: rpc
+    const isEmpty: boolean = false // await this.parcelIdentity.getIsEmpty()
 
     //If it is not empty we fetch the state
     if (!isEmpty) {

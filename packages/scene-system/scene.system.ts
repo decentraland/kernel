@@ -36,7 +36,7 @@ class WebWorkerScene extends SceneRuntime {
   }
 
   async systemDidEnable() {
-    this.devToolsAdapter = new DevToolsAdapter(this.devTools)
+    // this.devToolsAdapter = new DevToolsAdapter(this.devTools)
     await super.systemDidEnable()
   }
 

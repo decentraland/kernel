@@ -6,6 +6,6 @@ message RequestTeleportRequest {
 
 message Empty {}
 
-service UserActioNoduleService {
+service UserActionModuleService {
     rpc requestTeleport(RequestTeleportRequest) returns (Empty) {}
 }

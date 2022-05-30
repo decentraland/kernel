@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort, RpcClientPort } from '@dcl/rpc/dist/types'
-import { Empty, EngineAPIServiceDefinition, EventId, ManyEntityAction } from './gen/EngineAPI'
+import { EngineAPIServiceDefinition, EventId, ManyEntityAction } from './gen/EngineAPI'
 
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 import defaultLogger from 'shared/logger'
@@ -23,7 +23,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       context.EngineAPI.parcelSceneAPI.sendBatch(actions)
       return {}
     },
-    async startSignal(req: Empty, context) {
+    async startSignal(req, context) {
       context.EngineAPI.didStart = true
       return {}
     },

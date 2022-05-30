@@ -1,6 +1,6 @@
-import { Vector3, Quaternion } from '@dcl/ecs-math'
+import { Vector3 } from '@dcl/ecs-math'
 
-import { playerConfigurations } from 'config'
+// import { playerConfigurations } from 'config'
 import { SceneWorker } from './SceneWorker'
 import { PositionReport, positionObservable } from './positionThings'
 import { Observer } from 'mz-observable'
@@ -23,8 +23,9 @@ export class NewSceneSystemWorker extends SceneWorker {
   private sceneStarted: boolean = false
 
   private position!: Vector3
-  private readonly lastSentPosition = new Vector3(0, 0, 0)
-  private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
+  // TODO: engine api
+  // private readonly lastSentPosition = new Vector3(0, 0, 0)
+  // private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
   private positionObserver: Observer<any> | null = null
   private sceneLifeCycleObserver: Observer<any> | null = null
   private renderStateObserver: Observer<any> | null = null
@@ -83,31 +84,31 @@ export class NewSceneSystemWorker extends SceneWorker {
     }
   }
 
-  private sendUserViewMatrix(positionReport: Readonly<PositionReport>) {
-    if (this.engineAPI && 'positionChanged' in this.engineAPI.subscribedEvents) {
-      if (!this.lastSentPosition.equals(positionReport.position)) {
-        this.engineAPI.sendSubscriptionEvent('positionChanged', {
-          position: {
-            x: positionReport.position.x - this.position.x,
-            z: positionReport.position.z - this.position.z,
-            y: positionReport.position.y
-          },
-          cameraPosition: positionReport.position,
-          playerHeight: playerConfigurations.height
-        })
-        this.lastSentPosition.copyFrom(positionReport.position)
-      }
-    }
-
-    if (this.engineAPI && 'rotationChanged' in this.engineAPI.subscribedEvents) {
-      if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
-        this.engineAPI.sendSubscriptionEvent('rotationChanged', {
-          rotation: positionReport.cameraEuler,
-          quaternion: positionReport.cameraQuaternion
-        })
-        this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
-      }
-    }
+  private sendUserViewMatrix(_positionReport: Readonly<PositionReport>) {
+    // TODO: engine api
+    // if (this.engineAPI && 'positionChanged' in this.engineAPI.subscribedEvents) {
+    //   if (!this.lastSentPosition.equals(positionReport.position)) {
+    //     this.engineAPI.sendSubscriptionEvent('positionChanged', {
+    //       position: {
+    //         x: positionReport.position.x - this.position.x,
+    //         z: positionReport.position.z - this.position.z,
+    //         y: positionReport.position.y
+    //       },
+    //       cameraPosition: positionReport.position,
+    //       playerHeight: playerConfigurations.height
+    //     })
+    //     this.lastSentPosition.copyFrom(positionReport.position)
+    //   }
+    // }
+    // if (this.engineAPI && 'rotationChanged' in this.engineAPI.subscribedEvents) {
+    //   if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
+    //     this.engineAPI.sendSubscriptionEvent('rotationChanged', {
+    //       rotation: positionReport.cameraEuler,
+    //       quaternion: positionReport.cameraQuaternion
+    //     })
+    //     this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
+    //   }
+    // }
   }
 
   private subscribeToPositionEvents() {
@@ -121,9 +122,11 @@ export class NewSceneSystemWorker extends SceneWorker {
       const userId = getCurrentUserId(store.getState())
       if (userId) {
         if (report.newScene?.sceneId === this.getSceneId()) {
-          this.engineAPI?.sendSubscriptionEvent('onEnterScene', { userId })
+          // TODO: engine api
+          // this.engineAPI?.sendSubscriptionEvent('onEnterScene', { userId })
         } else if (report.previousScene?.sceneId === this.getSceneId()) {
-          this.engineAPI?.sendSubscriptionEvent('onLeaveScene', { userId })
+          // TODO: engine api
+          // this.engineAPI?.sendSubscriptionEvent('onLeaveScene', { userId })
         }
       }
     })
@@ -148,7 +151,8 @@ export class NewSceneSystemWorker extends SceneWorker {
   private sendSceneReadyIfNecessary() {
     if (!this.sceneStarted && isRendererEnabled() && this.sceneReady) {
       this.sceneStarted = true
-      this.engineAPI?.sendSubscriptionEvent('sceneStart', {})
+      // TODO: engine api
+      // this.engineAPI?.sendSubscriptionEvent('sceneStart', {})
       renderStateObservable.remove(this.renderStateObserver)
     }
   }

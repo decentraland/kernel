@@ -1,5 +1,5 @@
-import { createEnvironmentAPIServiceClient } from 'shared/apis/EnvironmentAPI/client'
-import { createEngineAPIServiceClient } from 'shared/apis/EngineAPI/client'
+import { createEnvironmentAPIServiceClient } from 'shared/apis/EnvironmentAPI'
+import { createEngineAPIServiceClient } from 'shared/apis/EngineAPI'
 import { componentNameRE, generatePBObject, getIdAsNumber, numberToIdStore, resolveMapping } from './Utils'
 import {
   AttachEntityComponentPayload,
@@ -315,6 +315,8 @@ function initMessagesFinished() {
 }
 
 export async function startNewSceneRuntime(client: RpcClient) {
+  debugger
+
   const clientPort = await client.createPort('new-ecs-scene-worker')
   const environmentApiService = await createEnvironmentAPIServiceClient(clientPort)
   const engineApiService = await createEngineAPIServiceClient(clientPort)
@@ -387,10 +389,10 @@ export async function startNewSceneRuntime(client: RpcClient) {
   dcl.loadModule = async (moduleName: string, exportsRef: any): Promise<ModuleDescriptor> => {
     try {
       const module = (await clientPort.loadModule(moduleName)) as ClientModuleDefinition
-      
+
       return {
         rpcHandle: moduleName,
-        methods: Object.keys(module).map((key) => ({ name: 'hello-world' })
+        methods: Object.keys(module).map((key) => ({ name: 'hello-world' }))
       }
     } catch (err) {}
 

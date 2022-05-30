@@ -25,19 +25,15 @@ message UserData {
     AvatarForUserData avatar = 6; 
 }
 
-message GetUserPublicKeyData {
-    string address = 1;
-}
-
 message GetUserDataResponse {
     optional UserData data = 1;
 }
 
 message GetUserPublicKeyResponse {
-    optional GetUserPublicKeyData data = 1;
+    optional string address = 1;
 }
 
 service UserIdentityService {
-    rpc getUserPublicKey(Empty) returns (GetUserPublicKeyResponse) {}
-    rpc getUserData(Empty) returns (GetUserDataResponse) {}
+    rpc realGetUserPublicKey(Empty) returns (GetUserPublicKeyResponse) {}
+    rpc realGetUserData(Empty) returns (GetUserDataResponse) {}
 }
