@@ -1,5 +1,4 @@
-import { createEnvironmentAPIServiceClient } from 'shared/apis/EnvironmentAPI'
-import { createEngineAPIServiceClient } from 'shared/apis/EngineAPI'
+import { createEnvironmentAPIServiceClient, createEngineAPIServiceClient } from 'shared/apis/APIClient'
 import { componentNameRE, generatePBObject, getIdAsNumber, numberToIdStore, resolveMapping } from './Utils'
 import {
   AttachEntityComponentPayload,

@@ -5,7 +5,7 @@ import { getCommsIsland, getRealm } from './../comms/selectors'
 import { Realm } from './../dao/types'
 import { getFeatureFlagEnabled } from './../meta/selectors'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { RpcClientPort, RpcServerPort } from '@dcl/rpc/dist/types'
+import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   AreUnsafeRequestAllowedResponse,
   BootstrapDataResponse,
@@ -106,6 +106,3 @@ export function setDecentralandTime(data: DecentralandTimeData) {
   decentralandTimeData = data
   decentralandTimeData.receivedAt = Date.now()
 }
-
-export const createEnvironmentAPIServiceClient = <Context>(clientPort: RpcClientPort) =>
-  codegen.loadService<Context, EnvironmentAPIServiceDefinition>(clientPort, EnvironmentAPIServiceDefinition)

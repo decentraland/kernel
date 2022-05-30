@@ -1,5 +1,5 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { RpcServerPort, RpcClientPort } from '@dcl/rpc/dist/types'
+import { RpcServerPort } from '@dcl/rpc/dist/types'
 import { EngineAPIServiceDefinition, EventId, ManyEntityAction } from './gen/EngineAPI'
 
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
@@ -58,6 +58,3 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
     }
   }))
 }
-
-export const createEngineAPIServiceClient = <Context>(clientPort: RpcClientPort) =>
-  codegen.loadService<Context, EngineAPIServiceDefinition>(clientPort, EngineAPIServiceDefinition)
