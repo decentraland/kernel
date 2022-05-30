@@ -28,6 +28,10 @@ jobs:
         run: |
           sudo apt-get install xvfb
           npm ci
+          make install_protoc
+
+      - name: generate protocol code
+        run: make compile_apis
 
       - name: test-ci
         run: xvfb-run --auto-servernum make test-ci

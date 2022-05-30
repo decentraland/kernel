@@ -35,7 +35,6 @@ message GetUserPublicKeyResponse {
     optional string address = 1;
 }
 
-
 service UserIdentityService {
     rpc realGetUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse) {}
     rpc realGetUserData(GetUserDataRequest) returns (GetUserDataResponse) {}
