@@ -70,8 +70,11 @@ jobs:
           cwd: ./static
 
       - name: install
-        run: npm ci
-
+        run: |
+          npm ci
+          make install_protoc
+      - name: generate protocol code
+        run: make compile_apis
       - name: build
         run: make build-essentials build-release build-deploy
       - uses: hmarr/debug-action@v2
