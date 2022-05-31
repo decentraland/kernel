@@ -5,7 +5,7 @@ import defaultLogger from '../../packages/shared/logger'
 // import { RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
 // import { Permissions } from 'shared/apis/Permissions'
-import { PermissionItem } from 'shared/apis/PermissionItems'
+import { PermissionItem } from 'shared/apis/gen/Permissions'
 
 describe('RestrictedActions tests', () => {
   afterEach(() => sinon.restore())

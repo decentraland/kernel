@@ -20,10 +20,12 @@ export enum SceneWorkerReadyState {
   DISPOSED = 1 << 8
 }
 
-import { registerEngineAPIServiceServerImplementation } from 'shared/apis/EngineAPI'
-import { registerEnvironmentAPIServiceServerImplementation } from 'shared/apis/EnvironmentAPI'
-import { registerDevToolsServiceServerImplementation } from 'shared/apis/DevTools'
-import { PortContext } from 'shared/apis/context'
+import { registerEngineAPIServiceServerImplementation } from 'shared/apis/host/EngineAPI'
+import { registerEnvironmentAPIServiceServerImplementation } from 'shared/apis/host/EnvironmentAPI'
+import { registerDevToolsServiceServerImplementation } from 'shared/apis/host/DevTools'
+import { registerPermissionServiceServerImplementation } from 'shared/apis/host/Permissions'
+
+import { PortContext } from 'shared/apis/host/context'
 // import Protocol from 'devtools-protocol'
 
 export abstract class SceneWorker {
@@ -65,6 +67,7 @@ export abstract class SceneWorker {
         registerDevToolsServiceServerImplementation(port)
         registerEngineAPIServiceServerImplementation(port)
         registerEnvironmentAPIServiceServerImplementation(port)
+        registerPermissionServiceServerImplementation(port)
       })
 
       this.rpcServer.attachTransport(transport as Transport, this.rpcContext)

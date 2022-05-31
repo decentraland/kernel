@@ -1,9 +1,9 @@
-import { getSelectedNetwork } from './../dao/selectors'
-import { getServerConfigurations, PREVIEW, RENDERER_WS } from './../../config'
-import { store } from './../store/isolatedStore'
-import { getCommsIsland, getRealm } from './../comms/selectors'
-import { Realm } from './../dao/types'
-import { getFeatureFlagEnabled } from './../meta/selectors'
+import { getSelectedNetwork } from './../../dao/selectors'
+import { getServerConfigurations, PREVIEW, RENDERER_WS } from './../../../config'
+import { store } from './../../store/isolatedStore'
+import { getCommsIsland, getRealm } from './../../comms/selectors'
+import { Realm } from './../../dao/types'
+import { getFeatureFlagEnabled } from './../../meta/selectors'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
@@ -15,8 +15,8 @@ import {
   GetExplorerConfigurationResponse,
   GetPlatformResponse,
   PreviewModeResponse
-} from './gen/EnvironmentAPI'
-import { EnvironmentRealm, Platform } from './IEnvironmentAPI'
+} from './../gen/EnvironmentAPI'
+import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContext } from './context'
 
 export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {

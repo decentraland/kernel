@@ -7,5 +7,5 @@ message RequestTeleportRequest {
 message RequestTeleportResponse {}
 
 service UserActionModuleService {
-    rpc requestTeleport(RequestTeleportRequest) returns (RequestTeleportResponse) {}
+    rpc realRequestTeleport(RequestTeleportRequest) returns (RequestTeleportResponse) {}
 }

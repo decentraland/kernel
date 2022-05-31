@@ -45,9 +45,9 @@ message GetUserAccountResponse {
 }
 
 service EthereumControllerService {
-    rpc requirePayment(RequirePaymentRequest) returns (RequirePaymentResponse) {}
-    rpc signMessage(SignMessageRequest) returns (SignMessageResponse) {}
-    rpc convertMessageToObject(ConvertMessageToObjectRequest) returns (ConvertMessageToObjectResponse) {}
-    rpc sendAsync(SendAsyncRequest) returns (SendAsyncResponse) {}
-    rpc getUserAccount(GetUserAccountRequest) returns (GetUserAccountResponse) {}
+    rpc realRequirePayment(RequirePaymentRequest) returns (RequirePaymentResponse) {}
+    rpc realSignMessage(SignMessageRequest) returns (SignMessageResponse) {}
+    rpc realConvertMessageToObject(ConvertMessageToObjectRequest) returns (ConvertMessageToObjectResponse) {}
+    rpc realSendAsync(SendAsyncRequest) returns (SendAsyncResponse) {}
+    rpc realGetUserAccount(GetUserAccountRequest) returns (GetUserAccountResponse) {}
 }

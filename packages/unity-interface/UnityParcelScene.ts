@@ -8,6 +8,7 @@ import { EnvironmentData, LoadableParcelScene, LoadablePortableExperienceScene }
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
+import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 // import { defaultPortableExperiencePermissions, Permissions } from 'shared/apis/Permissions'
 // import { PermissionItem } from 'shared/apis/PermissionItems'
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
@@ -25,9 +26,11 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
     worker.setPosition(aux)
 
     if (!worker.useOldRpc) {
+      const eventChannel = pushableChannel<any>(function () {})
+
       worker.patchContext({
         EnvironmentAPI: { data: this.data },
-        EngineAPI: { parcelSceneAPI: this, didStart: false, subscribedEvents: {} }
+        EngineAPI: { parcelSceneAPI: this, didStart: false, subscribedEvents: {}, eventChannel }
       })
     } else {
       throw new Error('Old RPC is deprecated')

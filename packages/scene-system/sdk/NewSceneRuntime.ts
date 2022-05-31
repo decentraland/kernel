@@ -1,4 +1,4 @@
-import { createEnvironmentAPIServiceClient, createEngineAPIServiceClient } from 'shared/apis/APIClient'
+import { LoadedModules, LoadableAPIs } from './../../shared/apis/client'
 import { componentNameRE, generatePBObject, getIdAsNumber, numberToIdStore, resolveMapping } from './Utils'
 import {
   AttachEntityComponentPayload,
@@ -10,6 +10,7 @@ import {
   OpenNFTDialogPayload,
   QueryPayload,
   RemoveEntityPayload,
+  RPCSendableMessage,
   SetEntityParentPayload,
   UpdateEntityComponentPayload
 } from 'shared/types'
@@ -17,38 +18,59 @@ import { QueryType } from '@dcl/legacy-ecs'
 import { customEval, getES5Context } from './sandbox'
 import { createFetch } from './Fetch'
 import { createWebSocket } from './WebSocket'
-import { ClientModuleDefinition, RpcClient } from '@dcl/rpc/dist/types'
+import { RpcClient, RpcClientPort } from '@dcl/rpc/dist/types'
+import { PermissionItem } from 'shared/apis/gen/Permissions'
+import future, { IFuture } from 'fp-future'
+
+const WEB3_PROVIDER = 'web3-provider'
+const PROVIDER_METHOD = 'getProvider'
+
+type EventState = { allowOpenExternalUrl: boolean }
+type EventCallback = (id: string, payload: any) => void
 
 interface DecentralandInterfaceOptions {
+  modules: LoadedModules
   onLog: (...args: any[]) => void
   onError: (...args: any[]) => void
-  events: any[]
-  allowOpenExternalUrl: boolean
-  onUpdateFunctions: any[]
-  onEventFunctions: any[]
-  onStartFunctions: any[]
+  onEventFunctions: EventCallback[]
   sceneId: string
-  subscribedEvents: Map<string, boolean>
-  subscribe: (id: string, cb: (data: any) => void) => Promise<void>
-  fireEvent: (event: any) => void
+  clientPort: RpcClientPort
+  eventState: EventState
 }
 
-function getDecentralandInterface(options: DecentralandInterfaceOptions): DecentralandInterface {
-  const {
-    onLog,
-    onError,
-    events,
-    allowOpenExternalUrl,
-    onUpdateFunctions,
-    sceneId,
-    onEventFunctions,
-    subscribedEvents,
-    onStartFunctions,
-    subscribe,
-    fireEvent
-  } = options
+async function getEthereumProvider(modules: LoadedModules, port: RpcClientPort) {
+  modules.EthereumController = await LoadableAPIs.EthereumController(port)
 
   return {
+    // @internal
+    send(message: RPCSendableMessage, callback?: (error: Error | null, result?: any) => void): void {
+      if (message && callback && callback instanceof Function) {
+        modules
+          .EthereumController!.sendAsync(message)
+          .then((x: any) => callback(null, x))
+          .catch(callback)
+      } else {
+        throw new Error('Decentraland provider only allows async calls')
+      }
+    },
+    sendAsync(message: RPCSendableMessage, callback: (error: Error | null, result?: any) => void): void {
+      modules
+        .EthereumController!.sendAsync(message)
+        .then((x: any) => callback(null, x))
+        .catch(callback)
+    }
+  }
+}
+
+function getDecentralandInterface(options: DecentralandInterfaceOptions) {
+  const { modules, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
+  const events: any = []
+  const onUpdateFunctions: ((dt: number) => void)[] = []
+  const onStartFunctions: (() => void)[] = []
+  const loadingModules: Record<string, IFuture<void>> = {}
+  let provider: Awaited<ReturnType<typeof getEthereumProvider>> | null = null
+
+  const dcl: DecentralandInterface = {
     DEBUG: true,
     log(...args: any[]) {
       onLog(...args)
@@ -60,7 +82,7 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
         return
       }
 
-      if (allowOpenExternalUrl) {
+      if (eventState.allowOpenExternalUrl) {
         events.push({
           type: 'OpenExternalUrl',
           tag: '',
@@ -72,7 +94,7 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
     },
 
     openNFTDialog(assetContractAddress: string, tokenId: string, comment: string | null) {
-      if (allowOpenExternalUrl) {
+      if (eventState.allowOpenExternalUrl) {
         const payload = { assetContractAddress, tokenId, comment }
 
         if (JSON.stringify(payload).length > 49000) {
@@ -203,24 +225,26 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
 
     /** subscribe to specific events, events will be handled by the onEvent function */
     subscribe(eventName: string): void {
-      if (!subscribedEvents.has(eventName)) {
-        subscribedEvents.set(eventName, true)
+      modules.EngineAPI?.realSubscribe({ eventId: eventName }).catch((err) => onError(err))
 
-        subscribe(eventName, (event) => {
-          if (eventName === 'raycastResponse') {
-            const idAsNumber = parseInt(event.data.queryId, 10)
-            if (numberToIdStore[idAsNumber]) {
-              event.data.queryId = numberToIdStore[idAsNumber].toString()
-            }
-          }
-          fireEvent({ type: eventName, data: event })
-        }).catch((error) => console.error(error))
-      }
+      // if (!subscribedEvents.has(eventName)) {
+      //   subscribedEvents.set(eventName, true)
+      //   subscribe(eventName, (event) => {
+      //     if (eventName === 'raycastResponse') {
+      //       const idAsNumber = parseInt(event.data.queryId, 10)
+      //       if (numberToIdStore[idAsNumber]) {
+      //         event.data.queryId = numberToIdStore[idAsNumber].toString()
+      //       }
+      //     }
+      //     fireEvent({ type: eventName, data: event })
+      //   }).catch((error) => console.error(error))
+      // }
     },
 
     /** unsubscribe to specific event */
     unsubscribe(eventName: string): void {
-      subscribedEvents.delete(eventName)
+      modules.EngineAPI?.realUnsubscribe({ eventId: eventName }).catch((err) => onError(err))
+      // subscribedEvents.delete(eventName)
       // that.eventSubscriber.off(eventName)
     },
 
@@ -258,43 +282,48 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
     },
 
     loadModule: async (_moduleName) => {
-      // const loadingModule: IFuture<void> = future()
-      // loadingModules[_moduleName] = loadingModule
+      const loadingModule: IFuture<void> = future()
+      loadingModules[_moduleName] = loadingModule
       try {
         const moduleToLoad = _moduleName.replace(/^@decentraland\//, '')
-        const methods: string[] = []
-        // if (moduleToLoad === WEB3_PROVIDER) {
-        //   methods.push(PROVIDER_METHOD)
-        //   this.provider = await this.getEthereumProvider()
-        // } else {
-        //   const proxy = (await this.loadAPIs([moduleToLoad]))[moduleToLoad]
-        //   try {
-        //     methods = await proxy._getExposedMethods()
-        //   } catch (e: any) {
-        //     throw Object.assign(new Error(`Error getting the methods of ${moduleToLoad}: ` + e.message), {
-        //       original: e
-        //     })
-        //   }
-        // }
+        let methods: string[] = []
+
+        if (moduleToLoad in LoadableAPIs) {
+          ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad]
+        }
+        if (moduleToLoad === WEB3_PROVIDER) {
+          methods.push(PROVIDER_METHOD)
+          provider = await getEthereumProvider(modules, clientPort)
+        } else {
+          try {
+            if (moduleToLoad in LoadableAPIs) {
+              ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad]
+            }
+            methods = Object.keys((modules as any)[moduleToLoad])
+          } catch (e: any) {
+            throw Object.assign(new Error(`Error getting the methods of ${moduleToLoad}: ` + e.message), {
+              original: e
+            })
+          }
+        }
         return {
           rpcHandle: moduleToLoad,
           methods: methods.map((name) => ({ name }))
         }
       } finally {
-        // loadingModule.resolve()
+        loadingModule.resolve()
       }
     },
     callRpc: async (rpcHandle: string, methodName: string, args: any[]) => {
-      // if (rpcHandle === WEB3_PROVIDER && methodName === PROVIDER_METHOD) {
-      //   return this.provider
-      // }
-      // const module = this.loadedAPIs[rpcHandle]
-      // if (!module) {
-      //   throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
-      // }
-      // // eslint-disable-next-line prefer-spread
-      // return module[methodName].apply(module, args)
-      return {}
+      if (rpcHandle === WEB3_PROVIDER && methodName === PROVIDER_METHOD) {
+        return provider
+      }
+      const module = (modules as any)[rpcHandle]
+      if (!module) {
+        throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
+      }
+      // eslint-disable-next-line prefer-spread
+      return module[methodName].apply(module, args)
     },
     onStart(cb: () => void) {
       onStartFunctions.push(cb)
@@ -302,6 +331,14 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions): Decent
     error(message, data) {
       onError(Object.assign(new Error(message as string), { data }))
     }
+  }
+
+  return {
+    dcl,
+    onStartFunctions,
+    onUpdateFunctions,
+    events,
+    loadingModules
   }
 }
 
@@ -313,15 +350,47 @@ function initMessagesFinished() {
   }
 }
 
+async function eventTracker(
+  EngineAPI: LoadedModules['EngineAPI'],
+  eventArgs: { eventState: EventState; onEventFunctions: EventCallback[] }
+) {
+  for await (const notif of EngineAPI!.streamEvents({})) {
+    const data = JSON.parse(notif.eventData || '')
+    if (notif.eventId === 'raycastResponse') {
+      const idAsNumber = parseInt(data.queryId, 10)
+      if (numberToIdStore[idAsNumber]) {
+        data.queryId = numberToIdStore[idAsNumber].toString()
+      }
+    }
+
+    if (isPointerEvent({ type: notif.eventId, data })) {
+      eventArgs.eventState.allowOpenExternalUrl = true
+    }
+    for (const cb of eventArgs.onEventFunctions) {
+      try {
+        cb(notif.eventId, data)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    eventArgs.eventState.allowOpenExternalUrl = false
+  }
+}
+
 export async function startNewSceneRuntime(client: RpcClient) {
-  debugger
-
   const clientPort = await client.createPort('new-ecs-scene-worker')
-  const environmentApiService = await createEnvironmentAPIServiceClient(clientPort)
-  const engineApiService = await createEngineAPIServiceClient(clientPort)
+  const modules: LoadedModules = {
+    EngineAPI: await LoadableAPIs.EngineAPI(clientPort),
+    EnvironmentAPI: await LoadableAPIs.EnvironmentAPI(clientPort),
+    Permissions: await LoadableAPIs.Permissions(clientPort)
+  }
 
-  const bootstrapData = await environmentApiService.getBootstrapData({})
-  const isPreview = (await environmentApiService.isPreviewMode({})).isPreview
+  const eventState: EventState = { allowOpenExternalUrl: false }
+  const onEventFunctions: EventCallback[] = []
+  eventTracker(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => console.error(err))
+
+  const bootstrapData = await modules.EnvironmentAPI!.getBootstrapData({})
+  const isPreview = (await modules.EnvironmentAPI!.isPreviewMode({})).isPreview
 
   if (!bootstrapData || !bootstrapData.main) {
     throw new Error(`No boostrap data`)
@@ -338,75 +407,21 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   const sourceCode = await codeRequest.text()
 
-  const events: any = []
-  let allowOpenExternalUrl = false
-  const onUpdateFunctions: ((dt: number) => void)[] = []
-  const onEventFunctions: ((event: any) => void)[] = []
-  const onStartFunctions: (() => void)[] = []
-
-  async function subscribe(id: string, cb: (data: any) => void) {
-    for await (const notif of engineApiService.subscribe({ id })) {
-      cb(JSON.parse(notif.payload || '{}'))
-    }
-  }
-
-  function fireEvent(event: any) {
-    try {
-      if (isPointerEvent(event)) {
-        allowOpenExternalUrl = true
-      }
-      for (const trigger of onEventFunctions) {
-        trigger(event)
-      }
-    } catch (e: any) {
-      console.error(e)
-    }
-    allowOpenExternalUrl = false
-  }
-
-  const dcl = getDecentralandInterface({
-    onLog: (...args: any[]) => {
-      console.log(...args)
-    },
-    onError: (...args: any[]) => {
-      console.error(...args)
-    },
-    events,
-    allowOpenExternalUrl,
-    onUpdateFunctions,
+  const { dcl, onUpdateFunctions, onStartFunctions, events } = getDecentralandInterface({
+    modules,
+    clientPort,
+    onError: (...args: any) => console.error(...args),
+    onLog: (...args: any) => console.error(...args),
     onEventFunctions,
-    onStartFunctions,
     sceneId: bootstrapData.sceneId,
-    subscribedEvents: new Map<string, boolean>(),
-    subscribe,
-    fireEvent
+    eventState
   })
 
-  dcl.callRpc = async (rpcHandle: string, methodName: string, args: any[]) => {
-    console.log({ rpcHandle, methodName, args })
-  }
-  dcl.loadModule = async (moduleName: string, exportsRef: any): Promise<ModuleDescriptor> => {
-    try {
-      const module = (await clientPort.loadModule(moduleName)) as ClientModuleDefinition
-
-      return {
-        rpcHandle: moduleName,
-        methods: Object.keys(module).map((key) => ({ name: 'hello-world' }))
-      }
-    } catch (err) {}
-
-    console.log({ moduleName, exportsRef })
-    return {
-      rpcHandle: 'module',
-      methods: [{ name: 'hello-world' }]
-    }
-  }
-
-  // const { Permissions } = await this.loadAPIs(['Permissions'])
-  const canUseWebsocket = true // await Permissions.hasPermission(PermissionItem.USE_WEBSOCKET)
-  const canUseFetch = true // await Permissions.hasPermission(PermissionItem.USE_FETCH)
-  // const { EnvironmentAPI } = (await this.loadAPIs(['EnvironmentAPI'])) as { EnvironmentAPI: IEnvironmentAPI }
-  const unsafeAllowed = (await environmentApiService.areUnsafeRequestAllowed({})).status
+  const canUseWebsocket = (await modules.Permissions!.realHasPermission({ permission: PermissionItem.USE_WEBSOCKET }))
+    .hasPermission
+  const canUseFetch = (await modules.Permissions!.realHasPermission({ permission: PermissionItem.USE_FETCH }))
+    .hasPermission
+  const unsafeAllowed = (await modules.EnvironmentAPI!.areUnsafeRequestAllowed({})).status
 
   const originalFetch = fetch
 
@@ -425,34 +440,31 @@ export async function startNewSceneRuntime(client: RpcClient) {
   globalThis.fetch = restrictedFetch
   globalThis.WebSocket = restrictedWebSocket
 
-  const env = { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch }
-
-  async function onStart() {
-    await engineApiService.subscribe({ id: 'sceneStart' })
-    startLoop().catch((err) => console.error(err))
-
-    onStartFunctions.forEach(($) => {
-      try {
-        $()
-      } catch (e: any) {
-        console.error(e)
-      }
-    })
-  }
-
-  onStart().catch((err) => console.error(err))
-
-  await customEval(sourceCode, getES5Context(env))
-
-  events.push(initMessagesFinished())
-
   onStartFunctions.push(() => {
-    engineApiService.startSignal({}).catch((e) => {
+    modules.EngineAPI!.startSignal({}).catch((e) => {
       console.error(e)
     })
   })
 
-  await engineApiService.sendBatch({ actions: events })
+  onEventFunctions.push((id: string, _payload: any) => {
+    if (id === 'sceneStart') {
+      startLoop().catch((err) => console.error(err))
+      for (const startFunctionCb of onStartFunctions) {
+        try {
+          startFunctionCb()
+        } catch (e: any) {
+          console.error(e)
+        }
+      }
+    }
+  })
+
+  const env = { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch }
+  await customEval(sourceCode, getES5Context(env))
+
+  events.push(initMessagesFinished())
+
+  await modules.EngineAPI!.sendBatch({ actions: events })
 
   async function startLoop() {
     let start = performance.now()
@@ -474,7 +486,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
         }
       }
 
-      engineApiService.sendBatch({ actions: events }).catch((err) => console.error(err))
+      modules.EngineAPI!.sendBatch({ actions: events }).catch((err) => console.error(err))
     }
 
     update()
@@ -488,3 +500,75 @@ function isPointerEvent(event: any): boolean {
   }
   return false
 }
+
+// private setupFpsThrottling(dcl: DecentralandInterface) {
+//   dcl.subscribe('positionChanged')
+//   dcl.onEvent((event) => {
+//     if (event.type !== 'positionChanged') {
+//       return
+//     }
+
+//     const e = event.data as IEvents['positionChanged']
+
+//     //NOTE: calling worldToGrid from parcelScenePositions.ts here crashes kernel when there are 80+ workers since chrome 92.
+//     const PARCEL_SIZE = 16
+//     const playerPosition = new Vector2(
+//       Math.floor(e.cameraPosition.x / PARCEL_SIZE),
+//       Math.floor(e.cameraPosition.z / PARCEL_SIZE)
+//     )
+
+//     if (playerPosition === undefined || this.scenePosition === undefined) {
+//       return
+//     }
+
+//     const playerPos = playerPosition as Vector2
+//     const scenePos = this.scenePosition
+
+//     let sqrDistanceToPlayerInParcels = 10 * 10
+//     let isInsideScene = false
+
+//     if (!!this.parcels) {
+//       for (const parcel of this.parcels) {
+//         sqrDistanceToPlayerInParcels = Math.min(
+//           sqrDistanceToPlayerInParcels,
+//           Vector2.DistanceSquared(playerPos, parcel)
+//         )
+//         if (parcel.x === playerPos.x && parcel.y === playerPos.y) {
+//           isInsideScene = true
+//         }
+//       }
+//     } else {
+//       sqrDistanceToPlayerInParcels = Vector2.DistanceSquared(playerPos, scenePos)
+//       isInsideScene = scenePos.x === playerPos.x && scenePos.y === playerPos.y
+//     }
+
+//     let fps: number = 1
+
+//     if (isInsideScene) {
+//       fps = 30
+//     } else if (sqrDistanceToPlayerInParcels <= 2 * 2) {
+//       // NOTE(Brian): Yes, this could be a formula, but I prefer this pedestrian way as
+//       //              its easier to read and tweak (i.e. if we find out its better as some arbitrary curve, etc).
+//       fps = 20
+//     } else if (sqrDistanceToPlayerInParcels <= 3 * 3) {
+//       fps = 10
+//     } else if (sqrDistanceToPlayerInParcels <= 4 * 4) {
+//       fps = 5
+//     }
+
+//     this.updateInterval = 1000 / fps
+//   })
+// }
+
+// calculateSceneCenter(parcels: Array<{ x: number; y: number }>): Vector2 {
+//   let center: Vector2 = new Vector2()
+
+//   parcels.forEach((v2) => {
+//     center = Vector2.Add(v2, center)
+//   })
+
+//   center.x /= parcels.length
+//   center.y /= parcels.length
+
+//   return center
+// }

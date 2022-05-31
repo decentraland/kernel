@@ -76,7 +76,7 @@ import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
 import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
-import { setDecentralandTime } from 'shared/apis/EnvironmentAPI'
+import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }

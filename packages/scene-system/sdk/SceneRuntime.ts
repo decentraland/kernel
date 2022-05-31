@@ -28,7 +28,7 @@ import type {
 import { componentNameRE, generatePBObject, getIdAsNumber, numberToIdStore, resolveMapping } from './Utils'
 import { createWebSocket } from './WebSocket'
 import { createFetch } from './Fetch'
-import { PermissionItem } from 'shared/apis/PermissionItems'
+import { PermissionItem } from 'shared/apis/gen/Permissions'
 
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
