@@ -69,8 +69,6 @@ export abstract class SceneWorker {
   }
 
   constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
-    debugger
-
     this.rpcContext = {
       eventChannel: pushableChannel<any>(function () {})
     }

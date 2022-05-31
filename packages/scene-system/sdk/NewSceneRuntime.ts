@@ -21,6 +21,7 @@ import { createWebSocket } from './WebSocket'
 import { RpcClient, RpcClientPort } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/gen/Permissions'
 import future, { IFuture } from 'fp-future'
+import { sleep } from 'atomicHelpers/sleep'
 
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
@@ -318,6 +319,7 @@ function getDecentralandInterface(options: DecentralandInterfaceOptions) {
       if (rpcHandle === WEB3_PROVIDER && methodName === PROVIDER_METHOD) {
         return provider
       }
+      console.log({ m: 'callRpc', rpcHandle, methodName })
       const module = (modules as any)[rpcHandle]
       if (!module) {
         throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
@@ -409,7 +411,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   const sourceCode = await codeRequest.text()
 
-  const { dcl, onUpdateFunctions, onStartFunctions, events } = getDecentralandInterface({
+  const { dcl, onUpdateFunctions, onStartFunctions, events, loadingModules } = getDecentralandInterface({
     modules,
     clientPort,
     onError: (...args: any) => console.error(...args),
@@ -463,6 +465,20 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   const env = { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch }
   await customEval(sourceCode, getES5Context(env))
+
+  let modulesNotLoaded: string[] = []
+
+  const timeout = sleep(10000).then(() => {
+    modulesNotLoaded = Object.keys(loadingModules).filter((it) => loadingModules[it].isPending)
+  })
+
+  await Promise.race([Promise.all(Object.values(loadingModules)), timeout])
+
+  if (modulesNotLoaded.length > 0) {
+    console.log(
+      `Timed out loading modules!. The scene ${bootstrapData.sceneId} may not work correctly. Modules not loaded: ${modulesNotLoaded}`
+    )
+  }
 
   events.push(initMessagesFinished())
 
