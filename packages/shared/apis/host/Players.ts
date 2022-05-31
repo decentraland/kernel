@@ -4,7 +4,7 @@
 
 // import { store } from 'shared/store/isolatedStore'
 
-// import { AvatarForUserData, UserData } from 'shared/types'
+import { AvatarForUserData } from 'shared/types'
 // import { getProfileFromStore } from 'shared/profiles/selectors'
 // import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
@@ -13,8 +13,8 @@
 // import { lastPlayerPosition } from 'shared/world/positionThings'
 // import { getCurrentUserId } from 'shared/session/selectors'
 // import { isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
-// import { AvatarInfo } from '@dcl/schemas'
-// import { rgbToHex } from 'shared/profiles/transformations/convertToRGBObject'
+import { AvatarInfo } from '@dcl/schemas'
+import { rgbToHex } from 'shared/profiles/transformations/convertToRGBObject'
 
 // export interface IPlayers {
 //   /**
@@ -25,21 +25,21 @@
 //   getPlayersInScene(): Promise<{ userId: string }[]>
 // }
 
-// export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
-//   return {
-//     ...avatar,
-//     bodyShape: avatar.bodyShape,
-//     wearables: avatar.wearables,
-//     snapshots: {
-//       ...avatar.snapshots,
-//       face: avatar.snapshots.face256,
-//       face128: avatar.snapshots.face256
-//     } as any,
-//     eyeColor: rgbToHex(avatar.eyes.color),
-//     hairColor: rgbToHex(avatar.hair.color),
-//     skinColor: rgbToHex(avatar.hair.color)
-//   }
-// }
+export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
+  return {
+    ...avatar,
+    bodyShape: avatar.bodyShape,
+    wearables: avatar.wearables,
+    snapshots: {
+      ...avatar.snapshots,
+      face: avatar.snapshots.face256,
+      face128: avatar.snapshots.face256
+    } as any,
+    eyeColor: rgbToHex(avatar.eyes.color),
+    hairColor: rgbToHex(avatar.hair.color),
+    skinColor: rgbToHex(avatar.hair.color)
+  }
+}
 
 // @registerAPI('Players')
 // export class Players extends ExposableAPI implements IPlayers {
@@ -95,3 +95,22 @@
 //     return result
 //   }
 // }
+import { RpcServerPort } from '@dcl/rpc'
+import { PortContext } from './context'
+import * as codegen from '@dcl/rpc/dist/codegen'
+
+import { PlayersServiceDefinition } from './../gen/Players'
+
+export function registerPlayersServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, PlayersServiceDefinition, async () => ({
+    async realGetPlayerData() {
+      return {} as any
+    },
+    async realGetPlayersInScene() {
+      return {} as any
+    },
+    async realGetConnectedPlayers() {
+      return {} as any
+    }
+  }))
+}

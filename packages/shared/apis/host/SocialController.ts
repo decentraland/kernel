@@ -1,28 +1,18 @@
-// import { APIOptions, registerAPI } from 'decentraland-rpc/lib/host'
-// import { ExposableAPI } from './ExposableAPI'
-// import { EngineAPI } from 'shared/apis/EngineAPI'
-// import { avatarMessageObservable } from 'shared/comms/peers'
+import { RpcServerPort } from '@dcl/rpc'
+import { PortContext } from './context'
+import * as codegen from '@dcl/rpc/dist/codegen'
 
-// export interface IProfileData {
-//   displayName: string
-//   publicKey: string
-//   status: string
-//   avatarType: string
-//   isMuted: boolean
-//   isBlocked: boolean
-// }
+import { SocialControllerServiceDefinition } from './../gen/SocialController'
+import { avatarMessageObservable } from 'shared/comms/peers'
+import defaultLogger from 'shared/logger'
 
-// @registerAPI('SocialController')
-// export class SocialController extends ExposableAPI {
-//   static pluginName = 'SocialController'
-
-//   constructor(options: APIOptions) {
-//     super(options)
-
-//     const engineAPI = options.getAPIInstance(EngineAPI)
-
-//     avatarMessageObservable.add((event: any) => {
-//       engineAPI.sendSubscriptionEvent('AVATAR_OBSERVABLE' as any, event)
-//     })
-//   }
-// }
+export function registerSocialControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, SocialControllerServiceDefinition, async () => ({
+    async init(_req, ctx) {
+      avatarMessageObservable.add((event: any) => {
+        ctx.eventChannel.push({ id: 'AVATAR_OBSERVABLE', data: event }).catch((err) => defaultLogger.error(err))
+      })
+      return {}
+    }
+  }))
+}

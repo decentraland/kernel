@@ -1,42 +1,27 @@
-// import { registerAPI, exposeMethod } from 'decentraland-rpc/lib/host'
-// import { ExposableAPI } from './ExposableAPI'
-// import { ILand } from 'shared/types'
+import * as codegen from '@dcl/rpc/dist/codegen'
+import { RpcServerPort } from '@dcl/rpc/dist/types'
+import { ParcelIdentityServiceDefinition } from '../gen/ParcelIdentity'
+import { PortContextService } from './context'
 
-// export interface IParcelIdentity {
-//   getParcel(): Promise<{ land: ILand; cid: string }>
-// }
-
-// @registerAPI('ParcelIdentity')
-// export class ParcelIdentity extends ExposableAPI implements IParcelIdentity {
-//   land!: ILand
-//   cid!: string
-//   isPortableExperience: boolean = false
-//   isEmpty: boolean = false
-
-//   /**
-//    * Returns the coordinates and the definition of a parcel
-//    */
-//   @exposeMethod
-//   async getParcel(): Promise<{ land: ILand; cid: string }> {
-//     return {
-//       land: this.land,
-//       cid: this.cid
-//     }
-//   }
-
-//   /**
-//    * Returns if the parcel is empty or not
-//    */
-//   @exposeMethod
-//   async getIsEmpty(): Promise<boolean> {
-//     return this.isEmpty
-//   }
-
-//   /**
-//    * Returns the scene id
-//    */
-//   @exposeMethod
-//   async getSceneId(): Promise<string> {
-//     return this.land?.sceneId || this.cid || ''
-//   }
-// }
+export function registerParcelIdentityServiceServerImplementation(
+  port: RpcServerPort<PortContextService<'ParcelIdentity'>>
+) {
+  codegen.registerService(port, ParcelIdentityServiceDefinition, async () => ({
+    async realGetParcel(_req, ctx) {
+      return {
+        land: {
+          ...ctx.ParcelIdentity.land,
+          sceneJsonData: JSON.stringify(ctx.ParcelIdentity.land.sceneJsonData)
+        },
+        cid: ctx.ParcelIdentity.cid
+      } as any
+    },
+    async realGetSceneId(_req, ctx) {
+      const sceneId = ctx.ParcelIdentity.land.sceneId || ctx.ParcelIdentity.cid || ''
+      return { sceneId }
+    },
+    async realGetIsEmpty(_req, ctx) {
+      return { isEmpty: ctx.ParcelIdentity.isEmpty }
+    }
+  }))
+}

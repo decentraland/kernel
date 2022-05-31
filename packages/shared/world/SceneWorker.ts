@@ -1,10 +1,5 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Vector3 } from '@dcl/ecs-math'
-// import { future } from 'fp-future'
-// import { APIOptions, ScriptingHost } from 'decentraland-rpc/lib/host'
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
-// import { defaultLogger } from 'shared/logger'
-// import { PREVIEW } from 'config'
+import { defaultLogger } from 'shared/logger'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
@@ -20,59 +15,76 @@ export enum SceneWorkerReadyState {
   DISPOSED = 1 << 8
 }
 
-import { registerEngineAPIServiceServerImplementation } from 'shared/apis/host/EngineAPI'
-import { registerEnvironmentAPIServiceServerImplementation } from 'shared/apis/host/EnvironmentAPI'
-import { registerDevToolsServiceServerImplementation } from 'shared/apis/host/DevTools'
-import { registerPermissionServiceServerImplementation } from 'shared/apis/host/Permissions'
-
+import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
-// import Protocol from 'devtools-protocol'
+import { pushableChannel } from '@dcl/rpc/dist/push-channel'
+
+function createGenericLogComponent() {
+  return {
+    getLogger(loggerName) {
+      return {
+        log(message, extra) {
+          defaultLogger.log(loggerName, message, extra)
+        },
+        warn(message, extra) {
+          defaultLogger.warn(loggerName, message, extra)
+        },
+        info(message, extra) {
+          defaultLogger.info(loggerName, message, extra)
+        },
+        debug(message, extra) {
+          defaultLogger.trace(loggerName, message, extra)
+        },
+        error(error, extra) {
+          let message = `${error}`
+          let printTrace = true
+          if (error instanceof Error && 'stack' in error && typeof error.stack === 'string') {
+            if (error.stack.includes(error.message)) {
+              message = error.stack
+              printTrace = false
+            }
+          }
+          defaultLogger.error(loggerName, message, extra || error)
+          if (printTrace) {
+            console.trace()
+          }
+        }
+      }
+    }
+  }
+}
 
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
-  // protected engineAPI: EngineAPI | null = null
-  // private readonly system = future<ScriptingHost>()
 
   private rpcServer: RpcServer<PortContext> | null = null
-  private rpcContext!: PortContext
+  public rpcContext!: PortContext
 
   public patchContext(ctx: Partial<PortContext>) {
     this.rpcContext = { ...this.rpcContext, ...ctx }
   }
+
   public get getRpcContext() {
     return this.rpcContext
   }
 
-  public get useOldRpc() {
-    return this.oldRpc
-  }
+  constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
+    debugger
 
-  constructor(
-    private readonly parcelScene: ParcelSceneAPI,
-    private oldRpc: boolean,
-    public transport: Transport | ScriptingTransport
-  ) {
+    this.rpcContext = {
+      eventChannel: pushableChannel<any>(function () {})
+    }
+
     parcelScene.registerWorker(this)
 
-    if (oldRpc) {
-      throw new Error('Old RPC is deprecated')
-      // this.startSystem(transport as ScriptingTransport)
-      //   .then(($) => this.system.resolve($))
-      //   .catch(($) => this.system.reject($))
-    } else {
-      this.rpcServer = createRpcServer<PortContext>({})
-
-      this.rpcServer.setHandler(async function handler(port) {
-        console.log('  Creating server port: ' + port.portName)
-        registerDevToolsServiceServerImplementation(port)
-        registerEngineAPIServiceServerImplementation(port)
-        registerEnvironmentAPIServiceServerImplementation(port)
-        registerPermissionServiceServerImplementation(port)
-      })
-
-      this.rpcServer.attachTransport(transport as Transport, this.rpcContext)
-      this.ready |= SceneWorkerReadyState.LOADED
-    }
+    this.rpcServer = createRpcServer<PortContext>({
+      logger: createGenericLogComponent().getLogger('test-rpc-server')
+    })
+    this.rpcServer.setHandler(async (port) => {
+      registerServices(port)
+    })
+    this.rpcServer.attachTransport(transport as Transport, this.rpcContext)
+    this.ready |= SceneWorkerReadyState.LOADED
   }
 
   abstract setPosition(position: Vector3): void
@@ -91,14 +103,8 @@ export abstract class SceneWorker {
     this.parcelScene.emit(event, data)
   }
 
-  getAPIInstance<X>(api: any): Promise<X> {
-    throw new Error('getAPIInstance is a depracated methods')
-    // return this.system.then((system) => system.getAPIInstance(api))
-  }
-
   sendSubscriptionEvent<K extends IEventNames>(event: K, data: IEvents[K]) {
-    // TODO: send subscription event
-    // this.engineAPI?.sendSubscriptionEvent(event, data)
+    this.rpcContext.eventChannel.push({ id: event, data }).catch((err) => defaultLogger.error(err))
   }
 
   dispose() {
@@ -109,54 +115,14 @@ export abstract class SceneWorker {
       this.ready |= SceneWorkerReadyState.DISPOSING
       this.childDispose()
 
-      // TODO: Unmount the system
-      // this.system
-      //   .then((system) => {
-      //     try {
-      //       system.unmount()
-      //     } catch (e) {
-      //       defaultLogger.error('Error unmounting system', e)
-      //     }
-      //     this.ready |= SceneWorkerReadyState.SYSTEM_DISPOSED
-      //   })
-      //   .catch((e) => {
-      //     defaultLogger.error('Unable to unmount system', e)
-      //     this.ready |= SceneWorkerReadyState.SYSTEM_DISPOSED
-      //   })
-
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
 
     getUnityInstance().UnloadScene(this.getSceneId())
 
-    if (!this.useOldRpc) {
-      this.transport.close()
-      this.ready |= SceneWorkerReadyState.DISPOSED
-    }
+    this.transport.close()
+    this.ready |= SceneWorkerReadyState.DISPOSED
   }
 
   protected abstract childDispose(): void
-
-  // private async startSystem(transport: ScriptingTransport) {
-  //   const system = await ScriptingHost.fromTransport(transport)
-  //   this.engineAPI = system.getAPIInstance('EngineAPI') as EngineAPI
-  //   this.engineAPI.parcelSceneAPI = this.parcelScene
-  //   system.getAPIInstance(EnvironmentAPI).data = this.parcelScene.data
-  //   // TODO: track this errors using rollbar because this kind of event are usually triggered due to setInterval() or unreliable code in scenes, that is not sandboxed
-  //   system.on('error', (e) => {
-  //     // @ts-ignore
-  //     console['log']('Unloading scene because of unhandled exception in the scene worker: ')
-  //     // @ts-ignore
-  //     console['error'](e)
-  //     // These errors should be handled in development time
-  //     if (PREVIEW) {
-  //       eval('debu' + 'gger')
-  //     }
-  //     transport.close()
-  //     this.ready |= SceneWorkerReadyState.SYSTEM_FAILED
-  //   })
-  //   system.enable()
-  //   this.ready |= SceneWorkerReadyState.LOADED
-  //   return system
-  // }
 }

@@ -6,27 +6,27 @@ import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJs
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 
-//   private getSceneName(baseCoord: string, sceneJsonData: any): string {
-//     const sceneName = getSceneNameFromAtlasState(sceneJsonData) ?? store.getState().atlas.tileToScene[baseCoord]?.name
-//     return postProcessSceneName(sceneName)
-//   }
-// }
-
 import { UserActionModuleServiceDefinition } from './../gen/UserActionModule'
 import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
+import { getSceneNameFromAtlasState, postProcessSceneName } from 'shared/atlas/selectors'
 
 export function registerUserActionModuleServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  function getSceneName(baseCoord: string, sceneJsonData: any): string {
+    const sceneName = getSceneNameFromAtlasState(sceneJsonData) ?? store.getState().atlas.tileToScene[baseCoord]?.name
+    return postProcessSceneName(sceneName)
+  }
+
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
     async realRequestTeleport(req) {
       const { destination } = req
       if (destination === 'magic' || destination === 'crowd') {
         getUnityInstance().RequestTeleport({ destination })
-        return
+        return {}
       } else if (!/^\-?\d+\,\-?\d+$/.test(destination)) {
         defaultLogger.error(`teleportTo: invalid destination ${destination}`)
-        return
+        return {}
       }
 
       let sceneThumbnailUrl: string | undefined
@@ -37,7 +37,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
       const sceneId = (await fetchSceneIds([destination]))[0]
       const mapSceneData = sceneId ? (await fetchSceneJson([sceneId!]))[0] : undefined
 
-      sceneName = this.getSceneName(destination, mapSceneData?.sceneJsonData)
+      sceneName = getSceneName(destination, mapSceneData?.sceneJsonData)
       sceneCreator = getOwnerNameFromJsonData(mapSceneData?.sceneJsonData)
 
       if (mapSceneData) {

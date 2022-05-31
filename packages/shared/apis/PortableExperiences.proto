@@ -20,8 +20,8 @@ message GetPortableExperiencesLoadedResponse {
 }
 
 service PortableExperiencesService {
-    rpc spawn(PxRequest) returns (SpawnResponse) {}
-    rpc kill(PxRequest) returns (KillResponse) {}
-    rpc exit(PxRequest) returns (KillResponse) {}
-    rpc getPortableExperiencesLoaded(GetPortableExperiencesLoadedRequest) returns (GetPortableExperiencesLoadedResponse) {}
+    rpc realSpawn(PxRequest) returns (SpawnResponse) {}
+    rpc realKill(PxRequest) returns (KillResponse) {}
+    rpc realExit(PxRequest) returns (KillResponse) {}
+    rpc realGetPortableExperiencesLoaded(GetPortableExperiencesLoadedRequest) returns (GetPortableExperiencesLoadedResponse) {}
 }

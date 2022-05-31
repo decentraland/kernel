@@ -8,9 +8,9 @@ import { EnvironmentData, LoadableParcelScene, LoadablePortableExperienceScene }
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
-import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 // import { defaultPortableExperiencePermissions, Permissions } from 'shared/apis/Permissions'
 // import { PermissionItem } from 'shared/apis/PermissionItems'
+
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
     super(data)
@@ -25,28 +25,22 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
     gridToWorld(this.data.data.basePosition.x, this.data.data.basePosition.y, aux)
     worker.setPosition(aux)
 
-    if (!worker.useOldRpc) {
-      const eventChannel = pushableChannel<any>(function () {})
-
-      worker.patchContext({
-        EnvironmentAPI: { data: this.data },
-        EngineAPI: { parcelSceneAPI: this, didStart: false, subscribedEvents: {}, eventChannel }
-      })
-    } else {
-      throw new Error('Old RPC is deprecated')
-      // this.worker
-      //   .getAPIInstance(DevTools)
-      //   .then((devTools) => (devTools.logger = this.logger))
-      //   .catch((e) => this.logger.error('Error initializing system DevTools', e))
-      // this.worker
-      //   .getAPIInstance(ParcelIdentity)
-      //   .then((parcelIdentity) => {
-      //     parcelIdentity.land = this.data.data.land!
-      //     parcelIdentity.cid = worker.getSceneId()
-      //     parcelIdentity.isPortableExperience = false
-      //   })
-      //   .catch((e) => this.logger.error('Error initializing system ParcelIdentity', e))
-    }
+    worker.patchContext({
+      EnvironmentAPI: { data: this.data },
+      EngineAPI: { parcelSceneAPI: this, didStart: false, subscribedEvents: {} }
+    })
+    // this.worker
+    //   .getAPIInstance(DevTools)
+    //   .then((devTools) => (devTools.logger = this.logger))
+    //   .catch((e) => this.logger.error('Error initializing system DevTools', e))
+    // this.worker
+    //   .getAPIInstance(ParcelIdentity)
+    //   .then((parcelIdentity) => {
+    //     parcelIdentity.land = this.data.data.land!
+    //     parcelIdentity.cid = worker.getSceneId()
+    //     parcelIdentity.isPortableExperience = false
+    //   })
+    //   .catch((e) => this.logger.error('Error initializing system ParcelIdentity', e))
   }
 }
 

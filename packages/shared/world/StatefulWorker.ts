@@ -1,11 +1,11 @@
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { SceneWorker } from './SceneWorker'
-import { CustomWebWorkerTransport } from './CustomWebWorkerTransport'
 // import { SceneStateStorageController } from 'shared/apis/SceneStateStorageController/SceneStateStorageController'
 // import { defaultLogger } from 'shared/logger'
 // import { ParcelIdentity } from 'shared/apis/ParcelIdentity'
 import { StatefulWorkerOptions } from './types'
+import { Transport } from '@dcl/rpc'
+import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const gamekitWorkerRaw = require('raw-loader!../../../static/systems/stateful.scene.system.js')
@@ -14,7 +14,7 @@ const gamekitWorkerUrl = URL.createObjectURL(gamekitWorkerBLOB)
 
 export class StatefulWorker extends SceneWorker {
   constructor(parcelScene: ParcelSceneAPI, _options: StatefulWorkerOptions) {
-    super(parcelScene, true, StatefulWorker.buildWebWorkerTransport(parcelScene))
+    super(parcelScene, StatefulWorker.buildWebWorkerTransport(parcelScene))
 
     // todo: new rpc
 
@@ -24,12 +24,12 @@ export class StatefulWorker extends SceneWorker {
     // void this.getAPIInstance(ParcelIdentity).then((parcelIdentity) => (parcelIdentity.isEmpty = options.isEmpty))
   }
 
-  private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): ScriptingTransport {
+  private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): Transport {
     const worker = new Worker(gamekitWorkerUrl, {
       name: `StatefulWorker(${parcelScene.data.sceneId})`
     })
 
-    return CustomWebWorkerTransport(worker)
+    return WebWorkerTransport(worker)
   }
 
   setPosition() {

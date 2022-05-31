@@ -1,51 +1,55 @@
-// import { ExposableAPI } from './ExposableAPI'
-// import { exposeMethod, registerAPI } from 'decentraland-rpc/lib/host'
-// import { ParcelIdentity } from './ParcelIdentity'
-// import { FlatFetchInit, FlatFetchResponse } from 'atomicHelpers/flatFetch'
-// import { signedFetch } from 'atomicHelpers/signedFetch'
-// import { ETHEREUM_NETWORK } from '../../config'
-// import { getSelectedNetwork } from 'shared/dao/selectors'
-// import { store } from 'shared/store/isolatedStore'
-// import { getIsGuestLogin } from 'shared/session/selectors'
-// import { onLoginCompleted } from 'shared/session/sagas'
-// import { getRealm } from 'shared/comms/selectors'
+import { signedFetch } from './../../../atomicHelpers/signedFetch'
+import { ETHEREUM_NETWORK } from './../../../config'
+import { getSelectedNetwork } from './../../dao/selectors'
+import { store } from './../../store/isolatedStore'
+import { getIsGuestLogin } from './../../session/selectors'
+import { onLoginCompleted } from './../../session/sagas'
+import { getRealm } from './../../comms/selectors'
 
-// @registerAPI('SignedFetch')
-// export class SignedFetch extends ExposableAPI {
-//   parcelIdentity = this.options.getAPIInstance(ParcelIdentity)
+import { RpcServerPort } from '@dcl/rpc'
+import { PortContext } from './context'
+import * as codegen from '@dcl/rpc/dist/codegen'
 
-//   @exposeMethod
-//   async signedFetch(url: string, init?: FlatFetchInit): Promise<FlatFetchResponse> {
-//     const { identity } = await onLoginCompleted()
+import { SignedFetchServiceDefinition } from './../gen/SignedFetch'
+import { avatarMessageObservable } from './../../comms/peers'
+import defaultLogger from './../../logger'
 
-//     const state = store.getState()
-//     const realm = getRealm(state)
-//     const isGuest = !!getIsGuestLogin(state)
-//     const network = getSelectedNetwork(state)
+export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>, ctx: PortContext) {
+  avatarMessageObservable.add((event: any) => {
+    ctx.eventChannel.push({ id: 'AVATAR_OBSERVABLE', data: event }).catch((err) => defaultLogger.error(err))
+  })
+  codegen.registerService(port, SignedFetchServiceDefinition, async () => ({
+    async realSignedFetch(req, ctx) {
+      const { identity } = await onLoginCompleted()
 
-//     const compatibilityRealm:
-//       | {
-//           domain: string
-//           layer: string
-//           catalystName: string
-//         }
-//       | undefined = realm ? { domain: realm.hostname, layer: '', catalystName: realm.serverName } : undefined
+      const state = store.getState()
+      const realm = getRealm(state)
+      const isGuest = !!getIsGuestLogin(state)
+      const network = getSelectedNetwork(state)
 
-//     const additionalMetadata: Record<string, any> = {
-//       sceneId: this.parcelIdentity.cid,
-//       parcel: this.getSceneData().scene.base,
-//       // THIS WILL BE DEPRECATED
-//       tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
-//       network,
-//       isGuest,
-//       realm: realm?.protocol === 'v2' || realm?.protocol === 'v1' ? compatibilityRealm : realm,
-//       signer: 'decentraland-kernel-scene'
-//     }
+      const compatibilityRealm:
+        | {
+            domain: string
+            layer: string
+            catalystName: string
+          }
+        | undefined = realm ? { domain: realm.hostname, layer: '', catalystName: realm.serverName } : undefined
 
-//     return signedFetch(url, identity!, init, additionalMetadata)
-//   }
+      const additionalMetadata: Record<string, any> = {
+        sceneId: this.parcelIdentity.cid,
+        parcel: this.getSceneData().scene.base,
+        // THIS WILL BE DEPRECATED
+        tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
+        network,
+        isGuest,
+        realm: realm?.protocol === 'v2' || realm?.protocol === 'v1' ? compatibilityRealm : realm,
+        signer: 'decentraland-kernel-scene'
+      }
 
-//   private getSceneData() {
-//     return this.parcelIdentity.land.sceneJsonData
-//   }
-// }
+      //   return this.parcelIdentity.land.sceneJsonData
+      const result = signedFetch(req.url, identity!, req.init, additionalMetadata)
+
+      return {} as any
+    }
+  }))
+}

@@ -1,15 +1,13 @@
-// import { registerAPI, exposeMethod, APIOptions } from 'decentraland-rpc/lib/host'
-
-// import {
-//   ICommunicationsController,
-//   subscribeParcelSceneToCommsMessages,
-//   unsubscribeParcelSceneToCommsMessages
-// } from 'shared/comms/sceneSubscriptions'
-// import { ExposableAPI } from 'shared/apis/ExposableAPI'
-// import { EngineAPI } from 'shared/apis/EngineAPI'
-// import { ParcelIdentity } from './ParcelIdentity'
-// import { PeerInformation } from 'shared/comms/interface/types'
-// import { sendParcelSceneCommsMessage } from 'shared/comms'
+import {
+  ICommunicationsController,
+  subscribeParcelSceneToCommsMessages,
+  unsubscribeParcelSceneToCommsMessages
+} from 'shared/comms/sceneSubscriptions'
+import { ExposableAPI } from 'shared/apis/ExposableAPI'
+import { EngineAPI } from 'shared/apis/EngineAPI'
+import { ParcelIdentity } from './ParcelIdentity'
+import { PeerInformation } from 'shared/comms/interface/types'
+import { sendParcelSceneCommsMessage } from './../../comms'
 
 // @registerAPI('CommunicationsController')
 // export class CommunicationsController extends ExposableAPI implements ICommunicationsController {
@@ -42,3 +40,30 @@
 //     sendParcelSceneCommsMessage(this.cid, message)
 //   }
 // }
+import { RpcServerPort } from '@dcl/rpc'
+import { PortContext } from './context'
+import * as codegen from '@dcl/rpc/dist/codegen'
+
+import { CommunicationsControllerServiceDefinition } from './../gen/CommunicationsController'
+import defaultLogger from '../../logger'
+
+export function CommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, CommunicationsControllerServiceDefinition, async () => ({
+    async init(_req, ctx) {
+      // todo: this is the subscribe of EngineAPI
+      if (!ctx.EngineAPI.subscribedEvents['comms']) {
+        ctx.EngineAPI.parcelSceneAPI.on('comms', (data: any) => {
+          if (ctx.EngineAPI.subscribedEvents['comms']) {
+            ctx.eventChannel.push({ id: 'comms', data }).catch((error) => defaultLogger.error(error))
+          }
+        })
+        ctx.EngineAPI.subscribedEvents['comms'] = true
+      }
+      return {}
+    },
+    async realSend(req) {
+      sendParcelSceneCommsMessage(this.cid, req.message)
+      return {}
+    }
+  }))
+}

@@ -3,10 +3,10 @@ import { RpcServerPort } from '@dcl/rpc/dist/types'
 import { EngineAPIServiceDefinition, ManyEntityAction } from './../gen/EngineAPI'
 
 import defaultLogger from 'shared/logger'
-import { PortContext } from './context'
+import { PortContextService } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
 
-export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
+export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContextService<'EngineAPI'>>) {
   codegen.registerService(port, EngineAPIServiceDefinition, async () => ({
     async sendBatch(req: ManyEntityAction, context) {
       const actions: EntityAction[] = []
@@ -28,7 +28,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
     },
 
     async realSubscribe(req, ctx) {
-      const channel = ctx.EngineAPI.eventChannel
+      const channel = ctx.eventChannel
 
       if (!(req.eventId in ctx.EngineAPI.subscribedEvents)) {
         ctx.EngineAPI.parcelSceneAPI.on(req.eventId, (data: any) => {
@@ -36,6 +36,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
             channel.push({ id: req.eventId, data }).catch((error) => defaultLogger.error(error))
           }
         })
+        ctx.EngineAPI.subscribedEvents[req.eventId] = true
       }
 
       return {}
@@ -45,9 +46,9 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       return {}
     },
     async *streamEvents(req, ctx) {
-      const channel = ctx.EngineAPI.eventChannel
+      const channel = ctx.eventChannel
       for await (const message of channel) {
-        yield { eventId: message.id, eventData: message.data }
+        yield { eventId: message.id, eventData: JSON.stringify(message.data) }
       }
     }
   }))

@@ -58,11 +58,11 @@ message GetExplorerConfigurationRequest {}
 message GetDecentralandTimeRequest {}
 
 service EnvironmentAPIService {
-    rpc getBootstrapData(GetBootstrapDataRequest) returns (BootstrapDataResponse) {}
-    rpc isPreviewMode(IsPreviewModeRequest) returns (PreviewModeResponse) {}
-    rpc getPlatform(GetPlatformRequest) returns (GetPlatformResponse) {}
-    rpc areUnsafeRequestAllowed(AreUnsafeRequestAllowedRequest) returns (AreUnsafeRequestAllowedResponse) {}
-    rpc getCurrentRealm(GetCurrentRealmRequest) returns (GetCurrentRealmResponse) {}
-    rpc getExplorerConfiguration(GetExplorerConfigurationRequest) returns (GetExplorerConfigurationResponse) {}
-    rpc getDecentralandTime(GetDecentralandTimeRequest) returns (GetDecentralandTimeResponse) {}
+    rpc realGetBootstrapData(GetBootstrapDataRequest) returns (BootstrapDataResponse) {}
+    rpc realIsPreviewMode(IsPreviewModeRequest) returns (PreviewModeResponse) {}
+    rpc realGetPlatform(GetPlatformRequest) returns (GetPlatformResponse) {}
+    rpc realAreUnsafeRequestAllowed(AreUnsafeRequestAllowedRequest) returns (AreUnsafeRequestAllowedResponse) {}
+    rpc realGetCurrentRealm(GetCurrentRealmRequest) returns (GetCurrentRealmResponse) {}
+    rpc realGetExplorerConfiguration(GetExplorerConfigurationRequest) returns (GetExplorerConfigurationResponse) {}
+    rpc realGetDecentralandTime(GetDecentralandTimeRequest) returns (GetDecentralandTimeResponse) {}
 }

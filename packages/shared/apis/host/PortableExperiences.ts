@@ -71,3 +71,33 @@
 //     return Array.from(loaded).map(($) => ({ pid: $.data.sceneId, parentCid: $.parentCid }))
 //   }
 // }
+import { RpcServerPort } from '@dcl/rpc'
+import { PortContext } from './context'
+import * as codegen from '@dcl/rpc/dist/codegen'
+
+import { PortableExperiencesServiceDefinition } from './../gen/PortableExperiences'
+import { avatarMessageObservable } from 'shared/comms/peers'
+import defaultLogger from 'shared/logger'
+
+export function registerPortableExperiencesServiceServerImplementation(
+  port: RpcServerPort<PortContext>,
+  ctx: PortContext
+) {
+  avatarMessageObservable.add((event: any) => {
+    ctx.eventChannel.push({ id: 'AVATAR_OBSERVABLE', data: event }).catch((err) => defaultLogger.error(err))
+  })
+  codegen.registerService(port, PortableExperiencesServiceDefinition, async () => ({
+    async realSpawn() {
+      return {} as any
+    },
+    async realKill() {
+      return {} as any
+    },
+    async realExit() {
+      return {} as any
+    },
+    async realGetPortableExperiencesLoaded() {
+      return {} as any
+    }
+  }))
+}

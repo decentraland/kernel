@@ -8,5 +8,5 @@ message DevToolsBody {
 message EventResponse {}
 
 service DevToolsService {
-    rpc event(DevToolsBody) returns (EventResponse) {}
+    rpc realEvent(DevToolsBody) returns (EventResponse) {}
 }

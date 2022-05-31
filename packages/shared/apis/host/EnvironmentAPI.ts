@@ -17,27 +17,30 @@ import {
   PreviewModeResponse
 } from './../gen/EnvironmentAPI'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
-import { PortContext } from './context'
+import { PortContextService } from './context'
 
-export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
+export function registerEnvironmentAPIServiceServerImplementation(
+  port: RpcServerPort<PortContextService<'EnvironmentAPI'>>
+) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
-    async getBootstrapData(req, context): Promise<BootstrapDataResponse> {
+    async realGetBootstrapData(req, context): Promise<BootstrapDataResponse> {
+      debugger
       return { ...context.EnvironmentAPI.data, jsonPayload: JSON.stringify(context.EnvironmentAPI.data.data) }
     },
-    async isPreviewMode(): Promise<PreviewModeResponse> {
+    async realIsPreviewMode(): Promise<PreviewModeResponse> {
       return { isPreview: PREVIEW }
     },
-    async getPlatform(): Promise<GetPlatformResponse> {
+    async realGetPlatform(): Promise<GetPlatformResponse> {
       if (RENDERER_WS) {
         return { platform: Platform.DESKTOP }
       } else {
         return { platform: Platform.BROWSER }
       }
     },
-    async areUnsafeRequestAllowed(): Promise<AreUnsafeRequestAllowedResponse> {
+    async realAreUnsafeRequestAllowed(): Promise<AreUnsafeRequestAllowedResponse> {
       return { status: getFeatureFlagEnabled(store.getState(), 'unsafe-request') }
     },
-    async getCurrentRealm(): Promise<GetCurrentRealmResponse> {
+    async realGetCurrentRealm(): Promise<GetCurrentRealmResponse> {
       const realm = getRealm(store.getState())
       const island = getCommsIsland(store.getState()) ?? '' // We shouldn't send undefined because it would break contract
 
@@ -47,7 +50,7 @@ export function registerEnvironmentAPIServiceServerImplementation(port: RpcServe
 
       return { currentRealm: toEnvironmentRealmType(realm, island) }
     },
-    async getExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
+    async realGetExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
       return {
         clientUri: location.href,
         configurations: {
@@ -55,7 +58,7 @@ export function registerEnvironmentAPIServiceServerImplementation(port: RpcServe
         }
       }
     },
-    async getDecentralandTime(): Promise<GetDecentralandTimeResponse> {
+    async realGetDecentralandTime(): Promise<GetDecentralandTimeResponse> {
       let time = decentralandTimeData.time
 
       // if time is not paused we calculate the current time to avoid

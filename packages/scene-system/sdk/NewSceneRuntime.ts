@@ -26,7 +26,7 @@ const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
 
 type EventState = { allowOpenExternalUrl: boolean }
-type EventCallback = (id: string, payload: any) => void
+type EventCallback = (event: { type: string; data: any }) => void
 
 interface DecentralandInterfaceOptions {
   modules: LoadedModules
@@ -355,20 +355,22 @@ async function eventTracker(
   eventArgs: { eventState: EventState; onEventFunctions: EventCallback[] }
 ) {
   for await (const notif of EngineAPI!.streamEvents({})) {
-    const data = JSON.parse(notif.eventData || '')
-    if (notif.eventId === 'raycastResponse') {
+    console.log({ notif })
+    const data = JSON.parse(notif.eventData || '{}')
+    const event = { type: notif.eventId, data }
+    if (event.type === 'raycastResponse') {
       const idAsNumber = parseInt(data.queryId, 10)
       if (numberToIdStore[idAsNumber]) {
         data.queryId = numberToIdStore[idAsNumber].toString()
       }
     }
 
-    if (isPointerEvent({ type: notif.eventId, data })) {
+    if (isPointerEvent(event)) {
       eventArgs.eventState.allowOpenExternalUrl = true
     }
     for (const cb of eventArgs.onEventFunctions) {
       try {
-        cb(notif.eventId, data)
+        cb(event)
       } catch (err) {
         console.error(err)
       }
@@ -389,8 +391,8 @@ export async function startNewSceneRuntime(client: RpcClient) {
   const onEventFunctions: EventCallback[] = []
   eventTracker(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => console.error(err))
 
-  const bootstrapData = await modules.EnvironmentAPI!.getBootstrapData({})
-  const isPreview = (await modules.EnvironmentAPI!.isPreviewMode({})).isPreview
+  const bootstrapData = await modules.EnvironmentAPI!.realGetBootstrapData({})
+  const isPreview = (await modules.EnvironmentAPI!.realIsPreviewMode({})).isPreview
 
   if (!bootstrapData || !bootstrapData.main) {
     throw new Error(`No boostrap data`)
@@ -421,7 +423,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
     .hasPermission
   const canUseFetch = (await modules.Permissions!.realHasPermission({ permission: PermissionItem.USE_FETCH }))
     .hasPermission
-  const unsafeAllowed = (await modules.EnvironmentAPI!.areUnsafeRequestAllowed({})).status
+  const unsafeAllowed = (await modules.EnvironmentAPI!.realAreUnsafeRequestAllowed({})).status
 
   const originalFetch = fetch
 
@@ -446,8 +448,8 @@ export async function startNewSceneRuntime(client: RpcClient) {
     })
   })
 
-  onEventFunctions.push((id: string, _payload: any) => {
-    if (id === 'sceneStart') {
+  onEventFunctions.push((event) => {
+    if (event.type === 'sceneStart') {
       startLoop().catch((err) => console.error(err))
       for (const startFunctionCb of onStartFunctions) {
         try {
@@ -496,7 +498,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
 function isPointerEvent(event: any): boolean {
   switch (event.type) {
     case 'uuidEvent':
-      return event.data.payload.buttonId !== undefined
+      return event.data?.payload?.buttonId !== undefined
   }
   return false
 }
