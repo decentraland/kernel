@@ -271,7 +271,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
             addNewChatMessage(chatMessage)
           })
 
-          shouldTry = false;
+          shouldTry = false
         } catch (e) {
           logger.error(`Error fetching message for conversation (attempt ${attempt})`, conversation, e)
 
@@ -285,7 +285,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
             millisToRetry *= 2
           }
 
-          shouldTry = attempt < maxAttempts;
+          shouldTry = attempt < maxAttempts
 
           if (shouldTry) {
             await sleep(millisToRetry)
