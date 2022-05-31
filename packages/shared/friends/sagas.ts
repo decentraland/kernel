@@ -277,7 +277,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
           trackEvent('error', {
             context: 'kernel#saga',
-            message: `There was an error fetching messages for conversation ${conversation.id}`,
+            message: `There was an error fetching messages for conversation, attempt ${attempt}`,
             stack: '' + e
           })
 
