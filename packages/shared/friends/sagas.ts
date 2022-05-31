@@ -290,7 +290,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
           if (shouldTry) {
             await sleep(millisToRetry)
           } else {
-            logger.error(`Error fetching message for conversation, maxed attempts to try (${maxAttempts}), will no retry`, conversation)
+            logger.error(
+              `Error fetching message for conversation, maxed attempts to try (${maxAttempts}), will no retry`,
+              conversation
+            )
           }
         }
       }
