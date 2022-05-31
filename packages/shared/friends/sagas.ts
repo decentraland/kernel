@@ -63,6 +63,7 @@ import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
+import { sleep } from 'atomicHelpers/sleep'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -239,25 +240,60 @@ function* configureMatrixClient(action: SetMatrixClient) {
   yield Promise.all(
     conversations.map(async ({ conversation }) => {
       const cursor = await client.getCursorOnLastMessage(conversation.id, { initialSize: INITIAL_CHAT_SIZE })
-      const messages = cursor.getMessages()
 
-      const friend = friendsSocial.find((friend) => friend.conversationId === conversation.id)
+      let millisToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
 
-      if (!friend) {
-        return
-      }
+      const maxAttempts = 5
+      let shouldTry = true
+      let attempt = 0
 
-      messages.forEach((message) => {
-        const chatMessage = {
-          messageId: message.id,
-          messageType: ChatMessageType.PRIVATE,
-          timestamp: message.timestamp,
-          body: message.text,
-          sender: message.sender === ownId ? identity.address : friend.userId,
-          recipient: message.sender === ownId ? friend.userId : identity.address
+      while (shouldTry) {
+        attempt += 1
+
+        try {
+          const messages = cursor.getMessages()
+
+          const friend = friendsSocial.find((friend) => friend.conversationId === conversation.id)
+
+          if (!friend) {
+            return
+          }
+
+          messages.forEach((message) => {
+            const chatMessage = {
+              messageId: message.id,
+              messageType: ChatMessageType.PRIVATE,
+              timestamp: message.timestamp,
+              body: message.text,
+              sender: message.sender === ownId ? identity.address : friend.userId,
+              recipient: message.sender === ownId ? friend.userId : identity.address
+            }
+            addNewChatMessage(chatMessage)
+          })
+
+          shouldTry = false;
+        } catch (e) {
+          logger.error(`Error fetching message for conversation (attempt ${attempt})`, conversation, e)
+
+          trackEvent('error', {
+            context: 'kernel#saga',
+            message: `There was an error fetching messages for conversation ${conversation.id}`,
+            stack: '' + e
+          })
+
+          if (millisToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
+            millisToRetry *= 2
+          }
+
+          shouldTry = attempt < maxAttempts;
+
+          if (shouldTry) {
+            await sleep(millisToRetry)
+          } else {
+            logger.error(`Error fetching message for conversation, maxed attempts to try (${maxAttempts}), will no retry`, conversation)
+          }
         }
-        addNewChatMessage(chatMessage)
-      })
+      }
     })
   )
 }
