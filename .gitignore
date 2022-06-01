@@ -59,7 +59,6 @@ packages/config/contracts.ts
 .decentraland
 **/.decentraland
 
-packages/shared/comms/v4/proto/comms.ts
 packages/shared/comms/v4/proto/bff/*.ts
 packages/shared/comms/v4/proto/*.ts
 protoc3/
