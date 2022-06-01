@@ -39,6 +39,36 @@ interface DecentralandInterfaceOptions {
   eventState: EventState
 }
 
+type Stat = {
+  repeatCount: number
+  repeatBytesCount: number
+  nextTick: number
+}
+
+type StatId = 'sendBatch' | 'eventReceive'
+const stats: Map<StatId, Stat> = new Map<StatId, Stat>()
+function addStat(id: StatId, count: number, byteLength: number) {
+  const now = new Date().getTime()
+  if (!stats.has(id)) {
+    stats.set(id, {
+      repeatBytesCount: 0,
+      repeatCount: 0,
+      nextTick: new Date().getTime() + 1000
+    })
+    console.log(`[new-rpc-stat] ${id} initialized`)
+  }
+
+  const stat = stats.get(id)!
+  if (now > stat.nextTick) {
+    const dt = 1000 + now - stat.nextTick
+    console.log(`[new-rpc-stat] ${id} - count ${stat.repeatCount} - bytes ${stat.repeatBytesCount} in ${dt}ms`)
+    stat.repeatCount = stat.repeatBytesCount = 0
+    stat.nextTick = now + 1000
+  }
+  stat.repeatCount += count
+  stat.repeatBytesCount += byteLength
+}
+
 async function getEthereumProvider(modules: LoadedModules, port: RpcClientPort) {
   modules.EthereumController = await LoadableAPIs.EthereumController(port)
 
@@ -65,7 +95,7 @@ async function getEthereumProvider(modules: LoadedModules, port: RpcClientPort) 
 
 function getDecentralandInterface(options: DecentralandInterfaceOptions) {
   const { modules, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
-  const events: any = []
+  const events: any[] = []
   const onUpdateFunctions: ((dt: number) => void)[] = []
   const onStartFunctions: (() => void)[] = []
   const loadingModules: Record<string, IFuture<void>> = {}
@@ -357,7 +387,8 @@ async function eventTracker(
   eventArgs: { eventState: EventState; onEventFunctions: EventCallback[] }
 ) {
   for await (const notif of EngineAPI!.streamEvents({})) {
-    console.log({ notif })
+    addStat('eventReceive', 1, notif.eventData.length)
+
     const data = JSON.parse(notif.eventData || '{}')
     const event = { type: notif.eventId, data }
     if (event.type === 'raycastResponse') {
@@ -489,7 +520,12 @@ export async function startNewSceneRuntime(client: RpcClient) {
       const batch = events.slice()
       events.length = 0
 
-      console.log(`sending ${batch.length} events.`)
+      addStat(
+        'sendBatch',
+        batch.length,
+        batch.reduce((prev, current) => prev + current.payload.length, 0)
+      )
+
       modules.EngineAPI!.sendBatch({ actions: batch }).catch((err) => console.error(err))
     }
   }
