@@ -81,10 +81,7 @@ build-proto: protoc3/bin/protoc
 		--ts_proto_out="$(PWD)/packages/shared/comms/v4/proto" \
 		-I="$(PWD)/packages/shared/comms/v4/proto" \
 		"$(PWD)/packages/shared/comms/v4/proto/comms.proto"  \
-		"$(PWD)/packages/shared/comms/v4/proto/p2p.proto"  \
-		"$(PWD)/packages/shared/comms/v4/proto/ws.proto"  \
 		"$(PWD)/packages/shared/comms/v4/proto/archipelago.proto" 
-
 
 	protoc3/bin/protoc \
 		--plugin=./node_modules/.bin/protoc-gen-ts_proto \

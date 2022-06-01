@@ -1,21 +1,18 @@
 /// <reference lib="dom" />
-
+import { store } from 'shared/store/isolatedStore'
+import { getCommsConfig } from 'shared/meta/selectors'
 import { Position3D } from './types'
 import { Data, Profile_ProfileType } from './proto/comms'
 import { Position } from '../../comms/interface/utils'
 import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
-import { WsTransport } from './WsTransport'
-import { LivekitTransport } from './LivekitTransport'
-import { Transport, TransportMessage } from './Transport'
+import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
 import { createLogger } from 'shared/logger'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 
-import { PeerToPeerTransport } from './PeerToPeerTransport'
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import { ProfileType } from 'shared/profiles/types'
 import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
-import { DummyTransport } from './DummyTransport'
 import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
 import { HeartbeatMessage, IslandChangedMessage } from './proto/archipelago'
@@ -35,6 +32,24 @@ export class InstanceConnection implements RoomConnection {
 
   async connect(): Promise<void> {
     const peerId = await this.bff.connect()
+    const commsConfig = getCommsConfig(store.getState())
+    const config: TransportsConfig = {
+      logger: this.logger,
+      bff: this.bff,
+      selfPosition: this.selfPosition,
+      peerId,
+      p2p: {
+        verbose: true,
+        debugWebRtcEnabled: false
+      }
+    }
+
+    if (!commsConfig.relaySuspensionDisabled) {
+      config.p2p.relaySuspensionConfig = {
+        relaySuspensionInterval: commsConfig.relaySuspensionInterval ?? 750,
+        relaySuspensionDuration: commsConfig.relaySuspensionDuration ?? 5000
+      }
+    }
 
     this.heartBeatInterval = setInterval(async () => {
       const position = this.selfPosition()
@@ -65,26 +80,10 @@ export class InstanceConnection implements RoomConnection {
           this.logger.error('cannot process island change message', e)
           return
         }
-        const connStr = islandChangedMessage.connStr
-        this.logger.info(`Got island change message: ${connStr}`)
-
-        let transport: Transport | null = null
-        if (connStr.startsWith('ws-room:')) {
-          transport = new WsTransport(connStr.substring('ws-room:'.length))
-        } else if (connStr.startsWith('livekit:')) {
-          transport = new LivekitTransport(connStr.substring('livekit:'.length))
-        } else if (connStr.startsWith('p2p:')) {
-          const peers = new Map<string, Position3D>()
-          for (const [id, p] of Object.entries(islandChangedMessage.peers)) {
-            if (peerId !== id) {
-              peers.set(id, [p.x, p.y, p.z])
-            }
-          }
-          transport = new PeerToPeerTransport(peerId, this.bff, islandChangedMessage.islandId, peers)
-        }
+        const transport = createTransport(config, islandChangedMessage)
 
         if (!transport) {
-          this.logger.error(`Invalid islandConnStr ${connStr}`)
+          this.logger.error(`Invalid islandConnStr ${islandChangedMessage.connStr}`)
           return
         }
         await this.changeTransport(transport)
@@ -388,7 +387,6 @@ export class InstanceConnection implements RoomConnection {
   }
 
   private selfPosition(): Position3D | undefined {
-    // TODO we also use this for the PeerToPeerTransport, maybe receive this as part of the config
     if (lastPlayerPositionReport) {
       const { x, y, z } = lastPlayerPositionReport.position
       return [x, y, z]
