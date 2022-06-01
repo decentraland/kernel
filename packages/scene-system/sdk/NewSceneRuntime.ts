@@ -16,7 +16,7 @@ import { createEventTracker, EventCallback, EventState } from './new-rpc/EventTr
 import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
 
 export async function startNewSceneRuntime(client: RpcClient) {
-  const clientPort = await client.createPort('new-rpc-scene-worker')
+  const clientPort = await client.createPort(`new-rpc-${globalThis.name}`)
   const modules: LoadedModules = {
     EngineAPI: await LoadableAPIs.EngineAPI(clientPort),
     EnvironmentAPI: await LoadableAPIs.EnvironmentAPI(clientPort),
