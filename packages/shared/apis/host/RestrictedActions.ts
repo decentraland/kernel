@@ -14,22 +14,25 @@ import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { RestrictedActionsServiceDefinition } from './../gen/RestrictedActions'
+import { assertHasPermission } from './Permissions'
+import { PermissionItem } from '../gen/Permissions'
 
 export function registerRestrictedActionsServiceServerImplementation(port: RpcServerPort<PortContext>) {
   function isPositionValid(position: Vector3, ctx: PortContext) {
     return (
       ctx.ParcelIdentity!.isPortableExperience ||
-      isWorldPositionInsideParcels(ctx.ParcelIdentity!.land.sceneJsonData.scene.parcels, position)
+      isWorldPositionInsideParcels(ctx.ParcelIdentity.land!.sceneJsonData.scene.parcels, position)
     )
   }
   codegen.registerService(port, RestrictedActionsServiceDefinition, async () => ({
     async realMovePlayerTo(req, ctx) {
       //   checks permissions
-      // await this.assertHasPermissions([PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE])
+      assertHasPermission(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, ctx)
+
       if (!ctx.ParcelIdentity) return {}
 
       const base = parseParcelPosition(
-        ctx.ParcelIdentity.isPortableExperience ? '0,0' : ctx.ParcelIdentity.land.sceneJsonData.scene.base
+        ctx.ParcelIdentity.isPortableExperience ? '0,0' : ctx.ParcelIdentity.land!.sceneJsonData.scene.base
       )
       const basePosition = new Vector3()
       gridToWorld(base.x, base.y, basePosition)
@@ -67,7 +70,7 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
     },
     async realTriggerEmote(req, ctx) {
       // checks permissions
-      // await this.assertHasPermissions([PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE])
+      assertHasPermission(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE, ctx)
 
       if (!isPositionValid(lastPlayerPosition, ctx)) {
         defaultLogger.error('Error: Player is not inside of scene', lastPlayerPosition)

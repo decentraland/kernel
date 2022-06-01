@@ -105,7 +105,7 @@ export class NewSceneSystemWorker extends SceneWorker {
         this.lastSentPosition.copyFrom(positionReport.position)
       }
     }
-    if (this.rpcContext?.EngineAPI && 'rotationChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
+    if (this.rpcContext.EngineAPI && 'rotationChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
       if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
         this.rpcContext.eventChannel
           .push({

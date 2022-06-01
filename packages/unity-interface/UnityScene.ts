@@ -8,6 +8,7 @@ import { getUnityInstance } from './IUnityInterface'
 import { protobufMsgBridge } from './protobufMessagesBridge'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { trackEvent } from 'shared/analytics'
+import { PermissionItem, permissionItemFromJSON } from 'shared/apis/gen/Permissions'
 
 const sendBatchTime: Array<number> = []
 const sendBatchMsgs: Array<number> = []
@@ -104,5 +105,24 @@ export class UnityScene<T> implements ParcelSceneAPI {
 
   emit<T extends IEventNames>(event: T, data: IEvents[T]): void {
     this.eventDispatcher.emit(event, data)
+  }
+
+  protected async loadPermission(defaultPermissions: PermissionItem[] = []) {
+    const permissionArray: PermissionItem[] = [...defaultPermissions]
+    const sceneJsonFile = this.data.mappings.find((m) => m.file.startsWith('scene.json'))?.hash
+
+    if (sceneJsonFile) {
+      const sceneJson = await (await fetch(new URL(sceneJsonFile, this.data.baseUrl).toString())).json()
+
+      if (sceneJson.requiredPermissions) {
+        for (const permissionItemString of sceneJson.requiredPermissions) {
+          permissionArray.push(permissionItemFromJSON(permissionItemString))
+        }
+      }
+    }
+
+    // Delete duplicated
+    const permissionSet = new Set<PermissionItem>(permissionArray)
+    this.worker.rpcContext.Permissions.permissionGranted = Array.from(permissionSet)
   }
 }

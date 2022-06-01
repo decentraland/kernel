@@ -11,13 +11,14 @@ export function registerParcelIdentityServiceServerImplementation(
       return {
         land: {
           ...ctx.ParcelIdentity.land,
-          sceneJsonData: JSON.stringify(ctx.ParcelIdentity.land.sceneJsonData)
+          sceneJsonData: JSON.stringify(ctx.ParcelIdentity.land!.sceneJsonData)
         },
         cid: ctx.ParcelIdentity.cid
       } as any
+      // TODO: new rpc
     },
     async realGetSceneId(_req, ctx) {
-      const sceneId = ctx.ParcelIdentity.land.sceneId || ctx.ParcelIdentity.cid || ''
+      const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.ParcelIdentity.cid || ''
       return { sceneId }
     },
     async realGetIsEmpty(_req, ctx) {

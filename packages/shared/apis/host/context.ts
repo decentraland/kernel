@@ -13,27 +13,28 @@ type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 export type PortContextService<K extends keyof PortContext> = WithRequired<PortContext, K>
 
 export type PortContext = {
-  EnvironmentAPI?: {
+  EnvironmentAPI: {
     data: EnvironmentData<any>
   }
-  EngineAPI?: {
+  EngineAPI: {
     didStart: boolean
     parcelSceneAPI: ParcelSceneAPI
     subscribedEvents: { [event: string]: boolean }
   }
-  DevTools?: {
-    logger: ILogger
-    logs: Protocol.Runtime.ConsoleAPICalledEvent[]
-    exceptions: Map<number, Protocol.Runtime.ExceptionDetails>
-  }
-  Permissions?: {
+  Permissions: {
     permissionGranted: PermissionItem[]
   }
-  ParcelIdentity?: {
-    land: ILand
+  ParcelIdentity: {
+    land?: ILand
     cid: string
     isPortableExperience: boolean
     isEmpty: boolean
   }
   eventChannel: ReturnType<typeof eventPushableChannel>
+
+  DevTools: {
+    logger: ILogger
+    logs: Protocol.Runtime.ConsoleAPICalledEvent[]
+    exceptions: Map<number, Protocol.Runtime.ExceptionDetails>
+  }
 }

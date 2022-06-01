@@ -117,3 +117,11 @@ export function getIdAsNumber(id: string): number {
     return idToNumberStore[id]
   }
 }
+
+export function initMessagesFinished() {
+  return {
+    type: 'InitMessagesFinished',
+    tag: 'scene',
+    payload: '{}'
+  }
+}

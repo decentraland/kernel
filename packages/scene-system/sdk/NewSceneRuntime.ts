@@ -1,429 +1,35 @@
 import { LoadedModules, LoadableAPIs } from './../../shared/apis/client'
-import { componentNameRE, generatePBObject, getIdAsNumber, numberToIdStore, resolveMapping } from './Utils'
-import {
-  AttachEntityComponentPayload,
-  ComponentCreatedPayload,
-  ComponentDisposedPayload,
-  ComponentRemovedPayload,
-  ComponentUpdatedPayload,
-  CreateEntityPayload,
-  LoadableParcelScene,
-  OpenNFTDialogPayload,
-  QueryPayload,
-  RemoveEntityPayload,
-  RPCSendableMessage,
-  SetEntityParentPayload,
-  UpdateEntityComponentPayload
-} from 'shared/types'
-import { QueryType, Vector2 } from '@dcl/legacy-ecs'
+import { initMessagesFinished, resolveMapping } from './Utils'
+import { LoadableParcelScene } from 'shared/types'
 import { customEval, getES5Context } from './sandbox'
 import { createFetch } from './Fetch'
 import { createWebSocket } from './WebSocket'
-import { RpcClient, RpcClientPort } from '@dcl/rpc/dist/types'
+import { RpcClient } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/gen/Permissions'
-import future, { IFuture } from 'fp-future'
 import { sleep } from 'atomicHelpers/sleep'
 
-const WEB3_PROVIDER = 'web3-provider'
-const PROVIDER_METHOD = 'getProvider'
-
-type EventState = { allowOpenExternalUrl: boolean }
-type EventCallback = (event: { type: string; data: any }) => void
-
-interface DecentralandInterfaceOptions {
-  modules: LoadedModules
-  onLog: (...args: any[]) => void
-  onError: (...args: any[]) => void
-  onEventFunctions: EventCallback[]
-  sceneId: string
-  clientPort: RpcClientPort
-  eventState: EventState
-}
-
-type Stat = {
-  repeatCount: number
-  repeatBytesCount: number
-  nextTick: number
-}
-
-type StatId = 'sendBatch' | 'eventReceive'
-const stats: Map<StatId, Stat> = new Map<StatId, Stat>()
-function addStat(id: StatId, count: number, byteLength: number) {
-  const now = new Date().getTime()
-  if (!stats.has(id)) {
-    stats.set(id, {
-      repeatBytesCount: 0,
-      repeatCount: 0,
-      nextTick: new Date().getTime() + 1000
-    })
-    console.log(`[new-rpc-stat] ${id} initialized`)
-  }
-
-  const stat = stats.get(id)!
-  if (now > stat.nextTick) {
-    const dt = 1000 + now - stat.nextTick
-    console.log(`[new-rpc-stat] ${id} - count ${stat.repeatCount} - bytes ${stat.repeatBytesCount} in ${dt}ms`)
-    stat.repeatCount = stat.repeatBytesCount = 0
-    stat.nextTick = now + 1000
-  }
-  stat.repeatCount += count
-  stat.repeatBytesCount += byteLength
-}
-
-async function getEthereumProvider(modules: LoadedModules, port: RpcClientPort) {
-  modules.EthereumController = await LoadableAPIs.EthereumController(port)
-
-  return {
-    // @internal
-    send(message: RPCSendableMessage, callback?: (error: Error | null, result?: any) => void): void {
-      if (message && callback && callback instanceof Function) {
-        modules
-          .EthereumController!.sendAsync(message)
-          .then((x: any) => callback(null, x))
-          .catch(callback)
-      } else {
-        throw new Error('Decentraland provider only allows async calls')
-      }
-    },
-    sendAsync(message: RPCSendableMessage, callback: (error: Error | null, result?: any) => void): void {
-      modules
-        .EthereumController!.sendAsync(message)
-        .then((x: any) => callback(null, x))
-        .catch(callback)
-    }
-  }
-}
-
-function getDecentralandInterface(options: DecentralandInterfaceOptions) {
-  const { modules, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
-  const events: any[] = []
-  const onUpdateFunctions: ((dt: number) => void)[] = []
-  const onStartFunctions: (() => void)[] = []
-  const loadingModules: Record<string, IFuture<void>> = {}
-  let provider: Awaited<ReturnType<typeof getEthereumProvider>> | null = null
-
-  const dcl: DecentralandInterface = {
-    DEBUG: true,
-    log(...args: any[]) {
-      onLog(...args)
-    },
-
-    openExternalUrl(url: string) {
-      if (JSON.stringify(url).length > 49000) {
-        onError(new Error('URL payload cannot exceed 49.000 bytes'))
-        return
-      }
-
-      if (eventState.allowOpenExternalUrl) {
-        events.push({
-          type: 'OpenExternalUrl',
-          tag: '',
-          payload: JSON.stringify(url)
-        })
-      } else {
-        this.error('openExternalUrl can only be used inside a pointerEvent')
-      }
-    },
-
-    openNFTDialog(assetContractAddress: string, tokenId: string, comment: string | null) {
-      if (eventState.allowOpenExternalUrl) {
-        const payload = { assetContractAddress, tokenId, comment }
-
-        if (JSON.stringify(payload).length > 49000) {
-          onError(new Error('OpenNFT payload cannot exceed 49.000 bytes'))
-          return
-        }
-
-        events.push({
-          type: 'OpenNFTDialog',
-          tag: '',
-          payload: JSON.stringify(payload as OpenNFTDialogPayload)
-        })
-      } else {
-        this.error('openNFTDialog can only be used inside a pointerEvent')
-      }
-    },
-
-    addEntity(entityId: string) {
-      if (entityId === '0') {
-        // We dont create the entity 0 in the engine.
-        return
-      }
-      events.push({
-        type: 'CreateEntity',
-        payload: JSON.stringify({ id: entityId } as CreateEntityPayload)
-      })
-    },
-
-    removeEntity(entityId: string) {
-      events.push({
-        type: 'RemoveEntity',
-        payload: JSON.stringify({ id: entityId } as RemoveEntityPayload)
-      })
-    },
-
-    /** update tick */
-    onUpdate(cb: (deltaTime: number) => void): void {
-      if (typeof (cb as any) !== 'function') {
-        onError(new Error('onUpdate must be called with only a function argument'))
-      } else {
-        onUpdateFunctions.push(cb)
-      }
-    },
-
-    /** event from the engine */
-    onEvent(cb: (event: any) => void): void {
-      if (typeof (cb as any) !== 'function') {
-        onError(new Error('onEvent must be called with only a function argument'))
-      } else {
-        onEventFunctions.push(cb)
-      }
-    },
-
-    /** called after adding a component to the entity or after updating a component */
-    updateEntityComponent(entityId: string, componentName: string, classId: number, json: string): void {
-      if (json.length > 49000) {
-        onError(new Error('Component payload cannot exceed 49.000 bytes'))
-        return
-      }
-
-      if (componentNameRE.test(componentName)) {
-        events.push({
-          type: 'UpdateEntityComponent',
-          tag: sceneId + '_' + entityId + '_' + classId,
-          payload: JSON.stringify({
-            entityId,
-            classId,
-            name: componentName.replace(componentNameRE, ''),
-            json: generatePBObject(classId, json)
-          } as UpdateEntityComponentPayload)
-        })
-      }
-    },
-
-    /** called after adding a DisposableComponent to the entity */
-    attachEntityComponent(entityId: string, componentName: string, id: string): void {
-      if (componentNameRE.test(componentName)) {
-        events.push({
-          type: 'AttachEntityComponent',
-          tag: entityId,
-          payload: JSON.stringify({
-            entityId,
-            name: componentName.replace(componentNameRE, ''),
-            id
-          } as AttachEntityComponentPayload)
-        })
-      }
-    },
-
-    /** call after removing a component from the entity */
-    removeEntityComponent(entityId: string, componentName: string): void {
-      if (componentNameRE.test(componentName)) {
-        events.push({
-          type: 'ComponentRemoved',
-          tag: entityId,
-          payload: JSON.stringify({
-            entityId,
-            name: componentName.replace(componentNameRE, '')
-          } as ComponentRemovedPayload)
-        })
-      }
-    },
-
-    /** set a new parent for the entity */
-    setParent(entityId: string, parentId: string): void {
-      events.push({
-        type: 'SetEntityParent',
-        tag: entityId,
-        payload: JSON.stringify({
-          entityId,
-          parentId
-        } as SetEntityParentPayload)
-      })
-    },
-
-    /** queries for a specific system with a certain query configuration */
-    query(queryType: QueryType, payload: any) {
-      payload.queryId = getIdAsNumber(payload.queryId).toString()
-      events.push({
-        type: 'Query',
-        tag: sceneId + '_' + payload.queryId,
-        payload: JSON.stringify({
-          queryId: queryType,
-          payload
-        } as QueryPayload)
-      })
-    },
-
-    /** subscribe to specific events, events will be handled by the onEvent function */
-    subscribe(eventName: string): void {
-      modules.EngineAPI?.realSubscribe({ eventId: eventName }).catch((err) => onError(err))
-
-      // if (!subscribedEvents.has(eventName)) {
-      //   subscribedEvents.set(eventName, true)
-      //   subscribe(eventName, (event) => {
-      //     if (eventName === 'raycastResponse') {
-      //       const idAsNumber = parseInt(event.data.queryId, 10)
-      //       if (numberToIdStore[idAsNumber]) {
-      //         event.data.queryId = numberToIdStore[idAsNumber].toString()
-      //       }
-      //     }
-      //     fireEvent({ type: eventName, data: event })
-      //   }).catch((error) => console.error(error))
-      // }
-    },
-
-    /** unsubscribe to specific event */
-    unsubscribe(eventName: string): void {
-      modules.EngineAPI?.realUnsubscribe({ eventId: eventName }).catch((err) => onError(err))
-      // subscribedEvents.delete(eventName)
-      // that.eventSubscriber.off(eventName)
-    },
-
-    componentCreated(id: string, componentName: string, classId: number) {
-      if (componentNameRE.test(componentName)) {
-        events.push({
-          type: 'ComponentCreated',
-          tag: id,
-          payload: JSON.stringify({
-            id,
-            classId,
-            name: componentName.replace(componentNameRE, '')
-          } as ComponentCreatedPayload)
-        })
-      }
-    },
-
-    componentDisposed(id: string) {
-      events.push({
-        type: 'ComponentDisposed',
-        tag: id,
-        payload: JSON.stringify({ id } as ComponentDisposedPayload)
-      })
-    },
-
-    componentUpdated(id: string, json: string) {
-      events.push({
-        type: 'ComponentUpdated',
-        tag: id,
-        payload: JSON.stringify({
-          id,
-          json
-        } as ComponentUpdatedPayload)
-      })
-    },
-
-    loadModule: async (_moduleName) => {
-      const loadingModule: IFuture<void> = future()
-      loadingModules[_moduleName] = loadingModule
-      try {
-        const moduleToLoad = _moduleName.replace(/^@decentraland\//, '')
-        let methods: string[] = []
-
-        if (moduleToLoad in LoadableAPIs) {
-          ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad]
-        }
-        if (moduleToLoad === WEB3_PROVIDER) {
-          methods.push(PROVIDER_METHOD)
-          provider = await getEthereumProvider(modules, clientPort)
-        } else {
-          try {
-            if (moduleToLoad in LoadableAPIs) {
-              ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad]
-            }
-            methods = Object.keys((modules as any)[moduleToLoad])
-          } catch (e: any) {
-            throw Object.assign(new Error(`Error getting the methods of ${moduleToLoad}: ` + e.message), {
-              original: e
-            })
-          }
-        }
-        return {
-          rpcHandle: moduleToLoad,
-          methods: methods.map((name) => ({ name }))
-        }
-      } finally {
-        loadingModule.resolve()
-      }
-    },
-    callRpc: async (rpcHandle: string, methodName: string, args: any[]) => {
-      if (rpcHandle === WEB3_PROVIDER && methodName === PROVIDER_METHOD) {
-        return provider
-      }
-      console.log({ m: 'callRpc', rpcHandle, methodName })
-      const module = (modules as any)[rpcHandle]
-      if (!module) {
-        throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
-      }
-      // eslint-disable-next-line prefer-spread
-      return module[methodName].apply(module, args)
-    },
-    onStart(cb: () => void) {
-      onStartFunctions.push(cb)
-    },
-    error(message, data) {
-      onError(Object.assign(new Error(message as string), { data }))
-    }
-  }
-
-  return {
-    dcl,
-    onStartFunctions,
-    onUpdateFunctions,
-    events,
-    loadingModules
-  }
-}
-
-function initMessagesFinished() {
-  return {
-    type: 'InitMessagesFinished',
-    tag: 'scene',
-    payload: '{}'
-  }
-}
-
-async function eventTracker(
-  EngineAPI: LoadedModules['EngineAPI'],
-  eventArgs: { eventState: EventState; onEventFunctions: EventCallback[] }
-) {
-  for await (const notif of EngineAPI!.streamEvents({})) {
-    addStat('eventReceive', 1, notif.eventData.length)
-
-    const data = JSON.parse(notif.eventData || '{}')
-    const event = { type: notif.eventId, data }
-    if (event.type === 'raycastResponse') {
-      const idAsNumber = parseInt(data.queryId, 10)
-      if (numberToIdStore[idAsNumber]) {
-        data.queryId = numberToIdStore[idAsNumber].toString()
-      }
-    }
-
-    if (isPointerEvent(event)) {
-      eventArgs.eventState.allowOpenExternalUrl = true
-    }
-    for (const cb of eventArgs.onEventFunctions) {
-      try {
-        cb(event)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-    eventArgs.eventState.allowOpenExternalUrl = false
-  }
-}
+// New
+import { addStat, setupStats } from './new-rpc/Stats'
+import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
+import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
+import { createEventTracker, EventCallback, EventState } from './new-rpc/EventTracker'
+import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
 
 export async function startNewSceneRuntime(client: RpcClient) {
-  const clientPort = await client.createPort('new-ecs-scene-worker')
+  const clientPort = await client.createPort('new-rpc-scene-worker')
   const modules: LoadedModules = {
     EngineAPI: await LoadableAPIs.EngineAPI(clientPort),
     EnvironmentAPI: await LoadableAPIs.EnvironmentAPI(clientPort),
-    Permissions: await LoadableAPIs.Permissions(clientPort)
+    Permissions: await LoadableAPIs.Permissions(clientPort),
+    DevTools: await LoadableAPIs.DevTools(clientPort)
   }
+
+  const devToolsAdapter = new DevToolsAdapter(modules.DevTools)
+  setupStats((...args: any[]) => devToolsAdapter.log(...args))
 
   const eventState: EventState = { allowOpenExternalUrl: false }
   const onEventFunctions: EventCallback[] = []
-  eventTracker(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => console.error(err))
+  createEventTracker(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => devToolsAdapter.error(err))
 
   const bootstrapData = await modules.EnvironmentAPI!.realGetBootstrapData({})
   const fullData = JSON.parse(bootstrapData.jsonPayload) as LoadableParcelScene
@@ -444,11 +50,11 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   const sourceCode = await codeRequest.text()
 
-  const { dcl, onUpdateFunctions, onStartFunctions, events, loadingModules } = getDecentralandInterface({
+  const { dcl, onUpdateFunctions, onStartFunctions, events, loadingModules } = createDecentralandInterface({
     modules,
     clientPort,
-    onError: (...args: any) => console.error('[scene-error]', ...args),
-    onLog: (...args: any) => console.log('[scene-log]', ...args),
+    onError: (err: Error) => devToolsAdapter.error(err),
+    onLog: (...args: any) => devToolsAdapter.log(...args),
     onEventFunctions,
     sceneId: bootstrapData.sceneId,
     eventState
@@ -479,18 +85,18 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   onStartFunctions.push(() => {
     modules.EngineAPI!.startSignal({}).catch((e) => {
-      console.error(e)
+      devToolsAdapter.error(e)
     })
   })
 
   onEventFunctions.push((event) => {
     if (event.type === 'sceneStart') {
-      startLoop().catch((err) => console.error(err))
+      startLoop().catch((err) => devToolsAdapter.error(err))
       for (const startFunctionCb of onStartFunctions) {
         try {
           startFunctionCb()
         } catch (e: any) {
-          console.error(e)
+          devToolsAdapter.error(e)
         }
       }
     }
@@ -508,7 +114,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
   await Promise.race([Promise.all(Object.values(loadingModules)), timeout])
 
   if (modulesNotLoaded.length > 0) {
-    console.log(
+    devToolsAdapter.log(
       `Timed out loading modules!. The scene ${bootstrapData.sceneId} may not work correctly. Modules not loaded: ${modulesNotLoaded}`
     )
   }
@@ -528,65 +134,14 @@ export async function startNewSceneRuntime(client: RpcClient) {
         batch.reduce((prev, current) => prev + current.payload.length, 0)
       )
 
-      modules.EngineAPI!.sendBatch({ actions: batch }).catch((err) => console.error(err))
+      modules.EngineAPI!.sendBatch({ actions: batch }).catch((err) => devToolsAdapter.error(err))
     }
   }
 
   let updateInterval: number = 1000 / 30
   if (bootstrapData.useFPSThrottling === true) {
-    setupFpsThrottling(dcl, fullData.parcels)
-  }
-
-  function setupFpsThrottling(dcl: DecentralandInterface, parcels: Array<{ x: number; y: number }>) {
-    dcl.subscribe('positionChanged')
-    dcl.onEvent((event) => {
-      if (event.type !== 'positionChanged') {
-        return
-      }
-
-      const e = event.data as IEvents['positionChanged']
-
-      //NOTE: calling worldToGrid from parcelScenePositions.ts here crashes kernel when there are 80+ workers since chrome 92.
-      const PARCEL_SIZE = 16
-      const playerPosition = new Vector2(
-        Math.floor(e.cameraPosition.x / PARCEL_SIZE),
-        Math.floor(e.cameraPosition.z / PARCEL_SIZE)
-      )
-
-      if (playerPosition === undefined) {
-        return
-      }
-
-      const playerPos = playerPosition as Vector2
-
-      let sqrDistanceToPlayerInParcels = 10 * 10
-      let isInsideScene = false
-
-      for (const parcel of parcels) {
-        sqrDistanceToPlayerInParcels = Math.min(
-          sqrDistanceToPlayerInParcels,
-          Vector2.DistanceSquared(playerPos, parcel)
-        )
-        if (parcel.x === playerPos.x && parcel.y === playerPos.y) {
-          isInsideScene = true
-        }
-      }
-
-      let fps: number = 1
-
-      if (isInsideScene) {
-        fps = 30
-      } else if (sqrDistanceToPlayerInParcels <= 2 * 2) {
-        // NOTE(Brian): Yes, this could be a formula, but I prefer this pedestrian way as
-        //              its easier to read and tweak (i.e. if we find out its better as some arbitrary curve, etc).
-        fps = 20
-      } else if (sqrDistanceToPlayerInParcels <= 3 * 3) {
-        fps = 10
-      } else if (sqrDistanceToPlayerInParcels <= 4 * 4) {
-        fps = 5
-      }
-
-      updateInterval = 1000 / fps
+    setupFpsThrottling(dcl, fullData.parcels, (newValue) => {
+      updateInterval = newValue
     })
   }
 
@@ -606,21 +161,13 @@ export async function startNewSceneRuntime(client: RpcClient) {
         try {
           trigger(time)
         } catch (e: any) {
-          console.error(e)
+          devToolsAdapter.error(e)
         }
       }
 
-      sendBatch().catch((err) => console.error(err))
+      sendBatch().catch((err) => devToolsAdapter.error(err))
     }
 
     update()
   }
-}
-
-function isPointerEvent(event: any): boolean {
-  switch (event.type) {
-    case 'uuidEvent':
-      return event.data?.payload?.buttonId !== undefined
-  }
-  return false
 }

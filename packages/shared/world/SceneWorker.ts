@@ -18,6 +18,7 @@ export enum SceneWorkerReadyState {
 import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
+import Protocol from 'devtools-protocol'
 
 function createGenericLogComponent() {
   return {
@@ -57,16 +58,8 @@ function createGenericLogComponent() {
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
 
-  private rpcServer: RpcServer<PortContext> | null = null
   public rpcContext!: PortContext
-
-  public patchContext(ctx: Partial<PortContext>) {
-    this.rpcContext = { ...this.rpcContext, ...ctx }
-  }
-
-  public get getRpcContext() {
-    return this.rpcContext
-  }
+  private rpcServer: RpcServer<PortContext> | null = null
 
   constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
     this.rpcContext = {
@@ -77,6 +70,20 @@ export abstract class SceneWorker {
         didStart: false,
         parcelSceneAPI: parcelScene,
         subscribedEvents: {}
+      },
+      Permissions: {
+        permissionGranted: []
+      },
+      ParcelIdentity: {
+        land: parcelScene.data.data?.land,
+        cid: '',
+        isPortableExperience: false,
+        isEmpty: false
+      },
+      DevTools: {
+        logger: defaultLogger,
+        exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>(),
+        logs: []
       },
       eventChannel: pushableChannel<any>(function () {})
     }

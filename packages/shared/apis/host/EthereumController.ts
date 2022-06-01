@@ -14,11 +14,14 @@ import { RpcServerPort } from '@dcl/rpc/dist/types'
 import { EthereumControllerServiceDefinition } from '../gen/EthereumController'
 import { PortContext } from './context'
 import { RPCSendableMessage } from 'shared/types'
+import { PermissionItem } from '../gen/Permissions'
+import { assertHasPermission } from './Permissions'
 
 export function registerEthereumControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EthereumControllerServiceDefinition, async () => ({
     async realRequirePayment(req, ctx) {
-      //   await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+      assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
+
       await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
         ...req,
         sceneId: ctx.EnvironmentAPI!.data.sceneId
@@ -26,15 +29,16 @@ export function registerEthereumControllerServiceServerImplementation(port: RpcS
       return requirePayment(req.toAddress, req.amount, req.currency)
     },
     async realSignMessage(req, ctx) {
-      //   await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+      assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
+
       await getUnityInstance().RequestWeb3ApiUse('signMessage', {
         message: await messageToString(req.message),
         sceneId: ctx.EnvironmentAPI!.data.sceneId
       })
       return signMessage(req.message)
     },
-    async realConvertMessageToObject(req) {
-      //   await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    async realConvertMessageToObject(req, ctx) {
+      assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
       return { dict: await convertMessageToObject(req.message) }
     },
     async realSendAsync(req, ctx) {
@@ -44,7 +48,7 @@ export function registerEthereumControllerServiceServerImplementation(port: RpcS
         method: req.method,
         params: JSON.parse(req.jsonParams) as any[]
       }
-      //   await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+      assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
       if (rpcRequireSign(message)) {
         await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
           message: `${message.method}(${message.params.join(',')})`,
@@ -53,8 +57,8 @@ export function registerEthereumControllerServiceServerImplementation(port: RpcS
       }
       return sendAsync(message)
     },
-    async realGetUserAccount() {
-      //   await this.assertHasPermissions([PermissionItem.USE_WEB3_API])
+    async realGetUserAccount(_req, ctx) {
+      assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
       return { address: await getUserAccount(requestManager) }
     }
   }))

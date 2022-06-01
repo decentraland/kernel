@@ -3,9 +3,9 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { DevToolsServiceDefinition } from './../gen/DevTools'
 import { ProtocolMapping } from 'devtools-protocol/types/protocol-mapping'
 import { DEBUG } from './../../../config'
-import { PortContextService } from './context'
+import { PortContext } from './context'
 
-export function registerDevToolsServiceServerImplementation(port: RpcServerPort<PortContextService<'DevTools'>>) {
+export function registerDevToolsServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, DevToolsServiceDefinition, async () => ({
     async realEvent(req, context) {
       const params = JSON.parse(req.jsonPayload)
