@@ -1,4 +1,3 @@
-import defaultLogger from 'shared/logger'
 import { getOwnerNameFromJsonData, getThumbnailUrlFromJsonDataAndContent } from 'shared/selectors'
 import { getFetchContentServer } from 'shared/dao/selectors'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
@@ -19,13 +18,13 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
   }
 
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
-    async realRequestTeleport(req) {
+    async realRequestTeleport(req, ctx) {
       const { destination } = req
       if (destination === 'magic' || destination === 'crowd') {
         getUnityInstance().RequestTeleport({ destination })
         return {}
       } else if (!/^\-?\d+\,\-?\d+$/.test(destination)) {
-        defaultLogger.error(`teleportTo: invalid destination ${destination}`)
+        ctx.DevTools.logger.error(`teleportTo: invalid destination ${destination}`)
         return {}
       }
 
@@ -69,7 +68,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
           }
         }
       } catch (e: any) {
-        defaultLogger.error(e)
+        ctx.DevTools.logger.error(e)
       }
 
       getUnityInstance().RequestTeleport({

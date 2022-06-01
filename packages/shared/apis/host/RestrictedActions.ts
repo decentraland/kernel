@@ -1,5 +1,4 @@
 import { Vector3, Quaternion } from '@dcl/ecs-math'
-import defaultLogger from '../../logger'
 import {
   gridToWorld,
   isWorldPositionInsideParcels,
@@ -43,12 +42,12 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
 
       // validate new position is inside one of the scene's parcels
       if (!isPositionValid(newAbsolutePosition, ctx)) {
-        defaultLogger.error('Error: Position is out of scene', newAbsolutePosition)
-        return
+        ctx.DevTools.logger.error('Error: Position is out of scene', newAbsolutePosition)
+        return {}
       }
       if (!isPositionValid(lastPlayerPosition, ctx)) {
-        defaultLogger.error('Error: Player is not inside of scene', lastPlayerPosition)
-        return
+        ctx.DevTools.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
+        return {}
       }
 
       getUnityInstance().Teleport(
@@ -66,19 +65,19 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
         rotation: Quaternion.Identity,
         immediate: true
       })
-      return {} as any
+      return {}
     },
     async realTriggerEmote(req, ctx) {
       // checks permissions
       assertHasPermission(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE, ctx)
 
       if (!isPositionValid(lastPlayerPosition, ctx)) {
-        defaultLogger.error('Error: Player is not inside of scene', lastPlayerPosition)
-        return
+        ctx.DevTools.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
+        return {}
       }
 
       getUnityInstance().TriggerSelfUserExpression(req.predefinedEmote)
-      return {} as any
+      return {}
     }
   }))
 }

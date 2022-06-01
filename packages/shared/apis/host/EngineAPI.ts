@@ -2,7 +2,6 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import { EngineAPIServiceDefinition, ManyEntityAction } from './../gen/EngineAPI'
 
-import defaultLogger from 'shared/logger'
 import { PortContextService } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
 
@@ -33,7 +32,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       if (!(req.eventId in ctx.EngineAPI.subscribedEvents)) {
         ctx.EngineAPI.parcelSceneAPI.on(req.eventId, (data: any) => {
           if (ctx.EngineAPI.subscribedEvents[req.eventId]) {
-            channel.push({ id: req.eventId, data }).catch((error) => defaultLogger.error(error))
+            channel.push({ id: req.eventId, data }).catch((error) => ctx.DevTools.logger.error(error))
           }
         })
         ctx.EngineAPI.subscribedEvents[req.eventId] = true

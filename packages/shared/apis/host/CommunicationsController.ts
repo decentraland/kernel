@@ -45,7 +45,6 @@ import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { CommunicationsControllerServiceDefinition } from './../gen/CommunicationsController'
-import defaultLogger from '../../logger'
 
 export function CommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, CommunicationsControllerServiceDefinition, async () => ({
@@ -54,7 +53,7 @@ export function CommunicationsControllerServiceServerImplementation(port: RpcSer
       if (!ctx.EngineAPI.subscribedEvents['comms']) {
         ctx.EngineAPI.parcelSceneAPI.on('comms', (data: any) => {
           if (ctx.EngineAPI.subscribedEvents['comms']) {
-            ctx.eventChannel.push({ id: 'comms', data }).catch((error) => defaultLogger.error(error))
+            ctx.eventChannel.push({ id: 'comms', data }).catch((error) => ctx.DevTools.logger.error(error))
           }
         })
         ctx.EngineAPI.subscribedEvents['comms'] = true

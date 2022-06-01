@@ -111,12 +111,18 @@ export class UnityScene<T> implements ParcelSceneAPI {
     const permissionArray: PermissionItem[] = [...defaultPermissions]
     const sceneJsonFile = this.data.mappings.find((m) => m.file.startsWith('scene.json'))?.hash
 
-    if (sceneJsonFile) {
-      const sceneJson = await (await fetch(new URL(sceneJsonFile, this.data.baseUrl).toString())).json()
+    this.worker.rpcContext.Permissions.permissionGranted = defaultPermissions
 
-      if (sceneJson.requiredPermissions) {
-        for (const permissionItemString of sceneJson.requiredPermissions) {
-          permissionArray.push(permissionItemFromJSON(permissionItemString))
+    if (sceneJsonFile) {
+      const sceneJsonUrl = new URL(sceneJsonFile, this.data.baseUrl).toString()
+      const sceneJsonReq = await fetch(sceneJsonUrl)
+      if (sceneJsonReq.ok) {
+        const sceneJson = await sceneJsonReq.json()
+
+        if (sceneJson.requiredPermissions) {
+          for (const permissionItemString of sceneJson.requiredPermissions) {
+            permissionArray.push(permissionItemFromJSON(permissionItemString))
+          }
         }
       }
     }

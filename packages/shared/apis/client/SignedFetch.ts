@@ -38,7 +38,14 @@ export async function createSignedFetchServiceClient<Context>(clientPort: RpcCli
         }
       }
       const result = await realService.realSignedFetch({ url, init })
-      return result
+      return {
+        ok: result.ok,
+        status: result.status,
+        statusText: result.statusText,
+        headers: result.headers,
+        json: originalInit?.responseBodyType === 'json' ? JSON.parse(result.body) : undefined,
+        text: originalInit?.responseBodyType === 'text' ? result.body : undefined
+      }
     }
   }
 }

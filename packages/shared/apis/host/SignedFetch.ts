@@ -12,11 +12,10 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { SignedFetchServiceDefinition } from './../gen/SignedFetch'
 import { avatarMessageObservable } from './../../comms/peers'
-import defaultLogger from './../../logger'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>, ctx: PortContext) {
   avatarMessageObservable.add((event: any) => {
-    ctx.eventChannel.push({ id: 'AVATAR_OBSERVABLE', data: event }).catch((err) => defaultLogger.error(err))
+    ctx.eventChannel.push({ id: 'AVATAR_OBSERVABLE', data: event }).catch((err) => ctx.DevTools.logger.error(err))
   })
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({
     async realSignedFetch(req, ctx) {
@@ -47,9 +46,15 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
       }
 
       //   return this.parcelIdentity.land.sceneJsonData
-      const result = signedFetch(req.url, identity!, req.init, additionalMetadata)
+      const result = await signedFetch(req.url, identity!, req.init, additionalMetadata)
 
-      return {} as any
+      return {
+        ok: result.ok,
+        status: result.status,
+        statusText: result.statusText,
+        headers: result.headers,
+        body: result.text || '{}'
+      }
     }
   }))
 }

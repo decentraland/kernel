@@ -1,7 +1,15 @@
 syntax = "proto3";
 
+message KillRequest {
+    string pid = 1;
+}
+
 message KillResponse {
     bool status = 1;
+}
+
+message SpawnRequest {
+    string pid = 1;
 }
 
 message SpawnResponse {
@@ -19,9 +27,14 @@ message GetPortableExperiencesLoadedResponse {
     repeated SpawnResponse loaded = 1;
 }
 
+message ExitRequest {}
+message ExitResponse {
+    bool status = 1;
+}
+
 service PortableExperiencesService {
-    rpc realSpawn(PxRequest) returns (SpawnResponse) {}
-    rpc realKill(PxRequest) returns (KillResponse) {}
-    rpc realExit(PxRequest) returns (KillResponse) {}
+    rpc realSpawn(SpawnRequest) returns (SpawnResponse) {}
+    rpc realKill(KillRequest) returns (KillResponse) {}
+    rpc realExit(ExitRequest) returns (ExitResponse) {}
     rpc realGetPortableExperiencesLoaded(GetPortableExperiencesLoadedRequest) returns (GetPortableExperiencesLoadedResponse) {}
 }

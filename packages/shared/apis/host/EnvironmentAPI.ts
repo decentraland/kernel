@@ -23,7 +23,7 @@ export function registerEnvironmentAPIServiceServerImplementation(
   port: RpcServerPort<PortContextService<'EnvironmentAPI'>>
 ) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
-    async realGetBootstrapData(req, ctx): Promise<BootstrapDataResponse> {
+    async realGetBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
       return { ...ctx.EnvironmentAPI.data, jsonPayload: JSON.stringify(ctx.EnvironmentAPI.data.data) }
     },
     async realIsPreviewMode(): Promise<PreviewModeResponse> {

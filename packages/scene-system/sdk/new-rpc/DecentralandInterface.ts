@@ -14,13 +14,14 @@ import {
   SetEntityParentPayload,
   UpdateEntityComponentPayload
 } from 'shared/types'
-import { QueryType } from '@dcl/legacy-ecs'
+import { QueryType, Vector3 } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import future, { IFuture } from 'fp-future'
 import { EventCallback, EventState } from './EventTracker'
 
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
+const RESTRICTED_ACTION_MODULE = 'RestrictedActionModule'
 
 export interface DecentralandInterfaceOptions {
   modules: LoadedModules
@@ -245,11 +246,21 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         let methods: string[] = []
 
         if (moduleToLoad in LoadableAPIs) {
-          ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad]
+          ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad](clientPort)
         }
         if (moduleToLoad === WEB3_PROVIDER) {
           methods.push(PROVIDER_METHOD)
           provider = await getEthereumProvider(modules, clientPort)
+        } else if (moduleToLoad === RESTRICTED_ACTION_MODULE) {
+          if (modules.RestrictedActions === undefined) {
+            modules.RestrictedActions = await LoadableAPIs.RestrictedActions(clientPort)
+          }
+          ;(modules as any)[moduleToLoad] = {
+            movePlayerTo(newPosition: Vector3, cameraTarget?: Vector3): Promise<void> {
+              return modules.RestrictedActions!.movePlayerTo(newPosition, cameraTarget)
+            }
+          }
+          methods.push('movePlayerTo')
         } else {
           try {
             if (moduleToLoad in LoadableAPIs) {
