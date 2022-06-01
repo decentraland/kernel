@@ -12,7 +12,6 @@ export type TrackEvents = PositionTrackEvents & {
   ['Control USER_UNMUTED']: { userId: string }
   ['Control USER_BLOCKED']: { userId: string }
   ['Control USER_UNBLOCKED']: { userId: string }
-  ['Control Chat message received']: { length: number; messageType: ChatMessageType }
   ['Control Send chat message']: { length: number; messageId: string; messageType: ChatMessageType }
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
