@@ -113,18 +113,11 @@ export function forceStopSceneWorker(worker: SceneWorker) {
  */
 export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transport, persistent: boolean = false) {
   const sceneId = parcelScene.getSceneId()
-
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   console.log(`[newecs] loading ${sceneId}`)
 
   if (!parcelSceneWorker) {
-    // if (sceneId.startsWith('b64')) {
-    // if (sceneId.startsWith('never')) {
-    // } else {
-    // parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
-    // }
-
     parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)
     setNewParcelScene(sceneId, parcelSceneWorker)
   }

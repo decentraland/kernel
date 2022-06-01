@@ -7,6 +7,7 @@ import {
   ComponentRemovedPayload,
   ComponentUpdatedPayload,
   CreateEntityPayload,
+  LoadableParcelScene,
   OpenNFTDialogPayload,
   QueryPayload,
   RemoveEntityPayload,
@@ -14,7 +15,7 @@ import {
   SetEntityParentPayload,
   UpdateEntityComponentPayload
 } from 'shared/types'
-import { QueryType } from '@dcl/legacy-ecs'
+import { QueryType, Vector2 } from '@dcl/legacy-ecs'
 import { customEval, getES5Context } from './sandbox'
 import { createFetch } from './Fetch'
 import { createWebSocket } from './WebSocket'
@@ -425,6 +426,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
   eventTracker(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => console.error(err))
 
   const bootstrapData = await modules.EnvironmentAPI!.realGetBootstrapData({})
+  const fullData = JSON.parse(bootstrapData.jsonPayload) as LoadableParcelScene
   const isPreview = (await modules.EnvironmentAPI!.realIsPreviewMode({})).isPreview
 
   if (!bootstrapData || !bootstrapData.main) {
@@ -530,6 +532,64 @@ export async function startNewSceneRuntime(client: RpcClient) {
     }
   }
 
+  let updateInterval: number = 1000 / 30
+  if (bootstrapData.useFPSThrottling === true) {
+    setupFpsThrottling(dcl, fullData.parcels)
+  }
+
+  function setupFpsThrottling(dcl: DecentralandInterface, parcels: Array<{ x: number; y: number }>) {
+    dcl.subscribe('positionChanged')
+    dcl.onEvent((event) => {
+      if (event.type !== 'positionChanged') {
+        return
+      }
+
+      const e = event.data as IEvents['positionChanged']
+
+      //NOTE: calling worldToGrid from parcelScenePositions.ts here crashes kernel when there are 80+ workers since chrome 92.
+      const PARCEL_SIZE = 16
+      const playerPosition = new Vector2(
+        Math.floor(e.cameraPosition.x / PARCEL_SIZE),
+        Math.floor(e.cameraPosition.z / PARCEL_SIZE)
+      )
+
+      if (playerPosition === undefined) {
+        return
+      }
+
+      const playerPos = playerPosition as Vector2
+
+      let sqrDistanceToPlayerInParcels = 10 * 10
+      let isInsideScene = false
+
+      for (const parcel of parcels) {
+        sqrDistanceToPlayerInParcels = Math.min(
+          sqrDistanceToPlayerInParcels,
+          Vector2.DistanceSquared(playerPos, parcel)
+        )
+        if (parcel.x === playerPos.x && parcel.y === playerPos.y) {
+          isInsideScene = true
+        }
+      }
+
+      let fps: number = 1
+
+      if (isInsideScene) {
+        fps = 30
+      } else if (sqrDistanceToPlayerInParcels <= 2 * 2) {
+        // NOTE(Brian): Yes, this could be a formula, but I prefer this pedestrian way as
+        //              its easier to read and tweak (i.e. if we find out its better as some arbitrary curve, etc).
+        fps = 20
+      } else if (sqrDistanceToPlayerInParcels <= 3 * 3) {
+        fps = 10
+      } else if (sqrDistanceToPlayerInParcels <= 4 * 4) {
+        fps = 5
+      }
+
+      updateInterval = 1000 / fps
+    })
+  }
+
   async function startLoop() {
     let start = performance.now()
 
@@ -538,7 +598,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
       const dt = now - start
       start = now
 
-      setTimeout(update, 100)
+      setTimeout(update, updateInterval)
 
       const time = dt / 1000
 
@@ -564,75 +624,3 @@ function isPointerEvent(event: any): boolean {
   }
   return false
 }
-
-// private setupFpsThrottling(dcl: DecentralandInterface) {
-//   dcl.subscribe('positionChanged')
-//   dcl.onEvent((event) => {
-//     if (event.type !== 'positionChanged') {
-//       return
-//     }
-
-//     const e = event.data as IEvents['positionChanged']
-
-//     //NOTE: calling worldToGrid from parcelScenePositions.ts here crashes kernel when there are 80+ workers since chrome 92.
-//     const PARCEL_SIZE = 16
-//     const playerPosition = new Vector2(
-//       Math.floor(e.cameraPosition.x / PARCEL_SIZE),
-//       Math.floor(e.cameraPosition.z / PARCEL_SIZE)
-//     )
-
-//     if (playerPosition === undefined || this.scenePosition === undefined) {
-//       return
-//     }
-
-//     const playerPos = playerPosition as Vector2
-//     const scenePos = this.scenePosition
-
-//     let sqrDistanceToPlayerInParcels = 10 * 10
-//     let isInsideScene = false
-
-//     if (!!this.parcels) {
-//       for (const parcel of this.parcels) {
-//         sqrDistanceToPlayerInParcels = Math.min(
-//           sqrDistanceToPlayerInParcels,
-//           Vector2.DistanceSquared(playerPos, parcel)
-//         )
-//         if (parcel.x === playerPos.x && parcel.y === playerPos.y) {
-//           isInsideScene = true
-//         }
-//       }
-//     } else {
-//       sqrDistanceToPlayerInParcels = Vector2.DistanceSquared(playerPos, scenePos)
-//       isInsideScene = scenePos.x === playerPos.x && scenePos.y === playerPos.y
-//     }
-
-//     let fps: number = 1
-
-//     if (isInsideScene) {
-//       fps = 30
-//     } else if (sqrDistanceToPlayerInParcels <= 2 * 2) {
-//       // NOTE(Brian): Yes, this could be a formula, but I prefer this pedestrian way as
-//       //              its easier to read and tweak (i.e. if we find out its better as some arbitrary curve, etc).
-//       fps = 20
-//     } else if (sqrDistanceToPlayerInParcels <= 3 * 3) {
-//       fps = 10
-//     } else if (sqrDistanceToPlayerInParcels <= 4 * 4) {
-//       fps = 5
-//     }
-
-//     this.updateInterval = 1000 / fps
-//   })
-// }
-
-// calculateSceneCenter(parcels: Array<{ x: number; y: number }>): Vector2 {
-//   let center: Vector2 = new Vector2()
-
-//   parcels.forEach((v2) => {
-//     center = Vector2.Add(v2, center)
-//   })
-
-//   center.x /= parcels.length
-//   center.y /= parcels.length
-
-//   return center
-// }

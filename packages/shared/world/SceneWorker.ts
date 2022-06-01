@@ -70,6 +70,14 @@ export abstract class SceneWorker {
 
   constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
     this.rpcContext = {
+      EnvironmentAPI: {
+        data: parcelScene.data
+      },
+      EngineAPI: {
+        didStart: false,
+        parcelSceneAPI: parcelScene,
+        subscribedEvents: {}
+      },
       eventChannel: pushableChannel<any>(function () {})
     }
 
