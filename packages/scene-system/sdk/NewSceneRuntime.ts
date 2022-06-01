@@ -414,8 +414,8 @@ export async function startNewSceneRuntime(client: RpcClient) {
   const { dcl, onUpdateFunctions, onStartFunctions, events, loadingModules } = getDecentralandInterface({
     modules,
     clientPort,
-    onError: (...args: any) => console.error(...args),
-    onLog: (...args: any) => console.error(...args),
+    onError: (...args: any) => console.error('[scene-error]', ...args),
+    onLog: (...args: any) => console.log('[scene-log]', ...args),
     onEventFunctions,
     sceneId: bootstrapData.sceneId,
     eventState
@@ -482,7 +482,17 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   events.push(initMessagesFinished())
 
-  await modules.EngineAPI!.sendBatch({ actions: events })
+  await sendBatch()
+
+  async function sendBatch() {
+    if (events.length) {
+      const batch = events.slice()
+      events.length = 0
+
+      console.log(`sending ${batch.length} events.`)
+      modules.EngineAPI!.sendBatch({ actions: batch }).catch((err) => console.error(err))
+    }
+  }
 
   async function startLoop() {
     let start = performance.now()
@@ -504,7 +514,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
         }
       }
 
-      modules.EngineAPI!.sendBatch({ actions: events }).catch((err) => console.error(err))
+      sendBatch().catch((err) => console.error(err))
     }
 
     update()
