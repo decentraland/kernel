@@ -8,8 +8,6 @@ export async function createCommunicationsControllerServiceClient<Context>(clien
     CommunicationsControllerServiceDefinition
   )
 
-  await realService.init({})
-
   return {
     ...realService,
     async send(message: string): Promise<void> {

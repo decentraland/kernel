@@ -8,7 +8,5 @@ export async function createSocialControllerServiceClient<Context>(clientPort: R
     SocialControllerServiceDefinition
   )
 
-  await realService.init({})
-
   return realService
 }

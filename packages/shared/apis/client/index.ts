@@ -47,6 +47,8 @@ export const LoadableAPIs = {
   Identity: createUserIdentityServiceClient
 }
 
+export const LoadableNeedInit = ['SocialController', 'CommunicationsController']
+
 export type ILoadedModules<T> = {
   [K in keyof T]?: T[K] extends (...args: any[]) => any ? Awaited<ReturnType<T[K]>> : never
 }

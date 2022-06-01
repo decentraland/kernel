@@ -1,4 +1,4 @@
-import { LoadedModules, LoadableAPIs } from './../../../shared/apis/client'
+import { LoadedModules, LoadableAPIs, LoadableNeedInit } from './../../../shared/apis/client'
 import { componentNameRE, generatePBObject, getIdAsNumber } from './../Utils'
 import {
   AttachEntityComponentPayload,
@@ -262,6 +262,12 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
           try {
             if (moduleToLoad in LoadableAPIs) {
               ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad](clientPort)
+
+              // todo: this is a hack :/
+              if (LoadableNeedInit.includes(moduleToLoad)) {
+                await (modules as any)[moduleToLoad].init({})
+              }
+
               methods = Object.keys((modules as any)[moduleToLoad])
             } else {
               throw new Error('The module is not available in the list!')
