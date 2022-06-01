@@ -1,5 +1,4 @@
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
-import { Vector3, Quaternion } from '@dcl/ecs-math'
+import { Quaternion, Vector3 } from '@dcl/ecs-math'
 
 import { playerConfigurations } from 'config'
 import { SceneWorker } from './SceneWorker'
@@ -8,12 +7,13 @@ import { Observer } from 'mz-observable'
 import { sceneLifeCycleObservable } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { renderStateObservable, isRendererEnabled } from './worldState'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
-import { CustomWebWorkerTransport } from './CustomWebWorkerTransport'
 import { sceneObservable } from 'shared/world/sceneState'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 
 import { Transport } from '@dcl/rpc'
+import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
+import defaultLogger from 'shared/logger'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const gamekitWorkerRaw = require('raw-loader!../../../static/systems/scene.system.js')
@@ -34,7 +34,7 @@ export class SceneSystemWorker extends SceneWorker {
   private sceneReady: boolean = false
 
   constructor(parcelScene: ParcelSceneAPI, transport?: Transport, private readonly persistent: boolean = false) {
-    super(parcelScene, true, transport ?? SceneSystemWorker.buildWebWorkerTransport(parcelScene))
+    super(parcelScene, transport ?? SceneSystemWorker.buildWebWorkerTransport(parcelScene))
 
     this.subscribeToSceneLifeCycleEvents()
     this.subscribeToWorldRunningEvents()
@@ -42,12 +42,12 @@ export class SceneSystemWorker extends SceneWorker {
     this.subscribeToSceneChangeEvents()
   }
 
-  private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): ScriptingTransport {
+  private static buildWebWorkerTransport(parcelScene: ParcelSceneAPI): Transport {
     const worker = new Worker(gamekitWorkerUrl, {
       name: `ParcelSceneWorker(${parcelScene.data.sceneId})`
     })
 
-    return CustomWebWorkerTransport(worker)
+    return WebWorkerTransport(worker)
   }
 
   setPosition(position: Vector3) {
@@ -85,27 +85,37 @@ export class SceneSystemWorker extends SceneWorker {
   }
 
   private sendUserViewMatrix(positionReport: Readonly<PositionReport>) {
-    if (this.engineAPI && 'positionChanged' in this.engineAPI.subscribedEvents) {
+    if (this.rpcContext?.EngineAPI && 'positionChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
       if (!this.lastSentPosition.equals(positionReport.position)) {
-        this.engineAPI.sendSubscriptionEvent('positionChanged', {
-          position: {
-            x: positionReport.position.x - this.position.x,
-            z: positionReport.position.z - this.position.z,
-            y: positionReport.position.y
-          },
-          cameraPosition: positionReport.position,
-          playerHeight: playerConfigurations.height
-        })
+        this.rpcContext.eventChannel
+          .push({
+            id: 'positionChanged',
+            data: {
+              position: {
+                x: positionReport.position.x - this.position.x,
+                z: positionReport.position.z - this.position.z,
+                y: positionReport.position.y
+              },
+              cameraPosition: positionReport.position,
+              playerHeight: playerConfigurations.height
+            }
+          })
+          .catch((err) => defaultLogger.error(err))
+
         this.lastSentPosition.copyFrom(positionReport.position)
       }
     }
-
-    if (this.engineAPI && 'rotationChanged' in this.engineAPI.subscribedEvents) {
+    if (this.rpcContext.EngineAPI && 'rotationChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
       if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
-        this.engineAPI.sendSubscriptionEvent('rotationChanged', {
-          rotation: positionReport.cameraEuler,
-          quaternion: positionReport.cameraQuaternion
-        })
+        this.rpcContext.eventChannel
+          .push({
+            id: 'rotationChanged',
+            data: {
+              rotation: positionReport.cameraEuler,
+              quaternion: positionReport.cameraQuaternion
+            }
+          })
+          .catch((err) => defaultLogger.error(err))
         this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
       }
     }
@@ -122,9 +132,13 @@ export class SceneSystemWorker extends SceneWorker {
       const userId = getCurrentUserId(store.getState())
       if (userId) {
         if (report.newScene?.sceneId === this.getSceneId()) {
-          this.engineAPI!.sendSubscriptionEvent('onEnterScene', { userId })
+          this.rpcContext.eventChannel
+            .push({ id: 'onEnterScene', data: { userId } })
+            .catch((err) => defaultLogger.error(err))
         } else if (report.previousScene?.sceneId === this.getSceneId()) {
-          this.engineAPI!.sendSubscriptionEvent('onLeaveScene', { userId })
+          this.rpcContext.eventChannel
+            .push({ id: 'onLeaveScene', data: { userId } })
+            .catch((err) => defaultLogger.error(err))
         }
       }
     })
@@ -149,7 +163,7 @@ export class SceneSystemWorker extends SceneWorker {
   private sendSceneReadyIfNecessary() {
     if (!this.sceneStarted && isRendererEnabled() && this.sceneReady) {
       this.sceneStarted = true
-      this.engineAPI!.sendSubscriptionEvent('sceneStart', {})
+      this.rpcContext.eventChannel.push({ id: 'sceneStart', data: {} }).catch((err) => defaultLogger.error(err))
       renderStateObservable.remove(this.renderStateObserver)
     }
   }

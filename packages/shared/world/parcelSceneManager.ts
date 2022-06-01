@@ -16,8 +16,7 @@ import { EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene } from
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { parcelObservable, teleportObservable } from './positionThings'
 import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
-// import { SceneSystemWorker } from './SceneSystemWorker'
-import { NewSceneSystemWorker } from './NewSceneSystemWorker'
+import { SceneSystemWorker } from './SceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from '@dcl/legacy-ecs'
@@ -118,7 +117,7 @@ export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transpo
   console.log(`[new-rpc] loading ${sceneId}`)
 
   if (!parcelSceneWorker) {
-    parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)
+    parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
     setNewParcelScene(sceneId, parcelSceneWorker)
   }
 
