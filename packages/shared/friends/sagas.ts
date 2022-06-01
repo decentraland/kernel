@@ -638,27 +638,27 @@ function* trackEvents({ payload }: UpdateFriendship) {
   const { action } = payload
   switch (action) {
     case FriendshipAction.APPROVED: {
-      trackEvent('Friend request approved', {})
+      trackEvent('Control Friend request approved', {})
       break
     }
     case FriendshipAction.REJECTED: {
-      trackEvent('Friend request rejected', {})
+      trackEvent('Control Friend request rejected', {})
       break
     }
     case FriendshipAction.CANCELED: {
-      trackEvent('Friend request cancelled', {})
+      trackEvent('Control Friend request cancelled', {})
       break
     }
     case FriendshipAction.REQUESTED_FROM: {
-      trackEvent('Friend request received', {})
+      trackEvent('Control Friend request received', {})
       break
     }
     case FriendshipAction.REQUESTED_TO: {
-      trackEvent('Friend request sent', {})
+      trackEvent('Control Friend request sent', {})
       break
     }
     case FriendshipAction.DELETED: {
-      trackEvent('Friend deleted', {})
+      trackEvent('Control Friend deleted', {})
       break
     }
   }
