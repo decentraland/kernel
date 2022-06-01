@@ -16,7 +16,7 @@ import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 import defaultLogger from 'shared/logger'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const gamekitWorkerRaw = require('raw-loader!../../../static/systems/newecs.scene.system.js')
+const gamekitWorkerRaw = require('raw-loader!../../../static/systems/scene.system.js')
 const gamekitWorkerBLOB = new Blob([gamekitWorkerRaw])
 const gamekitWorkerUrl = URL.createObjectURL(gamekitWorkerBLOB)
 

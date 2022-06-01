@@ -14,8 +14,6 @@ async function main() {
   await processEntryPoint('packages/scene-system/stateful.scene.system.ts')
   await processEntryPoint('packages/decentraland-loader/lifecycle/worker.ts')
   await processEntryPoint('packages/scene-system/scene.system.ts')
-  await processEntryPoint('packages/scene-system/newecs.scene.system.ts')
-  await processEntryPoint('packages/scene-system/cli.scene.system.ts')
   await processEntryPoint('packages/entryPoints/index.ts')
   await processEntryPoint('packages/ui/decentraland-ui.scene.ts')
   await processEntryPoint('packages/voice-chat-codec/audioWorkletProcessors.ts')
