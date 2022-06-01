@@ -81,6 +81,7 @@ export function* friendsSaga() {
   yield fork(initializeReceivedMessagesCleanUp)
 
   yield takeEvery(SET_MATRIX_CLIENT, configureMatrixClient)
+  yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
   yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
 }
@@ -630,6 +631,36 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
     // in case of any error, re initialize friends, to possibly correct state in both kernel and renderer
     yield call(refreshFriends)
+  }
+}
+
+function* trackEvents({ payload }: UpdateFriendship) {
+  const { action } = payload
+  switch (action) {
+    case FriendshipAction.APPROVED: {
+      trackEvent('Control Friend request approved', {})
+      break
+    }
+    case FriendshipAction.REJECTED: {
+      trackEvent('Control Friend request rejected', {})
+      break
+    }
+    case FriendshipAction.CANCELED: {
+      trackEvent('Control Friend request cancelled', {})
+      break
+    }
+    case FriendshipAction.REQUESTED_FROM: {
+      trackEvent('Control Friend request received', {})
+      break
+    }
+    case FriendshipAction.REQUESTED_TO: {
+      trackEvent('Control Friend request sent', {})
+      break
+    }
+    case FriendshipAction.DELETED: {
+      trackEvent('Control Friend deleted', {})
+      break
+    }
   }
 }
 
