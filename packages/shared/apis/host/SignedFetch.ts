@@ -11,12 +11,8 @@ import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { SignedFetchServiceDefinition } from './../gen/SignedFetch'
-import { avatarMessageObservable } from './../../comms/peers'
 
-export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>, ctx: PortContext) {
-  avatarMessageObservable.add((event: any) => {
-    ctx.eventChannel.push({ id: 'AVATAR_OBSERVABLE', data: event }).catch((err) => ctx.DevTools.logger.error(err))
-  })
+export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({
     async realSignedFetch(req, ctx) {
       const { identity } = await onLoginCompleted()
@@ -35,8 +31,8 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
         | undefined = realm ? { domain: realm.hostname, layer: '', catalystName: realm.serverName } : undefined
 
       const additionalMetadata: Record<string, any> = {
-        sceneId: this.parcelIdentity.cid,
-        parcel: this.getSceneData().scene.base,
+        sceneId: ctx.ParcelIdentity.cid,
+        parcel: ctx.ParcelIdentity.land!.sceneJsonData.scene.base,
         // THIS WILL BE DEPRECATED
         tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
         network,

@@ -11,6 +11,10 @@ import { registerParcelIdentityServiceServerImplementation } from './ParcelIdent
 import { registerUserActionModuleServiceServerImplementation } from './UserActionModule'
 import { registerSocialControllerServiceServerImplementation } from './SocialController'
 import { registerRestrictedActionsServiceServerImplementation } from './RestrictedActions'
+import { registerCommunicationsControllerServiceServerImplementation } from './CommunicationsController'
+import { registerPlayersServiceServerImplementation } from './Players'
+import { registerPortableExperiencesServiceServerImplementation } from './PortableExperiences'
+import { registerSignedFetchServiceServerImplementation } from './SignedFetch'
 
 export function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerDevToolsServiceServerImplementation(serverPort)
@@ -23,4 +27,8 @@ export function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerParcelIdentityServiceServerImplementation(serverPort)
   registerSocialControllerServiceServerImplementation(serverPort)
   registerRestrictedActionsServiceServerImplementation(serverPort)
+  registerCommunicationsControllerServiceServerImplementation(serverPort)
+  registerPlayersServiceServerImplementation(serverPort)
+  registerPortableExperiencesServiceServerImplementation(serverPort)
+  registerSignedFetchServiceServerImplementation(serverPort)
 }

@@ -13,7 +13,7 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { CommunicationsControllerServiceDefinition } from './../gen/CommunicationsController'
 
-export function CommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
+export function registerCommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   let commsController: ICommunicationsController | null = null
 
   codegen.registerService(port, CommunicationsControllerServiceDefinition, async () => ({

@@ -245,9 +245,6 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         const moduleToLoad = _moduleName.replace(/^@decentraland\//, '')
         let methods: string[] = []
 
-        if (moduleToLoad in LoadableAPIs) {
-          ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad](clientPort)
-        }
         if (moduleToLoad === WEB3_PROVIDER) {
           methods.push(PROVIDER_METHOD)
           provider = await getEthereumProvider(modules, clientPort)
@@ -264,9 +261,11 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         } else {
           try {
             if (moduleToLoad in LoadableAPIs) {
-              ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad]
+              ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad](clientPort)
+              methods = Object.keys((modules as any)[moduleToLoad])
+            } else {
+              throw new Error('The module is not available in the list!')
             }
-            methods = Object.keys((modules as any)[moduleToLoad])
           } catch (e: any) {
             throw Object.assign(new Error(`Error getting the methods of ${moduleToLoad}: ` + e.message), {
               original: e

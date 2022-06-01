@@ -9,18 +9,6 @@ import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-// export interface IUserIdentity {
-//   /**
-//    * Return the Ethereum address of the user
-//    */
-//   getUserPublicKey(): Promise<string | null>
-
-//   /**
-//    * Return the user's data
-//    */
-//   getUserData(): Promise<UserData | null>
-// }
-
 export function registerUserIdentityServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, UserIdentityServiceDefinition, async () => ({
     async realGetUserPublicKey() {
