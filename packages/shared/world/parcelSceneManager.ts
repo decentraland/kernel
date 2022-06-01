@@ -115,7 +115,7 @@ export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transpo
   const sceneId = parcelScene.getSceneId()
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
-  console.log(`[newecs] loading ${sceneId}`)
+  console.log(`[new-rpc] loading ${sceneId}`)
 
   if (!parcelSceneWorker) {
     parcelSceneWorker = new NewSceneSystemWorker(parcelScene, transport, persistent)

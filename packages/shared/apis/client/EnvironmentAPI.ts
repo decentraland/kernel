@@ -1,5 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
+import { EnvironmentData } from 'shared/types'
 import { EnvironmentAPIServiceDefinition } from '../gen/EnvironmentAPI'
 
 export type Realm = {
@@ -28,6 +29,26 @@ export async function createEnvironmentAPIServiceClient<Context>(clientPort: Rpc
   )
   return {
     ...realService,
+
+    async getBootstrapData(): Promise<EnvironmentData<any>> {
+      const res = await realService.realGetBootstrapData({})
+      return {
+        sceneId: res.sceneId,
+        name: res.name,
+        main: res.main,
+        baseUrl: res.baseUrl,
+        mappings: res.mappings,
+        useFPSThrottling: res.useFPSThrottling,
+        data: JSON.parse(res.jsonPayload)
+      }
+    },
+
+    /**
+     * Returns if the feature flag unsafe-request is on
+     */
+    async areUnsafeRequestAllowed(): Promise<boolean> {
+      return (await realService.realAreUnsafeRequestAllowed({})).status
+    },
 
     /**
      * Returns the current connected realm

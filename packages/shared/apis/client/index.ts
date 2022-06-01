@@ -25,19 +25,26 @@ import { createSocialControllerServiceClient } from './SocialController'
 import { createCommunicationsControllerServiceClient } from './CommunicationsController'
 import { createSignedFetchServiceClient } from './SignedFetch'
 import { createRestrictedActionsServiceClient } from './RestrictedActions'
+import { createParcelIdentityServiceClient } from './ParcelIdentity'
+import { createPlayersServiceClient } from './Players'
+import { createPortableExperiencesServiceClient } from './PortableExperiences'
 
 export const LoadableAPIs = {
-  EngineAPI: createEngineAPIServiceClient,
-  UserActionModule: createUserActionModuleServiceClient,
-  Identity: createUserIdentityServiceClient,
-  EnvironmentAPI: createEnvironmentAPIServiceClient,
-  DevTools: createDevToolsServiceClient,
-  Permissions: createPermissionsServiceClient,
-  EthereumController: createEthereumControllerServiceClient,
-  SocialController: createSocialControllerServiceClient,
   CommunicationsController: createCommunicationsControllerServiceClient,
+  DevTools: createDevToolsServiceClient,
+  EngineAPI: createEngineAPIServiceClient,
+  EnvironmentAPI: createEnvironmentAPIServiceClient,
+  EthereumController: createEthereumControllerServiceClient,
+  ParcelIdentity: createParcelIdentityServiceClient,
+  Permissions: createPermissionsServiceClient,
+  Players: createPlayersServiceClient,
+  PortableExpierences: createPortableExperiencesServiceClient,
+  RestrictedActions: createRestrictedActionsServiceClient,
   SignedFetch: createSignedFetchServiceClient,
-  RestrictedActions: createRestrictedActionsServiceClient
+  SocialController: createSocialControllerServiceClient,
+  UserActionModule: createUserActionModuleServiceClient,
+  // This is UserIdentity in the host-side
+  Identity: createUserIdentityServiceClient
 }
 
 export type ILoadedModules<T> = {
