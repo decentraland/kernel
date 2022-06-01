@@ -1,57 +1,46 @@
 import * as sinon from 'sinon'
-// import { Vector3 } from '@dcl/ecs-math'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import defaultLogger from '../../packages/shared/logger'
-// import { RestrictedActions } from '../../packages/shared/apis/RestrictedActions'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
-// import { Permissions } from 'shared/apis/Permissions'
-import { PermissionItem } from 'shared/apis/gen/Permissions'
+import { PermissionItem, permissionItemToJSON } from 'shared/apis/gen/Permissions'
+import { realMovePlayerTo, realTriggerEmote } from 'shared/apis/host/RestrictedActions'
+import { PortContext } from 'shared/apis/host/context'
+import { assertHasPermission } from 'shared/apis/host/Permissions'
+import { Vector3 } from '@dcl/legacy-ecs'
 
 describe('RestrictedActions tests', () => {
   afterEach(() => sinon.restore())
-
-  const options = {
-    apiName: '',
-    system: null,
-    expose: sinon.stub(),
-    notify: sinon.stub(),
-    on: sinon.stub(),
-    getAPIInstance(name): any { }
-  }
+  sinon.mock()
 
   describe('TriggerEmote tests', () => {
     const emote = 'emote'
 
     it('should trigger emote', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
+      const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').once().withExactArgs(emote)
 
-      // const module = new RestrictedActions(options)
-      // module.permissions = new Permissions(options)
-      // await module.triggerEmote({ predefined: emote })
+      await realTriggerEmote({ predefinedEmote: emote }, ctx)
       sinon.verify()
     })
 
     it('should fail when scene does not have permissions', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith()
+      const ctx = getContextWithPermissions()
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
 
-      // const module = new RestrictedActions(options)
-      // module.permissions = new Permissions(options)
-      // try {
-      //   await module.triggerEmote({ predefined: 'emote' })
-      // } catch (err) {
+      try {
+        await realTriggerEmote({ predefinedEmote: 'emote' }, ctx)
+      } catch (err) {
 
-      // }
-      // sinon.stub(module, 'assertHasPermissions').threw()
+      }
+      sinon.spy(assertHasPermission).threw()
       sinon.verify()
     })
 
     it('should fail when player is out of scene and try to move', async () => {
       mockLastPlayerPosition(false)
-      mockPermissionsWith(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
+      const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
 
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
 
@@ -61,9 +50,7 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
-      // const module = new RestrictedActions(options)
-      // module.permissions = new Permissions(options)
-      // await module.triggerEmote({ predefined: emote })
+      await realTriggerEmote({ predefinedEmote: 'emote' }, ctx)
       sinon.verify()
     })
   })
@@ -71,23 +58,21 @@ describe('RestrictedActions tests', () => {
   describe('MovePlayerTo tests', () => {
     it('should move the player', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
+      const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
       sinon
         .mock(getUnityInstance())
         .expects('Teleport')
         .once()
         .withExactArgs({ position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined }, false)
 
-      // const module = new RestrictedActions(options)
-      // module.permissions = new Permissions(options)
+      await realMovePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
 
-      // await module.movePlayerTo(new Vector3(8, 0, 8))
       sinon.verify()
     })
 
     it('should fail when position is outside scene', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
+      const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
       sinon
         .mock(defaultLogger)
         .expects('error')
@@ -95,35 +80,28 @@ describe('RestrictedActions tests', () => {
         .withExactArgs('Error: Position is out of scene', { x: 21, y: 0, z: 1648 })
 
       sinon.mock(getUnityInstance()).expects('Teleport').never()
-
-      // const module = new RestrictedActions(options)
-      // module.permissions = new Permissions(options)
-
-      // await module.movePlayerTo(new Vector3(21, 0, 32))
+      await realMovePlayerTo({ newRelativePosition: new Vector3(21, 0, 32) }, ctx)
       sinon.verify()
     })
 
     it('should fail when scene does not have permissions', async () => {
       mockLastPlayerPosition()
-      mockPermissionsWith()
+      const ctx = getContextWithPermissions()
       sinon.mock(getUnityInstance()).expects('Teleport').never()
 
-      // const module = new RestrictedActions(options)
-      // module.permissions = new Permissions(options)
+      try {
+        await realMovePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
+      } catch (err) {
 
-      // try {
-      //   await module.movePlayerTo(new Vector3(8, 0, 8))
-      // } catch (err) {
+      }
 
-      // }
-
-      // sinon.stub(module, 'assertHasPermissions').threw()
+      sinon.spy(assertHasPermission).threw()
       sinon.verify()
     })
 
     it('should fail when player is out of scene and try to move', async () => {
       mockLastPlayerPosition(false)
-      mockPermissionsWith(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
+      const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
 
       sinon.mock(getUnityInstance()).expects('Teleport').never()
 
@@ -133,10 +111,8 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
-      // const module = new RestrictedActions(options)
-      // module.permissions = new Permissions(options)
+      await realMovePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
 
-      // await module.movePlayerTo(new Vector3(8, 0, 8))
       sinon.verify()
     })
   })
@@ -150,8 +126,22 @@ describe('RestrictedActions tests', () => {
     sinon.stub(lastPlayerPosition, 'z').value(position.z)
   }
 
-  function mockPermissionsWith(...permissions: PermissionItem[]) {
-    sinon.mock(options).expects('getAPIInstance').withArgs().atLeast(1).returns(buildParcelIdentity(permissions))
+  function getContextWithPermissions(...permissions: PermissionItem[]): PortContext {
+    const parcelIdentity = buildParcelIdentity(permissions)
+    return {
+      Permissions: {
+        permissionGranted: permissions
+      },
+      ParcelIdentity: {
+        ...parcelIdentity,
+        cid: 'test',
+        isPortableExperience: false,
+        isEmpty: false
+      },
+      DevTools: {
+        logger: defaultLogger
+      }
+    } as any
   }
 
   function buildParcelIdentity(permissions: PermissionItem[] = []) {
@@ -166,7 +156,7 @@ describe('RestrictedActions tests', () => {
           policy: { contentRating: 'E', fly: true, voiceEnabled: true, blacklist: [] },
           main: 'game.js',
           tags: [],
-          requiredPermissions: permissions,
+          requiredPermissions: permissions.map(item => permissionItemToJSON(item)),
           spawnPoints: [
             { name: 'spawn1', default: true, position: { x: 0, y: 0, z: 0 }, cameraTarget: { x: 8, y: 1, z: 8 } }
           ]
