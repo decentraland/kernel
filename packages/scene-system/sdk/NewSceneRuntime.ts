@@ -12,7 +12,7 @@ import { sleep } from 'atomicHelpers/sleep'
 import { addStat, setupStats } from './new-rpc/Stats'
 import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
 import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
-import { createEventTracker, EventCallback, EventState } from './new-rpc/EventTracker'
+import { createEventDispatcher, EventCallback, EventState } from './new-rpc/EventDispatcher'
 import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
 
 export async function startNewSceneRuntime(client: RpcClient) {
@@ -29,7 +29,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   const eventState: EventState = { allowOpenExternalUrl: false }
   const onEventFunctions: EventCallback[] = []
-  createEventTracker(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => devToolsAdapter.error(err))
+  createEventDispatcher(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => devToolsAdapter.error(err))
 
   const bootstrapData = await modules.EnvironmentAPI!.realGetBootstrapData({})
   const fullData = JSON.parse(bootstrapData.jsonPayload) as LoadableParcelScene

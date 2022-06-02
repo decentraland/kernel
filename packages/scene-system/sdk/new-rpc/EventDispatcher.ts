@@ -5,7 +5,7 @@ import { addStat } from './Stats'
 export type EventState = { allowOpenExternalUrl: boolean }
 export type EventCallback = (event: { type: string; data: any }) => void
 
-export async function createEventTracker(
+export async function createEventDispatcher(
   EngineAPI: LoadedModules['EngineAPI'],
   eventArgs: { eventState: EventState; onEventFunctions: EventCallback[] }
 ) {
