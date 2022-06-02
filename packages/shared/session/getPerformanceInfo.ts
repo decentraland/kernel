@@ -43,9 +43,11 @@ export function getPerformanceInfo(data: {
   const totalJSHeapSize = memory?.totalJSHeapSize
   const usedJSHeapSize = memory?.usedJSHeapSize
 
+  const isHidden = (globalThis as any).document?.hidden
+
   const ret = {
     runtime,
-    idle: document.hidden,
+    idle: isHidden,
     fps: (1000 * length) / sum,
     avg: sum / length,
     total: sum,
