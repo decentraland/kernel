@@ -63,7 +63,6 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
 
   if (!validateAvatar(ret)) {
     trackEvent('invalid_schema', { schema: 'avatar', payload: ret })
-    debugger
   }
 
   return ret
