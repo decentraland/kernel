@@ -1,3 +1,24 @@
+let kernelToRendererMessageCounter = 0
+let rendererToKernelMessageCounter = 0
+let receivedCommsMessagesCounter = 0
+let sentCommsMessagesCounter = 0
+
+export function incrementMessageFromRendererToKernel() {
+  rendererToKernelMessageCounter++
+}
+
+export function incrementMessageFromKernelToRenderer() {
+  kernelToRendererMessageCounter++
+}
+
+export function incrementCommsMessageReceived() {
+  receivedCommsMessagesCounter++
+}
+
+export function incrementCommsMessageSent() {
+  sentCommsMessagesCounter++
+}
+
 export function getPerformanceInfo(data: {
   samples: string
   fpsIsCapped: boolean
@@ -14,7 +35,16 @@ export function getPerformanceInfo(data: {
   }
   const sorted = entries.sort((a, b) => a - b)
 
-  return {
+  const runtime = performance.now()
+
+  const memory = (performance as any).memory
+
+  const jsHeapSizeLimit = memory?.jsHeapSizeLimit
+  const totalJSHeapSize = memory?.totalJSHeapSize
+  const usedJSHeapSize = memory?.usedJSHeapSize
+
+  const ret = {
+    runtime,
     idle: document.hidden,
     fps: (1000 * length) / sum,
     avg: sum / length,
@@ -32,9 +62,28 @@ export function getPerformanceInfo(data: {
     p95: sorted[Math.ceil(length * 0.95)],
     p99: sorted[Math.ceil(length * 0.99)],
     max: sorted[length - 1],
+    samples: data.samples,
+    // chrome memory
+    jsHeapSizeLimit,
+    totalJSHeapSize,
+    usedJSHeapSize,
+    // flags
     capped: data.fpsIsCapped,
+    // hiccups
     hiccupsInThousandFrames: data.hiccupsInThousandFrames,
     hiccupsTime: data.hiccupsTime,
-    totalTime: data.totalTime
+    totalTime: data.totalTime,
+    // counters
+    kernelToRendererMessageCounter,
+    rendererToKernelMessageCounter,
+    receivedCommsMessagesCounter,
+    sentCommsMessagesCounter
   }
+
+  sentCommsMessagesCounter = 0
+  receivedCommsMessagesCounter = 0
+  kernelToRendererMessageCounter = 0
+  rendererToKernelMessageCounter = 0
+
+  return ret
 }
