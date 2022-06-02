@@ -1,5 +1,9 @@
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { TRACE_RENDERER } from 'config'
+import {
+  incrementMessageFromKernelToRenderer,
+  incrementMessageFromRendererToKernel
+} from 'shared/session/getPerformanceInfo'
 import defaultLogger from '../shared/logger'
 import type { CommonRendererOptions } from './loader'
 
@@ -45,6 +49,9 @@ export function beginTrace(messagesCount: number) {
  * KK: Kernel->Kernel
  */
 export function logTrace(type: string, payload: string | number | undefined, direction: 'RK' | 'KR' | 'KK') {
+  if (direction === 'KR') incrementMessageFromKernelToRenderer()
+  if (direction === 'RK') incrementMessageFromRendererToKernel()
+
   if (pendingMessagesInTrace > 0) {
     const now = performance.now().toFixed(1)
     if (direction === 'KK') {
