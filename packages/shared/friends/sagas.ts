@@ -306,6 +306,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
   }
 }
 
+// this saga needs to throw in case of failure
 function* initializePrivateMessaging() {
   const synapseUrl: string = yield select(getSynapseUrl)
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
@@ -320,18 +321,14 @@ function* initializePrivateMessaging() {
 
   const authChain = Authenticator.signPayload(identity, messageToSign)
 
-  try {
-    const client: SocialAPI = yield apply(SocialClient, SocialClient.loginToServer, [
-      synapseUrl,
-      ethAddress,
-      timestamp,
-      authChain
-    ])
+  const client: SocialAPI = yield apply(SocialClient, SocialClient.loginToServer, [
+    synapseUrl,
+    ethAddress,
+    timestamp,
+    authChain
+  ])
 
-    yield put(setMatrixClient(client))
-  } catch (e) {
-    logAndTrackError('Error while logging in to chat service', e)
-  }
+  yield put(setMatrixClient(client))
 }
 
 function* refreshFriends() {
