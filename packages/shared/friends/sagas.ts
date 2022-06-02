@@ -129,13 +129,7 @@ function* initializeFriendsSaga() {
           // restart the debounce
           secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
         } catch (e) {
-          logger.error(`Error initializing private messaging`, e)
-
-          trackEvent('error', {
-            context: 'kernel#saga',
-            message: 'There was an error initializing friends and private messages',
-            stack: '' + e
-          })
+          logAndTrackError(`Error initializing private messaging`, e)
 
           if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
             secondsToRetry *= 1.5
@@ -143,7 +137,7 @@ function* initializeFriendsSaga() {
         }
       }
     } catch (e) {
-      logger.error('Error while logging in to chat service', e)
+      logAndTrackError('Error while logging in to chat service', e)
     }
   } while (shouldRetryReconnection)
 }
@@ -287,13 +281,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
             shouldTry = false
           } catch (e) {
-            logger.error(`Error fetching message for conversation (attempt ${attempt})`, conversation, e)
-
-            trackEvent('error', {
-              context: 'kernel#saga',
-              message: `There was an error fetching messages for conversation, attempt ${attempt}`,
-              stack: '' + e
-            })
+            logAndTrackError(`There was an error fetching messages for conversation, attempt ${attempt}`, e)
 
             if (millisToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
               millisToRetry *= 2
@@ -304,9 +292,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
             if (shouldTry) {
               await sleep(millisToRetry)
             } else {
-              logger.error(
+              logAndTrackError(
                 `Error fetching message for conversation, maxed attempts to try (${maxAttempts}), will no retry`,
-                conversation
+                e
               )
             }
           }
@@ -314,7 +302,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
       })
     )
   } catch (e) {
-    logger.error('Error while initializing chat messages', e)
+    logAndTrackError('Error while initializing chat messages', e)
   }
 }
 
@@ -342,7 +330,7 @@ function* initializePrivateMessaging() {
 
     yield put(setMatrixClient(client))
   } catch (e) {
-    logger.error('Error while logging in to chat service', e)
+    logAndTrackError('Error while logging in to chat service', e)
   }
 }
 
@@ -420,7 +408,7 @@ function* refreshFriends() {
 
     return { friendsSocial, ownId }
   } catch (e) {
-    logger.error('Error while refreshing friends', e)
+    logAndTrackError('Error while refreshing friends', e)
   }
 }
 
@@ -589,7 +577,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       try {
         yield apply(client, client.createDirectConversation, [socialData.socialId])
       } catch (e) {
-        logger.error('Error while creating direct conversation for friendship', e)
+        logAndTrackError('Error while creating direct conversation for friendship', e)
         return
       }
     } else {
@@ -626,7 +614,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
               logger.info(`userData`, userId, socialData.socialId, conversation.id)
               newState.socialInfo[userId] = { userId, socialId: socialData.socialId, conversationId: conversation.id }
             } catch (e) {
-              logger.error('Error while approving/rejecting friendship', e)
+              logAndTrackError('Error while approving/rejecting friendship', e)
             }
           }
         }
@@ -793,7 +781,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
     }
   } catch (e) {
-    logger.error('error while acting user freidnship action', e)
+    logAndTrackError('error while acting user friendship action', e)
   }
 
   // wait for matrix server to process new status
@@ -841,4 +829,14 @@ function notifyFriendOnlineStatusThroughChat(userStatus: UpdateUserStatusMessage
   }
 
   friendStatus[friendName] = userStatus.presence
+}
+
+function logAndTrackError(message: string, e: any) {
+  logger.error(message, e)
+
+  trackEvent('error', {
+    context: 'kernel#saga',
+    message: message,
+    stack: '' + e
+  })
 }
