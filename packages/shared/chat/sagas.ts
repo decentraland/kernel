@@ -1,4 +1,5 @@
 import { takeEvery, put, select, call } from 'redux-saga/effects'
+import { PayloadAction } from 'typesafe-actions'
 import {
   MESSAGE_RECEIVED,
   MessageReceived,
@@ -10,6 +11,7 @@ import {
 import { uuid } from 'atomicHelpers/math'
 import { ChatMessageType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
+import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
 import { getAllPeers } from 'shared/comms/peers'
 import { parseParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
@@ -44,6 +46,8 @@ const fpsConfiguration = {
 export function* chatSaga(): any {
   initChatCommands()
 
+  yield takeEvery([MESSAGE_RECEIVED, SEND_MESSAGE], trackEvents)
+
   yield takeEvery(MESSAGE_RECEIVED, handleReceivedMessage)
   yield takeEvery(SEND_MESSAGE, handleSendMessage)
 
@@ -59,6 +63,22 @@ function* showWelcomeMessage() {
       body: 'Type /help for info about controls'
     })
   )
+}
+
+type MessageEvent = typeof MESSAGE_RECEIVED | typeof SEND_MESSAGE
+
+function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
+  const { type, payload } = action
+  switch (type) {
+    case SEND_MESSAGE: {
+      trackEvent('Control Send chat message', {
+        messageId: payload.messageId,
+        length: payload.body.length,
+        messageType: payload.messageType
+      })
+      break
+    }
+  }
 }
 
 function* handleReceivedMessage(action: MessageReceived) {
