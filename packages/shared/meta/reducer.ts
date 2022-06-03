@@ -2,7 +2,7 @@ import { AnyAction } from 'redux'
 import { META_CONFIGURATION_INITIALIZED } from './actions'
 import { MetaState } from './types'
 
-const initialState = {
+const initialState: MetaState = {
   initialized: false,
   config: {}
 }

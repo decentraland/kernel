@@ -14,6 +14,7 @@ import { getUnityInstance } from './IUnityInterface'
 import { resolveUrlFromUrn } from '@dcl/urn-resolver'
 import { store } from 'shared/store/isolatedStore'
 import { addScenePortableExperience, removeScenePortableExperience } from 'shared/portableExperiences/actions'
+import { sleep } from 'atomicHelpers/sleep'
 
 declare let window: any
 
@@ -126,6 +127,10 @@ export async function declareWantedPortableExperiences(pxs: StorePortableExperie
       }
     }
   }
+
+  // TODO: this is an ugh workaround, fix controlling the scene lifecycle
+  // knowing when the scene was completly removed and then re-spawn it
+  await sleep(250)
 
   // then load all the missing scenes
   for (const sceneData of pxs) {

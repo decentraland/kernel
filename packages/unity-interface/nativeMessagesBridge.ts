@@ -16,6 +16,7 @@ import {
 } from 'shared/types'
 import { QueryType } from '@dcl/legacy-ecs'
 import type { UnityGame } from '@dcl/unity-renderer/src'
+import { incrementMessageFromKernelToRendererNative } from 'shared/session/getPerformanceInfo'
 
 enum RaycastQueryType {
   NONE,
@@ -237,6 +238,9 @@ export class NativeMessagesBridge {
 
   public SendNativeMessage(parcelSceneId: string, action: EntityAction): void {
     this.setSceneId(parcelSceneId)
+
+    // increment counter of messages sent
+    incrementMessageFromKernelToRendererNative()
 
     if (action.tag !== undefined) {
       this.setTag(action.tag)

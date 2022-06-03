@@ -1,4 +1,4 @@
-import { call, put, select, takeEvery } from 'redux-saga/effects'
+import { apply, call, put, select, takeEvery } from 'redux-saga/effects'
 
 import {
   WITH_FIXED_COLLECTIONS,
@@ -8,7 +8,8 @@ import {
   DEBUG,
   ETHEREUM_NETWORK,
   BUILDER_SERVER_URL,
-  rootURLPreviewMode
+  rootURLPreviewMode,
+  WITH_FIXED_ITEMS
 } from 'config'
 
 import defaultLogger from 'shared/logger'
@@ -87,13 +88,31 @@ export function* handleWearablesRequest(action: WearablesRequest) {
 
 function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const catalystUrl: string = yield select(getCatalystServer)
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const client: CatalystClient = new CatalystClient({ catalystUrl })
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
-  const COLLECTIONS_ALLOWED = PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
+  const COLLECTIONS_OR_ITEMS_ALLOWED =
+    PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
 
   const result: PartialWearableV2[] = []
   if (filters.ownedByUser) {
-    if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
+    if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
+      const splittedItemIds = WITH_FIXED_ITEMS.split(',')
+      const itemUuids = splittedItemIds.filter((id) => !id.startsWith('urn'))
+      const itemURNs = splittedItemIds.filter((id) => id.startsWith('urn'))
+
+      if (identity) {
+        if (itemUuids.length > 0) {
+          const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, itemUuids, identity)
+          result.push(...v2Wearables)
+        }
+
+        if (itemURNs.length > 0) {
+          const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ wearableIds: itemURNs })
+          result.push(...zoneWearables)
+        }
+      }
+    } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       // The WITH_FIXED_COLLECTIONS config can only be used in zone. However, we want to be able to use prod collections for testing.
       // That's why we are also querying a prod catalyst for the given collections
       const collectionIds: string[] = WITH_FIXED_COLLECTIONS.split(',')
@@ -101,13 +120,14 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       // Fetch published collections
       const urnCollections = collectionIds.filter((collectionId) => collectionId.startsWith('urn'))
       if (urnCollections.length > 0) {
-        const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
+        const zoneWearables: PartialWearableV2[] = yield apply(client, client.fetchWearables, [
+          { collectionIds: urnCollections }
+        ])
         result.push(...zoneWearables)
       }
 
       // Fetch unpublished collections from builder server
       const uuidCollections = collectionIds.filter((collectionId) => !collectionId.startsWith('urn'))
-      const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       if (uuidCollections.length > 0 && identity) {
         const v2Wearables: PartialWearableV2[] = yield call(
           fetchWearablesByCollectionFromBuilder,
@@ -137,11 +157,28 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     const wearables: PartialWearableV2[] = yield call(fetchWearablesByFilters, filters, client)
     result.push(...wearables)
 
-    if (WITH_FIXED_COLLECTIONS && COLLECTIONS_ALLOWED) {
+    if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
+      const splittedItemIds = WITH_FIXED_ITEMS.split(',')
+      const itemUuids = splittedItemIds.filter((id) => !id.startsWith('urn'))
+      const itemURNs = splittedItemIds.filter((id) => id.startsWith('urn'))
+
+      if (identity) {
+        if (itemUuids.length > 0) {
+          const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, itemUuids, identity)
+          result.push(...v2Wearables)
+        }
+
+        if (itemURNs.length > 0) {
+          const zoneWearables: PartialWearableV2[] = yield apply(client, client.fetchWearables, [
+            { wearableIds: itemURNs }
+          ])
+          result.push(...zoneWearables)
+        }
+      }
+    } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       const uuidCollections = WITH_FIXED_COLLECTIONS.split(',').filter(
         (collectionId) => !collectionId.startsWith('urn')
       )
-      const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       if (uuidCollections.length > 0 && identity) {
         const v2Wearables: PartialWearableV2[] = yield call(
           fetchWearablesByCollectionFromBuilder,
@@ -184,6 +221,26 @@ async function fetchWearablesByFilters(filters: WearablesRequestFilters, client:
   return client.fetchWearables(filters)
 }
 
+/**
+ * Fetches a single item from the Builder Server.
+ */
+async function fetchWearablesByIdFromBuilder(uuidsItems: string[], identity: ExplorerIdentity): Promise<WearableV2[]> {
+  return Promise.all(
+    uuidsItems.map(async (uuid) => {
+      const path = `items/${uuid}`
+      const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
+      const itemResponse = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
+        headers
+      })) as { data: UnpublishedWearable; ok: boolean; error?: string }
+      if (!itemResponse.ok) {
+        throw new Error(itemResponse.error)
+      }
+
+      return mapUnpublishedWearableIntoCatalystWearable(itemResponse.data) as WearableV2
+    })
+  )
+}
+
 async function fetchWearablesByCollectionFromBuilder(
   uuidCollections: string[],
   filters: WearablesRequestFilters | undefined,
@@ -208,6 +265,7 @@ async function fetchWearablesByCollectionFromBuilder(
   }
   return result
 }
+
 async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesRequestFilters | undefined) {
   const result: WearableV2[] = []
   try {

@@ -123,6 +123,14 @@ function* waitForCandidates() {
   }
 }
 
+function realmFromPinnedCatalyst(): Realm {
+  return {
+    protocol: 'v2',
+    hostname: PIN_CATALYST || 'peer.decentraland.org',
+    serverName: 'pinned-catalyst'
+  }
+}
+
 function* selectRealm() {
   const network: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
 
@@ -140,20 +148,21 @@ function* selectRealm() {
   const cachedCandidates: Candidate[] = yield call(getFromPersistentStorage, getLastRealmCandidatesCacheKey(network)) ??
     []
 
-  const PREVIEW_REALM: Realm = {
-    protocol: 'v1',
-    hostname: rootURLPreviewMode(),
-    serverName: 'localhost'
-  }
+  const PREVIEW_REALM: Realm = yield call(resolveCommsConnectionString, `v1~${rootURLPreviewMode()}`, [
+    ...allCandidates,
+    ...cachedCandidates
+  ])
 
   const realm: Realm | undefined =
-    // 1st priority: query param (dao candidates & cached)
+    // query param (dao candidates & cached)
     (yield call(getConfiguredRealm, [...allCandidates, ...cachedCandidates])) ||
-    // 2nd priority: preview mode
+    // preview mode
     (PREVIEW ? PREVIEW_REALM : null) ||
-    // 3rd priority: cached in local storage
+    // CATALYST from url parameter
+    (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
+    // cached in local storage
     (yield call(getRealmFromLocalStorage, network)) ||
-    // 4th priority: fetch catalysts and select one using the load balancing
+    // fetch catalysts and select one using the load balancing
     (yield call(pickCatalystRealm))
 
   if (!realm) debugger
@@ -195,7 +204,7 @@ function* initializeCatalystCandidates() {
   const catalystsNodesEndpointURL: string | undefined = yield select(getCatalystNodesEndpoint)
 
   const nodes: CatalystNode[] = yield call(fetchCatalystRealms, catalystsNodesEndpointURL)
-  const added: string[] = PIN_CATALYST ? [] : yield select(getAddedServers)
+  const added: string[] = yield select(getAddedServers)
 
   const candidates: Candidate[] = yield call(fetchCatalystStatuses, added.map((url) => ({ domain: url })).concat(nodes))
 
@@ -224,31 +233,6 @@ export async function checkValidRealm(realm: Realm) {
     return pingResult.status === ServerConnectionStatus.OK
   }
   return false
-}
-
-export async function fetchPeerHealthStatus(node: CatalystNode) {
-  const abortController = new AbortController()
-
-  const signal = abortController.signal
-  try {
-    setTimeout(() => {
-      abortController.abort()
-    }, 5000)
-
-    function peerHealthStatusUrl(domain: string) {
-      return `${domain}/lambdas/health`
-    }
-
-    const response = await fetch(peerHealthStatusUrl(node.domain), { signal })
-
-    if (!response.ok) return {}
-
-    const json = await response.json()
-
-    return json
-  } catch {
-    return {}
-  }
 }
 
 function* cacheCatalystRealm() {

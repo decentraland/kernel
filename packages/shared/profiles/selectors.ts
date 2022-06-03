@@ -2,6 +2,7 @@ import { ProfileStatus, ProfileUserInfo, RootProfileState } from './types'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { RootSessionState } from 'shared/session/types'
 import { Avatar } from '@dcl/schemas'
+import { calculateDisplayName } from './transformations/processServerProfile'
 
 export const getProfileStatusAndData = (
   store: RootProfileState,
@@ -46,7 +47,8 @@ export const findProfileByName = (store: RootProfileState, userName: string): Av
         .find(
           (user) =>
             user.data?.name.toLowerCase() === userName.toLowerCase() ||
-            user.data?.userId.toLowerCase() === userName.toLowerCase()
+            user.data?.userId.toLowerCase() === userName.toLowerCase() ||
+            calculateDisplayName(user.data) === userName
         )?.data || null
     : null
 

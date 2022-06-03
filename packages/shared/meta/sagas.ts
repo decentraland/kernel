@@ -1,41 +1,20 @@
-import { call, put, select, take } from 'redux-saga/effects'
+import { call, put, select, take, all } from 'redux-saga/effects'
 import {
   ETHEREUM_NETWORK,
   FORCE_RENDERING_STYLE,
   getAssetBundlesBaseUrl,
   getServerConfigurations,
-  QS_MAX_VISIBLE_PEERS
+  PREVIEW,
+  rootURLPreviewMode
 } from 'config'
 import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized } from './actions'
 import defaultLogger from '../logger'
-import { BannedUsers, MetaConfiguration, WorldConfig } from './types'
+import { FeatureFlagsName, MetaConfiguration, WorldConfig } from './types'
 import { isMetaConfigurationInitiazed } from './selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
-import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { RootState } from 'shared/store/rootTypes'
-import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
-
-function valueFromVariants<T>(variants: Record<string, any> | undefined, key: string): T | undefined {
-  const variant = variants?.[key]
-  if (variant && variant.enabled) {
-    try {
-      return JSON.parse(variant.payload.value)
-    } catch (e) {
-      defaultLogger.warn(`Couldn't parse value for ${key} from variants. The variants response was: `, variants)
-    }
-  }
-}
-
-function bannedUsersFromVariants(variants: Record<string, any> | undefined): BannedUsers | undefined {
-  return valueFromVariants(variants, 'explorer-banned_users')
-}
-
-function pickRealmAlgorithmConfigFromVariants(
-  variants: Record<string, any> | undefined
-): AlgorithmChainConfig | undefined {
-  return valueFromVariants(variants, 'explorer-pick_realm_algorithm_config')
-}
+import { FeatureFlagsResult, fetchFlags } from '@dcl/feature-flags'
 
 export function* waitForMetaConfigurationInitialization() {
   const configInitialized: boolean = yield select(isMetaConfigurationInitiazed)
@@ -52,34 +31,18 @@ export function* waitForNetworkSelected() {
   return net
 }
 
-function getMaxVisiblePeers(variants: Record<string, any> | undefined): number {
-  if (QS_MAX_VISIBLE_PEERS !== undefined) return QS_MAX_VISIBLE_PEERS
-  const fromVariants = valueFromVariants(variants, 'explorer-max_visible_peers')
-
-  return typeof fromVariants === 'number' ? fromVariants : DEFAULT_MAX_VISIBLE_PEERS
-}
-
 function* initMeta() {
   const net: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
 
-  const config: Partial<MetaConfiguration> = yield call(fetchMetaConfiguration, net)
-  const flagsAndVariants: { flags: Record<string, boolean>; variants: Record<string, any> } | undefined = yield call(
-    fetchFeatureFlagsAndVariants,
-    net
-  )
-
-  const maxVisiblePeers = getMaxVisiblePeers(flagsAndVariants?.variants)
+  const [config, flagsAndVariants]: [Partial<MetaConfiguration>, FeatureFlagsResult] = yield all([
+    call(fetchMetaConfiguration, net),
+    call(fetchFeatureFlagsAndVariants, net)
+  ])
 
   const merge: Partial<MetaConfiguration> = {
     ...config,
-    comms: {
-      ...config.comms,
-      maxVisiblePeers
-    },
-    featureFlags: flagsAndVariants?.flags,
-    featureFlagsV2: flagsAndVariants,
-    bannedUsers: bannedUsersFromVariants(flagsAndVariants?.variants),
-    pickRealmAlgorithmConfig: pickRealmAlgorithmConfigFromVariants(flagsAndVariants?.variants)
+    comms: config.comms,
+    featureFlagsV2: flagsAndVariants
   }
 
   if (FORCE_RENDERING_STYLE) {
@@ -97,18 +60,49 @@ export function* metaSaga(): any {
   yield call(initMeta)
 }
 
-async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<Record<string, boolean> | undefined> {
-  const featureFlagsEndpoint = getServerConfigurations(network).explorerFeatureFlags
-  try {
-    const response = await fetch(featureFlagsEndpoint, {
-      credentials: 'include'
-    })
-    if (response.ok) {
-      return response.json()
-    }
-  } catch (e) {
-    defaultLogger.warn(`Error while fetching feature flags from '${featureFlagsEndpoint}'. Using default config`)
+async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<FeatureFlagsResult> {
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+
+  const explorerFeatureFlags = PREVIEW
+    ? `${rootURLPreviewMode()}/feature-flags/`
+    : `https://feature-flags.decentraland.${tld}`
+
+  const flagsAndVariants = await fetchFlags({ applicationName: 'explorer', featureFlagsUrl: explorerFeatureFlags })
+
+  for (const key in flagsAndVariants.flags) {
+    const value = flagsAndVariants.flags[key]
+    delete flagsAndVariants.flags[key]
+    flagsAndVariants.flags[key.replace(/^explorer-/, '')] = value
   }
+
+  for (const key in flagsAndVariants.variants) {
+    const value = flagsAndVariants.variants[key]
+    delete flagsAndVariants.variants[key]
+    value.name = key.replace(/^explorer-/, '')
+    flagsAndVariants.variants[value.name] = value
+  }
+
+  if (location.search.length !== 0) {
+    const flags = new URLSearchParams(location.search)
+    flags.forEach((_, key) => {
+      if (key.startsWith(`DISABLE_`)) {
+        const featureName = key.replace('DISABLE_', '').toLowerCase() as FeatureFlagsName
+        flagsAndVariants.flags[featureName] = false
+        if (featureName in flagsAndVariants.variants) {
+          flagsAndVariants.variants[featureName].enabled = false
+        }
+      } else if (key.startsWith(`ENABLE_`)) {
+        const featureName = key.replace('ENABLE_', '').toLowerCase() as FeatureFlagsName
+        flagsAndVariants.flags[featureName] = true
+        if (featureName in flagsAndVariants.variants) {
+          flagsAndVariants.variants[featureName].enabled = true
+        } else {
+        }
+      }
+    })
+  }
+
+  return flagsAndVariants
 }
 
 async function fetchMetaConfiguration(network: ETHEREUM_NETWORK) {
@@ -135,7 +129,7 @@ async function fetchMetaConfiguration(network: ETHEREUM_NETWORK) {
       },
       bannedUsers: {},
       synapseUrl:
-        network === ETHEREUM_NETWORK.MAINNET ? 'https://synapse.decentraland.org' : 'https://synapse.decentraland.io',
+        network === ETHEREUM_NETWORK.MAINNET ? 'https://synapse.decentraland.org' : 'https://synapse.decentraland.zone',
       world: {
         pois: []
       },
