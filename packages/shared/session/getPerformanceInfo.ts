@@ -26,13 +26,17 @@ export function incrementCommsMessageSent() {
   sentCommsMessagesCounter++
 }
 
-export function getPerformanceInfo(data: {
-  samples: string
-  fpsIsCapped: boolean
-  hiccupsInThousandFrames: number
-  hiccupsTime: number
-  totalTime: number
-}) {
+export function getPerformanceInfo(
+  data: {
+    samples: string
+    fpsIsCapped: boolean
+    hiccupsInThousandFrames: number
+    hiccupsTime: number
+    totalTime: number
+    estimatedAllocatedMemory: number
+    estimatedTotalMemory: number
+  }
+) {
   const entries: number[] = []
   const length = data.samples.length
   let sum = 0
@@ -78,6 +82,10 @@ export function getPerformanceInfo(data: {
     jsHeapSizeLimit,
     totalJSHeapSize,
     usedJSHeapSize,
+    // unity memory
+    estimatedAllocatedMemory: data.estimatedAllocatedMemory,
+    estimatedTotalMemory: data.estimatedTotalMemory,
+    estimatedMemoryPercent: data.estimatedAllocatedMemory / data.estimatedTotalMemory,
     // flags
     capped: data.fpsIsCapped,
     // hiccups
