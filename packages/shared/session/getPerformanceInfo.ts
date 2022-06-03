@@ -1,3 +1,5 @@
+import { getUsedComponentVersions } from 'shared/rolloutVersions'
+
 let kernelToRendererMessageCounter = 0
 let rendererToKernelMessageCounter = 0
 let receivedCommsMessagesCounter = 0
@@ -45,6 +47,8 @@ export function getPerformanceInfo(data: {
 
   const isHidden = (globalThis as any).document?.hidden
 
+  const { kernelVersion, rendererVersion } = getUsedComponentVersions()
+
   const ret = {
     runtime,
     idle: isHidden,
@@ -79,7 +83,10 @@ export function getPerformanceInfo(data: {
     kernelToRendererMessageCounter,
     rendererToKernelMessageCounter,
     receivedCommsMessagesCounter,
-    sentCommsMessagesCounter
+    sentCommsMessagesCounter,
+    // versions
+    kernelVersion,
+    rendererVersion
   }
 
   sentCommsMessagesCounter = 0
