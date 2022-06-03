@@ -4,6 +4,7 @@ let kernelToRendererMessageCounter = 0
 let rendererToKernelMessageCounter = 0
 let receivedCommsMessagesCounter = 0
 let sentCommsMessagesCounter = 0
+let kernelToRendererMessageNativeCounter = 0
 
 export function incrementMessageFromRendererToKernel() {
   rendererToKernelMessageCounter++
@@ -11,6 +12,10 @@ export function incrementMessageFromRendererToKernel() {
 
 export function incrementMessageFromKernelToRenderer() {
   kernelToRendererMessageCounter++
+}
+
+export function incrementMessageFromKernelToRendererNative() {
+  kernelToRendererMessageNativeCounter++
 }
 
 export function incrementCommsMessageReceived() {
@@ -84,6 +89,7 @@ export function getPerformanceInfo(data: {
     rendererToKernelMessageCounter,
     receivedCommsMessagesCounter,
     sentCommsMessagesCounter,
+    kernelToRendererMessageNativeCounter,
     // versions
     kernelVersion,
     rendererVersion
@@ -93,6 +99,7 @@ export function getPerformanceInfo(data: {
   receivedCommsMessagesCounter = 0
   kernelToRendererMessageCounter = 0
   rendererToKernelMessageCounter = 0
+  kernelToRendererMessageNativeCounter = 0
 
   return ret
 }
