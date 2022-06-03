@@ -22,7 +22,7 @@ import {
 import { assertHasPermission } from './Permissions'
 import { PermissionItem } from '../gen/Permissions'
 
-export async function realMovePlayerTo(req: MovePlayerToRequest, ctx: PortContext): Promise<MovePlayerToResponse> {
+export async function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): Promise<MovePlayerToResponse> {
   //   checks permissions
   assertHasPermission(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, ctx)
 
@@ -66,7 +66,7 @@ export async function realMovePlayerTo(req: MovePlayerToRequest, ctx: PortContex
   return {}
 }
 
-export async function realTriggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Promise<TriggerEmoteResponse> {
+export async function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Promise<TriggerEmoteResponse> {
   // checks permissions
   assertHasPermission(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE, ctx)
 
@@ -88,7 +88,7 @@ function isPositionValid(position: Vector3, ctx: PortContext) {
 
 export function registerRestrictedActionsServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, RestrictedActionsServiceDefinition, async () => ({
-    realTriggerEmote,
-    realMovePlayerTo
+    triggerEmote,
+    movePlayerTo
   }))
 }

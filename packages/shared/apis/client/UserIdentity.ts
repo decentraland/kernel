@@ -4,19 +4,19 @@ import { UserIdentityServiceDefinition } from '../gen/UserIdentity'
 import { UserData } from '../../types'
 
 export async function createUserIdentityServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, UserIdentityServiceDefinition>(
+  const originalService = await codegen.loadService<Context, UserIdentityServiceDefinition>(
     clientPort,
     UserIdentityServiceDefinition
   )
 
   return {
-    ...realService,
+    ...originalService,
     async getUserPublicKey(): Promise<string | null> {
-      const realResponse = await realService.realGetUserPublicKey({})
+      const realResponse = await originalService.getUserPublicKey({})
       return realResponse.address || null
     },
     async getUserData(): Promise<UserData | null> {
-      const realResponse = await realService.realGetUserData({})
+      const realResponse = await originalService.getUserData({})
       if (!realResponse.data) {
         return null
       }

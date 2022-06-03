@@ -21,6 +21,6 @@ message HasManyPermissionRequest {
 }
 
 service PermissionsService {
-    rpc realHasPermission(HasPermissionRequest) returns (PermissionResponse) {}
-    rpc realHasManyPermissions(HasManyPermissionRequest) returns (PermissionResponse) {}
+    rpc hasPermission(HasPermissionRequest) returns (PermissionResponse) {}
+    rpc hasManyPermissions(HasManyPermissionRequest) returns (PermissionResponse) {}
 }

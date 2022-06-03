@@ -31,11 +31,11 @@ message StreamEventsResponse {
 }
 
 service EngineAPIService {
-  rpc SendBatch(ManyEntityAction) returns (SendBatchResponse) {}
-  rpc StartSignal(StartSignalRequest) returns (StartSignalResponse) {}
+  rpc sendBatch(ManyEntityAction) returns (SendBatchResponse) {}
+  rpc startSignal(StartSignalRequest) returns (StartSignalResponse) {}
 
-  rpc realSubscribe(SubscribeRequest) returns (SubscribeResponse) {}
-  rpc realUnsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+  rpc subscribe(SubscribeRequest) returns (SubscribeResponse) {}
+  rpc unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
 
   rpc streamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
 }

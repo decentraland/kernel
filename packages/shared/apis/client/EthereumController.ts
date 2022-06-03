@@ -14,13 +14,13 @@ export interface MessageDict {
 }
 
 export async function createEthereumControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, EthereumControllerServiceDefinition>(
+  const originalService = await codegen.loadService<Context, EthereumControllerServiceDefinition>(
     clientPort,
     EthereumControllerServiceDefinition
   )
 
   return {
-    ...realService,
+    ...originalService,
 
     /**
      * Requires a generic payment in ETH or ERC20.
@@ -29,7 +29,7 @@ export async function createEthereumControllerServiceClient<Context>(clientPort:
      * @param  {string} [currency] - ETH or ERC20 supported token symbol
      */
     async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
-      return await realService.realRequirePayment({ toAddress, amount, currency })
+      return await originalService.requirePayment({ toAddress, amount, currency })
     },
 
     /**
@@ -40,7 +40,7 @@ export async function createEthereumControllerServiceClient<Context>(clientPort:
     async signMessage(
       message: MessageDict
     ): Promise<{ message: string; hexEncodedMessage: string; signature: string }> {
-      return await realService.realSignMessage({ message })
+      return await originalService.signMessage({ message })
     },
 
     /**
@@ -50,7 +50,7 @@ export async function createEthereumControllerServiceClient<Context>(clientPort:
      * @internal
      */
     async convertMessageToObject(message: string): Promise<MessageDict> {
-      return (await realService.realConvertMessageToObject({ message })).dict
+      return (await originalService.convertMessageToObject({ message })).dict
     },
 
     /**
@@ -59,7 +59,7 @@ export async function createEthereumControllerServiceClient<Context>(clientPort:
     async sendAsync(message: RPCSendableMessage): Promise<any> {
       return JSON.parse(
         (
-          await realService.realSendAsync({
+          await originalService.sendAsync({
             id: message.id,
             method: message.method,
             jsonParams: JSON.stringify(message.params)
@@ -72,7 +72,7 @@ export async function createEthereumControllerServiceClient<Context>(clientPort:
      * Returns the user's public key (address)
      */
     async getUserAccount(): Promise<string> {
-      return (await realService.realGetUserAccount({})).address!
+      return (await originalService.getUserAccount({})).address!
     }
   }
 }

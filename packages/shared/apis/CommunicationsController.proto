@@ -11,5 +11,5 @@ message InitResponse {}
 
 service CommunicationsControllerService {
     rpc init(InitRequest) returns (InitResponse) {}
-    rpc realSend(RealSendRequest) returns (RealSendResponse) {}
+    rpc send(RealSendRequest) returns (RealSendResponse) {}
 }

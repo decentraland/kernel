@@ -66,10 +66,10 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
 
 export function registerPermissionServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PermissionsServiceDefinition, async () => ({
-    async realHasPermission(req, ctx) {
+    async hasPermission(req, ctx) {
       return { hasPermission: hasPermission(req.permission, ctx) }
     },
-    async realHasManyPermissions(req, ctx) {
+    async hasManyPermissions(req, ctx) {
       for (const item of req.permission) {
         if (!(await hasPermission(item, ctx))) {
           return { hasPermission: false }

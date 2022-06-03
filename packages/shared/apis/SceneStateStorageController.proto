@@ -95,13 +95,13 @@ message PublishSceneStateResponse {
 
 
 service SceneStateStorageControllerService {
-    rpc realSendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
-    rpc realCreateProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
-    rpc realGetStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
-    rpc realGetProjectManifest(GetProjectManifestRequest) returns (GetProjectManifestResponse) {}
-    rpc realGetProjectManifestByCoordinates(GetProjectManifestByCoordinatesRequest) returns (GetProjectManifestByCoordinatesResponse) {}
-    rpc realCreateProjectWithCoords(CreateProjectWithCoordsRequest) returns (CreateProjectWithCoordsResponse) {}
-    rpc realSaveSceneState(SaveSceneStateRequest) returns (SaveSceneStateResponse) {}
-    rpc realSaveProjectInfo(SaveProjectInfoRequest) returns (SaveProjectInfoResponse) {}
-    rpc realPublishSceneState(PublishSceneStateRequest) returns (PublishSceneStateResponse) {}
+    rpc sendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
+    rpc createProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
+    rpc getStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
+    rpc getProjectManifest(GetProjectManifestRequest) returns (GetProjectManifestResponse) {}
+    rpc getProjectManifestByCoordinates(GetProjectManifestByCoordinatesRequest) returns (GetProjectManifestByCoordinatesResponse) {}
+    rpc createProjectWithCoords(CreateProjectWithCoordsRequest) returns (CreateProjectWithCoordsResponse) {}
+    rpc saveSceneState(SaveSceneStateRequest) returns (SaveSceneStateResponse) {}
+    rpc saveProjectInfo(SaveProjectInfoRequest) returns (SaveProjectInfoResponse) {}
+    rpc publishSceneState(PublishSceneStateRequest) returns (PublishSceneStateResponse) {}
 }

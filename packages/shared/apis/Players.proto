@@ -22,7 +22,7 @@ message GetPlayersInSceneRequest {}
 message GetConnectedPlayersRequest {}
 
 service PlayersService {
-    rpc realGetPlayerData(GetPlayerDataRequest) returns (PlayersGetUserDataResponse) {}
-    rpc realGetPlayersInScene(GetPlayersInSceneRequest) returns (PlayerListResponse) {}
-    rpc realGetConnectedPlayers(GetConnectedPlayersRequest)  returns (PlayerListResponse) {}
+    rpc getPlayerData(GetPlayerDataRequest) returns (PlayersGetUserDataResponse) {}
+    rpc getPlayersInScene(GetPlayersInSceneRequest) returns (PlayerListResponse) {}
+    rpc getConnectedPlayers(GetConnectedPlayersRequest)  returns (PlayerListResponse) {}
 }

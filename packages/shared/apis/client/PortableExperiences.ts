@@ -10,13 +10,13 @@ type PortableExperienceLoaded = {
   portableExperiences: PortableExperienceHandle[]
 }
 export async function createPortableExperiencesServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, PortableExperiencesServiceDefinition>(
+  const originalService = await codegen.loadService<Context, PortableExperiencesServiceDefinition>(
     clientPort,
     PortableExperiencesServiceDefinition
   )
 
   return {
-    ...realService,
+    ...originalService,
 
     /**
      * Starts a portable experience.
@@ -25,7 +25,7 @@ export async function createPortableExperiencesServiceClient<Context>(clientPort
      * Returns the handle of the portable experience.
      */
     async spawn(pid: PortableExperienceUrn): Promise<PortableExperienceHandle> {
-      return await realService.realSpawn({ pid })
+      return await originalService.spawn({ pid })
     },
 
     /**
@@ -35,7 +35,7 @@ export async function createPortableExperiencesServiceClient<Context>(clientPort
      * Returns true if was able to kill the portable experience, false if not.
      */
     async kill(pid: PortableExperienceUrn): Promise<boolean> {
-      return (await realService.realKill({ pid })).status
+      return (await originalService.kill({ pid })).status
     },
 
     /**
@@ -44,7 +44,7 @@ export async function createPortableExperiencesServiceClient<Context>(clientPort
      * Returns true if was able to kill the portable experience, false if not.
      */
     async exit(): Promise<boolean> {
-      return (await realService.realExit({})).status
+      return (await originalService.exit({})).status
     },
 
     /**
@@ -53,7 +53,7 @@ export async function createPortableExperiencesServiceClient<Context>(clientPort
      */
     async getPortableExperiencesLoaded(): Promise<PortableExperienceLoaded> {
       return {
-        portableExperiences: (await realService.realGetPortableExperiencesLoaded({})).loaded
+        portableExperiences: (await originalService.getPortableExperiencesLoaded({})).loaded
       }
     }
   }

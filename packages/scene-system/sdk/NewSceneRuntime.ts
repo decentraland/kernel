@@ -9,11 +9,12 @@ import { PermissionItem } from 'shared/apis/gen/Permissions'
 import { sleep } from 'atomicHelpers/sleep'
 
 // New
-import { addStat, setupStats } from './new-rpc/Stats'
+import { setupStats } from './new-rpc/Stats'
 import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
 import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
 import { createEventDispatcher, EventCallback, EventState } from './new-rpc/EventDispatcher'
 import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
+import type { EntityAction } from 'shared/apis/gen/EngineAPI'
 
 export async function startNewSceneRuntime(client: RpcClient) {
   const clientPort = await client.createPort(`new-rpc-${globalThis.name}`)
@@ -31,9 +32,9 @@ export async function startNewSceneRuntime(client: RpcClient) {
   const onEventFunctions: EventCallback[] = []
   createEventDispatcher(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => devToolsAdapter.error(err))
 
-  const bootstrapData = await modules.EnvironmentAPI!.realGetBootstrapData({})
-  const fullData = JSON.parse(bootstrapData.jsonPayload) as LoadableParcelScene
-  const isPreview = (await modules.EnvironmentAPI!.realIsPreviewMode({})).isPreview
+  const bootstrapData = await modules.EnvironmentAPI!.getBootstrapData()
+  const fullData = bootstrapData.data as LoadableParcelScene
+  const isPreview = await modules.EnvironmentAPI!.isPreviewMode()
 
   if (!bootstrapData || !bootstrapData.main) {
     throw new Error(`No boostrap data`)
@@ -50,21 +51,24 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   const sourceCode = await codeRequest.text()
 
-  const { dcl, onUpdateFunctions, onStartFunctions, events, loadingModules } = createDecentralandInterface({
+  const batchEvents: { events: EntityAction[] } = {
+    events: []
+  }
+  const { dcl, onUpdateFunctions, onStartFunctions, loadingModules } = createDecentralandInterface({
     modules,
     clientPort,
     onError: (err: Error) => devToolsAdapter.error(err),
     onLog: (...args: any) => devToolsAdapter.log(...args),
     onEventFunctions,
     sceneId: bootstrapData.sceneId,
-    eventState
+    eventState,
+    batchEvents
   })
 
-  const canUseWebsocket = (await modules.Permissions!.realHasPermission({ permission: PermissionItem.USE_WEBSOCKET }))
+  const canUseWebsocket = (await modules.Permissions!.hasPermission({ permission: PermissionItem.USE_WEBSOCKET }))
     .hasPermission
-  const canUseFetch = (await modules.Permissions!.realHasPermission({ permission: PermissionItem.USE_FETCH }))
-    .hasPermission
-  const unsafeAllowed = (await modules.EnvironmentAPI!.realAreUnsafeRequestAllowed({})).status
+  const canUseFetch = (await modules.Permissions!.hasPermission({ permission: PermissionItem.USE_FETCH })).hasPermission
+  const unsafeAllowed = await modules.EnvironmentAPI!.areUnsafeRequestAllowed()
 
   const originalFetch = fetch
 
@@ -119,20 +123,14 @@ export async function startNewSceneRuntime(client: RpcClient) {
     )
   }
 
-  events.push(initMessagesFinished())
+  batchEvents.events.push(initMessagesFinished())
 
   await sendBatch()
 
   async function sendBatch() {
-    if (events.length) {
-      const batch = events.slice()
-      events.length = 0
-
-      addStat(
-        'sendBatch',
-        batch.length,
-        batch.reduce((prev, current) => prev + current.payload.length, 0)
-      )
+    if (batchEvents.events.length) {
+      const batch = batchEvents.events
+      batchEvents.events = []
 
       modules.EngineAPI!.sendBatch({ actions: batch }).catch((err) => devToolsAdapter.error(err))
     }

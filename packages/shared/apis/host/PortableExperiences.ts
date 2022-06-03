@@ -20,7 +20,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
     //    *
     //    * Returns the handle of the portable experience.
     //    */
-    async realSpawn(req, ctx) {
+    async spawn(req, ctx) {
       return await spawnScenePortableExperienceSceneFromUrn(req.pid, ctx.ParcelIdentity.cid)
     },
     /**
@@ -29,7 +29,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      *
      * Returns true if was able to kill the portable experience, false if not.
      */
-    async realKill(req, ctx) {
+    async kill(req, ctx) {
       const portableExperience = getRunningPortableExperience(req.pid)
 
       if (!!portableExperience && portableExperience.parentCid === ctx.ParcelIdentity.cid) {
@@ -44,7 +44,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      *
      * Returns true if was able to kill the portable experience, false if not.
      */
-    async realExit(_req, ctx) {
+    async exit(_req, ctx) {
       store.dispatch(removeScenePortableExperience(ctx.ParcelIdentity.cid))
       return { status: true }
     },
@@ -53,7 +53,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      *
      * Returns current portable experiences loaded with ids and parentCid
      */
-    async realGetPortableExperiencesLoaded() {
+    async getPortableExperiencesLoaded() {
       const loaded = getPortableExperiencesLoaded()
       return { loaded: Array.from(loaded).map(($) => ({ pid: $.data.sceneId, parentCid: $.parentCid })) }
     }

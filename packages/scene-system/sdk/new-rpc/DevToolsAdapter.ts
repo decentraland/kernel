@@ -40,7 +40,7 @@ export class DevToolsAdapter {
       })
     }
 
-    this.devTools!.realEvent({
+    this.devTools!.event({
       type: 'Runtime.consoleAPICalled',
       jsonPayload: JSON.stringify([params])
     }).catch(this.catchHandler)
@@ -79,7 +79,7 @@ export class DevToolsAdapter {
       }
     }
 
-    this.devTools!.realEvent({
+    this.devTools!.event({
       type: 'Runtime.exceptionThrown',
       jsonPayload: JSON.stringify([param])
     }).catch(this.catchHandler)

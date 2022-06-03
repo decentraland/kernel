@@ -11,7 +11,7 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 
 export function registerUserIdentityServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, UserIdentityServiceDefinition, async () => ({
-    async realGetUserPublicKey() {
+    async getUserPublicKey() {
       const { identity } = await onLoginCompleted()
       if (!identity || !identity.address) {
         debugger
@@ -22,7 +22,7 @@ export function registerUserIdentityServiceServerImplementation(port: RpcServerP
         return {}
       }
     },
-    async realGetUserData() {
+    async getUserData() {
       const { identity } = await onLoginCompleted()
 
       if (!identity || !identity.address) {

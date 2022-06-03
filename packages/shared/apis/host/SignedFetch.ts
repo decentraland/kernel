@@ -14,7 +14,7 @@ import { SignedFetchServiceDefinition } from './../gen/SignedFetch'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({
-    async realSignedFetch(req, ctx) {
+    async signedFetch(req, ctx) {
       const { identity } = await onLoginCompleted()
 
       const state = store.getState()

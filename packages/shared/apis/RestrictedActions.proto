@@ -20,6 +20,6 @@ message TriggerEmoteRequest {
 }
 
 service RestrictedActionsService {
-    rpc realMovePlayerTo(MovePlayerToRequest) returns (MovePlayerToResponse) {}
-    rpc realTriggerEmote(TriggerEmoteRequest) returns (TriggerEmoteResponse) {}
+    rpc movePlayerTo(MovePlayerToRequest) returns (MovePlayerToResponse) {}
+    rpc triggerEmote(TriggerEmoteRequest) returns (TriggerEmoteResponse) {}
 }

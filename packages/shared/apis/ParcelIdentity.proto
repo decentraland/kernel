@@ -36,7 +36,7 @@ message GetIsEmptyResponse {
 }
 
 service ParcelIdentityService {
-    rpc realGetParcel(GetParcelRequest) returns (GetParcelResponse) {}
-    rpc realGetSceneId(GetSceneIdRequest) returns (GetSceneIdResponse) {} 
-    rpc realGetIsEmpty(GetIsEmptyRequest) returns (GetIsEmptyResponse) {} 
+    rpc getParcel(GetParcelRequest) returns (GetParcelResponse) {}
+    rpc getSceneId(GetSceneIdRequest) returns (GetSceneIdResponse) {} 
+    rpc getIsEmpty(GetIsEmptyRequest) returns (GetIsEmptyResponse) {} 
 }

@@ -18,7 +18,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
   }
 
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
-    async realRequestTeleport(req, ctx) {
+    async requestTeleport(req, ctx) {
       const { destination } = req
       if (destination === 'magic' || destination === 'crowd') {
         getUnityInstance().RequestTeleport({ destination })

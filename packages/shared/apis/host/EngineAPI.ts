@@ -26,7 +26,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       return {}
     },
 
-    async realSubscribe(req, ctx) {
+    async subscribe(req, ctx) {
       const channel = ctx.eventChannel
 
       if (!(req.eventId in ctx.EngineAPI.subscribedEvents)) {
@@ -40,7 +40,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
 
       return {}
     },
-    async realUnsubscribe(req, ctx) {
+    async unsubscribe(req, ctx) {
       ctx.EngineAPI.subscribedEvents[req.eventId] = false
       return {}
     },

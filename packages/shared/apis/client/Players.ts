@@ -4,25 +4,28 @@ import { UserData } from '../../types'
 import { PlayersServiceDefinition } from '../gen/Players'
 
 export async function createPlayersServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, PlayersServiceDefinition>(clientPort, PlayersServiceDefinition)
+  const originalService = await codegen.loadService<Context, PlayersServiceDefinition>(
+    clientPort,
+    PlayersServiceDefinition
+  )
 
   return {
-    ...realService,
+    ...originalService,
     /**
      * Return the players's data
      */
     async getPlayerData(opt: { userId: string }): Promise<UserData | null> {
-      const realResponse = await await realService.realGetPlayerData({ userId: opt.userId })
-      if (!realResponse.data) {
+      const originalResponse = await await originalService.getPlayerData({ userId: opt.userId })
+      if (!originalResponse.data) {
         return null
       }
       return {
-        ...realResponse.data,
+        ...originalResponse.data,
         avatar: {
-          ...realResponse.data.avatar!,
-          snapshots: realResponse.data.avatar!.snapshots!
+          ...originalResponse.data.avatar!,
+          snapshots: originalResponse.data.avatar!.snapshots!
         },
-        publicKey: realResponse.data.publicKey || null
+        publicKey: originalResponse.data.publicKey || null
       }
     },
 
@@ -30,14 +33,14 @@ export async function createPlayersServiceClient<Context>(clientPort: RpcClientP
      * Return array of connected players
      */
     async getConnectedPlayers(): Promise<{ userId: string }[]> {
-      return (await realService.realGetConnectedPlayers({})).players
+      return (await originalService.getConnectedPlayers({})).players
     },
 
     /**
      * Return array of players inside the scene
      */
     async getPlayersInScene(): Promise<{ userId: string }[]> {
-      return (await realService.realGetPlayersInScene({})).players
+      return (await originalService.getPlayersInScene({})).players
     }
   }
 }

@@ -3,7 +3,7 @@ import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface
 import defaultLogger from '../../packages/shared/logger'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
 import { PermissionItem, permissionItemToJSON } from 'shared/apis/gen/Permissions'
-import { realMovePlayerTo, realTriggerEmote } from 'shared/apis/host/RestrictedActions'
+import { movePlayerTo, triggerEmote } from 'shared/apis/host/RestrictedActions'
 import { PortContext } from 'shared/apis/host/context'
 import { assertHasPermission } from 'shared/apis/host/Permissions'
 import { Vector3 } from '@dcl/legacy-ecs'
@@ -20,7 +20,7 @@ describe('RestrictedActions tests', () => {
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').once().withExactArgs(emote)
 
-      await realTriggerEmote({ predefinedEmote: emote }, ctx)
+      await triggerEmote({ predefinedEmote: emote }, ctx)
       sinon.verify()
     })
 
@@ -30,7 +30,7 @@ describe('RestrictedActions tests', () => {
       sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
 
       try {
-        await realTriggerEmote({ predefinedEmote: 'emote' }, ctx)
+        await triggerEmote({ predefinedEmote: 'emote' }, ctx)
       } catch (err) {
 
       }
@@ -50,7 +50,7 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
-      await realTriggerEmote({ predefinedEmote: 'emote' }, ctx)
+      await triggerEmote({ predefinedEmote: 'emote' }, ctx)
       sinon.verify()
     })
   })
@@ -65,7 +65,7 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs({ position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined }, false)
 
-      await realMovePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
+      await movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
 
       sinon.verify()
     })
@@ -80,7 +80,7 @@ describe('RestrictedActions tests', () => {
         .withExactArgs('Error: Position is out of scene', { x: 21, y: 0, z: 1648 })
 
       sinon.mock(getUnityInstance()).expects('Teleport').never()
-      await realMovePlayerTo({ newRelativePosition: new Vector3(21, 0, 32) }, ctx)
+      await movePlayerTo({ newRelativePosition: new Vector3(21, 0, 32) }, ctx)
       sinon.verify()
     })
 
@@ -90,7 +90,7 @@ describe('RestrictedActions tests', () => {
       sinon.mock(getUnityInstance()).expects('Teleport').never()
 
       try {
-        await realMovePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
+        await movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
       } catch (err) {
 
       }
@@ -111,7 +111,7 @@ describe('RestrictedActions tests', () => {
         .once()
         .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
 
-      await realMovePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
+      await movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
 
       sinon.verify()
     })

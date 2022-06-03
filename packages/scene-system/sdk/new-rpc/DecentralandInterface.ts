@@ -18,6 +18,7 @@ import { QueryType, Vector3 } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import future, { IFuture } from 'fp-future'
 import { EventCallback, EventState } from './EventDispatcher'
+import { EntityAction } from 'shared/apis/gen/EngineAPI'
 
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'
@@ -31,12 +32,12 @@ export interface DecentralandInterfaceOptions {
   sceneId: string
   clientPort: RpcClientPort
   eventState: EventState
+  batchEvents: { events: EntityAction[] }
 }
 
 export function createDecentralandInterface(options: DecentralandInterfaceOptions) {
-  const { modules, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
+  const { batchEvents, modules, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
 
-  const events: any[] = []
   const onUpdateFunctions: ((dt: number) => void)[] = []
   const onStartFunctions: (() => void)[] = []
   const loadingModules: Record<string, IFuture<void>> = {}
@@ -55,7 +56,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
       }
 
       if (eventState.allowOpenExternalUrl) {
-        events.push({
+        batchEvents.events.push({
           type: 'OpenExternalUrl',
           tag: '',
           payload: JSON.stringify(url)
@@ -74,7 +75,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
           return
         }
 
-        events.push({
+        batchEvents.events.push({
           type: 'OpenNFTDialog',
           tag: '',
           payload: JSON.stringify(payload as OpenNFTDialogPayload)
@@ -89,14 +90,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         // We dont create the entity 0 in the engine.
         return
       }
-      events.push({
+      batchEvents.events.push({
         type: 'CreateEntity',
         payload: JSON.stringify({ id: entityId } as CreateEntityPayload)
       })
     },
 
     removeEntity(entityId: string) {
-      events.push({
+      batchEvents.events.push({
         type: 'RemoveEntity',
         payload: JSON.stringify({ id: entityId } as RemoveEntityPayload)
       })
@@ -128,7 +129,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
       }
 
       if (componentNameRE.test(componentName)) {
-        events.push({
+        batchEvents.events.push({
           type: 'UpdateEntityComponent',
           tag: sceneId + '_' + entityId + '_' + classId,
           payload: JSON.stringify({
@@ -144,7 +145,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     /** called after adding a DisposableComponent to the entity */
     attachEntityComponent(entityId: string, componentName: string, id: string): void {
       if (componentNameRE.test(componentName)) {
-        events.push({
+        batchEvents.events.push({
           type: 'AttachEntityComponent',
           tag: entityId,
           payload: JSON.stringify({
@@ -159,7 +160,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     /** call after removing a component from the entity */
     removeEntityComponent(entityId: string, componentName: string): void {
       if (componentNameRE.test(componentName)) {
-        events.push({
+        batchEvents.events.push({
           type: 'ComponentRemoved',
           tag: entityId,
           payload: JSON.stringify({
@@ -172,7 +173,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     /** set a new parent for the entity */
     setParent(entityId: string, parentId: string): void {
-      events.push({
+      batchEvents.events.push({
         type: 'SetEntityParent',
         tag: entityId,
         payload: JSON.stringify({
@@ -185,7 +186,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     /** queries for a specific system with a certain query configuration */
     query(queryType: QueryType, payload: any) {
       payload.queryId = getIdAsNumber(payload.queryId).toString()
-      events.push({
+      batchEvents.events.push({
         type: 'Query',
         tag: sceneId + '_' + payload.queryId,
         payload: JSON.stringify({
@@ -197,17 +198,17 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     /** subscribe to specific events, events will be handled by the onEvent function */
     subscribe(eventName: string): void {
-      modules.EngineAPI?.realSubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      modules.EngineAPI?.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     /** unsubscribe to specific event */
     unsubscribe(eventName: string): void {
-      modules.EngineAPI?.realUnsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      modules.EngineAPI?.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     componentCreated(id: string, componentName: string, classId: number) {
       if (componentNameRE.test(componentName)) {
-        events.push({
+        batchEvents.events.push({
           type: 'ComponentCreated',
           tag: id,
           payload: JSON.stringify({
@@ -220,7 +221,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     },
 
     componentDisposed(id: string) {
-      events.push({
+      batchEvents.events.push({
         type: 'ComponentDisposed',
         tag: id,
         payload: JSON.stringify({ id } as ComponentDisposedPayload)
@@ -228,7 +229,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     },
 
     componentUpdated(id: string, json: string) {
-      events.push({
+      batchEvents.events.push({
         type: 'ComponentUpdated',
         tag: id,
         payload: JSON.stringify({
@@ -290,7 +291,6 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
       if (rpcHandle === WEB3_PROVIDER && methodName === PROVIDER_METHOD) {
         return provider
       }
-      console.log({ m: 'callRpc', rpcHandle, methodName })
       const module = (modules as any)[rpcHandle]
       if (!module) {
         throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
@@ -310,7 +310,6 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     dcl,
     onStartFunctions,
     onUpdateFunctions,
-    events,
     loadingModules
   }
 }

@@ -23,23 +23,23 @@ export function registerEnvironmentAPIServiceServerImplementation(
   port: RpcServerPort<PortContextService<'EnvironmentAPI'>>
 ) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
-    async realGetBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
+    async getBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
       return { ...ctx.EnvironmentAPI.data, jsonPayload: JSON.stringify(ctx.EnvironmentAPI.data.data) }
     },
-    async realIsPreviewMode(): Promise<PreviewModeResponse> {
+    async isPreviewMode(): Promise<PreviewModeResponse> {
       return { isPreview: PREVIEW }
     },
-    async realGetPlatform(): Promise<GetPlatformResponse> {
+    async getPlatform(): Promise<GetPlatformResponse> {
       if (RENDERER_WS) {
         return { platform: Platform.DESKTOP }
       } else {
         return { platform: Platform.BROWSER }
       }
     },
-    async realAreUnsafeRequestAllowed(): Promise<AreUnsafeRequestAllowedResponse> {
+    async areUnsafeRequestAllowed(): Promise<AreUnsafeRequestAllowedResponse> {
       return { status: getFeatureFlagEnabled(store.getState(), 'unsafe-request') }
     },
-    async realGetCurrentRealm(): Promise<GetCurrentRealmResponse> {
+    async getCurrentRealm(): Promise<GetCurrentRealmResponse> {
       const realm = getRealm(store.getState())
       const island = getCommsIsland(store.getState()) ?? '' // We shouldn't send undefined because it would break contract
 
@@ -49,7 +49,7 @@ export function registerEnvironmentAPIServiceServerImplementation(
 
       return { currentRealm: toEnvironmentRealmType(realm, island) }
     },
-    async realGetExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
+    async getExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
       return {
         clientUri: location.href,
         configurations: {
@@ -57,7 +57,7 @@ export function registerEnvironmentAPIServiceServerImplementation(
         }
       }
     },
-    async realGetDecentralandTime(): Promise<GetDecentralandTimeResponse> {
+    async getDecentralandTime(): Promise<GetDecentralandTimeResponse> {
       let time = decentralandTimeData.time
 
       // if time is not paused we calculate the current time to avoid

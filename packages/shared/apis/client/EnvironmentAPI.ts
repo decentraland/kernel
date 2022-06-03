@@ -23,15 +23,15 @@ export const enum Platform {
 }
 
 export async function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, EnvironmentAPIServiceDefinition>(
+  const originalService = await codegen.loadService<Context, EnvironmentAPIServiceDefinition>(
     clientPort,
     EnvironmentAPIServiceDefinition
   )
   return {
-    ...realService,
+    ...originalService,
 
     async getBootstrapData(): Promise<EnvironmentData<any>> {
-      const res = await realService.realGetBootstrapData({})
+      const res = await originalService.getBootstrapData({})
       return {
         sceneId: res.sceneId,
         name: res.name,
@@ -47,14 +47,14 @@ export async function createEnvironmentAPIServiceClient<Context>(clientPort: Rpc
      * Returns if the feature flag unsafe-request is on
      */
     async areUnsafeRequestAllowed(): Promise<boolean> {
-      return (await realService.realAreUnsafeRequestAllowed({})).status
+      return (await originalService.areUnsafeRequestAllowed({})).status
     },
 
     /**
      * Returns the current connected realm
      */
     async getCurrentRealm(): Promise<Realm | undefined> {
-      const res = await realService.realGetCurrentRealm({})
+      const res = await originalService.getCurrentRealm({})
       return res.currentRealm
     },
 
@@ -62,7 +62,7 @@ export async function createEnvironmentAPIServiceClient<Context>(clientPort: Rpc
      * Returns whether the scene is running in preview mode or not
      */
     async isPreviewMode(): Promise<boolean> {
-      const res = await realService.realIsPreviewMode({})
+      const res = await originalService.isPreviewMode({})
       return res.isPreview
     },
 
@@ -70,21 +70,21 @@ export async function createEnvironmentAPIServiceClient<Context>(clientPort: Rpc
      * Returns explorer configuration and environment information
      */
     async getExplorerConfiguration(): Promise<ExplorerConfiguration> {
-      return await realService.realGetExplorerConfiguration({})
+      return await originalService.getExplorerConfiguration({})
     },
 
     /**
      * Returns what platform is running the scene
      */
     async getPlatform(): Promise<Platform> {
-      return (await realService.realGetPlatform({})).platform as Platform
+      return (await originalService.getPlatform({})).platform as Platform
     },
 
     /**
      * Returns Decentraland's time
      */
     async getDecentralandTime(): Promise<{ seconds: number }> {
-      return await realService.realGetDecentralandTime({})
+      return await originalService.getDecentralandTime({})
     }
   }
 }

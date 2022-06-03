@@ -19,7 +19,7 @@ import { assertHasPermission } from './Permissions'
 
 export function registerEthereumControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EthereumControllerServiceDefinition, async () => ({
-    async realRequirePayment(req, ctx) {
+    async requirePayment(req, ctx) {
       assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
 
       await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
@@ -28,7 +28,7 @@ export function registerEthereumControllerServiceServerImplementation(port: RpcS
       })
       return requirePayment(req.toAddress, req.amount, req.currency)
     },
-    async realSignMessage(req, ctx) {
+    async signMessage(req, ctx) {
       assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
 
       await getUnityInstance().RequestWeb3ApiUse('signMessage', {
@@ -37,11 +37,11 @@ export function registerEthereumControllerServiceServerImplementation(port: RpcS
       })
       return signMessage(req.message)
     },
-    async realConvertMessageToObject(req, ctx) {
+    async convertMessageToObject(req, ctx) {
       assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
       return { dict: await convertMessageToObject(req.message) }
     },
-    async realSendAsync(req, ctx) {
+    async sendAsync(req, ctx) {
       const message: RPCSendableMessage = {
         jsonrpc: '2.0',
         id: req.id,
@@ -57,7 +57,7 @@ export function registerEthereumControllerServiceServerImplementation(port: RpcS
       }
       return sendAsync(message)
     },
-    async realGetUserAccount(_req, ctx) {
+    async getUserAccount(_req, ctx) {
       assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
       return { address: await getUserAccount(requestManager) }
     }

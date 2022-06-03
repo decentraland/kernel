@@ -36,6 +36,6 @@ message GetUserPublicKeyResponse {
 }
 
 service UserIdentityService {
-    rpc realGetUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse) {}
-    rpc realGetUserData(GetUserDataRequest) returns (GetUserDataResponse) {}
+    rpc getUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse) {}
+    rpc getUserData(GetUserDataRequest) returns (GetUserDataResponse) {}
 }

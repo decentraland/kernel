@@ -3,10 +3,10 @@ import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { SocialControllerServiceDefinition } from '../gen/SocialController'
 
 export async function createSocialControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, SocialControllerServiceDefinition>(
+  const originalService = await codegen.loadService<Context, SocialControllerServiceDefinition>(
     clientPort,
     SocialControllerServiceDefinition
   )
 
-  return realService
+  return originalService
 }

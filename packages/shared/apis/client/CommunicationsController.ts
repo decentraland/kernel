@@ -3,15 +3,15 @@ import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { CommunicationsControllerServiceDefinition } from '../gen/CommunicationsController'
 
 export async function createCommunicationsControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, CommunicationsControllerServiceDefinition>(
+  const originalService = await codegen.loadService<Context, CommunicationsControllerServiceDefinition>(
     clientPort,
     CommunicationsControllerServiceDefinition
   )
 
   return {
-    ...realService,
+    ...originalService,
     async send(message: string): Promise<void> {
-      await realService.realSend({ message })
+      await originalService.send({ message })
     }
   }
 }

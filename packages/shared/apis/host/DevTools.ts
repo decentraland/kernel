@@ -7,7 +7,7 @@ import { PortContext } from './context'
 
 export function registerDevToolsServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, DevToolsServiceDefinition, async () => ({
-    async realEvent(req, context) {
+    async event(req, context) {
       const params = JSON.parse(req.jsonPayload)
       switch (req.type) {
         case 'Runtime.consoleAPICalled': {

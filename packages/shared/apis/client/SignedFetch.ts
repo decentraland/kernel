@@ -16,13 +16,13 @@ export type BodyType = 'json' | 'text'
 export type OriginalFlatFetchInit = RequestInit & { responseBodyType?: BodyType }
 
 export async function createSignedFetchServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, SignedFetchServiceDefinition>(
+  const originalService = await codegen.loadService<Context, SignedFetchServiceDefinition>(
     clientPort,
     SignedFetchServiceDefinition
   )
 
   return {
-    ...realService,
+    ...originalService,
     async signedFetch(url: string, originalInit?: OriginalFlatFetchInit): Promise<OriginalFlatFetchResponse> {
       let init: FlatFetchInit | undefined = undefined
       if (originalInit) {
@@ -37,7 +37,7 @@ export async function createSignedFetchServiceClient<Context>(clientPort: RpcCli
           init.method = originalInit.method
         }
       }
-      const result = await realService.realSignedFetch({ url, init })
+      const result = await originalService.signedFetch({ url, init })
       return {
         ok: result.ok,
         status: result.status,

@@ -36,7 +36,7 @@ import { PlayersServiceDefinition } from './../gen/Players'
 
 export function registerPlayersServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PlayersServiceDefinition, async () => ({
-    async realGetPlayerData(req) {
+    async getPlayerData(req) {
       const userId = req.userId
       const profile = getProfileFromStore(store.getState(), userId)
 
@@ -55,7 +55,7 @@ export function registerPlayersServiceServerImplementation(port: RpcServerPort<P
         }
       }
     },
-    async realGetPlayersInScene(req, ctx) {
+    async getPlayersInScene(req, ctx) {
       const currentUserId = getCurrentUserId(store.getState())
       const sceneParcels = ctx.ParcelIdentity.land!.sceneJsonData.scene.parcels
 
@@ -78,7 +78,7 @@ export function registerPlayersServiceServerImplementation(port: RpcServerPort<P
 
       return { players: result }
     },
-    async realGetConnectedPlayers() {
+    async getConnectedPlayers() {
       return {
         players: getVisibleAvatarsUserId().map((userId) => {
           return { userId }

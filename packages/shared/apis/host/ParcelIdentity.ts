@@ -7,7 +7,7 @@ export function registerParcelIdentityServiceServerImplementation(
   port: RpcServerPort<PortContextService<'ParcelIdentity'>>
 ) {
   codegen.registerService(port, ParcelIdentityServiceDefinition, async () => ({
-    async realGetParcel(_req, ctx) {
+    async getParcel(_req, ctx) {
       return {
         land: {
           ...ctx.ParcelIdentity.land,
@@ -17,11 +17,11 @@ export function registerParcelIdentityServiceServerImplementation(
       } as any
       // TODO: new rpc
     },
-    async realGetSceneId(_req, ctx) {
+    async getSceneId(_req, ctx) {
       const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.ParcelIdentity.cid || ''
       return { sceneId }
     },
-    async realGetIsEmpty(_req, ctx) {
+    async getIsEmpty(_req, ctx) {
       return { isEmpty: ctx.ParcelIdentity.isEmpty }
     }
   }))

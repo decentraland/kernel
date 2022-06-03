@@ -28,13 +28,13 @@ export const enum PredefinedEmote {
 }
 
 export async function createRestrictedActionsServiceClient<Context>(clientPort: RpcClientPort) {
-  const realService = await codegen.loadService<Context, RestrictedActionsServiceDefinition>(
+  const originalService = await codegen.loadService<Context, RestrictedActionsServiceDefinition>(
     clientPort,
     RestrictedActionsServiceDefinition
   )
 
   return {
-    ...realService,
+    ...originalService,
     /**
      * move player to a position inside the scene
      *
@@ -42,7 +42,7 @@ export async function createRestrictedActionsServiceClient<Context>(clientPort: 
      * @param cameraTarget PositionType
      */
     async movePlayerTo(newPosition: PositionType, cameraTarget?: PositionType): Promise<void> {
-      await realService.realMovePlayerTo({ newRelativePosition: newPosition, cameraTarget: cameraTarget })
+      await originalService.movePlayerTo({ newRelativePosition: newPosition, cameraTarget: cameraTarget })
     },
     /**
      * trigger an emote on the current player
@@ -50,7 +50,7 @@ export async function createRestrictedActionsServiceClient<Context>(clientPort: 
      * @param emote the emote to perform
      */
     async triggerEmote(emote: Emote): Promise<void> {
-      await realService.realTriggerEmote({ predefinedEmote: emote.predefined })
+      await originalService.triggerEmote({ predefinedEmote: emote.predefined })
     }
   }
 }

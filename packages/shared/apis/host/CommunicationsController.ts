@@ -37,7 +37,7 @@ export function registerCommunicationsControllerServiceServerImplementation(port
         unsubscribeParcelSceneToCommsMessages(commsController)
       }
     },
-    async realSend(req, ctx) {
+    async send(req, ctx) {
       sendParcelSceneCommsMessage(ctx.ParcelIdentity.cid, req.message)
       return {}
     }
