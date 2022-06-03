@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message SendToRendererRequest {
+    bytes data = 1;
+}
+message SendToResponse {}
+
+message MessageFromRendererRequest {}
+message MessageFromRendererResponse {
+    bytes data = 1;
+}
+
+service ExperimentalAPIService {
+  rpc sendToRenderer(SendToRendererRequest) returns (SendToResponse) {}
+  rpc messageFromRenderer(MessageFromRendererRequest) returns (stream MessageFromRendererResponse) {}
+}

@@ -6,7 +6,7 @@ else
 PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
 endif
 
-APIS = EngineAPI EnvironmentAPI DevTools UserIdentity UserActionModule SocialController SignedFetch RestrictedActions PortableExperiences Players Permissions ParcelIdentity EthereumController CommunicationsController SceneStateStorageController
+APIS = EngineAPI EnvironmentAPI DevTools UserIdentity UserActionModule SocialController SignedFetch RestrictedActions PortableExperiences Players Permissions ParcelIdentity EthereumController CommunicationsController SceneStateStorageController ExperimentalAPI
 
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler

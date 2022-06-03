@@ -28,6 +28,7 @@ import { createRestrictedActionsServiceClient } from './RestrictedActions'
 import { createParcelIdentityServiceClient } from './ParcelIdentity'
 import { createPlayersServiceClient } from './Players'
 import { createPortableExperiencesServiceClient } from './PortableExperiences'
+import { createExperimentalAPIServiceClient } from './ExperimentalAPI'
 
 export const LoadableAPIs = {
   CommunicationsController: createCommunicationsControllerServiceClient,
@@ -35,6 +36,7 @@ export const LoadableAPIs = {
   EngineAPI: createEngineAPIServiceClient,
   EnvironmentAPI: createEnvironmentAPIServiceClient,
   EthereumController: createEthereumControllerServiceClient,
+  ExperimentalAPI: createExperimentalAPIServiceClient,
   ParcelIdentity: createParcelIdentityServiceClient,
   Permissions: createPermissionsServiceClient,
   Players: createPlayersServiceClient,

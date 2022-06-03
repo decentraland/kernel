@@ -5,6 +5,7 @@ import { registerEthereumControllerServiceServerImplementation } from './Ethereu
 import { registerDevToolsServiceServerImplementation } from './DevTools'
 import { registerEngineAPIServiceServerImplementation } from './EngineAPI'
 import { registerEnvironmentAPIServiceServerImplementation } from './EnvironmentAPI'
+import { registerExperimentalAPIServiceServerImplementation } from './ExperimentalAPI'
 import { registerPermissionServiceServerImplementation } from './Permissions'
 import { registerUserIdentityServiceServerImplementation } from './UserIdentity'
 import { registerParcelIdentityServiceServerImplementation } from './ParcelIdentity'
@@ -31,4 +32,6 @@ export function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerPlayersServiceServerImplementation(serverPort)
   registerPortableExperiencesServiceServerImplementation(serverPort)
   registerSignedFetchServiceServerImplementation(serverPort)
+  // TODO: remove when renderer-rpc is ready
+  registerExperimentalAPIServiceServerImplementation(serverPort)
 }
