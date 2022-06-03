@@ -13,3 +13,10 @@ export function injectVersions<T extends Record<string, any>>(versions: T): T & 
 
   return versions
 }
+
+export function getUsedComponentVersions() {
+  const versions = injectVersions({})
+  const kernelVersion = versions['@dcl/kernel'] || 'unknown'
+  const rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
+  return { kernelVersion, rendererVersion }
+}

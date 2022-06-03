@@ -1,4 +1,4 @@
-import { call, put, select, takeEvery } from 'redux-saga/effects'
+import { apply, call, put, select, takeEvery } from 'redux-saga/effects'
 
 import {
   WITH_FIXED_COLLECTIONS,
@@ -97,10 +97,20 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
   const result: PartialWearableV2[] = []
   if (filters.ownedByUser) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
-      const uuidsItems = WITH_FIXED_ITEMS.split(',')
-      if (uuidsItems.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, uuidsItems, identity)
-        result.push(...v2Wearables)
+      const splittedItemIds = WITH_FIXED_ITEMS.split(',')
+      const itemUuids = splittedItemIds.filter((id) => !id.startsWith('urn'))
+      const itemURNs = splittedItemIds.filter((id) => id.startsWith('urn'))
+
+      if (identity) {
+        if (itemUuids.length > 0) {
+          const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, itemUuids, identity)
+          result.push(...v2Wearables)
+        }
+
+        if (itemURNs.length > 0) {
+          const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ wearableIds: itemURNs })
+          result.push(...zoneWearables)
+        }
       }
     } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       // The WITH_FIXED_COLLECTIONS config can only be used in zone. However, we want to be able to use prod collections for testing.
@@ -110,7 +120,9 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
       // Fetch published collections
       const urnCollections = collectionIds.filter((collectionId) => collectionId.startsWith('urn'))
       if (urnCollections.length > 0) {
-        const zoneWearables: PartialWearableV2[] = yield client.fetchWearables({ collectionIds: urnCollections })
+        const zoneWearables: PartialWearableV2[] = yield apply(client, client.fetchWearables, [
+          { collectionIds: urnCollections }
+        ])
         result.push(...zoneWearables)
       }
 
@@ -146,10 +158,22 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
     result.push(...wearables)
 
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
-      const uuidsItems = WITH_FIXED_ITEMS.split(',')
-      if (uuidsItems.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, uuidsItems, identity)
-        result.push(...v2Wearables)
+      const splittedItemIds = WITH_FIXED_ITEMS.split(',')
+      const itemUuids = splittedItemIds.filter((id) => !id.startsWith('urn'))
+      const itemURNs = splittedItemIds.filter((id) => id.startsWith('urn'))
+
+      if (identity) {
+        if (itemUuids.length > 0) {
+          const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, itemUuids, identity)
+          result.push(...v2Wearables)
+        }
+
+        if (itemURNs.length > 0) {
+          const zoneWearables: PartialWearableV2[] = yield apply(client, client.fetchWearables, [
+            { wearableIds: itemURNs }
+          ])
+          result.push(...zoneWearables)
+        }
       }
     } else if (WITH_FIXED_COLLECTIONS && COLLECTIONS_OR_ITEMS_ALLOWED) {
       const uuidCollections = WITH_FIXED_COLLECTIONS.split(',').filter(

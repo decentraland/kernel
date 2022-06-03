@@ -36,8 +36,7 @@ export const getWorldConfig = (store: RootMetaState): WorldConfig => store.meta.
 
 export const getPois = (store: RootMetaState): Vector2Component[] => getWorldConfig(store)?.pois || []
 
-export const getCommsConfig = (store: RootMetaState): CommsConfig =>
-  store.meta.config.comms ?? { maxVisiblePeers: DEFAULT_MAX_VISIBLE_PEERS }
+export const getCommsConfig = (store: RootMetaState): CommsConfig => store.meta.config.comms ?? {}
 
 export const getBannedUsers = (store: RootMetaState): BannedUsers =>
   (getFeatureFlagVariantValue(store, 'banned_users') as BannedUsers) ?? {}
@@ -46,10 +45,11 @@ export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmCha
   getFeatureFlagVariantValue(store, 'pick_realm_algorithm_config') as AlgorithmChainConfig | undefined
 
 export function getMaxVisiblePeers(store: RootMetaState): number {
-  if (QS_MAX_VISIBLE_PEERS !== undefined) return QS_MAX_VISIBLE_PEERS
-  const fromVariants = +(getFeatureFlagVariantValue(store, 'max_visible_peers') as string)
-
-  return !isNaN(fromVariants) ? fromVariants : DEFAULT_MAX_VISIBLE_PEERS
+  return (
+    QS_MAX_VISIBLE_PEERS ||
+    +(getFeatureFlagVariantValue(store, 'max_visible_peers') as string) ||
+    DEFAULT_MAX_VISIBLE_PEERS
+  )
 }
 
 /**
@@ -86,7 +86,7 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
 }
 
 export const getSynapseUrl = (store: RootMetaState): string =>
-  store.meta.config.synapseUrl ?? 'https://synapse.decentraland.io'
+  store.meta.config.synapseUrl ?? 'https://synapse.decentraland.zone'
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint

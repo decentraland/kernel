@@ -1,5 +1,9 @@
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { TRACE_RENDERER } from 'config'
+import {
+  incrementMessageFromKernelToRenderer,
+  incrementMessageFromRendererToKernel
+} from 'shared/session/getPerformanceInfo'
 import defaultLogger from '../shared/logger'
 import type { CommonRendererOptions } from './loader'
 
@@ -12,6 +16,7 @@ export function traceDecoratorRendererOptions(options: CommonRendererOptions): C
   return {
     ...options,
     onMessage(type, payload) {
+      incrementMessageFromRendererToKernel()
       if (pendingMessagesInTrace > 0) {
         logTrace(type, payload, 'RK')
       }
@@ -26,6 +31,7 @@ export function traceDecoratorUnityGame(game: UnityGame): UnityGame {
     if (pendingMessagesInTrace > 0) {
       logTrace(`${obj}.${method}`, args, 'KR')
     }
+    incrementMessageFromKernelToRenderer()
     return originalSendMessage.call(this, obj, method, args)
   }
   return game

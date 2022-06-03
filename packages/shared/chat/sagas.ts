@@ -29,7 +29,7 @@ import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { injectVersions } from 'shared/rolloutVersions'
+import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
 interface IChatCommand {
   name: string
@@ -70,15 +70,8 @@ type MessageEvent = typeof MESSAGE_RECEIVED | typeof SEND_MESSAGE
 function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
   const { type, payload } = action
   switch (type) {
-    case MESSAGE_RECEIVED: {
-      trackEvent('Chat message received', {
-        length: payload.body.length,
-        messageType: payload.messageType
-      })
-      break
-    }
     case SEND_MESSAGE: {
-      trackEvent('Send chat message', {
+      trackEvent('Control Send chat message', {
         messageId: payload.messageId,
         length: payload.body.length,
         messageType: payload.messageType
@@ -414,7 +407,7 @@ function initChatCommands() {
   })
 
   addChatCommand('version', 'Shows application version', (_message) => {
-    const [kernelVersion, rendererVersion] = getVersions()
+    const { kernelVersion, rendererVersion } = getUsedComponentVersions()
     return {
       messageId: uuid(),
       sender: 'Decentraland',
@@ -465,13 +458,6 @@ function getDebugPanelMessage() {
     timestamp: Date.now(),
     body: 'Toggling FPS counter'
   }
-}
-
-function getVersions() {
-  const versions = injectVersions({})
-  const kernelVersion = versions['@dcl/kernel'] || 'unknown'
-  const rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
-  return [kernelVersion, rendererVersion]
 }
 
 function parseWhisperExpression(expression: string) {
