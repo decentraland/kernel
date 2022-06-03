@@ -4,6 +4,9 @@ import { EnvironmentData, ILand } from './../../types'
 import { ParcelSceneAPI } from './../../../shared/world/ParcelSceneAPI'
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 import { PermissionItem } from '../gen/Permissions'
+import { BuilderManifest } from '../SceneStateStorageController/types'
+import { BuilderServerAPIManager } from '../SceneStateStorageController/BuilderServerAPIManager'
+import { SceneTransformTranslator } from './../SceneStateStorageController/SceneTransformTranslator'
 
 const eventPushableChannel = (onIteratorClose: () => void) =>
   pushableChannel<{ id: string; data: any }>(onIteratorClose)
@@ -36,5 +39,11 @@ export type PortContext = {
     logger: ILogger
     logs: Protocol.Runtime.ConsoleAPICalledEvent[]
     exceptions: Map<number, Protocol.Runtime.ExceptionDetails>
+  }
+
+  SceneStateStorageController?: {
+    builderManifest: BuilderManifest
+    transformTranslator: SceneTransformTranslator
+    _builderApiManager: BuilderServerAPIManager
   }
 }

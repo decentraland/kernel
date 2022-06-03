@@ -2,6 +2,9 @@ import { CLASS_ID } from '@dcl/legacy-ecs'
 import { SceneSourcePlacement } from 'shared/types'
 import { Asset, BuilderAsset, SerializedSceneState } from './types'
 
+import * as SSSCTypes from '../SceneStateStorageController/types'
+import * as ProtoSceneStateStorageController from '../gen/SceneStateStorageController'
+
 /*
  * We are converting from numeric ids to a more human readable format. It might make sense to change this in the future,
  * but until this feature is stable enough, it's better to store it in a way that it is easy to debug.
@@ -101,4 +104,32 @@ export function getLayoutFromParcels(parcels: string[]): SceneSourcePlacement['l
     cols = [...new Set(parcels.map((parcel) => parcel.split(',')[0]))].length
   }
   return { cols, rows }
+}
+
+export function toProtoSerializedSceneState(
+  state: SSSCTypes.SerializedSceneState
+): ProtoSceneStateStorageController.SerializedSceneState {
+  return {
+    entities: state.entities.map((item) => ({
+      id: item.id,
+      components: item.components.map((component) => ({
+        type: component.type,
+        valueJson: JSON.stringify(component.value)
+      }))
+    }))
+  }
+}
+
+export function fromProtoSerializedSceneState(
+  state: ProtoSceneStateStorageController.SerializedSceneState
+): SSSCTypes.SerializedSceneState {
+  return {
+    entities: state.entities.map((item) => ({
+      id: item.id,
+      components: item.components.map((component) => ({
+        type: component.type,
+        value: JSON.parse(component.valueJson)
+      }))
+    }))
+  }
 }

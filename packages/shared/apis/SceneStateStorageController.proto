@@ -13,6 +13,7 @@ syntax = "proto3";
     //     projectDescription: string,
     //     projectScreenshot: string
     // ): Promise<boolean> {
+
     // async publishSceneState(
 //     sceneId: string,
 //     sceneName: string,
@@ -21,87 +22,115 @@ syntax = "proto3";
 //     sceneState: SerializedSceneState
 // ): Promise<DeploymentResult> {
 
-message SendAssetsToRendererRequest {
+// Auxiliary types
 
+message SerializedSceneState {
+  repeated SerializedEntity entities = 1;
 }
 
-message SendAssetsToRendererResponse {
-
+message SerializedComponent {
+    int32 type = 1;
+    string value_json = 2;
 }
 
-message CreateProjectFromStateDefinitionRequest {
-
+message SerializedEntity {
+    string id = 1; 
+    repeated SerializedComponent components = 2;
 }
 
-message CreateProjectFromStateDefinitionResponse {
-
-}
-
-message GetStoredStateRequest {
-
-}
-
-message GetStoredStateResponse {
-
-}
+// RPC Request and Response Messages
 
 message GetProjectManifestRequest {
-
+    string project_id = 1;
 }
 
 message GetProjectManifestResponse {
-
+    optional SerializedSceneState state = 1;
 }
 
 message GetProjectManifestByCoordinatesRequest {
-
+    string land = 1;
 }
 
 message GetProjectManifestByCoordinatesResponse {
+    optional SerializedSceneState state = 1;
 
 }
 
 message CreateProjectWithCoordsRequest {
-
+    string coordinates = 1;
 }
 
 message CreateProjectWithCoordsResponse {
-
+    bool ok = 1;
 }
 
 message SaveSceneStateRequest {
-
+    SerializedSceneState serializedSceneState = 1;
 }
 
 message SaveSceneStateResponse {
-
+    bool ok = 1;
+    optional string error = 2;
 }
 
 message SaveProjectInfoRequest {
-
+    SerializedSceneState sceneState = 1;
+    string projectName = 2;
+    string projectDescription = 3;
+    string projectScreenshot = 4;
 }
 
 message SaveProjectInfoResponse {
-
+    bool ok = 1;
 }
 
 message PublishSceneStateRequest {
-
+    string sceneId = 1;
+    string sceneName = 2;
+    string sceneDescription = 3;
+    string sceneScreenshot = 4;
+    SerializedSceneState sceneState = 5;
 }
 
 message PublishSceneStateResponse {
+    bool ok = 1;
+    optional string error = 2;
+}
 
+message GetStoredStateRequest {
+    string scene_id = 1;
+}
+
+message GetStoredStateResponse {
+    optional SerializedSceneState state = 1;
+}
+
+
+message CreateProjectFromStateDefinitionRequest {}
+
+message CreateProjectFromStateDefinitionResponse {
+    optional SerializedSceneState state = 1;
+}
+
+
+message SendAssetsToRendererRequest {
+    SerializedSceneState state = 1;
+}
+
+message SendAssetsToRendererResponse {
+    string state = 1;
 }
 
 
 service SceneStateStorageControllerService {
-    rpc sendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
-    rpc createProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
-    rpc getStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
     rpc getProjectManifest(GetProjectManifestRequest) returns (GetProjectManifestResponse) {}
     rpc getProjectManifestByCoordinates(GetProjectManifestByCoordinatesRequest) returns (GetProjectManifestByCoordinatesResponse) {}
     rpc createProjectWithCoords(CreateProjectWithCoordsRequest) returns (CreateProjectWithCoordsResponse) {}
     rpc saveSceneState(SaveSceneStateRequest) returns (SaveSceneStateResponse) {}
     rpc saveProjectInfo(SaveProjectInfoRequest) returns (SaveProjectInfoResponse) {}
     rpc publishSceneState(PublishSceneStateRequest) returns (PublishSceneStateResponse) {}
+    rpc getStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
+    rpc createProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
+    rpc sendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
 }
