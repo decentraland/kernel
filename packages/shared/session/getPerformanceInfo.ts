@@ -1,7 +1,10 @@
+import { getUsedComponentVersions } from 'shared/rolloutVersions'
+
 let kernelToRendererMessageCounter = 0
 let rendererToKernelMessageCounter = 0
 let receivedCommsMessagesCounter = 0
 let sentCommsMessagesCounter = 0
+let kernelToRendererMessageNativeCounter = 0
 
 export function incrementMessageFromRendererToKernel() {
   rendererToKernelMessageCounter++
@@ -9,6 +12,10 @@ export function incrementMessageFromRendererToKernel() {
 
 export function incrementMessageFromKernelToRenderer() {
   kernelToRendererMessageCounter++
+}
+
+export function incrementMessageFromKernelToRendererNative() {
+  kernelToRendererMessageNativeCounter++
 }
 
 export function incrementCommsMessageReceived() {
@@ -25,6 +32,8 @@ export function getPerformanceInfo(data: {
   hiccupsInThousandFrames: number
   hiccupsTime: number
   totalTime: number
+  estimatedAllocatedMemory: number
+  estimatedTotalMemory: number
 }) {
   const entries: number[] = []
   const length = data.samples.length
@@ -45,6 +54,8 @@ export function getPerformanceInfo(data: {
 
   const isHidden = (globalThis as any).document?.hidden
 
+  const { kernelVersion, rendererVersion } = getUsedComponentVersions()
+
   const ret = {
     runtime,
     idle: isHidden,
@@ -64,11 +75,17 @@ export function getPerformanceInfo(data: {
     p95: sorted[Math.ceil(length * 0.95)],
     p99: sorted[Math.ceil(length * 0.99)],
     max: sorted[length - 1],
-    samples: data.samples,
+    samples: JSON.stringify(entries),
     // chrome memory
     jsHeapSizeLimit,
     totalJSHeapSize,
     usedJSHeapSize,
+    // unity memory
+    estimatedAllocatedMemory: data.estimatedAllocatedMemory,
+    estimatedTotalMemory: data.estimatedTotalMemory,
+    estimatedMemoryPercent: data.estimatedTotalMemory
+      ? data.estimatedAllocatedMemory / data.estimatedTotalMemory
+      : null,
     // flags
     capped: data.fpsIsCapped,
     // hiccups
@@ -79,13 +96,18 @@ export function getPerformanceInfo(data: {
     kernelToRendererMessageCounter,
     rendererToKernelMessageCounter,
     receivedCommsMessagesCounter,
-    sentCommsMessagesCounter
+    sentCommsMessagesCounter,
+    kernelToRendererMessageNativeCounter,
+    // versions
+    kernelVersion,
+    rendererVersion
   }
 
   sentCommsMessagesCounter = 0
   receivedCommsMessagesCounter = 0
   kernelToRendererMessageCounter = 0
   rendererToKernelMessageCounter = 0
+  kernelToRendererMessageNativeCounter = 0
 
   return ret
 }
