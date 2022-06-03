@@ -63,6 +63,7 @@ import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
+import { sleep } from 'atomicHelpers/sleep'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -114,30 +115,29 @@ function* initializeFriendsSaga() {
     if (isGuest) return
 
     const client: SocialAPI | null = yield select(getSocialClient)
-    const isLoggedIn: boolean = (currentIdentity && client && (yield apply(client, client.isLoggedIn, []))) || false
 
-    const shouldRetry = !isLoggedIn && !isGuest
+    try {
+      const isLoggedIn: boolean = (currentIdentity && client && (yield apply(client, client.isLoggedIn, []))) || false
 
-    if (shouldRetry) {
-      try {
-        logger.log('[Social client] Initializing')
-        yield call(initializePrivateMessaging)
-        logger.log('[Social client] Initialized')
-        // restart the debounce
-        secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
-      } catch (e) {
-        logger.error(`Error initializing private messaging`, e)
+      const shouldRetry = !isLoggedIn && !isGuest
 
-        trackEvent('error', {
-          context: 'kernel#saga',
-          message: 'There was an error initializing friends and private messages',
-          stack: '' + e
-        })
+      if (shouldRetry) {
+        try {
+          logger.log('[Social client] Initializing')
+          yield call(initializePrivateMessaging)
+          logger.log('[Social client] Initialized')
+          // restart the debounce
+          secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
+        } catch (e) {
+          logAndTrackError(`Error initializing private messaging`, e)
 
-        if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
-          secondsToRetry *= 1.5
+          if (secondsToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
+            secondsToRetry *= 1.5
+          }
         }
       }
+    } catch (e) {
+      logAndTrackError('Error while logging in to chat service', e)
     }
   } while (shouldRetryReconnection)
 }
@@ -166,7 +166,14 @@ function* configureMatrixClient(action: SetMatrixClient) {
   const client = action.payload.socialApi
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
 
-  const { friendsSocial, ownId }: { friendsSocial: SocialData[]; ownId: string } = yield call(refreshFriends)
+  const friendsResponse: { friendsSocial: SocialData[]; ownId: string } | undefined = yield call(refreshFriends)
+
+  if (!friendsResponse) {
+    // refreshFriends might fail and return with no actual data
+    return
+  }
+
+  const { friendsSocial, ownId } = friendsResponse
 
   if (!identity) {
     return
@@ -232,37 +239,74 @@ function* configureMatrixClient(action: SetMatrixClient) {
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
 
-  const conversations: {
-    conversation: Conversation
-    unreadMessages: boolean
-  }[] = yield client.getAllCurrentConversations()
+  try {
+    const conversations: {
+      conversation: Conversation
+      unreadMessages: boolean
+    }[] = yield client.getAllCurrentConversations()
 
-  yield Promise.all(
-    conversations.map(async ({ conversation }) => {
-      const cursor = await client.getCursorOnLastMessage(conversation.id, { initialSize: INITIAL_CHAT_SIZE })
-      const messages = cursor.getMessages()
+    yield Promise.all(
+      conversations.map(async ({ conversation }) => {
+        const cursor = await client.getCursorOnLastMessage(conversation.id, { initialSize: INITIAL_CHAT_SIZE })
 
-      const friend = friendsSocial.find((friend) => friend.conversationId === conversation.id)
+        let millisToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
 
-      if (!friend) {
-        return
-      }
+        const maxAttempts = 5
+        let shouldTry = true
+        let attempt = 0
 
-      messages.forEach((message) => {
-        const chatMessage = {
-          messageId: message.id,
-          messageType: ChatMessageType.PRIVATE,
-          timestamp: message.timestamp,
-          body: message.text,
-          sender: message.sender === ownId ? identity.address : friend.userId,
-          recipient: message.sender === ownId ? friend.userId : identity.address
+        while (shouldTry) {
+          attempt += 1
+
+          try {
+            const messages = cursor.getMessages()
+
+            const friend = friendsSocial.find((friend) => friend.conversationId === conversation.id)
+
+            if (!friend) {
+              return
+            }
+
+            messages.forEach((message) => {
+              const chatMessage = {
+                messageId: message.id,
+                messageType: ChatMessageType.PRIVATE,
+                timestamp: message.timestamp,
+                body: message.text,
+                sender: message.sender === ownId ? identity.address : friend.userId,
+                recipient: message.sender === ownId ? friend.userId : identity.address
+              }
+              addNewChatMessage(chatMessage)
+            })
+
+            shouldTry = false
+          } catch (e) {
+            logAndTrackError(`There was an error fetching messages for conversation, attempt ${attempt}`, e)
+
+            if (millisToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
+              millisToRetry *= 2
+            }
+
+            shouldTry = attempt < maxAttempts
+
+            if (shouldTry) {
+              await sleep(millisToRetry)
+            } else {
+              logAndTrackError(
+                `Error fetching message for conversation, maxed attempts to try (${maxAttempts}), will no retry`,
+                e
+              )
+            }
+          }
         }
-        addNewChatMessage(chatMessage)
       })
-    })
-  )
+    )
+  } catch (e) {
+    logAndTrackError('Error while initializing chat messages', e)
+  }
 }
 
+// this saga needs to throw in case of failure
 function* initializePrivateMessaging() {
   const synapseUrl: string = yield select(getSynapseUrl)
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
@@ -288,77 +332,81 @@ function* initializePrivateMessaging() {
 }
 
 function* refreshFriends() {
-  const client: SocialAPI | null = yield select(getSocialClient)
+  try {
+    const client: SocialAPI | null = yield select(getSocialClient)
 
-  if (!client) return
+    if (!client) return
 
-  const ownId = client.getUserId()
+    const ownId = client.getUserId()
 
-  // init friends
-  const friends: string[] = yield client.getAllFriends()
+    // init friends
+    const friends: string[] = yield client.getAllFriends()
 
-  const friendsSocial: SocialData[] = yield Promise.all(
-    // TODO: opening the conversations should be a reactive thing
-    // and should only happen after you click in a conversation from the UI
-    // also, the UI should show a bubble whenever the matrix client recevies
-    // an invitation to join to a room.
-    // then the room should be created in renderer and start the conversation that way, after the click
-    toSocialData(friends).map(async (friend) => {
-      const conversation = await client.createDirectConversation(friend.socialId)
-      return { ...friend, conversationId: conversation.id }
-    })
-  )
+    const friendsSocial: SocialData[] = yield Promise.all(
+      // TODO: opening the conversations should be a reactive thing
+      // and should only happen after you click in a conversation from the UI
+      // also, the UI should show a bubble whenever the matrix client recevies
+      // an invitation to join to a room.
+      // then the room should be created in renderer and start the conversation that way, after the click
+      toSocialData(friends).map(async (friend) => {
+        const conversation = await client.createDirectConversation(friend.socialId)
+        return { ...friend, conversationId: conversation.id }
+      })
+    )
 
-  // init friend requests
-  const friendRequests: FriendshipRequest[] = yield client.getPendingRequests()
+    // init friend requests
+    const friendRequests: FriendshipRequest[] = yield client.getPendingRequests()
 
-  // filter my requests to others
-  const toFriendRequests = friendRequests.filter((request) => request.from === ownId).map((request) => request.to)
-  const toFriendRequestsSocial = toSocialData(toFriendRequests)
+    // filter my requests to others
+    const toFriendRequests = friendRequests.filter((request) => request.from === ownId).map((request) => request.to)
+    const toFriendRequestsSocial = toSocialData(toFriendRequests)
 
-  // filter other requests to me
-  const fromFriendRequests = friendRequests.filter((request) => request.to === ownId).map((request) => request.from)
-  const fromFriendRequestsSocial = toSocialData(fromFriendRequests)
+    // filter other requests to me
+    const fromFriendRequests = friendRequests.filter((request) => request.to === ownId).map((request) => request.from)
+    const fromFriendRequestsSocial = toSocialData(fromFriendRequests)
 
-  const socialInfo: Record<string, SocialData> = [
-    ...friendsSocial,
-    ...toFriendRequestsSocial,
-    ...fromFriendRequestsSocial
-  ].reduce(
-    (acc, current) => ({
-      ...acc,
-      [current.socialId]: current
-    }),
-    {}
-  )
+    const socialInfo: Record<string, SocialData> = [
+      ...friendsSocial,
+      ...toFriendRequestsSocial,
+      ...fromFriendRequestsSocial
+    ].reduce(
+      (acc, current) => ({
+        ...acc,
+        [current.socialId]: current
+      }),
+      {}
+    )
 
-  const friendIds = friends.map(($) => parseUserId($)).filter(Boolean) as string[]
-  const requestedFromIds = fromFriendRequestsSocial.map(($) => $.userId)
-  const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
+    const friendIds = friends.map(($) => parseUserId($)).filter(Boolean) as string[]
+    const requestedFromIds = fromFriendRequestsSocial.map(($) => $.userId)
+    const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
 
-  yield put(
-    updatePrivateMessagingState({
-      client,
-      socialInfo,
-      friends: friendIds,
-      fromFriendRequests: requestedFromIds,
-      toFriendRequests: requestedToIds
-    })
-  )
+    yield put(
+      updatePrivateMessagingState({
+        client,
+        socialInfo,
+        friends: friendIds,
+        fromFriendRequests: requestedFromIds,
+        toFriendRequests: requestedToIds
+      })
+    )
 
-  // ensure friend profiles are sent to renderer
+    // ensure friend profiles are sent to renderer
 
-  yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
+    yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
 
-  const initMessage = {
-    currentFriends: friendIds,
-    requestedTo: requestedToIds,
-    requestedFrom: requestedFromIds
+    const initMessage = {
+      currentFriends: friendIds,
+      requestedTo: requestedToIds,
+      requestedFrom: requestedFromIds
+    }
+
+    getUnityInstance().InitializeFriends(initMessage)
+
+    return { friendsSocial, ownId }
+  } catch (e) {
+    logAndTrackError('Error while refreshing friends', e)
   }
-
-  getUnityInstance().InitializeFriends(initMessage)
-
-  return { friendsSocial, ownId }
 }
 
 function* initializeReceivedMessagesCleanUp() {
@@ -523,7 +571,12 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     const socialData: SocialData | undefined = yield select(findPrivateMessagingFriendsByUserId, userId)
 
     if (socialData) {
-      yield apply(client, client.createDirectConversation, [socialData.socialId])
+      try {
+        yield apply(client, client.createDirectConversation, [socialData.socialId])
+      } catch (e) {
+        logAndTrackError('Error while creating direct conversation for friendship', e)
+        return
+      }
     } else {
       // if this is the case, a previous call to ensure data load is missing, this is an issue on our end
       logger.error(`handleUpdateFriendship, user not loaded`, userId)
@@ -552,10 +605,14 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             newState.friends.push(userId)
 
             const socialData: SocialData = yield select(findPrivateMessagingFriendsByUserId, userId)
-            const conversation: Conversation = yield client.createDirectConversation(socialData.socialId)
+            try {
+              const conversation: Conversation = yield client.createDirectConversation(socialData.socialId)
 
-            logger.info(`userData`, userId, socialData.socialId, conversation.id)
-            newState.socialInfo[userId] = { userId, socialId: socialData.socialId, conversationId: conversation.id }
+              logger.info(`userData`, userId, socialData.socialId, conversation.id)
+              newState.socialInfo[userId] = { userId, socialId: socialData.socialId, conversationId: conversation.id }
+            } catch (e) {
+              logAndTrackError('Error while approving/rejecting friendship', e)
+            }
           }
         }
 
@@ -688,36 +745,40 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
 
   const { socialId } = socialData
 
-  switch (update.action) {
-    case FriendshipAction.NONE: {
-      // do nothing in this case
-      break
+  try {
+    switch (update.action) {
+      case FriendshipAction.NONE: {
+        // do nothing in this case
+        break
+      }
+      case FriendshipAction.APPROVED: {
+        yield client.approveFriendshipRequestFrom(socialId)
+        updateUserStatus(client, socialId)
+        break
+      }
+      case FriendshipAction.REJECTED: {
+        yield client.rejectFriendshipRequestFrom(socialId)
+        break
+      }
+      case FriendshipAction.CANCELED: {
+        yield client.cancelFriendshipRequestTo(socialId)
+        break
+      }
+      case FriendshipAction.REQUESTED_FROM: {
+        // do nothing in this case
+        break
+      }
+      case FriendshipAction.REQUESTED_TO: {
+        yield client.addAsFriend(socialId)
+        break
+      }
+      case FriendshipAction.DELETED: {
+        yield client.deleteFriendshipWith(socialId)
+        break
+      }
     }
-    case FriendshipAction.APPROVED: {
-      yield client.approveFriendshipRequestFrom(socialId)
-      updateUserStatus(client, socialId)
-      break
-    }
-    case FriendshipAction.REJECTED: {
-      yield client.rejectFriendshipRequestFrom(socialId)
-      break
-    }
-    case FriendshipAction.CANCELED: {
-      yield client.cancelFriendshipRequestTo(socialId)
-      break
-    }
-    case FriendshipAction.REQUESTED_FROM: {
-      // do nothing in this case
-      break
-    }
-    case FriendshipAction.REQUESTED_TO: {
-      yield client.addAsFriend(socialId)
-      break
-    }
-    case FriendshipAction.DELETED: {
-      yield client.deleteFriendshipWith(socialId)
-      break
-    }
+  } catch (e) {
+    logAndTrackError('error while acting user friendship action', e)
   }
 
   // wait for matrix server to process new status
@@ -765,4 +826,14 @@ function notifyFriendOnlineStatusThroughChat(userStatus: UpdateUserStatusMessage
   }
 
   friendStatus[friendName] = userStatus.presence
+}
+
+function logAndTrackError(message: string, e: any) {
+  logger.error(message, e)
+
+  trackEvent('error', {
+    context: 'kernel#saga',
+    message: message,
+    stack: '' + e
+  })
 }
