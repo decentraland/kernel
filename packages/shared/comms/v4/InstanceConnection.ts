@@ -4,6 +4,7 @@ import { getCommsConfig } from 'shared/meta/selectors'
 import { Position3D } from './types'
 import { Data, Profile_ProfileType } from './proto/comms'
 import { Position } from '../../comms/interface/utils'
+import { removePeerByUUID } from '../../comms/peers'
 import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
 import { createLogger } from 'shared/logger'
@@ -15,7 +16,7 @@ import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
 import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
-import { HeartbeatMessage, IslandChangedMessage } from './proto/archipelago'
+import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago'
 
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
@@ -24,6 +25,7 @@ export class InstanceConnection implements RoomConnection {
   private transport: Transport = new DummyTransport()
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
+  private peerLeftListener: TopicListener | null = null
 
   constructor(private bff: BFFConnection) {
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
@@ -81,6 +83,22 @@ export class InstanceConnection implements RoomConnection {
           return
         }
         const transport = createTransport(config, islandChangedMessage)
+
+        if (this.peerLeftListener) {
+          await this.bff.removeSystemTopicListener(this.peerLeftListener)
+        }
+        this.peerLeftListener = await this.bff.addSystemTopicListener(
+          `island.${islandChangedMessage.islandId}.peer_left`,
+          (data: Uint8Array) => {
+            try {
+              const peerLeftMessage = LeftIslandMessage.decode(Reader.create(data))
+              removePeerByUUID(peerLeftMessage.peerId)
+            } catch (e) {
+              this.logger.error('cannot process peer left message', e)
+              return
+            }
+          }
+        )
 
         if (!transport) {
           this.logger.error(`Invalid islandConnStr ${islandChangedMessage.connStr}`)
@@ -208,6 +226,10 @@ export class InstanceConnection implements RoomConnection {
   async disconnect(): Promise<void> {
     if (this.islandChangedListener) {
       await this.bff.removeSystemTopicListener(this.islandChangedListener)
+    }
+
+    if (this.peerLeftListener) {
+      await this.bff.removeSystemTopicListener(this.peerLeftListener)
     }
 
     if (this.heartBeatInterval) {
@@ -378,6 +400,8 @@ export class InstanceConnection implements RoomConnection {
     transport.onDisconnectObservable.add(this.disconnect.bind(this))
 
     this.transport = transport
+
+    globalThis.__DEBUG_PEER = transport
 
     if (oldTransport) {
       oldTransport.onMessageObservable.clear()
