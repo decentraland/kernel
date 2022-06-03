@@ -86,7 +86,7 @@ async function getProjectManifest(
 
   ctx.SceneStateStorageController.builderManifest = manifest
   ctx.SceneStateStorageController.transformTranslator = new SceneTransformTranslator(
-    ctx.ParcelIdentity.land.sceneJsonData.source
+    ctx.ParcelIdentity.land!.sceneJsonData.source
   )
 
   const definition = fromBuildertoStateDefinitionFormat(
@@ -105,7 +105,7 @@ async function getProjectManifestByCoordinates(
     getUnityInstance().SendBuilderProjectInfo(newProject.project.title, newProject.project.description, false)
     ctx.SceneStateStorageController.builderManifest = newProject
     ctx.SceneStateStorageController.transformTranslator = new SceneTransformTranslator(
-      ctx.ParcelIdentity.land.sceneJsonData.source
+      ctx.ParcelIdentity.land!.sceneJsonData.source
     )
     const translatedManifest = fromBuildertoStateDefinitionFormat(
       ctx.SceneStateStorageController.builderManifest.scene,
@@ -135,7 +135,7 @@ async function saveSceneState(req: SaveSceneStateRequest, ctx: ServiceContext): 
   try {
     // Deserialize the scene state
     const sceneState: SceneStateDefinition = deserializeSceneState(
-      fromProtoSerializedSceneState(req.serializedSceneState)
+      fromProtoSerializedSceneState(req.serializedSceneState!)
     )
 
     // Convert the scene state to builder scheme format
@@ -161,7 +161,7 @@ async function saveProjectInfo(req: SaveProjectInfoRequest, ctx: ServiceContext)
   try {
     const thumbnailBlob: Blob = base64ToBlob(req.projectScreenshot, 'image/png')
     await updateProjectDetails(
-      fromProtoSerializedSceneState(req.sceneState),
+      fromProtoSerializedSceneState(req.sceneState!),
       req.projectName,
       req.projectDescription,
       thumbnailBlob,
@@ -182,7 +182,7 @@ async function publishSceneState(
 ): Promise<PublishSceneStateResponse> {
   let result: DeploymentResult
 
-  const sceneState = fromProtoSerializedSceneState(req.sceneState)
+  const sceneState = fromProtoSerializedSceneState(req.sceneState!)
   // Convert to storable format
   const storableFormat = fromSerializedStateToStorableFormat(sceneState)
 
@@ -300,6 +300,7 @@ async function getStoredState(req: GetStoredStateRequest, ctx: ServiceContext): 
   } catch (e) {
     defaultLogger.error(`Failed to fetch the current scene (${ctx.ParcelIdentity.cid}) from the content server`, e)
   }
+  return { state: undefined }
 }
 
 async function createProjectFromStateDefinition(
@@ -401,13 +402,14 @@ async function createProjectFromStateDefinition(
   } catch (error) {
     defaultLogger.error(`Failed creating project from state definition at coords ${baseParcel}`, error)
   }
+  return { state: undefined }
 }
 
 async function sendAssetsToRenderer(
   req: SendAssetsToRendererRequest,
   ctx: ServiceContext
 ): Promise<SendAssetsToRendererResponse> {
-  const assets = await getAllBuilderAssets(fromProtoSerializedSceneState(req.state), ctx)
+  const assets = await getAllBuilderAssets(fromProtoSerializedSceneState(req.state!), ctx)
   getUnityInstance().SendSceneAssets(assets)
   return { state: 'OK' }
 }

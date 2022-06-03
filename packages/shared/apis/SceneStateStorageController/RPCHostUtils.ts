@@ -27,11 +27,11 @@ export function getBuilderApiManager(ctx: PortContext): BuilderServerAPIManager 
     } as any
   }
 
-  if (!ctx.SceneStateStorageController._builderApiManager) {
+  if (!ctx.SceneStateStorageController!._builderApiManager) {
     const net = getSelectedNetwork(store.getState())
-    ctx.SceneStateStorageController._builderApiManager = new BuilderServerAPIManager(net)
+    ctx.SceneStateStorageController!._builderApiManager = new BuilderServerAPIManager(net)
   }
-  return ctx.SceneStateStorageController._builderApiManager
+  return ctx.SceneStateStorageController!._builderApiManager
 }
 
 export function getIdentity(): ExplorerIdentity {
@@ -108,9 +108,9 @@ export async function updateProjectDetails(
   // Convert the scene state to builder scheme format
   const builderManifest = await toBuilderFromStateDefinitionFormat(
     deserializedSceneState,
-    ctx.SceneStateStorageController.builderManifest,
+    ctx.SceneStateStorageController!.builderManifest,
     getBuilderApiManager(ctx),
-    ctx.SceneStateStorageController.transformTranslator
+    ctx.SceneStateStorageController!.transformTranslator
   )
 
   // Update the project info
