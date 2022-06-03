@@ -29,6 +29,7 @@ import { createParcelIdentityServiceClient } from './ParcelIdentity'
 import { createPlayersServiceClient } from './Players'
 import { createPortableExperiencesServiceClient } from './PortableExperiences'
 import { createExperimentalAPIServiceClient } from './ExperimentalAPI'
+import { createSceneStateStorageControllerServiceClient } from './SceneStateStorageController'
 
 export const LoadableAPIs = {
   CommunicationsController: createCommunicationsControllerServiceClient,
@@ -45,6 +46,7 @@ export const LoadableAPIs = {
   SignedFetch: createSignedFetchServiceClient,
   SocialController: createSocialControllerServiceClient,
   UserActionModule: createUserActionModuleServiceClient,
+  SceneStateStorageController: createSceneStateStorageControllerServiceClient,
   // This is UserIdentity in the host-side
   Identity: createUserIdentityServiceClient
 }

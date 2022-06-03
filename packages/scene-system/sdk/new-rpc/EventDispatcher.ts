@@ -39,3 +39,23 @@ function isPointerEvent(event: any): boolean {
   }
   return false
 }
+
+export type SimpleEventDispatcher = { onEventFunctions: EventCallback[] }
+
+export async function createSimpleEventDispatcher(
+  EngineAPI: LoadedModules['EngineAPI'],
+  eventArgs: SimpleEventDispatcher
+) {
+  for await (const notif of EngineAPI!.streamEvents({})) {
+    const data = JSON.parse(notif.eventData || '{}')
+    const event = { type: notif.eventId, data }
+
+    for (const cb of eventArgs.onEventFunctions) {
+      try {
+        cb(event)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+}

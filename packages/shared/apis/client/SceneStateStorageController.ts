@@ -21,15 +21,15 @@ export async function createSceneStateStorageControllerServiceClient<Context>(cl
     },
     async createProjectFromStateDefinition(): Promise<SSSCTypes.SerializedSceneState | undefined> {
       const response = await originalService.createProjectFromStateDefinition({})
-      if (response.res) {
-        return fromProtoSerializedSceneState(response.res)
+      if (response.state) {
+        return fromProtoSerializedSceneState(response.state)
       }
       return undefined
     },
     async getStoredState(sceneId: string): Promise<SSSCTypes.SerializedSceneState | undefined> {
       const response = await originalService.getStoredState({ sceneId })
-      if (response.res) {
-        return fromProtoSerializedSceneState(response.res)
+      if (response.state) {
+        return fromProtoSerializedSceneState(response.state)
       }
       return undefined
     },
@@ -54,10 +54,10 @@ export async function createSceneStateStorageControllerServiceClient<Context>(cl
       const response = await originalService.saveSceneState({
         serializedSceneState: toProtoSerializedSceneState(serializedSceneState)
       })
-      if (response.result.ok) {
+      if (response.ok) {
         return { ok: true }
       } else {
-        return { ok: false, error: response.result.error! }
+        return { ok: false, error: response.error! }
       }
     },
     async saveProjectInfo(
@@ -90,10 +90,10 @@ export async function createSceneStateStorageControllerServiceClient<Context>(cl
         sceneScreenshot,
         sceneState: toProtoSerializedSceneState(sceneState)
       })
-      if (response.result.ok) {
+      if (response.ok) {
         return { ok: true }
       } else {
-        return { ok: false, error: response.result.error! }
+        return { ok: false, error: response.error! }
       }
     }
   }
