@@ -16,6 +16,7 @@ export function traceDecoratorRendererOptions(options: CommonRendererOptions): C
   return {
     ...options,
     onMessage(type, payload) {
+      incrementMessageFromRendererToKernel()
       if (pendingMessagesInTrace > 0) {
         logTrace(type, payload, 'RK')
       }
@@ -30,6 +31,7 @@ export function traceDecoratorUnityGame(game: UnityGame): UnityGame {
     if (pendingMessagesInTrace > 0) {
       logTrace(`${obj}.${method}`, args, 'KR')
     }
+    incrementMessageFromKernelToRenderer()
     return originalSendMessage.call(this, obj, method, args)
   }
   return game
@@ -49,9 +51,6 @@ export function beginTrace(messagesCount: number) {
  * KK: Kernel->Kernel
  */
 export function logTrace(type: string, payload: string | number | undefined, direction: 'RK' | 'KR' | 'KK') {
-  if (direction === 'KR') incrementMessageFromKernelToRenderer()
-  if (direction === 'RK') incrementMessageFromRendererToKernel()
-
   if (pendingMessagesInTrace > 0) {
     const now = performance.now().toFixed(1)
     if (direction === 'KK') {
