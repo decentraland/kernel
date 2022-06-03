@@ -59,7 +59,7 @@ export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
 
   public rpcContext!: PortContext
-  private rpcServer: RpcServer<PortContext> | null = null
+  private rpcServer!: RpcServer<PortContext>
 
   constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
     this.rpcContext = {
@@ -75,7 +75,7 @@ export abstract class SceneWorker {
         permissionGranted: []
       },
       ParcelIdentity: {
-        land: parcelScene.data.data?.land,
+        land: parcelScene.data.data?.land || parcelScene.data.data?.data?.land,
         cid: '',
         isPortableExperience: false,
         isEmpty: false

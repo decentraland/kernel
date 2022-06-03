@@ -1,28 +1,52 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { ParcelIdentityServiceDefinition } from '../gen/ParcelIdentity'
-import { PortContextService } from './context'
+import {
+  GetParcelRequest,
+  GetParcelResponse,
+  GetSceneIdRequest,
+  ParcelIdentityServiceDefinition,
+  GetIsEmptyResponse,
+  GetIsEmptyRequest,
+  GetSceneIdResponse
+} from '../gen/ParcelIdentity'
+import { PortContext } from './context'
 
-export function registerParcelIdentityServiceServerImplementation(
-  port: RpcServerPort<PortContextService<'ParcelIdentity'>>
-) {
+async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetParcelResponse> {
+  const land = ctx.ParcelIdentity.land
+
+  if (!land) {
+    throw new Error('No land assigned in the ParcelIdentity context.')
+  }
+
+  return {
+    land: {
+      sceneId: land.sceneId,
+      sceneJsonData: JSON.stringify(land.sceneJsonData),
+      baseUrl: land.baseUrl,
+      baseUrlBundles: land.baseUrlBundles || '',
+      mappingsResponse: {
+        parcelId: land.mappingsResponse.parcel_id,
+        rootCid: land.mappingsResponse.root_cid,
+        contents: land.mappingsResponse.contents
+      }
+    },
+    cid: ctx.ParcelIdentity.cid
+  }
+}
+
+async function getSceneId(_req: GetSceneIdRequest, ctx: PortContext): Promise<GetSceneIdResponse> {
+  const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.ParcelIdentity.cid || ''
+  return { sceneId }
+}
+
+async function getIsEmpty(_req: GetIsEmptyRequest, ctx: PortContext): Promise<GetIsEmptyResponse> {
+  return { isEmpty: ctx.ParcelIdentity.isEmpty }
+}
+
+export function registerParcelIdentityServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, ParcelIdentityServiceDefinition, async () => ({
-    async getParcel(_req, ctx) {
-      return {
-        land: {
-          ...ctx.ParcelIdentity.land,
-          sceneJsonData: JSON.stringify(ctx.ParcelIdentity.land!.sceneJsonData)
-        },
-        cid: ctx.ParcelIdentity.cid
-      } as any
-      // TODO: new rpc
-    },
-    async getSceneId(_req, ctx) {
-      const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.ParcelIdentity.cid || ''
-      return { sceneId }
-    },
-    async getIsEmpty(_req, ctx) {
-      return { isEmpty: ctx.ParcelIdentity.isEmpty }
-    }
+    getParcel,
+    getSceneId,
+    getIsEmpty
   }))
 }

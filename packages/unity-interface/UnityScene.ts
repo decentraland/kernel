@@ -114,17 +114,19 @@ export class UnityScene<T> implements ParcelSceneAPI {
     this.worker.rpcContext.Permissions.permissionGranted = defaultPermissions
 
     if (sceneJsonFile) {
-      const sceneJsonUrl = new URL(sceneJsonFile, this.data.baseUrl).toString()
-      const sceneJsonReq = await fetch(sceneJsonUrl)
-      if (sceneJsonReq.ok) {
-        const sceneJson = await sceneJsonReq.json()
+      try {
+        const sceneJsonUrl = new URL(sceneJsonFile, this.data.baseUrl).toString()
+        const sceneJsonReq = await fetch(sceneJsonUrl)
+        if (sceneJsonReq.ok) {
+          const sceneJson = await sceneJsonReq.json()
 
-        if (sceneJson.requiredPermissions) {
-          for (const permissionItemString of sceneJson.requiredPermissions) {
-            permissionArray.push(permissionItemFromJSON(permissionItemString))
+          if (sceneJson.requiredPermissions) {
+            for (const permissionItemString of sceneJson.requiredPermissions) {
+              permissionArray.push(permissionItemFromJSON(permissionItemString))
+            }
           }
         }
-      }
+      } catch (err) {}
     }
 
     // Delete duplicated

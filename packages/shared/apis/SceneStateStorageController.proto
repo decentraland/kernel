@@ -1,27 +1,5 @@
 syntax = "proto3";
 
-    // async sendAssetsToRenderer(state: SerializedSceneState): Promise<string> {
-    // async createProjectFromStateDefinition(): Promise<SerializedSceneState | undefined> {
-    // async getStoredState(sceneId: string): Promise<SerializedSceneState | undefined> {
-    // async getProjectManifest(projectId: string): Promise<SerializedSceneState | undefined> {
-    // async getProjectManifestByCoordinates(land: string): Promise<SerializedSceneState | undefined> {
-    // async createProjectWithCoords(coordinates: string): Promise<boolean> {
-    // async saveSceneState(serializedSceneState: SerializedSceneState): Promise<DeploymentResult> {
-    // async saveProjectInfo(
-    //     sceneState: SerializedSceneState,
-    //     projectName: string,
-    //     projectDescription: string,
-    //     projectScreenshot: string
-    // ): Promise<boolean> {
-
-    // async publishSceneState(
-//     sceneId: string,
-//     sceneName: string,
-//     sceneDescription: string,
-//     sceneScreenshot: string,
-//     sceneState: SerializedSceneState
-// ): Promise<DeploymentResult> {
-
 // Auxiliary types
 
 message SerializedSceneState {
@@ -66,7 +44,7 @@ message CreateProjectWithCoordsResponse {
 }
 
 message SaveSceneStateRequest {
-    SerializedSceneState serializedSceneState = 1;
+    SerializedSceneState serialized_scene_state = 1;
 }
 
 message SaveSceneStateResponse {
@@ -75,10 +53,10 @@ message SaveSceneStateResponse {
 }
 
 message SaveProjectInfoRequest {
-    SerializedSceneState sceneState = 1;
-    string projectName = 2;
-    string projectDescription = 3;
-    string projectScreenshot = 4;
+    SerializedSceneState scene_state = 1;
+    string project_name = 2;
+    string project_description = 3;
+    string project_screenshot = 4;
 }
 
 message SaveProjectInfoResponse {
@@ -86,11 +64,11 @@ message SaveProjectInfoResponse {
 }
 
 message PublishSceneStateRequest {
-    string sceneId = 1;
-    string sceneName = 2;
-    string sceneDescription = 3;
-    string sceneScreenshot = 4;
-    SerializedSceneState sceneState = 5;
+    string scene_id = 1;
+    string scene_name = 2;
+    string scene_description = 3;
+    string scene_screenshot = 4;
+    SerializedSceneState scene_state = 5;
 }
 
 message PublishSceneStateResponse {
