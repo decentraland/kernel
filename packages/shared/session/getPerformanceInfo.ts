@@ -73,7 +73,7 @@ export function getPerformanceInfo(data: {
     p95: sorted[Math.ceil(length * 0.95)],
     p99: sorted[Math.ceil(length * 0.99)],
     max: sorted[length - 1],
-    samples: entries.join(','),
+    samples: JSON.stringify(entries),
     // chrome memory
     jsHeapSizeLimit,
     totalJSHeapSize,
