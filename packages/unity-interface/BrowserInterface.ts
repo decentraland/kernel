@@ -271,8 +271,12 @@ export class BrowserInterface {
     hiccupsTime: number
     totalTime: number
   }) {
-    const estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
-    const estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
+    let estimatedAllocatedMemory = 0
+    let estimatedTotalMemory = 0
+    if (getUnityInstance()?.Module?.asmLibraryArg?._GetDynamicMemorySize) {
+      estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
+      estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
+    }
     const perfReport = getPerformanceInfo({ ...data, estimatedAllocatedMemory, estimatedTotalMemory })
     trackEvent('performance report', perfReport)
   }
