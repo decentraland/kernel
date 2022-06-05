@@ -1,6 +1,7 @@
 import { PortableExperiencesState } from './types'
 import {
   ACTIVATE_ALL_PORTABLE_EXPERIENCES,
+  ADD_KERNEL_PX,
   ADD_SCENE_PX,
   DENY_PORTABLE_EXPERIENCES,
   PortableExperienceActions,
@@ -12,6 +13,7 @@ import {
 const INITIAL_STATE: PortableExperiencesState = {
   deniedPortableExperiencesFromRenderer: [],
   portableExperiencesCreatedByScenesList: {},
+  kernelPortableExperiences: {},
   globalPortalExperienceShutDown: false
 }
 
@@ -22,6 +24,7 @@ export function portableExperienceReducer(
   if (!state) {
     return INITIAL_STATE
   }
+
   if (!action) {
     return state
   }
@@ -36,6 +39,16 @@ export function portableExperienceReducer(
     case DENY_PORTABLE_EXPERIENCES: {
       const { payload } = action
       return { ...state, deniedPortableExperiencesFromRenderer: payload.urnList }
+    }
+    case ADD_KERNEL_PX: {
+      const { payload } = action
+      return {
+        ...state,
+        kernelPortableExperiences: {
+          ...state.kernelPortableExperiences,
+          [payload.data.id]: payload.data
+        }
+      }
     }
     case ADD_SCENE_PX: {
       const { payload } = action
