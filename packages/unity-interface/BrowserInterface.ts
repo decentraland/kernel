@@ -271,7 +271,7 @@ export class BrowserInterface {
       estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
       estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
     }
-    const perfReport = getPerformanceInfo({ ...data as any, estimatedAllocatedMemory, estimatedTotalMemory })
+    const perfReport = getPerformanceInfo({ ...(data as any), estimatedAllocatedMemory, estimatedTotalMemory })
     trackEvent('performance report', perfReport)
   }
 
