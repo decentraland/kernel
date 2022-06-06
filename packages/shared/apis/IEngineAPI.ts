@@ -20,7 +20,6 @@ export interface IEngineAPI {
    */
   sendBatch(actions: EntityAction[]): Promise<void>
 
-
   /** Event handler for subscription events */
   onSubscribedEvent(fn: any): void
 }
