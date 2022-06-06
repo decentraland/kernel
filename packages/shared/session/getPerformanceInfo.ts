@@ -152,11 +152,14 @@ export function getPerformanceInfo(data: {
     processedMessages: data.processedMessages,
     playerCount: data.playerCount,
     loadRadius: data.loadRadius,
-    sceneScores: data.sceneScores,
+
     drawCalls: data.drawCalls,
     memoryReserved: data.memoryReserved,
     memoryUsage: data.memoryUsage,
-    totalGCAlloc: data.totalGCAlloc
+    totalGCAlloc: data.totalGCAlloc,
+
+    // replace sceneScores by the values only
+    sceneScores: (data.sceneScores && Object.values(data.sceneScores)) || null
   }
 
   sentCommsMessagesCounter = 0
