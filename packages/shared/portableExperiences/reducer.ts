@@ -72,11 +72,13 @@ export function portableExperienceReducer(
     }
     case REMOVE_SCENE_PX: {
       const { payload } = action
-      const newState = {
+      const newState: PortableExperiencesState = {
         ...state,
-        portableExperiencesCreatedByScenesList: { ...state.portableExperiencesCreatedByScenesList }
+        portableExperiencesCreatedByScenesList: { ...state.portableExperiencesCreatedByScenesList },
+        kernelPortableExperiences: { ...state.kernelPortableExperiences },
       }
       delete newState.portableExperiencesCreatedByScenesList[payload.urn]
+      delete newState.kernelPortableExperiences[payload.urn]
       return newState
     }
   }
