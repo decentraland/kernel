@@ -11,15 +11,14 @@ import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized } from './
 import defaultLogger from '../logger'
 import { FeatureFlagsName, MetaConfiguration, WorldConfig } from './types'
 import { getFeatureFlagVariantValue, isMetaConfigurationInitiazed } from './selectors'
-import { getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
 import { RootState } from 'shared/store/rootTypes'
 import { FeatureFlagsResult, fetchFlags } from '@dcl/feature-flags'
-import { Entity } from 'dcl-catalyst-commons'
-import { EntityV3Asset, parseUrn, resolveUrlFromUrn } from '@dcl/urn-resolver'
 import { trackEvent } from 'shared/analytics'
 import { addKernelPortableExperience } from 'shared/portableExperiences/actions'
 import { StorePortableExperience } from 'shared/types'
+import { getPortableExperienceFromUrn } from 'unity-interface/portableExperiencesUtils'
 
 export function* waitForMetaConfigurationInitialization() {
   const configInitialized: boolean = yield select(isMetaConfigurationInitiazed)
@@ -71,48 +70,20 @@ function* fetchInitialPortableExperiences() {
     ? qs.getAll('GLOBAL_PX')
     : yield select(getFeatureFlagVariantValue, 'initial_portable_experiences')
 
-  try {
-    if (Array.isArray(variants)) {
-      for (const id of variants) {
-        const parsedUrn: EntityV3Asset = yield parseUrn(id)
-        if (parsedUrn) {
-          const url: string = yield call(resolveUrlFromUrn, id)
-          try {
-            if (url) {
-              const result = yield fetch(url)
-              const json: Entity = yield result.json()
-
-              const mappings = json.content || []
-
-              const px: StorePortableExperience = {
-                id,
-                baseUrl: parsedUrn.baseUrl || (yield select(getFetchContentServer)),
-                mappings,
-                menuBarIcon: json.metadata.menuBarIcon || '',
-                name: json.metadata?.display?.title || 'Unnamed',
-                parentCid: 'main'
-              }
-
-              yield put(addKernelPortableExperience(px))
-            }
-          } catch (err: any) {
-            console.error(err)
-            trackEvent('error', {
-              context: 'fetchInitialPortableExperiences',
-              message: err.message,
-              stack: err.stack
-            })
-          }
-        }
+  if (Array.isArray(variants)) {
+    for (const id of variants) {
+      try {
+        const px: StorePortableExperience = yield call(getPortableExperienceFromUrn, id)
+        yield put(addKernelPortableExperience(px))
+      } catch (err: any) {
+        console.error(err)
+        trackEvent('error', {
+          context: 'fetchInitialPortableExperiences',
+          message: err.message,
+          stack: err.stack
+        })
       }
     }
-  } catch (err: any) {
-    console.error(err)
-    trackEvent('error', {
-      context: 'fetchInitialPortableExperiences',
-      message: err.message,
-      stack: err.stack
-    })
   }
 }
 
