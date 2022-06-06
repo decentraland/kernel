@@ -1,4 +1,4 @@
-import { call, put, select, take, all } from 'redux-saga/effects'
+import { call, put, select, take, all, fork } from 'redux-saga/effects'
 import {
   ETHEREUM_NETWORK,
   FORCE_RENDERING_STYLE,
@@ -10,11 +10,15 @@ import {
 import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized } from './actions'
 import defaultLogger from '../logger'
 import { FeatureFlagsName, MetaConfiguration, WorldConfig } from './types'
-import { isMetaConfigurationInitiazed } from './selectors'
+import { getFeatureFlagVariantValue, isMetaConfigurationInitiazed } from './selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
 import { RootState } from 'shared/store/rootTypes'
 import { FeatureFlagsResult, fetchFlags } from '@dcl/feature-flags'
+import { trackEvent } from 'shared/analytics'
+import { addKernelPortableExperience } from 'shared/portableExperiences/actions'
+import { StorePortableExperience } from 'shared/types'
+import { getPortableExperienceFromUrn } from 'unity-interface/portableExperiencesUtils'
 
 export function* waitForMetaConfigurationInitialization() {
   const configInitialized: boolean = yield select(isMetaConfigurationInitiazed)
@@ -54,6 +58,33 @@ function* initMeta() {
   }
 
   yield put(metaConfigurationInitialized(merge))
+  yield fork(fetchInitialPortableExperiences)
+}
+
+function* fetchInitialPortableExperiences() {
+  yield waitForMetaConfigurationInitialization()
+
+  const qs = new URLSearchParams(globalThis.location.search)
+
+  const variants: string[] = qs.has('GLOBAL_PX')
+    ? qs.getAll('GLOBAL_PX')
+    : yield select(getFeatureFlagVariantValue, 'initial_portable_experiences')
+
+  if (Array.isArray(variants)) {
+    for (const id of variants) {
+      try {
+        const px: StorePortableExperience = yield call(getPortableExperienceFromUrn, id)
+        yield put(addKernelPortableExperience(px))
+      } catch (err: any) {
+        console.error(err)
+        trackEvent('error', {
+          context: 'fetchInitialPortableExperiences',
+          message: err.message,
+          stack: err.stack
+        })
+      }
+    }
+  }
 }
 
 export function* metaSaga(): any {

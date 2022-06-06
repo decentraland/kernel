@@ -15,7 +15,8 @@ import {
   UpdateEnginePortableExperiencesAction,
   UPDATE_ENGINE_PX,
   SHUTDOWN_ALL_PORTABLE_EXPERIENCES,
-  ACTIVATE_ALL_PORTABLE_EXPERIENCES
+  ACTIVATE_ALL_PORTABLE_EXPERIENCES,
+  ADD_KERNEL_PX
 } from './actions'
 import { getDesiredPortableExperiences } from './selectors'
 
@@ -26,6 +27,7 @@ export function* portableExperienceSaga(): any {
   yield takeEvery(ACTIVATE_ALL_PORTABLE_EXPERIENCES, handlePortableExperienceChanges)
   yield takeEvery(DENY_PORTABLE_EXPERIENCES, handlePortableExperienceChanges)
   yield takeEvery(ADD_SCENE_PX, handlePortableExperienceChanges)
+  yield takeEvery(ADD_KERNEL_PX, handlePortableExperienceChanges)
   yield takeEvery(REMOVE_SCENE_PX, handlePortableExperienceChanges)
   yield takeEvery(RELOAD_SCENE_PX, reloadPortableExperienceChanges)
   yield debounce(100 /* ms */, UPDATE_ENGINE_PX, handlePortableExperienceChangesEffect)
