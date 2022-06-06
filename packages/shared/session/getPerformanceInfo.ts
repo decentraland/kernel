@@ -5,6 +5,7 @@ let rendererToKernelMessageCounter = 0
 let receivedCommsMessagesCounter = 0
 let sentCommsMessagesCounter = 0
 let kernelToRendererMessageNativeCounter = 0
+let lastReport = 0
 
 export function incrementMessageFromRendererToKernel() {
   rendererToKernelMessageCounter++
@@ -37,14 +38,18 @@ export function getPerformanceInfo(data: {
 }) {
   const entries: number[] = []
   const length = data.samples.length
-  let sum = 0
+  let sumTotalSamples = 0
+
   for (let i = 0; i < length; i++) {
     entries[i] = data.samples.charCodeAt(i)
-    sum += entries[i]
+    sumTotalSamples += entries[i]
   }
+
   const sorted = entries.sort((a, b) => a - b)
 
   const runtime = performance.now()
+  const deltaTime = runtime - lastReport
+  lastReport = runtime
 
   const memory = (performance as any).memory
 
@@ -59,9 +64,9 @@ export function getPerformanceInfo(data: {
   const ret = {
     runtime,
     idle: isHidden,
-    fps: (1000 * length) / sum,
-    avg: sum / length,
-    total: sum,
+    fps: (1000 * length) / sumTotalSamples,
+    avg: sumTotalSamples / length,
+    total: sumTotalSamples,
     len: length,
     min: sorted[0],
     p1: sorted[Math.ceil(length * 0.01)],
@@ -98,6 +103,13 @@ export function getPerformanceInfo(data: {
     receivedCommsMessagesCounter,
     sentCommsMessagesCounter,
     kernelToRendererMessageNativeCounter,
+
+    // reserved
+    rendererAllocatedSize: 0,
+
+    // delta time between performance reports
+    deltaTime,
+
     // versions
     kernelVersion,
     rendererVersion
