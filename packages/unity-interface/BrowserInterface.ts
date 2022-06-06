@@ -264,20 +264,14 @@ export class BrowserInterface {
     globalObservable.emit('openUrl', data)
   }
 
-  public PerformanceReport(data: {
-    samples: string
-    fpsIsCapped: boolean
-    hiccupsInThousandFrames: number
-    hiccupsTime: number
-    totalTime: number
-  }) {
+  public PerformanceReport(data: Record<string, unknown>) {
     let estimatedAllocatedMemory = 0
     let estimatedTotalMemory = 0
     if (getUnityInstance()?.Module?.asmLibraryArg?._GetDynamicMemorySize) {
       estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
       estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
     }
-    const perfReport = getPerformanceInfo({ ...data, estimatedAllocatedMemory, estimatedTotalMemory })
+    const perfReport = getPerformanceInfo({ ...data as any, estimatedAllocatedMemory, estimatedTotalMemory })
     trackEvent('performance report', perfReport)
   }
 

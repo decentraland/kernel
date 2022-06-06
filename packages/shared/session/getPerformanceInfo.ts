@@ -36,25 +36,47 @@ export function getPerformanceInfo(data: {
   estimatedAllocatedMemory: number
   estimatedTotalMemory: number
 
+  // summarizes all frames
   gltfInProgress: number
+  // summarizes all frames
   gltfFailed: number
+  // summarizes all frames
   gltfCancelled: number
+  // summarizes all frames
   gltfLoaded: number
+  // summarizes all frames
   abInProgress: number
+  // summarizes all frames
   abFailed: number
+  // summarizes all frames
   abCancelled: number
+  // summarizes all frames
   abLoaded: number
+  // summarizes all frames
   gltfTexturesLoaded: number
+  // summarizes all frames
   abTexturesLoaded: number
+  // summarizes all frames
   promiseTexturesLoaded: number
+  // summarizes all frames
   enqueuedMessages: number
+  // summarizes all frames
   processedMessages: number
+
+  // only samples last frame
   playerCount: number
+  // only samples last frame
   loadRadius: number
+  // only samples last frame
   sceneScores: Record<string, number>
+  // only samples last frame
   drawCalls: number
+  // only samples last frame
   memoryReserved: number
+  // only samples last frame
   memoryUsage: number
+
+  // summarizes all frames
   totalGCAlloc: number
 }) {
   console.dir(data)
