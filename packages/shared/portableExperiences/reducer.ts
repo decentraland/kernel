@@ -75,7 +75,7 @@ export function portableExperienceReducer(
       const newState: PortableExperiencesState = {
         ...state,
         portableExperiencesCreatedByScenesList: { ...state.portableExperiencesCreatedByScenesList },
-        kernelPortableExperiences: { ...state.kernelPortableExperiences },
+        kernelPortableExperiences: { ...state.kernelPortableExperiences }
       }
       delete newState.portableExperiencesCreatedByScenesList[payload.urn]
       delete newState.kernelPortableExperiences[payload.urn]
