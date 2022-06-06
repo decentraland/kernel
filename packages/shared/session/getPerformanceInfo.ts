@@ -35,7 +35,29 @@ export function getPerformanceInfo(data: {
   totalTime: number
   estimatedAllocatedMemory: number
   estimatedTotalMemory: number
+
+  gltfInProgress: number
+  gltfFailed: number
+  gltfCancelled: number
+  gltfLoaded: number
+  abInProgress: number
+  abFailed: number
+  abCancelled: number
+  abLoaded: number
+  gltfTexturesLoaded: number
+  abTexturesLoaded: number
+  promiseTexturesLoaded: number
+  enqueuedMessages: number
+  processedMessages: number
+  playerCount: number
+  loadRadius: number
+  sceneScores: Record<string, number>
+  drawCalls: number
+  memoryReserved: number
+  memoryUsage: number
+  totalGCAlloc: number
 }) {
+  console.dir(data)
   const entries: number[] = []
   const length = data.samples.length
   let sumTotalSamples = 0
@@ -112,7 +134,29 @@ export function getPerformanceInfo(data: {
 
     // versions
     kernelVersion,
-    rendererVersion
+    rendererVersion,
+
+    // detailed profiling
+    gltfInProgress: data.gltfInProgress,
+    gltfFailed: data.gltfFailed,
+    gltfCancelled: data.gltfCancelled,
+    gltfLoaded: data.gltfLoaded,
+    abInProgress: data.abInProgress,
+    abFailed: data.abFailed,
+    abCancelled: data.abCancelled,
+    abLoaded: data.abLoaded,
+    gltfTexturesLoaded: data.gltfTexturesLoaded,
+    abTexturesLoaded: data.abTexturesLoaded,
+    promiseTexturesLoaded: data.promiseTexturesLoaded,
+    enqueuedMessages: data.enqueuedMessages,
+    processedMessages: data.processedMessages,
+    playerCount: data.playerCount,
+    loadRadius: data.loadRadius,
+    sceneScores: data.sceneScores,
+    drawCalls: data.drawCalls,
+    memoryReserved: data.memoryReserved,
+    memoryUsage: data.memoryUsage,
+    totalGCAlloc: data.totalGCAlloc
   }
 
   sentCommsMessagesCounter = 0
