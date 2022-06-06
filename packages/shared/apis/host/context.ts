@@ -20,7 +20,6 @@ export type PortContext = {
     data: EnvironmentData<any>
   }
   EngineAPI: {
-    didStart: boolean
     parcelSceneAPI: ParcelSceneAPI
     subscribedEvents: { [event: string]: boolean }
   }

@@ -23,7 +23,7 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
     worker.setPosition(aux)
 
     worker.rpcContext.EnvironmentAPI.data = this.data
-    worker.rpcContext.EngineAPI = { parcelSceneAPI: this, didStart: false, subscribedEvents: {} }
+    worker.rpcContext.EngineAPI = { parcelSceneAPI: this, subscribedEvents: {} }
 
     worker.rpcContext.ParcelIdentity.land = this.data.data.land!
     worker.rpcContext.ParcelIdentity.cid = worker.getSceneId()
@@ -52,7 +52,7 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
     worker.setPosition(aux)
 
     worker.rpcContext.EnvironmentAPI.data = this.data
-    worker.rpcContext.EngineAPI = { parcelSceneAPI: this, didStart: false, subscribedEvents: {} }
+    worker.rpcContext.EngineAPI = { parcelSceneAPI: this, subscribedEvents: {} }
 
     worker.rpcContext.ParcelIdentity.cid = worker.getSceneId()
     worker.rpcContext.ParcelIdentity.isPortableExperience = true

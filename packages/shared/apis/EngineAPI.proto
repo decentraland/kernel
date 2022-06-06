@@ -10,9 +10,6 @@ message ManyEntityAction {
     repeated EntityAction actions = 1;
 }
 
-message StartSignalRequest {}
-message StartSignalResponse {}
-
 message SendBatchResponse {}
 
 message UnsubscribeRequest {
@@ -32,7 +29,6 @@ message StreamEventsResponse {
 
 service EngineAPIService {
   rpc sendBatch(ManyEntityAction) returns (SendBatchResponse) {}
-  rpc startSignal(StartSignalRequest) returns (StartSignalResponse) {}
 
   rpc subscribe(SubscribeRequest) returns (SubscribeResponse) {}
   rpc unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}

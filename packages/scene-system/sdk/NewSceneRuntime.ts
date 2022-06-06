@@ -86,13 +86,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
 
   globalThis.fetch = restrictedFetch
   globalThis.WebSocket = restrictedWebSocket
-
-  onStartFunctions.push(() => {
-    modules.EngineAPI!.startSignal({}).catch((e) => {
-      devToolsAdapter.error(e)
-    })
-  })
-
+  
   onEventFunctions.push((event) => {
     if (event.type === 'sceneStart') {
       startLoop().catch((err) => devToolsAdapter.error(err))

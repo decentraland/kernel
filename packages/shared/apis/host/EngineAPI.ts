@@ -21,10 +21,6 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       context.EngineAPI.parcelSceneAPI.sendBatch(actions)
       return {}
     },
-    async startSignal(_req, context) {
-      context.EngineAPI.didStart = true
-      return {}
-    },
 
     async subscribe(req, ctx) {
       const channel = ctx.eventChannel

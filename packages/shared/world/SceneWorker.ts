@@ -67,7 +67,6 @@ export abstract class SceneWorker {
         data: parcelScene.data
       },
       EngineAPI: {
-        didStart: false,
         parcelSceneAPI: parcelScene,
         subscribedEvents: {}
       },
