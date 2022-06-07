@@ -38,7 +38,7 @@ function instrumentHackedTimers() {
       lastHandler = null
 
       if (!fpsCapped || time - prevTime >= frameMs) {
-        let oldCallbacks = callbacks
+        const oldCallbacks = callbacks
         callbacks = []
 
         for (let i = 0; i < oldCallbacks.length; i++) {
