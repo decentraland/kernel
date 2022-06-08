@@ -114,7 +114,6 @@ wss.on('connection', function connection(ws, req) {
   }, 100)
 })
 
-
 /// --- SIDE EFFECTS ---
 {
   app.use(require('cors')())
@@ -201,6 +200,7 @@ wss.on('connection', function connection(ws, req) {
         .run(options)
         .then((result) => {
           if (result.coverage) {
+            fs.mkdirSync('test/tmp', { recursive: true })
             fs.writeFileSync('test/tmp/out.json', JSON.stringify(result.coverage))
           }
           process.exit(result.result.stats.failures)
