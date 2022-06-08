@@ -90,6 +90,7 @@
     "decentraland-ecs": "^6.0.4",
     "decentraland-rpc": "^3.1.9",
     "devtools-protocol": "0.0.615714",
+    "eslint": "^8.17.0",
     "eth-connect": "^6.0.2",
     "eth-crypto": "^1.5.1",
     "fortmatic": "^2.2.1",
