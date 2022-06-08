@@ -34,6 +34,7 @@ export type FeatureFlagsName =
   | 'banned_users'
   | 'max_visible_peers'
   | 'initial_portable_experiences'
+  | 'web_cap_fps' // caps the web client FPS
 
 export type BannedUsers = Record<string, Ban[]>
 

@@ -100,6 +100,7 @@ export interface IUnityInterface {
   SetSceneDebugPanel(): void
   ShowFPSPanel(): void
   HideFPSPanel(): void
+  SetFpsTarget(data: { capped: boolean; target: number }): void
   SetEngineDebugPanel(): void
   SetDisableAssetBundles(): void
   CrashPayloadRequest(): Promise<string>
