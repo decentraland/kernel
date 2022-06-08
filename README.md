@@ -6,6 +6,7 @@ This repository covers mainly the Kernel component of the explorer product.
 
 Kernel component responsibility includes running the SDK scenes, handling back-end business logic and more. This said, you can clone this repo and run the browser version of Explorer. If you want to contribute to our renderer, please check out the unity-renderer repo: https://github.com/decentraland/unity-renderer/pulls. Unity-renderer repo outputs a npm package that's used on this one for publishing the Explorer.
 
+
 ## Before you start
 
 1. [Contribution Guidelines](.github/CONTRIBUTING.md)
