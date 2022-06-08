@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { EngineAPIServiceDefinition, ManyEntityAction } from './../gen/EngineAPI'
+import { EngineAPIServiceDefinition, ManyEntityAction } from '../proto/EngineAPI'
 
 import { PortContextService } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'

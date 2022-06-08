@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { PortableExperiencesServiceDefinition } from '../gen/PortableExperiences'
+import { PortableExperiencesServiceDefinition } from '../proto/PortableExperiences'
 type PortableExperienceUrn = string
 type PortableExperienceHandle = {
   pid: PortableExperienceUrn

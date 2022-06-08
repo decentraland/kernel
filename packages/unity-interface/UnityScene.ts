@@ -8,7 +8,7 @@ import { getUnityInstance } from './IUnityInterface'
 import { protobufMsgBridge } from './protobufMessagesBridge'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { trackEvent } from 'shared/analytics'
-import { PermissionItem, permissionItemFromJSON } from 'shared/apis/gen/Permissions'
+import { PermissionItem, permissionItemFromJSON } from 'shared/apis/proto/Permissions'
 
 const sendBatchTime: Array<number> = []
 const sendBatchMsgs: Array<number> = []

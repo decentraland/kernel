@@ -18,7 +18,7 @@ import { QueryType, Vector3 } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import future, { IFuture } from 'fp-future'
 import { EventCallback, EventState } from './EventDispatcher'
-import { EntityAction } from 'shared/apis/gen/EngineAPI'
+import { EntityAction } from 'shared/apis/proto/EngineAPI'
 
 const WEB3_PROVIDER = 'web3-provider'
 const PROVIDER_METHOD = 'getProvider'

@@ -4,5 +4,5 @@ message InitRequest {}
 message InitResponse {}
 
 service SocialControllerService {
-    rpc init(InitRequest) returns (InitResponse) {}
+    rpc Init(InitRequest) returns (InitResponse) {}
 }

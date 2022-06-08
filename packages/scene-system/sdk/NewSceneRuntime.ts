@@ -5,7 +5,7 @@ import { customEval, getES5Context } from './sandbox'
 import { createFetch } from './Fetch'
 import { createWebSocket } from './WebSocket'
 import { RpcClient } from '@dcl/rpc/dist/types'
-import { PermissionItem } from 'shared/apis/gen/Permissions'
+import { PermissionItem } from 'shared/apis/proto/Permissions'
 import { sleep } from 'atomicHelpers/sleep'
 
 // New
@@ -14,7 +14,7 @@ import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
 import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
 import { createEventDispatcher, EventCallback, EventState } from './new-rpc/EventDispatcher'
 import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
-import type { EntityAction } from 'shared/apis/gen/EngineAPI'
+import type { EntityAction } from 'shared/apis/proto/EngineAPI'
 
 export async function startNewSceneRuntime(client: RpcClient) {
   const clientPort = await client.createPort(`new-rpc-${globalThis.name}`)

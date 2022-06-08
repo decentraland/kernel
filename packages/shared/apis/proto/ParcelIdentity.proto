@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-message ContentMapping { 
+message ContentMapping {
     string file = 1;
     string hash = 2;
 }
 
 message MappingsResponse  {
-    string parcel_id = 1; 
-    string root_cid = 2; 
-    repeated ContentMapping contents = 3; 
+    string parcel_id = 1;
+    string root_cid = 2;
+    repeated ContentMapping contents = 3;
 }
 
 message Land {
@@ -36,7 +36,7 @@ message GetIsEmptyResponse {
 }
 
 service ParcelIdentityService {
-    rpc getParcel(GetParcelRequest) returns (GetParcelResponse) {}
-    rpc getSceneId(GetSceneIdRequest) returns (GetSceneIdResponse) {} 
-    rpc getIsEmpty(GetIsEmptyRequest) returns (GetIsEmptyResponse) {} 
+    rpc GetParcel(GetParcelRequest) returns (GetParcelResponse) {}
+    rpc GetSceneId(GetSceneIdRequest) returns (GetSceneIdResponse) {}
+    rpc GetIsEmpty(GetIsEmptyRequest) returns (GetIsEmptyResponse) {}
 }

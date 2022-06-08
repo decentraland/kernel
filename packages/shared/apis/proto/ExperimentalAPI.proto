@@ -11,6 +11,6 @@ message MessageFromRendererResponse {
 }
 
 service ExperimentalAPIService {
-  rpc sendToRenderer(SendToRendererRequest) returns (SendToResponse) {}
-  rpc messageFromRenderer(MessageFromRendererRequest) returns (stream MessageFromRendererResponse) {}
+  rpc SendToRenderer(SendToRendererRequest) returns (SendToResponse) {}
+  rpc MessageFromRenderer(MessageFromRendererRequest) returns (stream MessageFromRendererResponse) {}
 }

@@ -58,7 +58,7 @@ import {
   SceneStateStorageControllerServiceDefinition,
   SendAssetsToRendererRequest,
   SendAssetsToRendererResponse
-} from './../gen/SceneStateStorageController'
+} from '../proto/SceneStateStorageController'
 
 import { fromProtoSerializedSceneState, toProtoSerializedSceneState } from '../SceneStateStorageController/utils'
 import {

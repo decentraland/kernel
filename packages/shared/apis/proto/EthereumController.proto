@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 message RequirePaymentRequest {
-    string toAddress = 1;
+    string to_address = 1;
     float amount = 2;
     string currency = 3;
 }
@@ -45,9 +45,9 @@ message GetUserAccountResponse {
 }
 
 service EthereumControllerService {
-    rpc requirePayment(RequirePaymentRequest) returns (RequirePaymentResponse) {}
-    rpc signMessage(SignMessageRequest) returns (SignMessageResponse) {}
-    rpc convertMessageToObject(ConvertMessageToObjectRequest) returns (ConvertMessageToObjectResponse) {}
-    rpc sendAsync(SendAsyncRequest) returns (SendAsyncResponse) {}
-    rpc getUserAccount(GetUserAccountRequest) returns (GetUserAccountResponse) {}
+    rpc RequirePayment(RequirePaymentRequest) returns (RequirePaymentResponse) {}
+    rpc SignMessage(SignMessageRequest) returns (SignMessageResponse) {}
+    rpc ConvertMessageToObject(ConvertMessageToObjectRequest) returns (ConvertMessageToObjectResponse) {}
+    rpc SendAsync(SendAsyncRequest) returns (SendAsyncResponse) {}
+    rpc GetUserAccount(GetUserAccountRequest) returns (GetUserAccountResponse) {}
 }

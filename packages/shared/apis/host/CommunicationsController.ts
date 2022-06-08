@@ -11,7 +11,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { CommunicationsControllerServiceDefinition } from './../gen/CommunicationsController'
+import { CommunicationsControllerServiceDefinition } from '../proto/CommunicationsController'
 
 export function registerCommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   let commsController: ICommunicationsController | null = null

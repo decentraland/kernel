@@ -6,12 +6,13 @@ else
 PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
 endif
 
-APIS = EngineAPI EnvironmentAPI DevTools UserIdentity UserActionModule SocialController SignedFetch RestrictedActions PortableExperiences Players Permissions ParcelIdentity EthereumController CommunicationsController SceneStateStorageController ExperimentalAPI
-
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
+SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
+PBS_TS = $(SCENE_PROTO_FILES:packages/shared/apis/proto/%.proto=packages/shared/apis/proto/%.ts)
 CWD = $(shell pwd)
+PROTOC = node_modules/.bin/protobuf/bin/protoc
 
 # Remove default Makefile rules
 
@@ -189,21 +190,17 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
 
-install_protoc:
+node_modules/.bin/protobuf/bin/protoc:
 	curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/$(PROTOBUF_ZIP)
 	unzip -o $(PROTOBUF_ZIP) -d node_modules/.bin/protobuf
 	rm $(PROTOBUF_ZIP)
-	chmod +x ./node_modules/.bin/protobuf/bin/protoc
+	chmod +x node_modules/.bin/protobuf/bin/protoc
 
-compile_apis: 
-	@echo "Generating APIs .proto ..." \
-	rm -rf ./packages/shared/apis/gen
-	mkdir -p ./packages/shared/apis/gen
-	@for file in $(APIS); do \
-		echo "Processing" $${file}; \
-		./node_modules/.bin/protobuf/bin/protoc \
+packages/shared/apis/proto/%.ts: packages/shared/apis/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
-			--ts_proto_out="./packages/shared/apis/gen" -I="./packages/shared/apis/" \
-			"./packages/shared/apis/$${file}.proto"; \
-	done
+			--ts_proto_out="$(PWD)/packages/shared/apis/proto" -I="$(PWD)/packages/shared/apis/proto" \
+			"$(PWD)/packages/shared/apis/proto/$*.proto";
+
+compile_apis: ${PBS_TS}

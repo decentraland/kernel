@@ -4,7 +4,7 @@ import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { onLoginCompleted } from 'shared/session/sagas'
 import { sdkCompatibilityAvatar } from './Players'
 
-import { UserIdentityServiceDefinition } from './../gen/UserIdentity'
+import { UserIdentityServiceDefinition } from '../proto/UserIdentity'
 import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'

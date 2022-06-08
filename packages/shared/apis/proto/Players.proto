@@ -15,14 +15,14 @@ message PlayerListResponse {
 }
 
 message GetPlayerDataRequest {
-    string userId = 1;
+    string user_id = 1;
 }
 
 message GetPlayersInSceneRequest {}
 message GetConnectedPlayersRequest {}
 
 service PlayersService {
-    rpc getPlayerData(GetPlayerDataRequest) returns (PlayersGetUserDataResponse) {}
-    rpc getPlayersInScene(GetPlayersInSceneRequest) returns (PlayerListResponse) {}
-    rpc getConnectedPlayers(GetConnectedPlayersRequest)  returns (PlayerListResponse) {}
+    rpc GetPlayerData(GetPlayerDataRequest) returns (PlayersGetUserDataResponse) {}
+    rpc GetPlayersInScene(GetPlayersInSceneRequest) returns (PlayerListResponse) {}
+    rpc GetConnectedPlayers(GetConnectedPlayersRequest)  returns (PlayerListResponse) {}
 }
