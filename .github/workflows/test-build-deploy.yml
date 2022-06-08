@@ -18,13 +18,12 @@ jobs:
 
       - uses: browser-actions/setup-chrome@latest
 
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: lts/-1
           cache: 'npm'
-      - name: install
 
+      - name: install
         run: |
           sudo apt-get install xvfb
           npm ci
@@ -52,10 +51,9 @@ jobs:
         run: node -e "console.log('::set-output name=branch::' +    ('${{github.head_ref}}' || '$GITHUB_REF'.replace('refs/heads/',''))    )"
         id: myref
 
-      - name: Use Node.js 14.x
-        uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 14.x
+          node-version: lts/-1
           cache: 'npm'
 
       - name: set package.json version
