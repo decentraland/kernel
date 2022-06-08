@@ -58,6 +58,7 @@ function* initMeta() {
   }
 
   yield put(metaConfigurationInitialized(merge))
+
   yield fork(fetchInitialPortableExperiences)
 }
 

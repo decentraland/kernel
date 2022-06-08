@@ -1,11 +1,7 @@
 import { resolve } from 'path'
-// a import fetch = require('node-fetch')
 import express = require('express')
-import multer = require('multer')
 import path = require('path')
 import fs = require('fs')
-import mkdirp = require('mkdirp')
-import * as BlinkDiff from 'blink-diff'
 import { Role } from '../packages/shared/comms/v1/proto/broker'
 import titere = require('titere')
 import WebSocket = require('ws')
@@ -16,26 +12,7 @@ const url = require('url')
 
 // defines if we should run headless tests and exit (true) or keep the server on (false)
 const singleRun = !(process.env.SINGLE_RUN === 'true')
-
-// defines if we should replace the base images
-const shouldGenerateNewImages = process.env.GENERATE_NEW_IMAGES === 'true'
-
 const port = process.env.PORT || 8080
-
-const resultsDir = path.resolve(__dirname, '../test/results')
-const tmpDir = path.resolve(__dirname, '../test/tmp')
-const diffDir = path.resolve(__dirname, '../test/diff')
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const destination = path.resolve(tmpDir, file.fieldname)
-    cb(null, destination)
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname)
-  }
-})
-
-const upload = multer({ storage })
 const app = express()
 
 const server = http.createServer(app)
@@ -137,41 +114,8 @@ wss.on('connection', function connection(ws, req) {
   }, 100)
 })
 
-function getFile(files: any): Express.Multer.File {
-  return files[Object.keys(files)[0]]
-}
-
-function checkDiff(imageAPath: string, imageBPath: string, threshold: number, diffOutputPath: string): Promise<number> {
-  return new Promise((resolve, reject) => {
-    mkdirp.sync(diffDir)
-
-    const diff = new BlinkDiff({
-      imageAPath,
-      imageBPath,
-      thresholdType: BlinkDiff.THRESHOLD_PERCENT,
-      threshold,
-      imageOutputLimit: BlinkDiff.OUTPUT_DIFFERENT,
-      imageOutputPath: diffOutputPath
-    })
-
-    diff.run(function (error, result) {
-      if (error) {
-        reject(error)
-      } else {
-        if (diff.hasPassed(result.code)) {
-          resolve(result.differences)
-        } else {
-          reject(new Error(`Found ${result.differences} differences`))
-        }
-      }
-    })
-  })
-}
-
 /// --- SIDE EFFECTS ---
 {
-  mkdirp.sync('test/tmp')
-
   app.use(require('cors')())
 
   app.get('/test', (req, res) => {
@@ -238,63 +182,6 @@ function checkDiff(imageAPath: string, imageBPath: string, threshold: number, di
 
   app.use(express.static(path.resolve(__dirname, '..', 'static')))
 
-  app.post('/upload', upload.any(), function (req, res) {
-    const threshold = 0.01
-
-    const file = getFile(req.files)
-
-    const tmpPath = path.resolve(file.destination, file.filename)
-    const resultPath = path.resolve(resultsDir, req.query.path)
-    const outputDiffFile = path.resolve(diffDir, req.query.path)
-
-    mkdirp.sync(path.dirname(tmpPath))
-    mkdirp.sync(path.dirname(resultPath))
-
-    console.log(`      uploading to: ${tmpPath}`)
-    console.log(`       target file: ${resultPath}`)
-    console.log(`       output diff: ${outputDiffFile}`)
-
-    // if the file to compare does not exist and we are uploading a new file
-    if ((shouldGenerateNewImages && fs.existsSync(tmpPath)) || !fs.existsSync(resultPath)) {
-      // move it to the final path
-      fs.renameSync(tmpPath, resultPath)
-      res.writeHead(201)
-      res.end()
-      return
-    }
-
-    // make sure the directory where we store the differences exists
-    mkdirp.sync(path.dirname(outputDiffFile))
-
-    const promise = checkDiff(resultPath, tmpPath, threshold, outputDiffFile)
-
-    promise
-      .then(($) => {
-        console.log(`       differences: ${$}`)
-        res.writeHead(200)
-        res.end()
-      })
-      .catch((e) => {
-        console.log(`    generating img: ${shouldGenerateNewImages} `)
-        console.log(`             error: ${e} `)
-        if (shouldGenerateNewImages) {
-          // If the diff fails, it means images are different enough to be
-          // commited as a test result to the repo.
-
-          if (fs.existsSync(tmpPath)) {
-            fs.renameSync(tmpPath, resultPath)
-            console.log(`                mv: ${tmpPath} -> ${resultPath}`)
-          }
-
-          res.writeHead(201)
-          res.end()
-        } else {
-          res.writeHead(500, e.message)
-          res.end()
-        }
-      })
-  })
-
   server.listen(port, function () {
     console.info('==>     Listening on port %s. Open up http://localhost:%s/test to run tests', port, port)
     console.info('                              Open up http://localhost:%s/ to test the client.', port)
@@ -313,6 +200,7 @@ function checkDiff(imageAPath: string, imageBPath: string, threshold: number, di
         .run(options)
         .then((result) => {
           if (result.coverage) {
+            fs.mkdirSync('test/tmp', { recursive: true })
             fs.writeFileSync('test/tmp/out.json', JSON.stringify(result.coverage))
           }
           process.exit(result.result.stats.failures)
