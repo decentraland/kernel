@@ -9,6 +9,9 @@ export const getPortableExperienceDenyList = (store: RootPortableExperiencesStat
 export const getPortableExperiencesCreatedByScenes = (store: RootPortableExperiencesState): StorePortableExperience[] =>
   Object.values(store.portableExperiences.portableExperiencesCreatedByScenesList)
 
+export const getKernelPortableExperiences = (store: RootPortableExperiencesState): StorePortableExperience[] =>
+  Object.values(store.portableExperiences.kernelPortableExperiences)
+
 export const getDesiredPortableExperiences = (
   store: RootPortableExperiencesState & RootWearablesPortableExperienceState
 ): StorePortableExperience[] => {
@@ -22,6 +25,7 @@ export const getDesiredPortableExperiences = (
       // ...getOnboardingPortableExperiences(store),
       // ...getSceneCreatedPortableExperiences(store),
       // ...getManuallyOpenPortableExperiences(store),
+      ...getKernelPortableExperiences(store),
       ...getPortableExperiencesCreatedByScenes(store),
       ...getDesiredLoadableWearablePortableExpriences(store)
     ],

@@ -35,7 +35,51 @@ export function getPerformanceInfo(data: {
   totalTime: number
   estimatedAllocatedMemory: number
   estimatedTotalMemory: number
+
+  // summarizes all frames
+  gltfInProgress: number
+  // summarizes all frames
+  gltfFailed: number
+  // summarizes all frames
+  gltfCancelled: number
+  // summarizes all frames
+  gltfLoaded: number
+  // summarizes all frames
+  abInProgress: number
+  // summarizes all frames
+  abFailed: number
+  // summarizes all frames
+  abCancelled: number
+  // summarizes all frames
+  abLoaded: number
+  // summarizes all frames
+  gltfTexturesLoaded: number
+  // summarizes all frames
+  abTexturesLoaded: number
+  // summarizes all frames
+  promiseTexturesLoaded: number
+  // summarizes all frames
+  enqueuedMessages: number
+  // summarizes all frames
+  processedMessages: number
+
+  // only samples last frame
+  playerCount: number
+  // only samples last frame
+  loadRadius: number
+  // only samples last frame
+  sceneScores: Record<string, number>
+  // only samples last frame
+  drawCalls: number
+  // only samples last frame
+  memoryReserved: number
+  // only samples last frame
+  memoryUsage: number
+
+  // summarizes all frames
+  totalGCAlloc: number
 }) {
+  console.dir(data)
   const entries: number[] = []
   const length = data.samples.length
   let sumTotalSamples = 0
@@ -112,7 +156,32 @@ export function getPerformanceInfo(data: {
 
     // versions
     kernelVersion,
-    rendererVersion
+    rendererVersion,
+
+    // detailed profiling
+    gltfInProgress: data.gltfInProgress,
+    gltfFailed: data.gltfFailed,
+    gltfCancelled: data.gltfCancelled,
+    gltfLoaded: data.gltfLoaded,
+    abInProgress: data.abInProgress,
+    abFailed: data.abFailed,
+    abCancelled: data.abCancelled,
+    abLoaded: data.abLoaded,
+    gltfTexturesLoaded: data.gltfTexturesLoaded,
+    abTexturesLoaded: data.abTexturesLoaded,
+    promiseTexturesLoaded: data.promiseTexturesLoaded,
+    enqueuedMessages: data.enqueuedMessages,
+    processedMessages: data.processedMessages,
+    playerCount: data.playerCount,
+    loadRadius: data.loadRadius,
+
+    drawCalls: data.drawCalls,
+    memoryReserved: data.memoryReserved,
+    memoryUsage: data.memoryUsage,
+    totalGCAlloc: data.totalGCAlloc,
+
+    // replace sceneScores by the values only
+    sceneScores: (data.sceneScores && Object.values(data.sceneScores)) || null
   }
 
   sentCommsMessagesCounter = 0

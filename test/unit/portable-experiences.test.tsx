@@ -96,6 +96,7 @@ describe('Portable experiences sagas test', () => {
           urnB: px3
         },
         deniedPortableExperiencesFromRenderer: [],
+        kernelPortableExperiences: {},
         globalPortalExperienceShutDown: false
       },
       wearablesPortableExperiences: {
@@ -123,6 +124,7 @@ describe('Portable experiences sagas test', () => {
         .withState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: ['urn-denied'],
+            kernelPortableExperiences: {},
             portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
@@ -136,6 +138,7 @@ describe('Portable experiences sagas test', () => {
         .hasFinalState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: [],
+            kernelPortableExperiences: {},
             portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
@@ -156,6 +159,7 @@ describe('Portable experiences sagas test', () => {
         .withState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: ['urn-denied'],
+            kernelPortableExperiences: {},
             portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld
             },
@@ -168,6 +172,7 @@ describe('Portable experiences sagas test', () => {
         .hasFinalState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: ['urn-denied'],
+            kernelPortableExperiences: {},
             portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld,
               [pxDenied.id]: pxDenied
@@ -187,6 +192,7 @@ describe('Portable experiences sagas test', () => {
         .withState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: [],
+            kernelPortableExperiences: {},
             portableExperiencesCreatedByScenesList: {
               [pxOld.id]: pxOld
             },
@@ -199,6 +205,7 @@ describe('Portable experiences sagas test', () => {
         .hasFinalState(state({
           portableExperiences: {
             deniedPortableExperiencesFromRenderer: [],
+            kernelPortableExperiences: {},
             portableExperiencesCreatedByScenesList: {},
             globalPortalExperienceShutDown: false
           }
@@ -218,6 +225,7 @@ describe('Portable experiences sagas test', () => {
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {},
           globalPortalExperienceShutDown: false
         }
@@ -228,6 +236,7 @@ describe('Portable experiences sagas test', () => {
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
@@ -243,6 +252,7 @@ describe('Portable experiences sagas test', () => {
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
@@ -255,6 +265,7 @@ describe('Portable experiences sagas test', () => {
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [px.id],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
@@ -271,6 +282,7 @@ describe('Portable experiences sagas test', () => {
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [px.id],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
@@ -283,6 +295,7 @@ describe('Portable experiences sagas test', () => {
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
@@ -297,6 +310,7 @@ describe('Portable experiences sagas test', () => {
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
@@ -307,6 +321,7 @@ describe('Portable experiences sagas test', () => {
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {
             [px.id]: px,
           },
@@ -320,6 +335,7 @@ describe('Portable experiences sagas test', () => {
       .withState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {},
           globalPortalExperienceShutDown: true
         }
@@ -328,6 +344,7 @@ describe('Portable experiences sagas test', () => {
       .hasFinalState(state({
         portableExperiences: {
           deniedPortableExperiencesFromRenderer: [],
+          kernelPortableExperiences: {},
           portableExperiencesCreatedByScenesList: {},
           globalPortalExperienceShutDown: false
         }

@@ -2,7 +2,6 @@ import {
   ContentMapping,
   EnvironmentData,
   LoadablePortableExperienceScene,
-  MappingsResponse,
   SceneJsonData,
   StorePortableExperience
 } from '../shared/types'
@@ -11,7 +10,8 @@ import { parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
 import { UnityPortableExperienceScene } from './UnityParcelScene'
 import { forceStopSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
-import { resolveUrlFromUrn } from '@dcl/urn-resolver'
+import { parseUrn, resolveContentUrl } from '@dcl/urn-resolver'
+import { Entity } from 'dcl-catalyst-commons'
 import { store } from 'shared/store/isolatedStore'
 import { addScenePortableExperience, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { sleep } from 'atomicHelpers/sleep'
@@ -51,57 +51,60 @@ export function getRunningPortableExperience(sceneId: string): UnityPortableExpe
   return currentPortableExperiences.get(sceneId)
 }
 
-async function getPortableExperienceFromUrn(sceneUrn: string): Promise<StorePortableExperience> {
-  const mappingsUrl = await resolveUrlFromUrn(sceneUrn)
-  if (mappingsUrl === null) {
+export async function getPortableExperienceFromUrn(sceneUrn: string): Promise<StorePortableExperience> {
+  const resolvedEntity = await parseUrn(sceneUrn)
+
+  if (resolvedEntity === null || resolvedEntity.type !== 'entity') {
     throw new Error(`Could not resolve mappings for scene: ${sceneUrn}`)
   }
-  const mappingsFetch = await fetch(mappingsUrl)
-  const mappingsResponse = (await mappingsFetch.json()) as MappingsResponse
 
-  const sceneJsonMapping = mappingsResponse.contents.find(($) => $.file === 'scene.json')
+  const resolvedUrl = await resolveContentUrl(resolvedEntity)
 
-  if (sceneJsonMapping) {
-    const baseUrl: string = new URL('.', mappingsUrl).toString()
-    const sceneUrl = `${baseUrl}${sceneJsonMapping.hash}`
-    const sceneResponse = await fetch(sceneUrl)
-
-    if (sceneResponse.ok) {
-      const scene = (await sceneResponse.json()) as SceneJsonData
-      return getLoadablePortableExperience({
-        sceneUrn: sceneUrn,
-        baseUrl: baseUrl,
-        mappings: mappingsResponse.contents,
-        sceneJsonData: scene
-      })
-    } else {
-      throw new Error('Could not load scene.json')
-    }
-  } else {
-    throw new Error('Could not load scene.json')
+  if (!resolvedUrl) {
+    throw new Error('Could not resolve URL to download ' + sceneUrn)
   }
+
+  const result = await fetch(resolvedUrl)
+  const entity = (await result.json()) as Entity
+  const baseUrl: string = resolvedEntity.baseUrl || new URL('.', resolvedUrl).toString()
+  const mappings = entity.content || []
+
+  return getLoadablePortableExperience({
+    sceneUrn: resolvedEntity.uri.href.replace(/(\?.+)$/, ''),
+    baseUrl: baseUrl,
+    mappings: mappings
+  })
 }
 
-function getLoadablePortableExperience(data: {
+async function getLoadablePortableExperience(data: {
   sceneUrn: string
   baseUrl: string
   mappings: ContentMapping[]
-  sceneJsonData: SceneJsonData
-}): StorePortableExperience {
-  const { sceneUrn, baseUrl, mappings, sceneJsonData } = data
+}): Promise<StorePortableExperience> {
+  const { sceneUrn, baseUrl, mappings } = data
 
-  const sceneJsons = mappings.filter((land) => land.file === 'scene.json')
-  if (!sceneJsons.length) {
+  const sceneJsonMapping = mappings.find(($) => $.file === 'scene.json')
+
+  if (!sceneJsonMapping) {
     throw new Error('Invalid scene mapping: no scene.json')
   }
 
-  return {
-    id: sceneUrn,
-    name: getSceneNameFromJsonData(sceneJsonData),
-    baseUrl: baseUrl,
-    mappings: data.mappings,
-    menuBarIcon: sceneJsonData.menuBarIcon || '',
-    parentCid: 'main'
+  const sceneUrl = `${baseUrl}${sceneJsonMapping.hash}`
+  const sceneResponse = await fetch(sceneUrl)
+
+  if (sceneResponse.ok) {
+    const sceneJsonData = (await sceneResponse.json()) as SceneJsonData
+
+    return {
+      id: sceneUrn,
+      name: getSceneNameFromJsonData(sceneJsonData),
+      baseUrl: baseUrl,
+      mappings: data.mappings,
+      menuBarIcon: sceneJsonData.menuBarIcon || '',
+      parentCid: 'main'
+    }
+  } else {
+    throw new Error('Error fetching scene.json: ' + sceneUrl)
   }
 }
 

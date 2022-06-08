@@ -33,6 +33,7 @@ export type FeatureFlagsName =
   | 'pick_realm_algorithm_config'
   | 'banned_users'
   | 'max_visible_peers'
+  | 'initial_portable_experiences'
 
 export type BannedUsers = Record<string, Ban[]>
 
