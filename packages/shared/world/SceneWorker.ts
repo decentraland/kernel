@@ -1,5 +1,5 @@
 import { Vector3 } from '@dcl/ecs-math'
-import { defaultLogger } from 'shared/logger'
+import { createGenericLogComponent, defaultLogger } from 'shared/logger'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
@@ -19,41 +19,6 @@ import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 import Protocol from 'devtools-protocol'
-
-function createGenericLogComponent() {
-  return {
-    getLogger(loggerName) {
-      return {
-        log(message, extra) {
-          defaultLogger.log(loggerName, message, extra)
-        },
-        warn(message, extra) {
-          defaultLogger.warn(loggerName, message, extra)
-        },
-        info(message, extra) {
-          defaultLogger.info(loggerName, message, extra)
-        },
-        debug(message, extra) {
-          defaultLogger.trace(loggerName, message, extra)
-        },
-        error(error, extra) {
-          let message = `${error}`
-          let printTrace = true
-          if (error instanceof Error && 'stack' in error && typeof error.stack === 'string') {
-            if (error.stack.includes(error.message)) {
-              message = error.stack
-              printTrace = false
-            }
-          }
-          defaultLogger.error(loggerName, message, extra || error)
-          if (printTrace) {
-            console.trace()
-          }
-        }
-      }
-    }
-  }
-}
 
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
@@ -83,7 +48,7 @@ export abstract class SceneWorker {
       },
       DevTools: {
         logger: defaultLogger,
-        exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>(),
+        exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>()
       },
       eventChannel,
       sendSceneEvent: (type, data) => {
@@ -98,7 +63,7 @@ export abstract class SceneWorker {
     parcelScene.registerWorker(this)
 
     this.rpcServer = createRpcServer<PortContext>({
-      logger: createGenericLogComponent().getLogger('test-rpc-server')
+      logger: createGenericLogComponent().getLogger(`rpc-server-${parcelScene.getSceneId()}`)
     })
     this.rpcServer.setHandler(async (port) => {
       registerServices(port)

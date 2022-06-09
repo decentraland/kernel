@@ -4,7 +4,6 @@ import {
   LifecycleManager,
   ParcelSceneLoadingParams
 } from 'decentraland-loader/lifecycle/manager'
-// import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
 import {
   sceneLifeCycleObservable,
   renderDistanceObservable,

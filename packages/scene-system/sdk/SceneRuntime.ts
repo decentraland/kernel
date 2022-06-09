@@ -1,4 +1,4 @@
-import { LoadableAPIs } from './../../shared/apis/client'
+import { LoadableAPIs } from '../../shared/apis/client'
 import { initMessagesFinished, resolveMapping } from './Utils'
 import { LoadableParcelScene } from 'shared/types'
 import { customEval, getES5Context } from './sandbox'
@@ -15,8 +15,9 @@ import { createEventDispatcher, EventCallback, EventState } from './new-rpc/Even
 import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
 import type { EntityAction } from 'shared/apis/proto/EngineAPI'
 
-export async function startNewSceneRuntime(client: RpcClient) {
-  const clientPort = await client.createPort(`new-rpc-${globalThis.name}`)
+export async function startSceneRuntime(client: RpcClient) {
+  const workerName = self.name
+  const clientPort = await client.createPort(`scene-${workerName}`)
 
   const [EngineAPI, EnvironmentAPI, Permissions, DevTools] = await Promise.all([
     LoadableAPIs.EngineAPI(clientPort),
@@ -66,8 +67,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
   })
 
   // TODO: aquire permissions using a single call
-  const canUseWebsocket = (await Permissions.hasPermission({ permission: PermissionItem.USE_WEBSOCKET }))
-    .hasPermission
+  const canUseWebsocket = (await Permissions.hasPermission({ permission: PermissionItem.USE_WEBSOCKET })).hasPermission
   const canUseFetch = (await Permissions.hasPermission({ permission: PermissionItem.USE_FETCH })).hasPermission
   const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 

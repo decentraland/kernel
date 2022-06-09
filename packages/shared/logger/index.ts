@@ -64,3 +64,42 @@ export function createUnityLogger(): ILogger {
 export const defaultLogger: ILogger = createLogger('')
 
 export default defaultLogger
+
+/**
+ * Extracted from @well-known-components
+ * @returns A generic log component user the default logger
+ */
+export function createGenericLogComponent() {
+  return {
+    getLogger(loggerName) {
+      return {
+        log(message, extra) {
+          defaultLogger.log(loggerName, message, extra)
+        },
+        warn(message, extra) {
+          defaultLogger.warn(loggerName, message, extra)
+        },
+        info(message, extra) {
+          defaultLogger.info(loggerName, message, extra)
+        },
+        debug(message, extra) {
+          defaultLogger.trace(loggerName, message, extra)
+        },
+        error(error, extra) {
+          let message = `${error}`
+          let printTrace = true
+          if (error instanceof Error && 'stack' in error && typeof error.stack === 'string') {
+            if (error.stack.includes(error.message)) {
+              message = error.stack
+              printTrace = false
+            }
+          }
+          defaultLogger.error(loggerName, message, extra || error)
+          if (printTrace) {
+            console.trace()
+          }
+        }
+      }
+    }
+  }
+}

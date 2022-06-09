@@ -91,9 +91,6 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
 
   loadParcelScene(scene, undefined, true)
 
-  // TODO
-  // await ensureUiApis(worker)
-
   getUnityInstance().CreateGlobalScene({
     id: scene.getSceneId(),
     name: scene.data.name,

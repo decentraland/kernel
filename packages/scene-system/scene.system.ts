@@ -1,7 +1,7 @@
 import { createRpcClient } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
-import { startNewSceneRuntime } from './sdk/NewSceneRuntime'
+import { startSceneRuntime } from './sdk/SceneRuntime'
 
 createRpcClient(WebWorkerTransport(self))
-  .then(startNewSceneRuntime)
+  .then(startSceneRuntime)
   .catch((err) => console.error(err))
