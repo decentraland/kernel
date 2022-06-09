@@ -27,8 +27,8 @@ export const enum PredefinedEmote {
   HEAD_EXPLODDE = 'headexplode'
 }
 
-export async function createRestrictedActionsServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, RestrictedActionsServiceDefinition>(
+export function createRestrictedActionsServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, RestrictedActionsServiceDefinition>(
     clientPort,
     RestrictedActionsServiceDefinition
   )

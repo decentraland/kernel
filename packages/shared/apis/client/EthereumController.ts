@@ -13,8 +13,8 @@ export interface MessageDict {
   [key: string]: string
 }
 
-export async function createEthereumControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, EthereumControllerServiceDefinition>(
+export function createEthereumControllerServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, EthereumControllerServiceDefinition>(
     clientPort,
     EthereumControllerServiceDefinition
   )

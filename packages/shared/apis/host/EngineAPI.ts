@@ -23,12 +23,10 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
     },
 
     async subscribe(req, ctx) {
-      const channel = ctx.eventChannel
-
       if (!(req.eventId in ctx.EngineAPI.subscribedEvents)) {
         ctx.EngineAPI.parcelSceneAPI.on(req.eventId, (data: any) => {
           if (ctx.EngineAPI.subscribedEvents[req.eventId]) {
-            channel.push({ id: req.eventId, data }).catch((error) => ctx.DevTools.logger.error(error))
+            ctx.sendSceneEvent(req.eventId as any, data)
           }
         })
         ctx.EngineAPI.subscribedEvents[req.eventId] = true
@@ -41,9 +39,8 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       return {}
     },
     async *streamEvents(req, ctx) {
-      const channel = ctx.eventChannel
-      for await (const message of channel) {
-        yield { eventId: message.id, eventData: JSON.stringify(message.data) }
+      for await (const message of ctx.eventChannel) {
+        yield { eventId: message.type, eventData: JSON.stringify(message.data) }
       }
     }
   }))

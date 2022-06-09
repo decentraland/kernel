@@ -30,6 +30,7 @@ import { createPlayersServiceClient } from './Players'
 import { createPortableExperiencesServiceClient } from './PortableExperiences'
 import { createExperimentalAPIServiceClient } from './ExperimentalAPI'
 import { createSceneStateStorageControllerServiceClient } from './SceneStateStorageController'
+import { createWeb3Provider } from './Web3Provider'
 
 export const LoadableAPIs = {
   CommunicationsController: createCommunicationsControllerServiceClient,
@@ -42,16 +43,21 @@ export const LoadableAPIs = {
   Permissions: createPermissionsServiceClient,
   Players: createPlayersServiceClient,
   PortableExpierences: createPortableExperiencesServiceClient,
+
+  // TODO: validate which of the following is actually used.
   RestrictedActions: createRestrictedActionsServiceClient,
+  RestrictedActionModule: createRestrictedActionsServiceClient,
+
   SignedFetch: createSignedFetchServiceClient,
   SocialController: createSocialControllerServiceClient,
   UserActionModule: createUserActionModuleServiceClient,
   SceneStateStorageController: createSceneStateStorageControllerServiceClient,
   // This is UserIdentity in the host-side
-  Identity: createUserIdentityServiceClient
-}
+  Identity: createUserIdentityServiceClient,
 
-export const LoadableNeedInit = ['SocialController', 'CommunicationsController']
+  // This is required by the scenes
+  ['web3-provider']: createWeb3Provider
+}
 
 export type ILoadedModules<T> = {
   [K in keyof T]?: T[K] extends (...args: any[]) => any ? Awaited<ReturnType<T[K]>> : never

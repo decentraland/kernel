@@ -15,8 +15,8 @@ export type BodyType = 'json' | 'text'
 
 export type OriginalFlatFetchInit = RequestInit & { responseBodyType?: BodyType }
 
-export async function createSignedFetchServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, SignedFetchServiceDefinition>(
+export function createSignedFetchServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, SignedFetchServiceDefinition>(
     clientPort,
     SignedFetchServiceDefinition
   )

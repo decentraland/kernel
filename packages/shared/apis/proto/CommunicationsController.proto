@@ -6,10 +6,6 @@ message RealSendRequest {
 
 message RealSendResponse {}
 
-message InitRequest {}
-message InitResponse {}
-
 service CommunicationsControllerService {
-    rpc Init(InitRequest) returns (InitResponse) {}
     rpc Send(RealSendRequest) returns (RealSendResponse) {}
 }

@@ -28,9 +28,6 @@ jobs:
           sudo apt-get install xvfb
           npm ci
 
-      - name: generate protocol code
-        run: make compile_apis
-
       - name: test-ci
         run: xvfb-run --auto-servernum make test-ci
 
@@ -69,8 +66,6 @@ jobs:
       - name: install
         run: |
           npm ci
-      - name: generate protocol code
-        run: make compile_apis
       - name: build
         run: make build-essentials build-release build-deploy
       - uses: hmarr/debug-action@v2

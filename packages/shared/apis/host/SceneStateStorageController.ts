@@ -35,7 +35,7 @@ import { getLayoutFromParcels } from './../SceneStateStorageController/utils'
 import { SceneTransformTranslator } from './../SceneStateStorageController/SceneTransformTranslator'
 
 import { RpcServerPort } from '@dcl/rpc'
-import { PortContextService } from './context'
+import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import {
@@ -73,43 +73,41 @@ import {
   updateProjectDetails
 } from '../SceneStateStorageController/RPCHostUtils'
 
-type ServiceContext = PortContextService<'SceneStateStorageController'>
-
 async function getProjectManifest(
   req: GetProjectManifestRequest,
-  ctx: ServiceContext
+  ctx: PortContext
 ): Promise<GetProjectManifestResponse> {
   const manifest = await getBuilderApiManager(ctx).getBuilderManifestFromProjectId(req.projectId, getIdentity())
   if (!manifest) return { state: undefined }
 
   getUnityInstance().SendBuilderProjectInfo(manifest.project.title, manifest.project.description, false)
 
-  ctx.SceneStateStorageController.builderManifest = manifest
-  ctx.SceneStateStorageController.transformTranslator = new SceneTransformTranslator(
+  ctx.SceneStateStorageController!.builderManifest = manifest
+  ctx.SceneStateStorageController!.transformTranslator = new SceneTransformTranslator(
     ctx.ParcelIdentity.land!.sceneJsonData.source
   )
 
   const definition = fromBuildertoStateDefinitionFormat(
     manifest.scene,
-    ctx.SceneStateStorageController.transformTranslator
+    ctx.SceneStateStorageController!.transformTranslator
   )
   return { state: toProtoSerializedSceneState(serializeSceneState(definition)) }
 }
 
 async function getProjectManifestByCoordinates(
   req: GetProjectManifestByCoordinatesRequest,
-  ctx: ServiceContext
+  ctx: PortContext
 ): Promise<GetProjectManifestByCoordinatesResponse> {
   const newProject = await getBuilderApiManager(ctx).getBuilderManifestFromLandCoordinates(req.land, getIdentity())
   if (newProject) {
     getUnityInstance().SendBuilderProjectInfo(newProject.project.title, newProject.project.description, false)
-    ctx.SceneStateStorageController.builderManifest = newProject
-    ctx.SceneStateStorageController.transformTranslator = new SceneTransformTranslator(
+    ctx.SceneStateStorageController!.builderManifest = newProject
+    ctx.SceneStateStorageController!.transformTranslator = new SceneTransformTranslator(
       ctx.ParcelIdentity.land!.sceneJsonData.source
     )
     const translatedManifest = fromBuildertoStateDefinitionFormat(
-      ctx.SceneStateStorageController.builderManifest.scene,
-      ctx.SceneStateStorageController.transformTranslator
+      ctx.SceneStateStorageController!.builderManifest.scene,
+      ctx.SceneStateStorageController!.transformTranslator
     )
     return { state: toProtoSerializedSceneState(serializeSceneState(translatedManifest)) }
   }
@@ -118,18 +116,18 @@ async function getProjectManifestByCoordinates(
 
 async function createProjectWithCoords(
   req: CreateProjectWithCoordsRequest,
-  ctx: ServiceContext
+  ctx: PortContext
 ): Promise<CreateProjectWithCoordsResponse> {
   const newProject = await getBuilderApiManager(ctx).createProjectWithCoords(req.coordinates, getIdentity())
   getUnityInstance().SendBuilderProjectInfo(newProject.project.title, newProject.project.description, true)
-  ctx.SceneStateStorageController.builderManifest = newProject
-  ctx.SceneStateStorageController.transformTranslator = new SceneTransformTranslator(
+  ctx.SceneStateStorageController!.builderManifest = newProject
+  ctx.SceneStateStorageController!.transformTranslator = new SceneTransformTranslator(
     ctx.ParcelIdentity.land!.sceneJsonData.source
   )
   return { ok: newProject ? true : false }
 }
 
-async function saveSceneState(req: SaveSceneStateRequest, ctx: ServiceContext): Promise<SaveSceneStateResponse> {
+async function saveSceneState(req: SaveSceneStateRequest, ctx: PortContext): Promise<SaveSceneStateResponse> {
   let result: SaveSceneStateResponse
 
   try {
@@ -141,9 +139,9 @@ async function saveSceneState(req: SaveSceneStateRequest, ctx: ServiceContext): 
     // Convert the scene state to builder scheme format
     const builderManifest = await toBuilderFromStateDefinitionFormat(
       sceneState,
-      ctx.SceneStateStorageController.builderManifest,
+      ctx.SceneStateStorageController!.builderManifest,
       getBuilderApiManager(ctx),
-      ctx.SceneStateStorageController.transformTranslator
+      ctx.SceneStateStorageController!.transformTranslator
     )
 
     // Update the manifest
@@ -156,7 +154,7 @@ async function saveSceneState(req: SaveSceneStateRequest, ctx: ServiceContext): 
   return result
 }
 
-async function saveProjectInfo(req: SaveProjectInfoRequest, ctx: ServiceContext): Promise<SaveProjectInfoResponse> {
+async function saveProjectInfo(req: SaveProjectInfoRequest, ctx: PortContext): Promise<SaveProjectInfoResponse> {
   let result: boolean
   try {
     const thumbnailBlob: Blob = base64ToBlob(req.projectScreenshot, 'image/png')
@@ -176,10 +174,7 @@ async function saveProjectInfo(req: SaveProjectInfoRequest, ctx: ServiceContext)
   return { ok: result }
 }
 
-async function publishSceneState(
-  req: PublishSceneStateRequest,
-  ctx: ServiceContext
-): Promise<PublishSceneStateResponse> {
+async function publishSceneState(req: PublishSceneStateRequest, ctx: PortContext): Promise<PublishSceneStateResponse> {
   let result: DeploymentResult
 
   const sceneState = fromProtoSerializedSceneState(req.sceneState!)
@@ -236,7 +231,7 @@ async function publishSceneState(
           source: {
             origin: 'builder-in-world',
             version: 1,
-            projectId: ctx.SceneStateStorageController.builderManifest.project.id,
+            projectId: ctx.SceneStateStorageController!.builderManifest.project.id,
             rotation: ctx.ParcelIdentity.land!.sceneJsonData.source?.rotation ?? 'east',
             layout: ctx.ParcelIdentity.land!.sceneJsonData.source?.layout ?? getLayoutFromParcels(parcels),
             point:
@@ -255,7 +250,7 @@ async function publishSceneState(
       await contentClient.deployEntity({ files, entityId, authChain })
 
       // Update the project name, desc and thumbnail. unlink coordinates from builder project
-      ctx.SceneStateStorageController.builderManifest.project.creation_coords = undefined
+      ctx.SceneStateStorageController!.builderManifest.project.creation_coords = undefined
       await updateProjectDetails(sceneState, req.sceneName, req.sceneDescription, thumbnailBlob, ctx)
 
       result = { ok: true }
@@ -268,7 +263,7 @@ async function publishSceneState(
   return result
 }
 
-async function getStoredState(req: GetStoredStateRequest, ctx: ServiceContext): Promise<GetStoredStateResponse> {
+async function getStoredState(req: GetStoredStateRequest, ctx: PortContext): Promise<GetStoredStateResponse> {
   if (DEBUG) {
     const sceneState: StorableSceneState = await getFromPersistentStorage(`scene-state-${req.sceneId}`)
     if (sceneState) {
@@ -282,7 +277,7 @@ async function getStoredState(req: GetStoredStateRequest, ctx: ServiceContext): 
   const contentClient = getContentClient()
   try {
     // Fetch the entity and find the definition's hash
-    const scene = await contentClient.fetchEntityById(EntityType.SCENE, ctx.ParcelIdentity.cid, { attempts: 3 })
+    const scene = await contentClient.fetchEntityById(EntityType.SCENE, ctx.EnvironmentAPI.cid, { attempts: 3 })
     const definitionHash: ContentFileHash | undefined = scene.content?.find(
       ({ file }) => file === CONTENT_PATH.DEFINITION_FILE
     )?.hash
@@ -294,18 +289,18 @@ async function getStoredState(req: GetStoredStateRequest, ctx: ServiceContext): 
       return { state: toProtoSerializedSceneState(fromStorableFormatToSerializedState(definitionFile)) }
     } else {
       defaultLogger.warn(
-        `Couldn't find a definition file on the content server for the current scene (${ctx.ParcelIdentity.cid})`
+        `Couldn't find a definition file on the content server for the current scene (${ctx.EnvironmentAPI.cid})`
       )
     }
   } catch (e) {
-    defaultLogger.error(`Failed to fetch the current scene (${ctx.ParcelIdentity.cid}) from the content server`, e)
+    defaultLogger.error(`Failed to fetch the current scene (${ctx.EnvironmentAPI.cid}) from the content server`, e)
   }
   return { state: undefined }
 }
 
 async function createProjectFromStateDefinition(
   req: CreateProjectFromStateDefinitionRequest,
-  ctx: ServiceContext
+  ctx: PortContext
 ): Promise<CreateProjectFromStateDefinitionResponse> {
   const sceneJson = ctx.ParcelIdentity.land!.sceneJsonData
   const sceneId: string = ctx.ParcelIdentity.land!.sceneId
@@ -348,14 +343,14 @@ async function createProjectFromStateDefinition(
 
       if (builderManifest) {
         // Transform manifest components
-        ctx.SceneStateStorageController.transformTranslator = new SceneTransformTranslator(
+        ctx.SceneStateStorageController!.transformTranslator = new SceneTransformTranslator(
           ctx.ParcelIdentity.land!.sceneJsonData.source
         )
 
         builderManifest.scene.components = Object.entries(builderManifest.scene.components).reduce(
           (acc, [k, v]) => ({
             ...acc,
-            [k]: ctx.SceneStateStorageController.transformTranslator.transformBuilderComponent(v)
+            [k]: ctx.SceneStateStorageController!.transformTranslator.transformBuilderComponent(v)
           }),
           {}
         )
@@ -368,7 +363,7 @@ async function createProjectFromStateDefinition(
         )
 
         // Update/Create manifest in builder-server
-        ctx.SceneStateStorageController.builderManifest = builderManifest
+        ctx.SceneStateStorageController!.builderManifest = builderManifest
         getBuilderApiManager(ctx)
           .updateProjectManifest(builderManifest, identity)
           .catch((error) => defaultLogger.error(`Error updating project manifest ${error}`))
@@ -407,25 +402,27 @@ async function createProjectFromStateDefinition(
 
 async function sendAssetsToRenderer(
   req: SendAssetsToRendererRequest,
-  ctx: ServiceContext
+  ctx: PortContext
 ): Promise<SendAssetsToRendererResponse> {
   const assets = await getAllBuilderAssets(fromProtoSerializedSceneState(req.state!), ctx)
   getUnityInstance().SendSceneAssets(assets)
   return { state: 'OK' }
 }
 
-export function registerSceneStateStorageControllerServiceServerImplementation(
-  port: RpcServerPort<PortContextService<'SceneStateStorageController'>>
-) {
-  codegen.registerService(port, SceneStateStorageControllerServiceDefinition, async () => ({
-    getProjectManifest,
-    getProjectManifestByCoordinates,
-    createProjectWithCoords,
-    saveSceneState,
-    saveProjectInfo,
-    publishSceneState,
-    getStoredState,
-    createProjectFromStateDefinition,
-    sendAssetsToRenderer
-  }))
+export function registerSceneStateStorageControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, SceneStateStorageControllerServiceDefinition, async (_, context) => {
+    if (!context.SceneStateStorageController) throw new Error('Not a builder scene!')
+
+    return {
+      getProjectManifest,
+      getProjectManifestByCoordinates,
+      createProjectWithCoords,
+      saveSceneState,
+      saveProjectInfo,
+      publishSceneState,
+      getStoredState,
+      createProjectFromStateDefinition,
+      sendAssetsToRenderer
+    }
+  })
 }

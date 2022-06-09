@@ -22,8 +22,8 @@ export const enum Platform {
   BROWSER = 'browser'
 }
 
-export async function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, EnvironmentAPIServiceDefinition>(
+export function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, EnvironmentAPIServiceDefinition>(
     clientPort,
     EnvironmentAPIServiceDefinition
   )

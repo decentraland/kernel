@@ -4,8 +4,8 @@ import { SceneStateStorageControllerServiceDefinition } from '../proto/SceneStat
 import * as SSSCTypes from '../SceneStateStorageController/types'
 import { fromProtoSerializedSceneState, toProtoSerializedSceneState } from '../SceneStateStorageController/utils'
 
-export async function createSceneStateStorageControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, SceneStateStorageControllerServiceDefinition>(
+export function createSceneStateStorageControllerServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, SceneStateStorageControllerServiceDefinition>(
     clientPort,
     SceneStateStorageControllerServiceDefinition
   )

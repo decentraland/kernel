@@ -62,7 +62,7 @@ export function registerPlayersServiceServerImplementation(port: RpcServerPort<P
       let isCurrentUserIncluded = false
 
       const result: { userId: string }[] = []
-      for (const userId of getInSceneAvatarsUserId(ctx.ParcelIdentity.cid)) {
+      for (const userId of getInSceneAvatarsUserId(ctx.EnvironmentAPI.cid)) {
         if (userId === currentUserId) {
           isCurrentUserIncluded = true
         }

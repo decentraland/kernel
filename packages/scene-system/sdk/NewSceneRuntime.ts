@@ -1,4 +1,4 @@
-import { LoadedModules, LoadableAPIs } from './../../shared/apis/client'
+import { LoadableAPIs } from './../../shared/apis/client'
 import { initMessagesFinished, resolveMapping } from './Utils'
 import { LoadableParcelScene } from 'shared/types'
 import { customEval, getES5Context } from './sandbox'
@@ -6,7 +6,6 @@ import { createFetch } from './Fetch'
 import { createWebSocket } from './WebSocket'
 import { RpcClient } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/proto/Permissions'
-import { sleep } from 'atomicHelpers/sleep'
 
 // New
 import { setupStats } from './new-rpc/Stats'
@@ -18,23 +17,24 @@ import type { EntityAction } from 'shared/apis/proto/EngineAPI'
 
 export async function startNewSceneRuntime(client: RpcClient) {
   const clientPort = await client.createPort(`new-rpc-${globalThis.name}`)
-  const modules: LoadedModules = {
-    EngineAPI: await LoadableAPIs.EngineAPI(clientPort),
-    EnvironmentAPI: await LoadableAPIs.EnvironmentAPI(clientPort),
-    Permissions: await LoadableAPIs.Permissions(clientPort),
-    DevTools: await LoadableAPIs.DevTools(clientPort)
-  }
 
-  const devToolsAdapter = new DevToolsAdapter(modules.DevTools)
+  const [EngineAPI, EnvironmentAPI, Permissions, DevTools] = await Promise.all([
+    LoadableAPIs.EngineAPI(clientPort),
+    LoadableAPIs.EnvironmentAPI(clientPort),
+    LoadableAPIs.Permissions(clientPort),
+    LoadableAPIs.DevTools(clientPort)
+  ])
+
+  const devToolsAdapter = new DevToolsAdapter(DevTools)
   setupStats((...args: any[]) => devToolsAdapter.log(...args))
 
   const eventState: EventState = { allowOpenExternalUrl: false }
   const onEventFunctions: EventCallback[] = []
-  createEventDispatcher(modules.EngineAPI!, { onEventFunctions, eventState }).catch((err) => devToolsAdapter.error(err))
+  createEventDispatcher(EngineAPI, { onEventFunctions, eventState }).catch((err) => devToolsAdapter.error(err))
 
-  const bootstrapData = await modules.EnvironmentAPI!.getBootstrapData()
+  const bootstrapData = await EnvironmentAPI.getBootstrapData()
   const fullData = bootstrapData.data as LoadableParcelScene
-  const isPreview = await modules.EnvironmentAPI!.isPreviewMode()
+  const isPreview = await EnvironmentAPI.isPreviewMode()
 
   if (!bootstrapData || !bootstrapData.main) {
     throw new Error(`No boostrap data`)
@@ -54,8 +54,8 @@ export async function startNewSceneRuntime(client: RpcClient) {
   const batchEvents: { events: EntityAction[] } = {
     events: []
   }
-  const { dcl, onUpdateFunctions, onStartFunctions, loadingModules } = createDecentralandInterface({
-    modules,
+
+  const { dcl, onUpdateFunctions, onStartFunctions } = createDecentralandInterface({
     clientPort,
     onError: (err: Error) => devToolsAdapter.error(err),
     onLog: (...args: any) => devToolsAdapter.log(...args),
@@ -65,10 +65,11 @@ export async function startNewSceneRuntime(client: RpcClient) {
     batchEvents
   })
 
-  const canUseWebsocket = (await modules.Permissions!.hasPermission({ permission: PermissionItem.USE_WEBSOCKET }))
+  // TODO: aquire permissions using a single call
+  const canUseWebsocket = (await Permissions.hasPermission({ permission: PermissionItem.USE_WEBSOCKET }))
     .hasPermission
-  const canUseFetch = (await modules.Permissions!.hasPermission({ permission: PermissionItem.USE_FETCH })).hasPermission
-  const unsafeAllowed = await modules.EnvironmentAPI!.areUnsafeRequestAllowed()
+  const canUseFetch = (await Permissions.hasPermission({ permission: PermissionItem.USE_FETCH })).hasPermission
+  const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
   const originalFetch = fetch
 
@@ -103,20 +104,6 @@ export async function startNewSceneRuntime(client: RpcClient) {
   const env = { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch }
   await customEval(sourceCode, getES5Context(env))
 
-  let modulesNotLoaded: string[] = []
-
-  const timeout = sleep(10000).then(() => {
-    modulesNotLoaded = Object.keys(loadingModules).filter((it) => loadingModules[it].isPending)
-  })
-
-  await Promise.race([Promise.all(Object.values(loadingModules)), timeout])
-
-  if (modulesNotLoaded.length > 0) {
-    devToolsAdapter.log(
-      `Timed out loading modules!. The scene ${bootstrapData.sceneId} may not work correctly. Modules not loaded: ${modulesNotLoaded}`
-    )
-  }
-
   batchEvents.events.push(initMessagesFinished())
 
   await sendBatch()
@@ -126,7 +113,7 @@ export async function startNewSceneRuntime(client: RpcClient) {
       const batch = batchEvents.events
       batchEvents.events = []
 
-      modules.EngineAPI!.sendBatch({ actions: batch }).catch((err) => devToolsAdapter.error(err))
+      EngineAPI.sendBatch({ actions: batch }).catch((err) => devToolsAdapter.error(err))
     }
   }
 

@@ -13,7 +13,6 @@ import { store } from 'shared/store/isolatedStore'
 
 import { Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
-import defaultLogger from 'shared/logger'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const gamekitWorkerRaw = require('raw-loader!../../../static/systems/scene.system.js')
@@ -87,35 +86,25 @@ export class SceneSystemWorker extends SceneWorker {
   private sendUserViewMatrix(positionReport: Readonly<PositionReport>) {
     if (this.rpcContext?.EngineAPI && 'positionChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
       if (!this.lastSentPosition.equals(positionReport.position)) {
-        this.rpcContext.eventChannel
-          .push({
-            id: 'positionChanged',
-            data: {
-              position: {
-                x: positionReport.position.x - this.position.x,
-                z: positionReport.position.z - this.position.z,
-                y: positionReport.position.y
-              },
-              cameraPosition: positionReport.position,
-              playerHeight: playerConfigurations.height
-            }
-          })
-          .catch((err) => defaultLogger.error(err))
+        this.rpcContext.sendSceneEvent('positionChanged', {
+          position: {
+            x: positionReport.position.x - this.position.x,
+            z: positionReport.position.z - this.position.z,
+            y: positionReport.position.y
+          },
+          cameraPosition: positionReport.position,
+          playerHeight: playerConfigurations.height
+        })
 
         this.lastSentPosition.copyFrom(positionReport.position)
       }
     }
     if (this.rpcContext.EngineAPI && 'rotationChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
       if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
-        this.rpcContext.eventChannel
-          .push({
-            id: 'rotationChanged',
-            data: {
-              rotation: positionReport.cameraEuler,
-              quaternion: positionReport.cameraQuaternion
-            }
-          })
-          .catch((err) => defaultLogger.error(err))
+        this.rpcContext.sendSceneEvent('rotationChanged', {
+          rotation: positionReport.cameraEuler,
+          quaternion: positionReport.cameraQuaternion
+        })
         this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
       }
     }
@@ -132,13 +121,9 @@ export class SceneSystemWorker extends SceneWorker {
       const userId = getCurrentUserId(store.getState())
       if (userId) {
         if (report.newScene?.sceneId === this.getSceneId()) {
-          this.rpcContext.eventChannel
-            .push({ id: 'onEnterScene', data: { userId } })
-            .catch((err) => defaultLogger.error(err))
+          this.rpcContext.sendSceneEvent('onEnterScene', { userId })
         } else if (report.previousScene?.sceneId === this.getSceneId()) {
-          this.rpcContext.eventChannel
-            .push({ id: 'onLeaveScene', data: { userId } })
-            .catch((err) => defaultLogger.error(err))
+          this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
         }
       }
     })
@@ -163,7 +148,7 @@ export class SceneSystemWorker extends SceneWorker {
   private sendSceneReadyIfNecessary() {
     if (!this.sceneStarted && isRendererEnabled() && this.sceneReady) {
       this.sceneStarted = true
-      this.rpcContext.eventChannel.push({ id: 'sceneStart', data: {} }).catch((err) => defaultLogger.error(err))
+      this.rpcContext.sendSceneEvent('sceneStart', {})
       renderStateObservable.remove(this.renderStateObserver)
     }
   }

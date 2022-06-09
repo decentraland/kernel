@@ -1,6 +1,7 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { PortableExperiencesServiceDefinition } from '../proto/PortableExperiences'
+
 type PortableExperienceUrn = string
 type PortableExperienceHandle = {
   pid: PortableExperienceUrn
@@ -9,8 +10,9 @@ type PortableExperienceHandle = {
 type PortableExperienceLoaded = {
   portableExperiences: PortableExperienceHandle[]
 }
-export async function createPortableExperiencesServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, PortableExperiencesServiceDefinition>(
+
+export function createPortableExperiencesServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, PortableExperiencesServiceDefinition>(
     clientPort,
     PortableExperiencesServiceDefinition
   )

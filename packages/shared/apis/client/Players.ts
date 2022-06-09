@@ -3,8 +3,8 @@ import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { UserData } from '../../types'
 import { PlayersServiceDefinition } from '../proto/Players'
 
-export async function createPlayersServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, PlayersServiceDefinition>(
+export function createPlayersServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, PlayersServiceDefinition>(
     clientPort,
     PlayersServiceDefinition
   )
@@ -15,7 +15,7 @@ export async function createPlayersServiceClient<Context>(clientPort: RpcClientP
      * Return the players's data
      */
     async getPlayerData(opt: { userId: string }): Promise<UserData | null> {
-      const originalResponse = await await originalService.getPlayerData({ userId: opt.userId })
+      const originalResponse = await originalService.getPlayerData({ userId: opt.userId })
       if (!originalResponse.data) {
         return null
       }
