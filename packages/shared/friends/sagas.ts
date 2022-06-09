@@ -329,7 +329,7 @@ function* initializePrivateMessaging() {
     timestamp,
     authChain,
     {
-      disablePresence,
+      disablePresence
     }
   ])
 
