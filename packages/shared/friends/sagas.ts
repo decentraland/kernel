@@ -321,11 +321,16 @@ function* initializePrivateMessaging() {
 
   const authChain = Authenticator.signPayload(identity, messageToSign)
 
+  const disablePresence = yield select(getFeatureFlagEnabled, 'matrix_presence_disabled')
+
   const client: SocialAPI = yield apply(SocialClient, SocialClient.loginToServer, [
     synapseUrl,
     ethAddress,
     timestamp,
-    authChain
+    authChain,
+    {
+      disablePresence,
+    }
   ])
 
   yield put(setMatrixClient(client))
