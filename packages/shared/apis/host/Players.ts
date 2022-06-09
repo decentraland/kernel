@@ -32,7 +32,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { PlayersServiceDefinition } from './../gen/Players'
+import { PlayersServiceDefinition } from '../proto/Players'
 
 export function registerPlayersServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PlayersServiceDefinition, async () => ({
@@ -62,7 +62,7 @@ export function registerPlayersServiceServerImplementation(port: RpcServerPort<P
       let isCurrentUserIncluded = false
 
       const result: { userId: string }[] = []
-      for (const userId of getInSceneAvatarsUserId(ctx.ParcelIdentity.cid)) {
+      for (const userId of getInSceneAvatarsUserId(ctx.EnvironmentAPI.cid)) {
         if (userId === currentUserId) {
           isCurrentUserIncluded = true
         }

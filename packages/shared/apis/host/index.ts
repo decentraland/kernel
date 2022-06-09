@@ -33,6 +33,7 @@ export function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerPlayersServiceServerImplementation(serverPort)
   registerPortableExperiencesServiceServerImplementation(serverPort)
   registerSignedFetchServiceServerImplementation(serverPort)
+
   registerSceneStateStorageControllerServiceServerImplementation(serverPort)
   // TODO: remove when renderer-rpc is ready
   registerExperimentalAPIServiceServerImplementation(serverPort)

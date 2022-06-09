@@ -44,7 +44,7 @@ message GetExplorerConfigurationResponse {
     string clientUri = 1;
     map<string, string> configurations = 2;
 }
- 
+
 message GetDecentralandTimeResponse {
     int32 seconds = 1;
 }
@@ -58,11 +58,11 @@ message GetExplorerConfigurationRequest {}
 message GetDecentralandTimeRequest {}
 
 service EnvironmentAPIService {
-    rpc getBootstrapData(GetBootstrapDataRequest) returns (BootstrapDataResponse) {}
-    rpc isPreviewMode(IsPreviewModeRequest) returns (PreviewModeResponse) {}
-    rpc getPlatform(GetPlatformRequest) returns (GetPlatformResponse) {}
-    rpc areUnsafeRequestAllowed(AreUnsafeRequestAllowedRequest) returns (AreUnsafeRequestAllowedResponse) {}
-    rpc getCurrentRealm(GetCurrentRealmRequest) returns (GetCurrentRealmResponse) {}
-    rpc getExplorerConfiguration(GetExplorerConfigurationRequest) returns (GetExplorerConfigurationResponse) {}
-    rpc getDecentralandTime(GetDecentralandTimeRequest) returns (GetDecentralandTimeResponse) {}
+    rpc GetBootstrapData(GetBootstrapDataRequest) returns (BootstrapDataResponse) {}
+    rpc IsPreviewMode(IsPreviewModeRequest) returns (PreviewModeResponse) {}
+    rpc GetPlatform(GetPlatformRequest) returns (GetPlatformResponse) {}
+    rpc AreUnsafeRequestAllowed(AreUnsafeRequestAllowedRequest) returns (AreUnsafeRequestAllowedResponse) {}
+    rpc GetCurrentRealm(GetCurrentRealmRequest) returns (GetCurrentRealmResponse) {}
+    rpc GetExplorerConfiguration(GetExplorerConfigurationRequest) returns (GetExplorerConfigurationResponse) {}
+    rpc GetDecentralandTime(GetDecentralandTimeRequest) returns (GetDecentralandTimeResponse) {}
 }

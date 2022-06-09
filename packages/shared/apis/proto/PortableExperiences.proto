@@ -33,8 +33,8 @@ message ExitResponse {
 }
 
 service PortableExperiencesService {
-    rpc spawn(SpawnRequest) returns (SpawnResponse) {}
-    rpc kill(KillRequest) returns (KillResponse) {}
-    rpc exit(ExitRequest) returns (ExitResponse) {}
-    rpc getPortableExperiencesLoaded(GetPortableExperiencesLoadedRequest) returns (GetPortableExperiencesLoadedResponse) {}
+    rpc Spawn(SpawnRequest) returns (SpawnResponse) {}
+    rpc Kill(KillRequest) returns (KillResponse) {}
+    rpc Exit(ExitRequest) returns (ExitResponse) {}
+    rpc GetPortableExperiencesLoaded(GetPortableExperiencesLoadedRequest) returns (GetPortableExperiencesLoadedResponse) {}
 }

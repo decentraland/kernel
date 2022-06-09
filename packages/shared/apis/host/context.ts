@@ -3,13 +3,13 @@ import { ILogger } from './../../logger'
 import { EnvironmentData, ILand } from './../../types'
 import { ParcelSceneAPI } from './../../../shared/world/ParcelSceneAPI'
 import { pushableChannel } from '@dcl/rpc/dist/push-channel'
-import { PermissionItem } from '../gen/Permissions'
+import { PermissionItem } from '../proto/Permissions'
 import { BuilderManifest } from '../SceneStateStorageController/types'
 import { BuilderServerAPIManager } from '../SceneStateStorageController/BuilderServerAPIManager'
 import { SceneTransformTranslator } from './../SceneStateStorageController/SceneTransformTranslator'
 
 const eventPushableChannel = (onIteratorClose: () => void) =>
-  pushableChannel<{ id: string; data: any }>(onIteratorClose)
+  pushableChannel<EngineEvent>(onIteratorClose)
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
@@ -17,6 +17,7 @@ export type PortContextService<K extends keyof PortContext> = WithRequired<PortC
 
 export type PortContext = {
   EnvironmentAPI: {
+    cid: string
     data: EnvironmentData<any>
   }
   EngineAPI: {
@@ -28,15 +29,15 @@ export type PortContext = {
   }
   ParcelIdentity: {
     land?: ILand
-    cid: string
     isPortableExperience: boolean
     isEmpty: boolean
   }
   eventChannel: ReturnType<typeof eventPushableChannel>
 
+  sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void
+
   DevTools: {
     logger: ILogger
-    logs: Protocol.Runtime.ConsoleAPICalledEvent[]
     exceptions: Map<number, Protocol.Runtime.ExceptionDetails>
   }
 

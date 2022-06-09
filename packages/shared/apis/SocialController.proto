@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-message InitRequest {}
-message InitResponse {}
-
-service SocialControllerService {
-    rpc init(InitRequest) returns (InitResponse) {}
-}

@@ -1,4 +1,4 @@
-import { LoadedModules, LoadableAPIs, LoadableNeedInit } from './../../../shared/apis/client'
+import { LoadableAPIs } from './../../../shared/apis/client'
 import { componentNameRE, generatePBObject, getIdAsNumber } from './../Utils'
 import {
   AttachEntityComponentPayload,
@@ -10,22 +10,15 @@ import {
   OpenNFTDialogPayload,
   QueryPayload,
   RemoveEntityPayload,
-  RPCSendableMessage,
   SetEntityParentPayload,
   UpdateEntityComponentPayload
 } from 'shared/types'
-import { QueryType, Vector3 } from '@dcl/legacy-ecs'
+import { QueryType } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import future, { IFuture } from 'fp-future'
 import { EventCallback, EventState } from './EventDispatcher'
-import { EntityAction } from 'shared/apis/gen/EngineAPI'
-
-const WEB3_PROVIDER = 'web3-provider'
-const PROVIDER_METHOD = 'getProvider'
-const RESTRICTED_ACTION_MODULE = 'RestrictedActionModule'
+import { EntityAction } from 'shared/apis/proto/EngineAPI'
 
 export interface DecentralandInterfaceOptions {
-  modules: LoadedModules
   onLog: (...args: any[]) => void
   onError: (e: Error) => void
   onEventFunctions: EventCallback[]
@@ -35,13 +28,17 @@ export interface DecentralandInterfaceOptions {
   batchEvents: { events: EntityAction[] }
 }
 
+type GenericRpcModule = Record<string, (...args: any) => Promise<unknown>>
+type ComposedRpcModule = ModuleDescriptor & { __INTERNAL_UNSAFE_loadedModule: GenericRpcModule }
+
 export function createDecentralandInterface(options: DecentralandInterfaceOptions) {
-  const { batchEvents, modules, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
+  const { batchEvents, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
+
+  const EngineAPI = LoadableAPIs.EngineAPI(clientPort)
 
   const onUpdateFunctions: ((dt: number) => void)[] = []
   const onStartFunctions: (() => void)[] = []
-  const loadingModules: Record<string, IFuture<void>> = {}
-  let provider: Awaited<ReturnType<typeof getEthereumProvider>> | null = null
+  const sceneLoadedModules: Record<string, ComposedRpcModule> = {}
 
   const dcl: DecentralandInterface = {
     DEBUG: true,
@@ -198,12 +195,12 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     /** subscribe to specific events, events will be handled by the onEvent function */
     subscribe(eventName: string): void {
-      modules.EngineAPI?.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      EngineAPI.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     /** unsubscribe to specific event */
     unsubscribe(eventName: string): void {
-      modules.EngineAPI?.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      EngineAPI.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     componentCreated(id: string, componentName: string, classId: number) {
@@ -240,63 +237,24 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     },
 
     loadModule: async (_moduleName) => {
-      const loadingModule: IFuture<void> = future()
-      loadingModules[_moduleName] = loadingModule
-      try {
-        const moduleToLoad = _moduleName.replace(/^@decentraland\//, '')
-        let methods: string[] = []
-
-        if (moduleToLoad === WEB3_PROVIDER) {
-          methods.push(PROVIDER_METHOD)
-          provider = await getEthereumProvider(modules, clientPort)
-        } else if (moduleToLoad === RESTRICTED_ACTION_MODULE) {
-          if (modules.RestrictedActions === undefined) {
-            modules.RestrictedActions = await LoadableAPIs.RestrictedActions(clientPort)
-          }
-          ;(modules as any)[moduleToLoad] = {
-            movePlayerTo(newPosition: Vector3, cameraTarget?: Vector3): Promise<void> {
-              return modules.RestrictedActions!.movePlayerTo(newPosition, cameraTarget)
-            }
-          }
-          methods.push('movePlayerTo')
-        } else {
-          try {
-            if (moduleToLoad in LoadableAPIs) {
-              ;(modules as any)[moduleToLoad] = await (LoadableAPIs as any)[moduleToLoad](clientPort)
-
-              // todo: this is a hack :/
-              if (LoadableNeedInit.includes(moduleToLoad)) {
-                await (modules as any)[moduleToLoad].init({})
-              }
-
-              methods = Object.keys((modules as any)[moduleToLoad])
-            } else {
-              throw new Error('The module is not available in the list!')
-            }
-          } catch (e: any) {
-            throw Object.assign(new Error(`Error getting the methods of ${moduleToLoad}: ` + e.message), {
-              original: e
-            })
-          }
+      if (!(_moduleName in sceneLoadedModules)) {
+        const loadedModule = loadSceneModule(clientPort, _moduleName)
+        sceneLoadedModules[_moduleName] = {
+          rpcHandle: _moduleName,
+          __INTERNAL_UNSAFE_loadedModule: loadedModule,
+          methods: Object.keys(loadedModule).map((name) => ({ name }))
         }
-        return {
-          rpcHandle: moduleToLoad,
-          methods: methods.map((name) => ({ name }))
-        }
-      } finally {
-        loadingModule.resolve()
       }
+
+      return sceneLoadedModules[_moduleName]
     },
     callRpc: async (rpcHandle: string, methodName: string, args: any[]) => {
-      if (rpcHandle === WEB3_PROVIDER && methodName === PROVIDER_METHOD) {
-        return provider
-      }
-      const module = (modules as any)[rpcHandle]
+      const module = sceneLoadedModules[rpcHandle]
       if (!module) {
         throw new Error(`RPCHandle: ${rpcHandle} is not loaded`)
       }
       // eslint-disable-next-line prefer-spread
-      return module[methodName].apply(module, args)
+      return module.__INTERNAL_UNSAFE_loadedModule[methodName].apply(module, args)
     },
     onStart(cb: () => void) {
       onStartFunctions.push(cb)
@@ -309,31 +267,21 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
   return {
     dcl,
     onStartFunctions,
-    onUpdateFunctions,
-    loadingModules
+    onUpdateFunctions
   }
 }
 
-async function getEthereumProvider(modules: LoadedModules, port: RpcClientPort) {
-  modules.EthereumController = await LoadableAPIs.EthereumController(port)
-
-  return {
-    // @internal
-    send(message: RPCSendableMessage, callback?: (error: Error | null, result?: any) => void): void {
-      if (message && callback && callback instanceof Function) {
-        modules
-          .EthereumController!.sendAsync(message)
-          .then((x: any) => callback(null, x))
-          .catch(callback)
-      } else {
-        throw new Error('Decentraland provider only allows async calls')
-      }
-    },
-    sendAsync(message: RPCSendableMessage, callback: (error: Error | null, result?: any) => void): void {
-      modules
-        .EthereumController!.sendAsync(message)
-        .then((x: any) => callback(null, x))
-        .catch(callback)
+function loadSceneModule(clientPort: RpcClientPort, moduleName: string): GenericRpcModule {
+  const moduleToLoad = moduleName.replace(/^@decentraland\//, '')
+  try {
+    if (moduleToLoad in LoadableAPIs) {
+      return (LoadableAPIs as any)[moduleToLoad](clientPort)
+    } else {
+      throw new Error('The module is not available in the list!')
     }
+  } catch (e: any) {
+    throw Object.assign(new Error(`Error getting the methods of ${moduleToLoad}: ` + e.message), {
+      original: e
+    })
   }
 }

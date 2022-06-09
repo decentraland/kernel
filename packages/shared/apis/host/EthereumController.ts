@@ -11,10 +11,10 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { EthereumControllerServiceDefinition } from '../gen/EthereumController'
+import { EthereumControllerServiceDefinition } from '../proto/EthereumController'
 import { PortContext } from './context'
 import { RPCSendableMessage } from 'shared/types'
-import { PermissionItem } from '../gen/Permissions'
+import { PermissionItem } from '../proto/Permissions'
 import { assertHasPermission } from './Permissions'
 
 export function registerEthereumControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {

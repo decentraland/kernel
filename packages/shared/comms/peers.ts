@@ -150,12 +150,12 @@ export function receiveUserVisible(uuid: string, visible: boolean) {
   const didChange = peer.visible !== visible
   peer.visible = visible
   if (peer.ethereumAddress) {
-    avatarMessageObservable.notifyObservers({
-      type: AvatarMessageType.USER_VISIBLE,
-      userId: peer.ethereumAddress,
-      visible
-    })
     if (didChange) {
+      avatarMessageObservable.notifyObservers({
+        type: AvatarMessageType.USER_VISIBLE,
+        userId: peer.ethereumAddress,
+        visible
+      })
       // often changes in visibility may delete the avatar remotely.
       // we send all the USER_DATA to make sure the scene always have
       // the required information to render the whole avatar

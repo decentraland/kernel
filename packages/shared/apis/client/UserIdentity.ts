@@ -1,10 +1,10 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { UserIdentityServiceDefinition } from '../gen/UserIdentity'
+import { UserIdentityServiceDefinition } from '../proto/UserIdentity'
 import { UserData } from '../../types'
 
-export async function createUserIdentityServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, UserIdentityServiceDefinition>(
+export function createUserIdentityServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, UserIdentityServiceDefinition>(
     clientPort,
     UserIdentityServiceDefinition
   )

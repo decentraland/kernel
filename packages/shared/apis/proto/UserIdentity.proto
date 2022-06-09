@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-message Snapshots { 
+message Snapshots {
     string face256 = 1;
     string body = 2;
 }
@@ -20,7 +20,7 @@ message UserData {
     bool has_connected_web3 = 3;
     string user_id = 4;
     int32 version = 5;
-    AvatarForUserData avatar = 6; 
+    AvatarForUserData avatar = 6;
 }
 
 message GetUserDataRequest {}
@@ -36,6 +36,6 @@ message GetUserPublicKeyResponse {
 }
 
 service UserIdentityService {
-    rpc getUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse) {}
-    rpc getUserData(GetUserDataRequest) returns (GetUserDataResponse) {}
+    rpc GetUserPublicKey(GetUserPublicKeyRequest) returns (GetUserPublicKeyResponse) {}
+    rpc GetUserData(GetUserDataRequest) returns (GetUserDataResponse) {}
 }

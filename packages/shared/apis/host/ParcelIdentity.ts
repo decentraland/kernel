@@ -8,7 +8,7 @@ import {
   GetIsEmptyResponse,
   GetIsEmptyRequest,
   GetSceneIdResponse
-} from '../gen/ParcelIdentity'
+} from '../proto/ParcelIdentity'
 import { PortContext } from './context'
 
 async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetParcelResponse> {
@@ -30,12 +30,12 @@ async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetP
         contents: land.mappingsResponse.contents
       }
     },
-    cid: ctx.ParcelIdentity.cid
+    cid: ctx.EnvironmentAPI.cid
   }
 }
 
 async function getSceneId(_req: GetSceneIdRequest, ctx: PortContext): Promise<GetSceneIdResponse> {
-  const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.ParcelIdentity.cid || ''
+  const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.EnvironmentAPI.cid || ''
   return { sceneId }
 }
 

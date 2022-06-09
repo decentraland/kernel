@@ -95,4 +95,4 @@ static/package-lock.json
 **/*.dot.pdf
 **/*.dot
 
-**/*/gen
+packages/shared/apis/proto/*.ts

@@ -12,7 +12,7 @@ message SerializedComponent {
 }
 
 message SerializedEntity {
-    string id = 1; 
+    string id = 1;
     repeated SerializedComponent components = 2;
 }
 
@@ -102,13 +102,13 @@ message SendAssetsToRendererResponse {
 
 
 service SceneStateStorageControllerService {
-    rpc getProjectManifest(GetProjectManifestRequest) returns (GetProjectManifestResponse) {}
-    rpc getProjectManifestByCoordinates(GetProjectManifestByCoordinatesRequest) returns (GetProjectManifestByCoordinatesResponse) {}
-    rpc createProjectWithCoords(CreateProjectWithCoordsRequest) returns (CreateProjectWithCoordsResponse) {}
-    rpc saveSceneState(SaveSceneStateRequest) returns (SaveSceneStateResponse) {}
-    rpc saveProjectInfo(SaveProjectInfoRequest) returns (SaveProjectInfoResponse) {}
-    rpc publishSceneState(PublishSceneStateRequest) returns (PublishSceneStateResponse) {}
-    rpc getStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
-    rpc createProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
-    rpc sendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
+    rpc GetProjectManifest(GetProjectManifestRequest) returns (GetProjectManifestResponse) {}
+    rpc GetProjectManifestByCoordinates(GetProjectManifestByCoordinatesRequest) returns (GetProjectManifestByCoordinatesResponse) {}
+    rpc CreateProjectWithCoords(CreateProjectWithCoordsRequest) returns (CreateProjectWithCoordsResponse) {}
+    rpc SaveSceneState(SaveSceneStateRequest) returns (SaveSceneStateResponse) {}
+    rpc SaveProjectInfo(SaveProjectInfoRequest) returns (SaveProjectInfoResponse) {}
+    rpc PublishSceneState(PublishSceneStateRequest) returns (PublishSceneStateResponse) {}
+    rpc GetStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
+    rpc CreateProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
+    rpc SendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
 }

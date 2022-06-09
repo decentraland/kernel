@@ -10,7 +10,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { SignedFetchServiceDefinition } from './../gen/SignedFetch'
+import { SignedFetchServiceDefinition } from '../proto/SignedFetch'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({
@@ -31,7 +31,7 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
         | undefined = realm ? { domain: realm.hostname, layer: '', catalystName: realm.serverName } : undefined
 
       const additionalMetadata: Record<string, any> = {
-        sceneId: ctx.ParcelIdentity.cid,
+        sceneId: ctx.EnvironmentAPI.cid,
         parcel: ctx.ParcelIdentity.land!.sceneJsonData.scene.base,
         // THIS WILL BE DEPRECATED
         tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',

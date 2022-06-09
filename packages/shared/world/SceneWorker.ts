@@ -62,8 +62,11 @@ export abstract class SceneWorker {
   private rpcServer!: RpcServer<PortContext>
 
   constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
+    const eventChannel = pushableChannel<EngineEvent>(function () {})
+
     this.rpcContext = {
       EnvironmentAPI: {
+        cid: parcelScene.data.sceneId,
         data: parcelScene.data
       },
       EngineAPI: {
@@ -75,16 +78,21 @@ export abstract class SceneWorker {
       },
       ParcelIdentity: {
         land: parcelScene.data.data?.land || parcelScene.data.data?.data?.land,
-        cid: '',
         isPortableExperience: false,
         isEmpty: false
       },
       DevTools: {
         logger: defaultLogger,
         exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>(),
-        logs: []
       },
-      eventChannel: pushableChannel<any>(function () {})
+      eventChannel,
+      sendSceneEvent: (type, data) => {
+        eventChannel.push({ type, data }, (err) => {
+          if (err) {
+            this.rpcContext.DevTools.logger.error(err)
+          }
+        })
+      }
     }
 
     parcelScene.registerWorker(this)
@@ -116,7 +124,7 @@ export abstract class SceneWorker {
   }
 
   sendSubscriptionEvent<K extends IEventNames>(event: K, data: IEvents[K]) {
-    this.rpcContext.eventChannel.push({ id: event, data }).catch((err) => defaultLogger.error(err))
+    this.rpcContext.sendSceneEvent(event, data)
   }
 
   dispose() {

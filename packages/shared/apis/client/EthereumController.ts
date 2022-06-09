@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { EthereumControllerServiceDefinition } from '../gen/EthereumController'
+import { EthereumControllerServiceDefinition } from '../proto/EthereumController'
 
 export type RPCSendableMessage = {
   jsonrpc: '2.0'
@@ -13,8 +13,8 @@ export interface MessageDict {
   [key: string]: string
 }
 
-export async function createEthereumControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, EthereumControllerServiceDefinition>(
+export function createEthereumControllerServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, EthereumControllerServiceDefinition>(
     clientPort,
     EthereumControllerServiceDefinition
   )

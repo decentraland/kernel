@@ -28,10 +28,8 @@ message StreamEventsResponse {
 }
 
 service EngineAPIService {
-  rpc sendBatch(ManyEntityAction) returns (SendBatchResponse) {}
-
-  rpc subscribe(SubscribeRequest) returns (SubscribeResponse) {}
-  rpc unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
-
-  rpc streamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
+  rpc SendBatch(ManyEntityAction) returns (SendBatchResponse) {}
+  rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
+  rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+  rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
 }

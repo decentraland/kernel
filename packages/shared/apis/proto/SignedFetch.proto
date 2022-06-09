@@ -20,5 +20,5 @@ message SignedFetchRequest {
 }
 
 service SignedFetchService {
-    rpc signedFetch(SignedFetchRequest) returns (FlatFetchResponse) {}
+    rpc SignedFetch(SignedFetchRequest) returns (FlatFetchResponse) {}
 }

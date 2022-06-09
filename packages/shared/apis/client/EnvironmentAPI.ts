@@ -1,7 +1,7 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { EnvironmentData } from 'shared/types'
-import { EnvironmentAPIServiceDefinition } from '../gen/EnvironmentAPI'
+import { EnvironmentAPIServiceDefinition } from '../proto/EnvironmentAPI'
 
 export type Realm = {
   domain: string
@@ -22,8 +22,8 @@ export const enum Platform {
   BROWSER = 'browser'
 }
 
-export async function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, EnvironmentAPIServiceDefinition>(
+export function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, EnvironmentAPIServiceDefinition>(
     clientPort,
     EnvironmentAPIServiceDefinition
   )

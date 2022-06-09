@@ -1,11 +1,11 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { SceneStateStorageControllerServiceDefinition } from '../gen/SceneStateStorageController'
+import { SceneStateStorageControllerServiceDefinition } from '../proto/SceneStateStorageController'
 import * as SSSCTypes from '../SceneStateStorageController/types'
 import { fromProtoSerializedSceneState, toProtoSerializedSceneState } from '../SceneStateStorageController/utils'
 
-export async function createSceneStateStorageControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, SceneStateStorageControllerServiceDefinition>(
+export function createSceneStateStorageControllerServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, SceneStateStorageControllerServiceDefinition>(
     clientPort,
     SceneStateStorageControllerServiceDefinition
   )

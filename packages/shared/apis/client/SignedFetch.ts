@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { SignedFetchServiceDefinition, FlatFetchInit } from '../gen/SignedFetch'
+import { SignedFetchServiceDefinition, FlatFetchInit } from '../proto/SignedFetch'
 
 export type OriginalFlatFetchResponse = {
   ok: boolean
@@ -15,8 +15,8 @@ export type BodyType = 'json' | 'text'
 
 export type OriginalFlatFetchInit = RequestInit & { responseBodyType?: BodyType }
 
-export async function createSignedFetchServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = await codegen.loadService<Context, SignedFetchServiceDefinition>(
+export function createSignedFetchServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, SignedFetchServiceDefinition>(
     clientPort,
     SignedFetchServiceDefinition
   )

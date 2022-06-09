@@ -3,7 +3,7 @@ import { getUnityInstance } from './../../../unity-interface/IUnityInterface'
 
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { ExperimentalAPIServiceDefinition } from '../gen/ExperimentalAPI'
+import { ExperimentalAPIServiceDefinition } from '../proto/ExperimentalAPI'
 import { PortContext } from './context'
 
 /** @deprecated this is only for experimental purposes */
@@ -11,7 +11,7 @@ export function registerExperimentalAPIServiceServerImplementation(port: RpcServ
   codegen.registerService(port, ExperimentalAPIServiceDefinition, async () => ({
     async sendToRenderer(req, ctx) {
       if (!PREVIEW) return {}
-      getUnityInstance().SendBinaryMessage(ctx.ParcelIdentity.cid, req.data, req.data.byteLength)
+      getUnityInstance().SendBinaryMessage(ctx.EnvironmentAPI.cid, req.data, req.data.byteLength)
       return {}
     },
 

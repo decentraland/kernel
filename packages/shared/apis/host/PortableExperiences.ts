@@ -10,7 +10,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { PortableExperiencesServiceDefinition } from './../gen/PortableExperiences'
+import { PortableExperiencesServiceDefinition } from '../proto/PortableExperiences'
 
 export function registerPortableExperiencesServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PortableExperiencesServiceDefinition, async () => ({
@@ -21,7 +21,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
     //    * Returns the handle of the portable experience.
     //    */
     async spawn(req, ctx) {
-      return await spawnScenePortableExperienceSceneFromUrn(req.pid, ctx.ParcelIdentity.cid)
+      return await spawnScenePortableExperienceSceneFromUrn(req.pid, ctx.EnvironmentAPI.cid)
     },
     /**
      * Stops a portable experience. Only the executor that spawned the portable experience has permission to kill it.
@@ -32,7 +32,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
     async kill(req, ctx) {
       const portableExperience = getRunningPortableExperience(req.pid)
 
-      if (!!portableExperience && portableExperience.parentCid === ctx.ParcelIdentity.cid) {
+      if (!!portableExperience && portableExperience.parentCid === ctx.EnvironmentAPI.cid) {
         store.dispatch(removeScenePortableExperience(req.pid))
         return { status: true }
       }
@@ -45,7 +45,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      * Returns true if was able to kill the portable experience, false if not.
      */
     async exit(_req, ctx) {
-      store.dispatch(removeScenePortableExperience(ctx.ParcelIdentity.cid))
+      store.dispatch(removeScenePortableExperience(ctx.EnvironmentAPI.cid))
       return { status: true }
     },
 
