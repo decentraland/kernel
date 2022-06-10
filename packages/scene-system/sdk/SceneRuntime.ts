@@ -9,15 +9,12 @@ import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
 
 import { createDecentralandInterface } from './runtime/DecentralandInterface'
 import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
-import {
-  createEventDispatcher,
-  EventCallback,
-  EventState,
-  isPointerEvent,
-  SimpleEvent
-} from './runtime/EventDispatcher'
+
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI.gen'
+import { RuntimeEventCallback, EventState, RuntimeEvent } from './runtime/Events'
+
+type EventState = { allowOpenExternalUrl: boolean }
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -32,9 +29,9 @@ export async function startSceneRuntime(client: RpcClient) {
 
   const devToolsAdapter = new DevToolsAdapter(DevTools)
   const eventState: EventState = { allowOpenExternalUrl: false }
-  const onEventFunctions: EventCallback[] = []
+  const onEventFunctions: RuntimeEventCallback[] = []
 
-  function eventReceiver(event: SimpleEvent) {
+  function eventReceiver(event: RuntimeEvent) {
     if (event.type === 'raycastResponse') {
       const idAsNumber = parseInt(event.data.queryId, 10)
       if (numberToIdStore[idAsNumber]) {
@@ -54,9 +51,6 @@ export async function startSceneRuntime(client: RpcClient) {
     }
     eventState.allowOpenExternalUrl = false
   }
-
-  const eventDispatcher = createEventDispatcher({ EngineAPI, devToolsAdapter, receiver: eventReceiver })
-  eventDispatcher.start()
 
   const bootstrapData = await EnvironmentAPI.getBootstrapData()
   const fullData = bootstrapData.data as LoadableParcelScene
@@ -209,4 +203,12 @@ export async function startSceneRuntime(client: RpcClient) {
   }
 
   waitToStart().catch(devToolsAdapter.error)
+}
+
+function isPointerEvent(event: RuntimeEvent): boolean {
+  switch (event.type) {
+    case 'uuidEvent':
+      return event.data?.payload?.buttonId !== undefined
+  }
+  return false
 }

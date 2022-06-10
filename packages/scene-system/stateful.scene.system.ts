@@ -1,4 +1,3 @@
-import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
 import { DevToolsAdapter } from './sdk/runtime/DevToolsAdapter'
 import { RendererStatefulActor } from './stateful-scene/RendererStatefulActor'
 import { BuilderStatefulActor } from './stateful-scene/BuilderStatefulActor'
@@ -7,50 +6,28 @@ import { SceneStateDefinition } from './stateful-scene/SceneStateDefinition'
 
 import { createRpcClient, RpcClient } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
-import { LoadableAPIs, LoadedModules } from 'shared/apis/client'
-import { createEventDispatcher, EventCallback, SimpleEvent } from './sdk/runtime/EventDispatcher'
+import { LoadableAPIs } from 'shared/apis/client'
+import { RuntimeEventCallback } from './sdk/runtime/Events'
 
 async function startStatefulScene(client: RpcClient) {
   const clientPort = await client.createPort(`stateful-scene-${globalThis.name}`)
-  const modules: LoadedModules = {
-    EngineAPI: await LoadableAPIs.EngineAPI(clientPort),
-    EnvironmentAPI: await LoadableAPIs.EnvironmentAPI(clientPort),
-    Permissions: await LoadableAPIs.Permissions(clientPort),
-    DevTools: await LoadableAPIs.DevTools(clientPort),
-    ParcelIdentity: await LoadableAPIs.ParcelIdentity(clientPort),
-    SceneStateStorageController: await LoadableAPIs.SceneStateStorageController(clientPort)
-  }
+  const [EngineAPI, DevTools, ParcelIdentity, SceneStateStorageController] = await Promise.all([
+    LoadableAPIs.EngineAPI(clientPort),
+    LoadableAPIs.DevTools(clientPort),
+    LoadableAPIs.ParcelIdentity(clientPort),
+    LoadableAPIs.SceneStateStorageController(clientPort)
+  ])
 
-  const devToolsAdapter = new DevToolsAdapter(modules.DevTools)
+  const devToolsAdapter = new DevToolsAdapter(DevTools)
+  const events: { onEventFunctions: RuntimeEventCallback[] } = { onEventFunctions: [] }
 
-  const eventDispacherParam: { onEventFunctions: EventCallback[] } = { onEventFunctions: [] }
-  function eventReceiver(event: SimpleEvent) {
-    for (const cb of eventDispacherParam.onEventFunctions) {
-      try {
-        cb(event)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-  }
+  const { cid: sceneId, land: land } = await ParcelIdentity!.getParcel()
+  const rendererActor = new RendererStatefulActor(EngineAPI, sceneId, events)
 
-  const eventDispacther = createEventDispatcher({
-    EngineAPI: modules.EngineAPI!,
-    devToolsAdapter,
-    receiver: eventReceiver
-  })
-  eventDispacther.start()
-
-  const { cid: sceneId, land: land } = await modules.ParcelIdentity!.getParcel()
-  const rendererActor = new RendererStatefulActor(modules, sceneId, eventDispacherParam)
-
-  const builderActor = new BuilderStatefulActor(
-    land,
-    modules.SceneStateStorageController as any as ISceneStateStorageController
-  )
+  const builderActor = new BuilderStatefulActor(land, SceneStateStorageController)
   let sceneDefinition: SceneStateDefinition
 
-  const isEmpty: boolean = await modules.ParcelIdentity!.getIsEmpty()
+  const isEmpty: boolean = await ParcelIdentity!.getIsEmpty()
 
   //If it is not empty we fetch the state
   if (!isEmpty) {
@@ -69,25 +46,20 @@ async function startStatefulScene(client: RpcClient) {
   // Listen to the renderer and update the local scene state
   rendererActor.forwardChangesTo(sceneDefinition)
 
-  eventDispacherParam.onEventFunctions.push((event) => {
+  events.onEventFunctions.push((event) => {
     if (event.type === 'stateEvent') {
       const { type, payload } = event.data
       if (type === 'SaveProjectInfo') {
-        modules
-          .SceneStateStorageController!.saveProjectInfo(
-            serializeSceneState(sceneDefinition),
-            payload.title,
-            payload.description,
-            payload.screenshot
-          )
+        SceneStateStorageController!
+          .saveProjectInfo(serializeSceneState(sceneDefinition), payload.title, payload.description, payload.screenshot)
           .catch((error: Error) => devToolsAdapter.error(error))
       } else if (type === 'SaveSceneState') {
-        modules
-          .SceneStateStorageController!.saveSceneState(serializeSceneState(sceneDefinition))
+        SceneStateStorageController!
+          .saveSceneState(serializeSceneState(sceneDefinition))
           .catch((error: Error) => devToolsAdapter.error(error))
       } else if (type === 'PublishSceneState') {
-        modules
-          .SceneStateStorageController!.publishSceneState(
+        SceneStateStorageController!
+          .publishSceneState(
             sceneId,
             payload.title,
             payload.description,
@@ -100,6 +72,29 @@ async function startStatefulScene(client: RpcClient) {
   })
 
   rendererActor.sendInitFinished()
+  /**
+   * This pull the events until the sceneStart event is emitted
+   */
+  async function waitToStart() {
+    try {
+      const res = await EngineAPI.pullEvents({})
+      for (const e of res.events) {
+        const event = { type: e.eventId, data: JSON.parse(e.eventData || '{}') }
+        for (const cb of events.onEventFunctions) {
+          try {
+            cb(event)
+          } catch (err) {
+            console.error(err)
+          }
+        }
+      }
+    } catch (err: any) {
+      devToolsAdapter.error(err)
+    }
+    setTimeout(waitToStart, 1000 / 30)
+  }
+
+  waitToStart().catch(devToolsAdapter.error)
 }
 
 createRpcClient(WebWorkerTransport(self))

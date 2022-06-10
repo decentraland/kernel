@@ -21,29 +21,27 @@ import {
 import { generatePBObjectJSON } from '../sdk/Utils'
 import { LoadedModules } from 'shared/apis/client'
 import defaultLogger from 'shared/logger'
-import { EventCallback } from 'scene-system/sdk/runtime/EventDispatcher'
+import { RuntimeEventCallback } from 'scene-system/sdk/runtime/Events'
 
 export class RendererStatefulActor extends StatefulActor implements StateContainerListener {
   private disposableComponents: number = 0
 
   constructor(
-    protected readonly modules: LoadedModules,
+    protected readonly EngineAPI: LoadedModules['EngineAPI'],
     private readonly sceneId: string,
-    private readonly eventCallbacks: { onEventFunctions: EventCallback[] }
+    private readonly eventCallbacks: { onEventFunctions: RuntimeEventCallback[] }
   ) {
     super()
   }
 
   sendBatch(events: EntityAction[]) {
-    this.modules
-      .EngineAPI!.sendBatch({
-        actions: events.map((item) => ({
-          type: item.type,
-          tag: item.tag,
-          payload: JSON.stringify(item.payload)
-        }))
-      })
-      .catch((err) => defaultLogger.error(err))
+    this.EngineAPI?.sendBatch({
+      actions: events.map((item) => ({
+        type: item.type,
+        tag: item.tag,
+        payload: JSON.stringify(item.payload)
+      }))
+    }).catch((err) => defaultLogger.error(err))
   }
 
   addEntity(entityId: EntityId, components?: Component[]): void {
