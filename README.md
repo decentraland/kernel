@@ -14,7 +14,6 @@ Kernel component responsibility includes running the SDK scenes, handling back-e
 
 # Running the Explorer
 
-
 Make sure you have the following dependencies:
 
 - Latest version of GNU make, install it using `brew install make`
