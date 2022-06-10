@@ -71,21 +71,21 @@ export default defaultLogger
  */
 export function createGenericLogComponent() {
   return {
-    getLogger(loggerName) {
+    getLogger(loggerName: string) {
       return {
-        log(message, extra) {
+        log(message: string, extra?: Record<string, string | number>) {
           defaultLogger.log(loggerName, message, extra)
         },
-        warn(message, extra) {
+        warn(message: string, extra?: Record<string, string | number>) {
           defaultLogger.warn(loggerName, message, extra)
         },
-        info(message, extra) {
+        info(message: string, extra?: Record<string, string | number>) {
           defaultLogger.info(loggerName, message, extra)
         },
-        debug(message, extra) {
+        debug(message: string, extra?: Record<string, string | number>) {
           defaultLogger.trace(loggerName, message, extra)
         },
-        error(error, extra) {
+        error(error: string | Error, extra?: Record<string, string | number>) {
           let message = `${error}`
           let printTrace = true
           if (error instanceof Error && 'stack' in error && typeof error.stack === 'string') {
