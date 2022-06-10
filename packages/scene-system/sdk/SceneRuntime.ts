@@ -12,9 +12,7 @@ import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI.gen'
-import { RuntimeEventCallback, EventState, RuntimeEvent } from './runtime/Events'
-
-type EventState = { allowOpenExternalUrl: boolean }
+import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState } from './runtime/Events'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -28,7 +26,7 @@ export async function startSceneRuntime(client: RpcClient) {
   ])
 
   const devToolsAdapter = new DevToolsAdapter(DevTools)
-  const eventState: EventState = { allowOpenExternalUrl: false }
+  const eventState: SceneRuntimeEventState = { allowOpenExternalUrl: false }
   const onEventFunctions: RuntimeEventCallback[] = []
 
   function eventReceiver(event: RuntimeEvent) {

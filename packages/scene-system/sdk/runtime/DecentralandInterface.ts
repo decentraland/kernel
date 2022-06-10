@@ -15,8 +15,9 @@ import {
 } from 'shared/types'
 import { QueryType } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { RuntimeEventCallback, EventState } from './EventDispatcher'
+import { RuntimeEventCallback } from './Events'
 import { EntityAction } from 'shared/apis/proto/EngineAPI.gen'
+import { SceneRuntimeEventState } from './Events'
 
 export interface DecentralandInterfaceOptions {
   onLog: (...args: any[]) => void
@@ -24,7 +25,7 @@ export interface DecentralandInterfaceOptions {
   onEventFunctions: RuntimeEventCallback[]
   sceneId: string
   clientPort: RpcClientPort
-  eventState: EventState
+  eventState: SceneRuntimeEventState
   batchEvents: { events: EntityAction[] }
 }
 

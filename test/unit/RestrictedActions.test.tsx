@@ -1,5 +1,5 @@
 import * as sinon from 'sinon'
-import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
+import { getUnityInstance, setUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import defaultLogger from '../../packages/shared/logger'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
 import { PermissionItem, permissionItemToJSON } from 'shared/apis/proto/Permissions.gen'
@@ -11,6 +11,7 @@ import { Vector3 } from '@dcl/legacy-ecs'
 describe('RestrictedActions tests', () => {
   afterEach(() => sinon.restore())
   sinon.mock()
+  setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
 
   describe('TriggerEmote tests', () => {
     const emote = 'emote'
