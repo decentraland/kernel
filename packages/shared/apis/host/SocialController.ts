@@ -11,7 +11,7 @@ export function registerSocialControllerServiceServerImplementation(port: RpcSer
     return {
       getAvatarEvents(): AsyncGenerator<SocialEvent> {
         const messageQueue = new AsyncQueue<SocialEvent>((_, action) => {
-          if (action == 'close') {
+          if (action === 'close') {
             avatarMessageObservable.remove(observer)
           }
         })

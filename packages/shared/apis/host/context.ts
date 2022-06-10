@@ -8,8 +8,7 @@ import { BuilderManifest } from '../SceneStateStorageController/types'
 import { BuilderServerAPIManager } from '../SceneStateStorageController/BuilderServerAPIManager'
 import { SceneTransformTranslator } from './../SceneStateStorageController/SceneTransformTranslator'
 
-const eventPushableChannel = (onIteratorClose: () => void) =>
-  pushableChannel<EngineEvent>(onIteratorClose)
+const eventPushableChannel = (onIteratorClose: () => void) => pushableChannel<EngineEvent>(onIteratorClose)
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 

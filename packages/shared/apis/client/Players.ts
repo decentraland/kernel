@@ -4,10 +4,7 @@ import { UserData } from '../../types'
 import { PlayersServiceDefinition } from '../proto/Players'
 
 export function createPlayersServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = codegen.loadService<Context, PlayersServiceDefinition>(
-    clientPort,
-    PlayersServiceDefinition
-  )
+  const originalService = codegen.loadService<Context, PlayersServiceDefinition>(clientPort, PlayersServiceDefinition)
 
   return {
     ...originalService,
