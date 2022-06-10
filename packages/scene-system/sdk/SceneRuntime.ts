@@ -7,7 +7,6 @@ import { createWebSocket } from './WebSocket'
 import { RpcClient } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
 
-import { setupStats } from './new-rpc/Stats'
 import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
 import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
 import {
