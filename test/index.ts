@@ -29,7 +29,7 @@ import './unit/logger.spec'
 import './unit/comms-resolver.test'
 
 /* SCENE EVENTS */
-// import './sceneEvents/visibleAvatars.spec'
+import './sceneEvents/visibleAvatars.spec'
 import './sceneEvents/comms.spec'
 import './sceneEvents/world/parcelSceneManager.spec'
 import './sceneEvents/apis/sceneDeployer.spec'
