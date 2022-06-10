@@ -1,5 +1,5 @@
-import { LoadableAPIs } from './../../../shared/apis/client'
-import { componentNameRE, generatePBObject, getIdAsNumber } from './../Utils'
+import { LoadableAPIs } from '../../../shared/apis/client'
+import { componentNameRE, generatePBObject, getIdAsNumber } from '../Utils'
 import {
   AttachEntityComponentPayload,
   ComponentCreatedPayload,

@@ -1,5 +1,5 @@
 import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
-import { DevToolsAdapter } from './sdk/new-rpc/DevToolsAdapter'
+import { DevToolsAdapter } from './sdk/runtime/DevToolsAdapter'
 import { RendererStatefulActor } from './stateful-scene/RendererStatefulActor'
 import { BuilderStatefulActor } from './stateful-scene/BuilderStatefulActor'
 import { serializeSceneState } from './stateful-scene/SceneStateDefinitionSerializer'
@@ -8,10 +8,10 @@ import { SceneStateDefinition } from './stateful-scene/SceneStateDefinition'
 import { createRpcClient, RpcClient } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 import { LoadableAPIs, LoadedModules } from 'shared/apis/client'
-import { createEventDispatcher, EventCallback, SimpleEvent } from './sdk/new-rpc/EventDispatcher'
+import { createEventDispatcher, EventCallback, SimpleEvent } from './sdk/runtime/EventDispatcher'
 
 async function startStatefulScene(client: RpcClient) {
-  const clientPort = await client.createPort(`new-rpc-${globalThis.name}`)
+  const clientPort = await client.createPort(`stateful-scene-${globalThis.name}`)
   const modules: LoadedModules = {
     EngineAPI: await LoadableAPIs.EngineAPI(clientPort),
     EnvironmentAPI: await LoadableAPIs.EnvironmentAPI(clientPort),

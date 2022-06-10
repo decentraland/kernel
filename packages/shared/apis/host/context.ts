@@ -2,13 +2,10 @@ import Protocol from 'devtools-protocol'
 import { ILogger } from './../../logger'
 import { EnvironmentData, ILand } from './../../types'
 import { ParcelSceneAPI } from './../../../shared/world/ParcelSceneAPI'
-import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 import { PermissionItem } from '../proto/Permissions.gen'
 import { BuilderManifest } from '../SceneStateStorageController/types'
 import { BuilderServerAPIManager } from '../SceneStateStorageController/BuilderServerAPIManager'
 import { SceneTransformTranslator } from './../SceneStateStorageController/SceneTransformTranslator'
-
-const eventPushableChannel = (onIteratorClose: () => void) => pushableChannel<EngineEvent>(onIteratorClose)
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
@@ -31,7 +28,6 @@ export type PortContext = {
     isPortableExperience: boolean
     isEmpty: boolean
   }
-  eventChannel: ReturnType<typeof eventPushableChannel>
   events: EngineEvent[]
 
   sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void

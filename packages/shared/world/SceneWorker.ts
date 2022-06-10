@@ -17,7 +17,6 @@ export enum SceneWorkerReadyState {
 
 import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
-import { pushableChannel } from '@dcl/rpc/dist/push-channel'
 import Protocol from 'devtools-protocol'
 
 export abstract class SceneWorker {
@@ -27,8 +26,6 @@ export abstract class SceneWorker {
   private rpcServer!: RpcServer<PortContext>
 
   constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
-    const eventChannel = pushableChannel<EngineEvent>(function () {})
-
     this.rpcContext = {
       EnvironmentAPI: {
         cid: parcelScene.data.sceneId,
@@ -50,15 +47,9 @@ export abstract class SceneWorker {
         logger: defaultLogger,
         exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>()
       },
-      eventChannel,
       events: [],
       sendSceneEvent: (type, data) => {
         this.rpcContext.events.push({ type, data })
-        // eventChannel.push({ type, data }, (err) => {
-        //   if (err) {
-        //     this.rpcContext.DevTools.logger.error(err)
-        //   }
-        // })
       }
     }
 

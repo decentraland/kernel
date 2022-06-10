@@ -7,16 +7,16 @@ import { createWebSocket } from './WebSocket'
 import { RpcClient } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
 
-import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
-import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
+import { createDecentralandInterface } from './runtime/DecentralandInterface'
+import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 import {
   createEventDispatcher,
   EventCallback,
   EventState,
   isPointerEvent,
   SimpleEvent
-} from './new-rpc/EventDispatcher'
-import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
+} from './runtime/EventDispatcher'
+import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI.gen'
 
 export async function startSceneRuntime(client: RpcClient) {

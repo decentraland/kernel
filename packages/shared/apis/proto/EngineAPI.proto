@@ -21,12 +21,6 @@ message SubscribeRequest {
 message SubscribeResponse {}
 message UnsubscribeResponse {}
 
-message StreamEventsRequest {}
-message StreamEventsResponse {
-    string event_id = 1;
-    string event_data = 2;
-}
-
 message PullEventsRequest {}
 message PullEventsResponse {
     message EventData {
@@ -40,6 +34,5 @@ service EngineAPIService {
   rpc SendBatch(ManyEntityAction) returns (SendBatchResponse) {}
   rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
-  rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
   rpc PullEvents(PullEventsRequest) returns (PullEventsResponse) {}
 }
