@@ -1,40 +1,40 @@
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import { PortContext } from './context'
 
-import { registerEthereumControllerServiceServerImplementation } from './EthereumController'
 import { registerDevToolsServiceServerImplementation } from './DevTools'
 import { registerEngineAPIServiceServerImplementation } from './EngineAPI'
 import { registerEnvironmentAPIServiceServerImplementation } from './EnvironmentAPI'
-import { registerExperimentalAPIServiceServerImplementation } from './ExperimentalAPI'
 import { registerPermissionServiceServerImplementation } from './Permissions'
-import { registerUserIdentityServiceServerImplementation } from './UserIdentity'
-import { registerParcelIdentityServiceServerImplementation } from './ParcelIdentity'
+// import { registerUserIdentityServiceServerImplementation } from './UserIdentity'
 import { registerUserActionModuleServiceServerImplementation } from './UserActionModule'
+import { registerEthereumControllerServiceServerImplementation } from './EthereumController'
+import { registerParcelIdentityServiceServerImplementation } from './ParcelIdentity'
 import { registerSocialControllerServiceServerImplementation } from './SocialController'
-import { registerRestrictedActionsServiceServerImplementation } from './RestrictedActions'
+// import { registerRestrictedActionsServiceServerImplementation } from './RestrictedActions'
 import { registerCommunicationsControllerServiceServerImplementation } from './CommunicationsController'
 import { registerPlayersServiceServerImplementation } from './Players'
 import { registerPortableExperiencesServiceServerImplementation } from './PortableExperiences'
-import { registerSignedFetchServiceServerImplementation } from './SignedFetch'
+// import { registerSignedFetchServiceServerImplementation } from './SignedFetch'
 import { registerSceneStateStorageControllerServiceServerImplementation } from './SceneStateStorageController'
+
+import { registerExperimentalAPIServiceServerImplementation } from './ExperimentalAPI'
 
 export function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerDevToolsServiceServerImplementation(serverPort)
   registerEngineAPIServiceServerImplementation(serverPort)
   registerEnvironmentAPIServiceServerImplementation(serverPort)
   registerPermissionServiceServerImplementation(serverPort)
-  registerUserIdentityServiceServerImplementation(serverPort)
+  // registerUserIdentityServiceServerImplementation(serverPort)
   registerUserActionModuleServiceServerImplementation(serverPort)
   registerEthereumControllerServiceServerImplementation(serverPort)
   registerParcelIdentityServiceServerImplementation(serverPort)
   registerSocialControllerServiceServerImplementation(serverPort)
-  registerRestrictedActionsServiceServerImplementation(serverPort)
+  // registerRestrictedActionsServiceServerImplementation(serverPort)
   registerCommunicationsControllerServiceServerImplementation(serverPort)
   registerPlayersServiceServerImplementation(serverPort)
   registerPortableExperiencesServiceServerImplementation(serverPort)
-  registerSignedFetchServiceServerImplementation(serverPort)
-
+  // registerSignedFetchServiceServerImplementation(serverPort)
   registerSceneStateStorageControllerServiceServerImplementation(serverPort)
-  // TODO: remove when renderer-rpc is ready
+  // // TODO: remove when renderer-rpc is ready
   registerExperimentalAPIServiceServerImplementation(serverPort)
 }
