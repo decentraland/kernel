@@ -32,6 +32,7 @@ export type PortContext = {
     isEmpty: boolean
   }
   eventChannel: ReturnType<typeof eventPushableChannel>
+  events: EngineEvent[]
 
   sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void
 

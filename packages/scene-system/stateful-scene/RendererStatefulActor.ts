@@ -21,7 +21,7 @@ import {
 import { generatePBObjectJSON } from '../sdk/Utils'
 import { LoadedModules } from 'shared/apis/client'
 import defaultLogger from 'shared/logger'
-import { SimpleEventDispatcher } from 'scene-system/sdk/new-rpc/EventDispatcher'
+import { EventCallback } from 'scene-system/sdk/new-rpc/EventDispatcher'
 
 export class RendererStatefulActor extends StatefulActor implements StateContainerListener {
   private disposableComponents: number = 0
@@ -29,7 +29,7 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
   constructor(
     protected readonly modules: LoadedModules,
     private readonly sceneId: string,
-    private readonly eventCallbacks: SimpleEventDispatcher
+    private readonly eventCallbacks: { onEventFunctions: EventCallback[] }
   ) {
     super()
   }

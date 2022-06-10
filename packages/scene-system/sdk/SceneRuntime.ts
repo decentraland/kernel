@@ -1,5 +1,5 @@
 import { LoadableAPIs } from '../../shared/apis/client'
-import { initMessagesFinished, resolveMapping } from './Utils'
+import { initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
 import { LoadableParcelScene } from 'shared/types'
 import { customEval, getES5Context } from './sandbox'
 import { createFetch } from './Fetch'
@@ -11,9 +11,15 @@ import { PermissionItem } from 'shared/apis/proto/Permissions'
 import { setupStats } from './new-rpc/Stats'
 import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
 import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
-import { createEventDispatcher, EventCallback, EventState } from './new-rpc/EventDispatcher'
+import {
+  createEventDispatcher,
+  EventCallback,
+  EventState,
+  isPointerEvent,
+  SimpleEvent
+} from './new-rpc/EventDispatcher'
 import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
-import type { EntityAction } from 'shared/apis/proto/EngineAPI'
+import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -31,7 +37,30 @@ export async function startSceneRuntime(client: RpcClient) {
 
   const eventState: EventState = { allowOpenExternalUrl: false }
   const onEventFunctions: EventCallback[] = []
-  createEventDispatcher(EngineAPI, { onEventFunctions, eventState }).catch((err) => devToolsAdapter.error(err))
+
+  function eventReceiver(event: SimpleEvent) {
+    if (event.type === 'raycastResponse') {
+      const idAsNumber = parseInt(event.data.queryId, 10)
+      if (numberToIdStore[idAsNumber]) {
+        event.data.queryId = numberToIdStore[idAsNumber].toString()
+      }
+    }
+
+    if (isPointerEvent(event)) {
+      eventState.allowOpenExternalUrl = true
+    }
+    for (const cb of onEventFunctions) {
+      try {
+        cb(event)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    eventState.allowOpenExternalUrl = false
+  }
+
+  const eventDispatcher = createEventDispatcher({ EngineAPI, devToolsAdapter, receiver: eventReceiver })
+  eventDispatcher.start()
 
   const bootstrapData = await EnvironmentAPI.getBootstrapData()
   const fullData = bootstrapData.data as LoadableParcelScene
@@ -88,8 +117,10 @@ export async function startSceneRuntime(client: RpcClient) {
   globalThis.fetch = restrictedFetch
   globalThis.WebSocket = restrictedWebSocket
 
+  let didStart = false
   onEventFunctions.push((event) => {
     if (event.type === 'sceneStart') {
+      didStart = true
       startLoop().catch((err) => devToolsAdapter.error(err))
       for (const startFunctionCb of onStartFunctions) {
         try {
@@ -124,6 +155,12 @@ export async function startSceneRuntime(client: RpcClient) {
     })
   }
 
+  function processEvents(req: PullEventsResponse) {
+    for (const e of req.events) {
+      eventReceiver({ type: e.eventId, data: JSON.parse(e.eventData || '{}') })
+    }
+  }
+
   async function startLoop() {
     let start = performance.now()
 
@@ -131,6 +168,8 @@ export async function startSceneRuntime(client: RpcClient) {
       const now = performance.now()
       const dt = now - start
       start = now
+
+      EngineAPI.pullEvents({}).then(processEvents).catch(devToolsAdapter.error)
 
       setTimeout(update, updateInterval)
 
@@ -149,4 +188,13 @@ export async function startSceneRuntime(client: RpcClient) {
 
     update()
   }
+
+  async function waitToStart() {
+    if (!didStart) {
+      processEvents(await EngineAPI.pullEvents({}))
+      setTimeout(waitToStart, 30)
+    }
+  }
+
+  waitToStart().catch(devToolsAdapter.error)
 }

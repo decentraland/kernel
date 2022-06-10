@@ -27,9 +27,19 @@ message StreamEventsResponse {
     string event_data = 2;
 }
 
+message PullEventsRequest {}
+message PullEventsResponse {
+    message EventData {
+        string event_id = 1;
+        string event_data = 2;
+    }
+    repeated EventData events = 1;
+}
+
 service EngineAPIService {
   rpc SendBatch(ManyEntityAction) returns (SendBatchResponse) {}
   rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
   rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse) {}
+  rpc PullEvents(PullEventsRequest) returns (PullEventsResponse) {}
 }

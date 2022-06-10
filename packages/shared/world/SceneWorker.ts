@@ -51,12 +51,14 @@ export abstract class SceneWorker {
         exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>()
       },
       eventChannel,
+      events: [],
       sendSceneEvent: (type, data) => {
-        eventChannel.push({ type, data }, (err) => {
-          if (err) {
-            this.rpcContext.DevTools.logger.error(err)
-          }
-        })
+        this.rpcContext.events.push({ type, data })
+        // eventChannel.push({ type, data }, (err) => {
+        //   if (err) {
+        //     this.rpcContext.DevTools.logger.error(err)
+        //   }
+        // })
       }
     }
 

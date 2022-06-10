@@ -42,6 +42,11 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       for await (const message of ctx.eventChannel) {
         yield { eventId: message.type, eventData: JSON.stringify(message.data) }
       }
+    },
+    async pullEvents(req, ctx) {
+      const events = ctx.events.map((e) => ({ eventId: e.type, eventData: JSON.stringify(e.data) }))
+      ctx.events = []
+      return { events }
     }
   }))
 }

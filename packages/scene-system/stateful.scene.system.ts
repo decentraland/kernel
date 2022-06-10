@@ -8,7 +8,7 @@ import { SceneStateDefinition } from './stateful-scene/SceneStateDefinition'
 import { createRpcClient, RpcClient } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 import { LoadableAPIs, LoadedModules } from 'shared/apis/client'
-import { createSimpleEventDispatcher, SimpleEventDispatcher } from './sdk/new-rpc/EventDispatcher'
+import { createEventDispatcher, EventCallback, SimpleEvent } from './sdk/new-rpc/EventDispatcher'
 
 async function startStatefulScene(client: RpcClient) {
   const clientPort = await client.createPort(`new-rpc-${globalThis.name}`)
@@ -21,10 +21,26 @@ async function startStatefulScene(client: RpcClient) {
     SceneStateStorageController: await LoadableAPIs.SceneStateStorageController(clientPort)
   }
 
-  const eventDispacherParam: SimpleEventDispatcher = { onEventFunctions: [] }
-  createSimpleEventDispatcher(modules.EngineAPI!, eventDispacherParam).catch((err) => devToolsAdapter.error(err))
-
   const devToolsAdapter = new DevToolsAdapter(modules.DevTools)
+
+  const eventDispacherParam: { onEventFunctions: EventCallback[] } = { onEventFunctions: [] }
+  function eventReceiver(event: SimpleEvent) {
+    for (const cb of eventDispacherParam.onEventFunctions) {
+      try {
+        cb(event)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  }
+
+  const eventDispacther = createEventDispatcher({
+    EngineAPI: modules.EngineAPI!,
+    devToolsAdapter,
+    receiver: eventReceiver
+  })
+  eventDispacther.start()
+
   const { cid: sceneId, land: land } = await modules.ParcelIdentity!.getParcel()
   const rendererActor = new RendererStatefulActor(modules, sceneId, eventDispacherParam)
 
