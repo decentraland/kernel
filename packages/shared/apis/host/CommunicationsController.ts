@@ -10,7 +10,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { sendParcelSceneCommsMessage } from './../../comms'
 import { PortContext } from './context'
-import { CommunicationsControllerServiceDefinition } from '../proto/CommunicationsController'
+import { CommunicationsControllerServiceDefinition } from '../proto/CommunicationsController.gen'
 
 export function registerCommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, CommunicationsControllerServiceDefinition, async (port, ctx) => {

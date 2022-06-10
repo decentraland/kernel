@@ -3,7 +3,7 @@ import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { AsyncQueue } from '@dcl/rpc/dist/push-channel'
 
-import { SocialControllerServiceDefinition, SocialEvent } from '../proto/SocialController'
+import { SocialControllerServiceDefinition, SocialEvent } from '../proto/SocialController.gen'
 import { avatarMessageObservable } from 'shared/comms/peers'
 
 export function registerSocialControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {

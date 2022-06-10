@@ -8,7 +8,7 @@ import {
   GetIsEmptyResponse,
   GetIsEmptyRequest,
   GetSceneIdResponse
-} from '../proto/ParcelIdentity'
+} from '../proto/ParcelIdentity.gen'
 import { PortContext } from './context'
 
 async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetParcelResponse> {

@@ -5,9 +5,8 @@ import { customEval, getES5Context } from './sandbox'
 import { createFetch } from './Fetch'
 import { createWebSocket } from './WebSocket'
 import { RpcClient } from '@dcl/rpc/dist/types'
-import { PermissionItem } from 'shared/apis/proto/Permissions'
+import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
 
-// New
 import { setupStats } from './new-rpc/Stats'
 import { createDecentralandInterface } from './new-rpc/DecentralandInterface'
 import { setupFpsThrottling } from './new-rpc/SetupFpsThrottling'
@@ -19,7 +18,7 @@ import {
   SimpleEvent
 } from './new-rpc/EventDispatcher'
 import { DevToolsAdapter } from './new-rpc/DevToolsAdapter'
-import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI'
+import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI.gen'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -33,8 +32,6 @@ export async function startSceneRuntime(client: RpcClient) {
   ])
 
   const devToolsAdapter = new DevToolsAdapter(DevTools)
-  setupStats((...args: any[]) => devToolsAdapter.log(...args))
-
   const eventState: EventState = { allowOpenExternalUrl: false }
   const onEventFunctions: EventCallback[] = []
 
@@ -95,9 +92,12 @@ export async function startSceneRuntime(client: RpcClient) {
     batchEvents
   })
 
-  // TODO: aquire permissions using a single call
-  const canUseWebsocket = (await Permissions.hasPermission({ permission: PermissionItem.USE_WEBSOCKET })).hasPermission
-  const canUseFetch = (await Permissions.hasPermission({ permission: PermissionItem.USE_FETCH })).hasPermission
+  const [canUseWebsocket, canUseFetch] = (
+    await Permissions.hasManyPermissions({
+      permissions: [PermissionItem.USE_WEBSOCKET, PermissionItem.USE_FETCH]
+    })
+  ).hasManyPermission
+
   const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
   const originalFetch = fetch
@@ -155,12 +155,18 @@ export async function startSceneRuntime(client: RpcClient) {
     })
   }
 
+  /**
+   * Handle the pull events response calling the eventReceiver
+   */
   function processEvents(req: PullEventsResponse) {
     for (const e of req.events) {
       eventReceiver({ type: e.eventId, data: JSON.parse(e.eventData || '{}') })
     }
   }
 
+  /**
+   * Forever loop until the worker is killed
+   */
   async function startLoop() {
     let start = performance.now()
 
@@ -189,10 +195,17 @@ export async function startSceneRuntime(client: RpcClient) {
     update()
   }
 
+  /**
+   * This pull the events until the sceneStart event is emitted
+   */
   async function waitToStart() {
     if (!didStart) {
-      processEvents(await EngineAPI.pullEvents({}))
-      setTimeout(waitToStart, 30)
+      try {
+        processEvents(await EngineAPI.pullEvents({}))
+      } catch (err: any) {
+        devToolsAdapter.error(err)
+      }
+      setTimeout(waitToStart, 1000 / 30)
     }
   }
 

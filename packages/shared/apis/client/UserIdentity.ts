@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { UserIdentityServiceDefinition } from '../proto/UserIdentity'
+import { UserIdentityServiceDefinition } from '../proto/UserIdentity.gen'
 import { UserData } from '../../types'
 
 export function createUserIdentityServiceClient<Context>(clientPort: RpcClientPort) {

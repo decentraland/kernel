@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { ParcelIdentityServiceDefinition } from '../proto/ParcelIdentity'
+import { ParcelIdentityServiceDefinition } from '../proto/ParcelIdentity.gen'
 import { ILand } from '../../types'
 
 export function createParcelIdentityServiceClient<Context>(clientPort: RpcClientPort) {

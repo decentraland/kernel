@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { RestrictedActionsServiceDefinition } from '../proto/RestrictedActions'
+import { RestrictedActionsServiceDefinition } from '../proto/RestrictedActions.gen'
 
 export type PositionType = { x: number; y: number; z: number }
 

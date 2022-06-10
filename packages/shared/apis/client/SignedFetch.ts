@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { SignedFetchServiceDefinition, FlatFetchInit } from '../proto/SignedFetch'
+import { SignedFetchServiceDefinition, FlatFetchInit } from '../proto/SignedFetch.gen'
 
 export type OriginalFlatFetchResponse = {
   ok: boolean

@@ -5,7 +5,7 @@ import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJs
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 
-import { UserActionModuleServiceDefinition } from '../proto/UserActionModule'
+import { UserActionModuleServiceDefinition } from '../proto/UserActionModule.gen'
 import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'

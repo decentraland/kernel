@@ -1,7 +1,7 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { UserData } from '../../types'
-import { PlayersServiceDefinition } from '../proto/Players'
+import { PlayersServiceDefinition } from '../proto/Players.gen'
 
 export function createPlayersServiceClient<Context>(clientPort: RpcClientPort) {
   const originalService = codegen.loadService<Context, PlayersServiceDefinition>(clientPort, PlayersServiceDefinition)

@@ -3,7 +3,7 @@ import { getUnityInstance } from './../../../unity-interface/IUnityInterface'
 
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { ExperimentalAPIServiceDefinition } from '../proto/ExperimentalAPI'
+import { ExperimentalAPIServiceDefinition } from '../proto/ExperimentalAPI.gen'
 import { PortContext } from './context'
 
 /** @deprecated this is only for experimental purposes */

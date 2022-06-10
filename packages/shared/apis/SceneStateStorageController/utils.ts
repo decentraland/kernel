@@ -3,7 +3,7 @@ import { SceneSourcePlacement } from 'shared/types'
 import { Asset, BuilderAsset, SerializedSceneState } from './types'
 
 import * as SSSCTypes from '../SceneStateStorageController/types'
-import * as ProtoSceneStateStorageController from '../proto/SceneStateStorageController'
+import * as ProtoSceneStateStorageController from '../proto/SceneStateStorageController.gen'
 
 /*
  * We are converting from numeric ids to a more human readable format. It might make sense to change this in the future,

@@ -17,10 +17,14 @@ message HasPermissionRequest {
 }
 
 message HasManyPermissionRequest {
-    repeated PermissionItem permission = 1;
+    repeated PermissionItem permissions = 1;
+}
+
+message HasManyPermissionResponse {
+    repeated bool has_many_permission = 1;
 }
 
 service PermissionsService {
     rpc HasPermission(HasPermissionRequest) returns (PermissionResponse) {}
-    rpc HasManyPermissions(HasManyPermissionRequest) returns (PermissionResponse) {}
+    rpc HasManyPermissions(HasManyPermissionRequest) returns (HasManyPermissionResponse) {}
 }

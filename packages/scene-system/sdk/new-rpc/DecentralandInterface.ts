@@ -16,7 +16,7 @@ import {
 import { QueryType } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { EventCallback, EventState } from './EventDispatcher'
-import { EntityAction } from 'shared/apis/proto/EngineAPI'
+import { EntityAction } from 'shared/apis/proto/EngineAPI.gen'
 
 export interface DecentralandInterfaceOptions {
   onLog: (...args: any[]) => void

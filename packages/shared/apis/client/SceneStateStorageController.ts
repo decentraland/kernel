@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { SceneStateStorageControllerServiceDefinition } from '../proto/SceneStateStorageController'
+import { SceneStateStorageControllerServiceDefinition } from '../proto/SceneStateStorageController.gen'
 import * as SSSCTypes from '../SceneStateStorageController/types'
 import { fromProtoSerializedSceneState, toProtoSerializedSceneState } from '../SceneStateStorageController/utils'
 

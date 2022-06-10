@@ -10,7 +10,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { SignedFetchServiceDefinition } from '../proto/SignedFetch'
+import { SignedFetchServiceDefinition } from '../proto/SignedFetch.gen'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({

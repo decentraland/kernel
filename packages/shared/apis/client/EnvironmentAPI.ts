@@ -1,7 +1,7 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { EnvironmentData } from 'shared/types'
-import { EnvironmentAPIServiceDefinition } from '../proto/EnvironmentAPI'
+import { EnvironmentAPIServiceDefinition } from '../proto/EnvironmentAPI.gen'
 
 export type Realm = {
   domain: string

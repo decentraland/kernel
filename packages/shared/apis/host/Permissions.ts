@@ -5,7 +5,7 @@ import {
   PermissionItem,
   permissionItemFromJSON,
   permissionItemToJSON
-} from '../proto/Permissions'
+} from '../proto/Permissions.gen'
 import { PortContext } from './context'
 
 export const defaultParcelPermissions: PermissionItem[] = [
@@ -70,12 +70,8 @@ export function registerPermissionServiceServerImplementation(port: RpcServerPor
       return { hasPermission: hasPermission(req.permission, ctx) }
     },
     async hasManyPermissions(req, ctx) {
-      for (const item of req.permission) {
-        if (!(await hasPermission(item, ctx))) {
-          return { hasPermission: false }
-        }
-      }
-      return { hasPermission: true }
+      const hasManyPermission = await Promise.all(req.permissions.map((item) => hasPermission(item, ctx)))
+      return { hasManyPermission }
     }
   }))
 }

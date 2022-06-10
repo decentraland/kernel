@@ -15,7 +15,7 @@ import {
   GetExplorerConfigurationResponse,
   GetPlatformResponse,
   PreviewModeResponse
-} from '../proto/EnvironmentAPI'
+} from '../proto/EnvironmentAPI.gen'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
 

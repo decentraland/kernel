@@ -7,7 +7,6 @@ import {
 import { lastPlayerPosition } from '../../world/positionThings'
 import { browserInterface } from '../../../unity-interface/BrowserInterface'
 import { getUnityInstance } from '../../../unity-interface/IUnityInterface'
-// import { PermissionItem } from './../proto/Permissions'
 import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
@@ -18,9 +17,9 @@ import {
   RestrictedActionsServiceDefinition,
   TriggerEmoteRequest,
   TriggerEmoteResponse
-} from '../proto/RestrictedActions'
+} from '../proto/RestrictedActions.gen'
 import { assertHasPermission } from './Permissions'
-import { PermissionItem } from '../proto/Permissions'
+import { PermissionItem } from '../proto/Permissions.gen'
 
 export async function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): Promise<MovePlayerToResponse> {
   //   checks permissions
