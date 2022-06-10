@@ -7,7 +7,7 @@ import { SocialControllerServiceDefinition, SocialEvent } from '../proto/SocialC
 import { avatarMessageObservable } from 'shared/comms/peers'
 
 export function registerSocialControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  codegen.registerService(port, SocialControllerServiceDefinition, async (port, ctx) => {
+  codegen.registerService(port, SocialControllerServiceDefinition, async (_port, _ctx) => {
     return {
       getAvatarEvents(): AsyncGenerator<SocialEvent> {
         const messageQueue = new AsyncQueue<SocialEvent>((_, action) => {
