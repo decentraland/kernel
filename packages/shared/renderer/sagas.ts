@@ -3,8 +3,8 @@ import { waitingForRenderer } from 'shared/loading/types'
 import { initializeEngine } from 'unity-interface/dcl'
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
 import { InitializeRenderer } from './actions'
-import { getParcelLoadingStarted, isRendererInitialized, isRendererReady } from './selectors'
-import { RENDERER_INITIALIZED_CORRECTLY, RENDERER_INITIALIZE, RENDERER_READY } from './types'
+import { getParcelLoadingStarted } from './selectors'
+import { RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
 import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import {
@@ -43,18 +43,7 @@ import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { getFeatureFlagEnabled } from 'shared/meta/selectors'
-
-export function* waitForRendererInstance() {
-  while (!(yield select(isRendererInitialized))) {
-    yield take(RENDERER_INITIALIZED_CORRECTLY)
-  }
-}
-
-export function* waitForRendererReady() {
-  while (!(yield select(isRendererReady))) {
-    yield take(RENDERER_READY)
-  }
-}
+import { waitForRendererInstance } from './sagas-helper'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
