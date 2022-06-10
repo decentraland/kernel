@@ -27,7 +27,7 @@ import {
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
-  setNewParcelScene,
+  // setNewParcelScene,
   stopParcelSceneWorker,
   allScenesEvent,
   AllScenesEvents,
@@ -54,7 +54,7 @@ import { reportHotScenes } from 'shared/social/hotScenes'
 import { GIFProcessor } from 'gif-processor/processor'
 import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatRecording } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
-import { StatefulWorker } from 'shared/world/StatefulWorker'
+// import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { wearablesRequest } from 'shared/catalogs/actions'
@@ -451,8 +451,10 @@ export class BrowserInterface {
         const options: StatefulWorkerOptions = {
           isEmpty: false
         }
+        options
+        throw new Error('Fix this circular dependency.')
 
-        setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
+        // setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
         break
       }
       case 'StopStatefulMode': {
