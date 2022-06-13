@@ -68,7 +68,10 @@ export class BFFConnection {
       for await (const { payload, sender } of commsService.getPeerMessages(subscription)) {
         handler(payload, sender)
       }
-    })(this.commsService).catch((err) => this.logger.error(`Peer topic handler error: ${err.toString()}`))
+    })(this.commsService).catch((err) => {
+      this.logger.error(`Peer topic handler error: ${err.toString()}`)
+      this.disconnect()
+    })
 
     return subscription
   }
@@ -84,7 +87,10 @@ export class BFFConnection {
       for await (const { payload } of commsService.getSystemMessages(subscription)) {
         handler(payload)
       }
-    })(this.commsService).catch((err) => this.logger.error(`System topic handler error: ${err.toString()}`))
+    })(this.commsService).catch((err) => {
+      this.logger.error(`System topic handler error: ${err.toString()}`)
+      this.disconnect()
+    })
     return subscription
   }
 
