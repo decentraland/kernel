@@ -20,15 +20,12 @@ export function createWeb3Provider<Context>(clientPort: RpcClientPort) {
   )
 
   async function request(message: RPCSendableMessage) {
-    return JSON.parse(
-      (
-        await originalService.sendAsync({
-          id: message.id,
-          method: message.method,
-          jsonParams: JSON.stringify(message.params)
-        })
-      ).jsonAnyResponse
-    )
+    const response = await originalService.sendAsync({
+      id: message.id,
+      method: message.method,
+      jsonParams: JSON.stringify(message.params)
+    })
+    return JSON.parse(response.jsonAnyResponse)
   }
 
   return {

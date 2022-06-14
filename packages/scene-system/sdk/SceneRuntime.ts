@@ -44,7 +44,7 @@ export async function startSceneRuntime(client: RpcClient) {
       try {
         cb(event)
       } catch (err) {
-        console.error(err)
+        console.error(err, { event })
       }
     }
     eventState.allowOpenExternalUrl = false
@@ -113,9 +113,8 @@ export async function startSceneRuntime(client: RpcClient) {
 
   let didStart = false
   onEventFunctions.push((event) => {
-    if (event.type === 'sceneStart') {
+    if (event.type === 'sceneStart' && !didStart) {
       didStart = true
-      startLoop().catch((err) => devToolsAdapter.error(err))
       for (const startFunctionCb of onStartFunctions) {
         try {
           startFunctionCb()
@@ -123,6 +122,7 @@ export async function startSceneRuntime(client: RpcClient) {
           devToolsAdapter.error(e)
         }
       }
+      startLoop().catch((err) => devToolsAdapter.error(err))
     }
   })
 
