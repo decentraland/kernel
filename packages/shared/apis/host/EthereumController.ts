@@ -31,8 +31,9 @@ async function requirePayment(req: RequirePaymentRequest, ctx): Promise<RequireP
     sceneId: ctx.EnvironmentAPI!.data.sceneId
   })
 
+  const response = EthService.requirePayment(req.toAddress, req.amount, req.currency)
   return {
-    jsonAnyResponse: JSON.stringify(EthService.requirePayment(req.toAddress, req.amount, req.currency))
+    jsonAnyResponse: JSON.stringify(response)
   }
 }
 
@@ -43,7 +44,8 @@ async function signMessage(req: SignMessageRequest, ctx): Promise<SignMessageRes
     message: await EthService.messageToString(req.message),
     sceneId: ctx.EnvironmentAPI!.data.sceneId
   })
-  return EthService.signMessage(req.message)
+  const response = await EthService.signMessage(req.message)
+  return response
 }
 
 async function convertMessageToObject(
@@ -61,6 +63,7 @@ async function sendAsync(req: SendAsyncRequest, ctx): Promise<SendAsyncResponse>
     method: req.method,
     params: JSON.parse(req.jsonParams) as any[]
   }
+
   assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
   if (EthService.rpcRequireSign(message)) {
     await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
@@ -68,8 +71,10 @@ async function sendAsync(req: SendAsyncRequest, ctx): Promise<SendAsyncResponse>
       sceneId: ctx.EnvironmentAPI!.data.sceneId
     })
   }
+
+  const response = await EthService.sendAsync(message)
   return {
-    jsonAnyResponse: JSON.stringify(EthService.sendAsync(message))
+    jsonAnyResponse: JSON.stringify(response)
   }
 }
 
