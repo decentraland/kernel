@@ -37,14 +37,16 @@ export function createSignedFetchServiceClient<Context>(clientPort: RpcClientPor
           init.method = originalInit.method
         }
       }
+      const responseBodyType = originalInit?.responseBodyType || 'text'
       const result = await originalService.signedFetch({ url, init })
+
       return {
         ok: result.ok,
         status: result.status,
         statusText: result.statusText,
         headers: result.headers,
-        json: originalInit?.responseBodyType === 'json' ? JSON.parse(result.body) : undefined,
-        text: originalInit?.responseBodyType === 'text' ? result.body : undefined
+        json: responseBodyType === 'json' ? JSON.parse(result.body) : undefined,
+        text: responseBodyType === 'text' ? result.body : undefined
       }
     }
   }
