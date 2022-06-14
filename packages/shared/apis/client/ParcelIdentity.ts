@@ -19,12 +19,14 @@ export function createParcelIdentityServiceClient<Context>(clientPort: RpcClient
       const data = await originalService.getParcel({})
       return {
         land: {
-          ...data.land,
-          sceneJsonData: JSON.parse(data.land.sceneJsonData || '{}'),
+          sceneId: data.land?.sceneId || '',
+          sceneJsonData: JSON.parse(data.land?.sceneJsonData || '{}'),
+          baseUrl: data.land?.baseUrl || '',
+          baseUrlBundles: data.land?.baseUrlBundles || '',
           mappingsResponse: {
-            root_cid: data.land.mappingsResponse.rootCid,
-            contents: data.land.mappingsResponse.contents,
-            parcel_id: data.land.mappingsResponse.parcelId
+            root_cid: data.land?.mappingsResponse?.rootCid || '',
+            parcel_id: data.land?.mappingsResponse?.parcelId || '',
+            contents: data.land?.mappingsResponse?.contents || []
           }
         },
         cid: data.cid
