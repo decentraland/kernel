@@ -55,9 +55,20 @@ export abstract class SceneWorker {
 
     parcelScene.registerWorker(this)
 
+    const skipErrors = ['Transport closed while waiting the ACK']
+    const logger = createGenericLogComponent().getLogger(`rpc-server-${parcelScene.getSceneId()}`)
+
     this.rpcServer = createRpcServer<PortContext>({
-      logger: createGenericLogComponent().getLogger(`rpc-server-${parcelScene.getSceneId()}`)
+      logger: {
+        ...logger,
+        error: (error: string | Error, extra?: Record<string, string | number>) => {
+          if (!(error instanceof Error && skipErrors.includes(error.message))) {
+            logger.error(error, extra)
+          }
+        }
+      }
     })
+
     this.rpcServer.setHandler(async (port) => {
       registerServices(port)
     })
@@ -91,14 +102,14 @@ export abstract class SceneWorker {
 
     if ((this.ready & disposingFlags) === 0) {
       this.ready |= SceneWorkerReadyState.DISPOSING
+
       this.childDispose()
+      this.transport.close()
 
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
 
     getUnityInstance().UnloadScene(this.getSceneId())
-
-    this.transport.close()
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
 
