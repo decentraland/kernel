@@ -18,7 +18,15 @@ export function createParcelIdentityServiceClient<Context>(clientPort: RpcClient
     async getParcel(): Promise<{ land: ILand; cid: string }> {
       const data = await originalService.getParcel({})
       return {
-        land: data.land as any as ILand,
+        land: {
+          ...data.land,
+          sceneJsonData: JSON.parse(data.land.sceneJsonData || '{}'),
+          mappingsResponse: {
+            root_cid: data.land.mappingsResponse.rootCid,
+            contents: data.land.mappingsResponse.contents,
+            parcel_id: data.land.mappingsResponse.parcelId
+          }
+        },
         cid: data.cid
       }
     },

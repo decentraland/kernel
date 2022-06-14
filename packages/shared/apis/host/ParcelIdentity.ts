@@ -20,17 +20,20 @@ async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetP
 
   return {
     land: {
-      sceneId: land.sceneId,
-      sceneJsonData: JSON.stringify(land.sceneJsonData),
-      baseUrl: land.baseUrl,
+      sceneId: land.sceneId || '',
+      sceneJsonData: land.sceneJsonData ? JSON.stringify(land.sceneJsonData) : '{}',
+      baseUrl: land.baseUrl || '',
       baseUrlBundles: land.baseUrlBundles || '',
       mappingsResponse: {
-        parcelId: land.mappingsResponse.parcel_id,
-        rootCid: land.mappingsResponse.root_cid,
-        contents: land.mappingsResponse.contents
+        parcelId: land.mappingsResponse.parcel_id || '',
+        rootCid: land.mappingsResponse.root_cid || '',
+        contents: (land.mappingsResponse.contents || []).map((item) => ({
+          file: item.file || '',
+          hash: item.hash || ''
+        }))
       }
     },
-    cid: ctx.EnvironmentAPI.cid
+    cid: ctx.EnvironmentAPI.cid || ''
   }
 }
 

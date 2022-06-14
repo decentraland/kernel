@@ -7,6 +7,7 @@ import { SceneWorker } from 'shared/world/SceneWorker'
 import { UnityScene } from './UnityScene'
 import { DEBUG_SCENE_LOG } from 'config'
 import { defaultParcelPermissions, defaultPortableExperiencePermissions } from 'shared/apis/host/Permissions'
+import { PermissionItem, permissionItemFromJSON } from 'shared/apis/proto/Permissions.gen'
 
 export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
   constructor(public data: EnvironmentData<LoadableParcelScene>) {
@@ -31,7 +32,16 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
 
     worker.rpcContext.DevTools.logger = this.logger
 
-    this.loadPermission(defaultParcelPermissions).catch((err) => {
+    const permissionArray: PermissionItem[] = []
+    if (this.data.data.land) {
+      if (this.data.data.land.sceneJsonData?.requiredPermissions) {
+        for (const permissionItemString of this.data.data.land.sceneJsonData?.requiredPermissions) {
+          permissionArray.push(permissionItemFromJSON(permissionItemString))
+        }
+      }
+    }
+
+    this.loadPermission(defaultParcelPermissions, permissionArray).catch((err) => {
       this.logger.error(err)
     })
   }
@@ -59,8 +69,34 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
 
     worker.rpcContext.DevTools.logger = this.logger
 
-    this.loadPermission(defaultPortableExperiencePermissions).catch((err) => {
-      this.logger.error(err)
-    })
+    this.getPxPermission()
+      .then((permissions) => {
+        this.loadPermission(defaultPortableExperiencePermissions, permissions).catch((err) => {
+          this.logger.error(err)
+        })
+      })
+      .catch(this.logger.error)
+  }
+
+  private async getPxPermission() {
+    const ret: PermissionItem[] = []
+    const sceneJsonFile = this.data.mappings.find((m) => m.file.startsWith('scene.json'))?.hash
+    if (sceneJsonFile) {
+      try {
+        const sceneJsonUrl = new URL(sceneJsonFile, this.data.baseUrl).toString()
+        const sceneJsonReq = await fetch(sceneJsonUrl)
+        if (sceneJsonReq.ok) {
+          const sceneJson = await sceneJsonReq.json()
+
+          if (sceneJson.requiredPermissions) {
+            for (const permissionItemString of sceneJson.requiredPermissions) {
+              ret.push(permissionItemFromJSON(permissionItemString))
+            }
+          }
+        }
+      } catch (err) {}
+    }
+
+    return ret
   }
 }

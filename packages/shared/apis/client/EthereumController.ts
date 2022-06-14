@@ -29,7 +29,8 @@ export function createEthereumControllerServiceClient<Context>(clientPort: RpcCl
      * @param  {string} [currency] - ETH or ERC20 supported token symbol
      */
     async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
-      return await originalService.requirePayment({ toAddress, amount, currency })
+      const response = await originalService.requirePayment({ toAddress, amount, currency })
+      return JSON.parse(response.jsonAnyResponse)
     },
 
     /**
