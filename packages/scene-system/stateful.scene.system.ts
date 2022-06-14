@@ -7,7 +7,7 @@ import { SceneStateDefinition } from './stateful-scene/SceneStateDefinition'
 import { createRpcClient, RpcClient } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 import { LoadableAPIs } from 'shared/apis/client'
-import { RuntimeEventCallback } from './sdk/runtime/Events'
+import { EventDataToRuntimeEvent, RuntimeEventCallback } from './sdk/runtime/Events'
 
 async function startStatefulScene(client: RpcClient) {
   const clientPort = await client.createPort(`stateful-scene-${globalThis.name}`)
@@ -79,7 +79,7 @@ async function startStatefulScene(client: RpcClient) {
     try {
       const res = await EngineAPI.pullEvents({})
       for (const e of res.events) {
-        const event = { type: e.eventId, data: JSON.parse(e.eventData || '{}') }
+        const event = EventDataToRuntimeEvent(e)
         for (const cb of events.onEventFunctions) {
           try {
             cb(event)

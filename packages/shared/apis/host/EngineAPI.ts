@@ -1,6 +1,14 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { EAType, eATypeToJSON, EngineAPIServiceDefinition, ManyEntityAction, Payload } from '../proto/EngineAPI.gen'
+import {
+  EAType,
+  eATypeToJSON,
+  EngineAPIServiceDefinition,
+  EventData,
+  EventDataType,
+  ManyEntityAction,
+  Payload
+} from '../proto/EngineAPI.gen'
 
 import { PortContextService } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
@@ -84,7 +92,16 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       return {}
     },
     async pullEvents(req, ctx) {
-      const events = ctx.events.map((e) => ({ eventId: e.type, eventData: JSON.stringify(e.data) }))
+      const events: EventData[] = ctx.events.map((e) => {
+        return (
+          e.proto ||
+          ({
+            type: EventDataType.Generic,
+            generic: { eventId: e.generic!.type, eventData: JSON.stringify(e.generic!.data) }
+          } as any)
+        )
+      })
+
       ctx.events = []
       return { events }
     }

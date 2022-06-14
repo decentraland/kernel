@@ -13,6 +13,7 @@ import { store } from 'shared/store/isolatedStore'
 
 import { Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
+import { EventDataType } from 'shared/apis/proto/EngineAPI.gen'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const gamekitWorkerRaw = require('raw-loader!../../../static/systems/scene.system.js')
@@ -86,14 +87,17 @@ export class SceneSystemWorker extends SceneWorker {
   private sendUserViewMatrix(positionReport: Readonly<PositionReport>) {
     if (this.rpcContext?.EngineAPI && 'positionChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
       if (!this.lastSentPosition.equals(positionReport.position)) {
-        this.rpcContext.sendSceneEvent('positionChanged', {
-          position: {
-            x: positionReport.position.x - this.position.x,
-            z: positionReport.position.z - this.position.z,
-            y: positionReport.position.y
-          },
-          cameraPosition: positionReport.position,
-          playerHeight: playerConfigurations.height
+        this.rpcContext.sendProtoSceneEvent({
+          type: EventDataType.PositionChanged,
+          positionChanged: {
+            position: {
+              x: positionReport.position.x - this.position.x,
+              z: positionReport.position.z - this.position.z,
+              y: positionReport.position.y
+            },
+            cameraPosition: positionReport.position,
+            playerHeight: playerConfigurations.height
+          }
         })
 
         this.lastSentPosition.copyFrom(positionReport.position)
@@ -101,9 +105,12 @@ export class SceneSystemWorker extends SceneWorker {
     }
     if (this.rpcContext.EngineAPI && 'rotationChanged' in this.rpcContext.EngineAPI.subscribedEvents) {
       if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
-        this.rpcContext.sendSceneEvent('rotationChanged', {
-          rotation: positionReport.cameraEuler,
-          quaternion: positionReport.cameraQuaternion
+        this.rpcContext.sendProtoSceneEvent({
+          type: EventDataType.RotationChanged,
+          rotationChanged: {
+            rotation: positionReport.cameraEuler,
+            quaternion: positionReport.cameraQuaternion
+          }
         })
         this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
       }

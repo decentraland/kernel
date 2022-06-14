@@ -6,10 +6,16 @@ import { PermissionItem } from '../proto/Permissions.gen'
 import { BuilderManifest } from '../SceneStateStorageController/types'
 import { BuilderServerAPIManager } from '../SceneStateStorageController/BuilderServerAPIManager'
 import { SceneTransformTranslator } from './../SceneStateStorageController/SceneTransformTranslator'
+import { EventData } from '../proto/EngineAPI.gen'
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
 export type PortContextService<K extends keyof PortContext> = WithRequired<PortContext, K>
+
+export type EventListItem = {
+  generic?: EngineEvent
+  proto?: EventData
+}
 
 export type PortContext = {
   EnvironmentAPI: {
@@ -28,9 +34,10 @@ export type PortContext = {
     isPortableExperience: boolean
     isEmpty: boolean
   }
-  events: EngineEvent[]
+  events: EventListItem[]
 
   sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void
+  sendProtoSceneEvent(event: EventData): void
 
   DevTools: {
     logger: ILogger

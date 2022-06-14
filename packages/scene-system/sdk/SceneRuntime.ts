@@ -12,7 +12,7 @@ import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI.gen'
-import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState } from './runtime/Events'
+import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState, EventDataToRuntimeEvent } from './runtime/Events'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -154,7 +154,7 @@ export async function startSceneRuntime(client: RpcClient) {
    */
   function processEvents(req: PullEventsResponse) {
     for (const e of req.events) {
-      eventReceiver({ type: e.eventId, data: JSON.parse(e.eventData || '{}') })
+      eventReceiver(EventDataToRuntimeEvent(e))
     }
   }
 

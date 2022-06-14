@@ -127,12 +127,52 @@ message SubscribeRequest {
 message SubscribeResponse {}
 message UnsubscribeResponse {}
 
+
+// Events
+enum EventDataType {
+    Generic = 0;
+    PositionChanged = 1;
+    RotationChanged = 2;
+}
+
+message GenericPayload {
+    string event_id = 3;
+    string event_data = 4;
+}
+
+message ReadOnlyVector3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+message ReadOnlyQuaternion {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+    float w = 4;
+}
+
+message PositionChangedPayload {
+    ReadOnlyVector3 position = 1;
+    ReadOnlyVector3 camera_position = 2;
+    float player_height = 3;
+}
+
+message RotationChangedPayload {
+    ReadOnlyVector3 rotation = 1;
+    ReadOnlyQuaternion quaternion = 2;
+}
+
+message EventData {
+    EventDataType type = 1;
+    optional GenericPayload generic = 2;
+    optional PositionChangedPayload position_changed = 3;
+    optional RotationChangedPayload rotation_changed = 4;
+}
+
 message PullEventsRequest {}
 message PullEventsResponse {
-    message EventData {
-        string event_id = 1;
-        string event_data = 2;
-    }
     repeated EventData events = 1;
 }
 

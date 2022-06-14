@@ -49,7 +49,10 @@ export abstract class SceneWorker {
       },
       events: [],
       sendSceneEvent: (type, data) => {
-        this.rpcContext.events.push({ type, data })
+        this.rpcContext.events.push({ generic: { type, data } })
+      },
+      sendProtoSceneEvent: (e) => {
+        this.rpcContext.events.push({ proto: e })
       }
     }
 
