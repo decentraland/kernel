@@ -7,7 +7,8 @@ import {
   EventData,
   EventDataType,
   ManyEntityAction,
-  Payload
+  Payload,
+  queryTypeToJSON
 } from '../proto/EngineAPI.gen'
 
 import { PortContextService } from './context'
@@ -40,7 +41,7 @@ function getPayload(payloadType: EAType, payload: Payload): any {
       return payload.setEntityParent
     }
     case EAType.Query: {
-      return payload.query
+      return { queryId: queryTypeToJSON(payload.query!.queryId), payload: JSON.parse(payload.query!.payload) }
     }
     case EAType.ComponentCreated: {
       return payload.componentCreated

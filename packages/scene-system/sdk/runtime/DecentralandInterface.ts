@@ -185,7 +185,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         payload: {
           query: {
             queryId: queryTypeFromJSON(queryType),
-            payload
+            payload: JSON.stringify(payload)
           }
         }
       })
