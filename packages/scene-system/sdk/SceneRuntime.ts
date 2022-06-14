@@ -64,7 +64,10 @@ export async function startSceneRuntime(client: RpcClient) {
   const codeRequest = await fetch(url)
 
   if (!codeRequest.ok) {
-    throw new Error(`SDK: Error while loading ${url} (${mappingName} -> ${mapping}) the mapping was not found`)
+    EngineAPI.sendBatch({ actions: [initMessagesFinished()] }).catch((err) => devToolsAdapter.error(err))
+    throw new Error(
+      `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
+    )
   }
 
   const sourceCode = await codeRequest.text()
