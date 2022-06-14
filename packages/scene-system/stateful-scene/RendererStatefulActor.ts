@@ -1,14 +1,14 @@
 import { CLASS_ID } from '@dcl/legacy-ecs'
-import {
-  AttachEntityComponentPayload,
-  ComponentCreatedPayload,
-  ComponentRemovedPayload,
-  ComponentUpdatedPayload,
-  CreateEntityPayload,
-  EntityAction,
-  RemoveEntityPayload,
-  UpdateEntityComponentPayload
-} from 'shared/types'
+// import {
+//   AttachEntityComponentPayload,
+//   ComponentCreatedPayload,
+//   ComponentRemovedPayload,
+//   ComponentUpdatedPayload,
+//   CreateEntityPayload,
+//   EntityAction,
+//   RemoveEntityPayload,
+//   UpdateEntityComponentPayload
+// } from 'shared/types'
 import {
   Component,
   ComponentData,
@@ -22,6 +22,7 @@ import { generatePBObjectJSON } from '../sdk/Utils'
 import { LoadedModules } from 'shared/apis/client'
 import defaultLogger from 'shared/logger'
 import { RuntimeEventCallback } from 'scene-system/sdk/runtime/Events'
+import { EAType, EntityAction } from 'shared/apis/proto/EngineAPI.gen'
 
 export class RendererStatefulActor extends StatefulActor implements StateContainerListener {
   private disposableComponents: number = 0
@@ -39,7 +40,7 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
       actions: events.map((item) => ({
         type: item.type,
         tag: item.tag,
-        payload: JSON.stringify(item.payload)
+        payload: item.payload
       }))
     }).catch((err) => defaultLogger.error(err))
   }
@@ -47,8 +48,8 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
   addEntity(entityId: EntityId, components?: Component[]): void {
     const batch: EntityAction[] = [
       {
-        type: 'CreateEntity',
-        payload: { id: entityId } as CreateEntityPayload
+        type: EAType.CreateEntity,
+        payload: { createEntity: { id: entityId } }
       }
     ]
     if (components) {
@@ -62,8 +63,8 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
   removeEntity(entityId: EntityId): void {
     this.sendBatch([
       {
-        type: 'RemoveEntity',
-        payload: { id: entityId } as RemoveEntityPayload
+        type: EAType.RemoveEntity,
+        payload: { removeEntity: { id: entityId } }
       }
     ])
   }
@@ -77,12 +78,14 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
     const { name } = this.getInfoAboutComponent(componentId)
     this.sendBatch([
       {
-        type: 'ComponentRemoved',
+        type: EAType.ComponentRemoved,
         tag: entityId,
         payload: {
-          entityId,
-          name
-        } as ComponentRemovedPayload
+          componentRemoved: {
+            entityId,
+            name
+          }
+        }
       }
     ])
   }
@@ -90,9 +93,9 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
   sendInitFinished() {
     this.sendBatch([
       {
-        type: 'InitMessagesFinished',
+        type: EAType.InitMessagesFinished,
         tag: 'scene',
-        payload: '{}'
+        payload: { initMessagesFinished: {} }
       }
     ])
   }
@@ -158,13 +161,16 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
     } else {
       return [
         {
-          type: 'UpdateEntityComponent',
+          type: EAType.UpdateEntityComponent,
           tag: this.sceneId + '_' + entityId + '_' + componentId,
           payload: {
-            entityId,
-            classId: componentId,
-            json: generatePBObjectJSON(componentId, data)
-          } as UpdateEntityComponentPayload
+            updateEntityComponent: {
+              entityId,
+              classId: componentId,
+              name: '',
+              json: generatePBObjectJSON(componentId, data)
+            }
+          }
         }
       ]
     }
@@ -174,28 +180,36 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
     const id = `C${this.disposableComponents++}`
     return [
       {
-        type: 'ComponentCreated',
+        type: EAType.ComponentCreated,
         tag: id,
         payload: {
-          id,
-          classId
-        } as ComponentCreatedPayload
+          componentCreated: {
+            id,
+            classId,
+            name: ''
+          }
+        }
       },
       {
-        type: 'ComponentUpdated',
+        type: EAType.ComponentUpdated,
         tag: id,
         payload: {
-          id,
-          json: JSON.stringify(data)
-        } as ComponentUpdatedPayload
+          componentUpdated: {
+            id,
+            json: JSON.stringify(data)
+          }
+        }
       },
       {
-        type: 'AttachEntityComponent',
+        type: EAType.AttachEntityComponent,
         tag: entityId,
         payload: {
-          entityId,
-          id
-        } as AttachEntityComponentPayload
+          attachEntityComponent: {
+            entityId,
+            id,
+            name: ''
+          }
+        }
       }
     ]
   }

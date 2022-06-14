@@ -1,5 +1,6 @@
 import { Vector3 } from '@dcl/ecs-math'
 import { CLASS_ID, Transform } from '@dcl/legacy-ecs'
+import { EAType } from 'shared/apis/proto/EngineAPI.gen'
 import { PB_Transform, PB_Vector3, PB_Quaternion } from '../../shared/proto/engineinterface_pb'
 
 const VECTOR3_MEMBER_CAP = 1000000 // Value measured when genesis plaza glitch triggered a physics engine breakdown
@@ -120,8 +121,8 @@ export function getIdAsNumber(id: string): number {
 
 export function initMessagesFinished() {
   return {
-    type: 'InitMessagesFinished',
+    type: EAType.InitMessagesFinished,
     tag: 'scene',
-    payload: '{}'
+    payload: { initMessagesFinished: {} }
   }
 }

@@ -1,22 +1,9 @@
 import { LoadableAPIs } from '../../../shared/apis/client'
 import { componentNameRE, generatePBObject, getIdAsNumber } from '../Utils'
-import {
-  AttachEntityComponentPayload,
-  ComponentCreatedPayload,
-  ComponentDisposedPayload,
-  ComponentRemovedPayload,
-  ComponentUpdatedPayload,
-  CreateEntityPayload,
-  OpenNFTDialogPayload,
-  QueryPayload,
-  RemoveEntityPayload,
-  SetEntityParentPayload,
-  UpdateEntityComponentPayload
-} from 'shared/types'
 import { QueryType } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { RuntimeEventCallback } from './Events'
-import { EntityAction } from 'shared/apis/proto/EngineAPI.gen'
+import { EAType, EntityAction, queryTypeFromJSON } from 'shared/apis/proto/EngineAPI.gen'
 import { SceneRuntimeEventState } from './Events'
 
 export interface DecentralandInterfaceOptions {
@@ -55,9 +42,9 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
       if (eventState.allowOpenExternalUrl) {
         batchEvents.events.push({
-          type: 'OpenExternalUrl',
+          type: EAType.OpenExternalUrl,
           tag: '',
-          payload: JSON.stringify(url)
+          payload: { openExternalUrl: { url } }
         })
       } else {
         this.error('openExternalUrl can only be used inside a pointerEvent')
@@ -66,17 +53,17 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     openNFTDialog(assetContractAddress: string, tokenId: string, comment: string | null) {
       if (eventState.allowOpenExternalUrl) {
-        const payload = { assetContractAddress, tokenId, comment }
+        const payloadLength = assetContractAddress.length + tokenId.length + (comment?.length || 0)
 
-        if (JSON.stringify(payload).length > 49000) {
+        if (payloadLength > 49000) {
           onError(new Error('OpenNFT payload cannot exceed 49.000 bytes'))
           return
         }
 
         batchEvents.events.push({
-          type: 'OpenNFTDialog',
+          type: EAType.OpenNFTDialog,
           tag: '',
-          payload: JSON.stringify(payload as OpenNFTDialogPayload)
+          payload: { openNftDialog: { assetContractAddress, tokenId, comment: comment || '' } }
         })
       } else {
         this.error('openNFTDialog can only be used inside a pointerEvent')
@@ -89,15 +76,15 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         return
       }
       batchEvents.events.push({
-        type: 'CreateEntity',
-        payload: JSON.stringify({ id: entityId } as CreateEntityPayload)
+        type: EAType.CreateEntity,
+        payload: { createEntity: { id: entityId } }
       })
     },
 
     removeEntity(entityId: string) {
       batchEvents.events.push({
-        type: 'RemoveEntity',
-        payload: JSON.stringify({ id: entityId } as RemoveEntityPayload)
+        type: EAType.RemoveEntity,
+        payload: { removeEntity: { id: entityId } }
       })
     },
 
@@ -128,14 +115,16 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: 'UpdateEntityComponent',
+          type: EAType.UpdateEntityComponent,
           tag: sceneId + '_' + entityId + '_' + classId,
-          payload: JSON.stringify({
-            entityId,
-            classId,
-            name: componentName.replace(componentNameRE, ''),
-            json: generatePBObject(classId, json)
-          } as UpdateEntityComponentPayload)
+          payload: {
+            updateEntityComponent: {
+              entityId,
+              classId,
+              name: componentName.replace(componentNameRE, ''),
+              json: generatePBObject(classId, json)
+            }
+          }
         })
       }
     },
@@ -144,13 +133,15 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     attachEntityComponent(entityId: string, componentName: string, id: string): void {
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: 'AttachEntityComponent',
+          type: EAType.AttachEntityComponent,
           tag: entityId,
-          payload: JSON.stringify({
-            entityId,
-            name: componentName.replace(componentNameRE, ''),
-            id
-          } as AttachEntityComponentPayload)
+          payload: {
+            attachEntityComponent: {
+              entityId,
+              name: componentName.replace(componentNameRE, ''),
+              id
+            }
+          }
         })
       }
     },
@@ -159,12 +150,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     removeEntityComponent(entityId: string, componentName: string): void {
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: 'ComponentRemoved',
+          type: EAType.ComponentRemoved,
           tag: entityId,
-          payload: JSON.stringify({
-            entityId,
-            name: componentName.replace(componentNameRE, '')
-          } as ComponentRemovedPayload)
+          payload: {
+            componentRemoved: {
+              entityId,
+              name: componentName.replace(componentNameRE, '')
+            }
+          }
         })
       }
     },
@@ -172,12 +165,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     /** set a new parent for the entity */
     setParent(entityId: string, parentId: string): void {
       batchEvents.events.push({
-        type: 'SetEntityParent',
+        type: EAType.SetEntityParent,
         tag: entityId,
-        payload: JSON.stringify({
-          entityId,
-          parentId
-        } as SetEntityParentPayload)
+        payload: {
+          setEntityParent: {
+            entityId,
+            parentId
+          }
+        }
       })
     },
 
@@ -185,12 +180,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     query(queryType: QueryType, payload: any) {
       payload.queryId = getIdAsNumber(payload.queryId).toString()
       batchEvents.events.push({
-        type: 'Query',
+        type: EAType.Query,
         tag: sceneId + '_' + payload.queryId,
-        payload: JSON.stringify({
-          queryId: queryType,
-          payload
-        } as QueryPayload)
+        payload: {
+          query: {
+            queryId: queryTypeFromJSON(queryType),
+            payload
+          }
+        }
       })
     },
 
@@ -207,33 +204,39 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     componentCreated(id: string, componentName: string, classId: number) {
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: 'ComponentCreated',
+          type: EAType.ComponentCreated,
           tag: id,
-          payload: JSON.stringify({
-            id,
-            classId,
-            name: componentName.replace(componentNameRE, '')
-          } as ComponentCreatedPayload)
+          payload: {
+            componentCreated: {
+              id,
+              classId,
+              name: componentName.replace(componentNameRE, '')
+            }
+          }
         })
       }
     },
 
     componentDisposed(id: string) {
       batchEvents.events.push({
-        type: 'ComponentDisposed',
+        type: EAType.ComponentDisposed,
         tag: id,
-        payload: JSON.stringify({ id } as ComponentDisposedPayload)
+        payload: {
+          componentDisposed: { id }
+        }
       })
     },
 
     componentUpdated(id: string, json: string) {
       batchEvents.events.push({
-        type: 'ComponentUpdated',
+        type: EAType.ComponentUpdated,
         tag: id,
-        payload: JSON.stringify({
-          id,
-          json
-        } as ComponentUpdatedPayload)
+        payload: {
+          componentUpdated: {
+            id,
+            json
+          }
+        }
       })
     },
 
