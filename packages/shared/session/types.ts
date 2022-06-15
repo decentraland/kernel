@@ -1,4 +1,4 @@
-import { AuthIdentity } from 'dcl-crypto'
+import { AuthIdentity } from '@dcl/crypto'
 
 import { ETHEREUM_NETWORK } from 'config'
 import { IEthereumProvider, LoginState } from '@dcl/kernel-interface'

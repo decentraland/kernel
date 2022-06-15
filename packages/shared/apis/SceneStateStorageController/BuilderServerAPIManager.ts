@@ -1,4 +1,4 @@
-import { Authenticator } from 'dcl-crypto'
+import { Authenticator } from '@dcl/crypto'
 import { ExplorerIdentity } from 'shared/session/types'
 import { uuid } from 'atomicHelpers/math'
 import {
