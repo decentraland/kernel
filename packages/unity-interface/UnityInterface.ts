@@ -372,11 +372,11 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public ConnectionToRealmSuccess(successData: WorldPosition) {
-    this.SendMessageToUnity('Main', 'ConnectionToRealmSuccess', JSON.stringify(successData))
+    this.SendMessageToUnity('Bridges', 'ConnectionToRealmSuccess', JSON.stringify(successData))
   }
 
   public ConnectionToRealmFailed(failedData: WorldPosition) {
-    this.SendMessageToUnity('Main', 'ConnectionToRealmFailed', JSON.stringify(failedData))
+    this.SendMessageToUnity('Bridges', 'ConnectionToRealmFailed', JSON.stringify(failedData))
   }
 
   public SendGIFPointers(id: string, width: number, height: number, pointers: number[], frameDelays: number[]) {
