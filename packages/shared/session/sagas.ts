@@ -36,7 +36,6 @@ import { localProfilesRepo } from '../profiles/sagas'
 import { getCurrentIdentity, getIsGuestLogin, isLoginCompleted } from './selectors'
 import { waitForRealmInitialized } from '../dao/sagas'
 import { profileRequest, PROFILE_SUCCESS, saveProfileDelta, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
-import { ensureUnityInterface } from '../renderer'
 import { LoginState } from '@dcl/kernel-interface'
 import { RequestManager } from 'eth-connect'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
@@ -48,6 +47,7 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 import { setWorldContext } from 'shared/comms/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar } from '@dcl/schemas'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
 
 const TOS_KEY = 'tos'
@@ -111,7 +111,7 @@ function* authenticate(action: AuthenticateAction) {
 
   yield put(changeLoginState(LoginState.WAITING_RENDERER))
 
-  yield call(ensureUnityInterface)
+  yield call(waitForRendererInstance)
 
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
 

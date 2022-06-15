@@ -1,0 +1,114 @@
+syntax = "proto3";
+
+// Auxiliary types
+
+message SerializedSceneState {
+  repeated SerializedEntity entities = 1;
+}
+
+message SerializedComponent {
+    int32 type = 1;
+    string value_json = 2;
+}
+
+message SerializedEntity {
+    string id = 1;
+    repeated SerializedComponent components = 2;
+}
+
+// RPC Request and Response Messages
+
+message GetProjectManifestRequest {
+    string project_id = 1;
+}
+
+message GetProjectManifestResponse {
+    optional SerializedSceneState state = 1;
+}
+
+message GetProjectManifestByCoordinatesRequest {
+    string land = 1;
+}
+
+message GetProjectManifestByCoordinatesResponse {
+    optional SerializedSceneState state = 1;
+
+}
+
+message CreateProjectWithCoordsRequest {
+    string coordinates = 1;
+}
+
+message CreateProjectWithCoordsResponse {
+    bool ok = 1;
+}
+
+message SaveSceneStateRequest {
+    SerializedSceneState serialized_scene_state = 1;
+}
+
+message SaveSceneStateResponse {
+    bool ok = 1;
+    optional string error = 2;
+}
+
+message SaveProjectInfoRequest {
+    SerializedSceneState scene_state = 1;
+    string project_name = 2;
+    string project_description = 3;
+    string project_screenshot = 4;
+}
+
+message SaveProjectInfoResponse {
+    bool ok = 1;
+}
+
+message PublishSceneStateRequest {
+    string scene_id = 1;
+    string scene_name = 2;
+    string scene_description = 3;
+    string scene_screenshot = 4;
+    SerializedSceneState scene_state = 5;
+}
+
+message PublishSceneStateResponse {
+    bool ok = 1;
+    optional string error = 2;
+}
+
+message GetStoredStateRequest {
+    string scene_id = 1;
+}
+
+message GetStoredStateResponse {
+    optional SerializedSceneState state = 1;
+}
+
+
+message CreateProjectFromStateDefinitionRequest {}
+
+message CreateProjectFromStateDefinitionResponse {
+    optional SerializedSceneState state = 1;
+}
+
+
+message SendAssetsToRendererRequest {
+    SerializedSceneState state = 1;
+}
+
+message SendAssetsToRendererResponse {
+    string state = 1;
+}
+
+
+service SceneStateStorageControllerService {
+    rpc GetProjectManifest(GetProjectManifestRequest) returns (GetProjectManifestResponse) {}
+    rpc GetProjectManifestByCoordinates(GetProjectManifestByCoordinatesRequest) returns (GetProjectManifestByCoordinatesResponse) {}
+    rpc CreateProjectWithCoords(CreateProjectWithCoordsRequest) returns (CreateProjectWithCoordsResponse) {}
+    rpc SaveSceneState(SaveSceneStateRequest) returns (SaveSceneStateResponse) {}
+    rpc SaveProjectInfo(SaveProjectInfoRequest) returns (SaveProjectInfoResponse) {}
+    rpc PublishSceneState(PublishSceneStateRequest) returns (PublishSceneStateResponse) {}
+    rpc GetStoredState(GetStoredStateRequest) returns (GetStoredStateResponse) {}
+    rpc CreateProjectFromStateDefinition(CreateProjectFromStateDefinitionRequest) returns (CreateProjectFromStateDefinitionResponse) {}
+    rpc SendAssetsToRenderer(SendAssetsToRendererRequest) returns (SendAssetsToRendererResponse) {}
+}

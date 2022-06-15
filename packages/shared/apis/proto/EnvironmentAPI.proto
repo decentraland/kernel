@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+message ContentMapping {
+    string file = 1;
+    string hash = 2;
+}
+
+message BootstrapDataResponse {
+    string scene_id = 1;
+    string name = 2;
+    string main = 3;
+    string base_url = 4;
+    bool use_f_p_s_throttling = 5;
+    repeated ContentMapping mappings = 6;
+    string json_payload = 7;
+}
+
+message PreviewModeResponse {
+    bool is_preview = 1;
+}
+
+message AreUnsafeRequestAllowedResponse {
+    bool status = 1;
+}
+
+message GetPlatformResponse {
+    string platform = 1;
+}
+
+message EnvironmentRealm {
+    string domain = 1;
+    string layer = 2;
+    string room = 3;
+    string server_name = 4;
+    string display_name = 5;
+    string protocol = 6;
+}
+
+message GetCurrentRealmResponse {
+    optional EnvironmentRealm current_realm = 1;
+}
+
+message GetExplorerConfigurationResponse {
+    string clientUri = 1;
+    map<string, string> configurations = 2;
+}
+
+message GetDecentralandTimeResponse {
+    int32 seconds = 1;
+}
+
+message GetBootstrapDataRequest {}
+message IsPreviewModeRequest {}
+message GetPlatformRequest {}
+message AreUnsafeRequestAllowedRequest {}
+message GetCurrentRealmRequest {}
+message GetExplorerConfigurationRequest {}
+message GetDecentralandTimeRequest {}
+
+service EnvironmentAPIService {
+    rpc GetBootstrapData(GetBootstrapDataRequest) returns (BootstrapDataResponse) {}
+    rpc IsPreviewMode(IsPreviewModeRequest) returns (PreviewModeResponse) {}
+    rpc GetPlatform(GetPlatformRequest) returns (GetPlatformResponse) {}
+    rpc AreUnsafeRequestAllowed(AreUnsafeRequestAllowedRequest) returns (AreUnsafeRequestAllowedResponse) {}
+    rpc GetCurrentRealm(GetCurrentRealmRequest) returns (GetCurrentRealmResponse) {}
+    rpc GetExplorerConfiguration(GetExplorerConfigurationRequest) returns (GetExplorerConfigurationResponse) {}
+    rpc GetDecentralandTime(GetDecentralandTimeRequest) returns (GetDecentralandTimeResponse) {}
+}

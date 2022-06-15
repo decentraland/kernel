@@ -6,18 +6,22 @@ declare const dcl: DecentralandInterface
 // Initialize avatar profile scene
 
 void executeTask(async () => {
-  await Promise.all([
+  const [_, socialController] = await Promise.all([
     dcl.loadModule('@decentraland/Identity', {}),
     dcl.loadModule('@decentraland/SocialController', {})
   ])
 
-  dcl.subscribe('AVATAR_OBSERVABLE' as any)
+  const ret: AsyncGenerator<{ event: string; payload: string }> = await dcl.callRpc(
+    socialController.rpcHandle,
+    'getAvatarEvents',
+    []
+  )
 
-  dcl.onEvent((event) => {
-    const eventType: string = event.type
-
-    if (eventType === 'AVATAR_OBSERVABLE') {
-      avatarMessageObservable.notifyObservers(event.data as any)
+  for await (const { payload } of ret) {
+    try {
+      avatarMessageObservable.notifyObservers(JSON.parse(payload))
+    } catch (err) {
+      console.error(err)
     }
-  })
+  }
 })

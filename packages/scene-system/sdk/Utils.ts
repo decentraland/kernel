@@ -1,5 +1,6 @@
 import { Vector3 } from '@dcl/ecs-math'
 import { CLASS_ID, Transform } from '@dcl/legacy-ecs'
+import { EAType } from 'shared/apis/proto/EngineAPI.gen'
 import { PB_Transform, PB_Vector3, PB_Quaternion } from '../../shared/proto/engineinterface_pb'
 
 const VECTOR3_MEMBER_CAP = 1000000 // Value measured when genesis plaza glitch triggered a physics engine breakdown
@@ -70,5 +71,58 @@ function capVector(targetVector: Vector3, cap: number) {
 
   if (Math.abs(targetVector.z) > cap) {
     targetVector.z = cap * Math.sign(targetVector.z)
+  }
+}
+
+const dataUrlRE = /^data:[^/]+\/[^;]+;base64,/
+const blobRE = /^blob:http/
+
+export const componentNameRE = /^(engine\.)/
+
+export function resolveMapping(mapping: string | undefined, mappingName: string, baseUrl: string) {
+  let url = mappingName
+
+  if (mapping) {
+    url = mapping
+  }
+
+  if (dataUrlRE.test(url)) {
+    return url
+  }
+
+  if (blobRE.test(url)) {
+    return url
+  }
+
+  return (baseUrl.endsWith('/') ? baseUrl : baseUrl + '/') + url
+}
+
+// NOTE(Brian): The idea is to map all string ids used by this scene to ints
+//              so we avoid sending/processing big ids like "xxxxx-xxxxx-xxxxx-xxxxx"
+//              that are used by i.e. raycasting queries.
+const idToNumberStore: Record<string, number> = {}
+export const numberToIdStore: Record<number, string> = {}
+let idToNumberStoreCounter: number = 10 // Starting in 10, to leave room for special cases (such as the root entity)
+
+function addIdToStorage(id: string, idAsNumber: number) {
+  idToNumberStore[id] = idAsNumber
+  numberToIdStore[idAsNumber] = id
+}
+
+export function getIdAsNumber(id: string): number {
+  if (!idToNumberStore.hasOwnProperty(id)) {
+    idToNumberStoreCounter++
+    addIdToStorage(id, idToNumberStoreCounter)
+    return idToNumberStoreCounter
+  } else {
+    return idToNumberStore[id]
+  }
+}
+
+export function initMessagesFinished() {
+  return {
+    type: EAType.InitMessagesFinished,
+    tag: 'scene',
+    payload: { initMessagesFinished: {} }
   }
 }

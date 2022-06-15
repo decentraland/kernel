@@ -54,7 +54,6 @@ import { reportHotScenes } from 'shared/social/hotScenes'
 import { GIFProcessor } from 'gif-processor/processor'
 import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatRecording } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
-import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { wearablesRequest } from 'shared/catalogs/actions'
@@ -76,7 +75,7 @@ import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
 import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
-import { setDecentralandTime } from 'shared/apis/EnvironmentAPI'
+import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
@@ -452,7 +451,12 @@ export class BrowserInterface {
           isEmpty: false
         }
 
-        setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
+        async function asyncLoad() {
+          const { StatefulWorker } = await import('shared/world/StatefulWorker')
+          setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
+        }
+
+        asyncLoad().catch(defaultLogger.error)
         break
       }
       case 'StopStatefulMode': {

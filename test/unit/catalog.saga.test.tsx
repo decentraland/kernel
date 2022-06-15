@@ -10,7 +10,7 @@ import {
 } from 'shared/catalogs/sagas'
 import { wearablesFailure, wearablesRequest, wearablesSuccess } from 'shared/catalogs/actions'
 import { baseCatalogsLoaded, getPlatformCatalog } from 'shared/catalogs/selectors'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 
 const serverUrl = 'https://server.com'
 const wearableId1 = 'WearableId1'

@@ -8,7 +8,7 @@ import { toRendererQuest } from '@dcl/ecs-quests/@dcl/mappings'
 import { getPreviousQuests, getQuests } from './selectors'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { getFeatureFlagEnabled } from '../meta/selectors'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 
 const QUESTS_REFRESH_INTERVAL = 30000
