@@ -1,4 +1,4 @@
-import {BigNumber} from 'eth-connect'
+import { BigNumber } from 'eth-connect'
 import { fromWei, toHex, toWei } from 'eth-connect'
 import { future, IFuture } from 'fp-future'
 import { defaultLogger } from 'shared/logger'
