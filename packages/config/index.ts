@@ -106,6 +106,10 @@ export const COMMS =
   !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
 
+export const DECENTRALAND_SPACE = qs.get('SPACE')
+
+export const PARCEL_LOADING_ENABLED = !DECENTRALAND_SPACE || qs.has('DISABLE_PARCEL_LOADING')
+
 export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
 export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('FETCH_CONTENT_SERVICE'))
 export const COMMS_SERVICE = ensureSingleString(qs.get('COMMS_SERVICE'))

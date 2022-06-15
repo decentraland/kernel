@@ -167,6 +167,7 @@ function* handleReportPendingScenes() {
     }
     if (shouldBeCounted && isPending && !failedLoading) {
       pendingScenes.add(sceneId)
+      console.log('pending', sceneId, sceneWorker)
     }
   }
 

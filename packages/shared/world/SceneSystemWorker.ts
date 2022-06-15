@@ -6,7 +6,7 @@ import { SceneWorker } from './SceneWorker'
 import { PositionReport, positionObservable } from './positionThings'
 import { Observer } from 'mz-observable'
 import { sceneLifeCycleObservable } from '../../decentraland-loader/lifecycle/controllers/scene'
-import { renderStateObservable, isRendererEnabled } from './worldState'
+import { renderStateObservable } from './worldState'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { CustomWebWorkerTransport } from './CustomWebWorkerTransport'
 import { sceneObservable } from 'shared/world/sceneState'
@@ -149,7 +149,7 @@ export class SceneSystemWorker extends SceneWorker {
   }
 
   private sendSceneReadyIfNecessary() {
-    if (!this.sceneStarted && isRendererEnabled() && this.sceneReady) {
+    if (!this.sceneStarted && this.sceneReady) {
       this.sceneStarted = true
       this.engineAPI!.sendSubscriptionEvent('sceneStart', {})
       renderStateObservable.remove(this.renderStateObserver)

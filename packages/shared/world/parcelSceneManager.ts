@@ -29,6 +29,8 @@ import { PositionTrackEvents } from 'shared/analytics/types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { activateAllPortableExperiences, killAllPortableExperiences } from '../portableExperiences/actions'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
+import { getPortableExperienceFromUrn } from 'unity-interface/portableExperiencesUtils'
+import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl } from 'config'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -165,6 +167,8 @@ export const parcelSceneLoadingState: ParcelSceneLoadingState = {
 }
 
 async function isEmptyParcel(coord: string): Promise<boolean> {
+  if (!parcelSceneLoadingState.lifecycleManager) return false
+
   for (const record of parcelSceneLoadingState.lifecycleManager.sceneIdToRequest) {
     const land = await record[1]
     if (land.sceneJsonData.scene.base === coord && record[0] === getEmptySceneId(coord)) return true
@@ -174,6 +178,7 @@ async function isEmptyParcel(coord: string): Promise<boolean> {
 }
 
 export async function invalidateScenesAtCoords(coords: string[], reloadScenes: boolean = true) {
+  if (!parcelSceneLoadingState.lifecycleManager) return
   const coordsToLoad: string[] = []
   // We check for empty parcels
   for (const coord of coords) {
@@ -211,7 +216,7 @@ export async function invalidateScenesAtCoords(coords: string[], reloadScenes: b
     if (!sceneId) continue
 
     if (reloadScenes) {
-      parcelSceneLoadingState.lifecycleManager.notify('Scene.reload', { sceneId })
+      parcelSceneLoadingState.lifecycleManager?.notify('Scene.reload', { sceneId })
     }
   }
 }
@@ -230,7 +235,7 @@ export async function startIsolatedMode(options: IsolatedModeOptions) {
   const sceneId = parcelSceneLoadingState.isolatedModeOptions.payload.sceneId
   if (sceneId && parcelSceneLoadingState.isolatedModeOptions.payload.land) {
     newSet.add(sceneId)
-    parcelSceneLoadingState.lifecycleManager.setParcelData(
+    parcelSceneLoadingState.lifecycleManager?.setParcelData(
       sceneId,
       parcelSceneLoadingState.isolatedModeOptions.payload.land
     )
@@ -254,7 +259,7 @@ export async function startIsolatedMode(options: IsolatedModeOptions) {
   await setDesiredParcelScenes(newSet)
 
   // We notify the lifecycle worker that the scenes are not on sight anymore
-  parcelSceneLoadingState.lifecycleManager.notify('ResetScenes', {})
+  parcelSceneLoadingState.lifecycleManager?.notify('ResetScenes', {})
 }
 
 export function stopIsolatedMode(options: IsolatedModeOptions) {
@@ -294,11 +299,22 @@ export function getDesiredParcelScenes(): Set<string> {
   return new Set(parcelSceneLoadingState.desiredParcelScenes)
 }
 
+export async function loadILandFromUrn(urn: string): Promise<ILand> {
+  const px = await getPortableExperienceFromUrn(urn)
+  return {
+    baseUrl: px.baseUrl,
+    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
+    mappingsResponse: { contents: px.mappings, parcel_id: px.entity.metadata?.scene?.base || '0,0', root_cid: px.id },
+    sceneId: urn,
+    sceneJsonData: px.entity.metadata
+  }
+}
+
 /**
  * @internal
  * Receives a set of Set<SceneId>
  */
-export async function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
+async function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
   const previousSet = new Set(parcelSceneLoadingState.desiredParcelScenes)
   const newSet = (parcelSceneLoadingState.desiredParcelScenes = desiredParcelScenes)
 
@@ -313,7 +329,12 @@ export async function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
   for (const newSceneId of newSet) {
     if (!loadedSceneWorkers.has(newSceneId)) {
       // create new scene
-      await loadParcelSceneByIdIfMissing(newSceneId)
+      const data = newSceneId.startsWith('urn:')
+        ? await loadILandFromUrn(newSceneId)
+        : (await parcelSceneLoadingState.lifecycleManager?.getParcelData(newSceneId)) ||
+          (await loadILandFromUrn(`urn:decentraland:entity:${newSceneId}`))
+
+      await loadParcelSceneByIdIfMissing(newSceneId, data)
     }
   }
 }
@@ -324,7 +345,7 @@ function unloadParcelSceneById(sceneId: string) {
     return
   }
   //We notify that the scene has been unloaded, the sceneId must have the same name
-  parcelSceneLoadingState.lifecycleManager.notify('Scene.status', {
+  parcelSceneLoadingState.lifecycleManager?.notify('Scene.status', {
     sceneId: sceneId,
     status: 'unloaded'
   })
@@ -334,10 +355,8 @@ function unloadParcelSceneById(sceneId: string) {
 /**
  * @internal
  **/
-export async function loadParcelSceneByIdIfMissing(sceneId: string) {
+export async function loadParcelSceneByIdIfMissing(sceneId: string, parcelSceneToStart: ILand) {
   const lifecycleManager = parcelSceneLoadingState.lifecycleManager
-
-  const parcelSceneToStart = await lifecycleManager.getParcelData(sceneId)
 
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
@@ -383,9 +402,10 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
       sceneLifeCycleObservable.remove(observer)
       clearTimeout(timer)
       worker.ready |= SceneWorkerReadyState.STARTED
-      lifecycleManager.notify('Scene.status', sceneStatus)
       globalSignalSceneStart(sceneId)
+      lifecycleManager?.notify('Scene.status', sceneStatus)
     }
+    debugger
   })
 
   // tell the engine to load the parcel scene
@@ -397,8 +417,8 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
     if (worker && !worker.hasSceneStarted()) {
       sceneLifeCycleObservable.remove(observer)
       worker.ready |= SceneWorkerReadyState.LOADING_FAILED
-      lifecycleManager.notify('Scene.status', { sceneId, status: 'failed' })
       globalSignalSceneFail(sceneId)
+      lifecycleManager?.notify('Scene.status', { sceneId, status: 'failed' })
     }
   }, WORKER_TIMEOUT)
 }
@@ -410,7 +430,7 @@ async function removeDesiredParcel(sceneId: string) {
   await setDesiredParcelScenes(desiredScenes)
 }
 
-async function addDesiredParcel(sceneId: string) {
+export async function addDesiredParcel(sceneId: string) {
   const desiredScenes = getDesiredParcelScenes()
   if (hasDesiredParcelScenes(sceneId)) return
   desiredScenes.add(sceneId)

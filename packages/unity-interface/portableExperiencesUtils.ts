@@ -51,7 +51,9 @@ export function getRunningPortableExperience(sceneId: string): UnityPortableExpe
   return currentPortableExperiences.get(sceneId)
 }
 
-export async function getPortableExperienceFromUrn(sceneUrn: string): Promise<StorePortableExperience> {
+export async function getPortableExperienceFromUrn(
+  sceneUrn: string
+): Promise<StorePortableExperience & { entity: Entity }> {
   const resolvedEntity = await parseUrn(sceneUrn)
 
   if (resolvedEntity === null || resolvedEntity.type !== 'entity') {
@@ -69,11 +71,14 @@ export async function getPortableExperienceFromUrn(sceneUrn: string): Promise<St
   const baseUrl: string = resolvedEntity.baseUrl || new URL('.', resolvedUrl).toString()
   const mappings = entity.content || []
 
-  return getLoadablePortableExperience({
-    sceneUrn: resolvedEntity.uri.href.replace(/(\?.+)$/, ''),
-    baseUrl: baseUrl,
-    mappings: mappings
-  })
+  return Object.assign(
+    await getLoadablePortableExperience({
+      sceneUrn: resolvedEntity.uri.href.replace(/(\?.+)$/, ''),
+      baseUrl: baseUrl,
+      mappings: mappings
+    }),
+    { entity }
+  )
 }
 
 async function getLoadablePortableExperience(data: {
