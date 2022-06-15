@@ -1,5 +1,5 @@
 import { ContractFactory, RequestManager, Contract, Address, TransactionOptions } from 'eth-connect'
-import BigNumber from 'bignumber.js'
+import { BigNumber } from 'eth-connect'
 
 const ERC20Abi = [
   {

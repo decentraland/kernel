@@ -1,6 +1,6 @@
 import { takeEvery, put, select, call, take, delay, apply, fork, race } from 'redux-saga/effects'
 
-import { Authenticator } from 'dcl-crypto'
+import { Authenticator } from '@dcl/crypto'
 import {
   SocialClient,
   FriendshipRequest,

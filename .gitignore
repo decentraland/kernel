@@ -96,3 +96,4 @@ static/package-lock.json
 **/*.dot
 
 packages/shared/apis/proto/*.ts
+lsall

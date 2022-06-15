@@ -1,5 +1,5 @@
 import { EntityType, ContentFileHash } from 'dcl-catalyst-commons'
-import { Authenticator } from 'dcl-crypto'
+import { Authenticator } from '@dcl/crypto'
 
 import { getFromPersistentStorage, saveToPersistentStorage } from './../../../atomicHelpers/persistentStorage'
 
