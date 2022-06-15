@@ -1,6 +1,6 @@
 import { expectSaga } from 'redux-saga-test-plan'
 import { select } from 'redux-saga/effects'
-import { toEnvironmentRealmType } from 'shared/apis/EnvironmentAPI'
+import { toEnvironmentRealmType } from 'shared/apis/host/EnvironmentAPI'
 import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { Realm } from 'shared/dao/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'

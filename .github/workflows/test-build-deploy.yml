@@ -64,8 +64,8 @@ jobs:
           cwd: ./static
 
       - name: install
-        run: npm ci
-
+        run: |
+          npm ci
       - name: build
         run: make build-essentials build-release build-deploy
       - uses: hmarr/debug-action@v2

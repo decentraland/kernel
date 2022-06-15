@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message RequestTeleportRequest {
+    string destination = 1;
+}
+
+message RequestTeleportResponse {}
+
+service UserActionModuleService {
+    rpc RequestTeleport(RequestTeleportRequest) returns (RequestTeleportResponse) {}
+}

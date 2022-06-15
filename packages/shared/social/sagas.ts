@@ -13,7 +13,7 @@ import {
   UNMUTE_PLAYERS
 } from './actions'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { Avatar } from '@dcl/schemas'
 import { validateAvatar } from 'shared/profiles/schemaValidation'
 

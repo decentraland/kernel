@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "esnext",
-    "target": "es2017",
+    "target": "es2018",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
@@ -23,7 +23,7 @@
     "removeComments": true,
     "pretty": true,
     "outDir": "../../static/systems",
-    "lib": ["es2017", "webworker"],
+    "lib": ["es2018", "webworker"],
     "baseUrl": "..",
     "types": ["@dcl/posix", "segment-analytics"]
   },

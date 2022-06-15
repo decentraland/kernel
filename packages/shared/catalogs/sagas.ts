@@ -30,7 +30,7 @@ import {
   PartialWearableV2,
   UnpublishedWearable
 } from './types'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "UserIdentity.proto";
+
+message Player {
+    string user_id = 1;
+}
+
+message PlayersGetUserDataResponse {
+    optional UserData data = 1;
+}
+
+message PlayerListResponse {
+    repeated Player players = 1;
+}
+
+message GetPlayerDataRequest {
+    string user_id = 1;
+}
+
+message GetPlayersInSceneRequest {}
+message GetConnectedPlayersRequest {}
+
+service PlayersService {
+    rpc GetPlayerData(GetPlayerDataRequest) returns (PlayersGetUserDataResponse) {}
+    rpc GetPlayersInScene(GetPlayersInSceneRequest) returns (PlayerListResponse) {}
+    rpc GetConnectedPlayers(GetConnectedPlayersRequest)  returns (PlayerListResponse) {}
+}

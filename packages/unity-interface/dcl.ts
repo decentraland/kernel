@@ -27,7 +27,6 @@ import { UnityParcelScene } from './UnityParcelScene'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
 import { UnityScene } from './UnityScene'
-import { ensureUiApis } from 'shared/world/uiSceneInitializer'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
@@ -102,9 +101,7 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
     mappings: []
   })
 
-  const worker = loadParcelScene(scene, undefined, true)
-
-  await ensureUiApis(worker)
+  loadParcelScene(scene, undefined, true)
 
   getUnityInstance().CreateGlobalScene({
     id: scene.getSceneId(),

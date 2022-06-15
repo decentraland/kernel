@@ -20,11 +20,6 @@ export interface IEngineAPI {
    */
   sendBatch(actions: EntityAction[]): Promise<void>
 
-  /**
-   * Start signal, sent after everything was initialized
-   */
-  startSignal(): Promise<void>
-
   /** Event handler for subscription events */
   onSubscribedEvent(fn: any): void
 }

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message InitRequest {}
+message SocialEvent {
+  string event = 1;
+  string payload = 2;
+}
+
+service SocialControllerService {
+    rpc GetAvatarEvents(InitRequest) returns (stream SocialEvent) {}
+}

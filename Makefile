@@ -1,9 +1,18 @@
 # General setup
+PROTOBUF_VERSION = 3.20.1
+ifeq ($(shell uname),Darwin)
+PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-osx-x86_64.zip
+else
+PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
+endif
 
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
+SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
+PBS_TS = $(SCENE_PROTO_FILES:packages/shared/apis/proto/%.proto=packages/shared/apis/proto/%.gen.ts)
 CWD = $(shell pwd)
+PROTOC = node_modules/.bin/protobuf/bin/protoc
 
 # Remove default Makefile rules
 
@@ -51,7 +60,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
 # Entry points
 static/%.js: build-essentials packages/entryPoints/%.ts
@@ -149,7 +158,6 @@ update-renderer:  ## Update the renderer
 
 madge: scripts/deps.js
 	@node scripts/deps.js
-	dot packages/scene-system/cli.scene.system.ts.dot -T pdf -O
 	dot packages/scene-system/scene.system.ts.dot -T pdf -O
 	dot packages/scene-system/stateful.scene.system.ts.dot -T pdf -O
 	dot packages/ui/decentraland-ui.scene.ts.dot -T pdf -O
@@ -166,3 +174,19 @@ madge: scripts/deps.js
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
+
+node_modules/.bin/protobuf/bin/protoc:
+	curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/$(PROTOBUF_ZIP)
+	unzip -o $(PROTOBUF_ZIP) -d node_modules/.bin/protobuf
+	rm $(PROTOBUF_ZIP)
+	chmod +x node_modules/.bin/protobuf/bin/protoc
+
+packages/shared/apis/proto/%.gen.ts: packages/shared/apis/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+	${PROTOC}  \
+			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
+			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+			--ts_proto_opt=fileSuffix=.gen \
+			--ts_proto_out="$(PWD)/packages/shared/apis/proto" -I="$(PWD)/packages/shared/apis/proto" \
+			"$(PWD)/packages/shared/apis/proto/$*.proto";
+
+compile_apis: ${PBS_TS}

@@ -45,7 +45,7 @@ import { retrieve, store as cacheStore } from 'shared/cache'
 import { getFetchContentServer, getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { MarketData } from 'shared/atlas/types'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 
