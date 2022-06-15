@@ -5,7 +5,6 @@ import {
   eATypeToJSON,
   EngineAPIServiceDefinition,
   EventData,
-  EventDataType,
   ManyEntityAction,
   Payload,
   queryTypeToJSON
@@ -93,16 +92,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       return {}
     },
     async pullEvents(req, ctx) {
-      const events: EventData[] = ctx.events.map((e) => {
-        return (
-          e.proto ||
-          ({
-            type: EventDataType.Generic,
-            generic: { eventId: e.generic!.type, eventData: JSON.stringify(e.generic!.data) }
-          } as any)
-        )
-      })
-
+      const events: EventData[] = ctx.events
       ctx.events = []
       return { events }
     }

@@ -12,11 +12,6 @@ type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
 export type PortContextService<K extends keyof PortContext> = WithRequired<PortContext, K>
 
-export type EventListItem = {
-  generic?: EngineEvent
-  proto?: EventData
-}
-
 export type PortContext = {
   EnvironmentAPI: {
     cid: string
@@ -34,7 +29,7 @@ export type PortContext = {
     isPortableExperience: boolean
     isEmpty: boolean
   }
-  events: EventListItem[]
+  events: EventData[]
 
   sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void
   sendProtoSceneEvent(event: EventData): void

@@ -14,15 +14,16 @@ import { PortableExperiencesServiceDefinition } from '../proto/PortableExperienc
 
 export function registerPortableExperiencesServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PortableExperiencesServiceDefinition, async () => ({
-    //   /**
-    //    * Starts a portable experience.
-    //    * @param  {SpawnPortableExperienceParameters} [pid] - Information to identify the PE
-    //    *
-    //    * Returns the handle of the portable experience.
-    //    */
+    /**
+     * Starts a portable experience.
+     * @param  {SpawnPortableExperienceParameters} [pid] - Information to identify the PE
+     *
+     * Returns the handle of the portable experience.
+     */
     async spawn(req, ctx) {
       return await spawnScenePortableExperienceSceneFromUrn(req.pid, ctx.EnvironmentAPI.cid)
     },
+
     /**
      * Stops a portable experience. Only the executor that spawned the portable experience has permission to kill it.
      * @param  {string} [pid] - The portable experience process id

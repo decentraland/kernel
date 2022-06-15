@@ -18,6 +18,7 @@ export enum SceneWorkerReadyState {
 import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import Protocol from 'devtools-protocol'
+import { EventDataType } from 'shared/apis/proto/EngineAPI.gen'
 
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
@@ -49,10 +50,16 @@ export abstract class SceneWorker {
       },
       events: [],
       sendSceneEvent: (type, data) => {
-        this.rpcContext.events.push({ generic: { type, data } })
+        this.rpcContext.events.push({
+          type: EventDataType.Generic,
+          generic: {
+            eventId: type,
+            eventData: JSON.stringify(data)
+          }
+        })
       },
       sendProtoSceneEvent: (e) => {
-        this.rpcContext.events.push({ proto: e })
+        this.rpcContext.events.push(e)
       }
     }
 

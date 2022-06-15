@@ -1,14 +1,4 @@
 import { CLASS_ID } from '@dcl/legacy-ecs'
-// import {
-//   AttachEntityComponentPayload,
-//   ComponentCreatedPayload,
-//   ComponentRemovedPayload,
-//   ComponentUpdatedPayload,
-//   CreateEntityPayload,
-//   EntityAction,
-//   RemoveEntityPayload,
-//   UpdateEntityComponentPayload
-// } from 'shared/types'
 import {
   Component,
   ComponentData,
@@ -36,13 +26,7 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
   }
 
   sendBatch(events: EntityAction[]) {
-    this.EngineAPI?.sendBatch({
-      actions: events.map((item) => ({
-        type: item.type,
-        tag: item.tag,
-        payload: item.payload
-      }))
-    }).catch((err) => defaultLogger.error(err))
+    this.EngineAPI?.sendBatch({ actions: events }).catch((err) => defaultLogger.error(err))
   }
 
   addEntity(entityId: EntityId, components?: Component[]): void {

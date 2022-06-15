@@ -28,6 +28,9 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
   //  Only the two permissions that start with ALLOW_TO_... can be conceed without user
   //  interaction
 
+  const isOneOfFirstPermissions =
+    test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE || test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE
+
   if (ctx.ParcelIdentity) {
     const sceneJsonData = ctx.ParcelIdentity.land?.sceneJsonData
     const list: PermissionItem[] = []
@@ -41,21 +44,14 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
       }
     }
 
-    if (
-      list.includes(test) &&
-      (test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
-        test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
-    ) {
+    if (list.includes(test) && isOneOfFirstPermissions) {
       return true
     }
 
     // Workaround to give old default permissions, remove when
     //  a method for grant permissions exist.
     if (ctx.ParcelIdentity.isPortableExperience) {
-      if (
-        test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
-        test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE
-      ) {
+      if (isOneOfFirstPermissions) {
         return true
       }
     }
