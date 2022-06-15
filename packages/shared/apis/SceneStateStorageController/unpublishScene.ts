@@ -1,4 +1,4 @@
-import { Authenticator } from 'dcl-crypto'
+import { Authenticator } from '@dcl/crypto'
 import { ContentClient } from 'dcl-catalyst-client'
 import { EntityType } from 'dcl-catalyst-commons'
 import { getFetchContentServer } from 'shared/dao/selectors'

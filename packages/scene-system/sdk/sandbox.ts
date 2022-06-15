@@ -1,4 +1,4 @@
-const whitelistES5: Array<keyof typeof global> = [
+const whitelistES5: Array<keyof typeof globalThis> = [
   'eval',
   'parseInt',
   'parseFloat',
@@ -52,7 +52,7 @@ export async function customEval(code: string, context: any) {
 }
 
 export function getES5Context(base: Record<string, any>) {
-  whitelistES5.forEach(($) => (base[$] = global[$]))
+  whitelistES5.forEach(($) => (base[$] = globalThis[$]))
 
   return base
 }

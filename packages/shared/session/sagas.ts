@@ -1,7 +1,5 @@
 import { call, put, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
-import { createIdentity } from 'eth-crypto'
-import { Account } from 'web3x/account'
-import { Authenticator } from 'dcl-crypto'
+import { Authenticator } from '@dcl/crypto'
 
 import { DEBUG_KERNEL_LOG, ETHEREUM_NETWORK, PREVIEW } from 'config'
 
@@ -50,6 +48,7 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 import { setWorldContext } from 'shared/comms/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar } from '@dcl/schemas'
+import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
 
 const TOS_KEY = 'tos'
 const logger = DEBUG_KERNEL_LOG ? createLogger('session: ') : createDummyLogger()
@@ -249,12 +248,12 @@ async function getSigner(
       ephemeralLifespanMinutes: 7 * 24 * 60 // 1 week
     }
   } else {
-    const account: Account = Account.create()
+    const account = createUnsafeIdentity()
 
     return {
-      address: account.address.toJSON().toLowerCase(),
+      address: account.address.toLowerCase(),
       async signer(message) {
-        return account.sign(message).signature
+        return Authenticator.createSignature(account, message)
       },
       hasConnectedWeb3: false,
       // If we are using a local profile, we don't want the identity to expire.
@@ -265,7 +264,7 @@ async function getSigner(
 }
 
 async function createAuthIdentity(requestManager: RequestManager, isGuest: boolean): Promise<ExplorerIdentity> {
-  const ephemeral = createIdentity()
+  const ephemeral = createUnsafeIdentity()
 
   const { address, signer, hasConnectedWeb3, ephemeralLifespanMinutes } = await getSigner(requestManager, isGuest)
 

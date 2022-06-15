@@ -1,4 +1,4 @@
-import { AuthChain, Authenticator, AuthIdentity } from 'dcl-crypto'
+import { AuthChain, Authenticator, AuthIdentity } from '@dcl/crypto'
 import { flatFetch, FlatFetchInit } from './flatFetch'
 
 const AUTH_CHAIN_HEADER_PREFIX = 'x-identity-auth-chain-'
