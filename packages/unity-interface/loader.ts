@@ -97,6 +97,7 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
         versionQueryParam: rendererVersion === 'dynamic' ? Date.now().toString() : rendererVersion,
         onProgress,
         onMessageLegacy: options.onMessage,
+        onBinaryMessage: (sceneId, data) => {}, // TODO: remove this
         onError: (error) => {
           ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_NEWERRORHANDLER)
           BringDownClientAndShowError(UNEXPECTED_ERROR)

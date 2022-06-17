@@ -17,6 +17,9 @@ import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { store } from 'shared/store/isolatedStore'
 import defaultLogger from 'shared/logger'
 import { browserInterface } from './BrowserInterface'
+import { webSocketTransportAdapter } from './rpc/webSocketTransportAdapter'
+import { webTransport } from './rpc/transport/webTransport'
+import { createRendererRpcClient } from './rpc/rpcClient'
 
 export type InitializeUnityResult = {
   container: HTMLElement
@@ -70,6 +73,9 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     return true
   }
 
+  const transport = webTransport({ unityModule: originalUnity.Module })
+  await createRendererRpcClient(transport)
+
   await engineStartedFuture
 
   return originalUnity
@@ -79,7 +85,9 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
 async function loadWsEditorDelegate(container: HTMLElement): Promise<UnityGame> {
   const queryParams = new URLSearchParams(document.location.search)
 
-  return initializeUnityEditor(queryParams.get('ws')!, container, defaultOptions)
+  const transport = webSocketTransportAdapter(queryParams.get('ws')!, defaultOptions)
+  //await createRendererRpcClient(transport)
+  return initializeUnityEditor(transport)
 }
 
 /** Initialize the injected engine in a container */
