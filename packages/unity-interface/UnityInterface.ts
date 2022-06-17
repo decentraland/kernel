@@ -38,7 +38,6 @@ import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import { setFpsCapOnOff } from './hackedTimers'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -182,10 +181,6 @@ export class UnityInterface implements IUnityInterface {
 
   public HideFPSPanel() {
     this.SendMessageToUnity('Main', 'HideFPSPanel')
-  }
-
-  public SetFpsTarget(data: { capped: boolean; target: number }) {
-    setFpsCapOnOff(data.capped, data.target)
   }
 
   public SetEngineDebugPanel() {

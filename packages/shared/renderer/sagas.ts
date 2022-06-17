@@ -42,7 +42,6 @@ import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
-import { getFeatureFlagEnabled } from 'shared/meta/selectors'
 import { waitForRendererInstance } from './sagas-helper'
 
 export function* rendererSaga() {
@@ -65,12 +64,6 @@ export function* rendererSaga() {
 function* configureFps() {
   yield call(ensureMetaConfigurationInitialized)
   yield call(waitForRendererInstance)
-
-  const fpsCapped: boolean = yield select(getFeatureFlagEnabled, 'web_cap_fps')
-
-  if (fpsCapped) {
-    getUnityInstance().SetFpsTarget({ capped: fpsCapped, target: 30 })
-  }
 }
 
 function* reportRealmChangeToRenderer() {
