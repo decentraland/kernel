@@ -34,11 +34,11 @@ import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
-import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
 import { trackEvent } from 'shared/analytics'
+import { authorizeBuilderHeaders } from 'atomicHelpers/authenticateBuilder'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
@@ -228,7 +228,7 @@ async function fetchWearablesByIdFromBuilder(uuidsItems: string[], identity: Exp
   return Promise.all(
     uuidsItems.map(async (uuid) => {
       const path = `items/${uuid}`
-      const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
+      const headers = authorizeBuilderHeaders(identity, 'get', `/${path}`)
       const itemResponse = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
         headers
       })) as { data: UnpublishedWearable; ok: boolean; error?: string }
@@ -253,7 +253,7 @@ async function fetchWearablesByCollectionFromBuilder(
     }
 
     const path = `collections/${collectionUuid}/items`
-    const headers = BuilderServerAPIManager.authorize(identity, 'get', `/${path}`)
+    const headers = authorizeBuilderHeaders(identity, 'get', `/${path}`)
     const collection: { data: UnpublishedWearable[] } = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
       headers
     })) as any

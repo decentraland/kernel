@@ -7,7 +7,6 @@ import {
 import {
   sceneLifeCycleObservable,
   renderDistanceObservable,
-  getEmptySceneId
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from '../analytics'
 import { scenesChanged, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
@@ -19,14 +18,10 @@ import { SceneSystemWorker } from './SceneSystemWorker'
 import { ILandToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from '@dcl/legacy-ecs'
-import { IsolatedModeOptions, IsolatedMode, StatefulWorkerOptions, ParcelSceneLoadingState } from './types'
+import { ParcelSceneLoadingState } from './types'
 import { UnityParcelScene } from 'unity-interface/UnityParcelScene'
-import { StatefulWorker } from './StatefulWorker'
-import { UnityScene } from 'unity-interface/UnityScene'
-import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { PositionTrackEvents } from 'shared/analytics/types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
-import { activateAllPortableExperiences, killAllPortableExperiences } from '../portableExperiences/actions'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { Transport } from '@dcl/rpc'
 
@@ -69,12 +64,6 @@ export function generateBannedILand(land: ILand): ILand {
   }
 }
 
-let lastPlayerPositionKnow: Vector2Component
-
-export function setBuilderLastKnownPlayerPosition(position: Vector2Component) {
-  lastPlayerPositionKnow = position
-}
-
 export const onLoadParcelScenesObservable = new Observable<ILand[]>()
 /**
  * Array of sceneId's
@@ -93,7 +82,7 @@ export function getSceneWorkerBySceneID(sceneId: string) {
 }
 
 /** Stops non-persistent scenes (i.e UI scene) */
-export function stopParcelSceneWorker(worker: SceneWorker) {
+function stopParcelSceneWorker(worker: SceneWorker) {
   if (worker && !worker.isPersistent()) {
     forceStopSceneWorker(worker)
   }
@@ -124,7 +113,7 @@ export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transpo
 /**
  * idempotent
  */
-export function setNewParcelScene(sceneId: string, worker: SceneWorker) {
+function setNewParcelScene(sceneId: string, worker: SceneWorker) {
   const parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   if (worker === parcelSceneWorker) return
@@ -153,131 +142,7 @@ function globalSignalSceneFail(sceneId: string) {
 export const parcelSceneLoadingState: ParcelSceneLoadingState = {
   isWorldLoadingEnabled: true,
   desiredParcelScenes: new Set<string>(),
-  lifecycleManager: null as any as LifecycleManager,
-  runningIsolatedMode: false,
-  isolatedModeOptions: null as IsolatedModeOptions | null
-}
-
-async function isEmptyParcel(coord: string): Promise<boolean> {
-  for (const record of parcelSceneLoadingState.lifecycleManager.sceneIdToRequest) {
-    const land = await record[1]
-    if (land.sceneJsonData.scene.base === coord && record[0] === getEmptySceneId(coord)) return true
-  }
-
-  return false
-}
-
-export async function invalidateScenesAtCoords(coords: string[], reloadScenes: boolean = true) {
-  const coordsToLoad: string[] = []
-  // We check for empty parcels
-  for (const coord of coords) {
-    const isEmpty = await isEmptyParcel(coord)
-    if (isEmpty) {
-      const emptySceneId = getEmptySceneId(coord)
-      if (reloadScenes) await removeDesiredParcel(emptySceneId)
-      coordsToLoad.push(coord)
-      await parcelSceneLoadingState.lifecycleManager.invalidateScene(emptySceneId)
-    }
-  }
-
-  // We check for scenes
-  const sceneIds = parcelSceneLoadingState.lifecycleManager.getSceneIds(coords)
-  for (const sceneIdPromise of sceneIds) {
-    const sceneId = await sceneIdPromise
-    if (!sceneId) continue
-
-    if (reloadScenes) await removeDesiredParcel(sceneId)
-
-    const land = await parcelSceneLoadingState.lifecycleManager.sceneIdToRequest.get(sceneId)
-    const coordsOfScene = land?.sceneJsonData.scene.parcels
-    if (!coordsOfScene) continue
-    for (const coord of coordsOfScene) {
-      coordsToLoad.push(coord)
-    }
-    await parcelSceneLoadingState.lifecycleManager.invalidateScene(sceneId)
-  }
-
-  // We invalidate all the coords that has changed
-  parcelSceneLoadingState.lifecycleManager.invalidateCoords(coordsToLoad)
-  const sceneIdsToLoad = parcelSceneLoadingState.lifecycleManager.getSceneIds(coordsToLoad)
-  for (const sceneIdPromise of sceneIdsToLoad) {
-    const sceneId = await sceneIdPromise
-    if (!sceneId) continue
-
-    if (reloadScenes) {
-      parcelSceneLoadingState.lifecycleManager.notify('Scene.reload', { sceneId })
-    }
-  }
-}
-
-export async function startIsolatedMode(options: IsolatedModeOptions) {
-  if (!options) return
-
-  // set the isolated mode On
-  parcelSceneLoadingState.isolatedModeOptions = options
-  parcelSceneLoadingState.runningIsolatedMode = true
-
-  // put in the newSet all scenes that should remain loaded due to isolatedMode
-  const newSet = new Set<string>()
-
-  // scene id to create
-  const sceneId = parcelSceneLoadingState.isolatedModeOptions.payload.sceneId
-  if (sceneId && parcelSceneLoadingState.isolatedModeOptions.payload.land) {
-    newSet.add(sceneId)
-    parcelSceneLoadingState.lifecycleManager.setParcelData(
-      sceneId,
-      parcelSceneLoadingState.isolatedModeOptions.payload.land
-    )
-
-    //If the payload specifies that we need to recreate it, we do it
-    if (
-      parcelSceneLoadingState.isolatedModeOptions.payload.recreateScene &&
-      !newSet.has(sceneId) &&
-      loadedSceneWorkers.has(sceneId)
-    ) {
-      // destroy old scene
-      unloadParcelSceneById(sceneId)
-    }
-  }
-
-  if (parcelSceneLoadingState.isolatedModeOptions.payload.killPortableExperiences) {
-    store.dispatch(killAllPortableExperiences())
-  }
-
-  // Refresh state of scenes
-  await setDesiredParcelScenes(newSet)
-
-  // We notify the lifecycle worker that the scenes are not on sight anymore
-  parcelSceneLoadingState.lifecycleManager.notify('ResetScenes', {})
-}
-
-export function stopIsolatedMode(options: IsolatedModeOptions) {
-  // If the options don't specify to mantain the scene, we unload it
-  const unloadScene = !(
-    options.payload?.sceneId && options.payload.sceneId === parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId
-  )
-
-  if (unloadScene) {
-    unloadParcelSceneById(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
-    parcelSceneLoadingState.desiredParcelScenes.delete(parcelSceneLoadingState.isolatedModeOptions?.payload.sceneId)
-  }
-  // We deactivate the isolated mode
-  parcelSceneLoadingState.runningIsolatedMode = false
-  parcelSceneLoadingState.isolatedModeOptions = null
-
-  //In the builder we need to go back to the world
-  if (options.mode === IsolatedMode.BUILDER) {
-    // We reactivate the portable experiences
-    store.dispatch(activateAllPortableExperiences())
-
-    // We do a teleport to go back to the world to the last position of the player
-    const text = 'Going back to the world'
-    teleportObservable.notifyObservers({
-      x: lastPlayerPositionKnow.x,
-      y: lastPlayerPositionKnow.y,
-      text: text
-    })
-  }
+  lifecycleManager: null as any as LifecycleManager
 }
 
 /**
@@ -292,7 +157,7 @@ export function getDesiredParcelScenes(): Set<string> {
  * @internal
  * Receives a set of Set<SceneId>
  */
-export async function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
+async function setDesiredParcelScenes(desiredParcelScenes: Set<string>) {
   const previousSet = new Set(parcelSceneLoadingState.desiredParcelScenes)
   const newSet = (parcelSceneLoadingState.desiredParcelScenes = desiredParcelScenes)
 
@@ -335,36 +200,13 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string) {
 
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
-    let worker: SceneWorker
-
     // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
-    if (
-      parcelSceneLoadingState.runningIsolatedMode &&
-      parcelSceneLoadingState.isolatedModeOptions?.mode === IsolatedMode.BUILDER
-    ) {
-      const scene = new UnityScene({
-        sceneId: sceneId,
-        name: 'title',
-        baseUrl: location.origin,
-        main: 'fileContentUrl',
-        useFPSThrottling: false,
-        data: ILandToLoadableParcelScene(parcelSceneLoadingState.isolatedModeOptions?.payload?.land),
-        mappings: []
-      })
+    const denyListed = isParcelDenyListed(parcelSceneToStart.sceneJsonData.scene.parcels)
+    const iland = denyListed ? generateBannedILand(parcelSceneToStart) : parcelSceneToStart
+    const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(iland))
 
-      const options: StatefulWorkerOptions = {
-        isEmpty: true
-      }
-
-      worker = new StatefulWorker(scene, options)
-    } else {
-      const denyListed = isParcelDenyListed(parcelSceneToStart.sceneJsonData.scene.parcels)
-      const iland = denyListed ? generateBannedILand(parcelSceneToStart) : parcelSceneToStart
-      const parcelScene = new UnityParcelScene(ILandToLoadableParcelScene(iland))
-
-      parcelScene.data.useFPSThrottling = true
-      worker = loadParcelScene(parcelScene)
-    }
+    parcelScene.data.useFPSThrottling = true
+    const worker = loadParcelScene(parcelScene)
 
     setNewParcelScene(sceneId, worker)
   }
@@ -450,8 +292,6 @@ export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams)
   )
 
   teleportObservable.add((position: { x: number; y: number }) => {
-    setBuilderLastKnownPlayerPosition(position)
-    if (parcelSceneLoadingState.runningIsolatedMode) return
     lifecycleManager.notify('User.setPosition', { position, teleported: true })
   })
 
@@ -462,10 +302,8 @@ export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams)
   parcelObservable.add((obj) => {
     // immediate reposition should only be broadcasted to others, otherwise our scene reloads
     if (obj.immediate) return
-    setBuilderLastKnownPlayerPosition(obj.newParcel)
 
     // If we are in isolated mode we don't report the position
-    if (parcelSceneLoadingState.runningIsolatedMode) return
     lifecycleManager.notify('User.setPosition', {
       position: obj.newParcel,
       teleported: false

@@ -3,9 +3,6 @@ import { ILogger } from './../../logger'
 import { EnvironmentData, ILand } from './../../types'
 import { ParcelSceneAPI } from './../../../shared/world/ParcelSceneAPI'
 import { PermissionItem } from '../proto/Permissions.gen'
-import { BuilderManifest } from '../SceneStateStorageController/types'
-import { BuilderServerAPIManager } from '../SceneStateStorageController/BuilderServerAPIManager'
-import { SceneTransformTranslator } from './../SceneStateStorageController/SceneTransformTranslator'
 import { EventData } from '../proto/EngineAPI.gen'
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
@@ -37,11 +34,5 @@ export type PortContext = {
   DevTools: {
     logger: ILogger
     exceptions: Map<number, Protocol.Runtime.ExceptionDetails>
-  }
-
-  SceneStateStorageController?: {
-    builderManifest: BuilderManifest
-    transformTranslator: SceneTransformTranslator
-    _builderApiManager: BuilderServerAPIManager
   }
 }

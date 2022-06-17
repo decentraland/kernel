@@ -24,7 +24,6 @@ import {
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
-import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { WearableV2 } from 'shared/catalogs/types'
@@ -447,8 +446,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Bridges', 'UpdateRealmsInfo', JSON.stringify(realmsInfo))
   }
 
-  public SendPublishSceneResult(result: DeploymentResult) {
-    this.SendMessageToUnity('Main', 'PublishSceneResult', JSON.stringify(result))
+  public SendPublishSceneResult() {
+    this.logger.warn('SendPublishSceneResult')
   }
 
   public SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean) {
@@ -473,8 +472,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'RequestedHeaders', JSON.stringify(request))
   }
 
-  public SendSceneAssets(assets: BuilderAsset[]) {
-    this.SendMessageToUnity('Main', 'AddAssets', JSON.stringify(assets))
+  public SendSceneAssets() {
+    this.logger.warn('SendSceneAssets')
   }
 
   public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined) {
@@ -494,8 +493,8 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
-  public SendUnpublishSceneResult(result: DeploymentResult) {
-    this.SendMessageToUnity('Bridges', 'UnpublishSceneResult', JSON.stringify(result))
+  public SendUnpublishSceneResult() {
+    this.logger.warn('SendUnpublishSceneResult')
   }
 
   // *********************************************************************************

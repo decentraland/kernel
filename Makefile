@@ -174,7 +174,6 @@ update-renderer:  ## Update the renderer
 madge: scripts/deps.js
 	@node scripts/deps.js
 	dot packages/scene-system/scene.system.ts.dot -T pdf -O
-	dot packages/scene-system/stateful.scene.system.ts.dot -T pdf -O
 	dot packages/ui/decentraland-ui.scene.ts.dot -T pdf -O
 	dot packages/entryPoints/index.ts.dot -T pdf -O
 	dot packages/decentraland-loader/lifecycle/worker.ts.dot -T pdf -O

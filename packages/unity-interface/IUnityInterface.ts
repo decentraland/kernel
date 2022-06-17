@@ -5,7 +5,6 @@ import type { UnityGame } from '@dcl/unity-renderer/src'
 import { Observable } from 'mz-observable'
 import { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from '../shared/airdrops/interface'
-import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import {
   RenderProfile,
   ContentMapping,
@@ -153,10 +152,10 @@ export interface IUnityInterface {
   // ************** Builder in world messages **************
   // *********************************************************************************
 
-  SendPublishSceneResult(result: DeploymentResult): void
+  SendPublishSceneResult(): void
   SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean): void
-  SendSceneAssets(assets: BuilderAsset[]): void
-  SendUnpublishSceneResult(result: DeploymentResult): void
+  SendSceneAssets(): void
+  SendUnpublishSceneResult(): void
 
   //Note: This message is deprecated and should be deleted in the future.
   //      We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022

@@ -16,7 +16,6 @@ import { registerCommunicationsControllerServiceServerImplementation } from './C
 import { registerPlayersServiceServerImplementation } from './Players'
 import { registerPortableExperiencesServiceServerImplementation } from './PortableExperiences'
 import { registerSignedFetchServiceServerImplementation } from './SignedFetch'
-import { registerSceneStateStorageControllerServiceServerImplementation } from './SceneStateStorageController'
 
 export function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerDevToolsServiceServerImplementation(serverPort)
@@ -34,7 +33,6 @@ export function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerPortableExperiencesServiceServerImplementation(serverPort)
   registerSignedFetchServiceServerImplementation(serverPort)
 
-  registerSceneStateStorageControllerServiceServerImplementation(serverPort)
   // TODO: remove when renderer-rpc is ready
   registerExperimentalAPIServiceServerImplementation(serverPort)
 }
