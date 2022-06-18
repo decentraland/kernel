@@ -32,7 +32,7 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
 
       const additionalMetadata: Record<string, any> = {
         sceneId: ctx.EnvironmentAPI.cid,
-        parcel: ctx.ParcelIdentity.land!.sceneJsonData.scene.base,
+        parcel: ctx.ParcelIdentity.entity.metadata.scene.base,
         // THIS WILL BE DEPRECATED
         tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
         network,

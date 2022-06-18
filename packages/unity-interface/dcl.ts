@@ -8,10 +8,11 @@ import {
   loadParcelScene,
   onLoadParcelScenesObservable,
   onPositionSettledObservable,
-  onPositionUnsettledObservable
+  onPositionUnsettledObservable,
+  reloadScene
 } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
-import { ILandToLoadableParcelScene } from 'shared/selectors'
+import { entityToLoadableParcelScene } from 'shared/selectors'
 import { UnityParcelScene } from './UnityParcelScene'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
@@ -19,7 +20,6 @@ import { UnityScene } from './UnityScene'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
-import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
@@ -27,6 +27,7 @@ import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
+import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -104,8 +105,7 @@ export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   onLoadParcelScenesObservable.add((lands) => {
     getUnityInstance().LoadParcelScenes(
       lands.map(($) => {
-        const x = Object.assign({}, ILandToLoadableParcelScene($).data)
-        delete x.land
+        const x = Object.assign({}, entityToLoadableParcelScene($).data)
         return x
       })
     )
@@ -155,15 +155,13 @@ export async function loadPreviewScene(message: sdk.Messages) {
 
         if (!!collection.data.length) {
           const wearable = collection.data[0]
+
+          const entity = await wearableToSceneEntity(wearable, wearable.baseUrl)
+
           store.dispatch(
             reloadScenePortableExperience({
-              id: wearable.id,
               parentCid: 'main',
-              name: wearable.name,
-              baseUrl: `${wearable.baseUrl}/`,
-              mappings: wearable.data.scene,
-              // TODO
-              menuBarIcon: 'pending' //wearable.data.
+              entity
             })
           )
         }

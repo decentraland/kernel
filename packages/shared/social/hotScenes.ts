@@ -59,23 +59,23 @@ function getSceneName(baseCoord: string, sceneJsonData: SceneJsonData | undefine
 async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
   const tiles = getPoiTiles(store.getState())
   const scenesId = (await fetchSceneIds(tiles)).filter((id) => id !== null) as string[]
-  const scenesLand = (await fetchSceneJson(scenesId)).filter((land) => land.sceneJsonData)
+  const scenesLand = (await fetchSceneJson(scenesId)).filter((land) => land.metadata)
 
   return scenesLand.map((land) => {
     return {
-      id: land.sceneId,
-      name: getSceneName(land.sceneJsonData.scene.base, land.sceneJsonData),
-      creator: getOwnerNameFromJsonData(land.sceneJsonData),
-      description: getSceneDescriptionFromJsonData(land.sceneJsonData),
+      id: land.id,
+      name: getSceneName(land.metadata.scene.base, land.metadata),
+      creator: getOwnerNameFromJsonData(land.metadata),
+      description: getSceneDescriptionFromJsonData(land.metadata),
       thumbnail:
         getThumbnailUrlFromJsonDataAndContent(
-          land.sceneJsonData,
-          land.mappingsResponse.contents,
+          land.metadata,
+          land.content,
           getFetchContentServer(store.getState())
         ) ?? '',
-      baseCoords: TileStringToVector2(land.sceneJsonData.scene.base),
-      parcels: land.sceneJsonData
-        ? land.sceneJsonData.scene.parcels.map((parcel) => {
+      baseCoords: TileStringToVector2(land.metadata.scene.base),
+      parcels: land.metadata
+        ? land.metadata.scene.parcels.map((parcel) => {
             const coord = parcel.split(',').map((str) => parseInt(str, 10)) as [number, number]
             return { x: coord[0], y: coord[1] }
           })

@@ -1,9 +1,10 @@
 import Protocol from 'devtools-protocol'
 import { ILogger } from './../../logger'
-import { EnvironmentData, ILand } from './../../types'
+import { EnvironmentData } from './../../types'
 import { ParcelSceneAPI } from './../../../shared/world/ParcelSceneAPI'
 import { PermissionItem } from '../proto/Permissions.gen'
 import { EventData } from '../proto/EngineAPI.gen'
+import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
@@ -22,7 +23,7 @@ export type PortContext = {
     permissionGranted: PermissionItem[]
   }
   ParcelIdentity: {
-    land?: ILand
+    entity: EntityWithBaseUrl
     isPortableExperience: boolean
     isEmpty: boolean
   }

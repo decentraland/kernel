@@ -32,7 +32,7 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
     test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE || test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE
 
   if (ctx.ParcelIdentity) {
-    const sceneJsonData = ctx.ParcelIdentity.land?.sceneJsonData
+    const sceneJsonData = ctx.ParcelIdentity.entity.metadata
     const list: PermissionItem[] = []
 
     if (sceneJsonData && sceneJsonData.requiredPermissions) {

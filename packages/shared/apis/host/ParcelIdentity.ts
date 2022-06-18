@@ -1,5 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
+import { ETHEREUM_NETWORK } from 'config'
 import {
   GetParcelRequest,
   GetParcelResponse,
@@ -12,7 +13,7 @@ import {
 import { PortContext } from './context'
 
 async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetParcelResponse> {
-  const land = ctx.ParcelIdentity.land
+  const land = ctx.ParcelIdentity.entity
 
   if (!land) {
     throw new Error('No land assigned in the ParcelIdentity context.')
@@ -20,14 +21,14 @@ async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetP
 
   return {
     land: {
-      sceneId: land.sceneId || '',
-      sceneJsonData: land.sceneJsonData ? JSON.stringify(land.sceneJsonData) : '{}',
+      sceneId: land.id || '',
+      sceneJsonData: land.metadata ? JSON.stringify(land.metadata) : '{}',
       baseUrl: land.baseUrl || '',
-      baseUrlBundles: land.baseUrlBundles || '',
+      baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
       mappingsResponse: {
-        parcelId: land.mappingsResponse.parcel_id || '',
-        rootCid: land.mappingsResponse.root_cid || '',
-        contents: (land.mappingsResponse.contents || []).map((item) => ({
+        parcelId: land.id || '',
+        rootCid: land.id || '',
+        contents: (land.content || []).map((item) => ({
           file: item.file || '',
           hash: item.hash || ''
         }))
@@ -38,12 +39,12 @@ async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetP
 }
 
 async function getSceneId(_req: GetSceneIdRequest, ctx: PortContext): Promise<GetSceneIdResponse> {
-  const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.EnvironmentAPI.cid || ''
+  const sceneId = ctx.ParcelIdentity.entity.id || ctx.EnvironmentAPI.cid || ''
   return { sceneId }
 }
 
 async function getIsEmpty(_req: GetIsEmptyRequest, ctx: PortContext): Promise<GetIsEmptyResponse> {
-  return { isEmpty: ctx.ParcelIdentity.isEmpty }
+  return { isEmpty: false }
 }
 
 export function registerParcelIdentityServiceServerImplementation(port: RpcServerPort<PortContext>) {
@@ -53,3 +54,7 @@ export function registerParcelIdentityServiceServerImplementation(port: RpcServe
     getIsEmpty
   }))
 }
+function getAssetBundlesBaseUrl(MAINNET: any) {
+  throw new Error('Function not implemented.')
+}
+

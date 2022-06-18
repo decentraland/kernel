@@ -123,7 +123,7 @@ function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdate) {
 function* listenToWhetherSceneSupportsVoiceChat() {
   sceneObservable.add(({ newScene }) => {
     const nowEnabled = newScene
-      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, newScene.sceneJsonData)
+      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, newScene.metadata)
       : isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT)
 
     getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)

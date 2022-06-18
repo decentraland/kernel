@@ -1,11 +1,14 @@
-import { select, takeEvery, takeLatest } from '@redux-saga/core/effects'
+import { EntityType } from '@dcl/schemas'
+import { call, select, takeEvery, takeLatest } from '@redux-saga/core/effects'
+import { jsonFetch } from 'atomicHelpers/jsonFetch'
+import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
 import { put } from 'redux-saga-test-plan/matchers'
 import { wearablesRequest, WearablesSuccess, WEARABLES_SUCCESS } from 'shared/catalogs/actions'
 import { getFetchContentServer } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
 import { isCurrentUserId } from 'shared/session/selectors'
-import { StorePortableExperience } from 'shared/types'
+import { SceneJsonData, StorePortableExperience, WearableV2 } from 'shared/types'
 import { getDesiredWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import {
   addDesiredPortableExperience,
@@ -62,8 +65,8 @@ function* handleProcessWearables(action: ProcessWearablesAction) {
     getDesiredWearablePortableExpriences
   )
 
-  if (payload.wearable.id in currentDesiredPortableExperiences) {
-    yield put(addDesiredPortableExperience(payload.wearable.id, payload.wearable))
+  if (payload.wearable.entity.id in currentDesiredPortableExperiences) {
+    yield put(addDesiredPortableExperience(payload.wearable.entity.id, payload.wearable))
   }
 }
 
@@ -75,45 +78,15 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
   )
 
   if (wearablesToProcess.length > 0) {
-    const fetchContentServer: string = yield select(getFetchContentServer)
+    const defaultBaseUrl: string = yield select(getFetchContentServer) + '/contents/'
 
     for (const wearable of wearablesToProcess) {
       try {
-        const baseUrl = wearable.baseUrl ?? fetchContentServer + '/contents/'
-
-        // Get the wearable content containing the game.js
-        const wearableContent = wearable.data.representations.filter((r) =>
-          r.contents.some((c) => c.key.endsWith('game.js'))
-        )[0].contents
-
-        // In the deployment the content was replicated when the bodyShape selected was 'both'
-        //  this add the prefix 'female/' or '/male' if they have more than one representations.
-        // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
-
-        const femaleCrop =
-          wearableContent.filter(($) => $.key.substr(0, 7) === 'female/').length === wearableContent.length
-        const maleCrop = wearableContent.filter(($) => $.key.substr(0, 5) === 'male/').length === wearableContent.length
-
-        const getFile = (key: string): string => {
-          if (femaleCrop) return key.substring(7)
-          if (maleCrop) return key.substring(5)
-          return key
-        }
-
-        const mappings = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
-        const name = wearable.i18n[0].text
-
-        const icon = 'smartWearableMenuBarIcon'
-        mappings.push({ file: icon, hash: wearable.menuBarIcon ?? wearable.thumbnail })
-
+        const entity = yield call(wearableToSceneEntity, wearable, defaultBaseUrl)
         yield put(
           processWearables({
-            id: wearable.id,
             parentCid: 'main',
-            name,
-            baseUrl,
-            mappings,
-            menuBarIcon: icon // TODO review
+            entity
           })
         )
       } catch (e: any) {
@@ -121,4 +94,45 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
       }
     }
   }
+}
+
+export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl: string): Promise<EntityWithBaseUrl> {
+  const baseUrl = wearable.baseUrl ?? defaultBaseUrl
+
+  // Get the wearable content containing the game.js
+  const wearableContent = wearable.data.representations.filter((representation) =>
+    representation.contents.some((c) => c.key.endsWith('game.js'))
+  )[0].contents
+  const sceneJson = wearableContent.find(($) => $.key == 'scene.json')
+
+  if (sceneJson) {
+    // In the deployment the content was replicated when the bodyShape selected was 'both'
+    //  this add the prefix 'female/' or 'male/' if they have more than one representations.
+    // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
+
+    const femaleCrop =
+      wearableContent.filter(($) => $.key.substring(0, 7) === 'female/').length === wearableContent.length
+    const maleCrop = wearableContent.filter(($) => $.key.substring(0, 5) === 'male/').length === wearableContent.length
+
+    const getFile = (key: string): string => {
+      if (femaleCrop) return key.substring(7)
+      if (maleCrop) return key.substring(5)
+      return key
+    }
+
+    const content = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
+    const metadata: SceneJsonData = await jsonFetch(baseUrl + sceneJson.hash)
+
+    return {
+      id: wearable.id,
+      baseUrl,
+      content,
+      metadata,
+      pointers: [wearable.id],
+      timestamp: 0,
+      type: EntityType.SCENE,
+      version: 'v3'
+    }
+  }
+  throw new Error('The wearable has no scene.json')
 }

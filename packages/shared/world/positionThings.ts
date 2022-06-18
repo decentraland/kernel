@@ -6,7 +6,7 @@ import {
   Vector2
 } from '@dcl/ecs-math'
 import { Observable } from 'mz-observable'
-import { ILand } from 'shared/types'
+import { ILand, SceneJsonData } from 'shared/types'
 import { InstancedSpawnPoint } from '../types'
 import {
   worldToGrid,
@@ -137,12 +137,12 @@ function replaceQueryStringPosition(x: any, y: any) {
  *
  * @param land Scene on which the player is spawning
  */
-export function pickWorldSpawnpoint(land: ILand): InstancedSpawnPoint {
+export function pickWorldSpawnpoint(land: SceneJsonData): InstancedSpawnPoint {
   const pick = pickSpawnpoint(land)
 
   const spawnpoint = pick || { position: { x: 0, y: 0, z: 0 } }
 
-  const baseParcel = land.sceneJsonData.scene.base
+  const baseParcel = land.scene.base
   const [bx, by] = baseParcel.split(',')
 
   const basePosition = new Vector3()
@@ -157,16 +157,16 @@ export function pickWorldSpawnpoint(land: ILand): InstancedSpawnPoint {
   }
 }
 
-function pickSpawnpoint(land: ILand): InstancedSpawnPoint | undefined {
-  if (!land.sceneJsonData || !land.sceneJsonData.spawnPoints || land.sceneJsonData.spawnPoints.length === 0) {
+function pickSpawnpoint(land: SceneJsonData): InstancedSpawnPoint | undefined {
+  if (!land || !land.spawnPoints || land.spawnPoints.length === 0) {
     return undefined
   }
 
   // 1 - default spawn points
-  const defaults = land.sceneJsonData.spawnPoints.filter(($) => $.default)
+  const defaults = land.spawnPoints.filter(($) => $.default)
 
   // 2 - if no default spawn points => all existing spawn points
-  const eligiblePoints = defaults.length === 0 ? land.sceneJsonData.spawnPoints : defaults
+  const eligiblePoints = defaults.length === 0 ? land.spawnPoints : defaults
 
   // 3 - pick randomly between spawn points
   const { position, cameraTarget } = eligiblePoints[Math.floor(Math.random() * eligiblePoints.length)]
@@ -180,7 +180,7 @@ function pickSpawnpoint(land: ILand): InstancedSpawnPoint | undefined {
 
   // 5 - If the final position is outside the scene limits, we zero it
   if (!DEBUG) {
-    const sceneBaseParcelCoords = land.sceneJsonData.scene.base.split(',')
+    const sceneBaseParcelCoords = land.scene.base.split(',')
     const sceneBaseParcelWorldPos = gridToWorld(
       parseInt(sceneBaseParcelCoords[0], 10),
       parseInt(sceneBaseParcelCoords[1], 10)
@@ -191,7 +191,7 @@ function pickSpawnpoint(land: ILand): InstancedSpawnPoint | undefined {
       z: sceneBaseParcelWorldPos.z + finalPosition.z
     }
 
-    if (!isWorldPositionInsideParcels(land.sceneJsonData.scene.parcels, finalWorldPosition)) {
+    if (!isWorldPositionInsideParcels(land.scene.parcels, finalWorldPosition)) {
       finalPosition.x = 0
       finalPosition.z = 0
     }

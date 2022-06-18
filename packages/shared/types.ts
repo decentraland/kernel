@@ -3,6 +3,7 @@ import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHe
 import type { QueryType } from '@dcl/legacy-ecs'
 import type { WearableId } from 'shared/catalogs/types'
 import { Snapshots } from '@dcl/schemas'
+import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
 export type MappingsResponse = {
@@ -143,19 +144,11 @@ export type LoadableParcelScene = {
   contents: Array<ContentMapping>
   baseUrl: string
   baseUrlBundles: string
-  land?: ILand
+  entity: EntityWithBaseUrl
 }
 
 /** THIS INTERFACE CANNOT CHANGE, IT IS USED IN THE UNITY BUILD */
-export type LoadablePortableExperienceScene = {
-  id: string
-  name: string
-  basePosition: { x: number; y: number }
-  parcels: Array<{ x: number; y: number }>
-  contents: Array<ContentMapping>
-  baseUrl: string
-  baseUrlBundles: string
-  land?: IPortableExperience
+export type LoadablePortableExperienceScene = LoadableParcelScene & {
   icon?: string
 }
 
@@ -661,17 +654,7 @@ export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendere
  * Holds all the information needed to start a portable experience.
  */
 export type StorePortableExperience = {
-  /** Id of the scene of the portable experience. Usually the EntityID or URN */
-  id: string
   /** Id of the parent scene that spawned this portable experience */
   parentCid: string
-  /** Name of the portable experience */
-  name: string
-  /** Base URL used to resolve the content assets */
-  baseUrl: string
-  /** ContentMappings of the assets of the portable experience  */
-  mappings: ContentMapping[]
-
-  /** Name of the ContentMapping used for the icon */
-  menuBarIcon: string
+  entity: EntityWithBaseUrl
 }

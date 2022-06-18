@@ -1,12 +1,11 @@
-import { ILand } from 'shared/types'
+import { Entity } from "@dcl/schemas"
 
 export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready' | 'failed'
 
 export class SceneLifeCycleStatus {
   status: SceneLifeCycleStatusType = 'unloaded'
 
-  //We could have a scene that is not linked to a land in the builder
-  constructor(public sceneDescription: ILand | undefined) {}
+  constructor(public sceneDescription: Entity) {}
 
   isAwake() {
     return this.status !== 'unloaded'

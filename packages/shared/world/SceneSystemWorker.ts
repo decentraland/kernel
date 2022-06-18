@@ -127,9 +127,9 @@ export class SceneSystemWorker extends SceneWorker {
     this.sceneChangeObserver = sceneObservable.add((report) => {
       const userId = getCurrentUserId(store.getState())
       if (userId) {
-        if (report.newScene?.sceneId === this.getSceneId()) {
+        if (report.newScene?.id === this.getSceneId()) {
           this.rpcContext.sendSceneEvent('onEnterScene', { userId })
-        } else if (report.previousScene?.sceneId === this.getSceneId()) {
+        } else if (report.previousScene?.id === this.getSceneId()) {
           this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
         }
       }

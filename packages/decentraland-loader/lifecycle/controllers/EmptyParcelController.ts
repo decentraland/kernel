@@ -1,12 +1,12 @@
+import { EntityType } from '@dcl/schemas'
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
 import { PREVIEW, rootURLPreviewMode } from 'config'
 import { WorldConfig } from 'shared/meta/types'
-import { ILand, ContentMapping } from 'shared/types'
+import { ContentMapping, SceneJsonData } from 'shared/types'
+import { EntityWithBaseUrl } from '../lib/types'
 
 export class EmptyParcelController {
-  emptyScenes!: Record<string, ContentMapping[]>
-  emptyScenesPromise?: Promise<Record<string, ContentMapping[]>>
-  emptySceneNames: string[] = []
+  emptyScenesPromise: Promise<Record<string, ContentMapping[]>>
   baseUrl: string = ''
 
   constructor(
@@ -19,52 +19,43 @@ export class EmptyParcelController {
     }
   ) {
     let rootUrl = options.rootUrl
+
     if (PREVIEW) {
       // rootURLPreviewMode returns rootUrl without ending slash
       rootUrl = rootURLPreviewMode() + '/'
     }
 
     this.baseUrl = `${rootUrl}loader/empty-scenes/`
+
+    this.emptyScenesPromise = jsonFetch(this.baseUrl + 'mappings.json')
   }
 
-  resolveEmptyParcels() {
-    if (this.emptyScenesPromise) {
-      return
+  async createFakeEntity(coordinates: string): Promise<EntityWithBaseUrl> {
+    const emptyScenes = await this.emptyScenesPromise
+    const names = Object.keys(emptyScenes)
+    const sceneName = names[Math.floor(Math.random() * names.length)]
+    const entityId = `Qm${coordinates}m`
+
+    const metadata: SceneJsonData = {
+      display: { title: 'Empty parcel' },
+      contact: { name: 'Decentraland' },
+      owner: '',
+      main: `bin/game.js`,
+      tags: [],
+      scene: { parcels: [coordinates], base: coordinates },
+      policy: {},
+      communications: { commServerUrl: '' }
     }
 
-    this.emptyScenesPromise = jsonFetch(this.baseUrl + 'mappings.json').then((scenes) => {
-      this.emptySceneNames = Object.keys(scenes)
-      this.emptyScenes = scenes
-      return this.emptyScenes
-    })
-  }
-
-  isEmptyParcel(sceneId: string): boolean {
-    return sceneId.endsWith('00000000000000000000')
-  }
-
-  createFakeILand(sceneId: string, coordinates: string): ILand {
-    const sceneName = this.emptySceneNames[Math.floor(Math.random() * this.emptySceneNames.length)]
-
     return {
-      sceneId: sceneId,
-      baseUrl: this.baseUrl + 'contents/',
-      baseUrlBundles: this.options.contentServerBundles,
-      sceneJsonData: {
-        display: { title: 'Empty parcel' },
-        contact: { name: 'Decentraland' },
-        owner: '',
-        main: `bin/game.js`,
-        tags: [],
-        scene: { parcels: [coordinates], base: coordinates },
-        policy: {},
-        communications: { commServerUrl: '' }
-      },
-      mappingsResponse: {
-        parcel_id: coordinates,
-        root_cid: sceneId,
-        contents: this.emptyScenes[sceneName]
-      }
+      id: entityId,
+      content: emptyScenes[sceneName]!,
+      pointers: [coordinates],
+      timestamp: Date.now(),
+      type: EntityType.SCENE,
+      metadata,
+      version: 'v3',
+      baseUrl: this.baseUrl + 'contents/'
     }
   }
 }

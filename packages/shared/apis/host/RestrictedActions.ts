@@ -27,9 +27,7 @@ export async function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): 
 
   if (!ctx.ParcelIdentity) return {}
 
-  const base = parseParcelPosition(
-    ctx.ParcelIdentity.isPortableExperience ? '0,0' : ctx.ParcelIdentity.land!.sceneJsonData.scene.base
-  )
+  const base = parseParcelPosition(ctx.ParcelIdentity.entity.metadata.scene?.base || '0,0')
   const basePosition = new Vector3()
   gridToWorld(base.x, base.y, basePosition)
 
@@ -81,7 +79,7 @@ export async function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): 
 function isPositionValid(position: Vector3, ctx: PortContext) {
   return (
     ctx.ParcelIdentity!.isPortableExperience ||
-    isWorldPositionInsideParcels(ctx.ParcelIdentity.land!.sceneJsonData.scene.parcels, position)
+    isWorldPositionInsideParcels(ctx.ParcelIdentity.entity.metadata.scene?.parcels || [], position)
   )
 }
 

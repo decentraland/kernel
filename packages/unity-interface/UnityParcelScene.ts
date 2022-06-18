@@ -26,18 +26,17 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
     worker.rpcContext.EnvironmentAPI.data = this.data
     worker.rpcContext.EngineAPI = { parcelSceneAPI: this, subscribedEvents: {} }
 
-    worker.rpcContext.ParcelIdentity.land = this.data.data.land!
+    worker.rpcContext.ParcelIdentity.entity = this.data.data.entity!
     worker.rpcContext.EnvironmentAPI.cid = worker.getSceneId()
     worker.rpcContext.ParcelIdentity.isPortableExperience = false
 
     worker.rpcContext.DevTools.logger = this.logger
 
     const permissionArray: PermissionItem[] = []
-    if (this.data.data.land) {
-      if (this.data.data.land.sceneJsonData?.requiredPermissions) {
-        for (const permissionItemString of this.data.data.land.sceneJsonData?.requiredPermissions) {
-          permissionArray.push(permissionItemFromJSON(permissionItemString))
-        }
+
+    if (this.data.data.entity.metadata?.requiredPermissions) {
+      for (const permissionItemString of this.data.data.entity.metadata?.requiredPermissions) {
+        permissionArray.push(permissionItemFromJSON(permissionItemString))
       }
     }
 
@@ -64,6 +63,7 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
     worker.rpcContext.EnvironmentAPI.data = this.data
     worker.rpcContext.EngineAPI = { parcelSceneAPI: this, subscribedEvents: {} }
 
+    worker.rpcContext.ParcelIdentity.entity = this.data.data.entity
     worker.rpcContext.EnvironmentAPI.cid = worker.getSceneId()
     worker.rpcContext.ParcelIdentity.isPortableExperience = true
 

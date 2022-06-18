@@ -36,20 +36,20 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
       const sceneId = (await fetchSceneIds([destination]))[0]
       const mapSceneData = sceneId ? (await fetchSceneJson([sceneId!]))[0] : undefined
 
-      sceneName = getSceneName(destination, mapSceneData?.sceneJsonData)
-      sceneCreator = getOwnerNameFromJsonData(mapSceneData?.sceneJsonData)
+      sceneName = getSceneName(destination, mapSceneData?.metadata)
+      sceneCreator = getOwnerNameFromJsonData(mapSceneData?.metadata)
 
       if (mapSceneData) {
         sceneThumbnailUrl = getThumbnailUrlFromJsonDataAndContent(
-          mapSceneData.sceneJsonData,
-          mapSceneData.mappingsResponse.contents,
+          mapSceneData.metadata,
+          mapSceneData.content,
           getFetchContentServer(store.getState())
         )
       }
       if (!sceneThumbnailUrl) {
         let sceneParcels = [destination]
-        if (mapSceneData && mapSceneData.sceneJsonData?.scene.parcels) {
-          sceneParcels = mapSceneData.sceneJsonData.scene.parcels
+        if (mapSceneData && mapSceneData.metadata?.scene.parcels) {
+          sceneParcels = mapSceneData.metadata.scene.parcels
         }
         sceneThumbnailUrl = `https://api.decentraland.org/v1/map.png?width=480&height=237&size=10&center=${destination}&selected=${sceneParcels.join(
           ';'

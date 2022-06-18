@@ -57,7 +57,7 @@ export function registerPlayersServiceServerImplementation(port: RpcServerPort<P
     },
     async getPlayersInScene(req, ctx) {
       const currentUserId = getCurrentUserId(store.getState())
-      const sceneParcels = ctx.ParcelIdentity.land!.sceneJsonData.scene.parcels
+      const sceneParcels = ctx.ParcelIdentity.entity.metadata.scene?.parcels
 
       let isCurrentUserIncluded = false
 

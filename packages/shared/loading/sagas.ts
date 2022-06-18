@@ -34,7 +34,7 @@ import { call } from 'redux-saga-test-plan/matchers'
 import { RootState } from 'shared/store/rootTypes'
 import { onLoginCompleted } from 'shared/session/sagas'
 import { getResourcesURL } from 'shared/location'
-import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
+import { getCatalystServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { getAssetBundlesBaseUrl } from 'config'
 import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
 import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
@@ -72,12 +72,12 @@ export function* loadingSaga() {
 }
 
 function* reportFailedScene(action: SceneFail) {
-  const sceneId = action.payload
+  const { id, baseUrl } = action.payload
   const fullRootUrl = getResourcesURL('.')
 
   trackEvent('scene_loading_failed', {
-    sceneId,
-    contentServer: yield select(getFetchContentServer),
+    sceneId: id,
+    contentServer: baseUrl,
     catalystServer: yield select(getCatalystServer),
     contentServerBundles: getAssetBundlesBaseUrl(yield select(getSelectedNetwork)) + '/',
     rootUrl: fullRootUrl
@@ -101,7 +101,8 @@ function* triggerUnityClientLoaded() {
 
 export function* trackLoadTime(action: SceneLoad): any {
   const start = new Date().getTime()
-  const sceneId = action.payload
+  const {id} = action.payload
+  const sceneId = id
   const result = yield race({
     start: take((action: AnyAction) => action.type === SCENE_START && action.payload === sceneId),
     fail: take((action: AnyAction) => action.type === SCENE_FAIL && action.payload === sceneId)

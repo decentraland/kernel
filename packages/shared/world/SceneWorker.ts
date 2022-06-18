@@ -40,7 +40,7 @@ export abstract class SceneWorker {
         permissionGranted: []
       },
       ParcelIdentity: {
-        land: parcelScene.data.data?.land || parcelScene.data.data?.data?.land,
+        entity: parcelScene.data.data?.entity,
         isPortableExperience: false,
         isEmpty: false
       },
