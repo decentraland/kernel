@@ -39,6 +39,7 @@ import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { setFpsCapOnOff } from './hackedTimers'
+import { RendererProtocol } from '../renderer-protocol/types'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -67,7 +68,7 @@ const unityLogger: ILogger = createUnityLogger()
 
 export class UnityInterface implements IUnityInterface {
   public logger = unityLogger
-  public gameInstance!: UnityGame
+  public gameInstance!: UnityGame & RendererProtocol
   public Module: any
   public currentHeight: number = -1
   public crashPayloadResponseObservable: Observable<string> = new Observable<string>()
@@ -85,7 +86,7 @@ export class UnityInterface implements IUnityInterface {
     resizeCanvas(height)
   }
 
-  public Init(gameInstance: UnityGame): void {
+  public Init(gameInstance: UnityGame & RendererProtocol): void {
     if (!WSS_ENABLED) {
       nativeMsgBridge.initNativeMessages(gameInstance)
     }
@@ -592,15 +593,16 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public SendBinaryMessage(sceneId: string, message: Uint8Array, length: number) {
-    if (!WSS_ENABLED) {
-      nativeMsgBridge.binaryMessage(sceneId, message, length)
-    } else {
-      this.SendMessageToUnity(
-        'Bridges',
-        `BinaryMessage`,
-        JSON.stringify({ sceneId, data: Buffer.from(message).toString('base64') })
-      )
-    }
+    this.gameInstance.crdtService.sendCRDT({ sceneId, payload: message }).catch(($) => {})
+    // if (!WSS_ENABLED) {
+    //   nativeMsgBridge.binaryMessage(sceneId, message, length)
+    // } else {
+    //   this.SendMessageToUnity(
+    //     'Bridges',
+    //     `BinaryMessage`,
+    //     JSON.stringify({ sceneId, data: Buffer.from(message).toString('base64') })
+    //   )
+    // }
   }
 
   // NOTE: we override wasm's setThrew function before sending message to unity and restore it to it's

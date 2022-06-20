@@ -10,9 +10,9 @@ NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
 SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
-RENDERER_PROTO_FILES := $(wildcard packages/unity-interface/rpc/proto/*.proto)
+RENDERER_PROTO_FILES := $(wildcard packages/renderer-protocol/proto/*.proto)
 PBS_TS = $(SCENE_PROTO_FILES:packages/shared/apis/proto/%.proto=packages/shared/apis/proto/%.gen.ts)
-PBRENDERER_TS = $(RENDERER_PROTO_FILES:packages/unity-interface/rpc/proto/%.proto=packages/unity-interface/rpc/proto/%.gen.ts)
+PBRENDERER_TS = $(RENDERER_PROTO_FILES:packages/renderer-protocol/proto/%.proto=packages/renderer-protocol/proto/%.gen.ts)
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protobuf/bin/protoc
 
@@ -206,13 +206,13 @@ packages/shared/apis/proto/%.gen.ts: packages/shared/apis/proto/%.proto node_mod
 			--ts_proto_out="$(PWD)/packages/shared/apis/proto" -I="$(PWD)/packages/shared/apis/proto" \
 			"$(PWD)/packages/shared/apis/proto/$*.proto";
 
-packages/unity-interface/rpc/proto/%.gen.ts: packages/unity-interface/rpc/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/renderer-protocol/proto/%.gen.ts: packages/renderer-protocol/proto/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/unity-interface/rpc/proto" -I="$(PWD)/packages/unity-interface/rpc/proto" \
-			"$(PWD)/packages/unity-interface/rpc/proto/$*.proto";			
+			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" -I="$(PWD)/packages/renderer-protocol/proto" \
+			"$(PWD)/packages/renderer-protocol/proto/$*.proto";			
 
 compile_apis: ${PBS_TS}
 

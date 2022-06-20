@@ -29,6 +29,7 @@ import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { RendererProtocol } from '../renderer-protocol/types'
 
 export type RealmInfo = {
   serverName: string
@@ -62,12 +63,12 @@ export function getUnityInstance(): IUnityInterface {
 }
 
 export interface IUnityInterface {
-  gameInstance: UnityGame
+  gameInstance: UnityGame & RendererProtocol
   Module: any
   crashPayloadResponseObservable: Observable<string>
   logger: ILogger
   SetTargetHeight(height: number): void
-  Init(gameInstance: UnityGame): void
+  Init(gameInstance: UnityGame & RendererProtocol): void
   SendGenericMessage(object: string, method: string, payload: string): void
   SetDebug(): void
   LoadProfile(profile: NewProfileForRenderer): void

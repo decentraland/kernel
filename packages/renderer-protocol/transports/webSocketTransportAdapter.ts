@@ -1,6 +1,6 @@
 import { Transport, TransportEvents } from '@dcl/rpc'
 import mitt from 'mitt'
-import { CommonRendererOptions } from '../loader'
+import { CommonRendererOptions } from '../../unity-interface/loader'
 
 export const defer = Promise.prototype.then.bind(Promise.resolve())
 /** @deprecated
@@ -12,7 +12,7 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
   let socket: WebSocket | undefined = undefined
   let firstConnect = true
 
-  const send = function(message: any) {
+  const send = function (message: any) {
     if (!socket) return
 
     if (socket.readyState === socket.OPEN) {
@@ -25,7 +25,7 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
     }
   }
 
-  const connect = function() {
+  const connect = function () {
     socket = new WebSocket(url)
 
     const queue: any[] = []
@@ -50,7 +50,6 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
 
     if (socket.readyState === socket.OPEN) {
       defer(() => events.emit('connect', { socket }))
-
     } else {
       socket.addEventListener('open', () => events.emit('connect', { socket }), { once: true })
     }
@@ -59,7 +58,7 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
       if (firstConnect === true) {
         setTimeout(() => {
           connect()
-        }, 1000);
+        }, 1000)
       } else {
         if (err.error) {
           events.emit('error', err.error)
@@ -95,8 +94,7 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
       send(message)
     },
     close() {
-      if (socket)
-        socket.close()
+      if (socket) socket.close()
     }
   }
 

@@ -44,6 +44,7 @@ import { deepEqual } from 'atomicHelpers/deepEqual'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { getFeatureFlagEnabled } from 'shared/meta/selectors'
 import { waitForRendererInstance } from './sagas-helper'
+import { RendererProtocol } from 'renderer-protocol/types'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -162,7 +163,7 @@ function* initializeRenderer(action: InitializeRenderer) {
 
   // start loading the renderer
   try {
-    const renderer: UnityGame = yield call(delegate, container)
+    const renderer: UnityGame & RendererProtocol = yield call(delegate, container)
 
     const startTime = performance.now()
 

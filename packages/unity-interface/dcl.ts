@@ -27,6 +27,7 @@ import { sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
+import { RendererProtocol } from '../renderer-protocol/types'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -45,7 +46,7 @@ globalThis.clientDebug = clientDebug
  *
  * @param _gameInstance Unity game instance
  */
-export async function initializeEngine(_gameInstance: UnityGame): Promise<void> {
+export async function initializeEngine(_gameInstance: UnityGame & RendererProtocol): Promise<void> {
   const gameInstance = traceDecoratorUnityGame(_gameInstance)
 
   getUnityInstance().Init(gameInstance)
