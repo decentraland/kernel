@@ -62,7 +62,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: ${PBRENDERER_TS} ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
 # Entry points
 static/%.js: build-essentials packages/entryPoints/%.ts
