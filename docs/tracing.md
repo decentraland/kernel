@@ -16,6 +16,13 @@ From the browser's console, at any moment, execute the command:
 beginTrace(1000) // to capture 1000 traces
 ```
 
+Once you have completed the tracing type in the console the following command
+```ts
+endTrace()
+```
+The browser will download automatically the CSV file containing all the traced messages.
+If the tracing is too big the results will be split in multiple files, in this case the browser might block the action and might ask for permission to multiple file download.
+
 Traces have this format:
 
 ```csv
