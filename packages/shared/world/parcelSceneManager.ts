@@ -6,7 +6,7 @@ import {
 } from 'decentraland-loader/lifecycle/manager'
 import {
   sceneLifeCycleObservable,
-  renderDistanceObservable,
+  renderDistanceObservable
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from '../analytics'
 import { scenesChanged, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'

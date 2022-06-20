@@ -24,11 +24,7 @@ import {
   WorldPosition,
   AvatarRendererMessage
 } from 'shared/types'
-import {
-  getSceneWorkerBySceneID,
-  allScenesEvent,
-  AllScenesEvents,
-} from 'shared/world/parcelSceneManager'
+import { getSceneWorkerBySceneID, allScenesEvent, AllScenesEvents } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
@@ -658,7 +654,7 @@ export class BrowserInterface {
   public RequestHeaderForUrl(data: { method: string; url: string }) {
     defaultLogger.warn('RequestHeaderForUrl')
   }
-  
+
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
     defaultLogger.warn('RequestSignedHeaderForBuilder')
   }
