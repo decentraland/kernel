@@ -31,8 +31,8 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
         | undefined = realm ? { domain: realm.hostname, layer: '', catalystName: realm.serverName } : undefined
 
       const additionalMetadata: Record<string, any> = {
-        sceneId: ctx.EnvironmentAPI.cid,
-        parcel: ctx.ParcelIdentity.entity.metadata.scene.base,
+        sceneId: ctx.sceneData.id,
+        parcel: ctx.sceneData.entity.metadata.scene.base,
         // THIS WILL BE DEPRECATED
         tld: network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone',
         network,

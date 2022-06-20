@@ -1,11 +1,12 @@
+import { Entity } from '@dcl/schemas'
 import { future, IFuture } from 'fp-future'
 import { WorldConfig } from 'shared/meta/types'
-import { EntityWithBaseUrl } from '../lib/types'
+import { LoadableScene } from 'shared/types'
 import { EmptyParcelController } from './EmptyParcelController'
 
 export class SceneDataDownloadManager {
-  positionToEntity: Map<string, IFuture<EntityWithBaseUrl | null>> = new Map()
-  entityIdToEntity: Map<string, IFuture<EntityWithBaseUrl | null>> = new Map()
+  positionToEntity: Map<string, IFuture<LoadableScene | null>> = new Map()
+  entityIdToEntity: Map<string, IFuture<LoadableScene | null>> = new Map()
 
   constructor(
     public options: {
@@ -19,18 +20,18 @@ export class SceneDataDownloadManager {
     }
   ) {}
 
-  async resolveEntitiesByPosition(tiles: string[]): Promise<Set<EntityWithBaseUrl>> {
-    const futures: Promise<EntityWithBaseUrl | null>[] = []
+  async resolveEntitiesByPosition(tiles: string[]): Promise<Set<LoadableScene>> {
+    const futures: Promise<LoadableScene | null>[] = []
 
     const missingTiles: string[] = []
 
     for (const tile of tiles) {
-      let promise: IFuture<EntityWithBaseUrl | null>
+      let promise: IFuture<LoadableScene | null>
 
       if (this.positionToEntity.has(tile)) {
         promise = this.positionToEntity.get(tile)!
       } else {
-        promise = future<EntityWithBaseUrl | null>()
+        promise = future<LoadableScene | null>()
         this.positionToEntity.set(tile, promise)
         missingTiles.push(tile)
       }
@@ -48,27 +49,30 @@ export class SceneDataDownloadManager {
       })
 
       if (scenesResponse.ok) {
-        const entities: EntityWithBaseUrl[] = await scenesResponse.json()
+        const entities: Entity[] = await scenesResponse.json()
         // resolve promises
         for (const entity of entities) {
-          entity.baseUrl = entity.baseUrl || this.options.contentServer + '/contents/'
-
+          const entityWithBaseUrl: LoadableScene = {
+            id: entity.id,
+            baseUrl: (entity as any).baseUrl ||this.options.contentServer + '/contents/',
+            entity
+          }
           for (const tile of entity.pointers) {
             if (this.positionToEntity.has(tile)) {
               const promise = this.positionToEntity.get(tile)
-              promise!.resolve(entity)
+              promise!.resolve(entityWithBaseUrl)
             } else {
               // if we get back a pointer/tile that was not pending => create the future and resolve
-              const promise = future<EntityWithBaseUrl | null>()
-              promise.resolve(entity)
+              const promise = future<LoadableScene | null>()
+              promise.resolve(entityWithBaseUrl)
               this.positionToEntity.set(tile, promise)
             }
           }
 
-          const pendingSceneData: IFuture<EntityWithBaseUrl | null> = this.entityIdToEntity.get(entity.id) || future()
+          const pendingSceneData: IFuture<LoadableScene | null> = this.entityIdToEntity.get(entity.id) || future()
 
           if (pendingSceneData.isPending) {
-            pendingSceneData.resolve(entity)
+            pendingSceneData.resolve(entityWithBaseUrl)
           }
 
           if (!this.entityIdToEntity.has(entity.id)) {
@@ -93,10 +97,10 @@ export class SceneDataDownloadManager {
 
     const ret = await Promise.all(futures)
 
-    return new Set(ret.filter(Boolean) as EntityWithBaseUrl[])
+    return new Set(ret.filter(Boolean) as LoadableScene[])
   }
 
-  async getParcelDataByEntityId(entityId: string): Promise<EntityWithBaseUrl | null> {
+  async getParcelDataByEntityId(entityId: string): Promise<LoadableScene | null> {
     return this.entityIdToEntity.get(entityId)!
   }
 }

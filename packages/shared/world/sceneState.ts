@@ -2,23 +2,23 @@ import { Observable } from 'mz-observable'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJson'
 import { parcelObservable } from './positionThings'
-import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
+import { LoadableScene } from 'shared/types'
 
 export type SceneReport = {
   /** Scene where the user was */
-  previousScene?: EntityWithBaseUrl
+  previousScene?: LoadableScene
   /** Scene the user just entered */
-  newScene?: EntityWithBaseUrl
+  newScene?: LoadableScene
 }
 
 // Called each time the user changes scene
 export const sceneObservable = new Observable<SceneReport>()
-export let lastPlayerScene: EntityWithBaseUrl | undefined
+export let lastPlayerScene: LoadableScene | undefined
 
 // Listen to parcel changes, and notify if the scene changed
 parcelObservable.add(async ({ newParcel }) => {
   const parcelString = `${newParcel.x},${newParcel.y}`
-  if (!lastPlayerScene || !lastPlayerScene.metadata.scene.parcels.includes(parcelString)) {
+  if (!lastPlayerScene || !lastPlayerScene.entity.metadata.scene.parcels.includes(parcelString)) {
     const scenesId = await fetchSceneIds([parcelString])
     const sceneId = scenesId[0]
     if (sceneId) {

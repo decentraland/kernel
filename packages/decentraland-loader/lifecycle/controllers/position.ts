@@ -50,7 +50,7 @@ export class PositionLifecycleController extends EventEmitter {
       const lands = await this.downloadManager.resolveEntitiesByPosition([`${position.x},${position.y}`])
       if (lands.size) {
         const [first] = lands
-        const spawnPoint = pickWorldSpawnpoint(first.metadata)
+        const spawnPoint = pickWorldSpawnpoint(first.entity.metadata)
         resolvedPosition = worldToGrid(spawnPoint.position)
         this.currentSpawnpoint = spawnPoint
       } else {

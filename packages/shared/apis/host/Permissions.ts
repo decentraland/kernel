@@ -31,8 +31,8 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
   const isOneOfFirstPermissions =
     test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE || test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE
 
-  if (ctx.ParcelIdentity) {
-    const sceneJsonData = ctx.ParcelIdentity.entity.metadata
+  if (ctx.sceneData.entity?.metadata) {
+    const sceneJsonData = ctx.sceneData.entity.metadata
     const list: PermissionItem[] = []
 
     if (sceneJsonData && sceneJsonData.requiredPermissions) {
@@ -50,7 +50,7 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
 
     // Workaround to give old default permissions, remove when
     //  a method for grant permissions exist.
-    if (ctx.ParcelIdentity.isPortableExperience) {
+    if (ctx.sceneData.isPortableExperience) {
       if (isOneOfFirstPermissions) {
         return true
       }

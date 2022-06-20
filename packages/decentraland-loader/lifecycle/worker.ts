@@ -92,7 +92,7 @@ let emptyParcelController: EmptyParcelController
 
         for (const scene of scenes) {
           connector.notify('Scene.idResponse', {
-            position: scene.pointers[0],
+            position: scene.entity.pointers[0],
             data: scene
           })
         }

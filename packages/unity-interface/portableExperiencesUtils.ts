@@ -1,6 +1,4 @@
-import {
-  StorePortableExperience
-} from '../shared/types'
+import { StorePortableExperience } from '../shared/types'
 import { UnityPortableExperienceScene } from './UnityParcelScene'
 import { forceStopSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
@@ -9,13 +7,7 @@ import { Entity } from '@dcl/schemas'
 import { store } from 'shared/store/isolatedStore'
 import { addScenePortableExperience, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { sleep } from 'atomicHelpers/sleep'
-import { entityToLoadableParcelScene } from '../shared/selectors'
-
-declare let window: any
-
-// TODO: Remove this when portable experiences are full-available
-window['spawnScenePortableExperienceSceneFromUrn'] = spawnScenePortableExperienceSceneFromUrn
-window['killScenePortableExperience'] = killScenePortableExperience
+import { getSceneNameFromJsonData, loadableSceneToLoadableParcelScene } from '../shared/selectors'
 
 export type PortableExperienceHandle = {
   pid: string
@@ -34,7 +26,7 @@ export async function spawnScenePortableExperienceSceneFromUrn(
 
   return {
     parentCid,
-    pid: data.entity.id
+    pid: data.id
   }
 }
 
@@ -64,11 +56,10 @@ export async function getPortableExperienceFromUrn(sceneUrn: string): Promise<St
   const baseUrl: string = resolvedEntity.baseUrl || new URL('.', resolvedUrl).toString()
 
   return {
-    entity: {
-      ...entity,
-      baseUrl
-    },
-    parentCid: 'main',
+    id: sceneUrn,
+    entity,
+    baseUrl,
+    parentCid: 'main'
   }
 }
 
@@ -82,7 +73,7 @@ export function getPortableExperiencesLoaded() {
 export async function declareWantedPortableExperiences(pxs: StorePortableExperience[]) {
   const immutableList = new Set(currentPortableExperiences.keys())
 
-  const wantedIds = pxs.map(($) => $.entity.id)
+  const wantedIds = pxs.map(($) => $.id)
 
   // kill extra ones
   for (const sceneUrn of immutableList) {
@@ -101,31 +92,34 @@ export async function declareWantedPortableExperiences(pxs: StorePortableExperie
 
   // then load all the missing scenes
   for (const sceneData of pxs) {
-    if (!getRunningPortableExperience(sceneData.entity.id)) {
+    if (!getRunningPortableExperience(sceneData.id)) {
       spawnPortableExperience(sceneData)
     }
   }
 }
 
 function spawnPortableExperience(spawnData: StorePortableExperience): PortableExperienceHandle {
-  if (currentPortableExperiences.has(spawnData.entity.id) || getSceneWorkerBySceneID(spawnData.entity.id)) {
-    throw new Error(`Portable Experience: "${spawnData.entity.id}" is already running.`)
+  const sceneId = spawnData.id
+  if (currentPortableExperiences.has(sceneId) || getSceneWorkerBySceneID(sceneId)) {
+    throw new Error(`Portable Experience: "${sceneId}" is already running.`)
   }
+  if (!sceneId) debugger
 
-  const data = entityToLoadableParcelScene(spawnData.entity)
+  const data = loadableSceneToLoadableParcelScene(spawnData)
   data.useFPSThrottling = false
 
   const scene = new UnityPortableExperienceScene(data, spawnData.parentCid)
-  currentPortableExperiences.set(scene.data.sceneId, scene)
+  currentPortableExperiences.set(sceneId, scene)
   loadParcelScene(scene, undefined, true)
+
   getUnityInstance().CreateGlobalScene({
-    id: scene.data.sceneId,
-    name: scene.data.name,
+    id: sceneId,
+    name: getSceneNameFromJsonData(scene.data.entity.metadata),
     baseUrl: scene.data.baseUrl,
     contents: scene.data.data.contents,
-    icon: spawnData.entity.metadata.menuBarIcon,
+    icon: spawnData.entity.metadata.menuBarIcon || '',
     isPortableExperience: true
   })
 
-  return { pid: scene.data.sceneId, parentCid: spawnData.parentCid }
+  return { pid: sceneId, parentCid: spawnData.parentCid }
 }

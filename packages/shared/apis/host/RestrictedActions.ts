@@ -25,9 +25,9 @@ export async function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): 
   //   checks permissions
   assertHasPermission(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, ctx)
 
-  if (!ctx.ParcelIdentity) return {}
+  if (!ctx.sceneData) return {}
 
-  const base = parseParcelPosition(ctx.ParcelIdentity.entity.metadata.scene?.base || '0,0')
+  const base = parseParcelPosition(ctx.sceneData.entity.metadata.scene?.base || '0,0')
   const basePosition = new Vector3()
   gridToWorld(base.x, base.y, basePosition)
 
@@ -78,8 +78,8 @@ export async function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): 
 
 function isPositionValid(position: Vector3, ctx: PortContext) {
   return (
-    ctx.ParcelIdentity!.isPortableExperience ||
-    isWorldPositionInsideParcels(ctx.ParcelIdentity.entity.metadata.scene?.parcels || [], position)
+    ctx.sceneData!.isPortableExperience ||
+    isWorldPositionInsideParcels(ctx.sceneData.entity.metadata.scene?.parcels || [], position)
   )
 }
 

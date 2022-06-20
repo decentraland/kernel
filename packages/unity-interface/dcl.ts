@@ -1,7 +1,7 @@
 import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
-import { ILand, SceneJsonData } from 'shared/types'
+import { ILand } from 'shared/types'
 import {
   allScenesEvent,
   enableParcelSceneLoading,
@@ -12,7 +12,7 @@ import {
   reloadScene
 } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
-import { entityToLoadableParcelScene } from 'shared/selectors'
+import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
 import { UnityParcelScene } from './UnityParcelScene'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
@@ -23,7 +23,7 @@ import type { UnityGame } from '@dcl/unity-renderer/src'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
-import { sdk } from '@dcl/schemas'
+import { EntityType, Scene, sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
@@ -81,20 +81,25 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
 async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
   const scene = new UnityScene({
-    sceneId: cid,
-    name: title,
+    id: cid,
     baseUrl: location.origin,
-    main: fileContentUrl,
-    useFPSThrottling: false,
-    data: {},
-    mappings: []
+    entity: {
+      content: [],
+      pointers: [cid],
+      timestamp: 0,
+      type: EntityType.SCENE,
+      metadata: null,
+      version: 'v3'
+    },
+    data: null,
+    useFPSThrottling: false
   })
 
   loadParcelScene(scene, undefined, true)
 
   getUnityInstance().CreateGlobalScene({
     id: scene.getSceneId(),
-    name: scene.data.name,
+    name: title,
     baseUrl: scene.data.baseUrl,
     isPortableExperience: false,
     contents: []
@@ -105,7 +110,7 @@ export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   onLoadParcelScenesObservable.add((lands) => {
     getUnityInstance().LoadParcelScenes(
       lands.map(($) => {
-        const x = Object.assign({}, entityToLoadableParcelScene($).data)
+        const x = Object.assign({}, loadableSceneToLoadableParcelScene($).data)
         return x
       })
     )
@@ -126,7 +131,7 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
   const result = await fetch('/scene.json?nocache=' + Math.random())
 
   if (result.ok) {
-    const scene = (await result.json()) as SceneJsonData
+    const scene = (await result.json()) as Scene
 
     const [sceneId] = await fetchSceneIds([scene.scene.base])
     return { sceneId, sceneBase: scene.scene.base }
@@ -160,8 +165,8 @@ export async function loadPreviewScene(message: sdk.Messages) {
 
           store.dispatch(
             reloadScenePortableExperience({
+              ...entity,
               parentCid: 'main',
-              entity
             })
           )
         }

@@ -24,7 +24,15 @@ export function registerEnvironmentAPIServiceServerImplementation(
 ) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
     async getBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
-      return { ...ctx.EnvironmentAPI.data, jsonPayload: JSON.stringify(ctx.EnvironmentAPI.data.data) }
+      return {
+        id: ctx.sceneData.id,
+        baseUrl: ctx.sceneData.baseUrl,
+        useFPSThrottling: ctx.EnvironmentAPI.data.useFPSThrottling,
+        entity: {
+          content: ctx.sceneData.entity.content,
+          metadataJson: JSON.stringify(ctx.sceneData.entity.metadata)
+        }
+      }
     },
     async isPreviewMode(): Promise<PreviewModeResponse> {
       return { isPreview: PREVIEW }

@@ -6,7 +6,7 @@ import {
   Vector2
 } from '@dcl/ecs-math'
 import { Observable } from 'mz-observable'
-import { ILand, SceneJsonData } from 'shared/types'
+import { ILand } from 'shared/types'
 import { InstancedSpawnPoint } from '../types'
 import {
   worldToGrid,
@@ -15,7 +15,7 @@ import {
   isWorldPositionInsideParcels
 } from 'atomicHelpers/parcelScenePositions'
 import { DEBUG } from '../../config'
-import { isInsideWorldLimits } from '@dcl/schemas'
+import { isInsideWorldLimits, Scene } from '@dcl/schemas'
 
 declare let location: any
 declare let history: any
@@ -137,7 +137,7 @@ function replaceQueryStringPosition(x: any, y: any) {
  *
  * @param land Scene on which the player is spawning
  */
-export function pickWorldSpawnpoint(land: SceneJsonData): InstancedSpawnPoint {
+export function pickWorldSpawnpoint(land: Scene): InstancedSpawnPoint {
   const pick = pickSpawnpoint(land)
 
   const spawnpoint = pick || { position: { x: 0, y: 0, z: 0 } }
@@ -157,7 +157,7 @@ export function pickWorldSpawnpoint(land: SceneJsonData): InstancedSpawnPoint {
   }
 }
 
-function pickSpawnpoint(land: SceneJsonData): InstancedSpawnPoint | undefined {
+function pickSpawnpoint(land: Scene): InstancedSpawnPoint | undefined {
   if (!land || !land.spawnPoints || land.spawnPoints.length === 0) {
     return undefined
   }

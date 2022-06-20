@@ -1,10 +1,9 @@
 import Protocol from 'devtools-protocol'
 import { ILogger } from './../../logger'
-import { EnvironmentData } from './../../types'
+import { EnvironmentData, LoadableScene } from './../../types'
 import { ParcelSceneAPI } from './../../../shared/world/ParcelSceneAPI'
 import { PermissionItem } from '../proto/Permissions.gen'
 import { EventData } from '../proto/EngineAPI.gen'
-import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
@@ -12,7 +11,6 @@ export type PortContextService<K extends keyof PortContext> = WithRequired<PortC
 
 export type PortContext = {
   EnvironmentAPI: {
-    cid: string
     data: EnvironmentData<any>
   }
   EngineAPI: {
@@ -22,11 +20,9 @@ export type PortContext = {
   Permissions: {
     permissionGranted: PermissionItem[]
   }
-  ParcelIdentity: {
-    entity: EntityWithBaseUrl
+  sceneData: Readonly<LoadableScene & {
     isPortableExperience: boolean
-    isEmpty: boolean
-  }
+  }>
   events: EventData[]
 
   sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void

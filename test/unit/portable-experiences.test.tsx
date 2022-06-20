@@ -22,9 +22,9 @@ import { EntityType } from '@dcl/schemas'
 describe('Portable experiences sagas test', () => {
   const createStorePX = (urn: string): StorePortableExperience => ({
     parentCid: 'main',
+    id: urn,
+    baseUrl: '',
     entity: {
-      id: urn,
-      baseUrl: '',
       content: [],
       metadata: {
         menuBarIcon: 'icon'
@@ -133,8 +133,8 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: ['urn-denied'],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [pxOld.entity.id]: pxOld,
-                [pxDenied.entity.id]: pxDenied
+                [pxOld.id]: pxOld,
+                [pxDenied.id]: pxDenied
               },
               globalPortalExperienceShutDown: false
             }
@@ -149,8 +149,8 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: [],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [pxOld.entity.id]: pxOld,
-                [pxDenied.entity.id]: pxDenied
+                [pxOld.id]: pxOld,
+                [pxDenied.id]: pxDenied
               },
               globalPortalExperienceShutDown: false
             }
@@ -172,7 +172,7 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: ['urn-denied'],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [pxOld.entity.id]: pxOld
+                [pxOld.id]: pxOld
               },
               globalPortalExperienceShutDown: false
             }
@@ -187,8 +187,8 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: ['urn-denied'],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [pxOld.entity.id]: pxOld,
-                [pxDenied.entity.id]: pxDenied
+                [pxOld.id]: pxOld,
+                [pxDenied.id]: pxDenied
               },
               globalPortalExperienceShutDown: false
             }
@@ -209,14 +209,14 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: [],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [pxOld.entity.id]: pxOld
+                [pxOld.id]: pxOld
               },
               globalPortalExperienceShutDown: false
             }
           })
         )
         .provide([[call(declareWantedPortableExperiences, []), []]])
-        .dispatch(removeScenePortableExperience(pxOld.entity.id))
+        .dispatch(removeScenePortableExperience(pxOld.id))
         .call(declareWantedPortableExperiences, [])
         .hasFinalState(
           state({
@@ -259,7 +259,7 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: [],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [px.entity.id]: px
+                [px.id]: px
               },
               globalPortalExperienceShutDown: false
             }
@@ -278,22 +278,22 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: [],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [px.entity.id]: px
+                [px.id]: px
               },
               globalPortalExperienceShutDown: false
             }
           })
         )
         .provide([[call(declareWantedPortableExperiences, []), []]])
-        .dispatch(denyPortableExperiences([px.entity.id]))
+        .dispatch(denyPortableExperiences([px.id]))
         .call(declareWantedPortableExperiences, [])
         .hasFinalState(
           state({
             portableExperiences: {
-              deniedPortableExperiencesFromRenderer: [px.entity.id],
+              deniedPortableExperiencesFromRenderer: [px.id],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [px.entity.id]: px
+                [px.id]: px
               },
               globalPortalExperienceShutDown: false
             }
@@ -309,10 +309,10 @@ describe('Portable experiences sagas test', () => {
         .withState(
           state({
             portableExperiences: {
-              deniedPortableExperiencesFromRenderer: [px.entity.id],
+              deniedPortableExperiencesFromRenderer: [px.id],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [px.entity.id]: px
+                [px.id]: px
               },
               globalPortalExperienceShutDown: false
             }
@@ -327,7 +327,7 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: [],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [px.entity.id]: px
+                [px.id]: px
               },
               globalPortalExperienceShutDown: false
             }
@@ -345,7 +345,7 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: [],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [px.entity.id]: px
+                [px.id]: px
               },
               globalPortalExperienceShutDown: false
             }
@@ -358,7 +358,7 @@ describe('Portable experiences sagas test', () => {
               deniedPortableExperiencesFromRenderer: [],
               kernelPortableExperiences: {},
               portableExperiencesCreatedByScenesList: {
-                [px.entity.id]: px
+                [px.id]: px
               },
               globalPortalExperienceShutDown: true
             }

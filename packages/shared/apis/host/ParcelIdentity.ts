@@ -13,33 +13,33 @@ import {
 import { PortContext } from './context'
 
 async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetParcelResponse> {
-  const land = ctx.ParcelIdentity.entity
+  const sceneData = ctx.sceneData
 
-  if (!land) {
+  if (!sceneData) {
     throw new Error('No land assigned in the ParcelIdentity context.')
   }
 
   return {
     land: {
-      sceneId: land.id || '',
-      sceneJsonData: land.metadata ? JSON.stringify(land.metadata) : '{}',
-      baseUrl: land.baseUrl || '',
+      sceneId: sceneData.id || '',
+      sceneJsonData: sceneData.entity.metadata ? JSON.stringify(sceneData.entity.metadata) : '{}',
+      baseUrl: sceneData.baseUrl || '',
       baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
       mappingsResponse: {
-        parcelId: land.id || '',
-        rootCid: land.id || '',
-        contents: (land.content || []).map((item) => ({
+        parcelId: sceneData.id || '',
+        rootCid: sceneData.id || '',
+        contents: (sceneData.entity.content || []).map((item) => ({
           file: item.file || '',
           hash: item.hash || ''
         }))
       }
     },
-    cid: ctx.EnvironmentAPI.cid || ''
+    cid: ctx.sceneData.id || ''
   }
 }
 
 async function getSceneId(_req: GetSceneIdRequest, ctx: PortContext): Promise<GetSceneIdResponse> {
-  const sceneId = ctx.ParcelIdentity.entity.id || ctx.EnvironmentAPI.cid || ''
+  const sceneId = ctx.sceneData.id || ''
   return { sceneId }
 }
 

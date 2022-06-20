@@ -5,14 +5,16 @@ message ContentMapping {
     string hash = 2;
 }
 
+message MinimalRunnableEntity {
+    repeated ContentMapping content = 1;
+    string metadata_json = 2;
+}
+
 message BootstrapDataResponse {
-    string scene_id = 1;
-    string name = 2;
-    string main = 3;
+    string id = 1;
     string base_url = 4;
+    MinimalRunnableEntity entity = 2;
     bool use_f_p_s_throttling = 5;
-    repeated ContentMapping mappings = 6;
-    string json_payload = 7;
 }
 
 message PreviewModeResponse {

@@ -2,8 +2,7 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from '@dcl/legacy-ecs'
 import type { WearableId } from 'shared/catalogs/types'
-import { Snapshots } from '@dcl/schemas'
-import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
+import { Entity, Scene, Snapshots } from '@dcl/schemas'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
 export type MappingsResponse = {
@@ -144,7 +143,7 @@ export type LoadableParcelScene = {
   contents: Array<ContentMapping>
   baseUrl: string
   baseUrlBundles: string
-  entity: EntityWithBaseUrl
+  loadableScene: LoadableScene
 }
 
 /** THIS INTERFACE CANNOT CHANGE, IT IS USED IN THE UNITY BUILD */
@@ -230,23 +229,6 @@ export type SceneSourcePlacement = {
   layout: { cols: number; rows: number }
 }
 
-/// https://github.com/decentraland/proposals/blob/master/dsp/0020.mediawiki
-export type SceneJsonData = {
-  display?: SceneDisplay
-  owner?: string
-  contact?: SceneContact
-  main: string
-  tags?: string[]
-  scene: SceneParcels
-  communications?: SceneCommunications
-  policy?: ScenePolicy
-  source?: SceneSource
-  spawnPoints?: SceneSpawnPoint[]
-  requiredPermissions?: string[] | undefined
-  featureToggles?: { [key: string]: string }
-  menuBarIcon?: string
-}
-
 export type SceneFeatureToggle = {
   name: string
   default: 'enabled' | 'disabled'
@@ -256,12 +238,13 @@ export class SceneFeatureToggles {
   static readonly VOICE_CHAT: SceneFeatureToggle = { name: 'voiceChat', default: 'enabled' }
 }
 
-export type EnvironmentData<T> = {
-  sceneId: string
-  name: string
-  main: string
+export type LoadableScene = {
+  entity: Omit<Entity, 'id'>
   baseUrl: string
-  mappings: Array<ContentMapping>
+  id: string
+}
+
+export type EnvironmentData<T> = LoadableScene & {
   useFPSThrottling: boolean
   data: T
 }
@@ -272,7 +255,7 @@ export interface ILand {
    * In the future will change to the sceneCID
    */
   sceneId: string
-  sceneJsonData: SceneJsonData
+  sceneJsonData: Scene
   baseUrl: string
   baseUrlBundles: string
   mappingsResponse: MappingsResponse
@@ -282,7 +265,7 @@ export interface IPortableExperience {
   cid: string
   baseUrl: string
   baseUrlBundles: string
-  sceneJsonData: SceneJsonData
+  sceneJsonData: Scene
   mappingsResponse: MappingsResponse
 }
 
@@ -653,8 +636,7 @@ export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendere
 /**
  * Holds all the information needed to start a portable experience.
  */
-export type StorePortableExperience = {
+export type StorePortableExperience = LoadableScene & {
   /** Id of the parent scene that spawned this portable experience */
   parentCid: string
-  entity: EntityWithBaseUrl
 }

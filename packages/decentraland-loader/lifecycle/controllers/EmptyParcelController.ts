@@ -1,9 +1,8 @@
-import { EntityType } from '@dcl/schemas'
+import { EntityType, Scene } from '@dcl/schemas'
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
 import { PREVIEW, rootURLPreviewMode } from 'config'
 import { WorldConfig } from 'shared/meta/types'
-import { ContentMapping, SceneJsonData } from 'shared/types'
-import { EntityWithBaseUrl } from '../lib/types'
+import { ContentMapping, LoadableScene } from 'shared/types'
 
 export class EmptyParcelController {
   emptyScenesPromise: Promise<Record<string, ContentMapping[]>>
@@ -30,32 +29,32 @@ export class EmptyParcelController {
     this.emptyScenesPromise = jsonFetch(this.baseUrl + 'mappings.json')
   }
 
-  async createFakeEntity(coordinates: string): Promise<EntityWithBaseUrl> {
+  async createFakeEntity(coordinates: string): Promise<LoadableScene> {
     const emptyScenes = await this.emptyScenesPromise
     const names = Object.keys(emptyScenes)
     const sceneName = names[Math.floor(Math.random() * names.length)]
     const entityId = `Qm${coordinates}m`
 
-    const metadata: SceneJsonData = {
+    const metadata: Scene = {
       display: { title: 'Empty parcel' },
       contact: { name: 'Decentraland' },
       owner: '',
       main: `bin/game.js`,
       tags: [],
-      scene: { parcels: [coordinates], base: coordinates },
-      policy: {},
-      communications: { commServerUrl: '' }
+      scene: { parcels: [coordinates], base: coordinates }
     }
 
     return {
       id: entityId,
-      content: emptyScenes[sceneName]!,
-      pointers: [coordinates],
-      timestamp: Date.now(),
-      type: EntityType.SCENE,
-      metadata,
-      version: 'v3',
-      baseUrl: this.baseUrl + 'contents/'
+      baseUrl: this.baseUrl + 'contents/',
+      entity: {
+        content: emptyScenes[sceneName]!,
+        pointers: [coordinates],
+        timestamp: Date.now(),
+        type: EntityType.SCENE,
+        metadata,
+        version: 'v3'
+      }
     }
   }
 }

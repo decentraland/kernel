@@ -21,7 +21,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      * Returns the handle of the portable experience.
      */
     async spawn(req, ctx) {
-      return await spawnScenePortableExperienceSceneFromUrn(req.pid, ctx.EnvironmentAPI.cid)
+      return await spawnScenePortableExperienceSceneFromUrn(req.pid, ctx.sceneData.id)
     },
 
     /**
@@ -33,7 +33,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
     async kill(req, ctx) {
       const portableExperience = getRunningPortableExperience(req.pid)
 
-      if (!!portableExperience && portableExperience.parentCid === ctx.EnvironmentAPI.cid) {
+      if (!!portableExperience && portableExperience.parentCid === ctx.sceneData.id) {
         store.dispatch(removeScenePortableExperience(req.pid))
         return { status: true }
       }
@@ -46,7 +46,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      * Returns true if was able to kill the portable experience, false if not.
      */
     async exit(_req, ctx) {
-      store.dispatch(removeScenePortableExperience(ctx.EnvironmentAPI.cid))
+      store.dispatch(removeScenePortableExperience(ctx.sceneData.id))
       return { status: true }
     },
 
@@ -56,7 +56,7 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      */
     async getPortableExperiencesLoaded() {
       const loaded = getPortableExperiencesLoaded()
-      return { loaded: Array.from(loaded).map(($) => ({ pid: $.data.sceneId, parentCid: $.parentCid })) }
+      return { loaded: Array.from(loaded).map(($) => ({ pid: $.getSceneId(), parentCid: $.parentCid })) }
     }
   }))
 }

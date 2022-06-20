@@ -36,7 +36,7 @@ export class UnityScene<T> implements ParcelSceneAPI {
   }
 
   getSceneId(): string {
-    return this.data.sceneId
+    return this.data.id
   }
 
   sendBatch(actions: EntityAction[]): void {

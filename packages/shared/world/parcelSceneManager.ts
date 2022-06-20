@@ -9,12 +9,12 @@ import {
   renderDistanceObservable,
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { scenesChanged, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
-import { EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene } from '../types'
+import { EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene, LoadableScene } from '../types'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { parcelObservable, teleportObservable } from './positionThings'
 import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
 import { SceneSystemWorker } from './SceneSystemWorker'
-import { entityToLoadableParcelScene } from 'shared/selectors'
+import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from '@dcl/legacy-ecs'
 import { ParcelSceneLoadingState } from './types'
@@ -22,8 +22,6 @@ import { UnityParcelScene } from 'unity-interface/UnityParcelScene'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { Transport } from '@dcl/rpc'
-import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
-import { Entity } from '@dcl/schemas'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
@@ -51,14 +49,17 @@ export function isParcelDenyListed(coordinates: string[]) {
   return false
 }
 
-export function generateBannedILand(land: EntityWithBaseUrl): EntityWithBaseUrl {
+export function generateBannedILand(entity: LoadableScene): LoadableScene {
   return {
-    ...land,
-    content: []
+    ...entity,
+    entity: {
+      ...entity.entity,
+      content: []
+    }
   }
 }
 
-export const onLoadParcelScenesObservable = new Observable<EntityWithBaseUrl[]>()
+export const onLoadParcelScenesObservable = new Observable<LoadableScene[]>()
 /**
  * Array of sceneId's
  */
@@ -119,15 +120,15 @@ function setNewParcelScene(sceneId: string, worker: SceneWorker) {
   loadedSceneWorkers.set(sceneId, worker)
 }
 
-function globalSignalSceneLoad(entity: EntityWithBaseUrl) {
+function globalSignalSceneLoad(entity: LoadableScene) {
   store.dispatch(signalSceneLoad(entity))
 }
 
-function globalSignalSceneStart(entity: EntityWithBaseUrl) {
+function globalSignalSceneStart(entity: LoadableScene) {
   store.dispatch(signalSceneStart(entity))
 }
 
-function globalSignalSceneFail(entity: EntityWithBaseUrl) {
+function globalSignalSceneFail(entity: LoadableScene) {
   store.dispatch(signalSceneFail(entity))
 }
 
@@ -142,7 +143,7 @@ export const parcelSceneLoadingState: ParcelSceneLoadingState = {
  *  @internal
  * Returns a set of Set<SceneId>
  */
-export function getDesiredParcelScenes(): Map<string, EntityWithBaseUrl> {
+export function getDesiredParcelScenes(): Map<string, LoadableScene> {
   return new Map(parcelSceneLoadingState.desiredParcelScenes)
 }
 
@@ -150,7 +151,7 @@ export function getDesiredParcelScenes(): Map<string, EntityWithBaseUrl> {
  * @internal
  * Receives a set of Set<SceneId>
  */
-async function setDesiredParcelScenes(desiredParcelScenes: Map<string, EntityWithBaseUrl>) {
+async function setDesiredParcelScenes(desiredParcelScenes: Map<string, LoadableScene>) {
   const previousSet = new Set(parcelSceneLoadingState.desiredParcelScenes)
   const newSet = (parcelSceneLoadingState.desiredParcelScenes = desiredParcelScenes)
 
@@ -191,16 +192,17 @@ function unloadParcelSceneById(sceneId: string) {
 /**
  * @internal
  **/
-export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: EntityWithBaseUrl) {
+export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableScene) {
   const lifecycleManager = parcelSceneLoadingState.lifecycleManager
 
 
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
     // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
-    const denyListed = isParcelDenyListed(entity.metadata.scene.parcels)
+    const denyListed = isParcelDenyListed(entity.entity.metadata.scene.parcels)
     const usedEntity = denyListed ? generateBannedILand(entity) : entity
-    const parcelScene = new UnityParcelScene(entityToLoadableParcelScene(usedEntity))
+
+    const parcelScene = new UnityParcelScene(loadableSceneToLoadableParcelScene(usedEntity))
 
     parcelScene.data.useFPSThrottling = true
     const worker = loadParcelScene(parcelScene)
@@ -243,10 +245,10 @@ async function removeDesiredParcel(sceneId: string) {
   await setDesiredParcelScenes(desiredScenes)
 }
 
-async function addDesiredParcel(entity: Entity, baseUrl: string) {
+async function addDesiredParcel(entity: LoadableScene) {
   const desiredScenes = getDesiredParcelScenes()
   if (hasDesiredParcelScenes(entity.id)) return
-  desiredScenes.set(entity.id, {...entity, baseUrl })
+  desiredScenes.set(entity.id, entity)
   await setDesiredParcelScenes(desiredScenes)
 }
 
@@ -259,8 +261,8 @@ export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams)
 
   parcelSceneLoadingState.lifecycleManager = lifecycleManager
 
-  lifecycleManager.on('Scene.shouldStart', async (opts: { entity: EntityWithBaseUrl }) => {
-    await addDesiredParcel(opts.entity, opts.entity.baseUrl)
+  lifecycleManager.on('Scene.shouldStart', async (opts: { entity: LoadableScene }) => {
+    await addDesiredParcel(opts.entity)
   })
 
   lifecycleManager.on('Scene.shouldUnload', async (opts: { sceneId: string }) => {

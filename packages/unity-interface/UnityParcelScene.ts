@@ -26,16 +26,14 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
     worker.rpcContext.EnvironmentAPI.data = this.data
     worker.rpcContext.EngineAPI = { parcelSceneAPI: this, subscribedEvents: {} }
 
-    worker.rpcContext.ParcelIdentity.entity = this.data.data.entity!
-    worker.rpcContext.EnvironmentAPI.cid = worker.getSceneId()
-    worker.rpcContext.ParcelIdentity.isPortableExperience = false
+    worker.rpcContext.sceneData = { ...this.data.data.loadableScene, isPortableExperience: false }
 
     worker.rpcContext.DevTools.logger = this.logger
 
     const permissionArray: PermissionItem[] = []
 
-    if (this.data.data.entity.metadata?.requiredPermissions) {
-      for (const permissionItemString of this.data.data.entity.metadata?.requiredPermissions) {
+    if (this.data.data.loadableScene.entity.metadata?.requiredPermissions) {
+      for (const permissionItemString of this.data.data.loadableScene.entity.metadata?.requiredPermissions) {
         permissionArray.push(permissionItemFromJSON(permissionItemString))
       }
     }
@@ -49,7 +47,7 @@ export class UnityParcelScene extends UnityScene<LoadableParcelScene> {
 export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExperienceScene> {
   constructor(public data: EnvironmentData<LoadablePortableExperienceScene>, public readonly parentCid: string) {
     super(data)
-    const loggerPrefix = `px: [${data.sceneId}] `
+    const loggerPrefix = `px: [${data.id}] `
     this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
   }
 
@@ -62,10 +60,7 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
 
     worker.rpcContext.EnvironmentAPI.data = this.data
     worker.rpcContext.EngineAPI = { parcelSceneAPI: this, subscribedEvents: {} }
-
-    worker.rpcContext.ParcelIdentity.entity = this.data.data.entity
-    worker.rpcContext.EnvironmentAPI.cid = worker.getSceneId()
-    worker.rpcContext.ParcelIdentity.isPortableExperience = true
+    worker.rpcContext.sceneData = { ...this.data.data.loadableScene, isPortableExperience: true }
 
     worker.rpcContext.DevTools.logger = this.logger
 
@@ -80,7 +75,7 @@ export class UnityPortableExperienceScene extends UnityScene<LoadablePortableExp
 
   private async getPxPermission() {
     const ret: PermissionItem[] = []
-    const sceneJsonFile = this.data.mappings.find((m) => m.file.startsWith('scene.json'))?.hash
+    const sceneJsonFile = this.data.entity.content.find((m) => m.file.startsWith('scene.json'))?.hash
     if (sceneJsonFile) {
       try {
         const sceneJsonUrl = new URL(sceneJsonFile, this.data.baseUrl).toString()

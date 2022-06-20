@@ -68,7 +68,7 @@ static/%.js: build-essentials packages/entryPoints/%.ts
 
 # Release
 
-DIST_ENTRYPOINTS := static/editor.js static/index.js
+DIST_ENTRYPOINTS := static/index.js
 DIST_STATIC_FILES := static/export.html static/preview.html static/default-profile/contents
 
 build-deploy: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) ## Build all the entrypoints needed for a deployment
@@ -116,16 +116,15 @@ generate-images: ## Generate the screenshots to run the visual diff validation t
 
 # CLI
 
-npm-link: build-essentials static/editor.js ## Run `npm link` to develop local scenes against this project
+npm-link: build-essentials ## Run `npm link` to develop local scenes against this project
 	cd static; npm link
 
-watch-builder: build-essentials static/editor.js ## Watch the files required for hacking with the builder
+watch-builder: build-essentials ## Watch the files required for hacking with the builder
 	@$(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,builder,server" \
+		-n "scene-system,internal-scenes,loader,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
 			"$(COMPILER) targets/engine/loader.json --watch" \
-			"$(COMPILER) targets/entryPoints/editor.json --watch" \
 			"node ./scripts/runTestServer.js --keep-open"
 
 watch-cli: build-essentials ## Watch the files required for building the CLI

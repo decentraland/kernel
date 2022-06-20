@@ -29,10 +29,10 @@ export const getDesiredPortableExperiences = (
       ...getPortableExperiencesCreatedByScenes(store),
       ...getDesiredLoadableWearablePortableExpriences(store)
     ],
-    (x) => x.entity.id
+    (x) => x.id
   )
 
-  const allFilteredPortableExperiences = allDesiredPortableExperiences.filter(($) => !denylist.includes($.entity.id))
+  const allFilteredPortableExperiences = allDesiredPortableExperiences.filter(($) => !denylist.includes($.id))
 
   return allFilteredPortableExperiences
 }

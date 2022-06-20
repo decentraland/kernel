@@ -9,7 +9,7 @@ import { getResourcesURL } from 'shared/location'
 import { parcelLimits, ENABLE_EMPTY_SCENES, LOS } from 'config'
 import defaultLogger from 'shared/logger'
 import { WorldConfig } from 'shared/meta/types'
-import { EntityWithBaseUrl } from './lib/types'
+import { LoadableScene } from 'shared/types'
 
 declare const globalThis: { workerManager: LifecycleManager }
 
@@ -23,12 +23,12 @@ const worker: Worker = new Worker(lifecycleWorkerUrl, { name: 'LifecycleWorker' 
 worker.onerror = (e) => defaultLogger.error('Loader worker error', e)
 
 export class LifecycleManager extends TransportBasedServer {
-  sceneIdToRequest: Map<string, IFuture<EntityWithBaseUrl>> = new Map()
+  sceneIdToRequest: Map<string, IFuture<LoadableScene>> = new Map()
   positionToRequest: Map<string, IFuture<string>> = new Map()
 
   enable() {
     super.enable()
-    this.on('Scene.dataResponse', (scene: { data: EntityWithBaseUrl }) => {
+    this.on('Scene.dataResponse', (scene: { data: LoadableScene }) => {
       if (scene.data) {
         const future = this.sceneIdToRequest.get(scene.data.id)
 
@@ -47,10 +47,10 @@ export class LifecycleManager extends TransportBasedServer {
     })
   }
 
-  getParcelData(sceneId: string): Promise<EntityWithBaseUrl> {
+  getParcelData(sceneId: string): Promise<LoadableScene> {
     let theFuture = this.sceneIdToRequest.get(sceneId)
     if (!theFuture) {
-      theFuture = future<EntityWithBaseUrl>()
+      theFuture = future<LoadableScene>()
       this.sceneIdToRequest.set(sceneId, theFuture)
       this.notify('Scene.dataRequest', { sceneId })
     }

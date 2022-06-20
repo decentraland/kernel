@@ -17,7 +17,7 @@ export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator =
 }
 
 export function isVoiceChatAllowedByCurrentScene() {
-  return isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, lastPlayerScene?.metadata)
+  return isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, lastPlayerScene?.entity.metadata)
 }
 
 export function sameRealm(realm1: Realm, realm2: Realm) {

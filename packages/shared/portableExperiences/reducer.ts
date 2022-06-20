@@ -46,7 +46,7 @@ export function portableExperienceReducer(
         ...state,
         kernelPortableExperiences: {
           ...state.kernelPortableExperiences,
-          [payload.data.entity.id]: payload.data
+          [payload.data.id]: payload.data
         }
       }
     }
@@ -56,7 +56,7 @@ export function portableExperienceReducer(
         ...state,
         portableExperiencesCreatedByScenesList: {
           ...state.portableExperiencesCreatedByScenesList,
-          [payload.data.entity.id]: payload.data
+          [payload.data.id]: payload.data
         }
       }
     }
@@ -66,7 +66,7 @@ export function portableExperienceReducer(
         ...state,
         portableExperiencesCreatedByScenesList: {
           ...state.portableExperiencesCreatedByScenesList,
-          [payload.data.entity.id]: payload.data
+          [payload.data.id]: payload.data
         }
       }
     }

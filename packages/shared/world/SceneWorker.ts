@@ -29,7 +29,6 @@ export abstract class SceneWorker {
   constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
     this.rpcContext = {
       EnvironmentAPI: {
-        cid: parcelScene.data.sceneId,
         data: parcelScene.data
       },
       EngineAPI: {
@@ -39,10 +38,10 @@ export abstract class SceneWorker {
       Permissions: {
         permissionGranted: []
       },
-      ParcelIdentity: {
-        entity: parcelScene.data.data?.entity,
-        isPortableExperience: false,
-        isEmpty: false
+      sceneData: {
+        /// TODO REVIEW THIS any
+        ...parcelScene.data.data?.entity,
+        isPortableExperience: false
       },
       DevTools: {
         logger: defaultLogger,
@@ -91,7 +90,7 @@ export abstract class SceneWorker {
   abstract hasSceneStarted(): boolean
 
   getSceneId(): string {
-    return this.parcelScene.data.sceneId
+    return this.parcelScene.data.id
   }
 
   getParcelScene(): ParcelSceneAPI {

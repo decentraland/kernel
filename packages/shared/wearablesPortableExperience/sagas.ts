@@ -1,14 +1,13 @@
-import { EntityType } from '@dcl/schemas'
+import { EntityType, Scene } from '@dcl/schemas'
 import { call, select, takeEvery, takeLatest } from '@redux-saga/core/effects'
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
-import { EntityWithBaseUrl } from 'decentraland-loader/lifecycle/lib/types'
 import { put } from 'redux-saga-test-plan/matchers'
 import { wearablesRequest, WearablesSuccess, WEARABLES_SUCCESS } from 'shared/catalogs/actions'
 import { getFetchContentServer } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
 import { isCurrentUserId } from 'shared/session/selectors'
-import { SceneJsonData, StorePortableExperience, WearableV2 } from 'shared/types'
+import { LoadableScene, StorePortableExperience, WearableV2 } from 'shared/types'
 import { getDesiredWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import {
   addDesiredPortableExperience,
@@ -65,8 +64,8 @@ function* handleProcessWearables(action: ProcessWearablesAction) {
     getDesiredWearablePortableExpriences
   )
 
-  if (payload.wearable.entity.id in currentDesiredPortableExperiences) {
-    yield put(addDesiredPortableExperience(payload.wearable.entity.id, payload.wearable))
+  if (payload.wearable.id in currentDesiredPortableExperiences) {
+    yield put(addDesiredPortableExperience(payload.wearable.id, payload.wearable))
   }
 }
 
@@ -85,8 +84,8 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
         const entity = yield call(wearableToSceneEntity, wearable, defaultBaseUrl)
         yield put(
           processWearables({
-            parentCid: 'main',
-            entity
+            ...entity,
+            parentCid: 'main'
           })
         )
       } catch (e: any) {
@@ -96,7 +95,7 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
   }
 }
 
-export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl: string): Promise<EntityWithBaseUrl> {
+export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl: string): Promise<LoadableScene> {
   const baseUrl = wearable.baseUrl ?? defaultBaseUrl
 
   // Get the wearable content containing the game.js
@@ -121,17 +120,19 @@ export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl
     }
 
     const content = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
-    const metadata: SceneJsonData = await jsonFetch(baseUrl + sceneJson.hash)
+    const metadata: Scene = await jsonFetch(baseUrl + sceneJson.hash)
 
     return {
       id: wearable.id,
       baseUrl,
-      content,
-      metadata,
-      pointers: [wearable.id],
-      timestamp: 0,
-      type: EntityType.SCENE,
-      version: 'v3'
+      entity: {
+        content,
+        metadata,
+        pointers: [wearable.id],
+        timestamp: 0,
+        type: EntityType.SCENE,
+        version: 'v3'
+      }
     }
   }
   throw new Error('The wearable has no scene.json')

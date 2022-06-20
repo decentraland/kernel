@@ -1,11 +1,11 @@
-import { Entity } from "@dcl/schemas"
+import { LoadableScene } from "shared/types"
 
 export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready' | 'failed'
 
 export class SceneLifeCycleStatus {
   status: SceneLifeCycleStatusType = 'unloaded'
 
-  constructor(public sceneDescription: Entity) {}
+  constructor(public sceneDescription: LoadableScene) {}
 
   isAwake() {
     return this.status !== 'unloaded'
