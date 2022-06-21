@@ -11,10 +11,6 @@ COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-comp
 CONCURRENTLY = node_modules/.bin/concurrently
 SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
 PBS_TS = $(SCENE_PROTO_FILES:packages/shared/apis/proto/%.proto=packages/shared/apis/proto/%.gen.ts)
-BFF_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/bff/*.proto)
-COMMS_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/*.proto)
-BFF_TS = $(BFF_PROTO_FILES:packages/shared/comms/v4/proto/bff/%.proto=packages/shared/comms/v4/proto/bff/%.gen.ts)
-COMMS_TS = $(COMMS_PROTO_FILES:packages/shared/comms/v4/proto/%.proto=packages/shared/comms/v4/proto/%.gen.ts)
 
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protobuf/bin/protoc
@@ -65,7 +61,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: ${PBS_TS} ${BFF_TS} ${COMMS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: ${PBS_TS} compile-comms-proto $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
 # Entry points
 static/%.js: build-essentials packages/entryPoints/%.ts
@@ -209,7 +205,7 @@ packages/shared/apis/proto/%.gen.ts: packages/shared/apis/proto/%.proto node_mod
 			--ts_proto_out="$(PWD)/packages/shared/apis/proto" -I="$(PWD)/packages/shared/apis/proto" \
 			"$(PWD)/packages/shared/apis/proto/$*.proto";
 
-packages/shared/comms/v4/proto/%.gen.ts: packages/shared/comms/v4/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+compile-comms-proto: node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,oneof=unions\
@@ -218,7 +214,6 @@ packages/shared/comms/v4/proto/%.gen.ts: packages/shared/comms/v4/proto/%.proto 
 			"$(PWD)/packages/shared/comms/v4/proto/comms.proto"  \
 			"$(PWD)/packages/shared/comms/v4/proto/archipelago.proto" 
 
-packages/shared/comms/v4/proto/bff/%.geb.ts: packages/shared/comms/v4/proto/bff/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
@@ -227,4 +222,4 @@ packages/shared/comms/v4/proto/bff/%.geb.ts: packages/shared/comms/v4/proto/bff/
 			"$(PWD)/packages/shared/comms/v4/proto/bff/comms-service.proto"  \
 			"$(PWD)/packages/shared/comms/v4/proto/bff/authentication-service.proto" 
 
-compile_apis: ${PBS_TS}
+compile_apis: ${PBS_TS} compile-comms-proto

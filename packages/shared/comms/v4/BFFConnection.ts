@@ -1,11 +1,11 @@
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
-import { AuthIdentity, Authenticator } from 'dcl-crypto'
+import { AuthIdentity, Authenticator } from '@dcl/crypto'
 import { createRpcClient, RpcClientPort, Transport } from '@dcl/rpc'
 import { WebSocketTransport } from '@dcl/rpc/dist/transports/WebSocket'
 import { loadService, RpcClientModule } from '@dcl/rpc/dist/codegen'
-import { BffAuthenticationServiceDefinition, WelcomePeerInformation } from './proto/bff/authentication-service'
-import { CommsServiceDefinition } from './proto/bff/comms-service'
+import { BffAuthenticationServiceDefinition, WelcomePeerInformation } from './proto/bff/authentication-service.gen'
+import { CommsServiceDefinition } from './proto/bff/comms-service.gen'
 
 export declare type BFFConfig = {
   getIdentity: () => AuthIdentity

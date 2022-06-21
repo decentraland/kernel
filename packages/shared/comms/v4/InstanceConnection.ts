@@ -2,7 +2,7 @@
 import { store } from 'shared/store/isolatedStore'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { Position3D } from './types'
-import { Data, Profile_ProfileType } from './proto/comms'
+import { Data, Profile_ProfileType } from './proto/comms.gen'
 import { Position } from '../../comms/interface/utils'
 import { removePeerByUUID } from '../../comms/peers'
 import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
@@ -16,7 +16,7 @@ import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
 import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
-import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago'
+import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago.gen'
 
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
@@ -43,6 +43,9 @@ export class InstanceConnection implements RoomConnection {
       p2p: {
         verbose: true,
         debugWebRtcEnabled: false
+      },
+      livekit: {
+        verbose: true
       }
     }
 
