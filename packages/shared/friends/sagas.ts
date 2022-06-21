@@ -23,8 +23,7 @@ import {
   NotificationType,
   ChatMessageType,
   FriendshipAction,
-  PresenceStatus,
-  UpdateUserStatusMessage
+  PresenceStatus
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -54,7 +53,6 @@ import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
-import { notifyStatusThroughChat } from 'shared/chat'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
@@ -445,7 +443,6 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
   }
 
   getUnityInstance().UpdateUserPresence(updateMessage)
-  notifyFriendOnlineStatusThroughChat(updateMessage)
 }
 
 function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
@@ -797,40 +794,6 @@ function toSocialData(socialIds: string[]) {
       socialId
     }))
     .filter(({ userId }) => !!userId) as SocialData[]
-}
-
-const friendStatus: Record<string, PresenceStatus> = {}
-
-function notifyFriendOnlineStatusThroughChat(userStatus: UpdateUserStatusMessage) {
-  const friendName = getProfile(store.getState(), userStatus.userId)?.name
-
-  if (friendName === undefined) {
-    return
-  }
-
-  if (!friendStatus[friendName]) {
-    friendStatus[friendName] = userStatus.presence
-    return
-  }
-
-  if (!userStatus.realm?.serverName) {
-    if (userStatus.presence !== PresenceStatus.ONLINE) {
-      friendStatus[friendName] = userStatus.presence
-    }
-    return
-  }
-
-  if (userStatus.presence === PresenceStatus.ONLINE && friendStatus[friendName] === PresenceStatus.OFFLINE) {
-    let message = `${friendName} joined ${userStatus.realm?.serverName}`
-
-    if (userStatus.position) {
-      message += ` ${userStatus.position.x}, ${userStatus.position.y}`
-    }
-
-    notifyStatusThroughChat(message)
-  }
-
-  friendStatus[friendName] = userStatus.presence
 }
 
 function logAndTrackError(message: string, e: any) {
