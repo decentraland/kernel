@@ -38,11 +38,11 @@ export class BFFConnection {
     this.wsTransport = WebSocketTransport(new WebSocket(this.url, 'comms'))
     this.wsTransport.on('close', async () => {
       this.logger.log('transport closed')
-      await this.disconnect()
+      this.disconnect()
     })
     this.wsTransport.on('error', async () => {
       this.logger.log('transport closed')
-      await this.disconnect()
+      this.disconnect()
     })
     const rpcClient = await createRpcClient(this.wsTransport)
     const port = await rpcClient.createPort('kernel')
@@ -151,7 +151,7 @@ export class BFFConnection {
     })
   }
 
-  async disconnect() {
+  disconnect() {
     if (this.wsTransport) {
       this.wsTransport.close()
       this.wsTransport = null

@@ -4,7 +4,6 @@ import { getCommsConfig } from 'shared/meta/selectors'
 import { Position3D } from './types'
 import { Data, Profile_ProfileType } from './proto/comms.gen'
 import { Position } from '../../comms/interface/utils'
-import { removePeerByUUID } from '../../comms/peers'
 import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
 import { createLogger } from 'shared/logger'
@@ -18,6 +17,10 @@ import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
 import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago.gen'
 
+export type Config = {
+  onPeerLeft: (peerId: string) => void
+}
+
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
@@ -26,8 +29,10 @@ export class InstanceConnection implements RoomConnection {
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
   private peerLeftListener: TopicListener | null = null
+  private onPeerLeft: (peerId: string) => void
 
-  constructor(private bff: BFFConnection) {
+  constructor(private bff: BFFConnection, { onPeerLeft }: Config) {
+    this.onPeerLeft = onPeerLeft
     this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
   }
@@ -95,7 +100,7 @@ export class InstanceConnection implements RoomConnection {
           (data: Uint8Array) => {
             try {
               const peerLeftMessage = LeftIslandMessage.decode(Reader.create(data))
-              removePeerByUUID(peerLeftMessage.peerId)
+              this.onPeerLeft(peerLeftMessage.peerId)
             } catch (e) {
               this.logger.error('cannot process peer left message', e)
               return

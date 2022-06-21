@@ -178,7 +178,12 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       commsLogger.log('Using BFF service: ', wsUrl)
       const bff = new BFFConnection(wsUrl, bffConfig)
-      connection = new V4InstanceConnection(bff)
+      connection = new V4InstanceConnection(bff, {
+        onPeerLeft: (peerId: string) => {
+          commsLogger.info('Removing peer that left an island', peerId)
+          removePeerByUUID(peerId)
+        }
+      })
       break
     }
     default: {
