@@ -18,13 +18,7 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import { createLogger, createDummyLogger } from 'shared/logger'
-import {
-  ChatMessage,
-  NotificationType,
-  ChatMessageType,
-  FriendshipAction,
-  PresenceStatus
-} from 'shared/types'
+import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
