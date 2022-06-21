@@ -4,11 +4,19 @@ import { nameValidCharacterRegex, nameValidRegex } from 'shared/profiles/utils/n
 import { getWorld } from '@dcl/schemas'
 import { injectVersions } from 'shared/rolloutVersions'
 import { store } from 'shared/store/isolatedStore'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 
-export function kernelConfigForRenderer(): KernelConfigForRenderer & any {
+export function kernelConfigForRenderer(): KernelConfigForRenderer {
   const versions = injectVersions({})
+  const globalState = store.getState()
 
-  const worldConfig: any = store.getState().meta.config.world
+  let network = 'mainnet'
+
+  try {
+    network = getSelectedNetwork(globalState)
+  } catch {}
+
+  const worldConfig: any = globalState.meta.config.world
 
   return {
     ...worldConfig,
@@ -25,7 +33,7 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer & any {
       typeof (window as any).OffscreenCanvas !== 'undefined' &&
       typeof (window as any).OffscreenCanvasRenderingContext2D === 'function' &&
       !WSS_ENABLED,
-    network: 'mainnet',
+    network,
     validWorldRanges: getWorld().validWorldRanges,
     kernelVersion: versions['@dcl/kernel'] || 'unknown-kernel-version',
     rendererVersion: versions['@dcl/unity-renderer'] || 'unknown-renderer-version'

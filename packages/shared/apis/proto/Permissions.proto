@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+enum PermissionItem {
+    ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE = 0;
+    ALLOW_TO_TRIGGER_AVATAR_EMOTE = 1;
+    USE_WEB3_API = 2;
+    USE_WEBSOCKET = 3;
+    USE_FETCH = 4;
+}
+
+message PermissionResponse {
+    bool has_permission = 1;
+}
+
+message HasPermissionRequest {
+    PermissionItem permission = 1;
+}
+
+message HasManyPermissionRequest {
+    repeated PermissionItem permissions = 1;
+}
+
+message HasManyPermissionResponse {
+    repeated bool has_many_permission = 1;
+}
+
+service PermissionsService {
+    rpc HasPermission(HasPermissionRequest) returns (PermissionResponse) {}
+    rpc HasManyPermissions(HasManyPermissionRequest) returns (HasManyPermissionResponse) {}
+}

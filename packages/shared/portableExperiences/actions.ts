@@ -18,6 +18,10 @@ export const ACTIVATE_ALL_PORTABLE_EXPERIENCES = '[PX] ActivateAll'
 export const activateAllPortableExperiences = () => action(ACTIVATE_ALL_PORTABLE_EXPERIENCES, {})
 export type ActivateAllPortableExperiencesAction = ReturnType<typeof activateAllPortableExperiences>
 
+export const ADD_KERNEL_PX = '[PX] AddKernelPx'
+export const addKernelPortableExperience = (data: StorePortableExperience) => action(ADD_KERNEL_PX, { data })
+export type AddKernelPortableExperience = ReturnType<typeof addKernelPortableExperience>
+
 export const ADD_SCENE_PX = '[PX] AddScenePx'
 export const addScenePortableExperience = (data: StorePortableExperience) => action(ADD_SCENE_PX, { data })
 export type AddScenePortableExperienceAction = ReturnType<typeof addScenePortableExperience>
@@ -38,3 +42,4 @@ export type PortableExperienceActions =
   | RemoveScenePortableExperienceAction
   | KillAllPortableExperiencesAction
   | ActivateAllPortableExperiencesAction
+  | AddKernelPortableExperience

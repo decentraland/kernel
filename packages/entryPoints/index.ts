@@ -205,7 +205,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   const configForRenderer = kernelConfigForRenderer()
   configForRenderer.comms.voiceChatEnabled = true
-  configForRenderer.network = getSelectedNetwork(store.getState())
 
   i.SetKernelConfiguration(configForRenderer)
   i.ConfigureHUDElement(HUDElementID.USERS_AROUND_LIST_HUD, { active: true, visible: false })

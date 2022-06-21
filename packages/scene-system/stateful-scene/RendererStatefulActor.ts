@@ -1,15 +1,4 @@
 import { CLASS_ID } from '@dcl/legacy-ecs'
-import type { IEngineAPI } from 'shared/apis/IEngineAPI'
-import {
-  AttachEntityComponentPayload,
-  ComponentCreatedPayload,
-  ComponentRemovedPayload,
-  ComponentUpdatedPayload,
-  CreateEntityPayload,
-  EntityAction,
-  RemoveEntityPayload,
-  UpdateEntityComponentPayload
-} from 'shared/types'
 import {
   Component,
   ComponentData,
@@ -20,22 +9,31 @@ import {
   StatefulActor
 } from './types'
 import { generatePBObjectJSON } from '../sdk/Utils'
-import { EventSubscriber } from 'decentraland-rpc'
+import { LoadedModules } from 'shared/apis/client'
+import defaultLogger from 'shared/logger'
+import { RuntimeEventCallback } from 'scene-system/sdk/runtime/Events'
+import { EAType, EntityAction } from 'shared/apis/proto/EngineAPI.gen'
 
 export class RendererStatefulActor extends StatefulActor implements StateContainerListener {
   private disposableComponents: number = 0
-  private readonly eventSubscriber: EventSubscriber
 
-  constructor(protected readonly engine: IEngineAPI, private readonly sceneId: string) {
+  constructor(
+    protected readonly EngineAPI: LoadedModules['EngineAPI'],
+    private readonly sceneId: string,
+    private readonly eventCallbacks: { onEventFunctions: RuntimeEventCallback[] }
+  ) {
     super()
-    this.eventSubscriber = new EventSubscriber(this.engine)
+  }
+
+  sendBatch(events: EntityAction[]) {
+    this.EngineAPI?.sendBatch({ actions: events }).catch((err) => defaultLogger.error(err))
   }
 
   addEntity(entityId: EntityId, components?: Component[]): void {
     const batch: EntityAction[] = [
       {
-        type: 'CreateEntity',
-        payload: { id: entityId } as CreateEntityPayload
+        type: EAType.CreateEntity,
+        payload: { createEntity: { id: entityId } }
       }
     ]
     if (components) {
@@ -43,43 +41,45 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
         .map(({ componentId, data }) => this.mapComponentToActions(entityId, componentId, data))
         .forEach((actions) => batch.push(...actions))
     }
-    void this.engine.sendBatch(batch)
+    this.sendBatch(batch)
   }
 
   removeEntity(entityId: EntityId): void {
-    void this.engine.sendBatch([
+    this.sendBatch([
       {
-        type: 'RemoveEntity',
-        payload: { id: entityId } as RemoveEntityPayload
+        type: EAType.RemoveEntity,
+        payload: { removeEntity: { id: entityId } }
       }
     ])
   }
 
   setComponent(entityId: EntityId, componentId: ComponentId, data: ComponentData): void {
     const updates = this.mapComponentToActions(entityId, componentId, data)
-    void this.engine.sendBatch(updates)
+    this.sendBatch(updates)
   }
 
   removeComponent(entityId: EntityId, componentId: ComponentId): void {
     const { name } = this.getInfoAboutComponent(componentId)
-    void this.engine.sendBatch([
+    this.sendBatch([
       {
-        type: 'ComponentRemoved',
+        type: EAType.ComponentRemoved,
         tag: entityId,
         payload: {
-          entityId,
-          name
-        } as ComponentRemovedPayload
+          componentRemoved: {
+            entityId,
+            name
+          }
+        }
       }
     ])
   }
 
   sendInitFinished() {
-    void this.engine.sendBatch([
+    this.sendBatch([
       {
-        type: 'InitMessagesFinished',
+        type: EAType.InitMessagesFinished,
         tag: 'scene',
-        payload: '{}'
+        payload: { initMessagesFinished: {} }
       }
     ])
   }
@@ -95,37 +95,45 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
   }
 
   onAddEntity(listener: (entityId: EntityId, components?: Component[]) => void): void {
-    this.eventSubscriber.on('stateEvent', ({ data }) => {
-      const { type, payload } = data
-      if (type === 'AddEntity') {
-        listener(payload.entityId, payload.components)
+    this.eventCallbacks.onEventFunctions.push((event) => {
+      if (event.type === 'stateEvent') {
+        const { type, payload } = event.data
+        if (type === 'AddEntity') {
+          listener(payload.entityId, payload.components)
+        }
       }
     })
   }
 
   onRemoveEntity(listener: (entityId: EntityId) => void): void {
-    this.eventSubscriber.on('stateEvent', ({ data }) => {
-      const { type, payload } = data
-      if (type === 'RemoveEntity') {
-        listener(payload.entityId)
+    this.eventCallbacks.onEventFunctions.push((event) => {
+      if (event.type === 'stateEvent') {
+        const { type, payload } = event.data
+        if (type === 'RemoveEntity') {
+          listener(payload.entityId)
+        }
       }
     })
   }
 
   onSetComponent(listener: (entityId: EntityId, componentId: ComponentId, data: ComponentData) => void): void {
-    this.eventSubscriber.on('stateEvent', ({ data }) => {
-      const { type, payload } = data
-      if (type === 'SetComponent') {
-        listener(payload.entityId, payload.componentId, payload.data)
+    this.eventCallbacks.onEventFunctions.push((event) => {
+      if (event.type === 'stateEvent') {
+        const { type, payload } = event.data
+        if (type === 'SetComponent') {
+          listener(payload.entityId, payload.componentId, payload.data)
+        }
       }
     })
   }
 
   onRemoveComponent(listener: (entityId: EntityId, componentId: ComponentId) => void): void {
-    this.eventSubscriber.on('stateEvent', ({ data }) => {
-      const { type, payload } = data
-      if (type === 'RemoveComponent') {
-        listener(payload.entityId, payload.componentId)
+    this.eventCallbacks.onEventFunctions.push((event) => {
+      if (event.type === 'stateEvent') {
+        const { type, payload } = event.data
+        if (type === 'RemoveComponent') {
+          listener(payload.entityId, payload.componentId)
+        }
       }
     })
   }
@@ -137,13 +145,16 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
     } else {
       return [
         {
-          type: 'UpdateEntityComponent',
+          type: EAType.UpdateEntityComponent,
           tag: this.sceneId + '_' + entityId + '_' + componentId,
           payload: {
-            entityId,
-            classId: componentId,
-            json: generatePBObjectJSON(componentId, data)
-          } as UpdateEntityComponentPayload
+            updateEntityComponent: {
+              entityId,
+              classId: componentId,
+              name: '',
+              json: generatePBObjectJSON(componentId, data)
+            }
+          }
         }
       ]
     }
@@ -153,28 +164,36 @@ export class RendererStatefulActor extends StatefulActor implements StateContain
     const id = `C${this.disposableComponents++}`
     return [
       {
-        type: 'ComponentCreated',
+        type: EAType.ComponentCreated,
         tag: id,
         payload: {
-          id,
-          classId
-        } as ComponentCreatedPayload
+          componentCreated: {
+            id,
+            classId,
+            name: ''
+          }
+        }
       },
       {
-        type: 'ComponentUpdated',
+        type: EAType.ComponentUpdated,
         tag: id,
         payload: {
-          id,
-          json: JSON.stringify(data)
-        } as ComponentUpdatedPayload
+          componentUpdated: {
+            id,
+            json: JSON.stringify(data)
+          }
+        }
       },
       {
-        type: 'AttachEntityComponent',
+        type: EAType.AttachEntityComponent,
         tag: entityId,
         payload: {
-          entityId,
-          id
-        } as AttachEntityComponentPayload
+          attachEntityComponent: {
+            entityId,
+            id,
+            name: ''
+          }
+        }
       }
     ]
   }

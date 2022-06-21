@@ -38,6 +38,7 @@ import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { setFpsCapOnOff } from './hackedTimers'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -181,6 +182,10 @@ export class UnityInterface implements IUnityInterface {
 
   public HideFPSPanel() {
     this.SendMessageToUnity('Main', 'HideFPSPanel')
+  }
+
+  public SetFpsTarget(data: { capped: boolean; target: number }) {
+    setFpsCapOnOff(data.capped, data.target)
   }
 
   public SetEngineDebugPanel() {
@@ -367,11 +372,11 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public ConnectionToRealmSuccess(successData: WorldPosition) {
-    this.SendMessageToUnity('Main', 'ConnectionToRealmSuccess', JSON.stringify(successData))
+    this.SendMessageToUnity('Bridges', 'ConnectionToRealmSuccess', JSON.stringify(successData))
   }
 
   public ConnectionToRealmFailed(failedData: WorldPosition) {
-    this.SendMessageToUnity('Main', 'ConnectionToRealmFailed', JSON.stringify(failedData))
+    this.SendMessageToUnity('Bridges', 'ConnectionToRealmFailed', JSON.stringify(failedData))
   }
 
   public SendGIFPointers(id: string, width: number, height: number, pointers: number[], frameDelays: number[]) {
@@ -584,6 +589,18 @@ export class UnityInterface implements IUnityInterface {
 
   public SetBuilderConfiguration(config: BuilderConfiguration) {
     this.SendBuilderMessage('SetBuilderConfiguration', JSON.stringify(config))
+  }
+
+  public SendBinaryMessage(sceneId: string, message: Uint8Array, length: number) {
+    if (!WSS_ENABLED) {
+      nativeMsgBridge.binaryMessage(sceneId, message, length)
+    } else {
+      this.SendMessageToUnity(
+        'Bridges',
+        `BinaryMessage`,
+        JSON.stringify({ sceneId, data: Buffer.from(message).toString('base64') })
+      )
+    }
   }
 
   // NOTE: we override wasm's setThrew function before sending message to unity and restore it to it's

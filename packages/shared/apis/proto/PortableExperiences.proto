@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+message KillRequest {
+    string pid = 1;
+}
+
+message KillResponse {
+    bool status = 1;
+}
+
+message SpawnRequest {
+    string pid = 1;
+}
+
+message SpawnResponse {
+    string pid = 1;
+    string parent_cid = 2;
+}
+
+message PxRequest {
+    string pid = 1;
+}
+
+message GetPortableExperiencesLoadedRequest {}
+
+message GetPortableExperiencesLoadedResponse {
+    repeated SpawnResponse loaded = 1;
+}
+
+message ExitRequest {}
+message ExitResponse {
+    bool status = 1;
+}
+
+service PortableExperiencesService {
+    rpc Spawn(SpawnRequest) returns (SpawnResponse) {}
+    rpc Kill(KillRequest) returns (KillResponse) {}
+    rpc Exit(ExitRequest) returns (ExitResponse) {}
+    rpc GetPortableExperiencesLoaded(GetPortableExperiencesLoadedRequest) returns (GetPortableExperiencesLoadedResponse) {}
+}

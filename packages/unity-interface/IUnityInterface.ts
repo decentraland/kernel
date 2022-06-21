@@ -100,6 +100,7 @@ export interface IUnityInterface {
   SetSceneDebugPanel(): void
   ShowFPSPanel(): void
   HideFPSPanel(): void
+  SetFpsTarget(data: { capped: boolean; target: number }): void
   SetEngineDebugPanel(): void
   SetDisableAssetBundles(): void
   CrashPayloadRequest(): Promise<string>
@@ -191,4 +192,6 @@ export interface IUnityInterface {
   OnBuilderKeyDown(key: string): void
   SetBuilderConfiguration(config: BuilderConfiguration): void
   SendMessageToUnity(object: string, method: string, payload?: any): void
+  SendMessageToUnity(object: string, method: string, payload?: any): void
+  SendBinaryMessage(sceneId: string, message: Uint8Array, length: number): void
 }

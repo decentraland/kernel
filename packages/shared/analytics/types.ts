@@ -1,11 +1,19 @@
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
+import { ChatMessageType } from '../types'
 
 export type PositionTrackEvents = {
   ['Scene Spawn']: { parcel: string; spawnpoint: ReadOnlyVector3 }
 }
 
 export type TrackEvents = PositionTrackEvents & {
-  // Comms Events
+  // Comms & Chat Events
+  // TODO - these are reintroduced for control, remove asap - moliva - 2022/06/01
+  ['Control USER_MUTED']: { userId: string }
+  ['Control USER_UNMUTED']: { userId: string }
+  ['Control USER_BLOCKED']: { userId: string }
+  ['Control USER_UNBLOCKED']: { userId: string }
+  ['Control Send chat message']: { length: number; messageId: string; messageType: ChatMessageType }
+  // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
 
   // Info logs, such as networks or things we want to track
@@ -57,4 +65,12 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number }
   ['invalid_schema']: { schema: string; payload: any }
+  // TODO - these are reintroduced for control, remove asap - moliva - 2022/06/01
+  ['Control Friend request approved']: Record<string, never> // {}
+  ['Control Friend request rejected']: Record<string, never> // {}
+  ['Control Friend request cancelled']: Record<string, never> // {}
+  ['Control Friend request received']: Record<string, never> // {}
+  ['Control Friend request sent']: Record<string, never> // {}
+  ['Control Friend deleted']: Record<string, never> // {}
+  // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
 }

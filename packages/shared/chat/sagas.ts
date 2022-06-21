@@ -1,4 +1,5 @@
 import { takeEvery, put, select, call } from 'redux-saga/effects'
+import { PayloadAction } from 'typesafe-actions'
 import {
   MESSAGE_RECEIVED,
   MessageReceived,
@@ -10,6 +11,7 @@ import {
 import { uuid } from 'atomicHelpers/math'
 import { ChatMessageType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
+import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
 import { getAllPeers } from 'shared/comms/peers'
 import { parseParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
@@ -26,8 +28,8 @@ import { getCurrentUserId } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
-import { waitForRendererInstance } from 'shared/renderer/sagas'
-import { injectVersions } from 'shared/rolloutVersions'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
+import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
 interface IChatCommand {
   name: string
@@ -44,6 +46,8 @@ const fpsConfiguration = {
 export function* chatSaga(): any {
   initChatCommands()
 
+  yield takeEvery([MESSAGE_RECEIVED, SEND_MESSAGE], trackEvents)
+
   yield takeEvery(MESSAGE_RECEIVED, handleReceivedMessage)
   yield takeEvery(SEND_MESSAGE, handleSendMessage)
 
@@ -59,6 +63,22 @@ function* showWelcomeMessage() {
       body: 'Type /help for info about controls'
     })
   )
+}
+
+type MessageEvent = typeof MESSAGE_RECEIVED | typeof SEND_MESSAGE
+
+function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
+  const { type, payload } = action
+  switch (type) {
+    case SEND_MESSAGE: {
+      trackEvent('Control Send chat message', {
+        messageId: payload.messageId,
+        length: payload.body.length,
+        messageType: payload.messageType
+      })
+      break
+    }
+  }
 }
 
 function* handleReceivedMessage(action: MessageReceived) {
@@ -387,7 +407,7 @@ function initChatCommands() {
   })
 
   addChatCommand('version', 'Shows application version', (_message) => {
-    const [kernelVersion, rendererVersion] = getVersions()
+    const { kernelVersion, rendererVersion } = getUsedComponentVersions()
     return {
       messageId: uuid(),
       sender: 'Decentraland',
@@ -438,13 +458,6 @@ function getDebugPanelMessage() {
     timestamp: Date.now(),
     body: 'Toggling FPS counter'
   }
-}
-
-function getVersions() {
-  const versions = injectVersions({})
-  const kernelVersion = versions['@dcl/kernel'] || 'unknown'
-  const rendererVersion = versions['@dcl/unity-renderer'] || 'unknown'
-  return [kernelVersion, rendererVersion]
 }
 
 function parseWhisperExpression(expression: string) {

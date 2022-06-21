@@ -1,14 +1,8 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Vector3 } from '@dcl/ecs-math'
-import { future } from 'fp-future'
-import { APIOptions, ScriptingHost } from 'decentraland-rpc/lib/host'
-import { ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
-import { defaultLogger } from 'shared/logger'
-import { EnvironmentAPI } from 'shared/apis/EnvironmentAPI'
-import { EngineAPI } from 'shared/apis/EngineAPI'
-import { PREVIEW } from 'config'
+import { createGenericLogComponent, defaultLogger } from 'shared/logger'
 import { ParcelSceneAPI } from './ParcelSceneAPI'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -21,17 +15,75 @@ export enum SceneWorkerReadyState {
   DISPOSED = 1 << 8
 }
 
+import { registerServices } from 'shared/apis/host'
+import { PortContext } from 'shared/apis/host/context'
+import Protocol from 'devtools-protocol'
+import { EventDataType } from 'shared/apis/proto/EngineAPI.gen'
+
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
-  protected engineAPI: EngineAPI | null = null
-  private readonly system = future<ScriptingHost>()
 
-  constructor(private readonly parcelScene: ParcelSceneAPI, transport: ScriptingTransport) {
+  public rpcContext!: PortContext
+  private rpcServer!: RpcServer<PortContext>
+
+  constructor(private readonly parcelScene: ParcelSceneAPI, public transport: Transport) {
+    this.rpcContext = {
+      EnvironmentAPI: {
+        cid: parcelScene.data.sceneId,
+        data: parcelScene.data
+      },
+      EngineAPI: {
+        parcelSceneAPI: parcelScene,
+        subscribedEvents: {}
+      },
+      Permissions: {
+        permissionGranted: []
+      },
+      ParcelIdentity: {
+        land: parcelScene.data.data?.land || parcelScene.data.data?.data?.land,
+        isPortableExperience: false,
+        isEmpty: false
+      },
+      DevTools: {
+        logger: defaultLogger,
+        exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>()
+      },
+      events: [],
+      sendSceneEvent: (type, data) => {
+        this.rpcContext.events.push({
+          type: EventDataType.Generic,
+          generic: {
+            eventId: type,
+            eventData: JSON.stringify(data)
+          }
+        })
+      },
+      sendProtoSceneEvent: (e) => {
+        this.rpcContext.events.push(e)
+      }
+    }
+
     parcelScene.registerWorker(this)
 
-    this.startSystem(transport)
-      .then(($) => this.system.resolve($))
-      .catch(($) => this.system.reject($))
+    const skipErrors = ['Transport closed while waiting the ACK']
+    const logger = createGenericLogComponent().getLogger(`rpc-server-${parcelScene.getSceneId()}`)
+
+    this.rpcServer = createRpcServer<PortContext>({
+      logger: {
+        ...logger,
+        error: (error: string | Error, extra?: Record<string, string | number>) => {
+          if (!(error instanceof Error && skipErrors.includes(error.message))) {
+            logger.error(error, extra)
+          }
+        }
+      }
+    })
+
+    this.rpcServer.setHandler(async (port) => {
+      registerServices(port)
+    })
+    this.rpcServer.attachTransport(transport as Transport, this.rpcContext)
+    this.ready |= SceneWorkerReadyState.LOADED
   }
 
   abstract setPosition(position: Vector3): void
@@ -50,12 +102,8 @@ export abstract class SceneWorker {
     this.parcelScene.emit(event, data)
   }
 
-  getAPIInstance<X>(api: { new (options: APIOptions): X }): Promise<X> {
-    return this.system.then((system) => system.getAPIInstance(api))
-  }
-
   sendSubscriptionEvent<K extends IEventNames>(event: K, data: IEvents[K]) {
-    this.engineAPI?.sendSubscriptionEvent(event, data)
+    this.rpcContext.sendSceneEvent(event, data)
   }
 
   dispose() {
@@ -64,61 +112,16 @@ export abstract class SceneWorker {
 
     if ((this.ready & disposingFlags) === 0) {
       this.ready |= SceneWorkerReadyState.DISPOSING
-      this.childDispose()
 
-      // Unmount the system
-      this.system
-        .then((system) => {
-          try {
-            system.unmount()
-          } catch (e) {
-            defaultLogger.error('Error unmounting system', e)
-          }
-          this.ready |= SceneWorkerReadyState.SYSTEM_DISPOSED
-        })
-        .catch((e) => {
-          defaultLogger.error('Unable to unmount system', e)
-          this.ready |= SceneWorkerReadyState.SYSTEM_DISPOSED
-        })
+      this.childDispose()
+      this.transport.close()
 
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
 
     getUnityInstance().UnloadScene(this.getSceneId())
+    this.ready |= SceneWorkerReadyState.DISPOSED
   }
 
   protected abstract childDispose(): void
-
-  private async startSystem(transport: ScriptingTransport) {
-    const system = await ScriptingHost.fromTransport(transport)
-
-    this.engineAPI = system.getAPIInstance('EngineAPI') as EngineAPI
-    this.engineAPI.parcelSceneAPI = this.parcelScene
-
-    system.getAPIInstance(EnvironmentAPI).data = this.parcelScene.data
-
-    // TODO: track this errors using rollbar because this kind of event are usually triggered due to setInterval() or unreliable code in scenes, that is not sandboxed
-    system.on('error', (e) => {
-      // @ts-ignore
-      console['log']('Unloading scene because of unhandled exception in the scene worker: ')
-
-      // @ts-ignore
-      console['error'](e)
-
-      // These errors should be handled in development time
-      if (PREVIEW) {
-        eval('debu' + 'gger')
-      }
-
-      transport.close()
-
-      this.ready |= SceneWorkerReadyState.SYSTEM_FAILED
-    })
-
-    system.enable()
-
-    this.ready |= SceneWorkerReadyState.LOADED
-
-    return system
-  }
 }

@@ -117,7 +117,7 @@ export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
 
 export const LOS = ensureSingleString(qs.get('LOS'))
 
-export const DEBUG = location.search.includes('DEBUG_MODE') || !!(global as any).mocha || PREVIEW || EDITOR
+export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
 export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
 export const DEBUG_MESSAGES = location.search.includes('DEBUG_MESSAGES')
@@ -270,7 +270,7 @@ export namespace ethereumConfigurations {
   }
 }
 
-export const isRunningTest: boolean = (global as any)['isRunningTests'] === true
+export const isRunningTest: boolean = (globalThis as any)['isRunningTests'] === true
 
 export const genericAvatarSnapshots = {
   body: 'QmSav1o6QK37Jj1yhbmhYk9MJc6c2H5DWbWzPVsg9JLYfF',

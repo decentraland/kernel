@@ -54,7 +54,6 @@ import { reportHotScenes } from 'shared/social/hotScenes'
 import { GIFProcessor } from 'gif-processor/processor'
 import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatRecording } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
-import { StatefulWorker } from 'shared/world/StatefulWorker'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { wearablesRequest } from 'shared/catalogs/actions'
@@ -71,12 +70,12 @@ import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
-import { Authenticator } from 'dcl-crypto'
+import { Authenticator } from '@dcl/crypto'
 import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
 import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
 import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
-import { setDecentralandTime } from 'shared/apis/EnvironmentAPI'
+import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
@@ -264,14 +263,14 @@ export class BrowserInterface {
     globalObservable.emit('openUrl', data)
   }
 
-  public PerformanceReport(data: {
-    samples: string
-    fpsIsCapped: boolean
-    hiccupsInThousandFrames: number
-    hiccupsTime: number
-    totalTime: number
-  }) {
-    const perfReport = getPerformanceInfo(data)
+  public PerformanceReport(data: Record<string, unknown>) {
+    let estimatedAllocatedMemory = 0
+    let estimatedTotalMemory = 0
+    if (getUnityInstance()?.Module?.asmLibraryArg?._GetDynamicMemorySize) {
+      estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
+      estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
+    }
+    const perfReport = getPerformanceInfo({ ...(data as any), estimatedAllocatedMemory, estimatedTotalMemory })
     trackEvent('performance report', perfReport)
   }
 
@@ -452,7 +451,12 @@ export class BrowserInterface {
           isEmpty: false
         }
 
-        setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
+        async function asyncLoad() {
+          const { StatefulWorker } = await import('shared/world/StatefulWorker')
+          setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
+        }
+
+        asyncLoad().catch(defaultLogger.error)
         break
       }
       case 'StopStatefulMode': {

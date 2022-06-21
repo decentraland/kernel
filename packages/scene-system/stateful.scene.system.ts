@@ -1,136 +1,102 @@
-import type { ILogOpts, ScriptingTransport } from 'decentraland-rpc/lib/common/json-rpc/types'
-import type { IEngineAPI } from 'shared/apis/IEngineAPI'
-import type { ParcelIdentity } from 'shared/apis/ParcelIdentity'
-import type { ISceneStateStorageController } from 'shared/apis/SceneStateStorageController/ISceneStateStorageController'
-import type { Permissions } from 'shared/apis/Permissions'
-import type { IEnvironmentAPI } from 'shared/apis/IEnvironmentAPI'
-import { EventSubscriber, WebWorkerTransport } from 'decentraland-rpc'
-import { inject, Script } from 'decentraland-rpc/lib/client/Script'
-import { defaultLogger } from 'shared/logger'
-import { DevToolsAdapter } from './sdk/DevToolsAdapter'
+import { DevToolsAdapter } from './sdk/runtime/DevToolsAdapter'
 import { RendererStatefulActor } from './stateful-scene/RendererStatefulActor'
 import { BuilderStatefulActor } from './stateful-scene/BuilderStatefulActor'
 import { serializeSceneState } from './stateful-scene/SceneStateDefinitionSerializer'
 import { SceneStateDefinition } from './stateful-scene/SceneStateDefinition'
 
-class StatefulWebWorkerScene extends Script {
-  @inject('DevTools')
-  devTools: any
+import { createRpcClient, RpcClient } from '@dcl/rpc'
+import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
+import { LoadableAPIs } from 'shared/apis/client'
+import { EventDataToRuntimeEvent, RuntimeEventCallback } from './sdk/runtime/Events'
 
-  @inject('EngineAPI')
-  engine!: IEngineAPI
+async function startStatefulScene(client: RpcClient) {
+  const clientPort = await client.createPort(`stateful-scene-${globalThis.name}`)
+  const [EngineAPI, DevTools, ParcelIdentity, SceneStateStorageController] = await Promise.all([
+    LoadableAPIs.EngineAPI(clientPort),
+    LoadableAPIs.DevTools(clientPort),
+    LoadableAPIs.ParcelIdentity(clientPort),
+    LoadableAPIs.SceneStateStorageController(clientPort)
+  ])
 
-  @inject('EnvironmentAPI')
-  environmentAPI!: IEnvironmentAPI
+  const devToolsAdapter = new DevToolsAdapter(DevTools)
+  const events: { onEventFunctions: RuntimeEventCallback[] } = { onEventFunctions: [] }
 
-  @inject('ParcelIdentity')
-  parcelIdentity!: ParcelIdentity
+  const { cid: sceneId, land: land } = await ParcelIdentity!.getParcel()
+  const rendererActor = new RendererStatefulActor(EngineAPI, sceneId, events)
 
-  @inject('Permissions')
-  permissions!: Permissions
+  const builderActor = new BuilderStatefulActor(land, SceneStateStorageController)
+  let sceneDefinition: SceneStateDefinition
 
-  @inject('SceneStateStorageController')
-  sceneStateStorage!: ISceneStateStorageController
+  const isEmpty: boolean = await ParcelIdentity!.getIsEmpty()
 
-  private devToolsAdapter!: DevToolsAdapter
-  private rendererActor!: RendererStatefulActor
-  private builderActor!: BuilderStatefulActor
-  private sceneDefinition!: SceneStateDefinition
-  private eventSubscriber!: EventSubscriber
+  //If it is not empty we fetch the state
+  if (!isEmpty) {
+    // Fetch stored scene
+    sceneDefinition = await builderActor.getInititalSceneState()
+    await builderActor.sendAssetsFromScene(sceneDefinition)
 
-  constructor(transport: ScriptingTransport, opt?: ILogOpts) {
-    super(transport, opt)
+    // Send the initial state ot the renderer
+    sceneDefinition.sendStateTo(rendererActor)
+
+    devToolsAdapter.log('Sent initial load')
+  } else {
+    sceneDefinition = new SceneStateDefinition()
   }
 
-  async systemDidEnable(): Promise<void> {
-    this.devToolsAdapter = new DevToolsAdapter(this.devTools)
-    const { cid: sceneId, land: land } = await this.parcelIdentity.getParcel()
-    this.rendererActor = new RendererStatefulActor(this.engine, sceneId)
-    this.eventSubscriber = new EventSubscriber(this.engine)
-    this.builderActor = new BuilderStatefulActor(land, this.sceneStateStorage)
+  // Listen to the renderer and update the local scene state
+  rendererActor.forwardChangesTo(sceneDefinition)
 
-    const isEmpty: boolean = await this.parcelIdentity.getIsEmpty()
-
-    //If it is not empty we fetch the state
-    if (!isEmpty) {
-      // Fetch stored scene
-      this.sceneDefinition = await this.builderActor.getInititalSceneState()
-      await this.builderActor.sendAssetsFromScene(this.sceneDefinition)
-
-      // Send the initial state ot the renderer
-      this.sceneDefinition.sendStateTo(this.rendererActor)
-
-      this.log('Sent initial load')
-    } else {
-      this.sceneDefinition = new SceneStateDefinition()
-    }
-
-    // Listen to the renderer and update the local scene state
-    this.rendererActor.forwardChangesTo(this.sceneDefinition)
-
-    this.rendererActor.sendInitFinished()
-
-    // Listen to scene state events
-    this.listenToEvents(sceneId)
-  }
-
-  private listenToEvents(sceneId: string): void {
-    // Listen to publish requests
-    this.eventSubscriber.on('stateEvent', ({ data }) => {
-      const { type, payload } = data
-      if (type === 'PublishSceneState') {
-        this.sceneStateStorage
+  events.onEventFunctions.push((event) => {
+    if (event.type === 'stateEvent') {
+      const { type, payload } = event.data
+      if (type === 'SaveProjectInfo') {
+        SceneStateStorageController!
+          .saveProjectInfo(serializeSceneState(sceneDefinition), payload.title, payload.description, payload.screenshot)
+          .catch((error: Error) => devToolsAdapter.error(error))
+      } else if (type === 'SaveSceneState') {
+        SceneStateStorageController!
+          .saveSceneState(serializeSceneState(sceneDefinition))
+          .catch((error: Error) => devToolsAdapter.error(error))
+      } else if (type === 'PublishSceneState') {
+        SceneStateStorageController!
           .publishSceneState(
             sceneId,
             payload.title,
             payload.description,
             payload.screenshot,
-            serializeSceneState(this.sceneDefinition)
+            serializeSceneState(sceneDefinition)
           )
-          .catch((error) => this.error(`Failed to store the scene's state`, error))
+          .catch((error: Error) => devToolsAdapter.error(error))
       }
-    })
-
-    // Listen to save scene requests
-    this.eventSubscriber.on('stateEvent', ({ data }) => {
-      if (data.type === 'SaveSceneState') {
-        this.sceneStateStorage
-          .saveSceneState(serializeSceneState(this.sceneDefinition))
-          .catch((error) => this.error(`Failed to save the scene's manifest`, error))
-      }
-    })
-
-    // Listen to save project info requests
-    this.eventSubscriber.on('stateEvent', ({ data }) => {
-      const { type, payload } = data
-      if (type === 'SaveProjectInfo') {
-        this.sceneStateStorage
-          .saveProjectInfo(
-            serializeSceneState(this.sceneDefinition),
-            payload.title,
-            payload.description,
-            payload.screenshot
-          )
-          .catch((error) => this.error(`Failed to save the scene's info`, error))
-      }
-    })
-  }
-
-  private error(context: string, error: Error) {
-    if (this.devToolsAdapter) {
-      this.devToolsAdapter.error(error)
-    } else {
-      defaultLogger.error(context, error)
     }
+  })
+
+  rendererActor.sendInitFinished()
+  /**
+   * This pull the events until the sceneStart event is emitted
+   */
+  async function waitToStart() {
+    try {
+      const res = await EngineAPI.pullEvents({})
+      for (const e of res.events) {
+        const event = EventDataToRuntimeEvent(e)
+        for (const cb of events.onEventFunctions) {
+          try {
+            cb(event)
+          } catch (err) {
+            console.error(err)
+          }
+        }
+      }
+    } catch (err: any) {
+      devToolsAdapter.error(err)
+    }
+    setTimeout(waitToStart, 1000 / 30)
   }
 
-  private log(...messages: any[]) {
-    if (this.devToolsAdapter) {
-      this.devToolsAdapter.log(...messages)
-    } else {
-      defaultLogger.info('', ...messages)
-    }
-  }
+  waitToStart().catch(devToolsAdapter.error)
 }
 
-new StatefulWebWorkerScene(WebWorkerTransport(self))
+createRpcClient(WebWorkerTransport(self))
+  .then(startStatefulScene)
+  .catch((err) => console.error(err))

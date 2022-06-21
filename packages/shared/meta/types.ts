@@ -25,6 +25,7 @@ export type FeatureFlagsName =
   | 'retry_matrix_login' // retry matrix reconnection
   | 'parcel-denylist' // denylist of specific parcels using variants
   | 'matrix_disabled' // disable matrix integration entirely
+  | 'matrix_presence_disabled' // disable matrix presence feature
   | 'builder_in_world'
   | 'avatar_lods'
   | 'asset_bundles'
@@ -33,6 +34,8 @@ export type FeatureFlagsName =
   | 'pick_realm_algorithm_config'
   | 'banned_users'
   | 'max_visible_peers'
+  | 'initial_portable_experiences'
+  | 'web_cap_fps' // caps the web client FPS
 
 export type BannedUsers = Record<string, Ban[]>
 

@@ -99,3 +99,6 @@ public/local-ipfs
 static/package-lock.json
 **/*.dot.pdf
 **/*.dot
+
+packages/shared/apis/proto/*.ts
+lsall
