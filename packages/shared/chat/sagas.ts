@@ -30,7 +30,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
-import { hasWallet } from "../session"
+import { hasWallet } from '../session'
 
 interface IChatCommand {
   name: string
@@ -77,7 +77,7 @@ function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
         from: hasWallet() ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
         to: ChatMessagePlayerType.WALLET,
         length: payload.body.length,
-        friends: isFriend(store.getState(), payload.recipient ?? ""),
+        friends: isFriend(store.getState(), payload.recipient ?? ''),
         messageType: payload.messageType
       })
       break
