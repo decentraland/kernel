@@ -9,8 +9,13 @@ export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
   // TODO - these are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Send chat message']: {
-    messageId: string; from: ChatMessagePlayerType; to: ChatMessagePlayerType; length: number;
-    friends: boolean; messageType: ChatMessageType }
+    messageId: string
+    from: ChatMessagePlayerType
+    to: ChatMessagePlayerType
+    length: number
+    friends: boolean
+    messageType: ChatMessageType
+  }
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
 
