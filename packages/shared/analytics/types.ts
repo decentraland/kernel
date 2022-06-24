@@ -1,5 +1,5 @@
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
-import { ChatMessageType } from '../types'
+import { ChatMessagePlayerType, ChatMessageType } from '../types'
 
 export type PositionTrackEvents = {
   ['Scene Spawn']: { parcel: string; spawnpoint: ReadOnlyVector3 }
@@ -8,11 +8,7 @@ export type PositionTrackEvents = {
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
   // TODO - these are reintroduced for control, remove asap - moliva - 2022/06/01
-  ['Control USER_MUTED']: { userId: string }
-  ['Control USER_UNMUTED']: { userId: string }
-  ['Control USER_BLOCKED']: { userId: string }
-  ['Control USER_UNBLOCKED']: { userId: string }
-  ['Control Send chat message']: { length: number; messageId: string; messageType: ChatMessageType }
+  ['Send chat message']: { messageId: string; from: ChatMessagePlayerType; to: ChatMessagePlayerType; length: number; friends: boolean; messageType: ChatMessageType }
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
 
