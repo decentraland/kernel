@@ -9,7 +9,7 @@ import {
   sendPrivateMessage
 } from './actions'
 import { uuid } from 'atomicHelpers/math'
-import { ChatMessageType, ChatMessagePlayerType } from 'shared/types'
+import { ChatMessageType, ChatMessagePlayerType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
