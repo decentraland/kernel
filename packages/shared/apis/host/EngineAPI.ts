@@ -76,19 +76,19 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
     },
 
     async subscribe(req, ctx) {
-      if (!(req.eventId in ctx.EngineAPI.subscribedEvents)) {
+      if (!ctx.EngineAPI.subscribedEvents.has(req.eventId)) {
         ctx.EngineAPI.parcelSceneAPI.on(req.eventId, (data: any) => {
-          if (ctx.EngineAPI.subscribedEvents[req.eventId]) {
+          if (ctx.EngineAPI.subscribedEvents.has(req.eventId)) {
             ctx.sendSceneEvent(req.eventId as any, data)
           }
         })
-        ctx.EngineAPI.subscribedEvents[req.eventId] = true
+        ctx.EngineAPI.subscribedEvents.add(req.eventId)
       }
 
       return {}
     },
     async unsubscribe(req, ctx) {
-      ctx.EngineAPI.subscribedEvents[req.eventId] = false
+      ctx.EngineAPI.subscribedEvents.delete(req.eventId)
       return {}
     },
     async pullEvents(req, ctx) {

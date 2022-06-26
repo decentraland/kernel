@@ -5,163 +5,184 @@ import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
 import { PermissionItem, permissionItemToJSON } from 'shared/apis/proto/Permissions.gen'
 import { movePlayerTo, triggerEmote } from 'shared/apis/host/RestrictedActions'
 import { PortContext } from 'shared/apis/host/context'
-import { assertHasPermission } from 'shared/apis/host/Permissions'
 import { Vector3 } from '@dcl/legacy-ecs'
+import { EntityType, Scene } from '@dcl/schemas'
+import { expect } from 'chai'
+import Sinon from 'sinon'
 
 describe('RestrictedActions tests', () => {
-  afterEach(() => sinon.restore())
-  sinon.mock()
-  setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
+  beforeEach(() => {
+    sinon.reset()
+    sinon.restore()
+    setUnityInstance({ Teleport: () => {}, TriggerSelfUserExpression: () => {} } as any)
+  })
 
   describe('TriggerEmote tests', () => {
     const emote = 'emote'
 
     it('should trigger emote', async () => {
-      mockLastPlayerPosition()
+      setLastPlayerPosition()
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
-      sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').once().withExactArgs(emote)
+      const stub = sinon.stub(getUnityInstance(), 'TriggerSelfUserExpression')
 
-      await triggerEmote({ predefinedEmote: emote }, ctx)
-      sinon.verify()
+      triggerEmote({ predefinedEmote: emote }, ctx)
+      Sinon.assert.calledWithExactly(stub, emote)
     })
 
     it('should fail when scene does not have permissions', async () => {
-      mockLastPlayerPosition()
+      setLastPlayerPosition()
       const ctx = getContextWithPermissions()
-      sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
+      const stub = sinon.stub(getUnityInstance(), 'TriggerSelfUserExpression')
 
-      try {
-        await triggerEmote({ predefinedEmote: 'emote' }, ctx)
-      } catch (err) {
+      expect(() => triggerEmote({ predefinedEmote: 'emote' }, ctx)).to.throw(
+        /This scene doesn't have some of the next permissions: ALLOW_TO_TRIGGER_AVATAR_EMOTE/
+      )
 
-      }
-      sinon.spy(assertHasPermission).threw()
-      sinon.verify()
+      Sinon.assert.callCount(stub, 0)
     })
 
     it('should fail when player is out of scene and try to move', async () => {
-      mockLastPlayerPosition(false)
+      setLastPlayerPosition(false)
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE)
 
-      sinon.mock(getUnityInstance()).expects('TriggerSelfUserExpression').never()
+      const stub = sinon.stub(getUnityInstance(), 'TriggerSelfUserExpression')
+      const errorSpy = sinon.spy(defaultLogger, 'error')
 
-      sinon
-        .mock(defaultLogger)
-        .expects('error')
-        .once()
-        .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
+      triggerEmote({ predefinedEmote: 'emote' }, ctx)
 
-      await triggerEmote({ predefinedEmote: 'emote' }, ctx)
-      sinon.verify()
+      Sinon.assert.calledWithExactly(errorSpy, 'Error: Player is not inside of scene', lastPlayerPosition)
+      Sinon.assert.callCount(stub, 0)
     })
   })
 
   describe('MovePlayerTo tests', () => {
     it('should move the player', async () => {
-      mockLastPlayerPosition()
+      setLastPlayerPosition()
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
-      sinon
-        .mock(getUnityInstance())
-        .expects('Teleport')
-        .once()
-        .withExactArgs({ position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined }, false)
+      const stub = sinon.stub(getUnityInstance(), 'Teleport')
 
-      await movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
+      movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
 
-      sinon.verify()
+      Sinon.assert.calledWithExactly(stub, { position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined }, false)
     })
 
     it('should fail when position is outside scene', async () => {
-      mockLastPlayerPosition()
+      setLastPlayerPosition()
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
-      sinon
-        .mock(defaultLogger)
-        .expects('error')
-        .once()
-        .withExactArgs('Error: Position is out of scene', { x: 21, y: 0, z: 1648 })
-
-      sinon.mock(getUnityInstance()).expects('Teleport').never()
-      await movePlayerTo({ newRelativePosition: new Vector3(21, 0, 32) }, ctx)
-      sinon.verify()
+      const errorSpy = sinon.spy(defaultLogger, 'error')
+      const stub = sinon.stub(getUnityInstance(), 'Teleport')
+      movePlayerTo({ newRelativePosition: new Vector3(21, 0, 32) }, ctx)
+      Sinon.assert.calledWithExactly(errorSpy, 'Error: Position is out of scene', { x: 21, y: 0, z: 1648 })
+      Sinon.assert.callCount(stub, 0)
     })
 
     it('should fail when scene does not have permissions', async () => {
-      mockLastPlayerPosition()
+      setLastPlayerPosition()
       const ctx = getContextWithPermissions()
-      sinon.mock(getUnityInstance()).expects('Teleport').never()
+      const stub = sinon.stub(getUnityInstance(), 'Teleport')
 
-      try {
-        await movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
-      } catch (err) {
+      expect(() => movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)).to.throw(/This scene doesn't have some of the next permissions: ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE/)
 
-      }
-
-      sinon.spy(assertHasPermission).threw()
+      Sinon.assert.callCount(stub, 0)
       sinon.verify()
     })
 
     it('should fail when player is out of scene and try to move', async () => {
-      mockLastPlayerPosition(false)
+      setLastPlayerPosition(false)
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
+      const stub = sinon.stub(getUnityInstance(), 'Teleport')
+      const errorSpy = sinon.spy(defaultLogger, 'error')
 
-      sinon.mock(getUnityInstance()).expects('Teleport').never()
+      movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
 
-      sinon
-        .mock(defaultLogger)
-        .expects('error')
-        .once()
-        .withExactArgs('Error: Player is not inside of scene', lastPlayerPosition)
-
-      await movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
-
-      sinon.verify()
+      Sinon.assert.calledWithExactly(errorSpy, 'Error: Player is not inside of scene', lastPlayerPosition)
+      Sinon.assert.callCount(stub, 0)
     })
   })
 
-  const mockLastPlayerPosition = (inside: boolean = true) => {
+  const setLastPlayerPosition = (inside: boolean = true) => {
     const position = inside
       ? { x: 7.554769515991211, y: 1.7549998760223389, z: 1622.2711181640625 } // in
       : { x: -1.0775706768035889, y: 1.774094820022583, z: 1621.8487548828125 } // out
-    sinon.stub(lastPlayerPosition, 'x').value(position.x)
-    sinon.stub(lastPlayerPosition, 'y').value(position.y)
-    sinon.stub(lastPlayerPosition, 'z').value(position.z)
+    lastPlayerPosition.x = position.x
+    lastPlayerPosition.y = position.y
+    lastPlayerPosition.z = position.z
   }
 
   function getContextWithPermissions(...permissions: PermissionItem[]): PortContext {
-    const parcelIdentity = buildParcelIdentity(permissions)
+    const sceneData = buildSceneData(permissions)
     return {
-      Permissions: {
-        permissionGranted: permissions
-      },
-      ParcelIdentity: {
-        ...parcelIdentity,
-        cid: 'test',
-        isPortableExperience: false,
-        isEmpty: false
-      },
+      sceneData,
       DevTools: {
-        logger: defaultLogger
-      }
-    } as any
+        logger: defaultLogger,
+        exceptions: new Map()
+      },
+      Permissions: {
+        permissionGranted: new Set(permissions)
+      },
+      EngineAPI: {
+        subscribedEvents: new Set(),
+        parcelSceneAPI: {
+          get data(): any {
+            throw new Error('not implemented')
+          },
+          emit() {
+            throw new Error('not implemented')
+          },
+          getSceneId() {
+            throw new Error('not implemented')
+          },
+          on() {
+            throw new Error('not implemented')
+          },
+          registerWorker() {
+            throw new Error('not implemented')
+          },
+          sendBatch() {
+            throw new Error('not implemented')
+          }
+        }
+      },
+      EnvironmentAPI: {
+        get data(): any {
+          throw new Error('not implemented')
+        }
+      },
+      events: [],
+      sendProtoSceneEvent() {},
+      sendSceneEvent() {}
+    }
   }
 
-  function buildParcelIdentity(permissions: PermissionItem[] = []) {
+  function buildSceneData(permissions: PermissionItem[] = []): PortContext['sceneData'] {
+    const metadata: Scene = {
+      display: { title: 'interactive-text', favicon: 'favicon_asset' },
+      contact: { name: 'Ezequiel', email: 'ezequiel@decentraland.org' },
+      owner: 'decentraland',
+      scene: { parcels: ['0,101'], base: '0,101' },
+      main: 'game.js',
+      tags: [],
+      requiredPermissions: permissions.map((item) => {
+        const ret = permissionItemToJSON(item)
+        expect(ret).to.not.eq('UNRECOGNIZED')
+        return ret
+      }),
+      spawnPoints: [
+        { name: 'spawn1', default: true, position: { x: 0, y: 0, z: 0 }, cameraTarget: { x: 8, y: 1, z: 8 } }
+      ]
+    }
+
     return {
-      land: {
-        sceneJsonData: {
-          display: { title: 'interactive-text', favicon: 'favicon_asset' },
-          contact: { name: 'Ezequiel', email: 'ezequiel@decentraland.org' },
-          owner: 'decentraland',
-          scene: { parcels: ['0,101'], base: '0,101' },
-          communications: { type: 'webrtc', signalling: 'https://signalling-01.decentraland.org' },
-          policy: { contentRating: 'E', fly: true, voiceEnabled: true, blacklist: [] },
-          main: 'game.js',
-          tags: [],
-          requiredPermissions: permissions.map(item => permissionItemToJSON(item)),
-          spawnPoints: [
-            { name: 'spawn1', default: true, position: { x: 0, y: 0, z: 0 }, cameraTarget: { x: 8, y: 1, z: 8 } }
-          ]
-        }
+      id: 'test',
+      isPortableExperience: false,
+      baseUrl: '',
+      entity: {
+        version: 'v3',
+        content: [],
+        pointers: [],
+        timestamp: 0,
+        type: EntityType.SCENE,
+        metadata
       }
     }
   }

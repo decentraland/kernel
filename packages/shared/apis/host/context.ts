@@ -15,10 +15,10 @@ export type PortContext = {
   }
   EngineAPI: {
     parcelSceneAPI: ParcelSceneAPI
-    subscribedEvents: { [event: string]: boolean }
+    subscribedEvents: Set<string>
   }
   Permissions: {
-    permissionGranted: PermissionItem[]
+    permissionGranted: Set<PermissionItem>
   }
   sceneData: Readonly<LoadableScene & {
     isPortableExperience: boolean

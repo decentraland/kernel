@@ -1,5 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
+import { Scene } from '@dcl/schemas'
 import {
   PermissionsServiceDefinition,
   PermissionItem,
@@ -32,7 +33,7 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
     test === PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE || test === PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE
 
   if (ctx.sceneData.entity?.metadata) {
-    const sceneJsonData = ctx.sceneData.entity.metadata
+    const sceneJsonData: Scene = ctx.sceneData.entity.metadata
     const list: PermissionItem[] = []
 
     if (sceneJsonData && sceneJsonData.requiredPermissions) {
@@ -57,7 +58,7 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
     }
   }
 
-  return ctx.Permissions.permissionGranted.includes(test)
+  return ctx.Permissions.permissionGranted.has(test)
 }
 
 export function registerPermissionServiceServerImplementation(port: RpcServerPort<PortContext>) {

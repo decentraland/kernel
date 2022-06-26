@@ -101,8 +101,8 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
           ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_NEWERRORHANDLER)
           BringDownClientAndShowError(UNEXPECTED_ERROR)
         },
-        onBinaryMessage(...args) {
-          console.dir('onBinaryMessage', args)
+        onBinaryMessage: (...args) => {
+          console.log('onBinaryMessage', ...args)
         }
       })
     },

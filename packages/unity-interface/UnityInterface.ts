@@ -603,6 +603,7 @@ export class UnityInterface implements IUnityInterface {
   public SendMessageToUnity(object: string, method: string, payload: any = undefined) {
     // "this.Module" is not present when using remote websocket renderer, so we just send the message to unity without doing any override.
     if (!this.Module) {
+      if(!this.gameInstance) debugger
       this.gameInstance.SendMessage(object, method, payload)
       return
     }

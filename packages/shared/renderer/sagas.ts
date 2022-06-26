@@ -43,6 +43,7 @@ import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { waitForRendererInstance } from './sagas-helper'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -193,7 +194,7 @@ function* sendSignUpToRenderer(action: SignUpSetIsSignUp) {
   }
 }
 
-let lastSentProfile: any = null
+let lastSentProfile: NewProfileForRenderer | null = null
 function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   const { userId } = action.payload
 

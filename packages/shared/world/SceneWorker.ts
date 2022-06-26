@@ -19,6 +19,7 @@ import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import Protocol from 'devtools-protocol'
 import { EventDataType } from 'shared/apis/proto/EngineAPI.gen'
+import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
 
 export abstract class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
@@ -33,10 +34,7 @@ export abstract class SceneWorker {
       },
       EngineAPI: {
         parcelSceneAPI: parcelScene,
-        subscribedEvents: {}
-      },
-      Permissions: {
-        permissionGranted: []
+        subscribedEvents: new Set()
       },
       sceneData: {
         /// TODO REVIEW THIS any
@@ -46,6 +44,9 @@ export abstract class SceneWorker {
       DevTools: {
         logger: defaultLogger,
         exceptions: new Map<number, Protocol.Runtime.ExceptionDetails>()
+      },
+      Permissions: {
+        permissionGranted: new Set<PermissionItem>()
       },
       events: [],
       sendSceneEvent: (type, data) => {

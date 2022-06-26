@@ -109,8 +109,6 @@ export class UnityScene<T> implements ParcelSceneAPI {
 
   protected async loadPermission(defaultPermissions: PermissionItem[] = [], permissions: PermissionItem[] = []) {
     const permissionArray: PermissionItem[] = [...defaultPermissions, ...permissions]
-    // Delete duplicated
-    const permissionSet = new Set<PermissionItem>(permissionArray)
-    this.worker.rpcContext.Permissions.permissionGranted = Array.from(permissionSet)
+    this.worker.rpcContext.Permissions.permissionGranted = new Set<PermissionItem>(permissionArray)
   }
 }
