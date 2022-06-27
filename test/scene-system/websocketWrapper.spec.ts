@@ -50,19 +50,19 @@ describe('Websocket wrapped for scenes', () => {
   })
 
   it('should run successfully if the ws is secure in preview scenes', async () => {
-    new wrappedPreviewWebSocket('wss://decentraland.org')
+    new wrappedPreviewWebSocket('wss://rpc.decentraland.org/mainnet')
   })
 
   it('should log an error if the ws is not secure in preview scenes', async () => {
     sinon.assert.notCalled(logPreview)
-    new wrappedPreviewWebSocket('ws://decentraland.org')
+    new wrappedPreviewWebSocket('ws://rpc.decentraland.org/mainnet')
     sinon.assert.calledOnce(logPreview)
   })
 
   it('should throw an error because it does not have permissions', async () => {
     const throwErrorLogger = sinon.spy()
     try {
-      new wrappedNotAllowedWebSocket('wss://decentraland.org')
+      new wrappedNotAllowedWebSocket('wss://rpc.decentraland.org/mainnet')
     } catch (err) {
       throwErrorLogger(err)
     }

@@ -1,5 +1,5 @@
 import { Vector3 } from '@dcl/ecs-math'
-import { CLASS_ID, Transform } from '@dcl/legacy-ecs'
+import { CLASS_ID, Transform } from '@dcl/legacy-ecs/dist/decentraland/Components'
 import { EAType } from 'shared/apis/proto/EngineAPI.gen'
 import { PB_Transform, PB_Vector3, PB_Quaternion } from '../../shared/proto/engineinterface_pb'
 

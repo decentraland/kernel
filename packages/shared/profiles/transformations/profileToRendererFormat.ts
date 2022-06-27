@@ -1,4 +1,4 @@
-import { ParcelsWithAccess } from '@dcl/legacy-ecs'
+import { ParcelsWithAccess } from '@dcl/legacy-ecs/dist/decentraland/Types'
 import { convertToRGBObject } from './convertToRGBObject'
 import { isURL } from 'atomicHelpers/isURL'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'

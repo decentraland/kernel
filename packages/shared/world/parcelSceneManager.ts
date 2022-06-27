@@ -5,27 +5,26 @@ import {
   ParcelSceneLoadingParams
 } from 'decentraland-loader/lifecycle/manager'
 import {
-  sceneLifeCycleObservable,
-  renderDistanceObservable,
+  NewDrawingDistanceReport,
+  SceneLifeCycleStatusReport
 } from '../../decentraland-loader/lifecycle/controllers/scene'
-import { scenesChanged, signalSceneFail, signalSceneLoad, signalSceneStart } from '../loading/actions'
-import { EnvironmentData, ILand, InstancedSpawnPoint, LoadableParcelScene, LoadableScene } from '../types'
-import { ParcelSceneAPI } from './ParcelSceneAPI'
+import { scenesChanged, SCENE_FAIL, SCENE_LOAD, SCENE_START } from '../loading/actions'
+import { ILand, InstancedSpawnPoint, LoadableScene } from '../types'
 import { parcelObservable, teleportObservable } from './positionThings'
-import { SceneWorker, SceneWorkerReadyState } from './SceneWorker'
-import { SceneSystemWorker } from './SceneSystemWorker'
-import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
+import { SceneWorker, workerStatusObservable } from './SceneWorker'
 import { store } from 'shared/store/isolatedStore'
-import { Observable } from '@dcl/legacy-ecs'
+import { Observable } from 'mz-observable'
 import { ParcelSceneLoadingState } from './types'
-import { UnityParcelScene } from 'unity-interface/UnityParcelScene'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { Transport } from '@dcl/rpc'
+import { defaultParcelPermissions } from 'shared/apis/host/Permissions'
+import { KernelScene } from 'unity-interface/KernelScene'
+import { SceneLifeCycleStatusType } from 'decentraland-loader/lifecycle/lib/scene.status'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
-    new (x: EnvironmentData<LoadableParcelScene>): ParcelSceneAPI
+    new (x: LoadableScene): KernelScene
   }
   preloadScene: (parcelToLoad: ILand) => Promise<any>
   onPositionSettled?: (spawnPoint: InstancedSpawnPoint) => void
@@ -59,6 +58,7 @@ export function generateBannedILand(entity: LoadableScene): LoadableScene {
   }
 }
 
+export const renderDistanceObservable = new Observable<Readonly<NewDrawingDistanceReport>>()
 export const onLoadParcelScenesObservable = new Observable<LoadableScene[]>()
 /**
  * Array of sceneId's
@@ -76,15 +76,9 @@ export function getSceneWorkerBySceneID(sceneId: string) {
   return loadedSceneWorkers.get(sceneId)
 }
 
-/** Stops non-persistent scenes (i.e UI scene) */
-function stopParcelSceneWorker(worker: SceneWorker) {
-  if (worker && !worker.isPersistent()) {
-    forceStopSceneWorker(worker)
-  }
-}
-
 export function forceStopSceneWorker(worker: SceneWorker) {
-  const sceneId = worker.getSceneId()
+  const sceneId = worker.kernelScene.loadableScene.id
+
   worker.dispose()
   loadedSceneWorkers.delete(sceneId)
   store.dispatch(scenesChanged())
@@ -93,12 +87,12 @@ export function forceStopSceneWorker(worker: SceneWorker) {
 /**
  * Creates a worker for the ParcelSceneAPI
  */
-export function loadParcelScene(parcelScene: ParcelSceneAPI, transport?: Transport, persistent: boolean = false) {
-  const sceneId = parcelScene.getSceneId()
+export function loadParcelScene(kernelScene: KernelScene, transport?: Transport) {
+  const sceneId = kernelScene.loadableScene.id
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   if (!parcelSceneWorker) {
-    parcelSceneWorker = new SceneSystemWorker(parcelScene, transport, persistent)
+    parcelSceneWorker = new SceneWorker(kernelScene, transport)
     setNewParcelScene(sceneId, parcelSceneWorker)
   }
 
@@ -118,18 +112,6 @@ function setNewParcelScene(sceneId: string, worker: SceneWorker) {
   }
 
   loadedSceneWorkers.set(sceneId, worker)
-}
-
-function globalSignalSceneLoad(entity: LoadableScene) {
-  store.dispatch(signalSceneLoad(entity))
-}
-
-function globalSignalSceneStart(entity: LoadableScene) {
-  store.dispatch(signalSceneStart(entity))
-}
-
-function globalSignalSceneFail(entity: LoadableScene) {
-  store.dispatch(signalSceneFail(entity))
 }
 
 // @internal
@@ -186,56 +168,31 @@ function unloadParcelSceneById(sceneId: string) {
     sceneId: sceneId,
     status: 'unloaded'
   })
-  stopParcelSceneWorker(worker)
+  forceStopSceneWorker(worker)
 }
 
 /**
  * @internal
  **/
 export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableScene) {
-  const lifecycleManager = parcelSceneLoadingState.lifecycleManager
-
-
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
     // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
     const denyListed = isParcelDenyListed(entity.entity.metadata.scene.parcels)
     const usedEntity = denyListed ? generateBannedILand(entity) : entity
 
-    const parcelScene = new UnityParcelScene(loadableSceneToLoadableParcelScene(usedEntity))
+    const kernelScene = new KernelScene(usedEntity)
+    const worker = loadParcelScene(kernelScene)
 
-    parcelScene.data.useFPSThrottling = true
-    const worker = loadParcelScene(parcelScene)
+    // add default permissions for Parcel based scenes
+    defaultParcelPermissions.forEach(($) => worker.rpcContext.permissionGranted.add($))
+    // and enablle FPS throttling, it will lower the frame-rate based on the distance
+    worker.rpcContext.sceneData.useFPSThrottling = true
+
     setNewParcelScene(sceneId, worker)
-    globalSignalSceneLoad(entity)
+
+    onLoadParcelScenesObservable.notifyObservers([entity])
   }
-
-  let timer: ReturnType<typeof setTimeout>
-
-  const observer = sceneLifeCycleObservable.add((sceneStatus) => {
-    const worker = getSceneWorkerBySceneID(sceneId)
-    if (worker && sceneStatus.sceneId === sceneId && (worker.ready & SceneWorkerReadyState.STARTED) === 0) {
-      sceneLifeCycleObservable.remove(observer)
-      clearTimeout(timer)
-      worker.ready |= SceneWorkerReadyState.STARTED
-      lifecycleManager.notify('Scene.status', sceneStatus)
-      globalSignalSceneStart(entity)
-    }
-  })
-
-  // tell the engine to load the parcel scene
-  onLoadParcelScenesObservable.notifyObservers([entity])
-  const WORKER_TIMEOUT = 90000
-
-  timer = setTimeout(() => {
-    const worker = getSceneWorkerBySceneID(sceneId)
-    if (worker && !worker.hasSceneStarted()) {
-      sceneLifeCycleObservable.remove(observer)
-      worker.ready |= SceneWorkerReadyState.LOADING_FAILED
-      lifecycleManager.notify('Scene.status', { sceneId, status: 'failed' })
-      globalSignalSceneFail(entity)
-    }
-  }, WORKER_TIMEOUT)
 }
 
 async function removeDesiredParcel(sceneId: string) {
@@ -285,6 +242,32 @@ export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams)
     lifecycleManager.notify('SetScenesLoadRadius', event)
   })
 
+  workerStatusObservable.add((action) => {
+    let status: SceneLifeCycleStatusType = 'failed'
+
+    switch (action.type) {
+      case SCENE_FAIL: {
+        status = 'failed'
+        break
+      }
+      case SCENE_LOAD: {
+        status = 'loaded'
+        break
+      }
+      case SCENE_START: {
+        status = 'ready'
+        break
+      }
+    }
+
+    const sceneStatus: SceneLifeCycleStatusReport = {
+      sceneId: action.payload.id,
+      status
+    }
+
+    lifecycleManager.notify('Scene.status', sceneStatus)
+  })
+
   parcelObservable.add((obj) => {
     // immediate reposition should only be broadcasted to others, otherwise our scene reloads
     if (obj.immediate) return
@@ -306,6 +289,6 @@ export type AllScenesEvents<T extends IEventNames> = {
 
 export function allScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
   for (const [, scene] of loadedSceneWorkers) {
-    scene.emit(data.eventType, data.payload)
+    scene.rpcContext.sendSceneEvent(data.eventType, data.payload)
   }
 }

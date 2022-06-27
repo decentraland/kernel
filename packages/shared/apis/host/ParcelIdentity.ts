@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { ETHEREUM_NETWORK } from 'config'
+import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl } from 'config'
 import {
   GetParcelRequest,
   GetParcelResponse,
@@ -54,7 +54,3 @@ export function registerParcelIdentityServiceServerImplementation(port: RpcServe
     getIsEmpty
   }))
 }
-function getAssetBundlesBaseUrl(MAINNET: any) {
-  throw new Error('Function not implemented.')
-}
-

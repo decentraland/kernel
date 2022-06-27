@@ -1,42 +1,38 @@
-import { EventDispatcher } from 'decentraland-rpc/lib/common/core/EventDispatcher'
 import { WSS_ENABLED, FORCE_SEND_MESSAGE, DEBUG_MESSAGES_QUEUE_PERF, DEBUG_SCENE_LOG } from 'config'
 import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
-import { EntityAction, EnvironmentData } from 'shared/types'
-import { ParcelSceneAPI } from 'shared/world/ParcelSceneAPI'
+import { EntityAction, LoadableScene } from 'shared/types'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { getUnityInstance } from './IUnityInterface'
 import { protobufMsgBridge } from './protobufMessagesBridge'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { trackEvent } from 'shared/analytics'
-import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
+import { permissionItemFromJSON } from 'shared/apis/proto/Permissions.gen'
+import { Scene } from '@dcl/schemas'
+import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+import { Vector3 } from '@dcl/ecs-math'
+import { getSceneNameFromJsonData } from 'shared/selectors'
 
 const sendBatchTime: Array<number> = []
 const sendBatchMsgs: Array<number> = []
 let sendBatchTimeCount: number = 0
 let sendBatchMsgCount: number = 0
 
-export class UnityScene<T> implements ParcelSceneAPI {
-  eventDispatcher = new EventDispatcher()
+export class KernelScene {
   worker!: SceneWorker
   logger: ILogger
   initMessageCount: number = 0
   initFinished: boolean = false
+  metadata: Scene
 
-  constructor(public data: EnvironmentData<T>) {
-    this.logger = DEBUG_SCENE_LOG ? createLogger('unityScene: ' + this.getSceneId() + ': ') : createDummyLogger()
+  constructor(public loadableScene: LoadableScene) {
+    this.metadata = loadableScene.entity.metadata
 
-    const startLoadingTime = performance.now()
+    const loggerName = getSceneNameFromJsonData(this.metadata) || loadableScene.id
+    const loggerPrefix = `scene: [${loggerName}]`
+    this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
 
-    this.eventDispatcher.once('sceneStart', () => {
-      trackEvent('scene_start_event', {
-        scene_id: this.getSceneId(),
-        time_since_creation: performance.now() - startLoadingTime
-      })
-    })
-  }
-
-  getSceneId(): string {
-    return this.data.id
+    if (!Scene.validate(loadableScene.entity.metadata)) {
+      this.logger.error('Invalid scene metadata', loadableScene.entity.metadata, Scene.validate.errors)
+    }
   }
 
   sendBatch(actions: EntityAction[]): void {
@@ -67,8 +63,18 @@ export class UnityScene<T> implements ParcelSceneAPI {
   }
 
   sendBatchWss(actions: EntityAction[]): void {
-    const sceneId = this.getSceneId()
-    let messages = ''
+    const sceneId = this.loadableScene.id
+    const messages: string[] = []
+    let len = 0
+
+    function flush() {
+      if (len) {
+        getUnityInstance().SendSceneMessage(messages.join('\n'))
+        messages.length = 0
+        len = 0
+      }
+    }
+
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
 
@@ -80,15 +86,20 @@ export class UnityScene<T> implements ParcelSceneAPI {
         continue
       }
 
-      messages += protobufMsgBridge.encodeSceneMessage(sceneId, action.type, action.payload, action.tag)
-      messages += '\n'
+      const part = protobufMsgBridge.encodeSceneMessage(sceneId, action.type, action.payload, action.tag)
+      messages.push(part)
+      len += part.length
+
+      if (len > 1024 * 1024) {
+        flush()
+      }
     }
 
-    getUnityInstance().SendSceneMessage(messages)
+    flush()
   }
 
   sendBatchNative(actions: EntityAction[]): void {
-    const sceneId = this.getSceneId()
+    const sceneId = this.loadableScene.id
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
       nativeMsgBridge.SendNativeMessage(sceneId, action)
@@ -97,18 +108,19 @@ export class UnityScene<T> implements ParcelSceneAPI {
 
   registerWorker(worker: SceneWorker): void {
     this.worker = worker
-  }
 
-  on<T extends IEventNames>(event: T, cb: (event: IEvents[T]) => void): void {
-    this.eventDispatcher.on(event, cb)
-  }
+    const aux: Vector3 = new Vector3()
+    const basePosition = parseParcelPosition(this.metadata.scene?.base)
+    gridToWorld(basePosition.x, basePosition.y, aux)
+    worker.setPosition(aux)
 
-  emit<T extends IEventNames>(event: T, data: IEvents[T]): void {
-    this.eventDispatcher.emit(event, data)
-  }
+    worker.rpcContext.sceneData = { ...this.loadableScene, isPortableExperience: false, useFPSThrottling: false }
+    worker.rpcContext.sendBatch = this.sendBatch.bind(this)
 
-  protected async loadPermission(defaultPermissions: PermissionItem[] = [], permissions: PermissionItem[] = []) {
-    const permissionArray: PermissionItem[] = [...defaultPermissions, ...permissions]
-    this.worker.rpcContext.Permissions.permissionGranted = new Set<PermissionItem>(permissionArray)
+    if (this.metadata.requiredPermissions) {
+      for (const permissionItemString of this.metadata.requiredPermissions) {
+        this.worker.rpcContext.permissionGranted.add(permissionItemFromJSON(permissionItemString))
+      }
+    }
   }
 }

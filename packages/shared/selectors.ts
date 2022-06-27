@@ -1,7 +1,7 @@
 import { Scene } from '@dcl/schemas'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl } from 'config'
-import { ContentMapping, EnvironmentData, LoadableParcelScene, SceneFeatureToggle, LoadableScene } from './types'
+import { ContentMapping, LoadableParcelScene, SceneFeatureToggle, LoadableScene } from './types'
 
 export function normalizeContentMappings(
   mappings: Record<string, string> | Array<ContentMapping>
@@ -21,27 +21,19 @@ export function normalizeContentMappings(
   return ret
 }
 
-export function loadableSceneToLoadableParcelScene(loadableScene: LoadableScene): EnvironmentData<LoadableParcelScene> {
+export function loadableSceneToLoadableParcelScene(loadableScene: LoadableScene): LoadableParcelScene {
   const mappings: ContentMapping[] = normalizeContentMappings(loadableScene.entity.content)
 
-  // name: getSceneNameFromJsonData(loadableScene.entity.metadata),
-  // main: loadableScene.entity.metadata.main,
-  const ret: EnvironmentData<LoadableParcelScene> = {
-    ...loadableScene,
-    useFPSThrottling: false,
-    data: {
-      id: loadableScene.id,
-      basePosition: parseParcelPosition(loadableScene.entity.metadata?.scene?.base || '0,0'),
-      name: getSceneNameFromJsonData(loadableScene.entity.metadata),
-      parcels: loadableScene.entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
-      baseUrl: loadableScene.baseUrl,
-      baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
-      contents: mappings,
-      loadableScene: loadableScene
-    }
+  return {
+    id: loadableScene.id,
+    basePosition: parseParcelPosition(loadableScene.entity.metadata?.scene?.base || '0,0'),
+    name: getSceneNameFromJsonData(loadableScene.entity.metadata),
+    parcels: loadableScene.entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
+    baseUrl: loadableScene.baseUrl,
+    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
+    contents: mappings,
+    loadableScene: loadableScene
   }
-
-  return ret
 }
 
 export function getOwnerNameFromJsonData(jsonData?: Scene) {
@@ -77,7 +69,7 @@ export function getSceneNameFromJsonData(jsonData?: Scene) {
     title = undefined
   }
 
-  return title || 'Unnamed'
+  return title || jsonData?.scene?.base || 'Unnamed'
 }
 
 export function getThumbnailUrlFromJsonDataAndContent(

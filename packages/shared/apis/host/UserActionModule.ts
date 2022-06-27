@@ -25,7 +25,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
         getUnityInstance().RequestTeleport({ destination })
         return {}
       } else if (!/^\-?\d+\,\-?\d+$/.test(destination)) {
-        ctx.DevTools.logger.error(`teleportTo: invalid destination ${destination}`)
+        ctx.logger.error(`teleportTo: invalid destination ${destination}`)
         return {}
       }
 
@@ -71,7 +71,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
           }
         }
       } catch (e: any) {
-        ctx.DevTools.logger.error(e)
+        ctx.logger.error(e)
       }
 
       getUnityInstance().RequestTeleport({

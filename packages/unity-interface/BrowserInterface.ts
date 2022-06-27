@@ -7,7 +7,6 @@ import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
   BringDownClientAndShowError,
@@ -28,6 +27,7 @@ import {
   getSceneWorkerBySceneID,
   allScenesEvent,
   AllScenesEvents,
+  renderDistanceObservable
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -65,6 +65,7 @@ import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
+import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -230,14 +231,14 @@ export class BrowserInterface {
   public SceneEvent(data: { sceneId: string; eventType: string; payload: any }) {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
-      scene.emit(data.eventType as IEventNames, data.payload)
+      scene.rpcContext.sendSceneEvent(data.eventType as IEventNames, data.payload)
 
       // Keep backward compatibility with old scenes using deprecated `pointerEvent`
       if (data.eventType === 'actionButtonEvent') {
         const { payload } = data.payload
         // CLICK, PRIMARY or SECONDARY
         if (payload.buttonId >= 0 && payload.buttonId <= 2) {
-          scene.emit('pointerEvent', data.payload)
+          scene.rpcContext.sendSceneEvent('pointerEvent', data.payload)
         }
       }
     } else {
@@ -658,7 +659,7 @@ export class BrowserInterface {
   public RequestHeaderForUrl(data: { method: string; url: string }) {
     defaultLogger.warn('RequestHeaderForUrl')
   }
-  
+
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
     defaultLogger.warn('RequestSignedHeaderForBuilder')
   }
@@ -728,7 +729,7 @@ export class BrowserInterface {
   }) {
     const scene = getSceneWorkerBySceneID(videoEvent.sceneId)
     if (scene) {
-      scene.emit('videoEvent' as IEventNames, {
+      scene.rpcContext.sendSceneEvent('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,
         videoClipId: videoEvent.videoTextureId,
         videoStatus: videoEvent.status,

@@ -47,7 +47,7 @@ let emptyParcelController: EmptyParcelController
       worldConfig: WorldConfig
     }) => {
       emptyParcelController = new EmptyParcelController(options)
-      downloadManager = new SceneDataDownloadManager({...options, emptyParcelController})
+      downloadManager = new SceneDataDownloadManager({ ...options, emptyParcelController })
       parcelController = new ParcelLifeCycleController(options)
       sceneController = new SceneLifeCycleController({ downloadManager })
       positionController = new PositionLifecycleController(downloadManager, parcelController, sceneController)

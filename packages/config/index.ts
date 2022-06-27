@@ -66,14 +66,6 @@ export namespace playerConfigurations {
   export const angularSensibility = 500
 }
 
-export namespace visualConfigurations {
-  export const fieldOfView = 75
-  export const farDistance = parcelLimits.visibleRadius * parcelLimits.parcelSize
-
-  export const near = 0.08
-  export const far = farDistance
-}
-
 // Entry points
 export const PREVIEW: boolean = !!(globalThis as any).preview
 export const EDITOR: boolean = !!(globalThis as any).isEditor

@@ -31,7 +31,7 @@ import {
   VOICE_RECORDING_UPDATE
 } from 'shared/comms/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
-import { CurrentRealmInfoForRenderer, SceneFeatureToggles } from 'shared/types'
+import { CurrentRealmInfoForRenderer, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getCommsContext } from 'shared/comms/selectors'
@@ -41,7 +41,6 @@ import { CommsContext } from 'shared/comms/context'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
-import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { waitForRendererInstance } from './sagas-helper'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
@@ -58,13 +57,6 @@ export function* rendererSaga() {
   yield call(listenToWhetherSceneSupportsVoiceChat)
 
   yield fork(reportRealmChangeToRenderer)
-  yield fork(configureFps)
-}
-
-// configures a cap on the FPS in the renderer
-function* configureFps() {
-  yield call(ensureMetaConfigurationInitialized)
-  yield call(waitForRendererInstance)
 }
 
 function* reportRealmChangeToRenderer() {
@@ -124,8 +116,8 @@ function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdate) {
 function* listenToWhetherSceneSupportsVoiceChat() {
   sceneObservable.add(({ newScene }) => {
     const nowEnabled = newScene
-      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, newScene.entity.metadata)
-      : isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT)
+      ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, newScene.entity.metadata)
+      : isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE)
 
     getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
   })

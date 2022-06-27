@@ -101,7 +101,7 @@ function* triggerUnityClientLoaded() {
 
 export function* trackLoadTime(action: SceneLoad): any {
   const start = new Date().getTime()
-  const {id} = action.payload
+  const { id } = action.payload
   const sceneId = id
   const result = yield race({
     start: take((action: AnyAction) => action.type === SCENE_START && action.payload === sceneId),
@@ -158,15 +158,12 @@ function* handleReportPendingScenes() {
 
   let countableScenes = 0
   for (const [sceneId, sceneWorker] of loadedSceneWorkers) {
-    // avatar scene should not be counted here
-    const shouldBeCounted = !sceneWorker.isPersistent()
-
     const isPending = (sceneWorker.ready & SceneWorkerReadyState.STARTED) === 0
     const failedLoading = (sceneWorker.ready & SceneWorkerReadyState.LOADING_FAILED) !== 0
-    if (shouldBeCounted) {
-      countableScenes++
-    }
-    if (shouldBeCounted && isPending && !failedLoading) {
+
+    countableScenes++
+
+    if (isPending && !failedLoading) {
       pendingScenes.add(sceneId)
     }
   }

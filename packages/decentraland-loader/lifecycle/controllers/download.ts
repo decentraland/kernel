@@ -54,7 +54,7 @@ export class SceneDataDownloadManager {
         for (const entity of entities) {
           const entityWithBaseUrl: LoadableScene = {
             id: entity.id,
-            baseUrl: (entity as any).baseUrl ||this.options.contentServer + '/contents/',
+            baseUrl: (entity as any).baseUrl || this.options.contentServer + '/contents/',
             entity
           }
           for (const tile of entity.pointers) {

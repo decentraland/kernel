@@ -10,7 +10,7 @@ import {
   queryTypeToJSON
 } from '../proto/EngineAPI.gen'
 
-import { PortContextService } from './context'
+import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
 
 function getPayload(payloadType: EAType, payload: Payload): any {
@@ -58,10 +58,11 @@ function getPayload(payloadType: EAType, payload: Payload): any {
   return {}
 }
 
-export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContextService<'EngineAPI'>>) {
+export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EngineAPIServiceDefinition, async () => ({
-    async sendBatch(req: ManyEntityAction, context) {
+    async sendBatch(req: ManyEntityAction, ctx) {
       const actions: EntityAction[] = []
+
       for (const action of req.actions) {
         if (action.payload) {
           actions.push({
@@ -71,30 +72,27 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
           })
         }
       }
-      context.EngineAPI.parcelSceneAPI.sendBatch(actions)
-      return {}
+
+      if (actions.length) {
+        ctx.sendBatch(actions)
+      }
+
+      const events: EventData[] = ctx.events
+
+      if (events.length) {
+        ctx.events = []
+      }
+
+      return { events }
     },
 
     async subscribe(req, ctx) {
-      if (!ctx.EngineAPI.subscribedEvents.has(req.eventId)) {
-        ctx.EngineAPI.parcelSceneAPI.on(req.eventId, (data: any) => {
-          if (ctx.EngineAPI.subscribedEvents.has(req.eventId)) {
-            ctx.sendSceneEvent(req.eventId as any, data)
-          }
-        })
-        ctx.EngineAPI.subscribedEvents.add(req.eventId)
-      }
-
+      ctx.subscribedEvents.add(req.eventId)
       return {}
     },
     async unsubscribe(req, ctx) {
-      ctx.EngineAPI.subscribedEvents.delete(req.eventId)
+      ctx.subscribedEvents.delete(req.eventId)
       return {}
-    },
-    async pullEvents(req, ctx) {
-      const events: EventData[] = ctx.events
-      ctx.events = []
-      return { events }
     }
   }))
 }

@@ -76,7 +76,7 @@ export async function retrieve(cachedKey: string) {
 export async function store(cachedKey: string, data: any) {
   try {
     const db = await cache
-    void db.write((store) => {
+    await db.write((store) => {
       store.put(data, cachedKey)
     })
   } catch (e) {

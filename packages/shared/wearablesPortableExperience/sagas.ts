@@ -7,7 +7,7 @@ import { getFetchContentServer } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
 import { isCurrentUserId } from 'shared/session/selectors'
-import { LoadableScene, StorePortableExperience, WearableV2 } from 'shared/types'
+import { LoadableScene, WearableV2 } from 'shared/types'
 import { getDesiredWearablePortableExpriences } from 'shared/wearablesPortableExperience/selectors'
 import {
   addDesiredPortableExperience,
@@ -30,7 +30,7 @@ function* handleProfileSuccess(action: ProfileSuccessAction): any {
   }
 
   const newProfileWearables = action.payload.profile.avatar.wearables
-  const currentDesiredPortableExperiences: Record<string, StorePortableExperience | null> = yield select(
+  const currentDesiredPortableExperiences: Record<string, LoadableScene | null> = yield select(
     getDesiredWearablePortableExpriences
   )
 
@@ -60,7 +60,7 @@ function* handleProfileSuccess(action: ProfileSuccessAction): any {
 // update the data on the currentDesiredPortableExperiences to include fetched runtime information
 function* handleProcessWearables(action: ProcessWearablesAction) {
   const { payload } = action
-  const currentDesiredPortableExperiences: Record<string, StorePortableExperience | null> = yield select(
+  const currentDesiredPortableExperiences: Record<string, LoadableScene | null> = yield select(
     getDesiredWearablePortableExpriences
   )
 
@@ -81,13 +81,8 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
 
     for (const wearable of wearablesToProcess) {
       try {
-        const entity = yield call(wearableToSceneEntity, wearable, defaultBaseUrl)
-        yield put(
-          processWearables({
-            ...entity,
-            parentCid: 'main'
-          })
-        )
+        const entity: LoadableScene = yield call(wearableToSceneEntity, wearable, defaultBaseUrl)
+        yield put(processWearables(entity))
       } catch (e: any) {
         defaultLogger.log(e)
       }
@@ -102,7 +97,7 @@ export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl
   const wearableContent = wearable.data.representations.filter((representation) =>
     representation.contents.some((c) => c.key.endsWith('game.js'))
   )[0].contents
-  const sceneJson = wearableContent.find(($) => $.key == 'scene.json')
+  const sceneJson = wearableContent.find(($) => $.key === 'scene.json')
 
   if (sceneJson) {
     // In the deployment the content was replicated when the bodyShape selected was 'both'
@@ -125,6 +120,7 @@ export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl
     return {
       id: wearable.id,
       baseUrl,
+      parentCid: 'avatar',
       entity: {
         content,
         metadata,
@@ -135,5 +131,6 @@ export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl
       }
     }
   }
+  console.dir(wearable)
   throw new Error('The wearable has no scene.json')
 }

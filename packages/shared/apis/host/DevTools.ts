@@ -12,22 +12,21 @@ export function registerDevToolsServiceServerImplementation(port: RpcServerPort<
         case 'Runtime.consoleAPICalled': {
           const [event] = params as ProtocolMapping.Events['Runtime.consoleAPICalled']
 
-          context.DevTools.logger.log('', ...event.args.map(($) => ('value' in $ ? $.value : $.unserializableValue)))
+          context.logger.log('', ...event.args.map(($) => ('value' in $ ? $.value : $.unserializableValue)))
 
           break
         }
 
         case 'Runtime.exceptionThrown': {
           const [payload] = params as ProtocolMapping.Events['Runtime.exceptionThrown']
-          context.DevTools.exceptions.set(payload.exceptionDetails.exceptionId, payload.exceptionDetails)
 
           if (payload.exceptionDetails.exception) {
-            context.DevTools.logger.error(
+            context.logger.error(
               payload.exceptionDetails.text,
               payload.exceptionDetails.exception.value || payload.exceptionDetails.exception.unserializableValue
             )
           } else {
-            context.DevTools.logger.error(payload.exceptionDetails.text)
+            context.logger.error(payload.exceptionDetails.text)
           }
           break
         }

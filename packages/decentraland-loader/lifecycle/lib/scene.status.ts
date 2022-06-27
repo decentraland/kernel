@@ -1,4 +1,4 @@
-import { LoadableScene } from "shared/types"
+import { LoadableScene } from 'shared/types'
 
 export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready' | 'failed'
 

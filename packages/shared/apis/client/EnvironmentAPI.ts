@@ -29,7 +29,7 @@ export type BootstrapData = {
   baseUrl: string
   mappings: ContentMapping[]
   useFPSThrottling: boolean
-  data: any
+  data: Scene
 }
 
 export function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClientPort) {

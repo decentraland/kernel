@@ -37,11 +37,11 @@ export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePl
 
   // validate new position is inside one of the scene's parcels
   if (!isPositionValid(newAbsolutePosition, ctx)) {
-    ctx.DevTools.logger.error('Error: Position is out of scene', newAbsolutePosition)
+    ctx.logger.error('Error: Position is out of scene', newAbsolutePosition)
     return {}
   }
   if (!isPositionValid(lastPlayerPosition, ctx)) {
-    ctx.DevTools.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
+    ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
     return {}
   }
 
@@ -68,7 +68,7 @@ export function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Trigge
   assertHasPermission(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE, ctx)
 
   if (!isPositionValid(lastPlayerPosition, ctx)) {
-    ctx.DevTools.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
+    ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
     return {}
   }
 

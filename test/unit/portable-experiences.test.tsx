@@ -11,7 +11,7 @@ import {
   killAllPortableExperiences,
   activateAllPortableExperiences
 } from 'shared/portableExperiences/actions'
-import { StorePortableExperience } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 import { getDesiredPortableExperiences } from 'shared/portableExperiences/selectors'
 import { declareWantedPortableExperiences } from 'unity-interface/portableExperiencesUtils'
 import { RootPortableExperiencesState } from 'shared/portableExperiences/types'
@@ -20,7 +20,7 @@ import { expect } from 'chai'
 import { EntityType } from '@dcl/schemas'
 
 describe('Portable experiences sagas test', () => {
-  const createStorePX = (urn: string): StorePortableExperience => ({
+  const createStorePX = (urn: string): LoadableScene => ({
     parentCid: 'main',
     id: urn,
     baseUrl: '',

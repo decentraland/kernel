@@ -234,19 +234,14 @@ export type SceneFeatureToggle = {
   default: 'enabled' | 'disabled'
 }
 
-export class SceneFeatureToggles {
-  static readonly VOICE_CHAT: SceneFeatureToggle = { name: 'voiceChat', default: 'enabled' }
-}
+export const VOICE_CHAT_FEATURE_TOGGLE: SceneFeatureToggle = { name: 'voiceChat', default: 'enabled' }
 
 export type LoadableScene = {
-  entity: Omit<Entity, 'id'>
-  baseUrl: string
-  id: string
-}
-
-export type EnvironmentData<T> = LoadableScene & {
-  useFPSThrottling: boolean
-  data: T
+  readonly entity: Readonly<Omit<Entity, 'id'>>
+  readonly baseUrl: string
+  readonly id: string
+  /** Id of the parent scene that spawned this scene experience */
+  readonly parentCid?: string
 }
 
 export interface ILand {
@@ -632,11 +627,3 @@ export type AvatarRendererRemovedMessage = {
 } & AvatarRendererBasePayload
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
-
-/**
- * Holds all the information needed to start a portable experience.
- */
-export type StorePortableExperience = LoadableScene & {
-  /** Id of the parent scene that spawned this portable experience */
-  parentCid: string
-}

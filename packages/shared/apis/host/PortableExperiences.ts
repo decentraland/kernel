@@ -26,14 +26,13 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
 
     /**
      * Stops a portable experience. Only the executor that spawned the portable experience has permission to kill it.
-     * @param  {string} [pid] - The portable experience process id
      *
      * Returns true if was able to kill the portable experience, false if not.
      */
     async kill(req, ctx) {
       const portableExperience = getRunningPortableExperience(req.pid)
 
-      if (!!portableExperience && portableExperience.parentCid === ctx.sceneData.id) {
+      if (!!portableExperience && portableExperience.loadableScene.parentCid === ctx.sceneData.id) {
         store.dispatch(removeScenePortableExperience(req.pid))
         return { status: true }
       }
@@ -56,7 +55,9 @@ export function registerPortableExperiencesServiceServerImplementation(port: Rpc
      */
     async getPortableExperiencesLoaded() {
       const loaded = getPortableExperiencesLoaded()
-      return { loaded: Array.from(loaded).map(($) => ({ pid: $.getSceneId(), parentCid: $.parentCid })) }
+      return {
+        loaded: Array.from(loaded).map(($) => ({ pid: $.loadableScene.id, parentCid: $.loadableScene.parentCid || '' }))
+      }
     }
   }))
 }

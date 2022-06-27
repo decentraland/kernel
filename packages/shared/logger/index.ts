@@ -71,7 +71,7 @@ export default defaultLogger
  */
 export function createGenericLogComponent() {
   return {
-    getLogger(loggerName: string) {
+    getLogger(loggerName: string): ILogger {
       return {
         log(message: string, extra?: Record<string, string | number>) {
           defaultLogger.log(loggerName, message, extra)
@@ -82,7 +82,7 @@ export function createGenericLogComponent() {
         info(message: string, extra?: Record<string, string | number>) {
           defaultLogger.info(loggerName, message, extra)
         },
-        debug(message: string, extra?: Record<string, string | number>) {
+        trace(message: string, extra?: Record<string, string | number>) {
           defaultLogger.trace(loggerName, message, extra)
         },
         error(error: string | Error, extra?: Record<string, string | number>) {

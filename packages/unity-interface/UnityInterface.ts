@@ -1,6 +1,6 @@
 import { Vector3 } from '@dcl/ecs-math'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
-import { MinimapSceneInfo } from '@dcl/legacy-ecs'
+import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {
@@ -603,7 +603,6 @@ export class UnityInterface implements IUnityInterface {
   public SendMessageToUnity(object: string, method: string, payload: any = undefined) {
     // "this.Module" is not present when using remote websocket renderer, so we just send the message to unity without doing any override.
     if (!this.Module) {
-      if(!this.gameInstance) debugger
       this.gameInstance.SendMessage(object, method, payload)
       return
     }

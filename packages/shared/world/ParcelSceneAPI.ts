@@ -1,10 +1,9 @@
-import { EntityAction, EnvironmentData } from 'shared/types'
+import { ILogger } from 'shared/logger'
+import { EntityAction, LoadableScene } from 'shared/types'
 
-export type ParcelSceneAPI = {
-  data: EnvironmentData<any>
+export type IKernelScene = {
+  loadableScene: LoadableScene
+  logger: ILogger
   sendBatch(actions: EntityAction[]): void
   registerWorker(event: any): void
-  on(event: string, cb: (event: any) => void): void
-  emit(event: string, data: any): void
-  getSceneId(): string
 }

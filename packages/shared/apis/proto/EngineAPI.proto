@@ -5,8 +5,8 @@ message OpenExternalUrlBody {
 }
 
 message OpenNFTDialogBody {
-    string asset_contract_address = 1; 
-    string token_id = 2; 
+    string asset_contract_address = 1;
+    string token_id = 2;
     optional string comment = 3;
 }
 
@@ -43,9 +43,9 @@ message SetEntityParentBody {
 
 enum QueryType {
     InvalidQueryType = 0;
-    HitFirst = 1; 
-    HitAll = 2; 
-    HitFirstAvatar = 3; 
+    HitFirst = 1;
+    HitAll = 2;
+    HitFirstAvatar = 3;
     HitAllAvatars = 4;
 }
 
@@ -116,7 +116,9 @@ message ManyEntityAction {
     repeated EntityAction actions = 1;
 }
 
-message SendBatchResponse {}
+message SendBatchResponse {
+  repeated EventData events = 1;
+}
 
 message UnsubscribeRequest {
     string event_id = 1;
@@ -171,14 +173,8 @@ message EventData {
     optional RotationChangedPayload rotation_changed = 4;
 }
 
-message PullEventsRequest {}
-message PullEventsResponse {
-    repeated EventData events = 1;
-}
-
 service EngineAPIService {
   rpc SendBatch(ManyEntityAction) returns (SendBatchResponse) {}
   rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
-  rpc PullEvents(PullEventsRequest) returns (PullEventsResponse) {}
 }

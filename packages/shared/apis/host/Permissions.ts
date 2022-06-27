@@ -58,7 +58,7 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
     }
   }
 
-  return ctx.Permissions.permissionGranted.has(test)
+  return ctx.permissionGranted.has(test)
 }
 
 export function registerPermissionServiceServerImplementation(port: RpcServerPort<PortContext>) {

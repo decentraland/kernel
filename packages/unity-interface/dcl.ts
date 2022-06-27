@@ -13,10 +13,9 @@ import {
 } from 'shared/world/parcelSceneManager'
 import { teleportObservable } from 'shared/world/positionThings'
 import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
-import { UnityParcelScene } from './UnityParcelScene'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
-import { UnityScene } from './UnityScene'
+import { KernelScene } from './KernelScene'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
@@ -28,6 +27,7 @@ import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
+import { workerStatusObservable } from 'shared/world/SceneWorker'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -80,49 +80,53 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 }
 
 async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
-  const scene = new UnityScene({
+  const metadata: Scene = {
+    display: {
+      title: title
+    },
+    main: 'game.js',
+    scene: {
+      base: '0,0',
+      parcels: ['0,0']
+    }
+  }
+
+  const scene = new KernelScene({
     id: cid,
     baseUrl: location.origin,
     entity: {
-      content: [],
+      content: [{ file: 'game.js', hash: fileContentUrl }],
       pointers: [cid],
       timestamp: 0,
       type: EntityType.SCENE,
-      metadata: null,
+      metadata,
       version: 'v3'
-    },
-    data: null,
-    useFPSThrottling: false
+    }
   })
 
-  loadParcelScene(scene, undefined, true)
+  loadParcelScene(scene, undefined)
 
   getUnityInstance().CreateGlobalScene({
-    id: scene.getSceneId(),
+    id: cid,
     name: title,
-    baseUrl: scene.data.baseUrl,
+    baseUrl: scene.loadableScene.baseUrl,
     isPortableExperience: false,
-    contents: []
+    contents: scene.loadableScene.entity.content
   })
 }
 
 export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   onLoadParcelScenesObservable.add((lands) => {
-    getUnityInstance().LoadParcelScenes(
-      lands.map(($) => {
-        const x = Object.assign({}, loadableSceneToLoadableParcelScene($).data)
-        return x
-      })
-    )
+    getUnityInstance().LoadParcelScenes(lands.map(($) => loadableSceneToLoadableParcelScene($)))
   })
   onPositionSettledObservable.add((spawnPoint) => {
     getUnityInstance().Teleport(spawnPoint)
     getUnityInstance().ActivateRendering()
   })
-
   onPositionUnsettledObservable.add(() => {
     getUnityInstance().DeactivateRendering()
   })
+  workerStatusObservable.add((action) => store.dispatch(action))
 
   await enableParcelSceneLoading(params)
 }
@@ -163,12 +167,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
 
           const entity = await wearableToSceneEntity(wearable, wearable.baseUrl)
 
-          store.dispatch(
-            reloadScenePortableExperience({
-              ...entity,
-              parentCid: 'main',
-            })
-          )
+          store.dispatch(reloadScenePortableExperience(entity))
         }
       } catch (err) {
         defaultLogger.error(`Unable to loader the preview portable experience`, message, err)
@@ -188,7 +187,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
   }
 }
 
-export function loadBuilderScene(_sceneData: ILand): UnityParcelScene | undefined {
+export function loadBuilderScene(_sceneData: ILand): KernelScene | undefined {
   // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
 }

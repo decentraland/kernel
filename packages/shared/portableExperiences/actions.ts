@@ -1,8 +1,8 @@
-import { StorePortableExperience } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 import { action } from 'typesafe-actions'
 
 export const UPDATE_ENGINE_PX = '[PX] UpdateEngine'
-export const updateEnginePortableExperiences = (desiredPortableExperiences: StorePortableExperience[]) =>
+export const updateEnginePortableExperiences = (desiredPortableExperiences: LoadableScene[]) =>
   action(UPDATE_ENGINE_PX, { desiredPortableExperiences })
 export type UpdateEnginePortableExperiencesAction = ReturnType<typeof updateEnginePortableExperiences>
 
@@ -19,15 +19,15 @@ export const activateAllPortableExperiences = () => action(ACTIVATE_ALL_PORTABLE
 export type ActivateAllPortableExperiencesAction = ReturnType<typeof activateAllPortableExperiences>
 
 export const ADD_KERNEL_PX = '[PX] AddKernelPx'
-export const addKernelPortableExperience = (data: StorePortableExperience) => action(ADD_KERNEL_PX, { data })
+export const addKernelPortableExperience = (data: LoadableScene) => action(ADD_KERNEL_PX, { data })
 export type AddKernelPortableExperience = ReturnType<typeof addKernelPortableExperience>
 
 export const ADD_SCENE_PX = '[PX] AddScenePx'
-export const addScenePortableExperience = (data: StorePortableExperience) => action(ADD_SCENE_PX, { data })
+export const addScenePortableExperience = (data: LoadableScene) => action(ADD_SCENE_PX, { data })
 export type AddScenePortableExperienceAction = ReturnType<typeof addScenePortableExperience>
 
 export const RELOAD_SCENE_PX = '[PX] ReloadScenePx'
-export const reloadScenePortableExperience = (data: StorePortableExperience) => action(RELOAD_SCENE_PX, { data })
+export const reloadScenePortableExperience = (data: LoadableScene) => action(RELOAD_SCENE_PX, { data })
 export type ReloadScenePortableExperienceAction = ReturnType<typeof reloadScenePortableExperience>
 
 export const REMOVE_SCENE_PX = '[PX] RemoveScenePx'

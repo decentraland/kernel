@@ -81,7 +81,9 @@ describe('RestrictedActions tests', () => {
       const ctx = getContextWithPermissions()
       const stub = sinon.stub(getUnityInstance(), 'Teleport')
 
-      expect(() => movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)).to.throw(/This scene doesn't have some of the next permissions: ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE/)
+      expect(() => movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)).to.throw(
+        /This scene doesn't have some of the next permissions: ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE/
+      )
 
       Sinon.assert.callCount(stub, 0)
       sinon.verify()
@@ -113,44 +115,19 @@ describe('RestrictedActions tests', () => {
     const sceneData = buildSceneData(permissions)
     return {
       sceneData,
-      DevTools: {
-        logger: defaultLogger,
-        exceptions: new Map()
-      },
-      Permissions: {
-        permissionGranted: new Set(permissions)
-      },
-      EngineAPI: {
-        subscribedEvents: new Set(),
-        parcelSceneAPI: {
-          get data(): any {
-            throw new Error('not implemented')
-          },
-          emit() {
-            throw new Error('not implemented')
-          },
-          getSceneId() {
-            throw new Error('not implemented')
-          },
-          on() {
-            throw new Error('not implemented')
-          },
-          registerWorker() {
-            throw new Error('not implemented')
-          },
-          sendBatch() {
-            throw new Error('not implemented')
-          }
-        }
-      },
-      EnvironmentAPI: {
-        get data(): any {
-          throw new Error('not implemented')
-        }
-      },
+      logger: defaultLogger,
+      permissionGranted: new Set(permissions),
+      subscribedEvents: new Set(),
       events: [],
-      sendProtoSceneEvent() {},
-      sendSceneEvent() {}
+      sendProtoSceneEvent() {
+        throw new Error('not implemented')
+      },
+      sendSceneEvent() {
+        throw new Error('not implemented')
+      },
+      sendBatch() {
+        throw new Error('not implemented')
+      }
     }
   }
 
@@ -175,6 +152,7 @@ describe('RestrictedActions tests', () => {
     return {
       id: 'test',
       isPortableExperience: false,
+      useFPSThrottling: false,
       baseUrl: '',
       entity: {
         version: 'v3',

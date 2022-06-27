@@ -17,7 +17,7 @@ import { registerPlayersServiceServerImplementation } from './Players'
 import { registerPortableExperiencesServiceServerImplementation } from './PortableExperiences'
 import { registerSignedFetchServiceServerImplementation } from './SignedFetch'
 
-export function registerServices(serverPort: RpcServerPort<PortContext>) {
+export async function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerDevToolsServiceServerImplementation(serverPort)
   registerEngineAPIServiceServerImplementation(serverPort)
   registerEnvironmentAPIServiceServerImplementation(serverPort)

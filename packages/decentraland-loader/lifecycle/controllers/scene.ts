@@ -1,14 +1,10 @@
 import { SceneLifeCycleStatus, SceneLifeCycleStatusType } from '../lib/scene.status'
 import { EventEmitter } from 'events'
 import { SceneDataDownloadManager } from './download'
-import { Observable } from 'mz-observable'
 import defaultLogger from 'shared/logger'
 
 export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
 export type NewDrawingDistanceReport = { distanceInParcels: number }
-
-export const sceneLifeCycleObservable = new Observable<Readonly<SceneLifeCycleStatusReport>>()
-export const renderDistanceObservable = new Observable<Readonly<NewDrawingDistanceReport>>()
 
 type SceneId = string
 
@@ -42,7 +38,7 @@ export class SceneLifeCycleController extends EventEmitter {
       }
     })
 
-    const difference = lostSight.filter((a) => !sighted.some((b) => a.id == b.id))
+    const difference = lostSight.filter((a) => !sighted.some((b) => a.id === b.id))
     this.unloadScenes(difference.map((entity) => entity.id))
 
     return { sighted: sighted.map((entity) => entity.id), lostSight: difference }
