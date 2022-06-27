@@ -14,7 +14,7 @@ void executeTask(async () => {
   dcl.onUpdate(async (_dt) => {
     const ret: { events: { event: string; payload: string }[] } = await dcl.callRpc(
       socialController.rpcHandle,
-      'getAvatarEvents',
+      'pullAvatarEvents',
       []
     )
 
