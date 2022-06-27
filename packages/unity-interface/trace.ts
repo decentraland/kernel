@@ -6,7 +6,6 @@ import {
 } from 'shared/session/getPerformanceInfo'
 import defaultLogger from '../shared/logger'
 import type { CommonRendererOptions } from './loader'
-import { RendererProtocol } from '../renderer-protocol/types'
 
 let pendingMessagesInTrace = 0
 const currentTrace: string[] = []
@@ -26,7 +25,7 @@ export function traceDecoratorRendererOptions(options: CommonRendererOptions): C
   }
 }
 
-export function traceDecoratorUnityGame(game: UnityGame & RendererProtocol): UnityGame & RendererProtocol {
+export function traceDecoratorUnityGame(game: UnityGame): UnityGame {
   const originalSendMessage = game.SendMessage
   game.SendMessage = function (obj, method, args) {
     if (pendingMessagesInTrace > 0) {

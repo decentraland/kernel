@@ -1,5 +1,5 @@
 import { PREVIEW } from './../../../config'
-import { getUnityInstance } from './../../../unity-interface/IUnityInterface'
+import { rendererProtocol } from './../../../renderer-protocol/rpcClient'
 
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
@@ -11,10 +11,14 @@ export function registerExperimentalAPIServiceServerImplementation(port: RpcServ
   codegen.registerService(port, ExperimentalAPIServiceDefinition, async () => ({
     async sendToRenderer(req, ctx) {
       if (!PREVIEW) return {}
-      getUnityInstance().SendBinaryMessage(ctx.EnvironmentAPI.cid, req.data, req.data.byteLength)
-      return {}
+      const protocol = await rendererProtocol
+      return protocol.crdtService.sendCRDT({ sceneId: ctx.EnvironmentAPI.cid, payload: req.data })
     },
 
-    async *messageFromRenderer() {}
+    async *messageFromRenderer() {
+      // const protocol = await rendererProtocol
+      // for await (const notification of protocol.crdtService.cRDTNotificationStream({})) {
+      // }
+    }
   }))
 }

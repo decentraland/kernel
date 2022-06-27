@@ -29,7 +29,6 @@ import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import { RendererProtocol } from '../renderer-protocol/types'
 
 export type RealmInfo = {
   serverName: string
@@ -63,12 +62,12 @@ export function getUnityInstance(): IUnityInterface {
 }
 
 export interface IUnityInterface {
-  gameInstance: UnityGame & RendererProtocol
+  gameInstance: UnityGame
   Module: any
   crashPayloadResponseObservable: Observable<string>
   logger: ILogger
   SetTargetHeight(height: number): void
-  Init(gameInstance: UnityGame & RendererProtocol): void
+  Init(gameInstance: UnityGame): void
   SendGenericMessage(object: string, method: string, payload: string): void
   SetDebug(): void
   LoadProfile(profile: NewProfileForRenderer): void
@@ -193,6 +192,4 @@ export interface IUnityInterface {
   OnBuilderKeyDown(key: string): void
   SetBuilderConfiguration(config: BuilderConfiguration): void
   SendMessageToUnity(object: string, method: string, payload?: any): void
-  SendMessageToUnity(object: string, method: string, payload?: any): void
-  SendBinaryMessage(sceneId: string, message: Uint8Array, length: number): void
 }
