@@ -11,9 +11,9 @@ export type TrackEvents = PositionTrackEvents & {
   ['Send chat message']: {
     messageId: string
     from: ChatMessagePlayerType
-    to: ChatMessagePlayerType
+    to?: ChatMessagePlayerType
     length: number
-    friends: boolean
+    friends?: boolean
     messageType: ChatMessageType
   }
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01

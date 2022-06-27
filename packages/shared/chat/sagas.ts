@@ -1,5 +1,5 @@
 import { takeEvery, put, select, call } from 'redux-saga/effects'
-import { PayloadAction } from 'typesafe-actions'
+import {PayloadAction} from 'typesafe-actions'
 import {
   MESSAGE_RECEIVED,
   MessageReceived,
@@ -8,29 +8,29 @@ import {
   SendMessage,
   sendPrivateMessage
 } from './actions'
-import { uuid } from 'atomicHelpers/math'
+import {uuid} from 'atomicHelpers/math'
 import { ChatMessageType, ChatMessagePlayerType, ChatMessage } from 'shared/types'
-import { EXPERIENCE_STARTED } from 'shared/loading/types'
-import { trackEvent } from 'shared/analytics'
-import { sendPublicChatMessage } from 'shared/comms'
-import { getAllPeers } from 'shared/comms/peers'
-import { parseParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
-import { TeleportController } from 'shared/world/TeleportController'
-import { notifyStatusThroughChat } from './index'
+import {EXPERIENCE_STARTED} from 'shared/loading/types'
+import {trackEvent} from 'shared/analytics'
+import {sendPublicChatMessage} from 'shared/comms'
+import {getAllPeers} from 'shared/comms/peers'
+import {parseParcelPosition, worldToGrid} from 'atomicHelpers/parcelScenePositions'
+import {TeleportController} from 'shared/world/TeleportController'
+import {notifyStatusThroughChat} from './index'
 import defaultLogger from 'shared/logger'
-import { changeRealm } from 'shared/dao'
-import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
-import { SHOW_FPS_COUNTER } from 'config'
-import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
-import { isFriend } from 'shared/friends/selectors'
-import { fetchHotScenes } from 'shared/social/hotScenes'
-import { getCurrentUserId } from 'shared/session/selectors'
-import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { store } from 'shared/store/isolatedStore'
-import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getUsedComponentVersions } from 'shared/rolloutVersions'
-import { hasWallet } from '../session'
+import {changeRealm} from 'shared/dao'
+import {isValidExpression, validExpressions} from 'shared/apis/expressionExplainer'
+import {SHOW_FPS_COUNTER} from 'config'
+import {findProfileByName, getCurrentUserProfile, getProfile} from 'shared/profiles/selectors'
+import {isFriend} from 'shared/friends/selectors'
+import {fetchHotScenes} from 'shared/social/hotScenes'
+import {getCurrentUserId} from 'shared/session/selectors'
+import {blockPlayers, mutePlayers, unblockPlayers, unmutePlayers} from 'shared/social/actions'
+import {getUnityInstance} from 'unity-interface/IUnityInterface'
+import {store} from 'shared/store/isolatedStore'
+import {waitForRendererInstance} from 'shared/renderer/sagas-helper'
+import {getUsedComponentVersions} from 'shared/rolloutVersions'
+import {hasWallet} from '../session'
 
 interface IChatCommand {
   name: string
@@ -75,9 +75,9 @@ function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
       trackEvent('Send chat message', {
         messageId: payload.messageId,
         from: hasWallet() ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
-        to: ChatMessagePlayerType.WALLET,
+        to: payload.messageType === ChatMessageType.PRIVATE ? undefined : ChatMessagePlayerType.WALLET,
         length: payload.body.length,
-        friends: isFriend(store.getState(), payload.recipient ?? ''),
+        friends: payload.messageType === ChatMessageType.PRIVATE ? undefined : isFriend(store.getState(), payload.recipient ?? ''),
         messageType: payload.messageType
       })
       break
