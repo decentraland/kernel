@@ -43,7 +43,7 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
   }
 })
 
-async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityGame> {
+async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityGame & RendererProtocol> {
   // inject unity loader
   const rootArtifactsUrl = rendererOptions.baseUrl || ''
 
@@ -73,12 +73,12 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     return true
   }
 
-  const transport = webTransport({ unityModule: originalUnity.Module })
-  await createRendererRpcClient(transport)
+  const transport = webTransport({ wasmModule: originalUnity.Module })
+  const protocol = await createRendererRpcClient(transport)
 
   await engineStartedFuture
 
-  return originalUnity
+  return { ...originalUnity, ...protocol }
 }
 
 /** Initialize engine using WS transport (UnityEditor) */
