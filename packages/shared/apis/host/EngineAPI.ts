@@ -16,7 +16,7 @@ import { EntityAction, EntityActionType } from 'shared/types'
 function getPayload(payloadType: EAType, payload: Payload): any {
   switch (payloadType) {
     case EAType.OpenExternalUrl: {
-      return payload.openExternalUrl
+      return payload.openExternalUrl?.url
     }
     case EAType.OpenNFTDialog: {
       return payload.openNftDialog
