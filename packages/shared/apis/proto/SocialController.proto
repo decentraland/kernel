@@ -6,6 +6,10 @@ message SocialEvent {
   string payload = 2;
 }
 
+message GetAvatarEventsResponse {
+  repeated SocialEvent events = 1;
+}
+
 service SocialControllerService {
-    rpc GetAvatarEvents(InitRequest) returns (stream SocialEvent) {}
+    rpc PullAvatarEvents(InitRequest) returns (GetAvatarEventsResponse) {}
 }
