@@ -161,39 +161,6 @@ export async function startSceneRuntime(client: RpcClient) {
   /**
    * Forever loop until the worker is killed
    */
-  async function startLoopWithWait() {
-    let start = performance.now()
-
-    while (true) {
-      const frameBeginingTime = performance.now()
-      const events = await EngineAPI.pullEvents({})
-      processEvents(events)
-
-      const now = performance.now()
-      const dt = now - start
-      start = now
-
-      const time = dt / 1000
-
-      for (const trigger of onUpdateFunctions) {
-        try {
-          trigger(time)
-        } catch (e: any) {
-          devToolsAdapter.error(e)
-        }
-      }
-
-      await sendBatch().catch((err) => devToolsAdapter.error(err))
-
-      // At least 10ms of releasing
-      const realInterval = Math.max(10, updateInterval - (performance.now() - frameBeginingTime))
-      await new Promise((resolve) => setTimeout(resolve, realInterval))
-    }
-  }
-
-  /**
-   * Forever loop until the worker is killed
-   */
   async function startLoop() {
     let start = performance.now()
 
