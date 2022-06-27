@@ -84,7 +84,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
 async function loadWsEditorDelegate(container: HTMLElement): Promise<UnityGame> {
   const queryParams = new URLSearchParams(document.location.search)
 
-  return initializeUnityEditor(queryParams.get('ws')!, defaultOptions)
+  return initializeUnityEditor(queryParams.get('ws')!, container, defaultOptions)
 }
 
 /** Initialize the injected engine in a container */
