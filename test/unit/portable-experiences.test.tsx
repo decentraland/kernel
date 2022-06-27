@@ -1,5 +1,5 @@
 import { expectSaga } from 'redux-saga-test-plan'
-import { call, select } from 'redux-saga/effects'
+import { delay, call, select } from 'redux-saga/effects'
 
 import { portableExperienceSaga } from '../../packages/shared/portableExperiences/sagas'
 import {
@@ -20,7 +20,7 @@ import { expect } from 'chai'
 import { EntityType } from '@dcl/schemas'
 
 describe('Portable experiences sagas test', () => {
-  const createStorePX = (urn: string): LoadableScene => ({
+  const createLoadablePX = (urn: string): LoadableScene => ({
     parentCid: 'main',
     id: urn,
     baseUrl: '',
@@ -37,7 +37,7 @@ describe('Portable experiences sagas test', () => {
   })
 
   it('empty scenario', () => {
-    const action = addScenePortableExperience(createStorePX('urn'))
+    const action = addScenePortableExperience(createLoadablePX('urn'))
 
     return expectSaga(portableExperienceSaga)
       .provide([
@@ -50,7 +50,7 @@ describe('Portable experiences sagas test', () => {
   })
 
   it('returning one PX in debug', () => {
-    const px = createStorePX('urn')
+    const px = createLoadablePX('urn')
     const action = addScenePortableExperience(px)
 
     return expectSaga(portableExperienceSaga)
@@ -63,14 +63,15 @@ describe('Portable experiences sagas test', () => {
       .run()
   })
 
-  it('reload PX', () => {
-    const px = createStorePX('urn')
+  it('reload PX should call declare wanted once empty and again with the desired px', () => {
+    const px = createLoadablePX('urn')
     const action = reloadScenePortableExperience(px)
 
     return expectSaga(portableExperienceSaga)
       .provide([
         [select(getDesiredPortableExperiences), [px]],
         [call(declareWantedPortableExperiences, []), []],
+        [delay(250), []],
         [call(declareWantedPortableExperiences, [px]), []]
       ])
       .dispatch(action)
@@ -80,7 +81,7 @@ describe('Portable experiences sagas test', () => {
   })
 
   it('updateEnginePortableExperiences triggers a change in the engine (debounced)', () => {
-    const px = createStorePX('urn')
+    const px = createLoadablePX('urn')
 
     return expectSaga(portableExperienceSaga)
       .provide([[call(declareWantedPortableExperiences, [px]), []]])
@@ -92,9 +93,9 @@ describe('Portable experiences sagas test', () => {
   })
 
   it('returning a PX multiple times should dedup the px', () => {
-    const px1 = createStorePX('urnA')
-    const px2 = createStorePX('urnA')
-    const px3 = createStorePX('urnB')
+    const px1 = createLoadablePX('urnA')
+    const px2 = createLoadablePX('urnA')
+    const px3 = createLoadablePX('urnB')
 
     const ret = getDesiredPortableExperiences({
       portableExperiences: {
@@ -122,8 +123,8 @@ describe('Portable experiences sagas test', () => {
 
   describe('with reducer', () => {
     it('removing a PX from denylist should start it', () => {
-      const pxOld = createStorePX('urn-old')
-      const pxDenied = createStorePX('urn-denied')
+      const pxOld = createLoadablePX('urn-old')
+      const pxDenied = createLoadablePX('urn-denied')
 
       return expectSaga(portableExperienceSaga)
         .withReducer(reducers)
@@ -161,8 +162,8 @@ describe('Portable experiences sagas test', () => {
     })
 
     it('adding a denied PX should not trigger any action', () => {
-      const pxOld = createStorePX('urn-old')
-      const pxDenied = createStorePX('urn-denied')
+      const pxOld = createLoadablePX('urn-old')
+      const pxDenied = createLoadablePX('urn-denied')
 
       return expectSaga(portableExperienceSaga)
         .withReducer(reducers)
@@ -199,7 +200,7 @@ describe('Portable experiences sagas test', () => {
     })
 
     it('removing a scene-created PX should remove it from the final list', () => {
-      const pxOld = createStorePX('urn-old')
+      const pxOld = createLoadablePX('urn-old')
 
       return expectSaga(portableExperienceSaga)
         .withReducer(reducers)
@@ -234,7 +235,7 @@ describe('Portable experiences sagas test', () => {
   })
 
   describe('santi use case', async () => {
-    const px = createStorePX('urn:decentraland:off-chain:static-portable-experiences:radio')
+    const px = createLoadablePX('urn:decentraland:off-chain:static-portable-experiences:radio')
 
     // add debug px
     it('add the debug px, the desired PX should contain it', () =>
