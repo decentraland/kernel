@@ -369,6 +369,38 @@ function* refreshFriends() {
 
     yield ensureFriendsProfile(friendIds).catch(logger.error)
 
+    // explorer information
+
+    // const conversationsWithUnreadMessages: Array<{ unreadMessages: BasicMessageInfo[] }> =
+    //   yield client.getAllConversationsWithUnreadMessages()
+
+    // const unreadMessages: UnseenPrivateMessage = conversationsWithUnreadMessages.map(
+    //   (conv) =>
+    //     ({
+    //       count: conv.unreadMessages.length,
+    //       userId: conv.userIds.find((x) => x !== ownId)
+    //     } as UnseenPrivateMessage)
+    // )
+
+    const initMessage: FriendsInitializationMessage = {
+      friends: { total: friendIds.length },
+      requests: {
+        lastSeenTimestamp: 1,
+        total: requestedFromIds.length
+      },
+      unseenPrivateMessages: []
+    }
+
+    getUnityInstance().InitializeFriends(initMessage)
+
+    // initialize friends internal for kernel
+    // filter unread messages
+    // const allConversations: Array<{ conversation: Conversation; unreadMessages: boolean }> =
+    //   yield client.getAllCurrentConversations()
+
+    // ensure friend profiles are sent to renderer
+    yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
+
     yield put(
       updatePrivateMessagingState({
         client,
