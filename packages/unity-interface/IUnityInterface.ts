@@ -125,10 +125,17 @@ export interface IUnityInterface {
   SetTutorialEnabledForUsersThatAlreadyDidTheTutorial(tutorialConfig: TutorialInitializationMessage): void
   TriggerAirdropDisplay(data: AirdropInfo): void
   AddMessageToChatWindow(message: ChatMessage): void
+
+  // *********************************************************************************
+  // ************** Chat messages **************
+  // *********************************************************************************
+
   InitializeFriends(initializationMessage: FriendsInitializationMessage): void
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
+
+  
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
   ConnectionToRealmSuccess(successData: WorldPosition): void
