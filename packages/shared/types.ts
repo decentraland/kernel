@@ -537,10 +537,25 @@ export type ChatMessage = {
   body: string
 }
 
+export interface UnseenPrivateMessage {
+  userId: string
+  count: number
+  lastSeenTimestamp: number
+}
+
 export type FriendsInitializationMessage = {
-  currentFriends: string[]
-  requestedTo: string[]
-  requestedFrom: string[]
+  // the unseen received friend requests
+  requests: {
+    total: number
+    lastSeenTimestamp: number
+  }
+
+  friends: {
+    total: number
+  }
+
+  // the unseen private messages for each user
+  unseenPrivateMessages: Array<UnseenPrivateMessage>
 }
 
 export enum FriendshipAction {

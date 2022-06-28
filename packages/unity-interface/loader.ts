@@ -90,6 +90,7 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
           })
         }
       }
+      
 
       return globalThis.DclRenderer!.initializeWebRenderer({
         baseUrl,
@@ -100,7 +101,8 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
         onError: (error) => {
           ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_NEWERRORHANDLER)
           BringDownClientAndShowError(UNEXPECTED_ERROR)
-        }
+        },
+        onBinaryMessage(sceneId, data) {}
       })
     },
     baseUrl
