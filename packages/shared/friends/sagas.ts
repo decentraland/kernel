@@ -18,7 +18,14 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import { createLogger, createDummyLogger } from 'shared/logger'
-import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus } from 'shared/types'
+import {
+  ChatMessage,
+  NotificationType,
+  ChatMessageType,
+  FriendshipAction,
+  PresenceStatus,
+  FriendsInitializationMessage
+} from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
@@ -239,6 +246,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
     yield Promise.all(
       conversations.map(async ({ conversation }) => {
+        // TODO: Remove, move to a lazy + ondemand way
         const cursor = await client.getCursorOnLastMessage(conversation.id, { initialSize: INITIAL_CHAT_SIZE })
 
         let millisToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
@@ -337,19 +345,10 @@ function* refreshFriends() {
     const ownId = client.getUserId()
 
     // init friends
-    const friends: string[] = yield client.getAllFriends()
+    const friends: string[] = []
+    // const friends: string[] = yield client.getAllFriends()
 
-    const friendsSocial: SocialData[] = yield Promise.all(
-      // TODO: opening the conversations should be a reactive thing
-      // and should only happen after you click in a conversation from the UI
-      // also, the UI should show a bubble whenever the matrix client recevies
-      // an invitation to join to a room.
-      // then the room should be created in renderer and start the conversation that way, after the click
-      toSocialData(friends).map(async (friend) => {
-        const conversation = await client.createDirectConversation(friend.socialId)
-        return { ...friend, conversationId: conversation.id }
-      })
-    )
+    const friendsSocial: SocialData[] = []
 
     // init friend requests
     const friendRequests: FriendshipRequest[] = yield client.getPendingRequests()
@@ -378,6 +377,38 @@ function* refreshFriends() {
     const requestedFromIds = fromFriendRequestsSocial.map(($) => $.userId)
     const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
 
+    // explorer information
+
+    // const conversationsWithUnreadMessages: Array<{ unreadMessages: BasicMessageInfo[] }> =
+    //   yield client.getAllConversationsWithUnreadMessages()
+
+    // const unreadMessages: UnseenPrivateMessage = conversationsWithUnreadMessages.map(
+    //   (conv) =>
+    //     ({
+    //       count: conv.unreadMessages.length,
+    //       userId: conv.userIds.find((x) => x !== ownId)
+    //     } as UnseenPrivateMessage)
+    // )
+
+    const initMessage: FriendsInitializationMessage = {
+      friends: { total: friendIds.length },
+      requests: {
+        lastSeenTimestamp: 1,
+        total: requestedFromIds.length
+      },
+      unseenPrivateMessages: []
+    }
+
+    getUnityInstance().InitializeFriends(initMessage)
+
+    // initialize friends internal for kernel
+    // filter unread messages
+    // const allConversations: Array<{ conversation: Conversation; unreadMessages: boolean }> =
+    //   yield client.getAllCurrentConversations()
+
+    // ensure friend profiles are sent to renderer
+    yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
+
     yield put(
       updatePrivateMessagingState({
         client,
@@ -386,19 +417,7 @@ function* refreshFriends() {
         fromFriendRequests: requestedFromIds,
         toFriendRequests: requestedToIds
       })
-    )
-
-    // ensure friend profiles are sent to renderer
-
-    yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
-
-    const initMessage = {
-      currentFriends: friendIds,
-      requestedTo: requestedToIds,
-      requestedFrom: requestedFromIds
-    }
-
-    getUnityInstance().InitializeFriends(initMessage)
+    )    
 
     return { friendsSocial, ownId }
   } catch (e) {
