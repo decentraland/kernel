@@ -405,10 +405,7 @@ export class InstanceConnection implements RoomConnection {
   private async changeTransport(transport: Transport): Promise<void> {
     const oldTransport = this.transport
 
-    console.log('CHANGE TRANSPORT')
     await transport.connect()
-
-    console.log('CONNECTED')
 
     transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
     transport.onDisconnectObservable.add(this.disconnect.bind(this))
