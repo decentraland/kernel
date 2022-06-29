@@ -543,19 +543,26 @@ export interface UnseenPrivateMessage {
   lastSeenTimestamp: number
 }
 
+// export type FriendsInitializationMessage = {
+//   // the unseen received friend requests
+//   requests: {
+//     total: number
+//     lastSeenTimestamp: number
+//   }
+
+//   friends: {
+//     total: number
+//   }
+
+//   // the unseen private messages for each user
+//   unseenPrivateMessages: Array<UnseenPrivateMessage>
+// }
+
+
 export type FriendsInitializationMessage = {
-  // the unseen received friend requests
-  requests: {
-    total: number
-    lastSeenTimestamp: number
-  }
-
-  friends: {
-    total: number
-  }
-
-  // the unseen private messages for each user
-  unseenPrivateMessages: Array<UnseenPrivateMessage>
+  currentFriends: string[]
+  requestedTo: string[]
+  requestedFrom: string[]
 }
 
 export enum FriendshipAction {
