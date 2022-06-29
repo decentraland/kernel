@@ -56,7 +56,7 @@ export class BFFConnection {
 
   public async addPeerTopicListener(
     topic: string,
-    handler: (data: Uint8Array, peerId: string) => void
+    handler: (data: Uint8Array, peerId: string) => Promise<void>
   ): Promise<TopicListener> {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
@@ -66,7 +66,7 @@ export class BFFConnection {
 
     ;(async (commsService) => {
       for await (const { payload, sender } of commsService.getPeerMessages(subscription)) {
-        handler(payload, sender)
+        await handler(payload, sender)
       }
     })(this.commsService).catch((err) => {
       this.logger.error(`Peer topic handler error: ${err.toString()}`)
@@ -76,7 +76,10 @@ export class BFFConnection {
     return subscription
   }
 
-  public async addSystemTopicListener(topic: string, handler: (data: Uint8Array) => void): Promise<TopicListener> {
+  public async addSystemTopicListener(
+    topic: string,
+    handler: (data: Uint8Array) => Promise<void>
+  ): Promise<TopicListener> {
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
@@ -85,7 +88,7 @@ export class BFFConnection {
 
     ;(async (commsService) => {
       for await (const { payload } of commsService.getSystemMessages(subscription)) {
-        handler(payload)
+        await handler(payload)
       }
     })(this.commsService).catch((err) => {
       this.logger.error(`System topic handler error: ${err.toString()}`)
@@ -175,7 +178,7 @@ export class BFFConnection {
     return authResponse.peerId
   }
 
-  private onSceneMessage(data: Uint8Array, peerId: string) {
+  private async onSceneMessage(data: Uint8Array, peerId: string) {
     this.onTopicMessageObservable.notifyObservers({
       peerId,
       data

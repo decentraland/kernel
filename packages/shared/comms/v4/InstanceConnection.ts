@@ -90,6 +90,8 @@ export class InstanceConnection implements RoomConnection {
           this.logger.error('cannot process island change message', e)
           return
         }
+
+        this.logger.log(`change island message ${islandChangedMessage.connStr}`)
         const transport = createTransport(config, islandChangedMessage)
 
         if (this.peerLeftListener) {
@@ -97,7 +99,7 @@ export class InstanceConnection implements RoomConnection {
         }
         this.peerLeftListener = await this.bff.addSystemTopicListener(
           `island.${islandChangedMessage.islandId}.peer_left`,
-          (data: Uint8Array) => {
+          async (data: Uint8Array) => {
             try {
               const peerLeftMessage = LeftIslandMessage.decode(Reader.create(data))
               this.onPeerLeft(peerLeftMessage.peerId)
@@ -403,7 +405,11 @@ export class InstanceConnection implements RoomConnection {
   private async changeTransport(transport: Transport): Promise<void> {
     const oldTransport = this.transport
 
+    console.log('CHANGE TRANSPORT')
     await transport.connect()
+
+    console.log('CONNECTED')
+
     transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
     transport.onDisconnectObservable.add(this.disconnect.bind(this))
 
