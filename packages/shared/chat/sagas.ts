@@ -75,8 +75,7 @@ function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
       trackEvent('Send chat message', {
         messageId: payload.messageId,
         from: hasWallet() ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
-        to: payload.messageType === ChatMessageType.PRIVATE
-          ? ChatMessagePlayerType.WALLET : undefined,
+        to: payload.messageType === ChatMessageType.PRIVATE ? ChatMessagePlayerType.WALLET : undefined,
         length: payload.body.length,
         messageType: payload.messageType
       })
