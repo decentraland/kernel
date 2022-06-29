@@ -11,17 +11,19 @@ void executeTask(async () => {
     dcl.loadModule('@decentraland/SocialController', {})
   ])
 
-  const ret: AsyncGenerator<{ event: string; payload: string }> = await dcl.callRpc(
-    socialController.rpcHandle,
-    'getAvatarEvents',
-    []
-  )
+  dcl.onUpdate(async (_dt) => {
+    const ret: { events: { event: string; payload: string }[] } = await dcl.callRpc(
+      socialController.rpcHandle,
+      'pullAvatarEvents',
+      []
+    )
 
-  for await (const { payload } of ret) {
-    try {
-      avatarMessageObservable.notifyObservers(JSON.parse(payload))
-    } catch (err) {
-      console.error(err)
+    for (const { payload } of ret.events) {
+      try {
+        avatarMessageObservable.notifyObservers(JSON.parse(payload))
+      } catch (err) {
+        console.error(err)
+      }
     }
-  }
+  })
 })
