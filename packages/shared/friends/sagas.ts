@@ -9,7 +9,8 @@ import {
   CurrentUserStatus,
   UnknownUsersError,
   SocialAPI,
-  UpdateUserStatus
+  UpdateUserStatus,
+  BasicMessageInfo
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -23,8 +24,8 @@ import {
   NotificationType,
   ChatMessageType,
   FriendshipAction,
-  PresenceStatus,
-  FriendsInitializationMessage
+  PresenceStatus
+  // FriendsInitializationMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -62,13 +63,12 @@ import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
-import { sleep } from 'atomicHelpers/sleep'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
 const receivedMessages: Record<string, number> = {}
 
-const INITIAL_CHAT_SIZE = 50
+// const INITIAL_CHAT_SIZE = 50
 const MESSAGE_LIFESPAN_MILLIS = 1_000
 const SEND_STATUS_INTERVAL_MILLIS = 60_000
 const MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 1000
@@ -172,7 +172,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
     return
   }
 
-  const { friendsSocial, ownId } = friendsResponse
+  const { ownId } = friendsResponse
 
   if (!identity) {
     return
@@ -237,73 +237,6 @@ function* configureMatrixClient(action: SetMatrixClient) {
   client.onFriendshipRequestRejection((socialId) =>
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
-
-  try {
-    const conversations: {
-      conversation: Conversation
-      unreadMessages: boolean
-    }[] = yield client.getAllCurrentConversations()
-
-    yield Promise.all(
-      conversations.map(async ({ conversation }) => {
-        // TODO: Remove, move to a lazy + ondemand way
-        const cursor = await client.getCursorOnLastMessage(conversation.id, { initialSize: INITIAL_CHAT_SIZE })
-
-        let millisToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
-
-        const maxAttempts = 5
-        let shouldTry = true
-        let attempt = 0
-
-        while (shouldTry) {
-          attempt += 1
-
-          try {
-            const messages = cursor.getMessages()
-
-            const friend = friendsSocial.find((friend) => friend.conversationId === conversation.id)
-
-            if (!friend) {
-              return
-            }
-
-            messages.forEach((message) => {
-              const chatMessage = {
-                messageId: message.id,
-                messageType: ChatMessageType.PRIVATE,
-                timestamp: message.timestamp,
-                body: message.text,
-                sender: message.sender === ownId ? identity.address : friend.userId,
-                recipient: message.sender === ownId ? friend.userId : identity.address
-              }
-              addNewChatMessage(chatMessage)
-            })
-
-            shouldTry = false
-          } catch (e) {
-            logAndTrackError(`There was an error fetching messages for conversation, attempt ${attempt}`, e)
-
-            if (millisToRetry < MAX_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS) {
-              millisToRetry *= 2
-            }
-
-            shouldTry = attempt < maxAttempts
-
-            if (shouldTry) {
-              await sleep(millisToRetry)
-            } else {
-              logAndTrackError(
-                `Error fetching message for conversation, maxed attempts to try (${maxAttempts}), will no retry`,
-                e
-              )
-            }
-          }
-        }
-      })
-    )
-  } catch (e) {
-    logAndTrackError('Error while initializing chat messages', e)
-  }
 }
 
 // this saga needs to throw in case of failure
@@ -378,7 +311,6 @@ function* refreshFriends() {
     const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
 
     // explorer information
-
     // const conversationsWithUnreadMessages: Array<{ unreadMessages: BasicMessageInfo[] }> =
     //   yield client.getAllConversationsWithUnreadMessages()
 
@@ -390,16 +322,24 @@ function* refreshFriends() {
     //     } as UnseenPrivateMessage)
     // )
 
-    const initMessage: FriendsInitializationMessage = {
-      friends: { total: friendIds.length },
-      requests: {
-        lastSeenTimestamp: 1,
-        total: requestedFromIds.length
-      },
-      unseenPrivateMessages: []
+    // const initMessage: FriendsInitializationMessage = {
+    //   friends: { total: friendIds.length },
+    //   requests: {
+    //     lastSeenTimestamp: 1,
+    //     total: requestedFromIds.length
+    //   },
+    //   unseenPrivateMessages: []
+    // }
+
+    const initMessage = {
+      currentFriends: friendIds,
+      requestedTo: requestedToIds,
+      requestedFrom: requestedFromIds
     }
 
     getUnityInstance().InitializeFriends(initMessage)
+
+    // getUnityInstance().InitializeFriends(initMessage)
 
     // initialize friends internal for kernel
     // filter unread messages
@@ -417,7 +357,7 @@ function* refreshFriends() {
         fromFriendRequests: requestedFromIds,
         toFriendRequests: requestedToIds
       })
-    )    
+    )
 
     return { friendsSocial, ownId }
   } catch (e) {
