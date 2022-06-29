@@ -9,7 +9,8 @@ import {
   CurrentUserStatus,
   UnknownUsersError,
   SocialAPI,
-  UpdateUserStatus
+  UpdateUserStatus,
+  BasicMessageInfo
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -370,7 +371,6 @@ function* refreshFriends() {
     yield ensureFriendsProfile(friendIds).catch(logger.error)
 
     // explorer information
-
     // const conversationsWithUnreadMessages: Array<{ unreadMessages: BasicMessageInfo[] }> =
     //   yield client.getAllConversationsWithUnreadMessages()
 
@@ -382,16 +382,24 @@ function* refreshFriends() {
     //     } as UnseenPrivateMessage)
     // )
 
-    const initMessage: FriendsInitializationMessage = {
-      friends: { total: friendIds.length },
-      requests: {
-        lastSeenTimestamp: 1,
-        total: requestedFromIds.length
-      },
-      unseenPrivateMessages: []
+    // const initMessage: FriendsInitializationMessage = {
+    //   friends: { total: friendIds.length },
+    //   requests: {
+    //     lastSeenTimestamp: 1,
+    //     total: requestedFromIds.length
+    //   },
+    //   unseenPrivateMessages: []
+    // }
+
+    const initMessage = {
+      currentFriends: friendIds,
+      requestedTo: requestedToIds,
+      requestedFrom: requestedFromIds
     }
 
     getUnityInstance().InitializeFriends(initMessage)
+
+    // getUnityInstance().InitializeFriends(initMessage)
 
     // initialize friends internal for kernel
     // filter unread messages
