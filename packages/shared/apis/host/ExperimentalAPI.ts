@@ -15,10 +15,10 @@ export function registerExperimentalAPIServiceServerImplementation(port: RpcServ
       return protocol.crdtService.sendCRDT({ sceneId: ctx.EnvironmentAPI.cid, payload: req.data })
     },
 
-    async *messageFromRenderer() {
-      // const protocol = await rendererProtocol
-      // for await (const notification of protocol.crdtService.cRDTNotificationStream({})) {
-      // }
+    async messageFromRenderer(_, ctx) {
+      const data: Uint8Array[] = ctx.crdtMessages
+      ctx.crdtMessages = []
+      return { data }
     }
   }))
 }
