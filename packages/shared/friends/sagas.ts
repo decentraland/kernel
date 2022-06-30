@@ -9,8 +9,7 @@ import {
   CurrentUserStatus,
   UnknownUsersError,
   SocialAPI,
-  UpdateUserStatus,
-  BasicMessageInfo
+  UpdateUserStatus
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -24,7 +23,9 @@ import {
   NotificationType,
   ChatMessageType,
   FriendshipAction,
-  PresenceStatus
+  PresenceStatus,
+  FriendsInitializationMessage,
+  UnseenPrivateMessage
   // FriendsInitializationMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
@@ -278,8 +279,8 @@ function* refreshFriends() {
     const ownId = client.getUserId()
 
     // init friends
-    const friends: string[] = []
-    // const friends: string[] = yield client.getAllFriends()
+    // const friends: string[] = []
+    const friends: string[] = yield client.getAllFriends()
 
     const friendsSocial: SocialData[] = []
 
@@ -311,40 +312,36 @@ function* refreshFriends() {
     const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
 
     // explorer information
-    // const conversationsWithUnreadMessages: Array<{ unreadMessages: BasicMessageInfo[] }> =
-    //   yield client.getAllConversationsWithUnreadMessages()
+    const conversationsWithUnreadMessages: Conversation[] = yield client.getAllConversationsWithUnreadMessages()
 
-    // const unreadMessages: UnseenPrivateMessage = conversationsWithUnreadMessages.map(
-    //   (conv) =>
-    //     ({
-    //       count: conv.unreadMessages.length,
-    //       userId: conv.userIds.find((x) => x !== ownId)
-    //     } as UnseenPrivateMessage)
-    // )
+    const unseenPrivateMessages: Record<string, UnseenPrivateMessage> = conversationsWithUnreadMessages.reduce(
+      (convDict, conv) => {
+        const userId = conv.userIds?.find((userId) => userId !== ownId)
 
-    // const initMessage: FriendsInitializationMessage = {
-    //   friends: { total: friendIds.length },
-    //   requests: {
-    //     lastSeenTimestamp: 1,
-    //     total: requestedFromIds.length
-    //   },
-    //   unseenPrivateMessages: []
-    // }
+        if (!userId || fromFriendRequests.some((fromRequestUserId) => fromRequestUserId === userId)) {
+          return convDict
+        }
 
-    const initMessage = {
-      currentFriends: friendIds,
-      requestedTo: requestedToIds,
-      requestedFrom: requestedFromIds
+        return {
+          ...convDict,
+          [userId]: { count: conv.unreadMessages?.length }
+        }
+      },
+      {}
+    )
+
+    const initMessage: FriendsInitializationMessage = {
+      friends: { total: friendIds.length },
+      requests: {
+        lastSeenTimestamp: 1,
+        total: requestedFromIds.length
+      },
+      unseenPrivateMessages
     }
 
+    console.log('____ initMessage ____', initMessage)
+
     getUnityInstance().InitializeFriends(initMessage)
-
-    // getUnityInstance().InitializeFriends(initMessage)
-
-    // initialize friends internal for kernel
-    // filter unread messages
-    // const allConversations: Array<{ conversation: Conversation; unreadMessages: boolean }> =
-    //   yield client.getAllCurrentConversations()
 
     // ensure friend profiles are sent to renderer
     yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
