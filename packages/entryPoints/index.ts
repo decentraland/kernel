@@ -220,14 +220,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     return
   }
 
-  const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
-  const tutorialConfig = {
-    fromDeepLink: HAS_INITIAL_POSITION_MARK,
-    enableNewTutorialCamera: enableNewTutorialCamera
-  }
-
-  i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
-
   const isGuest = !identity.hasConnectedWeb3
   const friendsActivated = !isGuest && !getFeatureFlagEnabled(store.getState(), 'matrix_disabled')
   const BUILDER_IN_WORLD_ENABLED = !isGuest && getFeatureFlagEnabled(store.getState(), 'builder_in_world')
@@ -266,6 +258,14 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   }
 
   setTimeout(() => store.dispatch(signalEngineReady()), 0)
+
+  const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
+  const tutorialConfig = {
+    fromDeepLink: HAS_INITIAL_POSITION_MARK,
+    enableNewTutorialCamera: enableNewTutorialCamera
+  }
+
+  i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
 
   return true
 }
