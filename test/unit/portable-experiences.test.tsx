@@ -76,6 +76,7 @@ describe('Portable experiences sagas test', () => {
       ])
       .dispatch(action)
       .call(declareWantedPortableExperiences, [])
+      .delay(250)
       .call(declareWantedPortableExperiences, [px])
       .run()
   })
