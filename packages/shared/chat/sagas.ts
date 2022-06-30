@@ -9,7 +9,7 @@ import {
   sendPrivateMessage
 } from './actions'
 import { uuid } from 'atomicHelpers/math'
-import { ChatMessageType, ChatMessage } from 'shared/types'
+import { ChatMessageType, ChatMessagePlayerType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
@@ -30,6 +30,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
+import { hasWallet } from '../session'
 
 interface IChatCommand {
   name: string
@@ -71,8 +72,10 @@ function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
   const { type, payload } = action
   switch (type) {
     case SEND_MESSAGE: {
-      trackEvent('Control Send chat message', {
+      trackEvent('Send chat message', {
         messageId: payload.messageId,
+        from: hasWallet() ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
+        to: payload.messageType === ChatMessageType.PRIVATE ? ChatMessagePlayerType.WALLET : undefined,
         length: payload.body.length,
         messageType: payload.messageType
       })
