@@ -62,9 +62,7 @@ function* submitProfileToScenes() {
 
 function* listenCrdtMessages() {
   while (true) {
-    console.log('pato: listenCrdtMessages')
     yield call(crdtNotificationListener)
-    console.log('pato: listenCrdtMessages2')
   }
 }
 
@@ -74,6 +72,5 @@ async function crdtNotificationListener() {
   for await (const crdt of protocol.crdtService.cRDTNotificationStream({})) {
     const scene = loadedSceneWorkers.get(crdt.sceneId)
     scene?.rpcContext.sendCrdtMessage(crdt.payload)
-    console.log(`pato: received crdt ${crdt.sceneId}`)
   }
 }
