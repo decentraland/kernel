@@ -62,7 +62,12 @@ function* submitProfileToScenes() {
 
 function* listenCrdtMessages() {
   while (true) {
-    yield call(crdtNotificationListener)
+    try {
+      yield call(crdtNotificationListener)
+    } catch (error: any) {
+      debugger // TODO: remove this debugger after merging ECS7
+      console.error(error)
+    }
   }
 }
 
