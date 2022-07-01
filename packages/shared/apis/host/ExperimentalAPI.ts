@@ -16,7 +16,9 @@ export function registerExperimentalAPIServiceServerImplementation(port: RpcServ
 
     async messageFromRenderer(_, ctx) {
       const data: Uint8Array[] = ctx.crdtMessages
-      ctx.crdtMessages = []
+      if (data.length) {
+        ctx.crdtMessages = []
+      }
       return { data }
     }
   }))
