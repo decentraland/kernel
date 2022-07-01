@@ -1,4 +1,3 @@
-import { PREVIEW } from './../../../config'
 import { rendererProtocol } from './../../../renderer-protocol/rpcClient'
 
 import * as codegen from '@dcl/rpc/dist/codegen'

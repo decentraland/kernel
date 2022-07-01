@@ -9,7 +9,7 @@ export function webTransport(options: WebTransportOptions): Transport {
   const events = mitt<TransportEvents>()
   const ALLOC_SIZE = 8388608
   let heapPtr: number
-  let sendMessageToRenderer: any = undefined
+  let sendMessageToRenderer: undefined | ((ptr: number, length: number) => void) = undefined
 
   if (!!options.wasmModule._call_BinaryMessage) {
     heapPtr = options.wasmModule._malloc(ALLOC_SIZE)
