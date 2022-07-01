@@ -10,7 +10,6 @@ import { PortContext } from './context'
 export function registerExperimentalAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, ExperimentalAPIServiceDefinition, async () => ({
     async sendToRenderer(req, ctx) {
-      if (!PREVIEW) return {}
       const protocol = await rendererProtocol
       return protocol.crdtService.sendCRDT({ sceneId: ctx.EnvironmentAPI.cid, payload: req.data })
     },
