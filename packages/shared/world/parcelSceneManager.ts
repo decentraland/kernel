@@ -19,12 +19,11 @@ import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { Transport } from '@dcl/rpc'
 import { defaultParcelPermissions } from 'shared/apis/host/Permissions'
-import { KernelScene } from 'unity-interface/KernelScene'
 import { SceneLifeCycleStatusType } from 'decentraland-loader/lifecycle/lib/scene.status'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
-    new (x: LoadableScene): KernelScene
+    new (x: LoadableScene): SceneWorker
   }
   preloadScene: (parcelToLoad: ILand) => Promise<any>
   onPositionSettled?: (spawnPoint: InstancedSpawnPoint) => void
@@ -76,24 +75,26 @@ export function getSceneWorkerBySceneID(sceneId: string) {
   return loadedSceneWorkers.get(sceneId)
 }
 
-export function forceStopSceneWorker(worker: SceneWorker) {
-  const sceneId = worker.kernelScene.loadableScene.id
-
-  worker.dispose()
-  loadedSceneWorkers.delete(sceneId)
-  store.dispatch(scenesChanged())
+export function forceStopScene(sceneId: string) {
+  const worker = loadedSceneWorkers.get(sceneId)
+  if (worker) {
+    worker.dispose()
+    loadedSceneWorkers.delete(sceneId)
+    store.dispatch(scenesChanged())
+  }
 }
 
 /**
  * Creates a worker for the ParcelSceneAPI
  */
-export function loadParcelScene(kernelScene: KernelScene, transport?: Transport) {
-  const sceneId = kernelScene.loadableScene.id
+export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: Transport) {
+  const sceneId = loadableScene.id
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   if (!parcelSceneWorker) {
-    parcelSceneWorker = new SceneWorker(kernelScene, transport)
-    setNewParcelScene(sceneId, parcelSceneWorker)
+    parcelSceneWorker = new SceneWorker(loadableScene, transport)
+    setNewParcelScene(parcelSceneWorker)
+    queueMicrotask(() => store.dispatch(scenesChanged()))
   }
 
   return parcelSceneWorker
@@ -102,13 +103,15 @@ export function loadParcelScene(kernelScene: KernelScene, transport?: Transport)
 /**
  * idempotent
  */
-function setNewParcelScene(sceneId: string, worker: SceneWorker) {
-  const parcelSceneWorker = loadedSceneWorkers.get(sceneId)
+function setNewParcelScene(worker: SceneWorker) {
+  const sceneId = worker.loadableScene.id
+  const parcelSceneWorker = loadedSceneWorkers.get(worker.loadableScene.id)
 
   if (worker === parcelSceneWorker) return
 
   if (parcelSceneWorker) {
-    forceStopSceneWorker(parcelSceneWorker)
+    // stop the current scene, forcing a reload
+    forceStopScene(sceneId)
   }
 
   loadedSceneWorkers.set(sceneId, worker)
@@ -168,7 +171,7 @@ function unloadParcelSceneById(sceneId: string) {
     sceneId: sceneId,
     status: 'unloaded'
   })
-  forceStopSceneWorker(worker)
+  forceStopScene(sceneId)
 }
 
 /**
@@ -181,15 +184,14 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: Load
     const denyListed = isParcelDenyListed(entity.entity.metadata.scene.parcels)
     const usedEntity = denyListed ? generateBannedILand(entity) : entity
 
-    const kernelScene = new KernelScene(usedEntity)
-    const worker = loadParcelScene(kernelScene)
+    const worker = loadParcelSceneWorker(usedEntity)
 
     // add default permissions for Parcel based scenes
     defaultParcelPermissions.forEach(($) => worker.rpcContext.permissionGranted.add($))
     // and enablle FPS throttling, it will lower the frame-rate based on the distance
     worker.rpcContext.sceneData.useFPSThrottling = true
 
-    setNewParcelScene(sceneId, worker)
+    setNewParcelScene(worker)
 
     onLoadParcelScenesObservable.notifyObservers([entity])
   }

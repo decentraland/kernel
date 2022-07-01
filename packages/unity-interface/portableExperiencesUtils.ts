@@ -1,6 +1,5 @@
 import { LoadableScene } from '../shared/types'
-import { KernelScene } from './KernelScene'
-import { forceStopSceneWorker, getSceneWorkerBySceneID, loadParcelScene } from 'shared/world/parcelSceneManager'
+import { forceStopScene, getSceneWorkerBySceneID, loadParcelSceneWorker } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { parseUrn, resolveContentUrl } from '@dcl/urn-resolver'
 import { Entity } from '@dcl/schemas'
@@ -8,13 +7,14 @@ import { store } from 'shared/store/isolatedStore'
 import { addScenePortableExperience, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { getSceneNameFromJsonData } from '../shared/selectors'
 import { defaultPortableExperiencePermissions } from 'shared/apis/host/Permissions'
+import { SceneWorker } from 'shared/world/SceneWorker'
 
 export type PortableExperienceHandle = {
   pid: string
   parentCid: string
 }
 
-const currentPortableExperiences: Map<string, KernelScene> = new Map()
+const currentPortableExperiences: Map<string, SceneWorker> = new Map()
 
 export async function spawnScenePortableExperienceSceneFromUrn(
   sceneUrn: string,
@@ -34,7 +34,7 @@ export function killScenePortableExperience(urn: string) {
   store.dispatch(removeScenePortableExperience(urn))
 }
 
-export function getRunningPortableExperience(sceneId: string): KernelScene | undefined {
+export function getRunningPortableExperience(sceneId: string): SceneWorker | undefined {
   return currentPortableExperiences.get(sceneId)
 }
 
@@ -81,7 +81,7 @@ export async function declareWantedPortableExperiences(pxs: LoadableScene[]) {
       const scene = getRunningPortableExperience(sceneUrn)
       if (scene) {
         currentPortableExperiences.delete(sceneUrn)
-        forceStopSceneWorker(scene.worker)
+        forceStopScene(sceneUrn)
       }
     }
   }
@@ -101,15 +101,13 @@ function spawnPortableExperience(spawnData: LoadableScene): PortableExperienceHa
   }
   if (!sceneId) debugger
 
-  const scene = new KernelScene(spawnData)
-
-  const worker = loadParcelScene(scene, undefined)
+  const scene = loadParcelSceneWorker(spawnData, undefined)
 
   // add default permissions for portable experience based scenes
-  defaultPortableExperiencePermissions.forEach(($) => worker.rpcContext.permissionGranted.add($))
-  worker.rpcContext.sceneData.isPortableExperience = true
+  defaultPortableExperiencePermissions.forEach(($) => scene.rpcContext.permissionGranted.add($))
+  scene.rpcContext.sceneData.isPortableExperience = true
   // portable experiences have no FPS limit
-  worker.rpcContext.sceneData.useFPSThrottling = false
+  scene.rpcContext.sceneData.useFPSThrottling = false
 
   currentPortableExperiences.set(sceneId, scene)
 

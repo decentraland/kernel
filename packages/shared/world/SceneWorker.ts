@@ -1,5 +1,11 @@
 import { Quaternion, Vector3 } from '@dcl/ecs-math'
-import { playerConfigurations } from 'config'
+import {
+  DEBUG_MESSAGES_QUEUE_PERF,
+  DEBUG_SCENE_LOG,
+  FORCE_SEND_MESSAGE,
+  playerConfigurations,
+  WSS_ENABLED
+} from 'config'
 import { PositionReport, positionObservable } from './positionThings'
 import { Observable, Observer } from 'mz-observable'
 import { sceneObservable } from 'shared/world/sceneState'
@@ -23,7 +29,12 @@ import {
   SceneLoad
 } from 'shared/loading/actions'
 import { SceneLifeCycleStatusReport } from 'decentraland-loader/lifecycle/controllers/scene'
-import { KernelScene } from 'unity-interface/KernelScene'
+import { EntityAction, LoadableScene } from 'shared/types'
+import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
+import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
+import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
+import { permissionItemFromJSON } from 'shared/apis/proto/Permissions.gen'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -41,14 +52,19 @@ const sceneRuntimeRaw = require('raw-loader!../../../static/systems/scene.system
 const sceneRuntimeBLOB = new Blob([sceneRuntimeRaw])
 const sceneRuntimeUrl = URL.createObjectURL(sceneRuntimeBLOB)
 
+const sendBatchTime: Array<number> = []
+const sendBatchMsgs: Array<number> = []
+let sendBatchTimeCount: number = 0
+let sendBatchMsgCount: number = 0
+
 export const workerStatusObservable = new Observable<SceneLoad | SceneStart | SceneFail>()
 export const sceneLifeCycleObservable = new Observable<Readonly<SceneLifeCycleStatusReport>>()
 
-function buildWebWorkerTransport(parcelScene: KernelScene): Transport {
-  const loggerName = getSceneNameFromJsonData(parcelScene.loadableScene.entity.metadata) || parcelScene.loadableScene.id
+function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
+  const loggerName = getSceneNameFromJsonData(loadableScene.entity.metadata) || loadableScene.id
 
   const worker = new Worker(sceneRuntimeUrl, {
-    name: `Scene(${loggerName},${(parcelScene.loadableScene.entity.metadata as Scene).scene?.base})`
+    name: `Scene(${loggerName},${(loadableScene.entity.metadata as Scene).scene?.base})`
   })
 
   return WebWorkerTransport(worker)
@@ -62,7 +78,7 @@ export class SceneWorker {
 
   private sceneStarted: boolean = false
 
-  private position!: Vector3
+  private position: Vector3 = new Vector3()
   private readonly lastSentPosition = new Vector3(0, 0, 0)
   private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
   private positionObserver: Observer<any> | null = null
@@ -71,16 +87,32 @@ export class SceneWorker {
   private readonly startLoadingTime = performance.now()
   private sceneReady: boolean = false
 
-  constructor(public kernelScene: KernelScene, public transport: Transport = buildWebWorkerTransport(kernelScene)) {
+  metadata: Scene
+  logger: ILogger
+
+  constructor(
+    public readonly loadableScene: Readonly<LoadableScene>,
+    public readonly transport: Transport = buildWebWorkerTransport(loadableScene)
+  ) {
     const skipErrors = ['Transport closed while waiting the ACK']
+
+    this.metadata = loadableScene.entity.metadata
+
+    const loggerName = getSceneNameFromJsonData(this.metadata) || loadableScene.id
+    const loggerPrefix = `scene: [${loggerName}]`
+    this.logger = DEBUG_SCENE_LOG ? createLogger(loggerPrefix) : createDummyLogger()
+
+    if (!Scene.validate(loadableScene.entity.metadata)) {
+      defaultLogger.error('Invalid scene metadata', loadableScene.entity.metadata, Scene.validate.errors)
+    }
 
     this.rpcContext = {
       sceneData: {
-        ...kernelScene.loadableScene,
+        ...loadableScene,
         isPortableExperience: false,
         useFPSThrottling: true
       },
-      logger: kernelScene.logger,
+      logger: this.logger,
       permissionGranted: new Set(),
       subscribedEvents: new Set(['sceneStart']),
       events: [],
@@ -98,55 +130,39 @@ export class SceneWorker {
       sendProtoSceneEvent: (e) => {
         this.rpcContext.events.push(e)
       },
-      sendBatch() {
-        throw new Error('sendBatch not initialized')
-      }
+      sendBatch: this.sendBatch.bind(this)
     }
 
-    kernelScene.registerWorker(this)
+    // if the scene metadata has a base parcel, then we set it as the position
+    // used for the zero of coordinates
+    if (loadableScene.entity.metadata.scene?.base) {
+      const metadata: Scene = loadableScene.entity.metadata
+      const basePosition = parseParcelPosition(metadata.scene?.base)
+      gridToWorld(basePosition.x, basePosition.y, this.position)
+    }
 
     this.rpcServer = createRpcServer<PortContext>({
       logger: {
-        ...kernelScene.logger,
-        debug: kernelScene.logger.log,
+        ...this.logger,
+        debug: this.logger.log,
         error: (error: string | Error, extra?: Record<string, string | number>) => {
           if (!(error instanceof Error && skipErrors.includes(error.message))) {
-            kernelScene.logger.error(error, extra)
+            this.logger.error(error, extra)
           }
         }
       }
     })
 
-    this.rpcServer.setHandler(registerServices)
-    this.rpcServer.attachTransport(transport as Transport, this.rpcContext)
-    this.ready |= SceneWorkerReadyState.LOADED
-
-    this.subscribeToSceneLifeCycleEvents()
-    this.subscribeToPositionEvents()
-    this.subscribeToSceneChangeEvents()
-
-    workerStatusObservable.notifyObservers(signalSceneLoad(this.kernelScene.loadableScene))
-
-    const WORKER_TIMEOUT = 90_000 // three minutes
-
-    setTimeout(() => {
-      if (!this.hasSceneStarted()) {
-        this.ready |= SceneWorkerReadyState.LOADING_FAILED
-        workerStatusObservable.notifyObservers(signalSceneFail(this.kernelScene.loadableScene))
+    if (this.metadata.requiredPermissions) {
+      for (const permissionItemString of this.metadata.requiredPermissions) {
+        this.rpcContext.permissionGranted.add(permissionItemFromJSON(permissionItemString))
       }
-    }, WORKER_TIMEOUT)
-  }
-
-  setPosition(position: Vector3) {
-    // This method is called before position is reported by the renderer
-    if (!this.position) {
-      this.position = new Vector3()
     }
-    this.position.copyFrom(position)
-  }
 
-  hasSceneStarted(): boolean {
-    return this.sceneStarted
+    // attachTransport is executed in a microtask to defer its execution stack
+    // and enable external customizations to this.rpcContext as it could be the
+    // permissions of the scene or the FPS limit
+    queueMicrotask(() => this.attachTransport())
   }
 
   dispose() {
@@ -162,7 +178,7 @@ export class SceneWorker {
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
 
-    getUnityInstance().UnloadScene(this.kernelScene.loadableScene.id)
+    getUnityInstance().UnloadScene(this.loadableScene.id)
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
 
@@ -178,6 +194,98 @@ export class SceneWorker {
     if (this.sceneChangeObserver) {
       sceneObservable.remove(this.sceneChangeObserver)
       this.sceneChangeObserver = null
+    }
+  }
+
+  private attachTransport() {
+    this.rpcServer.setHandler(registerServices)
+    this.rpcServer.attachTransport(this.transport as Transport, this.rpcContext)
+    this.ready |= SceneWorkerReadyState.LOADED
+
+    this.subscribeToSceneLifeCycleEvents()
+    this.subscribeToPositionEvents()
+    this.subscribeToSceneChangeEvents()
+
+    workerStatusObservable.notifyObservers(signalSceneLoad(this.loadableScene))
+
+    const WORKER_TIMEOUT = 90_000 // three minutes
+
+    setTimeout(() => {
+      if (!this.sceneStarted) {
+        this.ready |= SceneWorkerReadyState.LOADING_FAILED
+        workerStatusObservable.notifyObservers(signalSceneFail(this.loadableScene))
+      }
+    }, WORKER_TIMEOUT)
+  }
+
+  private sendBatch(actions: EntityAction[]): void {
+    let time = Date.now()
+    if (WSS_ENABLED || FORCE_SEND_MESSAGE) {
+      this.sendBatchWss(actions)
+    } else {
+      this.sendBatchNative(actions)
+    }
+
+    if (DEBUG_MESSAGES_QUEUE_PERF) {
+      time = Date.now() - time
+
+      sendBatchTime.push(time)
+      sendBatchMsgs.push(actions.length)
+
+      sendBatchTimeCount += time
+
+      sendBatchMsgCount += actions.length
+
+      while (sendBatchMsgCount >= 10000) {
+        sendBatchTimeCount -= sendBatchTime.splice(0, 1)[0]
+        sendBatchMsgCount -= sendBatchMsgs.splice(0, 1)[0]
+      }
+
+      defaultLogger.log(`sendBatch time total for msgs ${sendBatchMsgCount} calls: ${sendBatchTimeCount}ms ... `)
+    }
+  }
+
+  private sendBatchWss(actions: EntityAction[]): void {
+    const sceneId = this.loadableScene.id
+    const messages: string[] = []
+    let len = 0
+
+    function flush() {
+      if (len) {
+        getUnityInstance().SendSceneMessage(messages.join('\n'))
+        messages.length = 0
+        len = 0
+      }
+    }
+
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i]
+
+      // Check moved from SceneRuntime.ts->DecentralandInterface.componentUpdate() here until we remove base64 support.
+      // This way we can still initialize problematic scenes in the Editor, otherwise the protobuf encoding explodes with such messages.
+      if (action.payload.json?.length > 49000) {
+        this.logger.error('Component payload cannot exceed 49.000 bytes. Skipping message.')
+
+        continue
+      }
+
+      const part = protobufMsgBridge.encodeSceneMessage(sceneId, action.type, action.payload, action.tag)
+      messages.push(part)
+      len += part.length
+
+      if (len > 1024 * 1024) {
+        flush()
+      }
+    }
+
+    flush()
+  }
+
+  private sendBatchNative(actions: EntityAction[]): void {
+    const sceneId = this.loadableScene.id
+    for (let i = 0; i < actions.length; i++) {
+      const action = actions[i]
+      nativeMsgBridge.SendNativeMessage(sceneId, action)
     }
   }
 
@@ -224,7 +332,7 @@ export class SceneWorker {
     this.sceneChangeObserver = sceneObservable.add((report) => {
       const userId = getCurrentUserId(store.getState())
       if (userId) {
-        const sceneId = this.kernelScene.loadableScene.id
+        const sceneId = this.loadableScene.id
         if (report.newScene?.id === sceneId) {
           this.rpcContext.sendSceneEvent('onEnterScene', { userId })
         } else if (report.previousScene?.id === sceneId) {
@@ -236,7 +344,7 @@ export class SceneWorker {
 
   private subscribeToSceneLifeCycleEvents() {
     this.sceneLifeCycleObserver = sceneLifeCycleObservable.add((obj) => {
-      if (this.kernelScene.loadableScene.id === obj.sceneId && obj.status === 'ready') {
+      if (this.loadableScene.id === obj.sceneId && obj.status === 'ready') {
         this.ready |= SceneWorkerReadyState.STARTED
 
         this.sceneReady = true
@@ -252,11 +360,11 @@ export class SceneWorker {
       this.rpcContext.sendSceneEvent('sceneStart', {})
 
       trackEvent('scene_start_event', {
-        scene_id: this.kernelScene.loadableScene.id,
+        scene_id: this.loadableScene.id,
         time_since_creation: performance.now() - this.startLoadingTime
       })
 
-      workerStatusObservable.notifyObservers(signalSceneStart(this.kernelScene.loadableScene))
+      workerStatusObservable.notifyObservers(signalSceneStart(this.loadableScene))
     }
   }
 }

@@ -5,7 +5,7 @@ import { ILand } from 'shared/types'
 import {
   allScenesEvent,
   enableParcelSceneLoading,
-  loadParcelScene,
+  loadParcelSceneWorker,
   onLoadParcelScenesObservable,
   onPositionSettledObservable,
   onPositionUnsettledObservable,
@@ -15,7 +15,6 @@ import { teleportObservable } from 'shared/world/positionThings'
 import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
-import { KernelScene } from './KernelScene'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
@@ -27,7 +26,7 @@ import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
-import { workerStatusObservable } from 'shared/world/SceneWorker'
+import { SceneWorker, workerStatusObservable } from 'shared/world/SceneWorker'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -91,7 +90,7 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
     }
   }
 
-  const scene = new KernelScene({
+  const scene = loadParcelSceneWorker({
     id: cid,
     baseUrl: location.origin,
     entity: {
@@ -103,8 +102,6 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
       version: 'v3'
     }
   })
-
-  loadParcelScene(scene, undefined)
 
   getUnityInstance().CreateGlobalScene({
     id: cid,
@@ -187,7 +184,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
   }
 }
 
-export function loadBuilderScene(_sceneData: ILand): KernelScene | undefined {
+export function loadBuilderScene(_sceneData: ILand): SceneWorker | undefined {
   // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
 }
