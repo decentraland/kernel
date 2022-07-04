@@ -74,7 +74,7 @@ function* listenCrdtMessages() {
 async function crdtNotificationListener() {
   const protocol = await rendererProtocol
 
-  for await (const crdt of protocol.crdtService.cRDTNotificationStream({})) {
+  for await (const crdt of protocol.crdtService.crdtNotificationStream({})) {
     const scene = loadedSceneWorkers.get(crdt.sceneId)
     scene?.rpcContext.sendCrdtMessage(crdt.payload)
   }
