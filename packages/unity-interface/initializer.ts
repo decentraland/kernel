@@ -17,6 +17,8 @@ import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { store } from 'shared/store/isolatedStore'
 import defaultLogger from 'shared/logger'
 import { browserInterface } from './BrowserInterface'
+import { webTransport } from '../renderer-protocol/transports/webTransport'
+import { createRendererRpcClient } from '../renderer-protocol/rpcClient'
 
 export type InitializeUnityResult = {
   container: HTMLElement
@@ -69,6 +71,9 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     BringDownClientAndShowError(UNEXPECTED_ERROR)
     return true
   }
+
+  const transport = webTransport({ wasmModule: originalUnity.Module })
+  createRendererRpcClient(transport).catch((e) => {})
 
   await engineStartedFuture
 
