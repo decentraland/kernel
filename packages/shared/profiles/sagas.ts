@@ -88,6 +88,12 @@ export function* profileSaga(): any {
   yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
 }
 
+function* forwardProfilesToRenderer(action: ProfilesSuccessAction) {
+  for (const profile of action.payload.profiles) {
+    yield put(sendProfileToRenderer(profile.userId))
+  }
+}
+
 function* forwardProfileToRenderer(action: ProfileSuccessAction) {
   yield put(sendProfileToRenderer(action.payload.profile.userId))
 }
@@ -161,7 +167,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfiles, [userId], version)))[0] ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
@@ -270,10 +276,16 @@ export async function profileServerRequest(userId: string, version?: number): Pr
   const catalystUrl = getCatalystServer(state)
 
   try {
-    let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
+    let url = `${catalystUrl}/lambdas/profiles`
     if (version) url = url + `&version=${version}`
 
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ids: userIds })
+    })
 
     if (!response.ok) {
       throw new Error(`Invalid response from ${url}`)
@@ -281,7 +293,7 @@ export async function profileServerRequest(userId: string, version?: number): Pr
 
     const res = await response.json()
 
-    return res[0] || { avatars: [] }
+    return res || [{ avatars: [], timestamp: Date.now }]
   } catch (e: any) {
     defaultLogger.error(e)
     return { avatars: [], timestamp: Date.now() }
