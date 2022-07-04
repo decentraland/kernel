@@ -9,8 +9,10 @@ endif
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
-SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
-PBS_TS = $(SCENE_PROTO_FILES:packages/shared/apis/proto/%.proto=packages/shared/apis/proto/%.gen.ts)
+SCENE_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
+RENDERER_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/renderer-protocol/*.proto)
+PBS_TS = $(SCENE_PROTO_FILES:node_modules/@dcl/protocol/kernel/apis/%.proto=packages/shared/apis/proto/%.gen.ts)
+PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/renderer-protocol/proto/%.gen.ts)
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protobuf/bin/protoc
 
@@ -60,7 +62,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: ${PBRENDERER_TS} ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
 # Entry points
 static/%.js: build-essentials packages/entryPoints/%.ts
@@ -194,12 +196,24 @@ node_modules/.bin/protobuf/bin/protoc:
 	rm $(PROTOBUF_ZIP)
 	chmod +x node_modules/.bin/protobuf/bin/protoc
 
-packages/shared/apis/proto/%.gen.ts: packages/shared/apis/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/apis/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/apis/proto" -I="$(PWD)/packages/shared/apis/proto" \
-			"$(PWD)/packages/shared/apis/proto/$*.proto";
+			--ts_proto_out="$(PWD)/packages/shared/apis/proto" \
+			-I="$(PWD)/packages/shared/apis/proto" \
+			-I="$(PWD)/node_modules/@dcl/protocol/kernel/apis" \
+			"$(PWD)/node_modules/@dcl/protocol/kernel/apis/$*.proto";
+
+packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto node_modules/.bin/protobuf/bin/protoc
+	${PROTOC}  \
+			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
+			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+			--ts_proto_opt=fileSuffix=.gen \
+			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" -I="$(PWD)/packages/renderer-protocol/proto" \
+			"$(PWD)/packages/renderer-protocol/proto/$*.proto";			
 
 compile_apis: ${PBS_TS}
+
+compile_renderer_protocol: ${PBRENDERER_TS}

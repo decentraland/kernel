@@ -585,18 +585,6 @@ export class UnityInterface implements IUnityInterface {
     this.SendBuilderMessage('SetBuilderConfiguration', JSON.stringify(config))
   }
 
-  public SendBinaryMessage(sceneId: string, message: Uint8Array, length: number) {
-    if (!WSS_ENABLED) {
-      nativeMsgBridge.binaryMessage(sceneId, message, length)
-    } else {
-      this.SendMessageToUnity(
-        'Bridges',
-        `BinaryMessage`,
-        JSON.stringify({ sceneId, data: Buffer.from(message).toString('base64') })
-      )
-    }
-  }
-
   // NOTE: we override wasm's setThrew function before sending message to unity and restore it to it's
   // original function after message is sent. If an exception is thrown during SendMessage we assume that it's related
   // to the code executed by the SendMessage on unity's side.

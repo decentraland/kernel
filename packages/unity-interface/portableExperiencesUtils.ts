@@ -102,7 +102,6 @@ function spawnPortableExperience(spawnData: LoadableScene): PortableExperienceHa
   if (!sceneId) debugger
 
   const scene = loadParcelSceneWorker(spawnData, undefined)
-
   // add default permissions for portable experience based scenes
   defaultPortableExperiencePermissions.forEach(($) => scene.rpcContext.permissionGranted.add($))
   scene.rpcContext.sceneData.isPortableExperience = true

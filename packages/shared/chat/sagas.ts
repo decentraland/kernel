@@ -9,7 +9,7 @@ import {
   sendPrivateMessage
 } from './actions'
 import { uuid } from 'atomicHelpers/math'
-import { ChatMessageType, ChatMessage } from 'shared/types'
+import { ChatMessageType, ChatMessagePlayerType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
@@ -24,7 +24,7 @@ import { SHOW_FPS_COUNTER } from 'config'
 import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
 import { isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
-import { getCurrentUserId } from 'shared/session/selectors'
+import { getCurrentUserId, hasWallet } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
@@ -69,10 +69,13 @@ type MessageEvent = typeof MESSAGE_RECEIVED | typeof SEND_MESSAGE
 
 function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
   const { type, payload } = action
+  const isWallet = yield select(hasWallet)
   switch (type) {
     case SEND_MESSAGE: {
-      trackEvent('Control Send chat message', {
+      trackEvent('Send chat message', {
         messageId: payload.messageId,
+        from: isWallet ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
+        to: payload.messageType === ChatMessageType.PRIVATE ? ChatMessagePlayerType.WALLET : undefined,
         length: payload.body.length,
         messageType: payload.messageType
       })

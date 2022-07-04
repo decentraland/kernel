@@ -499,6 +499,11 @@ export type WorldPosition = {
   }
 }
 
+export enum ChatMessagePlayerType {
+  WALLET = 0,
+  GUEST = 1
+}
+
 export type ChatMessage = {
   messageId: string
   messageType: ChatMessageType

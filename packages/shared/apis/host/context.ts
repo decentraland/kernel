@@ -15,9 +15,12 @@ export type PortContext = {
   }
   subscribedEvents: Set<string>
   events: EventData[]
+
   // @deprecated
   sendBatch(actions: EntityAction[]): void
   sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void
   sendProtoSceneEvent(event: EventData): void
   logger: ILogger
+  crdtMessages: Uint8Array[]
+  sendCrdtMessage(payload: Uint8Array): void
 }
