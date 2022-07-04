@@ -112,7 +112,7 @@ function* initialRemoteProfileLoad() {
   let profile: Avatar
 
   try {
-    profile = yield call(ProfilesAsPromise, [userId], undefined, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
+    profile = yield call(ProfilesAsPromise, [userId], isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
   } catch (e: any) {
     ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
     BringDownClientAndShowError(UNEXPECTED_ERROR)
@@ -170,7 +170,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfiles, [userId], version)))[0] ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
@@ -198,7 +198,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 }
 
 export function* handleFetchProfiles(action: ProfilesRequestAction): any {
-  const { userIds, version } = action.payload
+  const { userIds } = action.payload
 
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
 
@@ -208,7 +208,7 @@ export function* handleFetchProfiles(action: ProfilesRequestAction): any {
     const userIdsToFetch = userIds.filter((userId) => userId.toLowerCase() !== identity.address.toLowerCase())
     const isFetchingOwnUser = userIds.some((userId) => userId.toLowerCase() === identity.address.toLowerCase())
 
-    const avatars: Avatar[] = yield (!isFetchingOwnUser && call(getRemoteProfiles, userIdsToFetch, version)) || []
+    const avatars: Avatar[] = yield (!isFetchingOwnUser && call(getRemoteProfiles, userIdsToFetch)) || []
 
     const ownProfile = isFetchingOwnUser && (yield call(readProfileFromLocalStorage))
     if (ownProfile != null) {
@@ -226,28 +226,24 @@ export function* handleFetchProfiles(action: ProfilesRequestAction): any {
   }
 }
 
-function* getRemoteProfiles(userIds: string[], version?: number) {
+function* getRemoteProfile(userId: string, version?: number) {
   try {
-    const profiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds, version)) as any
+    const profile: RemoteProfile = (yield call(profileServerRequest, userId, version)) as any
 
-    let avatars = profiles.map((profile) => {
-      let avatar = profile.avatars[0]
+    return processRemoteProfiles([profile], [userId])
+  } catch (error: any) {
+    if (error.message !== 'Profiles not found') {
+      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
+    }
+  }
+  return null
+}
 
-      if (avatar) {
-        avatar = ensureAvatarCompatibilityFormat(avatar)
-        if (!validateAvatar(avatar)) {
-          defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
-          return null
-        }
+function* getRemoteProfiles(userIds: string[]) {
+  try {
+    const profiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds)) as any
 
-        avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
-        avatar.hasConnectedWeb3 = true
-
-        return avatar
-      }
-    })
-
-    return avatars
+    return processRemoteProfiles(profiles, userIds)
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
       defaultLogger.log(`Error requesting profiles for auth check ${userIds}, `, error)
@@ -256,13 +252,56 @@ function* getRemoteProfiles(userIds: string[], version?: number) {
   return null
 }
 
-export async function profilesServerRequest(userIds: string[], version?: number): Promise<RemoteProfile[]> {
+function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]) {
+  const avatars = profiles.map((profile) => {
+    let avatar = profile.avatars[0]
+
+    if (avatar) {
+      avatar = ensureAvatarCompatibilityFormat(avatar)
+      if (!validateAvatar(avatar)) {
+        defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
+        return null
+      }
+
+      avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
+      avatar.hasConnectedWeb3 = true
+
+      return avatar
+    }
+  })
+
+  return avatars
+}
+
+export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
+  const state = store.getState()
+  const catalystUrl = getCatalystServer(state)
+
+  try {
+    let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
+    if (version) url = url + `&version=${version}`
+
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`Invalid response from ${url}`)
+    }
+
+    const res = await response.json()
+
+    return res[0] || { avatars: [] }
+  } catch (e: any) {
+    defaultLogger.error(e)
+    return { avatars: [], timestamp: Date.now() }
+  }
+}
+
+export async function profilesServerRequest(userIds: string[]): Promise<RemoteProfile[]> {
   const state = store.getState()
   const catalystUrl = getCatalystServer(state)
 
   try {
     let url = `${catalystUrl}/lambdas/profiles`
-    if (version) url = url + `&version=${version}`
 
     const response = await fetch(url, {
       method: 'POST',
