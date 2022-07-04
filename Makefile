@@ -9,8 +9,8 @@ endif
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
-SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
-PBS_TS = $(SCENE_PROTO_FILES:packages/shared/apis/proto/%.proto=packages/shared/apis/proto/%.gen.ts)
+SCENE_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
+PBS_TS = $(SCENE_PROTO_FILES:node_modules/@dcl/protocol/kernel/apis/%.proto=packages/shared/apis/proto/%.gen.ts)
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protobuf/bin/protoc
 
@@ -196,12 +196,14 @@ node_modules/.bin/protobuf/bin/protoc:
 	rm $(PROTOBUF_ZIP)
 	chmod +x node_modules/.bin/protobuf/bin/protoc
 
-packages/shared/apis/proto/%.gen.ts: packages/shared/apis/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/apis/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/apis/proto" -I="$(PWD)/packages/shared/apis/proto" \
-			"$(PWD)/packages/shared/apis/proto/$*.proto";
+			--ts_proto_out="$(PWD)/packages/shared/apis/proto" \
+			-I="$(PWD)/packages/shared/apis/proto" \
+			-I="$(PWD)/node_modules/@dcl/protocol/kernel/apis" \
+			"$(PWD)/node_modules/@dcl/protocol/kernel/apis/$*.proto";
 
 compile_apis: ${PBS_TS}
