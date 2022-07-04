@@ -56,16 +56,13 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
       }
     case PROFILES_SUCCESS:
       const { profiles } = (action as ProfilesSuccessAction).payload
-      const profilesState = profiles.reduce((newState, profile) => {
-        return {
-          ...newState,
-          [profile.userId]: {
-            ...state.userInfo[profile.userId],
-            data: profile,
-            status: 'ok'
-          }
+      const profilesState = {}
+      for (const profile of profiles) {
+        profilesState[profile.userId] = {
+          data: profile,
+          status: 'ok'
         }
-      }, {})
+      }
 
       return {
         ...state,
@@ -77,12 +74,11 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
 
     case PROFILES_FAILURE:
       const { userIds } = (action as ProfilesFailureAction).payload
-      const newProfilesState = userIds.reduce((newState, userId) => {
-        return {
-          ...newState,
-          [userId]: { status: 'error', data: action.payload.error }
-        }
-      }, {})
+
+      const newProfilesState = {}
+      for (const userId of userIds) {
+        newProfilesState[userId] = { status: 'error', data: action.payload.error }
+      }
 
       return {
         ...state,
