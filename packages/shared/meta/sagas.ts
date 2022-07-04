@@ -67,12 +67,12 @@ function* fetchInitialPortableExperiences() {
 
   const qs = new URLSearchParams(globalThis.location.search)
 
-  const variants: string[] = qs.has('GLOBAL_PX')
+  const globalPortableExperiences: string[] = qs.has('GLOBAL_PX')
     ? qs.getAll('GLOBAL_PX')
     : yield select(getFeatureFlagVariantValue, 'initial_portable_experiences')
 
-  if (Array.isArray(variants)) {
-    for (const id of variants) {
+  if (Array.isArray(globalPortableExperiences)) {
+    for (const id of globalPortableExperiences) {
       try {
         const px: LoadableScene = yield call(getPortableExperienceFromUrn, id)
         yield put(addKernelPortableExperience(px))

@@ -104,20 +104,6 @@ test-ci: # Run the tests (for use in the continuous integration environment)
 	@SINGLE_RUN=true NODE_ENV=production $(MAKE) test
 	@node_modules/.bin/nyc report --temp-directory ./test/tmp --reporter=html --reporter=lcov --reporter=text
 
-generate-images: ## Generate the screenshots to run the visual diff validation tests
-	@docker run \
-		-it \
-		--rm \
-		--name node \
-		-v "$(PWD):/usr/src/app" \
-		-w /usr/src/app \
-		-e SINGLE_RUN=true \
-		-e GENERATE_NEW_IMAGES=true \
-		circleci/node:10-browsers \
-			make test
-
-# CLI
-
 npm-link: build-essentials ## Run `npm link` to develop local scenes against this project
 	cd static; npm link
 
@@ -184,7 +170,7 @@ madge: scripts/deps.js
 
 # Makefile
 
-.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
+.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
 .DEFAULT_GOAL := help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

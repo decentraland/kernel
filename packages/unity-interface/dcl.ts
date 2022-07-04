@@ -1,4 +1,13 @@
-import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
+import {
+  DEBUG,
+  DECENTRALAND_SPACE,
+  EDITOR,
+  ENGINE_DEBUG_PANEL,
+  PARCEL_LOADING_ENABLED,
+  rootURLPreviewMode,
+  SCENE_DEBUG_PANEL,
+  SHOW_FPS_COUNTER
+} from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import { ILand } from 'shared/types'
@@ -9,10 +18,11 @@ import {
   onLoadParcelScenesObservable,
   onPositionSettledObservable,
   onPositionUnsettledObservable,
-  reloadScene
+  reloadScene,
+  addDesiredParcel
 } from 'shared/world/parcelSceneManager'
-import { teleportObservable } from 'shared/world/positionThings'
 import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
+import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
@@ -27,6 +37,8 @@ import { reloadScenePortableExperience } from 'shared/portableExperiences/action
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
 import { SceneWorker, workerStatusObservable } from 'shared/world/SceneWorker'
+import { signalParcelLoadingStarted } from 'shared/renderer/actions'
+import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -125,7 +137,17 @@ export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   })
   workerStatusObservable.add((action) => store.dispatch(action))
 
-  await enableParcelSceneLoading(params)
+  if (PARCEL_LOADING_ENABLED) {
+    await enableParcelSceneLoading(params)
+  } else {
+    store.dispatch(signalParcelLoadingStarted())
+  }
+
+  if (DECENTRALAND_SPACE) {
+    const px = await getPortableExperienceFromUrn(DECENTRALAND_SPACE)
+    await addDesiredParcel(px)
+    onPositionSettledObservable.notifyObservers(pickWorldSpawnpoint(px.entity.metadata as Scene))
+  }
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {

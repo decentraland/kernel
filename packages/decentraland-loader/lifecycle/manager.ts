@@ -11,8 +11,6 @@ import defaultLogger from 'shared/logger'
 import { WorldConfig } from 'shared/meta/types'
 import { LoadableScene } from 'shared/types'
 
-declare const globalThis: { workerManager: LifecycleManager }
-
 /*
  * The worker is set up on the first require of this file
  */
@@ -93,8 +91,6 @@ export async function initParcelSceneWorker(config: ParcelSceneLoadingParams) {
   await ensureMetaConfigurationInitialized()
 
   server = new LifecycleManager(WebWorkerTransport(worker))
-
-  globalThis.workerManager = server
 
   server.enable()
 

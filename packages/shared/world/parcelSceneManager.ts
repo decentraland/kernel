@@ -167,7 +167,7 @@ function unloadParcelSceneById(sceneId: string) {
     return
   }
   //We notify that the scene has been unloaded, the sceneId must have the same name
-  parcelSceneLoadingState.lifecycleManager.notify('Scene.status', {
+  parcelSceneLoadingState.lifecycleManager?.notify('Scene.status', {
     sceneId: sceneId,
     status: 'unloaded'
   })
@@ -204,7 +204,7 @@ async function removeDesiredParcel(sceneId: string) {
   await setDesiredParcelScenes(desiredScenes)
 }
 
-async function addDesiredParcel(entity: LoadableScene) {
+export async function addDesiredParcel(entity: LoadableScene) {
   const desiredScenes = getDesiredParcelScenes()
   if (hasDesiredParcelScenes(entity.id)) return
   desiredScenes.set(entity.id, entity)
