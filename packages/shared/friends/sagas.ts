@@ -26,6 +26,7 @@ import {
   PresenceStatus,
   FriendsInitializationMessage,
   UnseenPrivateMessage
+  // GetFriendsPayload
   // FriendsInitializationMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
@@ -156,7 +157,7 @@ async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, so
   store.dispatch(updateUserData(userId, socialId))
 
   // ensure user profile is initialized and send to renderer
-  await ensureFriendProfile(userId)
+  await ensureFriendProfile([userId])
 
   // add to friendRequests & update renderer
   store.dispatch(updateFriendship(action, userId, true))
@@ -343,8 +344,9 @@ function* refreshFriends() {
 
     getUnityInstance().InitializeFriends(initMessage)
 
-    // ensure friend profiles are sent to renderer
-    yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
+    const userIds = Object.values(socialInfo).map((info) => info.userId)
+
+    yield ensureFriendProfile(userIds).catch(logger.error)
 
     yield put(
       updatePrivateMessagingState({
@@ -361,6 +363,16 @@ function* refreshFriends() {
     logAndTrackError('Error while refreshing friends', e)
   }
 }
+
+// function* getFriends(request: GetFriendsPayload) {
+//   // ensure friend profiles are sent to renderer
+
+//   const friends: string[] = yield select(getPrivateMessagingFriends)
+
+// friends.filter((friend) => friend.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0).shift()
+
+// yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
+// }
 
 function* initializeReceivedMessagesCleanUp() {
   while (true) {
@@ -633,7 +645,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
   } catch (e) {
     if (e instanceof UnknownUsersError) {
-      const profile: Avatar = yield call(ensureFriendProfile, userId)
+      const profile: Avatar = yield call(ensureFriendProfile, [userId])
       const id = profile?.name ? profile.name : `with address '${userId}'`
       showErrorNotification(`User ${id} must log in at least once before befriending them`)
     }
