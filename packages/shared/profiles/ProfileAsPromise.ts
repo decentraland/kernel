@@ -1,5 +1,5 @@
 import { getProfile, getProfileStatusAndData } from './selectors'
-import { profileRequest } from './actions'
+import { profilesRequest } from './actions'
 import { ProfileType } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
@@ -11,53 +11,75 @@ const PROFILE_SOFT_TIMEOUT_MS = 5000
 // We reject the profile promise if more time than this has passed
 const PROFILE_HARD_TIMEOUT_MS = COMMS_PROFILE_TIMEOUT + 20000
 
-export function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Avatar> {
+export function ProfilesAsPromise(userIds: string[], version?: number, profileType?: ProfileType): Promise<Avatar[]> {
   function isExpectedVersion(aProfile: Avatar) {
     return !version || aProfile.version >= version
   }
 
-  const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
-  const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
-  if (existingProfile && existingProfileWithCorrectVersion) {
-    return Promise.resolve(existingProfile)
-  }
-  return new Promise<Avatar>((resolve, reject) => {
-    let pending = true
+  const usersToFech = userIds.filter((userId) => {
+    const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
+    const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+
+    // if it already exists we don't want to fetch it
+    return existingProfile && existingProfileWithCorrectVersion
+  })
+
+  let pending = true
+
+  return new Promise<Avatar[]>((resolve, reject) => {
     const unsubscribe = store.subscribe(() => {
-      const [status, data] = getProfileStatusAndData(store.getState(), userId)
+      const avatars: Avatar[] = []
 
-      if (status === 'error') {
-        unsubscribe()
-        pending = false
-        return reject(data)
-      }
+      for (const userId of userIds) {
+        const [status, data] = getProfileStatusAndData(store.getState(), userId)
 
-      const profile = getProfile(store.getState(), userId)
-      if (profile && isExpectedVersion(profile) && status === 'ok') {
-        unsubscribe()
-        pending = false
-        return resolve(profile)
-      }
-    })
-    store.dispatch(profileRequest(userId, profileType, version))
-
-    setTimeout(() => {
-      if (pending) {
-        const profile = getProfile(store.getState(), userId)
-
-        if (profile) {
+        if (status === 'error') {
           unsubscribe()
           pending = false
-          resolve(profile)
-        } else {
-          setTimeout(() => {
-            if (pending) {
-              unsubscribe()
-              pending = false
-              reject(new Error(`Timed out trying to resolve profile ${userId} (version: ${version})`))
-            }
-          }, PROFILE_HARD_TIMEOUT_MS - PROFILE_SOFT_TIMEOUT_MS)
+          return reject(data)
         }
+
+        const profile = getProfile(store.getState(), userId)
+        if (profile && isExpectedVersion(profile) && status === 'ok') {
+          avatars.push(profile)
+        }
+      }
+
+      if (avatars.length === userIds.length) {
+        unsubscribe()
+        pending = false
+        resolve(avatars)
+      }
+    })
+
+    if (usersToFech.length > 0) {
+      store.dispatch(profilesRequest(usersToFech, profileType, version))
+    }
+
+    setTimeout(() => {
+      // if it's pending it means that the promise has already resolved since none's clearing the timeout
+      if (!pending) {
+        return
+      }
+      const profiles = userIds
+        .map((userId) => getProfile(store.getState(), userId))
+        .filter((profile) => profile != null) as Avatar[]
+
+      if (profiles.length === userIds.length) {
+        unsubscribe()
+        pending = false
+        resolve(profiles)
+      } else {
+        setTimeout(() => {
+          // if it's pending it means that the promise has already resolved since none's clearing the timeout
+          if (!pending) {
+            return
+          }
+
+          unsubscribe()
+          pending = false
+          reject(new Error(`Timed out trying to resolve profiles ${userIds} (version: ${version})`))
+        }, PROFILE_HARD_TIMEOUT_MS - PROFILE_SOFT_TIMEOUT_MS)
       }
     }, PROFILE_SOFT_TIMEOUT_MS)
   })

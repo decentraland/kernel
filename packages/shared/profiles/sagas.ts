@@ -21,11 +21,17 @@ import {
   profileSuccess,
   PROFILE_SUCCESS,
   ProfileSuccessAction,
-  profileFailure
+  profileFailure,
+  PROFILES_REQUEST,
+  PROFILES_SUCCESS,
+  ProfilesSuccessAction,
+  ProfilesRequestAction,
+  profilesSuccess,
+  profilesFailure
 } from './actions'
 import { getCurrentUserProfile, getProfileFromStore } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
-import { ContentFile, ProfileType, ProfileUserInfo } from './types'
+import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { getUpdateProfileServer, getCatalystServer } from '../dao/selectors'
@@ -33,7 +39,7 @@ import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
 import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, isCurrentUserId } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { ProfileAsPromise } from './ProfileAsPromise'
+import { ProfilesAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
@@ -78,9 +84,17 @@ export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialRemoteProfileLoad)
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
   yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
+  yield takeEvery(PROFILES_REQUEST, handleFetchProfiles)
+  yield takeEvery(PROFILES_SUCCESS, forwardProfilesToRenderer)
   yield fork(handleCommsProfile)
   yield debounce(200, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
   yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
+}
+
+function* forwardProfilesToRenderer(action: ProfilesSuccessAction) {
+  for (const profile of action.payload.profiles) {
+    yield put(sendProfileToRenderer(profile.userId))
+  }
 }
 
 function* forwardProfileToRenderer(action: ProfileSuccessAction) {
@@ -98,7 +112,7 @@ function* initialRemoteProfileLoad() {
   let profile: Avatar
 
   try {
-    profile = yield call(ProfileAsPromise, userId, undefined, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
+    profile = yield call(ProfilesAsPromise, [userId], undefined, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
   } catch (e: any) {
     ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
     BringDownClientAndShowError(UNEXPECTED_ERROR)
@@ -156,7 +170,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfiles, [userId], version)))[0] ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
@@ -183,41 +197,80 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   }
 }
 
-function* getRemoteProfile(userId: string, version?: number) {
+export function* handleFetchProfiles(action: ProfilesRequestAction): any {
+  const { userIds, version } = action.payload
+
+  const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
+
+  if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
+
   try {
-    const profiles: { avatars: Avatar[] } = yield call(profileServerRequest, userId, version)
+    const userIdsToFetch = userIds.filter((userId) => userId.toLowerCase() !== identity.address.toLowerCase())
+    const isFetchingOwnUser = userIds.some((userId) => userId.toLowerCase() === identity.address.toLowerCase())
 
-    let avatar = profiles.avatars[0]
+    const avatars: Avatar[] = yield (!isFetchingOwnUser && call(getRemoteProfiles, userIdsToFetch, version)) || []
 
-    if (avatar) {
-      avatar = ensureAvatarCompatibilityFormat(avatar)
-      if (!validateAvatar(avatar)) {
-        defaultLogger.warn(`Remote avatar for user is invalid.`, userId, avatar, validateAvatar.errors)
-        return null
-      }
-
-      avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
-      avatar.hasConnectedWeb3 = true
-
-      return avatar
+    const ownProfile = isFetchingOwnUser && (yield call(readProfileFromLocalStorage))
+    if (ownProfile != null) {
+      avatars.push(ownProfile)
     }
+
+    yield put(profilesSuccess(avatars))
   } catch (error: any) {
-    if (error.message !== 'Profile not found') {
-      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
+    trackEvent('error', {
+      context: 'kernel#saga',
+      message: `Error requesting profiles for ${userIds}: ${error}`,
+      stack: error.stack || ''
+    })
+    yield put(profilesFailure(userIds, `${error}`))
+  }
+}
+
+function* getRemoteProfiles(userIds: string[], version?: number) {
+  try {
+    const profiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds, version)) as any
+
+    let avatars = profiles.map((profile) => {
+      let avatar = profile.avatars[0]
+
+      if (avatar) {
+        avatar = ensureAvatarCompatibilityFormat(avatar)
+        if (!validateAvatar(avatar)) {
+          defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
+          return null
+        }
+
+        avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
+        avatar.hasConnectedWeb3 = true
+
+        return avatar
+      }
+    })
+
+    return avatars
+  } catch (error: any) {
+    if (error.message !== 'Profiles not found') {
+      defaultLogger.log(`Error requesting profiles for auth check ${userIds}, `, error)
     }
   }
   return null
 }
 
-export async function profileServerRequest(userId: string, version?: number) {
+export async function profilesServerRequest(userIds: string[], version?: number): Promise<RemoteProfile[]> {
   const state = store.getState()
   const catalystUrl = getCatalystServer(state)
 
   try {
-    let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
+    let url = `${catalystUrl}/lambdas/profiles`
     if (version) url = url + `&version=${version}`
 
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ids: userIds })
+    })
 
     if (!response.ok) {
       throw new Error(`Invalid response from ${url}`)
@@ -225,10 +278,10 @@ export async function profileServerRequest(userId: string, version?: number) {
 
     const res = await response.json()
 
-    return res[0] || { avatars: [] }
+    return res || [{ avatars: [], timestamp: Date.now }]
   } catch (e: any) {
     defaultLogger.error(e)
-    return { avatars: [] }
+    return [{ avatars: [], timestamp: Date.now() }]
   }
 }
 
@@ -433,7 +486,7 @@ async function generateRandomUserProfile(userId: string): Promise<Avatar> {
 
   let profile: Avatar | undefined = undefined
   try {
-    const profiles: { avatars: Avatar[] } = await profileServerRequest(`default${_number}`)
+    const profiles: RemoteProfile = await profilesServerRequest([`default${_number}`])[0]
     if (profiles.avatars.length !== 0) {
       profile = profiles.avatars[0]
     }

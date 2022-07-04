@@ -24,3 +24,8 @@ export enum ProfileType {
   LOCAL = 0,
   DEPLOYED = 1
 }
+
+export interface RemoteProfile {
+  timestamp: number
+  avatars: Avatar[]
+}
