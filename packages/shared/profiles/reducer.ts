@@ -5,7 +5,12 @@ import {
   PROFILE_SUCCESS,
   PROFILE_FAILURE,
   PROFILE_REQUEST,
-  ProfileSuccessAction
+  ProfileSuccessAction,
+  PROFILES_SUCCESS,
+  PROFILES_REQUEST,
+  ProfilesSuccessAction,
+  ProfilesFailureAction,
+  PROFILES_FAILURE
 } from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
@@ -39,6 +44,51 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
             data: profile,
             status: 'ok'
           }
+        }
+      }
+    case PROFILES_REQUEST:
+      return {
+        ...state,
+        userInfo: {
+          ...state.userInfo,
+          [action.payload.userId]: { ...state.userInfo[action.payload.userId], status: 'loading' }
+        }
+      }
+    case PROFILES_SUCCESS:
+      const { profiles } = (action as ProfilesSuccessAction).payload
+      const profilesState = profiles.reduce((newState, profile) => {
+        return {
+          ...newState,
+          [profile.userId]: {
+            ...state.userInfo[profile.userId],
+            data: profile,
+            status: 'ok'
+          }
+        }
+      }, {})
+
+      return {
+        ...state,
+        userInfo: {
+          ...state.userInfo,
+          ...profilesState
+        }
+      }
+
+    case PROFILES_FAILURE:
+      const { userIds } = (action as ProfilesFailureAction).payload
+      const newProfilesState = userIds.reduce((newState, userId) => {
+        return {
+          ...newState,
+          [userId]: { status: 'error', data: action.payload.error }
+        }
+      }, {})
+
+      return {
+        ...state,
+        userInfo: {
+          ...state.userInfo,
+          ...newProfilesState
         }
       }
     case PROFILE_FAILURE:

@@ -532,6 +532,12 @@ export type FriendsInitializationMessage = {
   unseenPrivateMessages: Record<string, UnseenPrivateMessage>
 }
 
+export interface GetFriendsPayload {
+  userNameOrId: string // text to match
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+}
+
 export enum FriendshipAction {
   NONE,
   APPROVED,
