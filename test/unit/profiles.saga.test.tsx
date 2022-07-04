@@ -2,7 +2,7 @@ import { expectSaga } from 'redux-saga-test-plan'
 import { call, select } from 'redux-saga/effects'
 import * as matchers from 'redux-saga-test-plan/matchers'
 import { profileRequest, profileSuccess } from 'shared/profiles/actions'
-import { handleFetchProfile, profileServerRequest } from 'shared/profiles/sagas'
+import { handleFetchProfile, profilesServerRequest } from 'shared/profiles/sagas'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { profileSaga } from '../../packages/shared/profiles/sagas'
 import { dynamic } from 'redux-saga-test-plan/providers'
@@ -26,26 +26,58 @@ const delayedProfile = delayed({ avatars: [profile] })
 
 describe('fetchProfile behavior', () => {
   it('avatar compatibility format', () => {
-    ensureAvatarCompatibilityFormat({ "userId": "0x736df2ecb40e4bdc368e19e3067136802536550c", "email": "", "name": "Ant#550c", "hasClaimedName": false, "description": "Host at The Aquarium casino         * -140,126*                                         ", "ethAddress": "0x736df2ecb40e4bdc368e19e3067136802536550c", "version": 2, "avatar": { "bodyShape": "urn:decentraland:off-chain:base-avatars:BaseMale", "snapshots": { "face256": "https://peer.decentral.io/content/contents/bafkreidxhkfakmifeccr3ypojv53oqnecufx647tkqupwipuelru3tkevm", "body": "https://peer.decentral.io/content/contents/bafkreie2pwupprfvg64mopsvwnmgzxckxw4q3i4gquaedelwdf6ax2soea" }, "eyes": { "color": { "r": 0.75, "g": 0.62109375, "b": 0.3515625 } }, "hair": { "color": { "r": 0.234375, "g": 0.12890625, "b": 0.04296875 } }, "skin": { "color": { "r": 0.60546875, "g": 0.4609375, "b": 0.35546875 } }, "wearables": ["urn:decentraland:off-chain:base-avatars:casual_hair_03", "urn:decentraland:off-chain:base-avatars:eyebrows_00", "urn:decentraland:off-chain:base-avatars:eyes_08", "urn:decentraland:off-chain:base-avatars:mouth_03", "urn:decentraland:matic:collections-v2:0x1286dad1da5233a63a5d55fcf9e834feb14e1d6d:0", "urn:decentraland:off-chain:base-avatars:thug_life", "urn:decentraland:off-chain:base-avatars:Thunder_earring", "urn:decentraland:off-chain:base-avatars:brown_pants", "urn:decentraland:off-chain:base-avatars:sneakers", "urn:decentraland:matic:collections-v2:0x1286dad1da5233a63a5d55fcf9e834feb14e1d6d:1"] }, "tutorialStep": 256, "interests": [], "unclaimedName": "" } as any)
+    ensureAvatarCompatibilityFormat({
+      userId: '0x736df2ecb40e4bdc368e19e3067136802536550c',
+      email: '',
+      name: 'Ant#550c',
+      hasClaimedName: false,
+      description: 'Host at The Aquarium casino         * -140,126*                                         ',
+      ethAddress: '0x736df2ecb40e4bdc368e19e3067136802536550c',
+      version: 2,
+      avatar: {
+        bodyShape: 'urn:decentraland:off-chain:base-avatars:BaseMale',
+        snapshots: {
+          face256:
+            'https://peer.decentral.io/content/contents/bafkreidxhkfakmifeccr3ypojv53oqnecufx647tkqupwipuelru3tkevm',
+          body: 'https://peer.decentral.io/content/contents/bafkreie2pwupprfvg64mopsvwnmgzxckxw4q3i4gquaedelwdf6ax2soea'
+        },
+        eyes: { color: { r: 0.75, g: 0.62109375, b: 0.3515625 } },
+        hair: { color: { r: 0.234375, g: 0.12890625, b: 0.04296875 } },
+        skin: { color: { r: 0.60546875, g: 0.4609375, b: 0.35546875 } },
+        wearables: [
+          'urn:decentraland:off-chain:base-avatars:casual_hair_03',
+          'urn:decentraland:off-chain:base-avatars:eyebrows_00',
+          'urn:decentraland:off-chain:base-avatars:eyes_08',
+          'urn:decentraland:off-chain:base-avatars:mouth_03',
+          'urn:decentraland:matic:collections-v2:0x1286dad1da5233a63a5d55fcf9e834feb14e1d6d:0',
+          'urn:decentraland:off-chain:base-avatars:thug_life',
+          'urn:decentraland:off-chain:base-avatars:Thunder_earring',
+          'urn:decentraland:off-chain:base-avatars:brown_pants',
+          'urn:decentraland:off-chain:base-avatars:sneakers',
+          'urn:decentraland:matic:collections-v2:0x1286dad1da5233a63a5d55fcf9e834feb14e1d6d:1'
+        ]
+      },
+      tutorialStep: 256,
+      interests: [],
+      unclaimedName: ''
+    } as any)
   })
 
-
-  it.skip('completes once for more than one request of same user',
-    () => {
-      return expectSaga(profileSaga)
-        .put(profileSuccess('passport' as any))
-        .not.put(profileSuccess('passport' as any))
-        .dispatch(profileRequest('user|1'))
-        .dispatch(profileRequest('user|1'))
-        .dispatch(profileRequest('user|1'))
-        .provide([
-          [select(getRealm), {}],
-          [call(profileServerRequest, 'user|1'), delayedProfile],
-          [select(getCurrentUserId), 'myid'],
-          [call(ensureAvatarCompatibilityFormat, profile), 'passport']
-        ])
-        .run()
-    })
+  it.skip('completes once for more than one request of same user', () => {
+    return expectSaga(profileSaga)
+      .put(profileSuccess('passport' as any))
+      .not.put(profileSuccess('passport' as any))
+      .dispatch(profileRequest('user|1'))
+      .dispatch(profileRequest('user|1'))
+      .dispatch(profileRequest('user|1'))
+      .provide([
+        [select(getRealm), {}],
+        [call(profilesServerRequest, ['user|1']), delayedProfile],
+        [select(getCurrentUserId), 'myid'],
+        [call(ensureAvatarCompatibilityFormat, profile), 'passport']
+      ])
+      .run()
+  })
 
   it.skip('runs one request for each user', () => {
     return expectSaga(profileSaga)
@@ -59,15 +91,14 @@ describe('fetchProfile behavior', () => {
       .dispatch(profileRequest('user|2'))
       .provide([
         [select(getRealm), {}],
-        [call(profileServerRequest, 'user|1'), delayedProfile],
+        [call(profilesServerRequest, ['user|1']), delayedProfile],
         [select(getCurrentUserId), 'myid'],
         [call(ensureAvatarCompatibilityFormat, profile), 'passport1'],
-        [call(profileServerRequest, 'user|2'), delayedProfile],
+        [call(profilesServerRequest, ['user|2']), delayedProfile],
         [call(ensureAvatarCompatibilityFormat, profile), 'passport2']
       ])
       .run()
   })
-
 
   it.skip('detects and fixes corrupted scaled snapshots', () => {
     const profileWithCorruptedSnapshots = {
@@ -79,7 +110,7 @@ describe('fetchProfile behavior', () => {
         [select(getCurrentUserId), 'myid'],
         // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic(() => ({ ok: true }))],
-        [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
+        [call(profilesServerRequest, ['user|1']), delayed({ avatars: [profile1] })]
         // [call(ensureAvatarCompatibilityFormat, 'user|1', profile1), dynamic((effect) => effect.args[1])]
       ])
       .run()
@@ -105,7 +136,7 @@ describe('fetchProfile behavior', () => {
         [select(getCurrentUserId), 'myid'],
         // [select(getResizeService), 'http://fake/resizeurl'],
         [matchers.call.fn(fetch), dynamic((call) => ({ ok: !call.args[0].startsWith('http://fake/resizeurl') }))],
-        [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })],
+        [call(profilesServerRequest, ['user|1']), delayed({ avatars: [profile1] })]
         // [call(ensureAvatarCompatibilityFormat, 'user|1', profile1), dynamic((effect) => effect.args[1])]
       ])
       .run()
