@@ -15,5 +15,5 @@ export async function fetchENSOwnerProfile(name: string, maxResults: number = 1)
     userIds = await fetchENSOwnersContains(ethereumConfigurations[net].names, name, maxResults)
   }
 
-  return ProfilesAsPromise(userIds, undefined, ProfileType.DEPLOYED)
+  return ProfilesAsPromise(userIds, ProfileType.DEPLOYED)
 }
