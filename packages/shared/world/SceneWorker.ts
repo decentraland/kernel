@@ -60,6 +60,10 @@ export abstract class SceneWorker {
       },
       sendProtoSceneEvent: (e) => {
         this.rpcContext.events.push(e)
+      },
+      crdtMessages: [],
+      sendCrdtMessage: (payload) => {
+        this.rpcContext.crdtMessages.push(payload)
       }
     }
 
@@ -104,6 +108,10 @@ export abstract class SceneWorker {
 
   sendSubscriptionEvent<K extends IEventNames>(event: K, data: IEvents[K]) {
     this.rpcContext.sendSceneEvent(event, data)
+  }
+
+  sendCrdtMessage(payload: Uint8Array) {
+    this.rpcContext.sendCrdtMessage(payload)
   }
 
   dispose() {

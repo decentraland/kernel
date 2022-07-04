@@ -1,18 +1,21 @@
 import { Avatar } from '@dcl/schemas'
-import { call, select, takeLatest } from 'redux-saga/effects'
+import { call, select, takeLatest, takeLeading } from 'redux-saga/effects'
+import { rendererProtocol } from 'renderer-protocol/rpcClient'
 import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { RENDERER_INITIALIZED_CORRECTLY } from 'shared/renderer/types'
 import { toEnvironmentRealmType } from '../apis/host/EnvironmentAPI'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
 import { getCommsIsland, getRealm } from '../comms/selectors'
 import { Realm } from '../dao/types'
 import { SAVE_PROFILE } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
-import { allScenesEvent } from '../world/parcelSceneManager'
+import { allScenesEvent, loadedSceneWorkers } from '../world/parcelSceneManager'
 
 export function* sceneEventsSaga() {
   yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], islandChanged)
   yield takeLatestByUserId(SAVE_PROFILE, submitProfileToScenes)
+  yield takeLeading(RENDERER_INITIALIZED_CORRECTLY, listenCrdtMessages)
 }
 
 function* islandChanged() {
@@ -54,5 +57,26 @@ function* submitProfileToScenes() {
         version: profile.version
       }
     })
+  }
+}
+
+function* listenCrdtMessages() {
+  while (true) {
+    try {
+      yield call(crdtNotificationListener)
+    } catch (error: any) {
+      debugger // TODO: remove this debugger after merging ECS7
+      console.error(error)
+      yield error(error)
+    }
+  }
+}
+
+async function crdtNotificationListener() {
+  const protocol = await rendererProtocol
+
+  for await (const crdt of protocol.crdtService.crdtNotificationStream({})) {
+    const scene = loadedSceneWorkers.get(crdt.sceneId)
+    scene?.rpcContext.sendCrdtMessage(crdt.payload)
   }
 }

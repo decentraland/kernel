@@ -7,10 +7,10 @@ message SendToResponse {}
 
 message MessageFromRendererRequest {}
 message MessageFromRendererResponse {
-    bytes data = 1;
+    repeated bytes data = 1;
 }
 
 service ExperimentalAPIService {
   rpc SendToRenderer(SendToRendererRequest) returns (SendToResponse) {}
-  rpc MessageFromRenderer(MessageFromRendererRequest) returns (stream MessageFromRendererResponse) {}
+  rpc MessageFromRenderer(MessageFromRendererRequest) returns (MessageFromRendererResponse) {}
 }
