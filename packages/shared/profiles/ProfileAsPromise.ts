@@ -63,14 +63,10 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
   })
 }
 
-export function ProfilesAsPromise(userIds: string[], version?: number, profileType?: ProfileType): Promise<Avatar[]> {
-  function isExpectedVersion(aProfile: Avatar) {
-    return !version || aProfile.version >= version
-  }
-
+export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType): Promise<Avatar[]> {
   const usersToFech = userIds.filter((userId) => {
     const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
-    const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+    const existingProfileWithCorrectVersion = existingProfile
 
     // if it already exists we don't want to fetch it
     return existingProfile && existingProfileWithCorrectVersion
@@ -92,7 +88,7 @@ export function ProfilesAsPromise(userIds: string[], version?: number, profileTy
         }
 
         const profile = getProfile(store.getState(), userId)
-        if (profile && isExpectedVersion(profile) && status === 'ok') {
+        if (profile && status === 'ok') {
           avatars.push(profile)
         }
       }
@@ -105,7 +101,7 @@ export function ProfilesAsPromise(userIds: string[], version?: number, profileTy
     })
 
     if (usersToFech.length > 0) {
-      store.dispatch(profilesRequest(usersToFech, profileType, version))
+      store.dispatch(profilesRequest(usersToFech, profileType))
     }
 
     setTimeout(() => {
@@ -130,7 +126,7 @@ export function ProfilesAsPromise(userIds: string[], version?: number, profileTy
 
           unsubscribe()
           pending = false
-          reject(new Error(`Timed out trying to resolve profiles ${userIds} (version: ${version})`))
+          reject(new Error(`Timed out trying to resolve profiles ${userIds}`))
         }, PROFILE_HARD_TIMEOUT_MS - PROFILE_SOFT_TIMEOUT_MS)
       }
     }, PROFILE_SOFT_TIMEOUT_MS)

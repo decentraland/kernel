@@ -7,5 +7,5 @@ export async function ensureFriendProfile(userId: string): Promise<Avatar> {
 }
 
 export async function ensureFriendsProfile(userIds: string[]): Promise<Avatar[]> {
-  return ProfilesAsPromise(userIds, undefined, ProfileType.DEPLOYED) // Friends are always deployed ATM
+  return ProfilesAsPromise(userIds, ProfileType.DEPLOYED) // Friends are always deployed ATM
 }
