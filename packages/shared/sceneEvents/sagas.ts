@@ -67,6 +67,7 @@ function* listenCrdtMessages() {
     } catch (error: any) {
       debugger // TODO: remove this debugger after merging ECS7
       console.error(error)
+      yield error(error)
     }
   }
 }
