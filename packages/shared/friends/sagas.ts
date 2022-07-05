@@ -344,9 +344,7 @@ function* refreshFriends() {
 
     getUnityInstance().InitializeFriends(initMessage)
 
-    const userIds = Object.values(socialInfo).map((info) => info.userId)
-
-    yield ensureFriendsProfile(userIds).catch(logger.error)
+    yield ensureFriendsProfile(friendIds).catch(logger.error)
 
     yield put(
       updatePrivateMessagingState({
