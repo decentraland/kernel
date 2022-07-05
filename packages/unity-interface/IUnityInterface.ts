@@ -134,7 +134,6 @@ export interface IUnityInterface {
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
 
-  
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
   ConnectionToRealmSuccess(successData: WorldPosition): void
