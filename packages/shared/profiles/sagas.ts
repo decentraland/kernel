@@ -302,7 +302,7 @@ export async function profilesServerRequest(userIds: string[]): Promise<RemotePr
   const catalystUrl = getCatalystServer(state)
 
   try {
-    let url = `${catalystUrl}/lambdas/profiles`
+    const url = `${catalystUrl}/lambdas/profiles`
 
     const response = await fetch(url, {
       method: 'POST',
