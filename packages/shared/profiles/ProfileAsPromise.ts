@@ -111,7 +111,7 @@ export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType):
       }
       const profiles = userIds
         .map((userId) => getProfile(store.getState(), userId))
-        .filter((profile) => profile != null) as Avatar[]
+        .filter((profile) => !!profile) as Avatar[]
 
       if (profiles.length === userIds.length) {
         unsubscribe()

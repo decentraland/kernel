@@ -90,7 +90,6 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
           })
         }
       }
-      
 
       return globalThis.DclRenderer!.initializeWebRenderer({
         baseUrl,
