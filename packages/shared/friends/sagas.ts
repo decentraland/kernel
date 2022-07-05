@@ -17,7 +17,7 @@ import { DEBUG_KERNEL_LOG } from 'config'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
-import { createLogger, createDummyLogger } from 'shared/logger'
+import defaultLogger, { createLogger, createDummyLogger } from 'shared/logger'
 import {
   ChatMessage,
   NotificationType,
@@ -26,8 +26,6 @@ import {
   PresenceStatus,
   FriendsInitializationMessage,
   UnseenPrivateMessage
-  // GetFriendsPayload
-  // FriendsInitializationMessage
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -340,7 +338,7 @@ function* refreshFriends() {
       unseenPrivateMessages
     }
 
-    console.log('____ initMessage ____', initMessage)
+    defaultLogger.log('____ initMessage ____', initMessage)
 
     getUnityInstance().InitializeFriends(initMessage)
 
