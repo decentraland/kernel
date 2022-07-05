@@ -108,8 +108,8 @@ export async function startSceneRuntime(client: RpcClient) {
     for (const cb of onEventFunctions) {
       try {
         cb(event)
-      } catch (err) {
-        console.error(err, { event })
+      } catch (err: any) {
+        devToolsAdapter.error(err)
       }
     }
     eventState.allowOpenExternalUrl = false
