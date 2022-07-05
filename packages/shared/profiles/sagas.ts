@@ -1,6 +1,6 @@
 import { EntityType } from 'dcl-catalyst-commons'
 import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
-import { call, put, select, takeEvery, fork, take, debounce, apply } from 'redux-saga/effects'
+import { call, put, select, takeEvery, fork, take, debounce, apply, CallEffect } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
 import { ethereumConfigurations, RESET_TUTORIAL, ETHEREUM_NETWORK } from 'config'
@@ -210,8 +210,8 @@ export function* handleFetchProfiles(action: ProfilesRequestAction): any {
 
     const avatars: Avatar[] = yield (!isFetchingOwnUser && call(getRemoteProfiles, userIdsToFetch)) || []
 
-    const ownProfile = isFetchingOwnUser && (yield call(readProfileFromLocalStorage))
-    if (ownProfile != null) {
+    const ownProfile: Avatar | null = isFetchingOwnUser && (yield call(readProfileFromLocalStorage))
+    if (ownProfile && ownProfile.userId.length > 0) {
       avatars.push(ownProfile)
     }
 
@@ -226,11 +226,11 @@ export function* handleFetchProfiles(action: ProfilesRequestAction): any {
   }
 }
 
-function* getRemoteProfile(userId: string, version?: number) {
+function* getRemoteProfile(userId: string, version?: number): Generator<CallEffect<RemoteProfile> | RemoteProfile> {
   try {
     const profile: RemoteProfile = (yield call(profileServerRequest, userId, version)) as any
 
-    return processRemoteProfiles([profile], [userId])
+    return processRemoteProfiles([profile], [userId])[0]
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
       defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
@@ -239,7 +239,7 @@ function* getRemoteProfile(userId: string, version?: number) {
   return null
 }
 
-function* getRemoteProfiles(userIds: string[]) {
+function* getRemoteProfiles(userIds: string[]): Generator<CallEffect<RemoteProfile[]> | Array<Avatar | null>> {
   try {
     const profiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds)) as any
 
@@ -252,22 +252,23 @@ function* getRemoteProfiles(userIds: string[]) {
   return null
 }
 
-function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]) {
-  const avatars = profiles.map((profile) => {
+function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Array<Avatar | null> {
+  const avatars: Array<Avatar | null> = profiles.map((profile): Avatar | null => {
     let avatar = profile.avatars[0]
-
-    if (avatar) {
-      avatar = ensureAvatarCompatibilityFormat(avatar)
-      if (!validateAvatar(avatar)) {
-        defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
-        return null
-      }
-
-      avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
-      avatar.hasConnectedWeb3 = true
-
-      return avatar
+    if (!avatar) {
+      return null
     }
+
+    avatar = ensureAvatarCompatibilityFormat(avatar)
+    if (!validateAvatar(avatar)) {
+      defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
+      return null
+    }
+
+    avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
+    avatar.hasConnectedWeb3 = true
+
+    return avatar
   })
 
   return avatars

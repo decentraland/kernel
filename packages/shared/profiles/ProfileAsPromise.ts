@@ -69,7 +69,7 @@ export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType):
     const existingProfileWithCorrectVersion = existingProfile
 
     // if it already exists we don't want to fetch it
-    return existingProfile && existingProfileWithCorrectVersion
+    return !(existingProfile && existingProfileWithCorrectVersion)
   })
 
   let pending = true
