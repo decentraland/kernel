@@ -10,7 +10,8 @@ import {
   PROFILES_REQUEST,
   ProfilesSuccessAction,
   ProfilesFailureAction,
-  PROFILES_FAILURE
+  PROFILES_FAILURE,
+  ProfilesRequestAction
 } from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
@@ -47,11 +48,21 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         }
       }
     case PROFILES_REQUEST:
+      const loadingUserIds = (action as ProfilesRequestAction).payload.userIds
+
+      const loadingProfilesState = {}
+      for (const userId of loadingUserIds) {
+        loadingProfilesState[userId] = {
+          ...state.userInfo[userId],
+          status: 'loading'
+        }
+      }
+
       return {
         ...state,
         userInfo: {
           ...state.userInfo,
-          [action.payload.userId]: { ...state.userInfo[action.payload.userId], status: 'loading' }
+          ...loadingProfilesState
         }
       }
     case PROFILES_SUCCESS:

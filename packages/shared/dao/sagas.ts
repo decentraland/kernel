@@ -172,7 +172,8 @@ function* selectRealm() {
 
   if (!realm) debugger
 
-  return realm
+  // return realm
+  return { hostname: 'https://peer-testing.decentraland.org', protocol: 'v2', serverName: 'testing' }
 }
 
 // load realm from local storage
