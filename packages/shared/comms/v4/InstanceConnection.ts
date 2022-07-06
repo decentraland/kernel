@@ -50,7 +50,10 @@ export class InstanceConnection implements RoomConnection {
         debugWebRtcEnabled: false
       },
       livekit: {
-        verbose: true
+        verbose: false
+      },
+      ws: {
+        verbose: false
       }
     }
 
