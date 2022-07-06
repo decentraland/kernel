@@ -19,7 +19,8 @@ export function webTransport(options: WebTransportOptions): Transport {
   let isClosed = false
 
   ;(globalThis as any).DCL.BinaryMessageFromEngine = function (data: Uint8Array) {
-    events.emit('message', data)
+    const copiedData = new Uint8Array(data)
+    events.emit('message', copiedData)
   }
 
   const transport: Transport = {
