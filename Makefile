@@ -219,8 +219,10 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" -I="$(PWD)/packages/renderer-protocol/proto" \
-			"$(PWD)/packages/renderer-protocol/proto/$*.proto";			
+			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" \
+			-I="$(PWD)/packages/renderer-protocol/proto" \
+			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
+			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
 packages/shared/comms/v4/proto/bff/%.gen.ts: node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
