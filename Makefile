@@ -9,7 +9,6 @@ endif
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
-SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
 BFF_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/bff/*.proto)
 COMMS_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/*.proto)
 
