@@ -41,7 +41,7 @@ import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
+const hudWorkerRaw = require('../../static/systems/decentraland-ui.scene.js.txt')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
 export const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
 

@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { ContentMapping, Scene } from '@dcl/schemas'
+import type { RpcClientPort } from '@dcl/rpc/dist/types'
+import type { ContentMapping, Scene } from '@dcl/schemas'
 import { EnvironmentAPIServiceDefinition } from '../proto/EnvironmentAPI.gen'
 
 export type Realm = {

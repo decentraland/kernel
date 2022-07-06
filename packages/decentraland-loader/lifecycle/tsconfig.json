@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "esnext",
-    "target": "es2017",
+    "target": "es2020",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
@@ -23,7 +23,7 @@
     "pretty": true,
     "outDir": "../../../static/loader",
     "lib": [
-      "es2017",
+      "es2020",
       "dom"
     ],
     "baseUrl": "../.."

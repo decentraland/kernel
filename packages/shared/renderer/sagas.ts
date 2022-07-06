@@ -6,7 +6,6 @@ import { InitializeRenderer } from './actions'
 import { getParcelLoadingStarted } from './selectors'
 import { RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
-import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import {
   SendProfileToRenderer,
   addedProfileToCatalog,
@@ -42,7 +41,7 @@ import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { waitForRendererInstance } from './sagas-helper'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { NewProfileForRenderer, ParcelsWithAccess } from 'shared/profiles/transformations/types'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)

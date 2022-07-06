@@ -1,7 +1,7 @@
 import { LoadableAPIs } from '../../shared/apis/client'
 import { initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
 import { customEval, prepareSandboxContext } from './sandbox'
-import { RpcClient } from '@dcl/rpc/dist/types'
+import type { RpcClient } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
 
 import { createDecentralandInterface, DecentralandInterfaceOptions } from './runtime/DecentralandInterface'
@@ -10,6 +10,8 @@ import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState, EventDataToRuntimeEvent } from './runtime/Events'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+
+import queueMicroTask from 'queue-microtask'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -69,17 +71,18 @@ export async function startSceneRuntime(client: RpcClient) {
   let didStart = false
   let updateIntervalMs: number = 1000 / 30
 
-  async function sendBatchAndProcessEvents() {
+  function sendBatchAndProcessEvents() {
     const actions = batchEvents.events
 
     if (actions.length) {
       batchEvents.events = []
     }
 
-    const res = await EngineAPI.sendBatch({ actions })
-    for (const e of res.events) {
-      eventReceiver(EventDataToRuntimeEvent(e))
-    }
+    return EngineAPI.sendBatch({ actions }).then((res) => {
+      for (const e of res.events) {
+        eventReceiver(EventDataToRuntimeEvent(e))
+      }
+    })
   }
 
   function eventReceiver(event: RuntimeEvent) {
@@ -118,8 +121,8 @@ export async function startSceneRuntime(client: RpcClient) {
   let start = performance.now()
 
   function reschedule() {
-    const ms = Math.max((updateIntervalMs - (performance.now() - start)) | 0, 0)
-    setTimeout(mainLoop, ms)
+    const ms = Math.max((updateIntervalMs - (performance.now() - start)) | 0, 16)
+    queueMicroTask(() => setTimeout(mainLoop, ms))
   }
 
   function mainLoop() {
@@ -137,7 +140,9 @@ export async function startSceneRuntime(client: RpcClient) {
       }
     }
 
-    sendBatchAndProcessEvents().catch(devToolsAdapter.error).finally(reschedule)
+    sendBatchAndProcessEvents().catch(devToolsAdapter.error)
+
+    reschedule()
   }
 
   const dcl = createDecentralandInterface({

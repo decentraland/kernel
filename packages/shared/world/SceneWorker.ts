@@ -1,4 +1,4 @@
-import { Quaternion, Vector3 } from '@dcl/ecs-math'
+import { Vector3, Quaternion } from '@dcl/ecs-math'
 import {
   DEBUG_MESSAGES_QUEUE_PERF,
   DEBUG_SCENE_LOG,
@@ -48,7 +48,7 @@ export enum SceneWorkerReadyState {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const sceneRuntimeRaw = require('raw-loader!../../../static/systems/scene.system.js')
+const sceneRuntimeRaw = require('../../../static/systems/scene.system.js.txt')
 const sceneRuntimeBLOB = new Blob([sceneRuntimeRaw])
 const sceneRuntimeUrl = URL.createObjectURL(sceneRuntimeBLOB)
 

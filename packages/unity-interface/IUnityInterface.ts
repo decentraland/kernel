@@ -3,7 +3,6 @@ import { Vector3 } from '@dcl/ecs-math'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { Observable } from 'mz-observable'
-import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from '../shared/airdrops/interface'
 import {
   RenderProfile,
@@ -28,6 +27,7 @@ import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { MinimapSceneInfo } from 'shared/atlas/types'
 
 export type RealmInfo = {
   serverName: string

@@ -1,11 +1,10 @@
-import { ParcelsWithAccess } from '@dcl/legacy-ecs/dist/decentraland/Types'
 import { convertToRGBObject } from './convertToRGBObject'
 import { isURL } from 'atomicHelpers/isURL'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
 import { backupProfile } from '../generateRandomUserProfile'
 import { genericAvatarSnapshots } from 'config'
 import { calculateDisplayName } from './processServerProfile'
-import { NewProfileForRenderer } from './types'
+import { NewProfileForRenderer, ParcelsWithAccess } from './types'
 
 export function profileToRendererFormat(
   profile: Partial<Avatar>,

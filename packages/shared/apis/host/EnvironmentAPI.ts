@@ -5,7 +5,7 @@ import { getCommsIsland, getRealm } from './../../comms/selectors'
 import { Realm } from './../../dao/types'
 import { getFeatureFlagEnabled } from './../../meta/selectors'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { RpcServerPort } from '@dcl/rpc/dist/types'
+import type { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   AreUnsafeRequestAllowedResponse,
   BootstrapDataResponse,

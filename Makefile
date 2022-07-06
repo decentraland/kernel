@@ -62,11 +62,15 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: ${PBRENDERER_TS} ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: pre-env ${PBRENDERER_TS} packages/shared/proto/engineinterface.gen.ts ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+
+node_modules/env.d.ts:
+	echo 'declare module "env" {}' > node_modules/env.d.ts
+	echo 'declare module "dcl" {}' > node_modules/dcl.d.ts
 
 # Entry points
-static/%.js: build-essentials packages/entryPoints/%.ts
-	@$(COMPILER) $(word 2,$^)
+static/index.js:
+	@node ./build.js
 
 # Release
 
@@ -83,9 +87,8 @@ build-release: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) $(DIST_PACKAGE_JSON) ## 
 TEST_SOURCE_FILES := $(wildcard test/**/*.ts)
 
 test/out/index.js: build-essentials $(TEST_SOURCE_FILES)
-	@$(COMPILER) ./targets/test.json
 
-test: build-essentials test/out/index.js ## Run all the tests
+test: build-essentials test/out/index.js  ## Run all the tests
 	@node scripts/runTestServer.js
 
 test-docker: ## Run all the tests using a docker container
@@ -136,15 +139,14 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 
 # Development
 
+watch-tests:
+	cd test; ./build.js -watch
+
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
 	@NODE_ENV=development $(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,simulator,server" \
-			"$(COMPILER) targets/engine/scene-system.json --watch" \
-			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
-			"$(COMPILER) targets/engine/loader.json --watch" \
+		-n "basic-scenes,kernel,simulator,server" \
 			"$(COMPILER) targets/scenes/basic-scenes.json --watch" \
-			"$(COMPILER) targets/entryPoints/index.json --watch" \
-			"$(COMPILER) targets/test.json --watch" \
+			"./build.js -watch" \
 			"$(COMPILER) targets/engine/gif-processor.json --watch" \
 			"node ./scripts/runPathSimulator.js" \
 			"node ./scripts/runTestServer.js --keep-open"
@@ -170,7 +172,7 @@ madge: scripts/deps.js
 
 # Makefile
 
-.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
+.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer madge static/index.js  watch-tests
 .DEFAULT_GOAL := help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -181,6 +183,15 @@ node_modules/.bin/protobuf/bin/protoc:
 	unzip -o $(PROTOBUF_ZIP) -d node_modules/.bin/protobuf
 	rm $(PROTOBUF_ZIP)
 	chmod +x node_modules/.bin/protobuf/bin/protoc
+
+packages/shared/proto/engineinterface.gen.ts: packages/shared/proto/engineinterface.proto node_modules/.bin/protobuf/bin/protoc
+	${PROTOC}  \
+			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
+			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+			--ts_proto_opt=fileSuffix=.gen \
+			--ts_proto_out="$(PWD)/packages/shared/proto" \
+			-I="$(PWD)/packages/shared/proto" \
+			"$(PWD)/packages/shared/proto/engineinterface.proto";
 
 packages/shared/apis/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
@@ -198,7 +209,7 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" -I="$(PWD)/packages/renderer-protocol/proto" \
-			"$(PWD)/packages/renderer-protocol/proto/$*.proto";			
+			"$(PWD)/packages/renderer-protocol/proto/$*.proto";
 
 compile_apis: ${PBS_TS}
 

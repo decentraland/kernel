@@ -132,7 +132,7 @@ message PB_UpdateEntityComponent {
 
 message PB_ComponentCreated {
     string id = 1;
-    int32 classid = 2;
+    int32 class_id = 2;
     string name = 3;
 }
 

@@ -15,7 +15,7 @@ import { LoadableScene } from 'shared/types'
  * The worker is set up on the first require of this file
  */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const lifecycleWorkerRaw = require('raw-loader!../../../static/loader/worker.js')
+const lifecycleWorkerRaw = require('../../../static/loader/worker.js.txt')
 const lifecycleWorkerUrl = URL.createObjectURL(new Blob([lifecycleWorkerRaw]))
 const worker: Worker = new Worker(lifecycleWorkerUrl, { name: 'LifecycleWorker' })
 worker.onerror = (e) => defaultLogger.error('Loader worker error', e)

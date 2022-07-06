@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2017",
+    "target": "es2020",
     "inlineSourceMap": false,
     "inlineSources": false,
     "declaration": false,
@@ -16,7 +16,7 @@
     "noUnusedLocals": true,
     "jsx": "react",
     "jsxFactory": "h",
-    "lib": ["es2017", "dom"]
+    "lib": ["es2020", "dom"]
   },
   "exclude": ["../node_modules"]
 }

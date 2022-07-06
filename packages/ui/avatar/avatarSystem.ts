@@ -2,9 +2,9 @@ import {
   AvatarShape,
   engine,
   Entity,
-  Observable,
   Transform,
-  EventManager
+  EventManager,
+  Observable
   // BoxShape,
   // IEntity,
   // Material,

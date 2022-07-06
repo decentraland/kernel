@@ -1,4 +1,4 @@
-declare const globalThis: { DecentralandKernel: IDecentralandKernel }
+declare const globalThis: { DecentralandKernel: IDecentralandKernel, global: typeof globalThis }
 
 import { sdk } from '@dcl/schemas'
 import { createLogger } from 'shared/logger'

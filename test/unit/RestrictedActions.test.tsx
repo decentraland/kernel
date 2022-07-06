@@ -5,10 +5,10 @@ import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
 import { PermissionItem, permissionItemToJSON } from 'shared/apis/proto/Permissions.gen'
 import { movePlayerTo, triggerEmote } from 'shared/apis/host/RestrictedActions'
 import { PortContext } from 'shared/apis/host/context'
-import { Vector3 } from '@dcl/legacy-ecs'
 import { EntityType, Scene } from '@dcl/schemas'
 import { expect } from 'chai'
 import Sinon from 'sinon'
+import { Vector3 } from '@dcl/ecs-math'
 
 describe('RestrictedActions tests', () => {
   beforeEach(() => {

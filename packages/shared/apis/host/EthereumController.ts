@@ -4,7 +4,7 @@ import * as EthService from 'shared/ethereum/EthereumService'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { RpcServerPort } from '@dcl/rpc/dist/types'
+import type { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   ConvertMessageToObjectRequest,
   ConvertMessageToObjectResponse,

@@ -1,5 +1,5 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { RpcServerPort } from '@dcl/rpc/dist/types'
+import type { RpcServerPort } from '@dcl/rpc/dist/types'
 import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl } from 'config'
 import {
   GetParcelRequest,

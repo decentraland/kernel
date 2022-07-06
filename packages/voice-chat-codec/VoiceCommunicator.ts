@@ -6,7 +6,7 @@ import { parse, write } from 'sdp-transform'
 import { EncodedFrame, InputWorkletRequestTopic, OutputWorkletRequestTopic } from './types'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const workletWorkerRaw = require('raw-loader!../../static/voice-chat-codec/audioWorkletProcessors.js')
+const workletWorkerRaw = require('../../static/voice-chat-codec/audioWorkletProcessors.js.txt')
 const workletWorkerUrl = URL.createObjectURL(new Blob([workletWorkerRaw], { type: 'application/javascript' }))
 
 export type AudioCommunicatorChannel = {

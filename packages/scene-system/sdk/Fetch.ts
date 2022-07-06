@@ -1,4 +1,4 @@
-import PQueue from 'p-queue/dist'
+import PQueue from 'p-queue'
 
 const TIMEOUT_LIMIT = 29000
 
@@ -14,10 +14,10 @@ type Opts = {
   timeout: number
 }
 
-export function createFetch({ canUseFetch, previewMode, log, originalFetch }: FetchOptions) {
+export function createFetch({ canUseFetch, previewMode, log, originalFetch }: FetchOptions): typeof fetch {
   const fifoFetch = new PQueue({ concurrency: 1 })
-  return async (resource: RequestInfo, init?: (RequestInit & Partial<Opts>) | undefined): Promise<Response> => {
-    const url = resource instanceof Request ? resource.url : resource
+  return async (resource, init?: (RequestInit & Partial<Opts>) | undefined) => {
+    const url = resource instanceof Request ? (resource as any).url : resource
     if (url.toLowerCase().substr(0, 8) !== 'https://') {
       if (previewMode) {
         log(

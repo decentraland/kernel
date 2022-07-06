@@ -98,3 +98,4 @@ static/package-lock.json
 packages/shared/apis/proto/*.ts
 lsall
 *.gen.ts
+static/index.js.map

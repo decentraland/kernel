@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
-import type { QueryType } from '@dcl/legacy-ecs'
+import type { QueryType } from '@dcl/legacy-ecs/dist/decentraland/PhysicsCast'
 import type { WearableId } from 'shared/catalogs/types'
 import { Entity, Scene, Snapshots } from '@dcl/schemas'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'

@@ -23,9 +23,9 @@
     "removeComments": true,
     "pretty": true,
     "outDir": "../../static/systems",
-    "lib": ["es2018", "webworker"],
+    "lib": ["es2018"],
     "baseUrl": "..",
-    "types": ["@dcl/posix", "segment-analytics"]
+    "types": ["@dcl/posix"]
   },
   "exclude": ["../../node_modules"]
 }

@@ -1,5 +1,5 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { RpcClientPort } from '@dcl/rpc/dist/types'
+import type { RpcClientPort } from '@dcl/rpc/dist/types'
 import { UserIdentityServiceDefinition } from '../proto/UserIdentity.gen'
 import { UserData } from '../../types'
 

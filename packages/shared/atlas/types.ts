@@ -13,6 +13,22 @@ export type AtlasState = {
   lastReportPosition?: Vector2Component
 }
 
+
+// this type must match the renderer's
+export type MinimapSceneInfo = {
+  name: string;
+  owner: string;
+  description: string;
+  previewImageUrl: string | undefined;
+  type: number;
+  parcels: {
+      x: number;
+      y: number;
+  }[];
+  isPOI: boolean;
+};
+
+
 export type MapSceneData = {
   sceneId: string
   name: string

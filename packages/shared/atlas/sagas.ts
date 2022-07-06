@@ -1,5 +1,4 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
-import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { call, fork, put, select, take, takeEvery, race, takeLatest } from 'redux-saga/effects'
 import { parcelLimits } from 'config'
 import { fetchSceneJson } from '../../decentraland-loader/lifecycle/utils/fetchSceneJson'
@@ -33,7 +32,7 @@ import {
   REPORT_SCENES_FROM_TILES
 } from './actions'
 import { shouldLoadSceneJsonData, isMarketDataInitialized, getPoiTiles } from './selectors'
-import { AtlasState, RootAtlasState } from './types'
+import { AtlasState, MinimapSceneInfo, RootAtlasState } from './types'
 import { getTilesRectFromCenter } from '../getTilesRectFromCenter'
 import { ILand } from 'shared/types'
 import { SCENE_LOAD } from 'shared/loading/actions'
@@ -48,6 +47,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { MarketData } from 'shared/atlas/types'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
+
 
 const tiles = {
   id: 'tiles',
