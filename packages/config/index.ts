@@ -1,5 +1,4 @@
 import * as contractInfo from '@dcl/urn-resolver/dist/contracts'
-import { getWorld } from '@dcl/schemas'
 import { store } from 'shared/store/isolatedStore'
 
 export const NETWORK_HZ = 10
@@ -46,12 +45,6 @@ export namespace parcelLimits {
   export const minParcelX = -150
   /** @deprecated */
   export const minParcelZ = -150
-
-  export const descriptiveValidWorldRanges = getWorld()
-    .validWorldRanges.map(
-      (range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`
-    )
-    .join(' or ')
 }
 export namespace playerConfigurations {
   export const gravity = -0.2
