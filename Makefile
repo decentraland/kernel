@@ -10,7 +10,6 @@ NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
 SCENE_PROTO_FILES := $(wildcard packages/shared/apis/proto/*.proto)
-PBS_TS = $(SCENE_PROTO_FILES:packages/shared/apis/proto/%.proto=packages/shared/apis/proto/%.gen.ts)
 BFF_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/bff/*.proto)
 COMMS_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/*.proto)
 
