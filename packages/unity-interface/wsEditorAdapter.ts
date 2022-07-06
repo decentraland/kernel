@@ -1,93 +1,41 @@
-import { DEBUG_MESSAGES } from 'config'
-import future from 'fp-future'
-import { createLogger } from 'shared/logger'
-import type { CommonRendererOptions } from './loader'
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
-import { globalObservable } from 'shared/observables'
-
-const logger = createLogger('ws-adapter: ')
+import { CommonRendererOptions } from './loader'
+import { webSocketTransportAdapter } from '../renderer-protocol/transports/webSocketTransportAdapter'
+import { createRendererRpcClient } from '../renderer-protocol/rpcClient'
 
 /** This connects the local game to a native client via WebSocket */
 export async function initializeUnityEditor(
-  webSocketUrl: string,
+  wsUrl: string,
   container: HTMLElement,
   options: CommonRendererOptions
 ): Promise<UnityGame> {
-  const engineStartedFuture = future<UnityGame>()
+  container.innerHTML = `<h3>Connecting...</h3>`
 
-  let firstConnect = true
+  const transport = webSocketTransportAdapter(wsUrl, options)
 
-  const connect = () => {
-    logger.info(`Connecting WS to ${webSocketUrl}`)
-    container.innerHTML = `<h3>Connecting...</h3>`
-    const ws = new WebSocket(webSocketUrl)
+  transport.on('connect', () => {
+    container.classList.remove('dcl-loading')
+    container.innerHTML = `<h3 style='color:green'>Connected</h3>`
+  })
 
-    globalObservable.on('error', (_error) => {
-      ws.close()
-    })
+  transport.on('close', () => {
+    container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
+  })
 
-    ws.onclose = function (e) {
-      logger.error('WS closed!', e)
-      container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
-    }
-
-    ws.onerror = function (e) {
-      if (firstConnect) {
-        setTimeout(function () {
-          connect()
-        }, 1000)
-      } else {
-        logger.error('WS error!', e)
-        container.innerHTML = `<h3 style='color:red'>EERRORR</h3>`
-        engineStartedFuture.reject(new Error('Error in transport'))
-      }
-    }
-
-    ws.onmessage = function (ev) {
-      if (DEBUG_MESSAGES) {
-        logger.info('>>>', ev.data)
-      }
-
-      try {
-        const m = JSON.parse(ev.data)
-        if (m.type && m.payload) {
-          options.onMessage(m.type, m.payload)
-        } else {
-          logger.error('Unexpected message: ', m)
-        }
-      } catch (e: any) {
-        logger.error(e)
-      }
-    }
-
-    const gameInstance: UnityGame = {
-      Module: {},
-      SendMessage(_obj, type, payload) {
-        if (ws.readyState === ws.OPEN) {
-          const msg = JSON.stringify({ type, payload })
-          ws.send(msg)
-        }
-      },
-      SetFullscreen() {
-        // stub
-      },
-      async Quit() {
-        // stub
-      }
-    }
-
-    ws.onopen = function () {
-      firstConnect = false
-      container.classList.remove('dcl-loading')
-      logger.info('WS open!')
-      gameInstance.SendMessage('', 'Reset', '')
-      container.innerHTML = `<h3 style='color:green'>Connected</h3>`
-      // @see packages/shared/renderer/sagas.ts
-      engineStartedFuture.resolve(gameInstance)
+  const gameInstance: UnityGame = {
+    Module: {},
+    SendMessage(_obj, type, payload) {
+      transport.sendMessage({ type, payload } as any)
+    },
+    SetFullscreen() {
+      // stub
+    },
+    async Quit() {
+      // stub
     }
   }
 
-  connect()
+  createRendererRpcClient(transport).catch((e) => {})
 
-  return engineStartedFuture
+  return gameInstance
 }

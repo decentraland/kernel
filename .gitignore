@@ -59,8 +59,6 @@ packages/config/contracts.ts
 .decentraland
 **/.decentraland
 
-packages/shared/comms/v4/**/*.gen.ts
-
 test/tmp
 test/diff
 test/out
@@ -99,3 +97,4 @@ static/package-lock.json
 
 packages/shared/apis/proto/*.ts
 lsall
+*.gen.ts
