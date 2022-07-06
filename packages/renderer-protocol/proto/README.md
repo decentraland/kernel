@@ -1,0 +1,1 @@
+# Generated code from renderer-protocol.proto
