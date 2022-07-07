@@ -208,7 +208,7 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
 			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
-packages/shared/comms/v4/proto/bff/%.gen.ts: node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/v4/proto/bff/%.gen.ts: packages/shared/comms/v4/proto/bff/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
@@ -216,7 +216,7 @@ packages/shared/comms/v4/proto/bff/%.gen.ts: node_modules/.bin/protobuf/bin/prot
 			--ts_proto_out="$(PWD)/packages/shared/comms/v4/proto/bff" -I="$(PWD)/packages/shared/comms/v4/proto/bff" \
 			"$(PWD)/packages/shared/comms/v4/proto/bff/$*.proto"
 
-packages/shared/comms/v4/proto/%.gen.ts: node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/v4/proto/%.gen.ts: packages/shared/comms/v4/proto/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,oneof=unions\
