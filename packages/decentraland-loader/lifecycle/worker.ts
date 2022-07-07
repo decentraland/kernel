@@ -6,7 +6,6 @@ import { WebWorkerTransport } from 'decentraland-rpc'
 import defaultLogger from 'shared/logger'
 import { WorldConfig } from 'shared/meta/types'
 import { InstancedSpawnPoint, LoadableScene } from 'shared/types'
-
 import { SceneDataDownloadManager } from './controllers/download'
 import { EmptyParcelController } from './controllers/EmptyParcelController'
 import { ParcelLifeCycleController } from './controllers/parcel'
