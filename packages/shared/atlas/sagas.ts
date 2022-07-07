@@ -3,7 +3,7 @@ import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { call, fork, put, select, take, takeEvery, race, takeLatest } from 'redux-saga/effects'
 import { parcelLimits } from 'config'
 import { fetchSceneJson } from '../../decentraland-loader/lifecycle/utils/fetchSceneJson'
-import { fetchSceneByLocation } from '../../decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchScenesByLocation } from '../../decentraland-loader/lifecycle/utils/fetchSceneIds'
 import {
   getOwnerNameFromJsonData,
   getSceneDescriptionFromJsonData,
@@ -182,10 +182,10 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   yield call(waitForMarketInitialized)
 
   const tiles = action.payload.tiles
-  const result: Array<LoadableScene | null> = yield call(fetchSceneByLocation, tiles)
+  const result: Array<LoadableScene> = yield call(fetchScenesByLocation, tiles)
 
   // filter non null & distinct
-  const sceneIds = Array.from(new Set<string>(result.filter($ => !!$).map($ => $?.id!)))
+  const sceneIds = Array.from(new Set<string>(result.map(($) => $.id)))
 
   yield put(querySceneData(sceneIds))
 

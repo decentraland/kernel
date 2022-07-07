@@ -121,7 +121,7 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: LoadableSce
   for (const land of newData) {
     let mapScene: MapSceneData = { ...state.idToScene[land.id] }
 
-    const metadata: Scene =land.entity.metadata
+    const metadata: Scene = land.entity.metadata
 
     metadata.scene.parcels.forEach((x) => {
       const scene = tileToScene[x]

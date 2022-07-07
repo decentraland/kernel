@@ -1,6 +1,6 @@
 import { getOwnerNameFromJsonData, getThumbnailUrlFromJsonDataAndContent } from 'shared/selectors'
 import { getFetchContentServer } from 'shared/dao/selectors'
-import { fetchSceneByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 
@@ -33,7 +33,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
       let sceneCreator: string = 'Unknown'
       let sceneEvent = {}
 
-      const mapSceneData = (await fetchSceneByLocation([destination]))[0]
+      const mapSceneData = (await fetchScenesByLocation([destination]))[0]
 
       const metadata: Scene | undefined = mapSceneData?.entity.metadata
 

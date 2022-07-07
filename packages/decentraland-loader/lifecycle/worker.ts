@@ -5,7 +5,7 @@ import { WebWorkerTransport } from 'decentraland-rpc'
 
 import defaultLogger from 'shared/logger'
 import { WorldConfig } from 'shared/meta/types'
-import { InstancedSpawnPoint } from 'shared/types'
+import { InstancedSpawnPoint, LoadableScene } from 'shared/types'
 
 import { SceneDataDownloadManager } from './controllers/download'
 import { EmptyParcelController } from './controllers/EmptyParcelController'
@@ -81,20 +81,22 @@ let emptyParcelController: EmptyParcelController
         })
       })
 
-      connector.on('Scene.dataRequest', async (data: { sceneId: string }) => {
+      function sendData(sceneId: string, scene: LoadableScene | null) {
         connector.notify('Scene.dataResponse', {
-          data: await downloadManager.getParcelDataByEntityId(data.sceneId)
+          sceneId: sceneId,
+          data: scene
         })
+      }
+
+      connector.on('Scene.dataRequest', async (data: { sceneId: string }) => {
+        sendData(data.sceneId, await downloadManager.getParcelDataByEntityId(data.sceneId))
       })
 
-      connector.on('Scene.idRequest', async (data: { sceneIds: string[] }) => {
-        const scenes = await downloadManager.resolveEntitiesByPosition(data.sceneIds)
+      connector.on('Scene.getByPosition', async (data: { positions: string[] }) => {
+        const scenes = await downloadManager.resolveEntitiesByPosition(data.positions)
 
         for (const scene of scenes) {
-          connector.notify('Scene.idResponse', {
-            position: scene.entity.pointers[0],
-            data: scene
-          })
+          sendData(scene.id, scene)
         }
       })
 

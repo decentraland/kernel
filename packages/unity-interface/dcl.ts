@@ -10,7 +10,6 @@ import {
 } from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
-import { ILand } from 'shared/types'
 import {
   allScenesEvent,
   enableParcelSceneLoading,
@@ -28,7 +27,7 @@ import { clientDebug, ClientDebug } from './ClientDebug'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
-import { fetchSceneByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { EntityType, Scene, sdk } from '@dcl/schemas'
@@ -36,7 +35,7 @@ import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
-import { SceneWorker, workerStatusObservable } from 'shared/world/SceneWorker'
+import { workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 
@@ -156,7 +155,7 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
   if (result.ok) {
     const scene = (await result.json()) as Scene
 
-    const scenes = await fetchSceneByLocation([scene.scene.base])
+    const scenes = await fetchScenesByLocation([scene.scene.base])
     if (!scenes.length) throw new Error('cant find scene ' + scene.scene.base)
     return { sceneId: scenes[0].id, sceneBase: scene.scene.base }
   } else {
@@ -205,21 +204,6 @@ export async function loadPreviewScene(message: sdk.Messages) {
   } else {
     defaultLogger.log(`Unable to process message in loadPreviewScene`, { message })
   }
-}
-
-export function loadBuilderScene(_sceneData: ILand): SceneWorker | undefined {
-  // NOTE: check file history for previous implementation
-  throw new Error('Not implemented')
-}
-
-export function unloadCurrentBuilderScene() {
-  // NOTE: check file history for previous implementation
-  throw new Error('Not implemented')
-}
-
-export function updateBuilderScene(_sceneData: ILand) {
-  // NOTE: check file history for previous implementation
-  throw new Error('Not implemented')
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {
