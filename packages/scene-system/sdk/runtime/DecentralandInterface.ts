@@ -1,10 +1,11 @@
 import { LoadableAPIs } from '../../../shared/apis/client'
 import { componentNameRE, generatePBObject, getIdAsNumber } from '../Utils'
-import { QueryType } from '@dcl/legacy-ecs'
+import type { QueryType } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { RuntimeEventCallback } from './Events'
-import { EAType, EntityAction, queryTypeFromJSON } from 'shared/apis/proto/EngineAPI.gen'
+import { EAType, EngineAPIServiceDefinition, EntityAction, queryTypeFromJSON } from 'shared/apis/proto/EngineAPI.gen'
 import { SceneRuntimeEventState } from './Events'
+import { RpcClientModule } from '@dcl/rpc/dist/codegen'
 
 export interface DecentralandInterfaceOptions {
   onLog: (...args: any[]) => void
@@ -14,6 +15,9 @@ export interface DecentralandInterfaceOptions {
   clientPort: RpcClientPort
   eventState: SceneRuntimeEventState
   batchEvents: { events: EntityAction[] }
+  onStartFunctions: (() => void)[]
+  onUpdateFunctions: ((dt: number) => void)[]
+  EngineAPI: RpcClientModule<EngineAPIServiceDefinition>
 }
 
 type GenericRpcModule = Record<string, (...args: any) => Promise<unknown>>
@@ -22,10 +26,6 @@ type ComposedRpcModule = ModuleDescriptor & { __INTERNAL_UNSAFE_loadedModule: Ge
 export function createDecentralandInterface(options: DecentralandInterfaceOptions) {
   const { batchEvents, onError, onLog, sceneId, onEventFunctions, clientPort, eventState } = options
 
-  const EngineAPI = LoadableAPIs.EngineAPI(clientPort)
-
-  const onUpdateFunctions: ((dt: number) => void)[] = []
-  const onStartFunctions: (() => void)[] = []
   const sceneLoadedModules: Record<string, ComposedRpcModule> = {}
 
   const dcl: DecentralandInterface = {
@@ -93,7 +93,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
       if (typeof (cb as any) !== 'function') {
         onError(new Error('onUpdate must be called with only a function argument'))
       } else {
-        onUpdateFunctions.push(cb)
+        options.onUpdateFunctions.push(cb)
       }
     },
 
@@ -193,12 +193,12 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     /** subscribe to specific events, events will be handled by the onEvent function */
     subscribe(eventName: string): void {
-      EngineAPI.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      options.EngineAPI.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     /** unsubscribe to specific event */
     unsubscribe(eventName: string): void {
-      EngineAPI.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      options.EngineAPI.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     componentCreated(id: string, componentName: string, classId: number) {
@@ -261,18 +261,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
       return module.__INTERNAL_UNSAFE_loadedModule[methodName].apply(module, args)
     },
     onStart(cb: () => void) {
-      onStartFunctions.push(cb)
+      options.onStartFunctions.push(cb)
     },
     error(message, data) {
       onError(Object.assign(new Error(message as string), { data }))
     }
   }
 
-  return {
-    dcl,
-    onStartFunctions,
-    onUpdateFunctions
-  }
+  return dcl
 }
 
 function loadSceneModule(clientPort: RpcClientPort, moduleName: string): GenericRpcModule {

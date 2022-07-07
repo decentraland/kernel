@@ -7,7 +7,6 @@ import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
-import { renderDistanceObservable, sceneLifeCycleObservable } from '../decentraland-loader/lifecycle/controllers/scene'
 import { trackEvent } from 'shared/analytics'
 import {
   BringDownClientAndShowError,
@@ -22,18 +21,13 @@ import {
   FriendshipUpdateStatusMessage,
   FriendshipAction,
   WorldPosition,
-  LoadableParcelScene,
   AvatarRendererMessage
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
-  setNewParcelScene,
-  stopParcelSceneWorker,
   allScenesEvent,
   AllScenesEvents,
-  stopIsolatedMode,
-  startIsolatedMode,
-  invalidateScenesAtCoords
+  renderDistanceObservable
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -55,13 +49,10 @@ import { GIFProcessor } from 'gif-processor/processor'
 import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatRecording } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
-import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
-import { unpublishSceneByCoords } from 'shared/apis/SceneStateStorageController/unpublishScene'
-import { BuilderServerAPIManager } from 'shared/apis/SceneStateStorageController/BuilderServerAPIManager'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
@@ -71,12 +62,10 @@ import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from '@dcl/crypto'
-import { IsolatedModeOptions, StatefulWorkerOptions } from 'shared/world/types'
-import { deployScene } from 'shared/apis/SceneStateStorageController/SceneDeployer'
-import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageController/types'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
+import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -194,12 +183,12 @@ export class BrowserInterface {
     }
   }
 
-  public StartIsolatedMode(options: IsolatedModeOptions) {
-    startIsolatedMode(options).catch(defaultLogger.error)
+  public StartIsolatedMode() {
+    defaultLogger.warn('StartIsolatedMode')
   }
 
-  public StopIsolatedMode(options: IsolatedModeOptions) {
-    stopIsolatedMode(options)
+  public StopIsolatedMode() {
+    defaultLogger.warn('StopIsolatedMode')
   }
 
   public AllScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) {
@@ -242,14 +231,14 @@ export class BrowserInterface {
   public SceneEvent(data: { sceneId: string; eventType: string; payload: any }) {
     const scene = getSceneWorkerBySceneID(data.sceneId)
     if (scene) {
-      scene.emit(data.eventType as IEventNames, data.payload)
+      scene.rpcContext.sendSceneEvent(data.eventType as IEventNames, data.payload)
 
       // Keep backward compatibility with old scenes using deprecated `pointerEvent`
       if (data.eventType === 'actionButtonEvent') {
         const { payload } = data.payload
         // CLICK, PRIMARY or SECONDARY
         if (payload.buttonId >= 0 && payload.buttonId <= 2) {
-          scene.emit('pointerEvent', data.payload)
+          scene.rpcContext.sendSceneEvent('pointerEvent', data.payload)
         }
       }
     } else {
@@ -437,31 +426,6 @@ export class BrowserInterface {
          */
         store.dispatch(renderingActivated())
         renderStateObservable.notifyObservers()
-        break
-      }
-      case 'StartStatefulMode': {
-        const { sceneId } = payload
-        const worker = getSceneWorkerBySceneID(sceneId)!
-        const parcelScene = worker.getParcelScene()
-        stopParcelSceneWorker(worker)
-        const data = parcelScene.data.data as LoadableParcelScene
-        getUnityInstance().LoadParcelScenes([data]) // Maybe unity should do it by itself?
-
-        const options: StatefulWorkerOptions = {
-          isEmpty: false
-        }
-
-        async function asyncLoad() {
-          const { StatefulWorker } = await import('shared/world/StatefulWorker')
-          setNewParcelScene(sceneId, new StatefulWorker(parcelScene, options))
-        }
-
-        asyncLoad().catch(defaultLogger.error)
-        break
-      }
-      case 'StopStatefulMode': {
-        const { sceneId } = payload
-        reloadScene(sceneId).catch((error) => defaultLogger.warn(`Failed to stop stateful mode`, error))
         break
       }
       default: {
@@ -688,39 +652,16 @@ export class BrowserInterface {
     store.dispatch(denyPortableExperiences(data.idsToDisable))
   }
 
-  // Note: This message is deprecated and should be deleted in the future.
-  //       We are maintaining it for backward compatibility we can safely delete if we are further than 2/03/2022
   public RequestBIWCatalogHeader() {
-    const identity = getCurrentIdentity(store.getState())
-    if (!identity) {
-      const emptyHeader: Record<string, string> = {}
-      getUnityInstance().SendBuilderCatalogHeaders(emptyHeader)
-    } else {
-      const headers = BuilderServerAPIManager.authorize(identity, 'get', '/assetpacks')
-      getUnityInstance().SendBuilderCatalogHeaders(headers)
-    }
+    defaultLogger.warn('RequestBIWCatalogHeader')
   }
 
-  // Note: This message is deprecated and should be deleted in the future.
-  //       We are maintaining it for compatibility we can safely delete if we are further than 2/03/2022
   public RequestHeaderForUrl(data: { method: string; url: string }) {
-    const identity = getCurrentIdentity(store.getState())
-
-    const headers: Record<string, string> = identity
-      ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
-      : {}
-    getUnityInstance().SendBuilderCatalogHeaders(headers)
+    defaultLogger.warn('RequestHeaderForUrl')
   }
 
-  // Note: This message is deprecated and should be deleted in the future.
-  //       It is here until the Builder API is stabilized and uses the same signedFetch method as the rest of the platform
   public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
-    const identity = getCurrentIdentity(store.getState())
-
-    const headers: Record<string, string> = identity
-      ? BuilderServerAPIManager.authorize(identity, data.method, data.url)
-      : {}
-    getUnityInstance().SendHeaders(data.url, headers)
+    defaultLogger.warn('RequestSignedHeaderForBuilder')
   }
 
   // Note: This message is deprecated and should be deleted in the future.
@@ -737,28 +678,8 @@ export class BrowserInterface {
     getUnityInstance().SendHeaders(data.url, headers)
   }
 
-  public async PublishSceneState(data: PublishPayload) {
-    let deploymentResult: DeploymentResult
-
-    deployScene(data)
-      .then(() => {
-        deploymentResult = { ok: true }
-        if (data.reloadSingleScene) {
-          const promise = invalidateScenesAtCoords(data.pointers)
-          promise.catch((error) =>
-            defaultLogger.error(`error reloading the scene by coords: ${data.pointers} ${error}`)
-          )
-        } else {
-          const promise = invalidateScenesAtCoords(data.pointers, false)
-          promise?.catch((error) => defaultLogger.error(`error invalidating all the scenes: ${error}`))
-        }
-        getUnityInstance().SendPublishSceneResult(deploymentResult)
-      })
-      .catch((error) => {
-        deploymentResult = { ok: false, error: `${error}` }
-        getUnityInstance().SendPublishSceneResult(deploymentResult)
-        defaultLogger.error(error)
-      })
+  public async PublishSceneState(data) {
+    defaultLogger.warn('PublishSceneState', data)
   }
 
   public RequestWearables(data: {
@@ -790,8 +711,8 @@ export class BrowserInterface {
     BringDownClientAndShowError(AVATAR_LOADING_ERROR)
   }
 
-  public UnpublishScene(data: { coordinates: string }) {
-    unpublishSceneByCoords(data.coordinates).catch((error) => defaultLogger.log(error))
+  public UnpublishScene(data: any) {
+    defaultLogger.warn('UnpublishScene', data)
   }
 
   public async NotifyStatusThroughChat(data: { value: string }) {
@@ -808,7 +729,7 @@ export class BrowserInterface {
   }) {
     const scene = getSceneWorkerBySceneID(videoEvent.sceneId)
     if (scene) {
-      scene.emit('videoEvent' as IEventNames, {
+      scene.rpcContext.sendSceneEvent('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,
         videoClipId: videoEvent.videoTextureId,
         videoStatus: videoEvent.status,

@@ -73,7 +73,10 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
   }
 
   const transport = webTransport({ wasmModule: originalUnity.Module })
-  createRendererRpcClient(transport).catch((e) => {})
+  createRendererRpcClient(transport).catch((e) => {
+    console.error(e)
+    debugger
+  })
 
   await engineStartedFuture
 

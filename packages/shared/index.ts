@@ -1,5 +1,3 @@
-import './apis/index'
-
 import { DEBUG_PREFIX } from 'config'
 import { notStarted } from './loading/types'
 import { buildStore } from './store/store'

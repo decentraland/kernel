@@ -16,10 +16,8 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
     network = getSelectedNetwork(globalState)
   } catch {}
 
-  const worldConfig: any = globalState.meta.config.world
-
   return {
-    ...worldConfig,
+    ...globalState.meta.config.world,
     comms: {
       commRadius: commConfigurations.commRadius,
       voiceChatEnabled: false

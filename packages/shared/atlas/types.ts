@@ -1,5 +1,6 @@
+import { Scene } from '@dcl/schemas'
 import { Vector2Component } from 'atomicHelpers/landHelpers'
-import { ContentMapping, SceneJsonData } from 'shared/types'
+import { ContentMapping } from 'shared/types'
 
 export type AtlasState = {
   hasMarketData: boolean
@@ -17,7 +18,7 @@ export type MapSceneData = {
   name: string
   type: number
   estateId?: number
-  sceneJsonData?: SceneJsonData
+  sceneJsonData?: Scene
   alreadyReported: boolean
   contents: Array<ContentMapping>
   requestStatus: undefined | 'loading' | 'ok' | 'fail'

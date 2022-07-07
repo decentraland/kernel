@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { EnvironmentData } from 'shared/types'
+import { ContentMapping, Scene } from '@dcl/schemas'
 import { EnvironmentAPIServiceDefinition } from '../proto/EnvironmentAPI.gen'
 
 export type Realm = {
@@ -22,6 +22,16 @@ export const enum Platform {
   BROWSER = 'browser'
 }
 
+export type BootstrapData = {
+  sceneId: string
+  name: string
+  main: string
+  baseUrl: string
+  mappings: ContentMapping[]
+  useFPSThrottling: boolean
+  data: Scene
+}
+
 export function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClientPort) {
   const originalService = codegen.loadService<Context, EnvironmentAPIServiceDefinition>(
     clientPort,
@@ -30,16 +40,17 @@ export function createEnvironmentAPIServiceClient<Context>(clientPort: RpcClient
   return {
     ...originalService,
 
-    async getBootstrapData(): Promise<EnvironmentData<any>> {
+    async getBootstrapData(): Promise<BootstrapData> {
       const res = await originalService.getBootstrapData({})
+      const sceneMetadata: Scene = JSON.parse(res.entity?.metadataJson || '{}')
       return {
-        sceneId: res.sceneId,
-        name: res.name,
-        main: res.main,
+        sceneId: res.id,
+        name: sceneMetadata.display?.title || 'Unnamed',
+        main: sceneMetadata.main,
         baseUrl: res.baseUrl,
-        mappings: res.mappings,
+        mappings: res.entity?.content || [],
         useFPSThrottling: res.useFPSThrottling,
-        data: JSON.parse(res.jsonPayload)
+        data: sceneMetadata
       }
     },
 

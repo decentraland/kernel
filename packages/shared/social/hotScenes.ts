@@ -1,6 +1,5 @@
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJson'
-import { SceneJsonData } from 'shared/types'
 import { reportScenesFromTiles } from 'shared/atlas/actions'
 import { getSceneNameFromAtlasState, postProcessSceneName, getPoiTiles } from 'shared/atlas/selectors'
 import { getFetchContentServer, getHotScenesService } from 'shared/dao/selectors'
@@ -11,6 +10,7 @@ import {
 } from 'shared/selectors'
 import { getUnityInstance, HotSceneInfo, RealmInfo } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
+import { Scene } from '@dcl/schemas'
 
 export async function fetchHotScenes(): Promise<HotSceneInfo[]> {
   const url = getHotScenesService(store.getState())
@@ -51,7 +51,7 @@ export async function reportHotScenes() {
   getUnityInstance().UpdateHotScenesList(report)
 }
 
-function getSceneName(baseCoord: string, sceneJsonData: SceneJsonData | undefined): string {
+function getSceneName(baseCoord: string, sceneJsonData: Scene | undefined): string {
   const sceneName = getSceneNameFromAtlasState(sceneJsonData) ?? store.getState().atlas.tileToScene[baseCoord]?.name
   return postProcessSceneName(sceneName)
 }
@@ -59,23 +59,23 @@ function getSceneName(baseCoord: string, sceneJsonData: SceneJsonData | undefine
 async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
   const tiles = getPoiTiles(store.getState())
   const scenesId = (await fetchSceneIds(tiles)).filter((id) => id !== null) as string[]
-  const scenesLand = (await fetchSceneJson(scenesId)).filter((land) => land.sceneJsonData)
+  const scenesLand = (await fetchSceneJson(scenesId)).filter((land) => land.entity.metadata)
 
   return scenesLand.map((land) => {
     return {
-      id: land.sceneId,
-      name: getSceneName(land.sceneJsonData.scene.base, land.sceneJsonData),
-      creator: getOwnerNameFromJsonData(land.sceneJsonData),
-      description: getSceneDescriptionFromJsonData(land.sceneJsonData),
+      id: land.id,
+      name: getSceneName(land.entity.metadata.scene.base, land.entity.metadata),
+      creator: getOwnerNameFromJsonData(land.entity.metadata),
+      description: getSceneDescriptionFromJsonData(land.entity.metadata),
       thumbnail:
         getThumbnailUrlFromJsonDataAndContent(
-          land.sceneJsonData,
-          land.mappingsResponse.contents,
+          land.entity.metadata,
+          land.entity.content,
           getFetchContentServer(store.getState())
         ) ?? '',
-      baseCoords: TileStringToVector2(land.sceneJsonData.scene.base),
-      parcels: land.sceneJsonData
-        ? land.sceneJsonData.scene.parcels.map((parcel) => {
+      baseCoords: TileStringToVector2(land.entity.metadata.scene.base),
+      parcels: land.entity.metadata
+        ? land.entity.metadata.scene.parcels.map((parcel) => {
             const coord = parcel.split(',').map((str) => parseInt(str, 10)) as [number, number]
             return { x: coord[0], y: coord[1] }
           })

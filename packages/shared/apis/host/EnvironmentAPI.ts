@@ -20,11 +20,19 @@ import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
 
 export function registerEnvironmentAPIServiceServerImplementation(
-  port: RpcServerPort<PortContextService<'EnvironmentAPI'>>
+  port: RpcServerPort<PortContextService<'sceneData'>>
 ) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
     async getBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
-      return { ...ctx.EnvironmentAPI.data, jsonPayload: JSON.stringify(ctx.EnvironmentAPI.data.data) }
+      return {
+        id: ctx.sceneData.id,
+        baseUrl: ctx.sceneData.baseUrl,
+        useFPSThrottling: ctx.sceneData.useFPSThrottling,
+        entity: {
+          content: ctx.sceneData.entity.content,
+          metadataJson: JSON.stringify(ctx.sceneData.entity.metadata)
+        }
+      }
     },
     async isPreviewMode(): Promise<PreviewModeResponse> {
       return { isPreview: PREVIEW }

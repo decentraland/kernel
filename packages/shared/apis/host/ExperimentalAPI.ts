@@ -10,7 +10,7 @@ export function registerExperimentalAPIServiceServerImplementation(port: RpcServ
   codegen.registerService(port, ExperimentalAPIServiceDefinition, async () => ({
     async sendToRenderer(req, ctx) {
       const protocol = await rendererProtocol
-      return protocol.crdtService.sendCrdt({ sceneId: ctx.EnvironmentAPI.cid, payload: req.data })
+      return protocol.crdtService.sendCrdt({ sceneId: ctx.sceneData.id, payload: req.data })
     },
 
     async messageFromRenderer(_, ctx) {

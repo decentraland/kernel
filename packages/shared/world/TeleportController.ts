@@ -1,5 +1,4 @@
-import { parcelLimits } from 'config'
-import { isInsideWorldLimits } from '@dcl/schemas'
+import { getWorld, isInsideWorldLimits } from '@dcl/schemas'
 
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
 import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
@@ -10,6 +9,10 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { getCommsServer } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsContext } from 'shared/comms/selectors'
+
+const descriptiveValidWorldRanges = getWorld()
+  .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
+  .join(' or ')
 
 // TODO: don't do classess if it holds no state. Use namespaces or functions instead.
 export class TeleportController {
@@ -68,7 +71,7 @@ export class TeleportController {
 
       return { message: tpMessage, success: true }
     } else {
-      const errorMessage = `Coordinates are outside of the boundaries. Valid ranges are: ${parcelLimits.descriptiveValidWorldRanges}.`
+      const errorMessage = `Coordinates are outside of the boundaries. Valid ranges are: ${descriptiveValidWorldRanges}.`
       return { message: errorMessage, success: false }
     }
   }

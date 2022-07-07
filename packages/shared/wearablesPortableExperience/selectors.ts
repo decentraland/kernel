@@ -1,4 +1,4 @@
-import { StorePortableExperience } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 import { RootWearablesPortableExperienceState } from './types'
 
 export const getDesiredWearablePortableExpriences = (store: RootWearablesPortableExperienceState) =>
@@ -6,7 +6,7 @@ export const getDesiredWearablePortableExpriences = (store: RootWearablesPortabl
 
 export const getDesiredLoadableWearablePortableExpriences = (
   store: RootWearablesPortableExperienceState
-): StorePortableExperience[] =>
+): LoadableScene[] =>
   Object.values(store.wearablesPortableExperiences.desiredWearablePortableExperiences).filter(
     Boolean
-  ) as StorePortableExperience[]
+  ) as LoadableScene[]

@@ -1,6 +1,6 @@
 import { Fetcher } from 'dcl-catalyst-commons'
 import { ethereumConfigurations, ETHEREUM_NETWORK } from 'config'
-import { LandRole, ParcelsWithAccess } from '@dcl/legacy-ecs'
+import { LandRole, ParcelsWithAccess } from '@dcl/legacy-ecs/dist/decentraland/Types'
 import defaultLogger from 'shared/logger'
 import { getAppNetwork } from 'shared/web3'
 

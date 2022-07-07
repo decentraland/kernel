@@ -17,8 +17,8 @@ import { RootState } from 'shared/store/rootTypes'
 import { FeatureFlagsResult, fetchFlags } from '@dcl/feature-flags'
 import { trackEvent } from 'shared/analytics'
 import { addKernelPortableExperience } from 'shared/portableExperiences/actions'
-import { StorePortableExperience } from 'shared/types'
 import { getPortableExperienceFromUrn } from 'unity-interface/portableExperiencesUtils'
+import { LoadableScene } from 'shared/types'
 
 export function* waitForMetaConfigurationInitialization() {
   const configInitialized: boolean = yield select(isMetaConfigurationInitiazed)
@@ -67,14 +67,14 @@ function* fetchInitialPortableExperiences() {
 
   const qs = new URLSearchParams(globalThis.location.search)
 
-  const variants: string[] = qs.has('GLOBAL_PX')
+  const globalPortableExperiences: string[] = qs.has('GLOBAL_PX')
     ? qs.getAll('GLOBAL_PX')
     : yield select(getFeatureFlagVariantValue, 'initial_portable_experiences')
 
-  if (Array.isArray(variants)) {
-    for (const id of variants) {
+  if (Array.isArray(globalPortableExperiences)) {
+    for (const id of globalPortableExperiences) {
       try {
-        const px: StorePortableExperience = yield call(getPortableExperienceFromUrn, id)
+        const px: LoadableScene = yield call(getPortableExperienceFromUrn, id)
         yield put(addKernelPortableExperience(px))
       } catch (err: any) {
         console.error(err)

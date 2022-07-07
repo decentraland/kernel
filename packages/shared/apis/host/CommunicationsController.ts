@@ -15,7 +15,7 @@ import { CommunicationsControllerServiceDefinition } from '../proto/Communicatio
 export function registerCommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, CommunicationsControllerServiceDefinition, async (port, ctx) => {
     const commsController: ICommunicationsController = {
-      cid: ctx.EnvironmentAPI.cid,
+      cid: ctx.sceneData.id,
       receiveCommsMessage(message: string, sender: PeerInformation) {
         ctx.sendSceneEvent('comms', {
           message,
@@ -32,7 +32,7 @@ export function registerCommunicationsControllerServiceServerImplementation(port
 
     return {
       async send(req, ctx) {
-        sendParcelSceneCommsMessage(ctx.EnvironmentAPI.cid, req.message)
+        sendParcelSceneCommsMessage(ctx.sceneData.id, req.message)
         return {}
       }
     }

@@ -1,7 +1,7 @@
-import { StorePortableExperience } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 
 export type WearablesPortableExperienceState = {
-  desiredWearablePortableExperiences: Record<string, StorePortableExperience | null>
+  desiredWearablePortableExperiences: Record<string, LoadableScene | null>
 }
 
 export type RootWearablesPortableExperienceState = {

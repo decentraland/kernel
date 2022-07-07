@@ -2,7 +2,7 @@
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
 import type { QueryType } from '@dcl/legacy-ecs'
 import type { WearableId } from 'shared/catalogs/types'
-import { Snapshots } from '@dcl/schemas'
+import { Entity, Scene, Snapshots } from '@dcl/schemas'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
 export type MappingsResponse = {
@@ -143,19 +143,11 @@ export type LoadableParcelScene = {
   contents: Array<ContentMapping>
   baseUrl: string
   baseUrlBundles: string
-  land?: ILand
+  loadableScene: LoadableScene
 }
 
 /** THIS INTERFACE CANNOT CHANGE, IT IS USED IN THE UNITY BUILD */
-export type LoadablePortableExperienceScene = {
-  id: string
-  name: string
-  basePosition: { x: number; y: number }
-  parcels: Array<{ x: number; y: number }>
-  contents: Array<ContentMapping>
-  baseUrl: string
-  baseUrlBundles: string
-  land?: IPortableExperience
+export type LoadablePortableExperienceScene = LoadableParcelScene & {
   icon?: string
 }
 
@@ -237,40 +229,19 @@ export type SceneSourcePlacement = {
   layout: { cols: number; rows: number }
 }
 
-/// https://github.com/decentraland/proposals/blob/master/dsp/0020.mediawiki
-export type SceneJsonData = {
-  display?: SceneDisplay
-  owner?: string
-  contact?: SceneContact
-  main: string
-  tags?: string[]
-  scene: SceneParcels
-  communications?: SceneCommunications
-  policy?: ScenePolicy
-  source?: SceneSource
-  spawnPoints?: SceneSpawnPoint[]
-  requiredPermissions?: string[] | undefined
-  featureToggles?: { [key: string]: string }
-  menuBarIcon?: string
-}
-
 export type SceneFeatureToggle = {
   name: string
   default: 'enabled' | 'disabled'
 }
 
-export class SceneFeatureToggles {
-  static readonly VOICE_CHAT: SceneFeatureToggle = { name: 'voiceChat', default: 'enabled' }
-}
+export const VOICE_CHAT_FEATURE_TOGGLE: SceneFeatureToggle = { name: 'voiceChat', default: 'enabled' }
 
-export type EnvironmentData<T> = {
-  sceneId: string
-  name: string
-  main: string
-  baseUrl: string
-  mappings: Array<ContentMapping>
-  useFPSThrottling: boolean
-  data: T
+export type LoadableScene = {
+  readonly entity: Readonly<Omit<Entity, 'id'>>
+  readonly baseUrl: string
+  readonly id: string
+  /** Id of the parent scene that spawned this scene experience */
+  readonly parentCid?: string
 }
 
 export interface ILand {
@@ -279,7 +250,7 @@ export interface ILand {
    * In the future will change to the sceneCID
    */
   sceneId: string
-  sceneJsonData: SceneJsonData
+  sceneJsonData: Scene
   baseUrl: string
   baseUrlBundles: string
   mappingsResponse: MappingsResponse
@@ -289,7 +260,7 @@ export interface IPortableExperience {
   cid: string
   baseUrl: string
   baseUrlBundles: string
-  sceneJsonData: SceneJsonData
+  sceneJsonData: Scene
   mappingsResponse: MappingsResponse
 }
 
@@ -529,8 +500,8 @@ export type WorldPosition = {
 }
 
 export enum ChatMessagePlayerType {
-  WALLET,
-  GUEST
+  WALLET = 0,
+  GUEST = 1
 }
 
 export type ChatMessage = {
@@ -661,22 +632,3 @@ export type AvatarRendererRemovedMessage = {
 } & AvatarRendererBasePayload
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
-
-/**
- * Holds all the information needed to start a portable experience.
- */
-export type StorePortableExperience = {
-  /** Id of the scene of the portable experience. Usually the EntityID or URN */
-  id: string
-  /** Id of the parent scene that spawned this portable experience */
-  parentCid: string
-  /** Name of the portable experience */
-  name: string
-  /** Base URL used to resolve the content assets */
-  baseUrl: string
-  /** ContentMappings of the assets of the portable experience  */
-  mappings: ContentMapping[]
-
-  /** Name of the ContentMapping used for the icon */
-  menuBarIcon: string
-}

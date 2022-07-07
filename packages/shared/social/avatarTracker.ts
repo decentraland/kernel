@@ -39,11 +39,11 @@ function handleRendererAvatarSceneChanged(userId: string, sceneId: string) {
 
   if (avatarData?.sceneId) {
     const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
-    sceneWorker?.emit('onLeaveScene', { userId })
+    sceneWorker?.rpcContext.sendSceneEvent('onLeaveScene', { userId })
   }
 
   const sceneWorker = getSceneWorkerBySceneID(sceneId)
-  sceneWorker?.emit('onEnterScene', { userId })
+  sceneWorker?.rpcContext.sendSceneEvent('onEnterScene', { userId })
 
   rendererAvatars.set(userId, { sceneId: sceneId })
 }
@@ -52,7 +52,7 @@ function handleRendererAvatarRemoved(userId: string) {
   const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
   if (avatarData) {
     const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
-    sceneWorker?.emit('onLeaveScene', { userId })
+    sceneWorker?.rpcContext.sendSceneEvent('onLeaveScene', { userId })
     rendererAvatars.delete(userId)
   }
 }
