@@ -1,6 +1,5 @@
 import { Observable } from 'mz-observable'
-import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
-import { fetchSceneJson } from 'decentraland-loader/lifecycle/utils/fetchSceneJson'
+import { fetchSceneByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { parcelObservable } from './positionThings'
 import { LoadableScene } from 'shared/types'
 
@@ -19,10 +18,8 @@ export let lastPlayerScene: LoadableScene | undefined
 parcelObservable.add(async ({ newParcel }) => {
   const parcelString = `${newParcel.x},${newParcel.y}`
   if (!lastPlayerScene || !lastPlayerScene.entity.metadata.scene.parcels.includes(parcelString)) {
-    const scenesId = await fetchSceneIds([parcelString])
-    const sceneId = scenesId[0]
-    if (sceneId) {
-      const land = (await fetchSceneJson([sceneId]))[0]
+    const land = (await fetchSceneByLocation([parcelString]))[0]
+    if (land) {
       sceneObservable.notifyObservers({ previousScene: lastPlayerScene, newScene: land })
       lastPlayerScene = land
     } else {

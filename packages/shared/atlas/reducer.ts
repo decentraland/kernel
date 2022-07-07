@@ -1,5 +1,6 @@
+import { Scene } from '@dcl/schemas'
 import { AnyAction } from 'redux'
-import { ILand } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 import {
   REPORTED_SCENES_FOR_MINIMAP,
   FetchDataFromSceneJsonSuccess,
@@ -107,8 +108,8 @@ function reduceFailureDataFromSceneJson(state: AtlasState, sceneIds: string[]) {
   return { ...state, idToScene }
 }
 
-function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
-  const newData = landData.filter((land) => state.idToScene[land.sceneId]?.requestStatus !== 'ok')
+function reduceSuccessDataFromSceneJson(state: AtlasState, landData: LoadableScene[]) {
+  const newData = landData.filter((land) => state.idToScene[land.id]?.requestStatus !== 'ok')
 
   if (newData.length === 0) {
     return state
@@ -118,9 +119,11 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
   const idToScene = { ...state.idToScene }
 
   for (const land of newData) {
-    let mapScene: MapSceneData = { ...state.idToScene[land.sceneId] }
+    let mapScene: MapSceneData = { ...state.idToScene[land.id] }
 
-    land.sceneJsonData.scene.parcels.forEach((x) => {
+    const metadata: Scene =land.entity.metadata
+
+    metadata.scene.parcels.forEach((x) => {
       const scene = tileToScene[x]
       if (scene) {
         mapScene = {
@@ -133,8 +136,8 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
     })
 
     mapScene.requestStatus = 'ok'
-    mapScene.sceneJsonData = land.sceneJsonData
-    mapScene.contents = land.mappingsResponse.contents
+    mapScene.sceneJsonData = metadata
+    mapScene.contents = land.entity.content
 
     const name = getSceneNameFromAtlasState(mapScene.sceneJsonData) ?? mapScene.name
     mapScene.name = postProcessSceneName(name)
@@ -143,7 +146,7 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: ILand[]) {
       tileToScene[x] = mapScene
     })
 
-    idToScene[land.sceneId] = mapScene
+    idToScene[land.id] = mapScene
   }
 
   return { ...state, tileToScene, idToScene }

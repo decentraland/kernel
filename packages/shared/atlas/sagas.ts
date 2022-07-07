@@ -3,7 +3,7 @@ import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { call, fork, put, select, take, takeEvery, race, takeLatest } from 'redux-saga/effects'
 import { parcelLimits } from 'config'
 import { fetchSceneJson } from '../../decentraland-loader/lifecycle/utils/fetchSceneJson'
-import { fetchSceneIds } from '../../decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchSceneByLocation } from '../../decentraland-loader/lifecycle/utils/fetchSceneIds'
 import {
   getOwnerNameFromJsonData,
   getSceneDescriptionFromJsonData,
@@ -35,7 +35,7 @@ import {
 import { shouldLoadSceneJsonData, isMarketDataInitialized, getPoiTiles } from './selectors'
 import { AtlasState, RootAtlasState } from './types'
 import { getTilesRectFromCenter } from '../getTilesRectFromCenter'
-import { ILand } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 import { SCENE_LOAD } from 'shared/loading/actions'
 import { worldToGrid } from '../../atomicHelpers/parcelScenePositions'
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
@@ -111,7 +111,7 @@ function* loadMarketplace(config: MarketplaceConfig) {
 function* querySceneDataAction(action: QuerySceneData) {
   const sceneIds = action.payload
   try {
-    const lands: ILand[] = yield call(fetchSceneJson, sceneIds)
+    const lands: Array<LoadableScene> = yield call(fetchSceneJson, sceneIds)
     yield put(fetchDataFromSceneJsonSuccess(sceneIds, lands))
   } catch (e) {
     yield put(fetchDataFromSceneJsonFailure(sceneIds, e))
@@ -172,8 +172,6 @@ function* initializePois() {
   }
 }
 
-type stringOrNull = string | null
-
 function* waitForMarketInitialized() {
   while (!(yield select(isMarketDataInitialized))) {
     yield take(MARKET_DATA)
@@ -184,10 +182,10 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   yield call(waitForMarketInitialized)
 
   const tiles = action.payload.tiles
-  const result: stringOrNull[] = yield call(fetchSceneIds, tiles)
+  const result: Array<LoadableScene | null> = yield call(fetchSceneByLocation, tiles)
 
   // filter non null & distinct
-  const sceneIds = result.filter((e, i) => e !== null && result.indexOf(e) === i) as string[]
+  const sceneIds = Array.from(new Set<string>(result.filter($ => !!$).map($ => $?.id!)))
 
   yield put(querySceneData(sceneIds))
 

@@ -280,6 +280,7 @@ export async function startPreview(unityInterface: IUnityInterface) {
             sceneLimitsWarningSceneId: sceneData.sceneId
           }
         })
+        // THIS IS FAILING: 
         clientDebug.ToggleSceneBoundingBoxes(sceneData.sceneId, false).catch((e) => logger.error(e))
         unityInterface.SendMessageToUnity('Main', 'TogglePreviewMenu', JSON.stringify({ enabled: true }))
       }

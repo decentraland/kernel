@@ -22,7 +22,7 @@ worker.onerror = (e) => defaultLogger.error('Loader worker error', e)
 
 export class LifecycleManager extends TransportBasedServer {
   sceneIdToRequest: Map<string, IFuture<LoadableScene>> = new Map()
-  positionToRequest: Map<string, IFuture<string>> = new Map()
+  positionToRequest: Map<string, IFuture<LoadableScene>> = new Map()
 
   enable() {
     super.enable()
@@ -36,7 +36,7 @@ export class LifecycleManager extends TransportBasedServer {
       }
     })
 
-    this.on('Scene.idResponse', (scene: { position: string; data: string }) => {
+    this.on('Scene.idResponse', (scene: { position: string; data: LoadableScene }) => {
       const future = this.positionToRequest.get(scene.position)
 
       if (future) {
@@ -55,15 +55,15 @@ export class LifecycleManager extends TransportBasedServer {
     return theFuture
   }
 
-  getSceneIds(parcels: string[]): Promise<string | null>[] {
-    const futures: IFuture<string>[] = []
+  getSceneIds(parcels: string[]): Promise<LoadableScene | null>[] {
+    const futures: IFuture<LoadableScene>[] = []
     const missing: string[] = []
 
     for (const parcel of parcels) {
       let theFuture = this.positionToRequest.get(parcel)
 
       if (!theFuture) {
-        theFuture = future<string>()
+        theFuture = future<LoadableScene>()
         this.positionToRequest.set(parcel, theFuture)
 
         missing.push(parcel)

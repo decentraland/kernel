@@ -28,7 +28,7 @@ import { clientDebug, ClientDebug } from './ClientDebug'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
-import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchSceneByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { EntityType, Scene, sdk } from '@dcl/schemas'
@@ -156,8 +156,9 @@ export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sce
   if (result.ok) {
     const scene = (await result.json()) as Scene
 
-    const [sceneId] = await fetchSceneIds([scene.scene.base])
-    return { sceneId, sceneBase: scene.scene.base }
+    const scenes = await fetchSceneByLocation([scene.scene.base])
+    if (!scenes.length) throw new Error('cant find scene ' + scene.scene.base)
+    return { sceneId: scenes[0].id, sceneBase: scene.scene.base }
   } else {
     throw new Error('Could not load scene.json')
   }
