@@ -7,8 +7,8 @@ import { movePlayerTo, triggerEmote } from 'shared/apis/host/RestrictedActions'
 import { PortContext } from 'shared/apis/host/context'
 import { EntityType, Scene } from '@dcl/schemas'
 import { expect } from 'chai'
-import Sinon from 'sinon'
 import { Vector3 } from '@dcl/ecs-math'
+import Sinon from 'sinon'
 
 describe('RestrictedActions tests', () => {
   beforeEach(() => {

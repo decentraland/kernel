@@ -172,7 +172,7 @@ madge: scripts/deps.js
 
 # Makefile
 
-.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer madge static/index.js  watch-tests
+.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
 .DEFAULT_GOAL := help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -208,8 +208,10 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" -I="$(PWD)/packages/renderer-protocol/proto" \
-			"$(PWD)/packages/renderer-protocol/proto/$*.proto";
+			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" \
+			-I="$(PWD)/packages/renderer-protocol/proto" \
+			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
+			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
 compile_apis: ${PBS_TS}
 

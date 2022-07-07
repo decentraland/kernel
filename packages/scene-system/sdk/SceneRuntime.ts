@@ -10,7 +10,6 @@ import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState, EventDataToRuntimeEvent } from './runtime/Events'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
-
 import queueMicroTask from 'queue-microtask'
 
 export async function startSceneRuntime(client: RpcClient) {
@@ -71,18 +70,17 @@ export async function startSceneRuntime(client: RpcClient) {
   let didStart = false
   let updateIntervalMs: number = 1000 / 30
 
-  function sendBatchAndProcessEvents() {
+  async function sendBatchAndProcessEvents() {
     const actions = batchEvents.events
 
     if (actions.length) {
       batchEvents.events = []
     }
 
-    return EngineAPI.sendBatch({ actions }).then((res) => {
-      for (const e of res.events) {
-        eventReceiver(EventDataToRuntimeEvent(e))
-      }
-    })
+    const res = await EngineAPI.sendBatch({ actions })
+    for (const e of res.events) {
+      eventReceiver(EventDataToRuntimeEvent(e))
+    }
   }
 
   function eventReceiver(event: RuntimeEvent) {
@@ -121,7 +119,7 @@ export async function startSceneRuntime(client: RpcClient) {
   let start = performance.now()
 
   function reschedule() {
-    const ms = Math.max((updateIntervalMs - (performance.now() - start)) | 0, 16)
+    const ms = Math.max((updateIntervalMs - (performance.now() - start)) | 0, 0)
     queueMicroTask(() => setTimeout(mainLoop, ms))
   }
 
@@ -140,9 +138,7 @@ export async function startSceneRuntime(client: RpcClient) {
       }
     }
 
-    sendBatchAndProcessEvents().catch(devToolsAdapter.error)
-
-    reschedule()
+    sendBatchAndProcessEvents().catch(devToolsAdapter.error).finally(reschedule)
   }
 
   const dcl = createDecentralandInterface({
