@@ -24,13 +24,12 @@ import { SHOW_FPS_COUNTER } from 'config'
 import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
 import { isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
-import { getCurrentUserId } from 'shared/session/selectors'
+import { getCurrentUserId, hasWallet } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
-import { hasWallet } from '../session'
 
 interface IChatCommand {
   name: string
@@ -70,11 +69,12 @@ type MessageEvent = typeof MESSAGE_RECEIVED | typeof SEND_MESSAGE
 
 function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
   const { type, payload } = action
+  const isWallet = yield select(hasWallet)
   switch (type) {
     case SEND_MESSAGE: {
       trackEvent('Send chat message', {
         messageId: payload.messageId,
-        from: hasWallet() ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
+        from: isWallet ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
         to: payload.messageType === ChatMessageType.PRIVATE ? ChatMessagePlayerType.WALLET : undefined,
         length: payload.body.length,
         messageType: payload.messageType

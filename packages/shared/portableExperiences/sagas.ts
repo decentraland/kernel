@@ -1,5 +1,5 @@
-import { call, takeEvery, debounce, select, put } from 'redux-saga/effects'
-import { StorePortableExperience } from 'shared/types'
+import { call, takeEvery, debounce, select, put, delay } from 'redux-saga/effects'
+import { LoadableScene } from 'shared/types'
 import {
   ADD_DESIRED_PORTABLE_EXPERIENCE,
   REMOVE_DESIRED_PORTABLE_EXPERIENCE
@@ -41,7 +41,7 @@ function* handlePortableExperienceChanges() {
 
 // reload portable experience
 function* reloadPortableExperienceChanges(action: ReloadScenePortableExperienceAction) {
-  const allDesiredPortableExperiences: StorePortableExperience[] = yield select(getDesiredPortableExperiences)
+  const allDesiredPortableExperiences: LoadableScene[] = yield select(getDesiredPortableExperiences)
 
   const filteredDesiredPortableExperiences = allDesiredPortableExperiences.filter(
     ($) => $.id !== action.payload.data.id
@@ -49,6 +49,8 @@ function* reloadPortableExperienceChanges(action: ReloadScenePortableExperienceA
 
   // unload the filtered PX
   yield call(declareWantedPortableExperiences, filteredDesiredPortableExperiences)
+  // TODO: this is a horrible hack to give enough time to the renderer to kill all the PX
+  yield delay(250)
   // reload all PX
   yield call(declareWantedPortableExperiences, allDesiredPortableExperiences)
 }

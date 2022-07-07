@@ -1,6 +1,6 @@
 import { PlazaNames, RootAtlasState, AtlasState, MapSceneData, MarketData } from './types'
 import { getSceneNameFromJsonData } from 'shared/selectors'
-import { SceneJsonData } from 'shared/types'
+import { Scene } from '@dcl/schemas'
 
 export const EMPTY_PARCEL_NAME = 'Empty parcel'
 
@@ -28,7 +28,7 @@ export function getMapScene(tileToScene: AtlasState['tileToScene'], x: number, y
   return tileToScene[`${x},${y}`]
 }
 
-export function getSceneNameFromAtlasState(sceneJsonData?: SceneJsonData): string | undefined {
+export function getSceneNameFromAtlasState(sceneJsonData?: Scene): string | undefined {
   if (!sceneJsonData) {
     return undefined
   }

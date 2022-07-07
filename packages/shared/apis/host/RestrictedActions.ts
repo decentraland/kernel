@@ -21,15 +21,13 @@ import {
 import { assertHasPermission } from './Permissions'
 import { PermissionItem } from '../proto/Permissions.gen'
 
-export async function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): Promise<MovePlayerToResponse> {
+export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePlayerToResponse {
   //   checks permissions
   assertHasPermission(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, ctx)
 
-  if (!ctx.ParcelIdentity) return {}
+  if (!ctx.sceneData) return {}
 
-  const base = parseParcelPosition(
-    ctx.ParcelIdentity.isPortableExperience ? '0,0' : ctx.ParcelIdentity.land!.sceneJsonData.scene.base
-  )
+  const base = parseParcelPosition(ctx.sceneData.entity.metadata.scene?.base || '0,0')
   const basePosition = new Vector3()
   gridToWorld(base.x, base.y, basePosition)
 
@@ -39,11 +37,11 @@ export async function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): 
 
   // validate new position is inside one of the scene's parcels
   if (!isPositionValid(newAbsolutePosition, ctx)) {
-    ctx.DevTools.logger.error('Error: Position is out of scene', newAbsolutePosition)
+    ctx.logger.error('Error: Position is out of scene', newAbsolutePosition)
     return {}
   }
   if (!isPositionValid(lastPlayerPosition, ctx)) {
-    ctx.DevTools.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
+    ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
     return {}
   }
 
@@ -65,12 +63,12 @@ export async function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): 
   return {}
 }
 
-export async function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Promise<TriggerEmoteResponse> {
+export function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): TriggerEmoteResponse {
   // checks permissions
   assertHasPermission(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE, ctx)
 
   if (!isPositionValid(lastPlayerPosition, ctx)) {
-    ctx.DevTools.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
+    ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
     return {}
   }
 
@@ -80,14 +78,18 @@ export async function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): 
 
 function isPositionValid(position: Vector3, ctx: PortContext) {
   return (
-    ctx.ParcelIdentity!.isPortableExperience ||
-    isWorldPositionInsideParcels(ctx.ParcelIdentity.land!.sceneJsonData.scene.parcels, position)
+    ctx.sceneData!.isPortableExperience ||
+    isWorldPositionInsideParcels(ctx.sceneData.entity.metadata.scene?.parcels || [], position)
   )
 }
 
 export function registerRestrictedActionsServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, RestrictedActionsServiceDefinition, async () => ({
-    triggerEmote,
-    movePlayerTo
+    async triggerEmote(req: TriggerEmoteRequest, ctx: PortContext) {
+      return triggerEmote(req, ctx)
+    },
+    async movePlayerTo(req: MovePlayerToRequest, ctx: PortContext) {
+      return movePlayerTo(req, ctx)
+    }
   }))
 }

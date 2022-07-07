@@ -1,6 +1,5 @@
 import { analizeColorPart, stripAlpha } from './analizeColorPart'
 import { isValidBodyShape } from './isValidBodyShape'
-import { WearableId } from '@dcl/legacy-ecs'
 import { Avatar, AvatarInfo, Profile } from '@dcl/schemas'
 import { AvatarForUserData } from 'shared/types'
 import { validateAvatar } from '../schemaValidation'
@@ -68,7 +67,7 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
   return ret
 }
 
-function mapLegacyIdToUrn(wearableId: WearableId): WearableId {
+function mapLegacyIdToUrn(wearableId: string): string {
   if (!wearableId.startsWith('dcl://')) {
     return wearableId
   }

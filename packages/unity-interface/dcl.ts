@@ -1,32 +1,44 @@
-import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
+import {
+  DEBUG,
+  DECENTRALAND_SPACE,
+  EDITOR,
+  ENGINE_DEBUG_PANEL,
+  PARCEL_LOADING_ENABLED,
+  rootURLPreviewMode,
+  SCENE_DEBUG_PANEL,
+  SHOW_FPS_COUNTER
+} from 'config'
 import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
-import { ILand, SceneJsonData } from 'shared/types'
+import { ILand } from 'shared/types'
 import {
   allScenesEvent,
   enableParcelSceneLoading,
-  loadParcelScene,
+  loadParcelSceneWorker,
   onLoadParcelScenesObservable,
   onPositionSettledObservable,
-  onPositionUnsettledObservable
+  onPositionUnsettledObservable,
+  reloadScene,
+  addDesiredParcel
 } from 'shared/world/parcelSceneManager'
-import { teleportObservable } from 'shared/world/positionThings'
-import { ILandToLoadableParcelScene } from 'shared/selectors'
-import { UnityParcelScene } from './UnityParcelScene'
+import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
+import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
-import { UnityScene } from './UnityScene'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
-import { reloadScene } from 'decentraland-loader/lifecycle/utils/reloadScene'
 import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
-import { sdk } from '@dcl/schemas'
+import { EntityType, Scene, sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
+import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
+import { SceneWorker, workerStatusObservable } from 'shared/world/SceneWorker'
+import { signalParcelLoadingStarted } from 'shared/renderer/actions'
+import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -79,54 +91,70 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 }
 
 async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
-  const scene = new UnityScene({
-    sceneId: cid,
-    name: title,
+  const metadata: Scene = {
+    display: {
+      title: title
+    },
+    main: 'game.js',
+    scene: {
+      base: '0,0',
+      parcels: ['0,0']
+    }
+  }
+
+  const scene = loadParcelSceneWorker({
+    id: cid,
     baseUrl: location.origin,
-    main: fileContentUrl,
-    useFPSThrottling: false,
-    data: {},
-    mappings: []
+    entity: {
+      content: [{ file: 'game.js', hash: fileContentUrl }],
+      pointers: [cid],
+      timestamp: 0,
+      type: EntityType.SCENE,
+      metadata,
+      version: 'v3'
+    }
   })
 
-  loadParcelScene(scene, undefined, true)
-
   getUnityInstance().CreateGlobalScene({
-    id: scene.getSceneId(),
-    name: scene.data.name,
-    baseUrl: scene.data.baseUrl,
+    id: cid,
+    name: title,
+    baseUrl: scene.loadableScene.baseUrl,
     isPortableExperience: false,
-    contents: []
+    contents: scene.loadableScene.entity.content
   })
 }
 
 export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   onLoadParcelScenesObservable.add((lands) => {
-    getUnityInstance().LoadParcelScenes(
-      lands.map(($) => {
-        const x = Object.assign({}, ILandToLoadableParcelScene($).data)
-        delete x.land
-        return x
-      })
-    )
+    getUnityInstance().LoadParcelScenes(lands.map(($) => loadableSceneToLoadableParcelScene($)))
   })
   onPositionSettledObservable.add((spawnPoint) => {
     getUnityInstance().Teleport(spawnPoint)
     getUnityInstance().ActivateRendering()
   })
-
   onPositionUnsettledObservable.add(() => {
     getUnityInstance().DeactivateRendering()
   })
+  workerStatusObservable.add((action) => store.dispatch(action))
 
-  await enableParcelSceneLoading(params)
+  if (PARCEL_LOADING_ENABLED) {
+    await enableParcelSceneLoading(params)
+  } else {
+    store.dispatch(signalParcelLoadingStarted())
+  }
+
+  if (DECENTRALAND_SPACE) {
+    const px = await getPortableExperienceFromUrn(DECENTRALAND_SPACE)
+    await addDesiredParcel(px)
+    onPositionSettledObservable.notifyObservers(pickWorldSpawnpoint(px.entity.metadata as Scene))
+  }
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
   const result = await fetch('/scene.json?nocache=' + Math.random())
 
   if (result.ok) {
-    const scene = (await result.json()) as SceneJsonData
+    const scene = (await result.json()) as Scene
 
     const [sceneId] = await fetchSceneIds([scene.scene.base])
     return { sceneId, sceneBase: scene.scene.base }
@@ -155,17 +183,10 @@ export async function loadPreviewScene(message: sdk.Messages) {
 
         if (!!collection.data.length) {
           const wearable = collection.data[0]
-          store.dispatch(
-            reloadScenePortableExperience({
-              id: wearable.id,
-              parentCid: 'main',
-              name: wearable.name,
-              baseUrl: `${wearable.baseUrl}/`,
-              mappings: wearable.data.scene,
-              // TODO
-              menuBarIcon: 'pending' //wearable.data.
-            })
-          )
+
+          const entity = await wearableToSceneEntity(wearable, wearable.baseUrl)
+
+          store.dispatch(reloadScenePortableExperience(entity))
         }
       } catch (err) {
         defaultLogger.error(`Unable to loader the preview portable experience`, message, err)
@@ -185,7 +206,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
   }
 }
 
-export function loadBuilderScene(_sceneData: ILand): UnityParcelScene | undefined {
+export function loadBuilderScene(_sceneData: ILand): SceneWorker | undefined {
   // NOTE: check file history for previous implementation
   throw new Error('Not implemented')
 }

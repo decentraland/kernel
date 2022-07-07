@@ -1,36 +1,41 @@
-import * as sinon from 'sinon'
-import { expect } from "chai"
+import Sinon, * as sinon from 'sinon'
 import * as wrapConsole from 'shared/logger/wrap'
 import { defaultLogger } from 'shared/logger'
 
 describe('Wrapped Logger', () => {
-  wrapConsole.METHODS.forEach(method => {
+  wrapConsole.METHODS.forEach((method) => {
     describe(`Wrapped Console.${method}`, () => {
+      beforeEach(() => {
+        sinon.reset()
+        sinon.restore()
+      })
+
       it('should log everything without prefix', () => {
-        const a = sinon.spy(wrapConsole._console, method)
+        const spy = sinon.spy(wrapConsole._console, method)
+
         wrapConsole.default('*')
         const message = 'Some'
         console[method](message)
-        expect(a.calledWith(message)).to.equal(true)
+        Sinon.assert.calledWith(spy, message)
       })
 
       it('should NOT log if the message doenst match the prefix', () => {
-        const a = sinon.spy(wrapConsole._console, method)
+        const spy = sinon.spy(wrapConsole._console, method)
         const prefix = 'kernel: '
         wrapConsole.default(prefix)
 
         // No prefix
         const message = 'Some message without prefix'
         console[method](message)
-        expect(a.called).to.equal(false)
+        Sinon.assert.notCalled(spy)
 
         // Prefix with multiple args
         console[method](prefix, message)
-        expect(a.calledWith(prefix ,message)).to.equal(true)
+        Sinon.assert.calledWith(spy, prefix, message)
 
         // Prefix with single arg
         console[method](prefix + message)
-        expect(a.calledWith(prefix + message)).to.equal(true)
+        Sinon.assert.calledWith(spy, prefix + message)
       })
 
       it('should log with multiple prefixes', () => {
@@ -43,26 +48,26 @@ describe('Wrapped Logger', () => {
 
         // No prefix
         console[method](message)
-        expect(spy.called).to.equal(false)
+        Sinon.assert.notCalled(spy)
 
         // Kernel prefix
         console[method](kernelPrefix, message)
-        expect(spy.calledWith(kernelPrefix ,message)).to.equal(true)
+        Sinon.assert.calledWith(spy, kernelPrefix, message)
 
         // Unity prefix
         console[method](unityPrefix + message)
-        expect(spy.calledWith(unityPrefix + message)).to.equal(true)
+        Sinon.assert.calledWith(spy, unityPrefix + message)
       })
 
       it('should log an object correctly', () => {
-        if (method === 'warn') return
         const spy = sinon.spy(wrapConsole._console, method)
+        if (method === 'warn') return
         const prefix = '*'
         wrapConsole.default(prefix)
         const message = { someMessage: true }
         defaultLogger[method](message as any)
 
-        expect(spy.calledWith('kernel: ', '', message)).to.equal(true)
+        Sinon.assert.calledWith(spy, 'kernel: ', '', message)
       })
     })
   })

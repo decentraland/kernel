@@ -1,6 +1,6 @@
 import { Vector3 } from '@dcl/ecs-math'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
-import { MinimapSceneInfo } from '@dcl/legacy-ecs'
+import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {
@@ -24,7 +24,6 @@ import {
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
-import { BuilderAsset, DeploymentResult } from '../shared/apis/SceneStateStorageController/types'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { WearableV2 } from 'shared/catalogs/types'
@@ -38,7 +37,6 @@ import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import { setFpsCapOnOff } from './hackedTimers'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -182,10 +180,6 @@ export class UnityInterface implements IUnityInterface {
 
   public HideFPSPanel() {
     this.SendMessageToUnity('Main', 'HideFPSPanel')
-  }
-
-  public SetFpsTarget(data: { capped: boolean; target: number }) {
-    setFpsCapOnOff(data.capped, data.target)
   }
 
   public SetEngineDebugPanel() {
@@ -452,8 +446,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Bridges', 'UpdateRealmsInfo', JSON.stringify(realmsInfo))
   }
 
-  public SendPublishSceneResult(result: DeploymentResult) {
-    this.SendMessageToUnity('Main', 'PublishSceneResult', JSON.stringify(result))
+  public SendPublishSceneResult() {
+    this.logger.warn('SendPublishSceneResult')
   }
 
   public SendBuilderProjectInfo(projectName: string, projectDescription: string, isNewEmptyProject: boolean) {
@@ -478,8 +472,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'RequestedHeaders', JSON.stringify(request))
   }
 
-  public SendSceneAssets(assets: BuilderAsset[]) {
-    this.SendMessageToUnity('Main', 'AddAssets', JSON.stringify(assets))
+  public SendSceneAssets() {
+    this.logger.warn('SendSceneAssets')
   }
 
   public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined) {
@@ -499,8 +493,8 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
-  public SendUnpublishSceneResult(result: DeploymentResult) {
-    this.SendMessageToUnity('Bridges', 'UnpublishSceneResult', JSON.stringify(result))
+  public SendUnpublishSceneResult() {
+    this.logger.warn('SendUnpublishSceneResult')
   }
 
   // *********************************************************************************

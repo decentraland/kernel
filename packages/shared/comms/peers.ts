@@ -1,4 +1,4 @@
-import { Observable } from '@dcl/legacy-ecs'
+import { Observable } from 'mz-observable'
 import { UUID, PeerInformation, AvatarMessage, AvatarMessageType, Pose } from './interface/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { MinPeerData } from '@dcl/catalyst-peer'

@@ -31,7 +31,7 @@ import {
   VOICE_RECORDING_UPDATE
 } from 'shared/comms/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
-import { CurrentRealmInfoForRenderer, SceneFeatureToggles } from 'shared/types'
+import { CurrentRealmInfoForRenderer, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getCommsContext } from 'shared/comms/selectors'
@@ -41,9 +41,8 @@ import { CommsContext } from 'shared/comms/context'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
-import { ensureMetaConfigurationInitialized } from 'shared/meta'
-import { getFeatureFlagEnabled } from 'shared/meta/selectors'
 import { waitForRendererInstance } from './sagas-helper'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -58,19 +57,6 @@ export function* rendererSaga() {
   yield call(listenToWhetherSceneSupportsVoiceChat)
 
   yield fork(reportRealmChangeToRenderer)
-  yield fork(configureFps)
-}
-
-// configures a cap on the FPS in the renderer
-function* configureFps() {
-  yield call(ensureMetaConfigurationInitialized)
-  yield call(waitForRendererInstance)
-
-  const fpsCapped: boolean = yield select(getFeatureFlagEnabled, 'web_cap_fps')
-
-  if (fpsCapped) {
-    getUnityInstance().SetFpsTarget({ capped: fpsCapped, target: 30 })
-  }
 }
 
 function* reportRealmChangeToRenderer() {
@@ -130,8 +116,8 @@ function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdate) {
 function* listenToWhetherSceneSupportsVoiceChat() {
   sceneObservable.add(({ newScene }) => {
     const nowEnabled = newScene
-      ? isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, newScene.sceneJsonData)
-      : isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT)
+      ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, newScene.entity.metadata)
+      : isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE)
 
     getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
   })
@@ -200,7 +186,7 @@ function* sendSignUpToRenderer(action: SignUpSetIsSignUp) {
   }
 }
 
-let lastSentProfile: any = null
+let lastSentProfile: NewProfileForRenderer | null = null
 function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   const { userId } = action.payload
 

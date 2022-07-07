@@ -5,9 +5,10 @@ import { WebWorkerTransport } from 'decentraland-rpc'
 
 import defaultLogger from 'shared/logger'
 import { WorldConfig } from 'shared/meta/types'
-import { ILand, InstancedSpawnPoint } from 'shared/types'
+import { InstancedSpawnPoint } from 'shared/types'
 
-import { SceneDataDownloadManager, TileIdPair } from './controllers/download'
+import { SceneDataDownloadManager } from './controllers/download'
+import { EmptyParcelController } from './controllers/EmptyParcelController'
 import { ParcelLifeCycleController } from './controllers/parcel'
 import { PositionLifecycleController } from './controllers/position'
 import { NewDrawingDistanceReport, SceneLifeCycleController, SceneLifeCycleStatusReport } from './controllers/scene'
@@ -19,6 +20,7 @@ let parcelController: ParcelLifeCycleController
 let sceneController: SceneLifeCycleController
 let positionController: PositionLifecycleController
 let downloadManager: SceneDataDownloadManager
+let emptyParcelController: EmptyParcelController
 
 /**
  * Hook all the events to the connector.
@@ -26,13 +28,11 @@ let downloadManager: SceneDataDownloadManager
  * Make sure the main thread watches for:
  * - 'Position.settled'
  * - 'Position.unsettled'
- * - 'Scene.shouldStart' (sceneId: string)
+ * - 'Scene.shouldStart' (entity: Entity)
  * - 'Scene.shouldUnload' (sceneId: string)
- * - 'Scene.shouldPrefetch' (sceneId: string)
  *
  * Make sure the main thread reports:
  * - 'User.setPosition' { position: {x: number, y: number } }
- * - 'Scene.prefetchDone' { sceneId: string }
  */
 {
   connector.on(
@@ -46,17 +46,10 @@ let downloadManager: SceneDataDownloadManager
       emptyScenes: boolean
       worldConfig: WorldConfig
     }) => {
-      downloadManager = new SceneDataDownloadManager({
-        contentServer: options.contentServer,
-        catalystServer: options.catalystServer,
-        contentServerBundles: options.contentServerBundles,
-        worldConfig: options.worldConfig,
-        rootUrl: options.rootUrl
-      })
-      parcelController = new ParcelLifeCycleController({
-        lineOfSightRadius: options.lineOfSightRadius
-      })
-      sceneController = new SceneLifeCycleController({ downloadManager, enabledEmpty: options.emptyScenes })
+      emptyParcelController = new EmptyParcelController(options)
+      downloadManager = new SceneDataDownloadManager({ ...options, emptyParcelController })
+      parcelController = new ParcelLifeCycleController(options)
+      sceneController = new SceneLifeCycleController({ downloadManager })
       positionController = new PositionLifecycleController(downloadManager, parcelController, sceneController)
       parcelController.on('Sighted', (parcels: string[]) =>
         connector.notify('Parcel.sighted', {
@@ -75,15 +68,8 @@ let downloadManager: SceneDataDownloadManager
       positionController.on('Unsettled Position', () => {
         connector.notify('Position.unsettled')
       })
-      positionController.on('Tracking Event', (event: { name: string; data: any }) =>
-        connector.notify('Event.track', event)
-      )
-
-      sceneController.on('Start scene', (sceneId) => {
-        connector.notify('Scene.shouldStart', { sceneId })
-      })
-      sceneController.on('Preload scene', (sceneId) => {
-        connector.notify('Scene.shouldPrefetch', { sceneId })
+      sceneController.on('Start scene', (entity) => {
+        connector.notify('Scene.shouldStart', { entity })
       })
       sceneController.on('Unload scene', (sceneId) => {
         connector.notify('Scene.shouldUnload', { sceneId })
@@ -95,33 +81,21 @@ let downloadManager: SceneDataDownloadManager
         })
       })
 
-      connector.on('ResetScenes', () => {
-        parcelController.resetScenesOnSight()
-      })
-
       connector.on('Scene.dataRequest', async (data: { sceneId: string }) => {
         connector.notify('Scene.dataResponse', {
-          data: (await downloadManager.getParcelDataBySceneId(data.sceneId)) as ILand
+          data: await downloadManager.getParcelDataByEntityId(data.sceneId)
         })
       })
 
       connector.on('Scene.idRequest', async (data: { sceneIds: string[] }) => {
-        const scenes: TileIdPair[] = await downloadManager.resolveSceneSceneIds(data.sceneIds)
+        const scenes = await downloadManager.resolveEntitiesByPosition(data.sceneIds)
 
         for (const scene of scenes) {
           connector.notify('Scene.idResponse', {
-            position: scene[0],
-            data: scene[1]
+            position: scene.entity.pointers[0],
+            data: scene
           })
         }
-      })
-
-      connector.on('Scene.reload', (data: { sceneId: string }) => {
-        if (sceneController.isSceneRunning(data.sceneId)) void sceneController.reloadScene(data.sceneId)
-      })
-
-      connector.on('Scene.prefetchDone', (opt: { sceneId: string }) => {
-        sceneController.reportDataLoaded(opt.sceneId)
       })
 
       connector.on('Scene.status', (data: SceneLifeCycleStatusReport) => {
@@ -131,14 +105,6 @@ let downloadManager: SceneDataDownloadManager
       connector.on('SetScenesLoadRadius', (data: NewDrawingDistanceReport) => {
         const parcels = parcelController.setLineOfSightRadius(data.distanceInParcels)
         void positionController.updateSightedParcels(parcels)
-      })
-
-      connector.on('Scene.Invalidate', (data: { sceneId: string }) => {
-        sceneController.invalidate(data.sceneId)
-      })
-
-      connector.on('Parcel.Invalidate', (data: { coords: string[] }) => {
-        downloadManager.invalidateParcels(data.coords)
       })
     }
   )

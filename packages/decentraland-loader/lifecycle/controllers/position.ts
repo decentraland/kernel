@@ -7,7 +7,6 @@ import { worldToGrid, gridToWorld } from '../../../atomicHelpers/parcelScenePosi
 import { pickWorldSpawnpoint } from 'shared/world/positionThings'
 import { InstancedSpawnPoint } from 'shared/types'
 import { createLogger } from 'shared/logger'
-import type { PositionTrackEvents } from 'shared/analytics/types'
 
 const DEBUG = false
 
@@ -48,15 +47,11 @@ export class PositionLifecycleController extends EventEmitter {
     this.currentPosition = resolvedPosition
 
     if (teleported) {
-      const land = await this.downloadManager.getParcelData(`${position.x},${position.y}`)
-      if (land) {
-        const spawnPoint = pickWorldSpawnpoint(land)
+      const lands = await this.downloadManager.resolveEntitiesByPosition([`${position.x},${position.y}`])
+      if (lands.size) {
+        const [first] = lands
+        const spawnPoint = pickWorldSpawnpoint(first.entity.metadata)
         resolvedPosition = worldToGrid(spawnPoint.position)
-        this.trackEvent('Scene Spawn', {
-          parcel: land.sceneJsonData.scene.base,
-          spawnpoint: spawnPoint.position
-        })
-
         this.currentSpawnpoint = spawnPoint
       } else {
         this.currentSpawnpoint = { position: gridToWorld(position.x, position.y) }
@@ -73,15 +68,9 @@ export class PositionLifecycleController extends EventEmitter {
     if (parcels === undefined) return
 
     const newlySightedScenes = await this.sceneController.reportSightedParcels(parcels.sighted, parcels.lostSight)
-    if (!this.eqSet(this.currentlySightedScenes, newlySightedScenes.sighted)) {
+    if (!eqSet(this.currentlySightedScenes, newlySightedScenes.sighted)) {
       this.currentlySightedScenes = newlySightedScenes.sighted
     }
-  }
-
-  private eqSet(as: Array<any>, bs: Array<any>) {
-    if (as.length !== bs.length) return false
-    for (const a of as) if (!bs.includes(a)) return false
-    return true
   }
 
   private checkPositionSettlement() {
@@ -101,8 +90,11 @@ export class PositionLifecycleController extends EventEmitter {
       }
     }
   }
+}
 
-  private trackEvent<K extends keyof PositionTrackEvents>(name: K, data: PositionTrackEvents[K]) {
-    this.emit('Tracking Event', { name, data })
-  }
+function eqSet(as: Array<any>, bs: Array<any>) {
+  if (as.length !== bs.length) return false
+  for (const a of as) if (!bs.includes(a)) return false
+  for (const b of bs) if (!as.includes(b)) return false
+  return true
 }

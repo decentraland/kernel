@@ -1,5 +1,4 @@
 import * as contractInfo from '@dcl/urn-resolver/dist/contracts'
-import { getWorld } from '@dcl/schemas'
 import { store } from 'shared/store/isolatedStore'
 
 export const NETWORK_HZ = 10
@@ -46,12 +45,6 @@ export namespace parcelLimits {
   export const minParcelX = -150
   /** @deprecated */
   export const minParcelZ = -150
-
-  export const descriptiveValidWorldRanges = getWorld()
-    .validWorldRanges.map(
-      (range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`
-    )
-    .join(' or ')
 }
 export namespace playerConfigurations {
   export const gravity = -0.2
@@ -64,14 +57,6 @@ export namespace playerConfigurations {
   export const inertia = 0.01
   // The mouse sensibility (lower is most sensible)
   export const angularSensibility = 500
-}
-
-export namespace visualConfigurations {
-  export const fieldOfView = 75
-  export const farDistance = parcelLimits.visibleRadius * parcelLimits.parcelSize
-
-  export const near = 0.08
-  export const far = farDistance
 }
 
 // Entry points
@@ -105,6 +90,10 @@ const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
 export const COMMS =
   !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
+
+export const DECENTRALAND_SPACE = qs.get('SPACE')
+
+export const PARCEL_LOADING_ENABLED = !DECENTRALAND_SPACE || qs.has('DISABLE_PARCEL_LOADING')
 
 export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
 export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('FETCH_CONTENT_SERVICE'))

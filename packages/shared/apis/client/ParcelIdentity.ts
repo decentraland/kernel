@@ -34,14 +34,6 @@ export function createParcelIdentityServiceClient<Context>(clientPort: RpcClient
     },
 
     /**
-     * Returns if the parcel is empty or not
-     */
-    async getIsEmpty(): Promise<boolean> {
-      const data = await originalService.getIsEmpty({})
-      return data.isEmpty
-    },
-
-    /**
      * Returns the scene id
      */
     async getSceneId(): Promise<string> {

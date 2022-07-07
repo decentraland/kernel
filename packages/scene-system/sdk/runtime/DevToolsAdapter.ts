@@ -6,14 +6,10 @@ export class DevToolsAdapter {
 
   constructor(public devTools: LoadedModules['DevTools']) {}
 
-  get now() {
-    return performance.now()
-  }
-
   log(...args: any[]) {
     const params: Protocol.Runtime.ConsoleAPICalledEvent = {
       type: 'log',
-      timestamp: this.now,
+      timestamp: performance.now(),
       executionContextId: 0,
       args: args.map(($) => {
         let value = undefined
@@ -69,7 +65,7 @@ export class DevToolsAdapter {
       unserializableValue
     }
     const param: Protocol.Runtime.ExceptionThrownEvent = {
-      timestamp: this.now,
+      timestamp: performance.now(),
       exceptionDetails: {
         text: e.toString() + '\n' + e.stack,
         exceptionId,

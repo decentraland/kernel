@@ -70,7 +70,7 @@ static/%.js: build-essentials packages/entryPoints/%.ts
 
 # Release
 
-DIST_ENTRYPOINTS := static/editor.js static/index.js
+DIST_ENTRYPOINTS := static/index.js
 DIST_STATIC_FILES := static/export.html static/preview.html static/default-profile/contents
 
 build-deploy: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) ## Build all the entrypoints needed for a deployment
@@ -104,30 +104,15 @@ test-ci: # Run the tests (for use in the continuous integration environment)
 	@SINGLE_RUN=true NODE_ENV=production $(MAKE) test
 	@node_modules/.bin/nyc report --temp-directory ./test/tmp --reporter=html --reporter=lcov --reporter=text
 
-generate-images: ## Generate the screenshots to run the visual diff validation tests
-	@docker run \
-		-it \
-		--rm \
-		--name node \
-		-v "$(PWD):/usr/src/app" \
-		-w /usr/src/app \
-		-e SINGLE_RUN=true \
-		-e GENERATE_NEW_IMAGES=true \
-		circleci/node:10-browsers \
-			make test
-
-# CLI
-
-npm-link: build-essentials static/editor.js ## Run `npm link` to develop local scenes against this project
+npm-link: build-essentials ## Run `npm link` to develop local scenes against this project
 	cd static; npm link
 
-watch-builder: build-essentials static/editor.js ## Watch the files required for hacking with the builder
+watch-builder: build-essentials ## Watch the files required for hacking with the builder
 	@$(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,builder,server" \
+		-n "scene-system,internal-scenes,loader,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
 			"$(COMPILER) targets/engine/loader.json --watch" \
-			"$(COMPILER) targets/entryPoints/editor.json --watch" \
 			"node ./scripts/runTestServer.js --keep-open"
 
 watch-cli: build-essentials ## Watch the files required for building the CLI
@@ -176,7 +161,6 @@ update-renderer:  ## Update the renderer
 madge: scripts/deps.js
 	@node scripts/deps.js
 	dot packages/scene-system/scene.system.ts.dot -T pdf -O
-	dot packages/scene-system/stateful.scene.system.ts.dot -T pdf -O
 	dot packages/ui/decentraland-ui.scene.ts.dot -T pdf -O
 	dot packages/entryPoints/index.ts.dot -T pdf -O
 	dot packages/decentraland-loader/lifecycle/worker.ts.dot -T pdf -O
@@ -186,7 +170,7 @@ madge: scripts/deps.js
 
 # Makefile
 
-.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix generate-images test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
+.PHONY: help docs clean watch watch-builder watch-cli lint lint-fix test-ci test-docker update build-essentials build-deploy build-release update-renderer madge
 .DEFAULT_GOAL := help
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

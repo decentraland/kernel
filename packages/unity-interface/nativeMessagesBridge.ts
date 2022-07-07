@@ -14,7 +14,7 @@ import {
   UpdateEntityComponentPayload,
   EntityActionType
 } from 'shared/types'
-import { QueryType } from '@dcl/legacy-ecs'
+import type { QueryType } from '@dcl/legacy-ecs'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { incrementMessageFromKernelToRendererNative } from 'shared/session/getPerformanceInfo'
 
@@ -244,6 +244,8 @@ export class NativeMessagesBridge {
 
     if (action.tag !== undefined) {
       this.setTag(action.tag)
+    } else {
+      this.setTag('')
     }
 
     switch (action.type) {

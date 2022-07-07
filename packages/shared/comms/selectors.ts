@@ -1,6 +1,6 @@
 import { Realm } from 'shared/dao/types'
 import { isFeatureToggleEnabled } from 'shared/selectors'
-import { SceneFeatureToggles } from 'shared/types'
+import { VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { lastPlayerScene } from 'shared/world/sceneState'
 import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import type { CommsContext } from './context'
@@ -17,7 +17,7 @@ export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator =
 }
 
 export function isVoiceChatAllowedByCurrentScene() {
-  return isFeatureToggleEnabled(SceneFeatureToggles.VOICE_CHAT, lastPlayerScene?.sceneJsonData)
+  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, lastPlayerScene?.entity.metadata)
 }
 
 export function sameRealm(realm1: Realm, realm2: Realm) {

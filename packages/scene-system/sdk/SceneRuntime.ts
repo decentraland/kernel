@@ -1,18 +1,15 @@
 import { LoadableAPIs } from '../../shared/apis/client'
 import { initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
-import { LoadableParcelScene } from 'shared/types'
-import { customEval, getES5Context } from './sandbox'
-import { createFetch } from './Fetch'
-import { createWebSocket } from './WebSocket'
+import { customEval, prepareSandboxContext } from './sandbox'
 import { RpcClient } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
 
-import { createDecentralandInterface } from './runtime/DecentralandInterface'
+import { createDecentralandInterface, DecentralandInterfaceOptions } from './runtime/DecentralandInterface'
 import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
-import type { EntityAction, PullEventsResponse } from 'shared/apis/proto/EngineAPI.gen'
 import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState, EventDataToRuntimeEvent } from './runtime/Events'
+import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -25,9 +22,65 @@ export async function startSceneRuntime(client: RpcClient) {
     LoadableAPIs.DevTools(clientPort)
   ])
 
+  const [canUseWebsocket, canUseFetch] = (
+    await Permissions.hasManyPermissions({
+      permissions: [PermissionItem.USE_WEBSOCKET, PermissionItem.USE_FETCH]
+    })
+  ).hasManyPermission
+
   const devToolsAdapter = new DevToolsAdapter(DevTools)
   const eventState: SceneRuntimeEventState = { allowOpenExternalUrl: false }
   const onEventFunctions: RuntimeEventCallback[] = []
+  const onUpdateFunctions: ((dt: number) => void)[] = []
+  const onStartFunctions: (() => void)[] = []
+  const batchEvents: DecentralandInterfaceOptions['batchEvents'] = {
+    events: []
+  }
+
+  const bootstrapData = await EnvironmentAPI.getBootstrapData()
+  const fullData = bootstrapData.data
+  const isPreview = await EnvironmentAPI.isPreviewMode()
+  const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
+
+  if (!bootstrapData || !bootstrapData.main) {
+    throw new Error(`No boostrap data`)
+  }
+
+  const mappingName = bootstrapData.main
+  const mapping = bootstrapData.mappings.find(($) => $.file === mappingName)
+
+  if (!mapping) {
+    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+    throw new Error(`SDK: Error while loading scene. Main file missing.`)
+  }
+
+  const url = resolveMapping(mapping.hash, mappingName, bootstrapData.baseUrl)
+  const codeRequest = await fetch(url)
+
+  if (!codeRequest.ok) {
+    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+    throw new Error(
+      `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
+    )
+  }
+
+  const sourceCode = await codeRequest.text()
+
+  let didStart = false
+  let updateIntervalMs: number = 1000 / 30
+
+  async function sendBatchAndProcessEvents() {
+    const actions = batchEvents.events
+
+    if (actions.length) {
+      batchEvents.events = []
+    }
+
+    const res = await EngineAPI.sendBatch({ actions })
+    for (const e of res.events) {
+      eventReceiver(EventDataToRuntimeEvent(e))
+    }
+  }
 
   function eventReceiver(event: RuntimeEvent) {
     if (event.type === 'raycastResponse') {
@@ -37,83 +90,7 @@ export async function startSceneRuntime(client: RpcClient) {
       }
     }
 
-    if (isPointerEvent(event)) {
-      eventState.allowOpenExternalUrl = true
-    }
-    for (const cb of onEventFunctions) {
-      try {
-        cb(event)
-      } catch (err) {
-        console.error(err, { event })
-      }
-    }
-    eventState.allowOpenExternalUrl = false
-  }
-
-  const bootstrapData = await EnvironmentAPI.getBootstrapData()
-  const fullData = bootstrapData.data as LoadableParcelScene
-  const isPreview = await EnvironmentAPI.isPreviewMode()
-
-  if (!bootstrapData || !bootstrapData.main) {
-    throw new Error(`No boostrap data`)
-  }
-
-  const mappingName = bootstrapData.main
-  const mapping = bootstrapData.mappings.find(($) => $.file === mappingName)
-  const url = resolveMapping(mapping && mapping.hash, mappingName, bootstrapData.baseUrl)
-  const codeRequest = await fetch(url)
-
-  if (!codeRequest.ok) {
-    EngineAPI.sendBatch({ actions: [initMessagesFinished()] }).catch((err) => devToolsAdapter.error(err))
-    throw new Error(
-      `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
-    )
-  }
-
-  const sourceCode = await codeRequest.text()
-
-  const batchEvents: { events: EntityAction[] } = {
-    events: []
-  }
-
-  const { dcl, onUpdateFunctions, onStartFunctions } = createDecentralandInterface({
-    clientPort,
-    onError: (err: Error) => devToolsAdapter.error(err),
-    onLog: (...args: any) => devToolsAdapter.log(...args),
-    onEventFunctions,
-    sceneId: bootstrapData.sceneId,
-    eventState,
-    batchEvents
-  })
-
-  const [canUseWebsocket, canUseFetch] = (
-    await Permissions.hasManyPermissions({
-      permissions: [PermissionItem.USE_WEBSOCKET, PermissionItem.USE_FETCH]
-    })
-  ).hasManyPermission
-
-  const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
-
-  const originalFetch = fetch
-
-  const restrictedWebSocket = createWebSocket({
-    canUseWebsocket,
-    previewMode: isPreview || unsafeAllowed,
-    log: dcl.log
-  })
-  const restrictedFetch = createFetch({
-    canUseFetch,
-    originalFetch: originalFetch,
-    previewMode: isPreview || unsafeAllowed,
-    log: dcl.log
-  })
-
-  globalThis.fetch = restrictedFetch
-  globalThis.WebSocket = restrictedWebSocket
-
-  let didStart = false
-  onEventFunctions.push((event) => {
-    if (event.type === 'sceneStart' && !didStart) {
+    if (!didStart && event.type === 'sceneStart') {
       didStart = true
       for (const startFunctionCb of onStartFunctions) {
         try {
@@ -122,88 +99,89 @@ export async function startSceneRuntime(client: RpcClient) {
           devToolsAdapter.error(e)
         }
       }
-      startLoop().catch((err) => devToolsAdapter.error(err))
-    }
-  })
-
-  const env = { dcl, WebSocket: restrictedWebSocket, fetch: restrictedFetch }
-  await customEval(sourceCode, getES5Context(env))
-
-  batchEvents.events.push(initMessagesFinished())
-
-  await sendBatch()
-
-  async function sendBatch() {
-    if (batchEvents.events.length) {
-      const batch = batchEvents.events
-      batchEvents.events = []
-
-      EngineAPI.sendBatch({ actions: batch }).catch((err) => devToolsAdapter.error(err))
-    }
-  }
-
-  let updateInterval: number = 1000 / 30
-  if (bootstrapData.useFPSThrottling === true) {
-    setupFpsThrottling(dcl, fullData.parcels, (newValue) => {
-      updateInterval = newValue
-    })
-  }
-
-  /**
-   * Handle the pull events response calling the eventReceiver
-   */
-  function processEvents(req: PullEventsResponse) {
-    for (const e of req.events) {
-      eventReceiver(EventDataToRuntimeEvent(e))
-    }
-  }
-
-  /**
-   * Forever loop until the worker is killed
-   */
-  async function startLoop() {
-    let start = performance.now()
-
-    const update = () => {
-      const now = performance.now()
-      const dt = now - start
-      start = now
-
-      EngineAPI.pullEvents({}).then(processEvents).catch(devToolsAdapter.error)
-
-      setTimeout(update, updateInterval)
-
-      const time = dt / 1000
-
-      for (const trigger of onUpdateFunctions) {
-        try {
-          trigger(time)
-        } catch (e: any) {
-          devToolsAdapter.error(e)
-        }
-      }
-
-      sendBatch().catch((err) => devToolsAdapter.error(err))
     }
 
-    update()
-  }
+    if (isPointerEvent(event)) {
+      eventState.allowOpenExternalUrl = true
+    }
 
-  /**
-   * This pull the events until the sceneStart event is emitted
-   */
-  async function waitToStart() {
-    if (!didStart) {
+    for (const cb of onEventFunctions) {
       try {
-        processEvents(await EngineAPI.pullEvents({}))
+        cb(event)
       } catch (err: any) {
         devToolsAdapter.error(err)
       }
-      setTimeout(waitToStart, 1000 / 30)
     }
+    eventState.allowOpenExternalUrl = false
   }
 
-  waitToStart().catch(devToolsAdapter.error)
+  let start = performance.now()
+
+  function reschedule() {
+    const ms = Math.max((updateIntervalMs - (performance.now() - start)) | 0, 0)
+    setTimeout(mainLoop, ms)
+  }
+
+  function mainLoop() {
+    const now = performance.now()
+    const dtMillis = now - start
+    start = now
+
+    const dtSecs = dtMillis / 1000
+
+    for (const trigger of onUpdateFunctions) {
+      try {
+        trigger(dtSecs)
+      } catch (e: any) {
+        devToolsAdapter.error(e)
+      }
+    }
+
+    sendBatchAndProcessEvents().catch(devToolsAdapter.error).finally(reschedule)
+  }
+
+  const dcl = createDecentralandInterface({
+    clientPort,
+    onError: (err: Error) => devToolsAdapter.error(err),
+    onLog: (...args: any) => devToolsAdapter.log(...args),
+    sceneId: bootstrapData.sceneId,
+    eventState,
+    batchEvents,
+    EngineAPI,
+    onEventFunctions,
+    onStartFunctions,
+    onUpdateFunctions
+  })
+
+  // create the context for the scene
+  const runtimeExecutionContext = prepareSandboxContext({
+    dcl,
+    canUseFetch,
+    canUseWebsocket,
+    log: dcl.log,
+    previewMode: isPreview || unsafeAllowed
+  })
+
+  if (bootstrapData.useFPSThrottling === true) {
+    setupFpsThrottling(dcl, fullData.scene.parcels.map(parseParcelPosition), (newValue) => {
+      updateIntervalMs = newValue
+    })
+  }
+
+  // run the code of the scene
+  await customEval(sourceCode, runtimeExecutionContext)
+  // then notify the kernel that the initial scene was loaded
+  batchEvents.events.push(initMessagesFinished())
+
+  // wait for didStart=true
+  do {
+    await sendBatchAndProcessEvents()
+  } while (!didStart && (await sleep(100)))
+
+  // finally, start event loop
+  mainLoop()
+
+  // shutdown
 }
 
 function isPointerEvent(event: RuntimeEvent): boolean {
@@ -212,4 +190,9 @@ function isPointerEvent(event: RuntimeEvent): boolean {
       return event.data?.payload?.buttonId !== undefined
   }
   return false
+}
+
+async function sleep(ms: number): Promise<boolean> {
+  await new Promise<void>((resolve) => setTimeout(resolve, Math.max(ms | 0, 0)))
+  return true
 }

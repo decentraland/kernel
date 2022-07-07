@@ -10,9 +10,10 @@ import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { getSceneNameFromAtlasState, postProcessSceneName } from 'shared/atlas/selectors'
+import { Scene } from '@dcl/schemas'
 
 export function registerUserActionModuleServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  function getSceneName(baseCoord: string, sceneJsonData: any): string {
+  function getSceneName(baseCoord: string, sceneJsonData?: Scene): string {
     const sceneName = getSceneNameFromAtlasState(sceneJsonData) ?? store.getState().atlas.tileToScene[baseCoord]?.name
     return postProcessSceneName(sceneName)
   }
@@ -24,7 +25,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
         getUnityInstance().RequestTeleport({ destination })
         return {}
       } else if (!/^\-?\d+\,\-?\d+$/.test(destination)) {
-        ctx.DevTools.logger.error(`teleportTo: invalid destination ${destination}`)
+        ctx.logger.error(`teleportTo: invalid destination ${destination}`)
         return {}
       }
 
@@ -36,20 +37,22 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
       const sceneId = (await fetchSceneIds([destination]))[0]
       const mapSceneData = sceneId ? (await fetchSceneJson([sceneId!]))[0] : undefined
 
-      sceneName = getSceneName(destination, mapSceneData?.sceneJsonData)
-      sceneCreator = getOwnerNameFromJsonData(mapSceneData?.sceneJsonData)
+      const metadata: Scene | undefined = mapSceneData?.entity.metadata
+
+      sceneName = getSceneName(destination, metadata)
+      sceneCreator = getOwnerNameFromJsonData(metadata)
 
       if (mapSceneData) {
         sceneThumbnailUrl = getThumbnailUrlFromJsonDataAndContent(
-          mapSceneData.sceneJsonData,
-          mapSceneData.mappingsResponse.contents,
+          mapSceneData.entity.metadata,
+          mapSceneData.entity.content,
           getFetchContentServer(store.getState())
         )
       }
       if (!sceneThumbnailUrl) {
         let sceneParcels = [destination]
-        if (mapSceneData && mapSceneData.sceneJsonData?.scene.parcels) {
-          sceneParcels = mapSceneData.sceneJsonData.scene.parcels
+        if (metadata && metadata.scene.parcels) {
+          sceneParcels = metadata.scene.parcels
         }
         sceneThumbnailUrl = `https://api.decentraland.org/v1/map.png?width=480&height=237&size=10&center=${destination}&selected=${sceneParcels.join(
           ';'
@@ -68,7 +71,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
           }
         }
       } catch (e: any) {
-        ctx.DevTools.logger.error(e)
+        ctx.logger.error(e)
       }
 
       getUnityInstance().RequestTeleport({

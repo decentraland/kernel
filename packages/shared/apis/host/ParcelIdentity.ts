@@ -1,5 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
+import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl } from 'config'
 import {
   GetParcelRequest,
   GetParcelResponse,
@@ -12,38 +13,38 @@ import {
 import { PortContext } from './context'
 
 async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetParcelResponse> {
-  const land = ctx.ParcelIdentity.land
+  const sceneData = ctx.sceneData
 
-  if (!land) {
+  if (!sceneData) {
     throw new Error('No land assigned in the ParcelIdentity context.')
   }
 
   return {
     land: {
-      sceneId: land.sceneId || '',
-      sceneJsonData: land.sceneJsonData ? JSON.stringify(land.sceneJsonData) : '{}',
-      baseUrl: land.baseUrl || '',
-      baseUrlBundles: land.baseUrlBundles || '',
+      sceneId: sceneData.id || '',
+      sceneJsonData: sceneData.entity.metadata ? JSON.stringify(sceneData.entity.metadata) : '{}',
+      baseUrl: sceneData.baseUrl || '',
+      baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
       mappingsResponse: {
-        parcelId: land.mappingsResponse.parcel_id || '',
-        rootCid: land.mappingsResponse.root_cid || '',
-        contents: (land.mappingsResponse.contents || []).map((item) => ({
+        parcelId: sceneData.id || '',
+        rootCid: sceneData.id || '',
+        contents: (sceneData.entity.content || []).map((item) => ({
           file: item.file || '',
           hash: item.hash || ''
         }))
       }
     },
-    cid: ctx.EnvironmentAPI.cid || ''
+    cid: ctx.sceneData.id || ''
   }
 }
 
 async function getSceneId(_req: GetSceneIdRequest, ctx: PortContext): Promise<GetSceneIdResponse> {
-  const sceneId = ctx.ParcelIdentity.land?.sceneId || ctx.EnvironmentAPI.cid || ''
+  const sceneId = ctx.sceneData.id || ''
   return { sceneId }
 }
 
 async function getIsEmpty(_req: GetIsEmptyRequest, ctx: PortContext): Promise<GetIsEmptyResponse> {
-  return { isEmpty: ctx.ParcelIdentity.isEmpty }
+  return { isEmpty: false }
 }
 
 export function registerParcelIdentityServiceServerImplementation(port: RpcServerPort<PortContext>) {
