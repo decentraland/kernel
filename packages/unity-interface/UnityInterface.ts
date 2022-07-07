@@ -19,7 +19,8 @@ import {
   ContentMapping,
   TutorialInitializationMessage,
   WorldPosition,
-  HeaderRequest
+  HeaderRequest,
+  AddFriendsPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -339,6 +340,13 @@ export class UnityInterface implements IUnityInterface {
 
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
+  }
+
+  public AddUserProfilesToCatalog(peerProfile: NewProfileForRenderer[]): void {
+    this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(peerProfile))
+  }
+  public AddFriends(addFriendsPayload: AddFriendsPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
   }
 
   public UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage) {

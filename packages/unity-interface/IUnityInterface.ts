@@ -22,7 +22,8 @@ import {
   TutorialInitializationMessage,
   Notification,
   UpdateUserStatusMessage,
-  WorldPosition
+  WorldPosition,
+  AddFriendsPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -112,6 +113,7 @@ export interface IUnityInterface {
   UnlockCursor(): void
   SetCursorState(locked: boolean): void
   SetBuilderReady(): void
+  AddUserProfilesToCatalog(peerProfile: NewProfileForRenderer[]): void
   AddUserProfileToCatalog(peerProfile: NewProfileForRenderer): void
   AddWearablesToCatalog(wearables: WearableV2[], context?: string): void
   WearablesRequestFailed(error: string, context: string | undefined): void
@@ -135,6 +137,7 @@ export interface IUnityInterface {
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
+  AddFriends(addFriendsPayload: AddFriendsPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void

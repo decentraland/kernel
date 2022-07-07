@@ -25,12 +25,14 @@ import {
   FriendshipAction,
   PresenceStatus,
   FriendsInitializationMessage,
-  UnseenPrivateMessage
+  UnseenPrivateMessage,
+  GetFriendsPayload,
+  AddFriendsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getProfile } from 'shared/profiles/selectors'
+import { getProfile, getProfilesFromStore } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState } from 'shared/friends/types'
 import {
@@ -63,6 +65,8 @@ import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
+import { ProfileUserInfo } from 'shared/profiles/types'
+import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -360,15 +364,38 @@ function* refreshFriends() {
   }
 }
 
-// function* getFriends(request: GetFriendsPayload) {
-//   // ensure friend profiles are sent to renderer
+export function* getFriends(request: GetFriendsPayload) {
+  // ensure friend profiles are sent to renderer
 
-//   const friends: string[] = yield select(getPrivateMessagingFriends)
+  const friendsIds: string[] = yield select(getPrivateMessagingFriends)
+  const friendsProfiles: Array<ProfileUserInfo | null> = yield select(getProfilesFromStore, friendsIds)
 
-// friends.filter((friend) => friend.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0).shift()
+  const filteredFriends: Array<ProfileUserInfo> = friendsProfiles
+    .filter((friend) => {
+      if (!friend || !(friend.status === 'ok')) {
+        return false
+      }
+      if (request.userNameOrId) {
+        return (
+          friend.data.userId.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0 ||
+          friend.data.name.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0
+        )
+      }
 
-// yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
-// }
+      return true
+    })
+    .slice(request.skip, request.skip + request.limit) as Array<ProfileUserInfo>
+
+  const profilesForRenderer = filteredFriends.map((profile) => profileToRendererFormat(profile.data, {}))
+  getUnityInstance().AddUserProfilesToCatalog(profilesForRenderer)
+
+  const addFriendsPayload: AddFriendsPayload = {
+    friends: filteredFriends.map((friend) => friend.data.userId),
+    totalFriends: friendsIds.length
+  }
+
+  getUnityInstance().AddFriends(addFriendsPayload)
+}
 
 function* initializeReceivedMessagesCleanUp() {
   while (true) {

@@ -20,6 +20,9 @@ export const getProfileFromStore = (store: RootProfileState, userId: string): Pr
     () => null
   )
 
+export const getProfilesFromStore = (store: RootProfileState, userIds: string[]): Array<ProfileUserInfo | null> =>
+  userIds.map((userId) => getProfileFromStore(store, userId))
+
 export const getProfile = (store: RootProfileState, userId: string): Avatar | null =>
   getProfileValueIfOkOrLoading(
     store,

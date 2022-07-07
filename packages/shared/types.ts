@@ -557,7 +557,7 @@ export type FriendsInitializationMessage = {
 }
 
 export interface GetFriendsPayload {
-  userNameOrId: string // text to match
+  userNameOrId?: string // text to match
   limit: number // max amount of entries to request
   skip: number // amount of entries to skip
 }
@@ -593,6 +593,11 @@ export type UpdateUserStatusMessage = {
   realm: Realm | undefined
   position: Vector2Component | undefined
   presence: PresenceStatus
+}
+
+export interface AddFriendsPayload {
+  friends: string[] // ids of each friend added
+  totalFriends: number // total amount of friends
 }
 
 export type BuilderConfiguration = {
