@@ -64,11 +64,13 @@ export class BFFConnection {
 
     const subscription = await this.commsService.subscribeToPeerMessages({ topic })
 
-    ;(async (commsService) => {
+    async function getAsyncMessages(commsService) {
       for await (const { payload, sender } of commsService.getPeerMessages(subscription)) {
         await handler(payload, sender)
       }
-    })(this.commsService).catch((err) => {
+    }
+    
+    getAsyncMessages(this.commsService).catch((err) => {
       this.logger.error(`Peer topic handler error: ${err.toString()}`)
       this.disconnect()
     })
