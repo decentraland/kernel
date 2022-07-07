@@ -7,6 +7,8 @@ import { loadService, RpcClientModule } from '@dcl/rpc/dist/codegen'
 import { BffAuthenticationServiceDefinition, WelcomePeerInformation } from './proto/bff/authentication-service.gen'
 import { CommsServiceDefinition } from './proto/bff/comms-service.gen'
 
+type CommsService = RpcClientModule<CommsServiceDefinition, any>
+
 export declare type BFFConfig = {
   getIdentity: () => AuthIdentity
 }
@@ -30,7 +32,7 @@ export class BFFConnection {
 
   private sceneTopics = new Map<string, TopicListener>()
 
-  private commsService: RpcClientModule<CommsServiceDefinition, any> | null = null
+  private commsService: CommsService | null = null
 
   constructor(private url: string, private config: BFFConfig) {}
 
@@ -64,12 +66,12 @@ export class BFFConnection {
 
     const subscription = await this.commsService.subscribeToPeerMessages({ topic })
 
-    async function getAsyncMessages(commsService) {
+    async function getAsyncMessages(commsService: CommsService) {
       for await (const { payload, sender } of commsService.getPeerMessages(subscription)) {
         await handler(payload, sender)
       }
     }
-    
+
     getAsyncMessages(this.commsService).catch((err) => {
       this.logger.error(`Peer topic handler error: ${err.toString()}`)
       this.disconnect()
@@ -88,14 +90,17 @@ export class BFFConnection {
 
     const subscription = await this.commsService.subscribeToSystemMessages({ topic })
 
-    ;(async (commsService) => {
+    async function getAsyncMessages(commsService: CommsService) {
       for await (const { payload } of commsService.getSystemMessages(subscription)) {
         await handler(payload)
       }
-    })(this.commsService).catch((err) => {
+    }
+
+    getAsyncMessages(this.commsService).catch((err) => {
       this.logger.error(`System topic handler error: ${err.toString()}`)
       this.disconnect()
     })
+
     return subscription
   }
 
@@ -141,9 +146,9 @@ export class BFFConnection {
     }
 
     topicsToRemove.forEach((topic) => {
-      const l = this.sceneTopics.get(topic)
-      if (l) {
-        this.removePeerTopicListener(l).catch((err) => {
+      const listener = this.sceneTopics.get(topic)
+      if (listener) {
+        this.removePeerTopicListener(listener).catch((err) => {
           this.logger.error(`Error removing peer topic listener for ${topic}: ${err.toString()}`)
         })
       }
@@ -151,8 +156,8 @@ export class BFFConnection {
     })
 
     topicsToAdd.forEach(async (topic) => {
-      const l = await this.addPeerTopicListener(topic, this.onSceneMessage.bind(this))
-      this.sceneTopics.set(topic, l)
+      const listener = await this.addPeerTopicListener(topic, this.onSceneMessage.bind(this))
+      this.sceneTopics.set(topic, listener)
     })
   }
 
