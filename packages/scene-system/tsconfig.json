@@ -27,5 +27,6 @@
     "baseUrl": "..",
     "types": ["@dcl/posix"]
   },
-  "exclude": ["../../node_modules", "../voice-chat-codec"]
+  "exclude": ["../../node_modules", "../voice-chat-codec"],
+  "files": ["../modules.d.ts"]
 }

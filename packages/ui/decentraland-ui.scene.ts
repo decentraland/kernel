@@ -21,8 +21,8 @@ void executeTask(async () => {
     for (const { payload } of ret.events) {
       try {
         avatarMessageObservable.notifyObservers(JSON.parse(payload))
-      } catch (err) {
-        console.error(err)
+      } catch (err: any) {
+        dcl.error(err)
       }
     }
   })

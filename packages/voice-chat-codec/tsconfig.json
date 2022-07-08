@@ -22,8 +22,7 @@
     "outDir": "../../static/voice-chat-codec",
     "lib": [
       "es2020",
-      "dom",
-      "webworker"
+      "dom"
     ],
     "baseUrl": ".."
   },

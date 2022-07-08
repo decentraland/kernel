@@ -64,7 +64,7 @@ import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
-import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
+import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
@@ -160,7 +160,7 @@ export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
   }
 } as any
 
-const validateRendererSaveProfile = generateValidator<RendererSaveProfile>(rendererSaveProfileSchema)
+const validateRendererSaveProfile = generateLazyValidator<RendererSaveProfile>(rendererSaveProfileSchema)
 
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {

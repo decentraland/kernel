@@ -1,1 +1,3 @@
-declare module 'matrix-js-sdk/lib/client';
+declare module 'matrix-js-sdk/lib/client' {
+  export type MatrixClient = any
+}

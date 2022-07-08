@@ -4,7 +4,7 @@ import * as sinon from 'sinon'
 import { sleep } from 'atomicHelpers/sleep'
 import { createFetch, FetchFunction } from 'scene-system/sdk/Fetch'
 
-const originalFetch: FetchFunction = async (resource: RequestInfo, init?: RequestInit) => {
+const originalFetch: FetchFunction = async (resource, init) => {
   return new Response()
 }
 
@@ -34,7 +34,7 @@ describe('Fetch Wrapped for scenes', () => {
   const wrappedDelayFetch = createFetch({
     canUseFetch: true,
     log,
-    originalFetch: async (_resource: RequestInfo, init?: RequestInit) => {
+    originalFetch: async (_resource, init) => {
       await sleep(timePerFetchSleep)
 
       if (init.signal?.aborted) {
@@ -110,7 +110,7 @@ describe('Fetch Wrapped for scenes', () => {
     let error: Error = null
 
     try {
-      await wrappedDelayFetch('https://test.test/', { timeout: 10 })
+      await wrappedDelayFetch('https://test.test/', { timeout: 10 } as any)
     } catch (err: any) {
       console.log(err)
       error = err
@@ -122,7 +122,7 @@ describe('Fetch Wrapped for scenes', () => {
     let error: Error = null
     let counter = 0
     await Promise.all([
-      wrappedDelayFetch('https://test.test/', { timeout: 5 }).catch((err) => {
+      wrappedDelayFetch('https://test.test/', { timeout: 5 } as any).catch((err) => {
         error = err
         counter++
       }),

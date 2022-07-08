@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2018",
+    "target": "esnext",
     "diagnostics": false,
     "inlineSourceMap": false,
     "inlineSources": false,
@@ -20,19 +20,15 @@
     "emitDecoratorMetadata": true,
     "noUnusedLocals": true,
     "jsx": "react",
-    "jsxFactory": "createElement",
     "baseUrl": "./packages",
     "lib": [
-      "es2018",
+      "es2020",
       "dom",
       "esnext.asynciterable"
     ],
     "types": ["@dcl/posix", "offscreencanvas"],
     "typeRoots": ["./node_modules"],
-    "esModuleInterop": true,
-    "paths": {
-      "shared/*": ["packages/shared/*"]
-    }
+    "esModuleInterop": true
   },
   "exclude": [
     "node_modules",

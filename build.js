@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 const { build, cliopts } = require("estrella")
-const { readFile } = require("fs/promises")
 const path = require("path")
 
 const builtIns = {
@@ -9,7 +8,7 @@ const builtIns = {
   buffer: require.resolve("./node_modules/buffer/index.js")
 }
 
-const nodeBuiltIns = (options) => {
+const nodeBuiltIns = () => {
   const include = Object.keys(builtIns)
   if (!include.length) {
     throw new Error("Must specify at least one built-in module")
@@ -25,20 +24,24 @@ const nodeBuiltIns = (options) => {
   }
 }
 
+const commonOptions = {
+  bundle: true,
+  minify: !cliopts.watch,
+  sourcemap: cliopts.watch ? 'both' : undefined,
+  sourceRoot: path.resolve("./packages"),
+  sourcesContent: !!cliopts.watch,
+  treeShaking: true,
+  plugins: [nodeBuiltIns()]
+}
+
 
 function createWorker(entry, outfile) {
   return build({
+    ...commonOptions,
     entry,
     outfile,
     tsconfig: path.join(path.dirname(entry), "tsconfig.json"),
-    bundle: true,
-    minify: !cliopts.watch,
-    sourcemap: cliopts.watch ? 'both' : undefined,
-    sourceRoot: "packages",
-    sourcesContent: !!cliopts.watch,
-    treeShaking: true,
     inject: ["packages/entryPoints/inject.js"],
-    plugins: [nodeBuiltIns()]
   })
 }
 
@@ -50,21 +53,20 @@ createWorker('packages/ui/decentraland-ui.scene.ts', "static/systems/decentralan
 createWorker('packages/scene-system/scene.system.ts', "static/systems/scene.system.js.txt")
 
 build({
+  ...commonOptions,
   entry: "packages/entryPoints/index.ts",
   outfile: "static/index.js",
   tsconfig: "packages/entryPoints/tsconfig.json",
-  bundle: true,
-  minify: !cliopts.watch,
-  sourceRoot: "packages",
-  sourcemap: cliopts.watch ? 'both' : undefined,
-  sourcesContent: !!cliopts.watch,
-  treeShaking: true,
-  inject: ["packages/entryPoints/inject.js"],
-  plugins: [nodeBuiltIns()]
+  inject: ["packages/entryPoints/inject.js"]
+})
+
+build({
+  ...commonOptions,
+  entry: "test/index.ts",
+  outfile: "test/out/index.js",
+  tsconfig: "test/tsconfig.json",
+  inject: ["packages/entryPoints/inject.js"]
 })
 
 // Run a local web server with livereload when -watch is set
-cliopts.watch && require("serve-http").createServer({
-  port: 8181,
-  pubdir: require("path").join(__dirname, "static"),
-})
+cliopts.watch && require('./scripts/runTestServer')

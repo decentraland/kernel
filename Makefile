@@ -7,7 +7,6 @@ PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
 endif
 
 NODE = node
-COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
 SCENE_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
 RENDERER_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/renderer-protocol/*.proto)
@@ -37,23 +36,8 @@ EMPTY_SCENES := public/empty-scenes/common
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
 	@node_modules/.bin/tsc --build scripts/tsconfig.json
 
-static/loader/worker.js: packages/decentraland-loader/**/*.ts
-	@$(COMPILER) targets/engine/loader.json
-
-static/gif-processor/worker.js: packages/gif-processor/*.ts
-	@$(COMPILER) targets/engine/gif-processor.json
-
-static/voice-chat-codec/worker.js: packages/voice-chat-codec/*.ts
-	@$(COMPILER) targets/engine/voice-chat-codec.json
-
 static/default-profile/contents:
 	@node ./static/default-profile/download_all.js
-
-static/systems/scene.system.js: $(SCENE_SYSTEM_SOURCES) packages/scene-system/scene.system.ts
-	@$(COMPILER) targets/engine/scene-system.json
-
-static/systems/decentraland-ui.scene.js: $(SCENE_SYSTEM) packages/ui/tsconfig.json packages/ui/decentraland-ui.scene.ts
-	@$(COMPILER) targets/engine/internal-scenes.json
 
 empty-parcels:
 	cd public/empty-scenes/common && node generate_all.js
@@ -62,9 +46,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: pre-env ${PBRENDERER_TS} packages/shared/proto/engineinterface.gen.ts ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
-
-node_modules/env.d.ts:
+build-essentials: ${PBRENDERER_TS} packages/shared/proto/engineinterface.gen.ts ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 	echo 'declare module "env" {}' > node_modules/env.d.ts
 	echo 'declare module "dcl" {}' > node_modules/dcl.d.ts
 
@@ -110,23 +92,6 @@ test-ci: # Run the tests (for use in the continuous integration environment)
 npm-link: build-essentials ## Run `npm link` to develop local scenes against this project
 	cd static; npm link
 
-watch-builder: build-essentials ## Watch the files required for hacking with the builder
-	@$(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,server" \
-			"$(COMPILER) targets/engine/scene-system.json --watch" \
-			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
-			"$(COMPILER) targets/engine/loader.json --watch" \
-			"node ./scripts/runTestServer.js --keep-open"
-
-watch-cli: build-essentials ## Watch the files required for building the CLI
-	@$(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,kernel,server" \
-			"$(COMPILER) targets/engine/scene-system.json --watch" \
-			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
-			"$(COMPILER) targets/engine/loader.json --watch" \
-			"$(COMPILER) targets/entryPoints/index.json --watch" \
-			"node ./scripts/runTestServer.js --keep-open"
-
 # Aesthetics
 
 lint: ## Validate correct formatting and circular dependencies
@@ -143,19 +108,12 @@ watch-tests:
 	cd test; ./build.js -watch
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
-	@NODE_ENV=development $(CONCURRENTLY) \
-		-n "basic-scenes,kernel,simulator,server" \
-			"$(COMPILER) targets/scenes/basic-scenes.json --watch" \
-			"./build.js -watch" \
-			"$(COMPILER) targets/engine/gif-processor.json --watch" \
-			"node ./scripts/runPathSimulator.js" \
-			"node ./scripts/runTestServer.js --keep-open"
+	@NODE_ENV=development ./build.js -watch
 
 fetchSceneContents: scripts/fetchSceneContents.js
 	@node ./scripts/fetchSceneContents.js
 
 clean: ## Clean all generated files
-	@$(COMPILER) targets/clean.json
 
 update-renderer:  ## Update the renderer
 	npm install @dcl/unity-renderer@latest
