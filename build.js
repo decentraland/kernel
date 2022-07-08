@@ -44,15 +44,18 @@ function createWorker(entry, outfile) {
   })
 }
 
-createWorker('packages/gif-processor/worker.ts', 'static/gif-processor/worker.js.txt')
-createWorker('packages/decentraland-loader/lifecycle/worker.ts', 'static/loader/worker.js.txt')
-createWorker('packages/voice-chat-codec/worker.ts', 'static/voice-chat-codec/worker.js.txt')
-createWorker(
-  'packages/voice-chat-codec/audioWorkletProcessors.ts',
-  'static/voice-chat-codec/audioWorkletProcessors.js.txt'
-)
-createWorker('packages/ui/decentraland-ui.scene.ts', 'static/systems/decentraland-ui.scene.js.txt')
-createWorker('packages/scene-system/scene.system.ts', 'static/systems/scene.system.js.txt')
+if (!process.env.BUNDLES_ONLY) {
+  createWorker('packages/gif-processor/worker.ts', 'static/gif-processor/worker.js.txt')
+  createWorker('packages/decentraland-loader/lifecycle/worker.ts', 'static/loader/worker.js.txt')
+  createWorker('packages/voice-chat-codec/worker.ts', 'static/voice-chat-codec/worker.js.txt')
+  createWorker(
+    'packages/voice-chat-codec/audioWorkletProcessors.ts',
+    'static/voice-chat-codec/audioWorkletProcessors.js.txt'
+  )
+  createWorker('packages/ui/decentraland-ui.scene.ts', 'static/systems/decentraland-ui.scene.js.txt')
+  createWorker('packages/scene-system/scene.system.ts', 'static/systems/scene.system.js.txt')
+}
+
 if (!process.env.ESSENTIALS_ONLY) {
   build({
     ...commonOptions,

@@ -44,7 +44,7 @@ build-essentials: ${PBRENDERER_TS} packages/shared/proto/engineinterface.gen.ts 
 	echo 'declare module "env" {}' > node_modules/env.d.ts
 	echo 'declare module "dcl" {}' > node_modules/dcl.d.ts
 	ESSENTIALS_ONLY=true node ./build.js
-	node ./build.js
+	BUNDLES_ONLY=true node ./build.js
 
 # Entry points
 static/index.js:
