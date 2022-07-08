@@ -24,12 +24,6 @@ PROTOC = node_modules/.bin/protobuf/bin/protoc
 SOURCE_SUPPORT_TS_FILES := $(wildcard scripts/*.ts)
 COMPILED_SUPPORT_JS_FILES := $(subst .ts,.js,$(SOURCE_SUPPORT_TS_FILES))
 
-SCENE_SYSTEM_SOURCES := $(wildcard static/systems/**/*.ts)
-SCENE_SYSTEM := static/systems/scene.system.js
-DECENTRALAND_LOADER := static/loader/worker.js
-GIF_PROCESSOR := static/gif-processor/worker.js
-INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
-VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
 
 EMPTY_SCENES := public/empty-scenes/common
 
@@ -46,9 +40,11 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: ${PBRENDERER_TS} packages/shared/proto/engineinterface.gen.ts ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: ${PBRENDERER_TS} packages/shared/proto/engineinterface.gen.ts ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) empty-parcels
 	echo 'declare module "env" {}' > node_modules/env.d.ts
 	echo 'declare module "dcl" {}' > node_modules/dcl.d.ts
+	ESSENTIALS_ONLY=true node ./build.js
+	node ./build.js
 
 # Entry points
 static/index.js:
@@ -59,7 +55,7 @@ static/index.js:
 DIST_ENTRYPOINTS := static/index.js
 DIST_STATIC_FILES := static/export.html static/preview.html static/default-profile/contents
 
-build-deploy: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) ## Build all the entrypoints needed for a deployment
+build-deploy: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) ## Build all the entrypoints needed for a deployment
 
 build-release: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) $(DIST_PACKAGE_JSON) ## Build all the entrypoints and run the `scripts/prepareDist` script
 	@node ./scripts/prepareDist.js

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "esnext",
-    "target": "es2020",
+    "target": "esnext",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
