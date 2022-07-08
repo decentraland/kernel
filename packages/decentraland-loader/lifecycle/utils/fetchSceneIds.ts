@@ -1,8 +1,9 @@
+import { LoadableScene } from 'shared/types'
 import { getServer } from '../manager'
 
-export async function fetchSceneIds(parcels: string[]): Promise<Array<string | null>> {
+export async function fetchScenesByLocation(parcels: string[]): Promise<Array<LoadableScene>> {
   const server = getServer()
   if (!server) return []
-  const promises = server.getSceneIds(parcels)
-  return Promise.all(promises)
+  const results = await Promise.all(server.getLoadableScenesByPosition(parcels))
+  return results.filter(($) => !!$) as Array<LoadableScene>
 }

@@ -28,10 +28,7 @@ async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetP
       mappingsResponse: {
         parcelId: sceneData.id || '',
         rootCid: sceneData.id || '',
-        contents: (sceneData.entity.content || []).map((item) => ({
-          file: item.file || '',
-          hash: item.hash || ''
-        }))
+        contents: sceneData.entity.content || []
       }
     },
     cid: ctx.sceneData.id || ''

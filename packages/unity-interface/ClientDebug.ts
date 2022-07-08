@@ -1,7 +1,7 @@
 import { defaultLogger } from 'shared/logger'
 import { ErrorContextTypes, ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { getUnityInstance, IUnityInterface } from './IUnityInterface'
-import { fetchSceneIds } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 
 export class ClientDebug {
   private unityInterface: IUnityInterface
@@ -91,8 +91,8 @@ export class ClientDebug {
     let sceneId: string | undefined
 
     if (isInputCoords) {
-      const ids = await fetchSceneIds([scene])
-      sceneId = ids[0] ?? undefined
+      const scenes = await fetchScenesByLocation([scene])
+      sceneId = scenes.length ? scenes[0].id ?? undefined : undefined
     } else {
       sceneId = scene
     }
