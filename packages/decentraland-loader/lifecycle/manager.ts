@@ -10,6 +10,7 @@ import { parcelLimits, ENABLE_EMPTY_SCENES, LOS } from 'config'
 import defaultLogger from 'shared/logger'
 import { WorldConfig } from 'shared/meta/types'
 import { LoadableScene } from 'shared/types'
+import { Scene } from '@dcl/schemas'
 
 /*
  * The worker is set up on the first require of this file
@@ -21,58 +22,57 @@ const worker: Worker = new Worker(lifecycleWorkerUrl, { name: 'LifecycleWorker' 
 worker.onerror = (e) => defaultLogger.error('Loader worker error', e)
 
 export class LifecycleManager extends TransportBasedServer {
-  sceneIdToRequest: Map<string, IFuture<LoadableScene>> = new Map()
-  positionToRequest: Map<string, IFuture<string>> = new Map()
+  sceneIdToRequest: Map<string, IFuture<LoadableScene | null>> = new Map()
+  positionToRequest: Map<string, IFuture<LoadableScene | null>> = new Map()
 
   enable() {
     super.enable()
-    this.on('Scene.dataResponse', (scene: { data: LoadableScene }) => {
-      if (scene.data) {
-        const future = this.sceneIdToRequest.get(scene.data.id)
-
-        if (future) {
-          future.resolve(scene.data)
-        }
-      }
-    })
-
-    this.on('Scene.idResponse', (scene: { position: string; data: string }) => {
-      const future = this.positionToRequest.get(scene.position)
+    this.on('Scene.dataResponse', (result: { sceneId: string; data: LoadableScene | null }) => {
+      const future = this.sceneIdToRequest.get(result.sceneId)
 
       if (future) {
-        future.resolve(scene.data)
+        future.resolve(result.data)
+      }
+
+      if (result.data) {
+        const scene: Scene = result.data.entity.metadata
+        for (const position of scene.scene.parcels) {
+          if (this.positionToRequest.get(position)?.isPending) {
+            this.positionToRequest.get(position)!.resolve(result.data)
+          }
+        }
       }
     })
   }
 
-  getParcelData(sceneId: string): Promise<LoadableScene> {
+  getLoadableSceneBySceneId(sceneId: string): Promise<LoadableScene | null> {
     let theFuture = this.sceneIdToRequest.get(sceneId)
     if (!theFuture) {
-      theFuture = future<LoadableScene>()
+      theFuture = future<LoadableScene | null>()
       this.sceneIdToRequest.set(sceneId, theFuture)
       this.notify('Scene.dataRequest', { sceneId })
     }
     return theFuture
   }
 
-  getSceneIds(parcels: string[]): Promise<string | null>[] {
-    const futures: IFuture<string>[] = []
+  getLoadableScenesByPosition(positions: string[]): Promise<LoadableScene | null>[] {
+    const futures: IFuture<LoadableScene | null>[] = []
     const missing: string[] = []
 
-    for (const parcel of parcels) {
-      let theFuture = this.positionToRequest.get(parcel)
+    for (const position of positions) {
+      let theFuture = this.positionToRequest.get(position)
 
-      if (!theFuture) {
-        theFuture = future<string>()
-        this.positionToRequest.set(parcel, theFuture)
+      if (!theFuture || !theFuture.isPending) {
+        theFuture = future<LoadableScene | null>()
+        this.positionToRequest.set(position, theFuture)
 
-        missing.push(parcel)
+        missing.push(position)
       }
 
       futures.push(theFuture)
     }
 
-    this.notify('Scene.idRequest', { sceneIds: missing })
+    this.notify('Scene.getByPosition', { positions: missing })
     return futures
   }
 }

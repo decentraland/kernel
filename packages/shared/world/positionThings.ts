@@ -6,14 +6,8 @@ import {
   Vector2
 } from '@dcl/ecs-math'
 import { Observable } from 'mz-observable'
-import { ILand } from 'shared/types'
 import { InstancedSpawnPoint } from '../types'
-import {
-  worldToGrid,
-  gridToWorld,
-  parseParcelPosition,
-  isWorldPositionInsideParcels
-} from 'atomicHelpers/parcelScenePositions'
+import { worldToGrid, gridToWorld, isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
 import { DEBUG } from '../../config'
 import { isInsideWorldLimits, Scene } from '@dcl/schemas'
 
@@ -228,17 +222,4 @@ function computeComponentValue(x: number | number[]) {
   }
 
   return Math.random() * (max - min) + min
-}
-
-export function getLandBase(land: ILand): { x: number; y: number } {
-  if (
-    land.sceneJsonData &&
-    land.sceneJsonData.scene &&
-    land.sceneJsonData.scene.base &&
-    typeof (land.sceneJsonData.scene.base as string | void) === 'string'
-  ) {
-    return parseParcelPosition(land.sceneJsonData.scene.base)
-  } else {
-    return parseParcelPosition(land.mappingsResponse.parcel_id)
-  }
 }

@@ -9,7 +9,7 @@ import {
   SceneLifeCycleStatusReport
 } from '../../decentraland-loader/lifecycle/controllers/scene'
 import { scenesChanged, SCENE_FAIL, SCENE_LOAD, SCENE_START } from '../loading/actions'
-import { ILand, InstancedSpawnPoint, LoadableScene } from '../types'
+import { InstancedSpawnPoint, LoadableScene } from '../types'
 import { parcelObservable, teleportObservable } from './positionThings'
 import { SceneWorker, workerStatusObservable } from './SceneWorker'
 import { store } from 'shared/store/isolatedStore'
@@ -25,10 +25,7 @@ export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {
     new (x: LoadableScene): SceneWorker
   }
-  preloadScene: (parcelToLoad: ILand) => Promise<any>
   onPositionSettled?: (spawnPoint: InstancedSpawnPoint) => void
-  onLoadParcelScenes?(x: ILand[]): void
-  onUnloadParcelScenes?(x: ILand[]): void
   onPositionUnsettled?(): void
 }
 
@@ -47,7 +44,7 @@ export function isParcelDenyListed(coordinates: string[]) {
   return false
 }
 
-export function generateBannedILand(entity: LoadableScene): LoadableScene {
+export function generateBannedLoadableScene(entity: LoadableScene): LoadableScene {
   return {
     ...entity,
     entity: {
@@ -182,7 +179,7 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: Load
   if (!getSceneWorkerBySceneID(sceneId)) {
     // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
     const denyListed = isParcelDenyListed(entity.entity.metadata.scene.parcels)
-    const usedEntity = denyListed ? generateBannedILand(entity) : entity
+    const usedEntity = denyListed ? generateBannedLoadableScene(entity) : entity
 
     const worker = loadParcelSceneWorker(usedEntity)
 

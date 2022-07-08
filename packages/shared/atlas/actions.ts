@@ -1,4 +1,4 @@
-import { ILand } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 import { action } from 'typesafe-actions'
 import { Vector2Component } from '../../atomicHelpers/landHelpers'
 import { DistrictData, MarketData } from './types'
@@ -8,7 +8,7 @@ export const querySceneData = (sceneIds: string[]) => action(QUERY_DATA_FROM_SCE
 export type QuerySceneData = ReturnType<typeof querySceneData>
 
 export const SUCCESS_DATA_FROM_SCENE_JSON = '[Success] Fetch data from scene.json'
-export const fetchDataFromSceneJsonSuccess = (sceneIds: string[], data: ILand[]) =>
+export const fetchDataFromSceneJsonSuccess = (sceneIds: string[], data: LoadableScene[]) =>
   action(SUCCESS_DATA_FROM_SCENE_JSON, { sceneIds, data })
 export type FetchDataFromSceneJsonSuccess = ReturnType<typeof fetchDataFromSceneJsonSuccess>
 
