@@ -36,7 +36,6 @@
     "@types/fs-extra": "^5.0.2",
     "@types/glob": "^7.1.1",
     "@types/google-protobuf": "^3.2.7",
-    "@types/matrix-js-sdk": "^11.0.1",
     "@types/mocha": "^5.2.0",
     "@types/node": "^16.11.43",
     "@types/node-fetch": "^2.1.4",
@@ -106,9 +105,7 @@
     "redux-logger": "^3.0.6",
     "redux-saga": "^1.0.5",
     "sdp-transform": "^2.14.1",
-    "serve-http": "^1.0.6",
     "stream-browserify": "^3.0.0",
-    "ts-loader": "^9.3.1",
     "typesafe-actions": "^5.1.0",
     "ws": "^7.4.6"
   },
