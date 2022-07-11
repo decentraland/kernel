@@ -67,6 +67,7 @@ import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
+import { addedProfilesToCatalog } from 'shared/profiles/actions'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -395,6 +396,10 @@ export function* getFriends(request: GetFriendsPayload) {
   }
 
   getUnityInstance().AddFriends(addFriendsPayload)
+
+  yield put(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
+
+  // TODO: verify if we need to call receivePeerUserData here
 }
 
 function* initializeReceivedMessagesCleanUp() {
