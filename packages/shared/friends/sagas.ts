@@ -370,28 +370,28 @@ export function* getFriends(request: GetFriendsPayload) {
   const friendsIds: string[] = yield select(getPrivateMessagingFriends)
   const friendsProfiles: Array<ProfileUserInfo | null> = yield select(getProfilesFromStore, friendsIds)
 
-  const filteredFriends: Array<ProfileUserInfo> = friendsProfiles
-    .filter((friend) => {
-      if (!friend || !(friend.status === 'ok')) {
-        return false
-      }
-      if (request.userNameOrId) {
-        return (
-          friend.data.userId.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0 ||
-          friend.data.name.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0
-        )
-      }
+  const filteredFriends: Array<ProfileUserInfo> = friendsProfiles.filter((friend) => {
+    if (!friend || !(friend.status === 'ok')) {
+      return false
+    }
+    if (request.userNameOrId) {
+      return (
+        friend.data.userId.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0 ||
+        friend.data.name.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0
+      )
+    }
 
-      return true
-    })
-    .slice(request.skip, request.skip + request.limit) as Array<ProfileUserInfo>
+    return true
+  }) as Array<ProfileUserInfo>
 
-  const profilesForRenderer = filteredFriends.map((profile) => profileToRendererFormat(profile.data, {}))
+  const friendsToReturn = filteredFriends.slice(request.skip, request.skip + request.limit)
+
+  const profilesForRenderer = friendsToReturn.map((profile) => profileToRendererFormat(profile.data, {}))
   getUnityInstance().AddUserProfilesToCatalog(profilesForRenderer)
 
   const addFriendsPayload: AddFriendsPayload = {
-    friends: filteredFriends.map((friend) => friend.data.userId),
-    totalFriends: friendsIds.length
+    friends: friendsToReturn.map((friend) => friend.data.userId),
+    totalFriends: filteredFriends.length
   }
 
   getUnityInstance().AddFriends(addFriendsPayload)
