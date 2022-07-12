@@ -23,12 +23,12 @@ import { RPCSendableMessage } from 'shared/types'
 import { PermissionItem } from '../proto/Permissions.gen'
 import { assertHasPermission } from './Permissions'
 
-async function requirePayment(req: RequirePaymentRequest, ctx): Promise<RequirePaymentResponse> {
+async function requirePayment(req: RequirePaymentRequest, ctx: PortContext): Promise<RequirePaymentResponse> {
   assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
 
   await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
     ...req,
-    sceneId: ctx.EnvironmentAPI!.data.sceneId
+    sceneId: ctx.sceneData.id
   })
 
   const response = EthService.requirePayment(req.toAddress, req.amount, req.currency)
@@ -37,12 +37,12 @@ async function requirePayment(req: RequirePaymentRequest, ctx): Promise<RequireP
   }
 }
 
-async function signMessage(req: SignMessageRequest, ctx): Promise<SignMessageResponse> {
+async function signMessage(req: SignMessageRequest, ctx: PortContext): Promise<SignMessageResponse> {
   assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
 
   await getUnityInstance().RequestWeb3ApiUse('signMessage', {
     message: await EthService.messageToString(req.message),
-    sceneId: ctx.EnvironmentAPI!.data.sceneId
+    sceneId: ctx.sceneData.id
   })
   const response = await EthService.signMessage(req.message)
   return response
@@ -50,13 +50,13 @@ async function signMessage(req: SignMessageRequest, ctx): Promise<SignMessageRes
 
 async function convertMessageToObject(
   req: ConvertMessageToObjectRequest,
-  ctx
+  ctx: PortContext
 ): Promise<ConvertMessageToObjectResponse> {
   assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
   return { dict: await EthService.convertMessageToObject(req.message) }
 }
 
-async function sendAsync(req: SendAsyncRequest, ctx): Promise<SendAsyncResponse> {
+async function sendAsync(req: SendAsyncRequest, ctx: PortContext): Promise<SendAsyncResponse> {
   const message: RPCSendableMessage = {
     jsonrpc: '2.0',
     id: req.id,
@@ -68,7 +68,7 @@ async function sendAsync(req: SendAsyncRequest, ctx): Promise<SendAsyncResponse>
   if (EthService.rpcRequireSign(message)) {
     await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
       message: `${message.method}(${message.params.join(',')})`,
-      sceneId: ctx.EnvironmentAPI!.data.sceneId
+      sceneId: ctx.sceneData.id
     })
   }
 
@@ -78,7 +78,7 @@ async function sendAsync(req: SendAsyncRequest, ctx): Promise<SendAsyncResponse>
   }
 }
 
-async function getUserAccount(_req: GetUserAccountRequest, ctx): Promise<GetUserAccountResponse> {
+async function getUserAccount(_req: GetUserAccountRequest, ctx: PortContext): Promise<GetUserAccountResponse> {
   assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
   return { address: await EthProvider.getUserAccount(EthProvider.requestManager) }
 }
