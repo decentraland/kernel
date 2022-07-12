@@ -66,7 +66,6 @@ import { denyPortableExperiences, removeScenePortableExperience } from 'shared/p
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
-import { componentSerializeOpt } from '../scene-system/sdk/Utils'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -166,6 +165,11 @@ const validateRendererSaveProfile = generateValidator<RendererSaveProfile>(rende
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {
   private lastBalanceOfMana: number = -1
+  private useBinaryTransform: boolean = false
+
+  public get enableBinaryTransform() {
+    return this.useBinaryTransform
+  }
 
   /**
    * This is the only method that should be called publically in this class.
@@ -268,7 +272,7 @@ export class BrowserInterface {
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 
-    componentSerializeOpt.useBinaryTransform = !!data.useBinaryTransform
+    this.useBinaryTransform = !!data.useBinaryTransform
 
     queueMicrotask(() => {
       // send an "engineStarted" notification, use a queueMicrotask
