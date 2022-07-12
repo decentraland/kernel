@@ -365,20 +365,21 @@ function* refreshFriends() {
   }
 }
 
-export function* getFriends(request: GetFriendsPayload) {
+export function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
 
-  const friendsIds: string[] = yield select(getPrivateMessagingFriends)
-  const friendsProfiles: Array<ProfileUserInfo | null> = yield select(getProfilesFromStore, friendsIds)
+  const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
+  const friendsProfiles: Array<ProfileUserInfo | null> = getProfilesFromStore(store.getState(), friendsIds)
 
   const filteredFriends: Array<ProfileUserInfo> = friendsProfiles.filter((friend) => {
-    if (!friend || !(friend.status === 'ok')) {
+    if (!friend || friend.status !== 'ok') {
       return false
     }
     if (request.userNameOrId) {
+      // keep the ones userId or name includes the filter
       return (
-        friend.data.userId.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0 ||
-        friend.data.name.toLocaleLowerCase().indexOf(request.userNameOrId.toLocaleLowerCase()) >= 0
+        friend.data.userId.toLocaleLowerCase().includes(request.userNameOrId.toLocaleLowerCase()) ||
+        friend.data.name.toLocaleLowerCase().includes(request.userNameOrId.toLocaleLowerCase())
       )
     }
 
@@ -397,8 +398,7 @@ export function* getFriends(request: GetFriendsPayload) {
 
   getUnityInstance().AddFriends(addFriendsPayload)
 
-  yield put(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
-
+  store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
   // TODO: verify if we need to call receivePeerUserData here
 }
 

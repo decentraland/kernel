@@ -23,7 +23,8 @@ import {
   FriendshipAction,
   WorldPosition,
   LoadableParcelScene,
-  AvatarRendererMessage
+  AvatarRendererMessage,
+  GetFriendsPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -77,6 +78,7 @@ import { DeploymentResult, PublishPayload } from 'shared/apis/SceneStateStorageC
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
+import { getFriends } from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -403,6 +405,10 @@ export class BrowserInterface {
 
   public SaveUserDescription(changes: { description: string }) {
     store.dispatch(saveProfileDelta({ description: changes.description }))
+  }
+
+  public GetFriends(getFriendsRequest: GetFriendsPayload) {
+    getFriends(getFriendsRequest)
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
