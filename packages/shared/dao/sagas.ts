@@ -8,7 +8,7 @@ import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization, waitForNetworkSelected } from '../meta/sagas'
 import { Candidate, Realm, ServerConnectionStatus } from './types'
-import { fetchCatalystRealms, fetchCatalystStatuses, commsStatusUrl, changeRealmObject } from '.'
+import { fetchCatalystRealms, fetchCatalystStatuses, changeRealmObject } from '.'
 import { ping } from './utils/ping'
 import {
   getAddedServers,
@@ -47,6 +47,7 @@ import {
   resolveCommsV4Urls,
   resolveCommsV3Urls
 } from 'shared/comms/v3/resolver'
+import { resolveCommsV2Url } from 'shared/comms/v2/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 
@@ -226,7 +227,7 @@ export async function checkValidRealm(realm: Realm) {
     }
 
     const minCatalystVersion: string | undefined = getMinCatalystVersion(store.getState())
-    const pingResult = await ping(commsStatusUrl(realm.hostname))
+    const pingResult = await ping(resolveCommsV2Url(realm))
 
     if (pingResult.status === ServerConnectionStatus.UNREACHABLE) return false
 
