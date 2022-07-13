@@ -1,5 +1,5 @@
 import defaultLogger from '../logger'
-import { Realm, ServerConnectionStatus, HealthStatus, Candidate } from './types'
+import { Realm, ServerConnectionStatus, Candidate } from './types'
 import { getAllCatalystCandidates } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { CatalystNode } from '../types'
@@ -42,32 +42,33 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
   return nodes
 }
 
-export function isPeerHealthy(peerStatus: Record<string, HealthStatus>) {
-  return (
-    Object.keys(peerStatus).length > 0 &&
-    !Object.keys(peerStatus).some((server) => {
-      return peerStatus[server] !== HealthStatus.HEALTHY
-    })
-  )
-}
+async function fetchCatalystStatus(domain: string): Promise<Candidate | undefined> {
+  const [commsResponse, lambdasResponse] = await Promise.all([
+    ping(`${domain}/comms/status?includeUsersParcels=true`),
+    ping(`${domain}/lambdas/health`)
+  ])
+  const result = commsResponse.result
 
-export function lambdasHealthUrl(domain: string) {
-  return `${domain}/lambdas/health`
-}
-
-export function commsStatusUrl(domain: string, includeUsersParcels: boolean = false) {
-  let url = `${domain}/comms/status`
-  const queryParameters: string[] = []
-
-  if (includeUsersParcels) {
-    queryParameters.push('includeUsersParcels=true')
+  if (
+    result &&
+    commsResponse.status === ServerConnectionStatus.OK &&
+    lambdasResponse.status === ServerConnectionStatus.OK
+  ) {
+    if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
+      return {
+        type: 'islands-based',
+        protocol: 'v2',
+        catalystName: result.name,
+        domain: domain,
+        status: commsResponse.status,
+        elapsed: commsResponse.elapsed!,
+        lighthouseVersion: result.version,
+        usersCount: result.usersCount ?? 0,
+        maxUsers: result.maxUsers ?? -1,
+        usersParcels: result.usersParcels
+      }
+    }
   }
-
-  if (queryParameters.length > 0) {
-    url += '?' + queryParameters.join('&')
-  }
-
-  return url
 }
 
 export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promise<Candidate[]> {
@@ -75,31 +76,9 @@ export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promis
 
   await Promise.all(
     nodes.map(async (node) => {
-      const [commsResponse, lambdasResponse] = await Promise.all([
-        ping(commsStatusUrl(node.domain, true)),
-        ping(lambdasHealthUrl(node.domain))
-      ])
-      const result = commsResponse.result
-
-      if (
-        result &&
-        commsResponse.status === ServerConnectionStatus.OK &&
-        lambdasResponse.status === ServerConnectionStatus.OK
-      ) {
-        if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
-          results.push({
-            type: 'islands-based',
-            protocol: 'v2',
-            catalystName: result.name,
-            domain: node.domain,
-            status: commsResponse.status,
-            elapsed: commsResponse.elapsed!,
-            lighthouseVersion: result.version,
-            usersCount: result.usersCount ?? 0,
-            maxUsers: result.maxUsers ?? -1,
-            usersParcels: result.usersParcels
-          })
-        }
+      const result = await fetchCatalystStatus(node.domain)
+      if (result) {
+        results.push(result)
       }
     })
   )
