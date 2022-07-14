@@ -22,6 +22,8 @@ import {
   FriendshipAction,
   WorldPosition,
   AvatarRendererMessage
+  LoadableParcelScene,
+  GetFriendsPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -67,6 +69,7 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
+import { getFriends } from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -396,6 +399,10 @@ export class BrowserInterface {
 
   public SaveUserDescription(changes: { description: string }) {
     store.dispatch(saveProfileDelta({ description: changes.description }))
+  }
+
+  public GetFriends(getFriendsRequest: GetFriendsPayload) {
+    getFriends(getFriendsRequest)
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
