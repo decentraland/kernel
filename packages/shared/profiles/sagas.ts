@@ -88,12 +88,6 @@ export function* profileSaga(): any {
   yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
 }
 
-function* forwardProfilesToRenderer(action: ProfilesSuccessAction) {
-  for (const profile of action.payload.profiles) {
-    yield put(sendProfileToRenderer(profile.userId))
-  }
-}
-
 function* forwardProfileToRenderer(action: ProfileSuccessAction) {
   yield put(sendProfileToRenderer(action.payload.profile.userId))
 }

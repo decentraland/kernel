@@ -543,7 +543,7 @@ export interface GetFriendRequestsPayload {
 }
 
 export interface GetFriendsPayload {
-  userNameOrId: string // text to match
+  userNameOrId?: string // text to match
   limit: number // max amount of entries to request
   skip: number // amount of entries to skip
 }
