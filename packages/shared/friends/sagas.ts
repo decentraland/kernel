@@ -27,7 +27,8 @@ import {
   FriendsInitializationMessage,
   UnseenPrivateMessage,
   GetFriendsPayload,
-  AddFriendsPayload
+  AddFriendsPayload,
+  GetFriendRequestsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -401,6 +402,8 @@ export function getFriends(request: GetFriendsPayload) {
   store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
   // TODO: verify if we need to call receivePeerUserData here
 }
+
+export function getFriendRequests(request: GetFriendRequestsPayload) {}
 
 function* initializeReceivedMessagesCleanUp() {
   while (true) {
