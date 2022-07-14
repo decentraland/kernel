@@ -35,7 +35,7 @@ import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getProfile, getProfilesFromStore } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
-import { SocialData, FriendsState } from 'shared/friends/types'
+import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
   getSocialClient,
   findPrivateMessagingFriendsByUserId,
@@ -313,8 +313,18 @@ function* refreshFriends() {
     )
 
     const friendIds = friends.map(($) => parseUserId($)).filter(Boolean) as string[]
-    const requestedFromIds = fromFriendRequestsSocial.map(($) => $.userId)
-    const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
+    const requestedFromIds = fromFriendRequestsSocial.map(
+      ($): FriendRequest => ({
+        createdAt: Date.now(), //TODO!: CAMBIAR ESTO
+        userId: $.userId
+      })
+    )
+    const requestedToIds = toFriendRequestsSocial.map(
+      ($): FriendRequest => ({
+        createdAt: Date.now(), //TODO!: CAMBIAR ESTO
+        userId: $.userId
+      })
+    )
 
     // explorer information
     const conversationsWithUnreadMessages: Conversation[] = yield client.getAllConversationsWithUnreadMessages()
@@ -578,6 +588,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
+    const selector = incoming ? 'toFriendRequests' : 'fromFriendRequests'
+
     switch (action) {
       case FriendshipAction.NONE: {
         // do nothing
@@ -585,10 +597,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       }
       case FriendshipAction.APPROVED:
       case FriendshipAction.REJECTED: {
-        const selector = incoming ? 'toFriendRequests' : 'fromFriendRequests'
         const requests = [...state[selector]]
 
-        const index = requests.indexOf(userId)
+        const index = requests.findIndex((request) => request.userId === userId)
 
         logger.info(`requests[${selector}]`, requests, index, userId)
         if (index !== -1) {
@@ -614,10 +625,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
       case FriendshipAction.CANCELED: {
-        const selector = incoming ? 'fromFriendRequests' : 'toFriendRequests'
         const requests = [...state[selector]]
 
-        const index = requests.indexOf(userId)
+        const index = requests.findIndex((request) => request.userId === userId)
 
         if (index !== -1) {
           requests.splice(index, 1)
@@ -628,19 +638,19 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
-        const exists = state.fromFriendRequests.includes(userId)
+        const exists = state.fromFriendRequests.some((request) => request.userId === userId)
 
         if (!exists) {
-          newState = { ...state, fromFriendRequests: [...state.fromFriendRequests, userId] }
+          newState = { ...state, fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId }] }
         }
 
         break
       }
       case FriendshipAction.REQUESTED_TO: {
-        const exists = state.toFriendRequests.includes(userId)
+        const exists = state.toFriendRequests.some((request) => request.userId === userId)
 
         if (!exists) {
-          newState = { ...state, toFriendRequests: [...state.toFriendRequests, userId] }
+          newState = { ...state, toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId }] }
         }
 
         break
