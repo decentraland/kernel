@@ -11,7 +11,9 @@ import {
   ProfilesSuccessAction,
   ProfilesFailureAction,
   PROFILES_FAILURE,
-  ProfilesRequestAction
+  ProfilesRequestAction,
+  AddedProfilesToCatalog,
+  ADDED_PROFILES_TO_CATALOG
 } from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
@@ -115,6 +117,24 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
             ...state.userInfo[action.payload.userId],
             addedToCatalog: true
           }
+        }
+      }
+
+    case ADDED_PROFILES_TO_CATALOG:
+      const addedProfiles = (action as AddedProfilesToCatalog).payload.profiles
+      const updatedProfilesState = {}
+      for (const profile of addedProfiles) {
+        updatedProfilesState[profile.userId] = {
+          ...state.userInfo[profile.userId],
+          addedToCatalog: true
+        }
+      }
+
+      return {
+        ...state,
+        userInfo: {
+          ...state.userInfo,
+          ...updatedProfilesState
         }
       }
     default:

@@ -23,8 +23,6 @@ import {
   ProfileSuccessAction,
   profileFailure,
   PROFILES_REQUEST,
-  PROFILES_SUCCESS,
-  ProfilesSuccessAction,
   ProfilesRequestAction,
   profilesSuccess,
   profilesFailure
@@ -85,16 +83,9 @@ export function* profileSaga(): any {
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
   yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
   yield takeEvery(PROFILES_REQUEST, handleFetchProfiles)
-  yield takeEvery(PROFILES_SUCCESS, forwardProfilesToRenderer)
   yield fork(handleCommsProfile)
   yield debounce(200, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
   yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
-}
-
-function* forwardProfilesToRenderer(action: ProfilesSuccessAction) {
-  for (const profile of action.payload.profiles) {
-    yield put(sendProfileToRenderer(profile.userId))
-  }
 }
 
 function* forwardProfileToRenderer(action: ProfileSuccessAction) {
