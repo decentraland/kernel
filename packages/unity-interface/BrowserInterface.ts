@@ -66,6 +66,7 @@ import { denyPortableExperiences, removeScenePortableExperience } from 'shared/p
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
+import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -263,8 +264,11 @@ export class BrowserInterface {
     trackEvent('performance report', perfReport)
   }
 
-  public SystemInfoReport(data: SystemInfoPayload) {
+  // TODO: remove useBinaryTransform after ECS7 is fully in prod
+  public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
+
+    transformSerializeOpt.useBinaryTransform = !!data.useBinaryTransform
 
     queueMicrotask(() => {
       // send an "engineStarted" notification, use a queueMicrotask

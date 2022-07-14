@@ -1,5 +1,5 @@
 import { LoadableAPIs } from '../../shared/apis/client'
-import { initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
+import { componentSerializeOpt, initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
 import { customEval, prepareSandboxContext } from './sandbox'
 import { RpcClient } from '@dcl/rpc/dist/types'
 import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
@@ -42,6 +42,8 @@ export async function startSceneRuntime(client: RpcClient) {
   const isPreview = await EnvironmentAPI.isPreviewMode()
   const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
 
+  const explorerConfiguration = await EnvironmentAPI.getExplorerConfiguration()
+
   if (!bootstrapData || !bootstrapData.main) {
     throw new Error(`No boostrap data`)
   }
@@ -63,6 +65,8 @@ export async function startSceneRuntime(client: RpcClient) {
       `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
     )
   }
+
+  componentSerializeOpt.useBinaryTransform = explorerConfiguration.configurations['enableBinaryTransform'] === 'true'
 
   const sourceCode = await codeRequest.text()
 
