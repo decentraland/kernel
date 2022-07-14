@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package protocol;
+
+message Position3DMessage {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+message HeartbeatMessage {
+  Position3DMessage position = 1;
+}
+
+message IslandChangedMessage {
+  string island_id = 1;
+  string conn_str = 2;
+  optional string from_island_id = 3;
+  map<string, Position3DMessage>  peers = 4;
+}
+
+message LeftIslandMessage {
+  string island_id = 1;
+  string peer_id = 2;
+}
+
+message JoinIslandMessage {
+  string island_id = 1;
+  string peer_id = 2;
+}

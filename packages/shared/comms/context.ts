@@ -86,6 +86,7 @@ export class CommsContext {
       }, 5001)
       return true
     } catch (e: any) {
+      commsLogger.error(e)
       await this.disconnect()
       return false
     }
