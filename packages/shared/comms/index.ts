@@ -15,9 +15,9 @@ import { commsLogger, CommsContext } from './context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
 import { Realm } from 'shared/dao/types'
-import { resolveCommsV3Urls, resolveCommsV4Urls } from './v3/resolver'
-import { BFFConfig, BFFConnection } from './v4/BFFConnection'
-import { InstanceConnection as V4InstanceConnection } from './v4/InstanceConnection'
+import { resolveCommsV4Urls, resolveCommsV3Urls } from './v3/resolver'
+import { BFFConfig, BFFConnection } from './v3/BFFConnection'
+import { InstanceConnection as V3InstanceConnection } from './v3/InstanceConnection'
 import { removePeerByUUID, removeMissingPeers } from './peers'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { ProfileType } from 'shared/profiles/types'
@@ -153,8 +153,26 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       break
     }
-    case 'v3': {
+    case 'v4': {
+      await ensureMetaConfigurationInitialized()
+
       const { wsUrl } = resolveCommsV3Urls(realm)!
+      const bffConfig: BFFConfig = {
+        getIdentity: () => getIdentity() as AuthIdentity
+      }
+
+      commsLogger.log('Using BFF service: ', wsUrl)
+      const bff = new BFFConnection(wsUrl, bffConfig)
+      connection = new V3InstanceConnection(bff, {
+        onPeerLeft: (peerId: string) => {
+          commsLogger.info('Removing peer that left an island', peerId)
+          removePeerByUUID(peerId)
+        }
+      })
+      break
+    }
+    case 'v4': {
+      const { wsUrl } = resolveCommsV4Urls(realm)!
 
       const url = new URL(wsUrl)
       const qs = new URLSearchParams({
@@ -166,24 +184,6 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       const commsBroker = new CliBrokerConnection(finalUrl)
       connection = new BrokerWorldInstanceConnection(commsBroker)
 
-      break
-    }
-    case 'v4': {
-      await ensureMetaConfigurationInitialized()
-
-      const { wsUrl } = resolveCommsV4Urls(realm)!
-      const bffConfig: BFFConfig = {
-        getIdentity: () => getIdentity() as AuthIdentity
-      }
-
-      commsLogger.log('Using BFF service: ', wsUrl)
-      const bff = new BFFConnection(wsUrl, bffConfig)
-      connection = new V4InstanceConnection(bff, {
-        onPeerLeft: (peerId: string) => {
-          commsLogger.info('Removing peer that left an island', peerId)
-          removePeerByUUID(peerId)
-        }
-      })
       break
     }
     default: {
