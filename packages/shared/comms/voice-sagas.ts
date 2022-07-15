@@ -1,4 +1,5 @@
 import { call, select, takeEvery, takeLatest } from 'redux-saga/effects'
+import defaultLogger from 'shared/logger'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
 import {
@@ -29,7 +30,7 @@ export function* voiceSaga() {
 function* updateVoiceChatRecordingStatus() {
   const recording = yield select(isVoiceChatRecording)
   const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
-
+  defaultLogger.log('[VOICECHAT] ', recording, ' ', voiceCommunicator)
   if (!isVoiceChatAllowedByCurrentScene() || !recording) {
     voiceCommunicator.pause()
   } else {
