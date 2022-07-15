@@ -47,6 +47,11 @@ describe('Comms resolver', () => {
 
   it('resolveCommsV3Urls', async () => {
     eq(r.resolveCommsV3Urls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
-    eq(r.resolveCommsV3Urls({ hostname: 'http://test.com', protocol: 'v3', serverName: 'http://test.com' }), { pingUrl: 'http://test.com/status', wsUrl: 'ws://test.com/ws' })
+    eq(r.resolveCommsV3Urls({ hostname: 'http://test.com', protocol: 'v3', serverName: 'http://test.com' }), { pingUrl: 'http://test.com/status', wsUrl: 'ws://test.com/rpc' })
+  })
+
+  it('resolveCommsV4Urls', async () => {
+    eq(r.resolveCommsV4Urls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
+    eq(r.resolveCommsV4Urls({ hostname: 'http://test.com', protocol: 'v4', serverName: 'http://test.com' }), { pingUrl: 'http://test.com/status', wsUrl: 'ws://test.com/ws' })
   })
 })
