@@ -50,6 +50,7 @@ class InputProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][], _outputs: Float32Array[][], _parameters: Record<string, Float32Array>) {
+    defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] process: ', this.status)
     if (this.status === InputProcessorStatus.PAUSED) return true
     let inputData = inputs?.[0]?.[0] ?? new Float32Array()
 
@@ -78,6 +79,7 @@ class InputProcessor extends AudioWorkletProcessor {
   }
 
   notify(notification: InputWorkletRequestTopic) {
+    defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] notify: ', notification)
     this.port.postMessage({ topic: notification })
   }
 
