@@ -32,9 +32,12 @@ function* updateVoiceChatRecordingStatus() {
   const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
   defaultLogger.log('[VOICECHAT] ', recording, ' ', voiceCommunicator)
   if (!isVoiceChatAllowedByCurrentScene() || !recording) {
+    defaultLogger.log('[VOICECHAT] PAUSE')
     voiceCommunicator.pause()
   } else {
+    defaultLogger.log('[VOICECHAT] REQUEST USER MEDIA')
     yield call(requestUserMedia)
+    defaultLogger.log('[VOICECHAT] START')
     voiceCommunicator.start()
   }
 }

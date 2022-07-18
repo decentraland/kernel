@@ -238,17 +238,21 @@ export class VoiceCommunicator {
 
   start() {
     if (this.input) {
+      defaultLogger.log('[VOICECHAT]::resume')
       this.input.workletNode.connect(this.input.recordingContext[0].destination)
       this.sendToInputWorklet(InputWorkletRequestTopic.RESUME)
     } else {
+      defaultLogger.log('[VOICECHAT]::start notifyRecording=false')
       this.notifyRecording(false)
     }
   }
 
   pause() {
     if (this.input) {
+      defaultLogger.log('[VOICECHAT]::pause')
       this.sendToInputWorklet(InputWorkletRequestTopic.PAUSE)
     } else {
+      defaultLogger.log('[VOICECHAT]::pause notifyRecording=false')
       this.notifyRecording(false)
     }
   }
