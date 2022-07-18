@@ -1,4 +1,5 @@
 import { RingBuffer } from 'atomicHelpers/RingBuffer'
+import defaultLogger from 'shared/logger'
 import { OPUS_SAMPLES_PER_FRAME, VOICE_CHAT_SAMPLE_RATE } from './constants'
 import { InputWorkletRequestTopic, OutputWorkletRequestTopic } from './types'
 
@@ -44,6 +45,7 @@ class InputProcessor extends AudioWorkletProcessor {
         this.status = InputProcessorStatus.RECORDING
         this.notify(InputWorkletRequestTopic.ON_RECORDING)
       }
+      defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] ', this.status)
     }
   }
 
@@ -63,6 +65,9 @@ class InputProcessor extends AudioWorkletProcessor {
         inputData = inputData.slice(0, samplesToUse)
         this.status = InputProcessorStatus.PAUSED
         this.notify(InputWorkletRequestTopic.ON_PAUSED)
+        defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] on paused')
+      } else {
+        defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] pause notify denied')
       }
     }
 
