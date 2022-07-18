@@ -458,6 +458,7 @@ export class VoiceCommunicator {
   }
 
   private notifyRecording(recording: boolean) {
+    defaultLogger.log('[VOICECHAT] send to unity, recording=', recording)
     this.streamRecordingListeners.forEach((listener) => listener(recording))
   }
 
