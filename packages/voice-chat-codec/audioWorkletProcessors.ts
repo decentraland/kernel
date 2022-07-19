@@ -32,7 +32,7 @@ enum InputProcessorStatus {
 class InputProcessor extends AudioWorkletProcessor {
   status: InputProcessorStatus = InputProcessorStatus.PAUSED
   inputSamplesCount: number = 0
-  timeout: NodeJS.Timeout | undefined = undefined
+  timeout: any | undefined = undefined
 
   constructor(...args: any[]) {
     super(...args)
