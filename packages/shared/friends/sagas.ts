@@ -638,19 +638,22 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
-        const exists = state.fromFriendRequests.some((request) => request.userId === userId)
+        const request = state.fromFriendRequests.find((request) => request.userId === userId)
 
-        if (!exists) {
-          newState = { ...state, fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId }] }
+        if (request) {
+          newState = {
+            ...state,
+            fromFriendRequests: [...state.fromFriendRequests, { createdAt: request.createdAt, userId }]
+          }
         }
 
         break
       }
       case FriendshipAction.REQUESTED_TO: {
-        const exists = state.toFriendRequests.some((request) => request.userId === userId)
+        const request = state.toFriendRequests.find((request) => request.userId === userId)
 
-        if (!exists) {
-          newState = { ...state, toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId }] }
+        if (request) {
+          newState = { ...state, toFriendRequests: [...state.toFriendRequests, { createdAt: request.createdAt, userId }] }
         }
 
         break
