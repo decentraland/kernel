@@ -32,22 +32,23 @@ enum InputProcessorStatus {
 class InputProcessor extends AudioWorkletProcessor {
   status: InputProcessorStatus = InputProcessorStatus.PAUSED
   inputSamplesCount: number = 0
-  timeout: any | undefined = undefined
+  requestPause: number = 0
 
   constructor(...args: any[]) {
     super(...args)
 
     this.port.onmessage = (e) => {
       if (e.data.topic === InputWorkletRequestTopic.PAUSE) {
-        this.status = InputProcessorStatus.PAUSE_REQUESTED
-        if (this.timeout === undefined) {
-          defaultLogger.log('[VOICECHAT] init timeout')
-          this.timeout = setTimeout(() => {
-            defaultLogger.log('[VOICECHAT] pause timeout')
+        if (this.status !== InputProcessorStatus.PAUSED) {
+          this.status = InputProcessorStatus.PAUSE_REQUESTED
+          const now = Date.now()
+          if (now - this.requestPause < 1200 && this.requestPause) {
+            this.status = InputProcessorStatus.PAUSED
             this.notify(InputWorkletRequestTopic.ON_PAUSED)
-            if (this.timeout) clearTimeout(this.timeout)
-            this.timeout = undefined
-          }, 1000)
+            this.requestPause = 0
+          }
+
+          this.requestPause = now
         }
       }
 
@@ -65,10 +66,6 @@ class InputProcessor extends AudioWorkletProcessor {
 
   process(inputs: Float32Array[][], _outputs: Float32Array[][], _parameters: Record<string, Float32Array>) {
     defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] process: ', this.status)
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-      this.timeout = undefined
-    }
     if (this.status === InputProcessorStatus.PAUSED) return true
     let inputData = inputs?.[0]?.[0] ?? new Float32Array()
 
@@ -84,6 +81,7 @@ class InputProcessor extends AudioWorkletProcessor {
         inputData = inputData.slice(0, samplesToUse)
         this.status = InputProcessorStatus.PAUSED
         this.notify(InputWorkletRequestTopic.ON_PAUSED)
+        this.requestPause = 0
         defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] on paused')
       } else {
         defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] pause notify denied')

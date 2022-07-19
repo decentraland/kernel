@@ -67,6 +67,7 @@ export class VoiceCommunicator {
   private outputStreamNode?: MediaStreamAudioDestinationNode
   private loopbackConnections?: { src: RTCPeerConnection; dst: RTCPeerConnection }
   private input?: VoiceInput
+  private pauseTimeout: NodeJS.Timeout | undefined = undefined
   private voiceChatWorkerMain: VoiceChatCodecWorkerMain
   private outputs: Record<string, VoiceOutput> = {}
 
@@ -246,6 +247,10 @@ export class VoiceCommunicator {
       defaultLogger.log('[VOICECHAT]::resume')
       this.input.workletNode.connect(this.input.recordingContext[0].destination)
       this.sendToInputWorklet(InputWorkletRequestTopic.RESUME)
+      if (this.pauseTimeout) {
+        clearTimeout(this.pauseTimeout)
+        this.pauseTimeout = undefined
+      }
     } else {
       defaultLogger.log('[VOICECHAT]::start notifyRecording=false')
       this.notifyRecording(false)
@@ -256,6 +261,12 @@ export class VoiceCommunicator {
     if (this.input) {
       defaultLogger.log('[VOICECHAT]::pause')
       this.sendToInputWorklet(InputWorkletRequestTopic.PAUSE)
+      if (this.pauseTimeout === undefined) {
+        this.pauseTimeout = setTimeout(() => {
+          this.sendToInputWorklet(InputWorkletRequestTopic.PAUSE)
+          this.pauseTimeout = undefined
+        }, 1000)
+      }
     } else {
       defaultLogger.log('[VOICECHAT]::pause notifyRecording=false')
       this.notifyRecording(false)
