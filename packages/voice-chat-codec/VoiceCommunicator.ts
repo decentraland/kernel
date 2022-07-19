@@ -212,6 +212,10 @@ export class VoiceCommunicator {
       }
     }
 
+    workletNode.onprocessorerror = (e) => {
+      defaultLogger.error('[VOICECHAT] workletNode outputProcessor error:', e)
+    }
+
     return workletNode
   }
 
@@ -455,7 +459,7 @@ export class VoiceCommunicator {
     }
 
     workletNode.onprocessorerror = (e) => {
-      defaultLogger.error('[VOICECHAT] workletNode error:', e)
+      defaultLogger.error('[VOICECHAT] workletNode inputProcessor error:', e)
       this.notifyRecording(false)
     }
 
