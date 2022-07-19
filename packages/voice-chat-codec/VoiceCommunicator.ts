@@ -417,6 +417,7 @@ export class VoiceCommunicator {
       numberOfInputs: 1,
       numberOfOutputs: 1
     })
+
     streamSource.connect(workletNode)
     return {
       recordingContext: context,
@@ -451,6 +452,11 @@ export class VoiceCommunicator {
       if (e.data.topic === InputWorkletRequestTopic.ON_RECORDING) {
         this.notifyRecording(true)
       }
+    }
+
+    workletNode.onprocessorerror = (e) => {
+      defaultLogger.error('[VOICECHAT] workletNode error:', e)
+      this.notifyRecording(false)
     }
 
     return encodeStream

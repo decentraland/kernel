@@ -22,7 +22,7 @@ import {
   HeaderRequest
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { createUnityLogger, ILogger } from 'shared/logger'
+import defaultLogger, { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
@@ -414,6 +414,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public SetPlayerTalking(talking: boolean) {
+    defaultLogger.log('[VOICECHAT] PAUSE')
     this.SendMessageToUnity('HUDController', 'SetPlayerTalking', JSON.stringify(talking))
   }
 
