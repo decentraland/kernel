@@ -47,6 +47,10 @@ class InputProcessor extends AudioWorkletProcessor {
       }
       defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] ', this.status)
     }
+
+    this.port.onmessageerror = (e) => {
+      defaultLogger.log('[VOICECHAT] [audioWorkletProcessor::InputProcessor] error', e)
+    }
   }
 
   process(inputs: Float32Array[][], _outputs: Float32Array[][], _parameters: Record<string, Float32Array>) {
@@ -106,6 +110,10 @@ class OutputProcessor extends AudioWorkletProcessor {
       if (e.data.topic === OutputWorkletRequestTopic.WRITE_SAMPLES) {
         this.buffer.write(e.data.samples)
       }
+    }
+
+    this.port.onmessageerror = (e) => {
+      defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] error', e)
     }
   }
 

@@ -197,6 +197,7 @@ export class VoiceCommunicator {
   }
 
   createWorkletFor(src: string) {
+    defaultLogger.error('[VOICECHAT] create workletNode outputProcessor:', src)
     const workletNode = new AudioWorkletNode(this.context, 'outputProcessor', {
       numberOfInputs: 0,
       numberOfOutputs: 1,
@@ -415,6 +416,7 @@ export class VoiceCommunicator {
   }
 
   private async createInputFor(stream: MediaStream, context: AudioContextWithInitPromise) {
+    defaultLogger.error('[VOICECHAT] create workletNode inputProcessor')
     await context[1]
     const streamSource = context[0].createMediaStreamSource(stream)
     const workletNode = new AudioWorkletNode(context[0], 'inputProcessor', {
