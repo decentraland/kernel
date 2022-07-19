@@ -28,7 +28,8 @@ import {
   UnseenPrivateMessage,
   GetFriendsPayload,
   AddFriendsPayload,
-  GetFriendRequestsPayload
+  GetFriendRequestsPayload,
+  AddFriendRequestsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -413,7 +414,16 @@ export function getFriends(request: GetFriendsPayload) {
   // TODO: verify if we need to call receivePeerUserData here
 }
 
-export function getFriendRequests(request: GetFriendRequestsPayload) {}
+export function getFriendRequests(request: GetFriendRequestsPayload) {
+  const friendRequests = [] // go to state
+  const filtered = friendRequests.slice(request.receivedSkip, request.receivedLimit + request.receivedSkip)
+
+  // const addFriendRequestsPayload: AddFriendRequestsPayload = {
+    
+  // }
+
+  // getUnityInstance().AddFriendRequests(filtered)
+}
 
 function* initializeReceivedMessagesCleanUp() {
   while (true) {
@@ -653,7 +663,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         const request = state.toFriendRequests.find((request) => request.userId === userId)
 
         if (request) {
-          newState = { ...state, toFriendRequests: [...state.toFriendRequests, { createdAt: request.createdAt, userId }] }
+          newState = {
+            ...state,
+            toFriendRequests: [...state.toFriendRequests, { createdAt: request.createdAt, userId }]
+          }
         }
 
         break
