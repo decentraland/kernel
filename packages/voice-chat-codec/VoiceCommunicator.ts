@@ -197,7 +197,7 @@ export class VoiceCommunicator {
   }
 
   createWorkletFor(src: string) {
-    defaultLogger.error('[VOICECHAT] create workletNode outputProcessor:', src)
+    defaultLogger.log('[VOICECHAT] create workletNode outputProcessor:', src)
     const workletNode = new AudioWorkletNode(this.context, 'outputProcessor', {
       numberOfInputs: 0,
       numberOfOutputs: 1,
@@ -350,6 +350,7 @@ export class VoiceCommunicator {
   }
 
   private async createOutput(src: string, relativePosition: VoiceSpatialParams) {
+    defaultLogger.log('[VOICECHAT] createOutput')
     this.outputs[src] = {
       encodedFramesQueue: new SortedLimitedQueue(
         Math.ceil((this.outputBufferLength * 1000) / OPUS_FRAME_SIZE_MS),
@@ -416,7 +417,7 @@ export class VoiceCommunicator {
   }
 
   private async createInputFor(stream: MediaStream, context: AudioContextWithInitPromise) {
-    defaultLogger.error('[VOICECHAT] create workletNode inputProcessor')
+    defaultLogger.log('[VOICECHAT] create workletNode inputProcessor')
     await context[1]
     const streamSource = context[0].createMediaStreamSource(stream)
     const workletNode = new AudioWorkletNode(context[0], 'inputProcessor', {
@@ -445,7 +446,10 @@ export class VoiceCommunicator {
       this.channel.send({ encoded: data, index: this.inputFramesIndex })
     })
 
+    defaultLogger.error('[VOICECHAT] createInputEncodeStream')
+
     workletNode.port.onmessage = (e) => {
+      defaultLogger.error('[VOICECHAT] workletNode.port')
       if (e.data.topic === InputWorkletRequestTopic.ENCODE) {
         encodeStream.encode(e.data.samples)
       }

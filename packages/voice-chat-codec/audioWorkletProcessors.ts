@@ -32,6 +32,7 @@ enum InputProcessorStatus {
 class InputProcessor extends AudioWorkletProcessor {
   status: InputProcessorStatus = InputProcessorStatus.PAUSED
   inputSamplesCount: number = 0
+  timeout: NodeJS.Timeout | undefined = undefined
 
   constructor(...args: any[]) {
     super(...args)
@@ -39,6 +40,14 @@ class InputProcessor extends AudioWorkletProcessor {
     this.port.onmessage = (e) => {
       if (e.data.topic === InputWorkletRequestTopic.PAUSE) {
         this.status = InputProcessorStatus.PAUSE_REQUESTED
+        if (this.timeout === undefined) {
+          this.timeout = setTimeout(() => {
+            defaultLogger.log('[VOICECHAT] pause timeout ')
+            this.notify(InputWorkletRequestTopic.ON_PAUSED)
+            if (this.timeout) clearTimeout(this.timeout)
+            this.timeout = undefined
+          }, 1000)
+        }
       }
 
       if (e.data.topic === InputWorkletRequestTopic.RESUME) {
@@ -55,6 +64,10 @@ class InputProcessor extends AudioWorkletProcessor {
 
   process(inputs: Float32Array[][], _outputs: Float32Array[][], _parameters: Record<string, Float32Array>) {
     defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] process: ', this.status)
+    if (this.timeout) {
+      clearTimeout(this.timeout)
+      this.timeout = undefined
+    }
     if (this.status === InputProcessorStatus.PAUSED) return true
     let inputData = inputs?.[0]?.[0] ?? new Float32Array()
 
