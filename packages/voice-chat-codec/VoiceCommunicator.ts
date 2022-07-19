@@ -81,7 +81,7 @@ export class VoiceCommunicator {
 
   private inputFramesIndex = 0
 
-  private checkStateTimeout: NodeJS.Timeout | undefined = undefined
+  private checkStateTimeout: any | undefined = undefined
 
   private get context(): AudioContext {
     return this.contextWithInitPromise[0]
