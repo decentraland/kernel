@@ -32,29 +32,28 @@ enum InputProcessorStatus {
 class InputProcessor extends AudioWorkletProcessor {
   status: InputProcessorStatus = InputProcessorStatus.PAUSED
   inputSamplesCount: number = 0
-  requestPause: number = 0
+  lastProcess: number = 0
 
   constructor(...args: any[]) {
     super(...args)
 
     this.port.onmessage = (e) => {
       if (e.data.topic === InputWorkletRequestTopic.PAUSE) {
-        if (this.status !== InputProcessorStatus.PAUSED) {
-          this.status = InputProcessorStatus.PAUSE_REQUESTED
-          const now = Date.now()
-          if (now - this.requestPause < 1200 && this.requestPause) {
-            this.status = InputProcessorStatus.PAUSED
-            this.notify(InputWorkletRequestTopic.ON_PAUSED)
-            this.requestPause = 0
-          }
-
-          this.requestPause = now
-        }
+        this.status = InputProcessorStatus.PAUSE_REQUESTED
       }
 
       if (e.data.topic === InputWorkletRequestTopic.RESUME) {
         this.status = InputProcessorStatus.RECORDING
         this.notify(InputWorkletRequestTopic.ON_RECORDING)
+      }
+
+      if (e.data.topic === InputWorkletRequestTopic.CHECK_STATUS) {
+        if (this.status === InputProcessorStatus.RECORDING || this.status === InputProcessorStatus.PAUSE_REQUESTED) {
+          if (this.isTimeout()) {
+            this.status = InputProcessorStatus.PAUSED
+            this.notify(InputWorkletRequestTopic.ON_PAUSED)
+          }
+        }
       }
       defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] ', this.status)
     }
@@ -64,7 +63,12 @@ class InputProcessor extends AudioWorkletProcessor {
     }
   }
 
+  isTimeout(): boolean {
+    return Date.now() - this.lastProcess > 1000
+  }
+
   process(inputs: Float32Array[][], _outputs: Float32Array[][], _parameters: Record<string, Float32Array>) {
+    this.lastProcess = Date.now()
     defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] process: ', this.status)
     if (this.status === InputProcessorStatus.PAUSED) return true
     let inputData = inputs?.[0]?.[0] ?? new Float32Array()
@@ -81,7 +85,6 @@ class InputProcessor extends AudioWorkletProcessor {
         inputData = inputData.slice(0, samplesToUse)
         this.status = InputProcessorStatus.PAUSED
         this.notify(InputWorkletRequestTopic.ON_PAUSED)
-        this.requestPause = 0
         defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] on paused')
       } else {
         defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] pause notify denied')

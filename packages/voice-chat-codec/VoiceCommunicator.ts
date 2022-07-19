@@ -67,7 +67,6 @@ export class VoiceCommunicator {
   private outputStreamNode?: MediaStreamAudioDestinationNode
   private loopbackConnections?: { src: RTCPeerConnection; dst: RTCPeerConnection }
   private input?: VoiceInput
-  private pauseTimeout: NodeJS.Timeout | undefined = undefined
   private voiceChatWorkerMain: VoiceChatCodecWorkerMain
   private outputs: Record<string, VoiceOutput> = {}
 
@@ -81,6 +80,9 @@ export class VoiceCommunicator {
   private readonly outputExpireTime = 60 * 1000
 
   private inputFramesIndex = 0
+
+  private checkStateTimeout: NodeJS.Timeout | undefined = undefined
+  private recording: boolean = false
 
   private get context(): AudioContext {
     return this.contextWithInitPromise[0]
@@ -242,15 +244,21 @@ export class VoiceCommunicator {
     }
   }
 
+  checkStatusTimeout() {
+    if (this.checkStateTimeout === undefined) {
+      this.checkStateTimeout = setTimeout(() => {
+        this.sendToInputWorklet(InputWorkletRequestTopic.CHECK_STATUS)
+        this.checkStateTimeout = undefined
+      }, 1200)
+    }
+  }
+
   start() {
     if (this.input) {
       defaultLogger.log('[VOICECHAT]::resume')
       this.input.workletNode.connect(this.input.recordingContext[0].destination)
       this.sendToInputWorklet(InputWorkletRequestTopic.RESUME)
-      if (this.pauseTimeout) {
-        clearTimeout(this.pauseTimeout)
-        this.pauseTimeout = undefined
-      }
+      this.checkStatusTimeout()
     } else {
       defaultLogger.log('[VOICECHAT]::start notifyRecording=false')
       this.notifyRecording(false)
@@ -261,12 +269,7 @@ export class VoiceCommunicator {
     if (this.input) {
       defaultLogger.log('[VOICECHAT]::pause')
       this.sendToInputWorklet(InputWorkletRequestTopic.PAUSE)
-      if (this.pauseTimeout === undefined) {
-        this.pauseTimeout = setTimeout(() => {
-          this.sendToInputWorklet(InputWorkletRequestTopic.PAUSE)
-          this.pauseTimeout = undefined
-        }, 1000)
-      }
+      this.checkStatusTimeout()
     } else {
       defaultLogger.log('[VOICECHAT]::pause notifyRecording=false')
       this.notifyRecording(false)
@@ -489,6 +492,7 @@ export class VoiceCommunicator {
   }
 
   private notifyRecording(recording: boolean) {
+    this.recording = recording
     defaultLogger.log('[VOICECHAT] send to unity, recording=', recording)
     this.streamRecordingListeners.forEach((listener) => listener(recording))
   }

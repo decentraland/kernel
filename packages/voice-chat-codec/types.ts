@@ -10,7 +10,8 @@ export enum InputWorkletRequestTopic {
   PAUSE = 'PAUSE',
   RESUME = 'RESUME',
   ON_PAUSED = 'ON_PAUSED',
-  ON_RECORDING = 'ON_RECORDING'
+  ON_RECORDING = 'ON_RECORDING',
+  CHECK_STATUS = 'CHECK_STATUS'
 }
 
 export enum OutputWorkletRequestTopic {
