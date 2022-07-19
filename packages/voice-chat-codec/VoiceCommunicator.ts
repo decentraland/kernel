@@ -15,6 +15,7 @@ export type AudioCommunicatorChannel = {
 
 export type StreamPlayingListener = (streamId: string, playing: boolean) => any
 export type StreamRecordingListener = (recording: boolean) => any
+export type StreamRecordingErrorListener = (message: string) => any
 
 type VoiceOutput = {
   encodedFramesQueue: SortedLimitedQueue<EncodedFrame>
@@ -74,6 +75,7 @@ export class VoiceCommunicator {
 
   private streamPlayingListeners: StreamPlayingListener[] = []
   private streamRecordingListeners: StreamRecordingListener[] = []
+  private streamRecordingErrorListeners: StreamRecordingErrorListener[] = []
 
   private readonly sampleRate: number
   private readonly outputBufferLength: number
@@ -119,6 +121,10 @@ export class VoiceCommunicator {
 
   public addStreamRecordingListener(listener: StreamRecordingListener) {
     this.streamRecordingListeners.push(listener)
+  }
+
+  public addStreamRecordingErrorListener(listener: StreamRecordingErrorListener) {
+    this.streamRecordingErrorListeners.push(listener)
   }
 
   public hasInput() {
@@ -475,6 +481,10 @@ export class VoiceCommunicator {
       if (e.data.topic === InputWorkletRequestTopic.ON_RECORDING) {
         this.notifyRecording(true)
       }
+
+      if (e.data.topic === InputWorkletRequestTopic.TIMEOUT) {
+        this.notifyRecordingError('Something went wrong with the microphone. No message was recorded.')
+      }
     }
 
     workletNode.onprocessorerror = (e) => {
@@ -493,6 +503,10 @@ export class VoiceCommunicator {
   private notifyRecording(recording: boolean) {
     defaultLogger.log('[VOICECHAT] send to unity, recording=', recording)
     this.streamRecordingListeners.forEach((listener) => listener(recording))
+  }
+
+  private notifyRecordingError(message: string) {
+    this.streamRecordingErrorListeners.forEach((listener) => listener(message))
   }
 
   private startOutputsExpiration() {

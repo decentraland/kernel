@@ -51,6 +51,7 @@ class InputProcessor extends AudioWorkletProcessor {
         if (this.status === InputProcessorStatus.RECORDING || this.status === InputProcessorStatus.PAUSE_REQUESTED) {
           if (this.isTimeout()) {
             this.status = InputProcessorStatus.PAUSED
+            this.notify(InputWorkletRequestTopic.TIMEOUT)
             this.notify(InputWorkletRequestTopic.ON_PAUSED)
           }
         }
