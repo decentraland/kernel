@@ -41,8 +41,9 @@ class InputProcessor extends AudioWorkletProcessor {
       if (e.data.topic === InputWorkletRequestTopic.PAUSE) {
         this.status = InputProcessorStatus.PAUSE_REQUESTED
         if (this.timeout === undefined) {
+          defaultLogger.log('[VOICECHAT] init timeout')
           this.timeout = setTimeout(() => {
-            defaultLogger.log('[VOICECHAT] pause timeout ')
+            defaultLogger.log('[VOICECHAT] pause timeout')
             this.notify(InputWorkletRequestTopic.ON_PAUSED)
             if (this.timeout) clearTimeout(this.timeout)
             this.timeout = undefined
