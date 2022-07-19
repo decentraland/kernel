@@ -82,7 +82,6 @@ export class VoiceCommunicator {
   private inputFramesIndex = 0
 
   private checkStateTimeout: NodeJS.Timeout | undefined = undefined
-  private recording: boolean = false
 
   private get context(): AudioContext {
     return this.contextWithInitPromise[0]
@@ -492,7 +491,6 @@ export class VoiceCommunicator {
   }
 
   private notifyRecording(recording: boolean) {
-    this.recording = recording
     defaultLogger.log('[VOICECHAT] send to unity, recording=', recording)
     this.streamRecordingListeners.forEach((listener) => listener(recording))
   }
