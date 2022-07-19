@@ -110,6 +110,7 @@ class OutputProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][], _parameters: Record<string, Float32Array>) {
+    defaultLogger.log('[VOICECHAT] [audioWorkletProcessor] process output')
     const data = outputs[0][0]
 
     data.fill(0)
