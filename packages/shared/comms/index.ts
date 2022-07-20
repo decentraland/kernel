@@ -153,7 +153,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       break
     }
-    case 'v4': {
+    case 'v3': {
       await ensureMetaConfigurationInitialized()
 
       const { wsUrl } = resolveCommsV3Urls(realm)!
@@ -187,7 +187,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       break
     }
     default: {
-      throw new Error(`unrecognized comms mode "${COMMS}"`)
+      throw new Error(`unrecognized comms mode "${COMMS}" "${protocol}"`)
     }
   }
 
