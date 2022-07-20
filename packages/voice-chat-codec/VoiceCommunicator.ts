@@ -307,6 +307,7 @@ export class VoiceCommunicator {
     src: RTCPeerConnection
     dst: RTCPeerConnection
   } {
+    defaultLogger.log('[VOICECHAT] VoiceCommunicator::createRTCLoopbackConnection')
     const src = new RTCPeerConnection()
     const dst = new RTCPeerConnection()
 
@@ -322,6 +323,7 @@ export class VoiceCommunicator {
         ) {
           // Just in case, we close connections to free resources
           this.closeLoopbackConnections()
+          defaultLogger.log('[VOICECHAT] VoiceCommunicator::createRTCLoopbackConnection loop')
           this.loopbackConnections = this.createRTCLoopbackConnection(retryNumber)
         } else if (src.connectionState === 'connected') {
           // We reset retry number when the connection succeeds
@@ -360,6 +362,7 @@ export class VoiceCommunicator {
   }
 
   private closeLoopbackConnections() {
+    defaultLogger.log('[VOICECHAT] VoiceCommunicator::closeLoopbackConnections')
     if (this.loopbackConnections) {
       const { src, dst } = this.loopbackConnections
 
@@ -510,6 +513,7 @@ export class VoiceCommunicator {
   }
 
   private startOutputsExpiration() {
+    defaultLogger.log('[VOICECHAT] VoiceCommunicator::startOutputsExpiration')
     const expireOutputs = () => {
       Object.keys(this.outputs).forEach((outputId) => {
         const output = this.outputs[outputId]
@@ -525,6 +529,7 @@ export class VoiceCommunicator {
   }
 
   private createContext(contextOptions?: AudioContextOptions): AudioContextWithInitPromise {
+    defaultLogger.log('[VOICECHAT] VoiceCommunicator::createContext ')
     const aContext = new AudioContext(contextOptions)
     if (aContext.audioWorklet) {
       const workletInitializedPromise = aContext.audioWorklet
@@ -539,6 +544,7 @@ export class VoiceCommunicator {
   }
 
   private destroyOutput(outputId: string) {
+    defaultLogger.log('[VOICECHAT] VoiceCommunicator::destroyOutput ', outputId)
     this.disconnectOutputNodes(outputId)
 
     this.voiceChatWorkerMain.destroyDecodeStream(outputId)
@@ -547,6 +553,7 @@ export class VoiceCommunicator {
   }
 
   private disconnectOutputNodes(outputId: string) {
+    defaultLogger.log('[VOICECHAT] VoiceCommunicator::disconnectOutputNodes ', outputId)
     const output = this.outputs[outputId]
     output.panNode?.disconnect()
     output.workletNode?.disconnect()
