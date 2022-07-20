@@ -47,7 +47,6 @@ export function* commsSaga() {
   })
 
   yield fork(handleNewCommsContext)
-  yield fork(voiceSaga)
 
   // respond to profile requests over comms
   yield fork(respondCommsProfileRequests)
@@ -193,6 +192,8 @@ function* handleNewCommsContext() {
       // disconnect previous context
       yield call(disconnectContext, oldContext)
     }
+
+    yield call(voiceSaga)
   })
 }
 
