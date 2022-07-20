@@ -415,14 +415,19 @@ export function getFriends(request: GetFriendsPayload) {
 }
 
 export function getFriendRequests(request: GetFriendRequestsPayload) {
-  const friendRequests = [] // go to state
-  const filtered = friendRequests.slice(request.receivedSkip, request.receivedLimit + request.receivedSkip)
+  const friends: FriendsState = getPrivateMessaging(store.getState())
+  
+  const fromFriendRequests = friends.fromFriendRequests.slice(request.receivedSkip, request.receivedSkip + request.receivedLimit)
+  const toFriendRequests = friends.toFriendRequests.slice(request.receivedSkip, request.receivedSkip + request.receivedLimit)
 
-  // const addFriendRequestsPayload: AddFriendRequestsPayload = {
-    
-  // }
+  const addFriendRequestsPayload: AddFriendRequestsPayload = {
+    requestedTo: fromFriendRequests.map((friend) => friend.userId),
+    requestedFrom: toFriendRequests.map((friend) => friend.userId),
+    totalReceivedFriendRequests: fromFriendRequests.map((friend) => friend.userId).length,
+    totalSentFriendRequests: toFriendRequests.map((friend) => friend.userId).length,
+  }
 
-  // getUnityInstance().AddFriendRequests(filtered)
+  getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
 function* initializeReceivedMessagesCleanUp() {
