@@ -46,8 +46,8 @@ export function* commsSaga() {
     yield put(setWorldContext(undefined))
   })
 
-  yield fork(voiceSaga)
   yield fork(handleNewCommsContext)
+  yield fork(voiceSaga)
 
   // respond to profile requests over comms
   yield fork(respondCommsProfileRequests)
