@@ -424,8 +424,8 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
     request.receivedSkip + request.receivedLimit
   )
   const toFriendRequests = friends.toFriendRequests.slice(
-    request.receivedSkip,
-    request.receivedSkip + request.receivedLimit
+    request.sentSkip,
+    request.sentSkip + request.sentLimit
   )
 
   const addFriendRequestsPayload: AddFriendRequestsPayload = {
