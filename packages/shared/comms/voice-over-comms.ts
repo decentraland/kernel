@@ -91,4 +91,5 @@ export function* initVoiceCommunicator() {
   ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
 
   yield put(setVoiceCommunicator(voiceCommunicator))
+  return voiceCommunicator
 }

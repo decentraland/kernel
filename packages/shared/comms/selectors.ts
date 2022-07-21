@@ -11,8 +11,7 @@ export const getVoicePolicy = (store: RootCommsState) => store.comms.voicePolicy
 export const getCommsIsland = (store: RootCommsState): string | undefined => store.comms.island
 export const getRealm = (store: RootCommsState): Realm | undefined => store.comms.context?.realm
 export const getCommsContext = (state: RootCommsState): CommsContext | undefined => state.comms.context
-export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator => {
-  if (!store.comms.voiceCommunicator) throw new Error('VoiceCommunicator not set')
+export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator | undefined => {
   return store.comms.voiceCommunicator
 }
 

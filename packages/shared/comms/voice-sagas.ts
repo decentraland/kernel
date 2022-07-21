@@ -17,8 +17,6 @@ import { isVoiceChatRecording, getVoiceCommunicator, isVoiceChatAllowedByCurrent
 import { initVoiceCommunicator } from './voice-over-comms'
 
 export function* voiceSaga() {
-  yield call(initVoiceCommunicator)
-
   yield takeLatest(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlaying)
@@ -28,7 +26,8 @@ export function* voiceSaga() {
 
 function* updateVoiceChatRecordingStatus() {
   const recording = yield select(isVoiceChatRecording)
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
+  const voiceCommunicator: VoiceCommunicator =
+    (yield select(getVoiceCommunicator)) || (yield call(initVoiceCommunicator))
 
   if (!isVoiceChatAllowedByCurrentScene() || !recording) {
     voiceCommunicator.pause()
@@ -40,11 +39,13 @@ function* updateVoiceChatRecordingStatus() {
 
 // TODO: bind this function to a "Request Microphone" button
 function* requestUserMedia() {
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
-  if (!voiceCommunicator.hasInput()) {
-    const media = yield call(requestMediaDevice)
-    if (media) {
-      yield voiceCommunicator.setInputStream(media)
+  const voiceCommunicator: VoiceCommunicator | undefined = yield select(getVoiceCommunicator)
+  if (voiceCommunicator) {
+    if (!voiceCommunicator.hasInput()) {
+      const media = yield call(requestMediaDevice)
+      if (media) {
+        yield voiceCommunicator.setInputStream(media)
+      }
     }
   }
 }
@@ -56,13 +57,17 @@ function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
 }
 
 function* updateVoiceChatVolume(action: SetVoiceVolume) {
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
-  voiceCommunicator.setVolume(action.payload.volume)
+  const voiceCommunicator: VoiceCommunicator | undefined = yield select(getVoiceCommunicator)
+
+  // TODO: If renderer changes the volume before initializating, it will be a problem. We need to keep to variable if is not initializated
+  voiceCommunicator?.setVolume(action.payload.volume)
 }
 
 function* updateVoiceChatMute(action: SetVoiceMute) {
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
-  voiceCommunicator.setMute(action.payload.mute)
+  const voiceCommunicator: VoiceCommunicator | undefined = yield select(getVoiceCommunicator)
+
+  // TODO: If renderer changes the volume before initializating, it will be a problem. We need to keep to variable if is not initializated
+  voiceCommunicator?.setMute(action.payload.mute)
 }
 
 let audioRequestPending = false
