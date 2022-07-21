@@ -159,26 +159,25 @@ describe('Friends sagas', () => {
     })
 
     describe("When there're sent and received friend requests", () => {
-      const request: GetFriendRequestsPayload = {
-        sentLimit: 0,
-        sentSkip: 10,
-        receivedLimit: 0,
-        receivedSkip: 10,
-      }
+      it("Should call unity with the declared parameters", () => {
+        const request: GetFriendRequestsPayload = {
+          sentLimit: 0,
+          sentSkip: 10,
+          receivedLimit: 0,
+          receivedSkip: 10,
+        }
 
-      const addedFriendRequests = {
-        requestTo: friendsFromStore.toFriendRequests.map((friend) => friend.userId),
-        requestFrom: friendsFromStore.fromFriendRequests.map((friend) => friend.userId),
-        totalReceivedFriendRequests: 1,
-        totalSentFriendRequests: 1,
-      }
+        const addedFriendRequests = {
+          requestTo: friendsFromStore.toFriendRequests.map((friend) => friend.userId),
+          requestFrom: friendsFromStore.fromFriendRequests.map((friend) => friend.userId),
+          totalReceivedFriendRequests: 1,
+          totalSentFriendRequests: 1,
+        }
 
-      it("Should have called unity with declared parameters", () => {
         sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
         friendsSagas.getFriendRequests(request)
         sinon.verify()
-      }
-      )
+      })
     })
   })
 })
