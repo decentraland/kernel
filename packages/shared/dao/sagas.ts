@@ -44,8 +44,8 @@ import { CatalystNode } from 'shared/types'
 import {
   candidateToRealm,
   resolveCommsConnectionString,
-  resolveCommsV3Urls,
-  resolveCommsV4Urls
+  resolveCommsV4Urls,
+  resolveCommsV3Urls
 } from 'shared/comms/v3/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
