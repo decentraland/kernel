@@ -9,7 +9,6 @@ import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { FriendRequest, FriendsState } from 'shared/friends/types'
-// import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 // import Sinon from 'sinon'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
@@ -172,6 +171,28 @@ describe('Friends sagas', () => {
           requestedFrom: friendsFromStore.fromFriendRequests.map((friend) => friend.userId),
           totalReceivedFriendRequests: 1,
           totalSentFriendRequests: 1,
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
+        friendsSagas.getFriendRequests(request)
+        sinon.verify()
+      })
+    })
+
+    describe("When there're friend requests, but there's also a skip", () => {
+      it("Should filter the requests to skip the expected amount", () => {
+        const request: GetFriendRequestsPayload = {
+          sentLimit: 10,
+          sentSkip: 5,
+          receivedLimit: 10,
+          receivedSkip: 5,
+        }
+
+        const addedFriendRequests = {
+          requestedTo: friendsFromStore.toFriendRequests.slice(5).map((friend) => friend.userId),
+          requestedFrom: friendsFromStore.fromFriendRequests.slice(5).map((friend) => friend.userId),
+          totalReceivedFriendRequests: 0,
+          totalSentFriendRequests: 0,
         }
 
         sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
