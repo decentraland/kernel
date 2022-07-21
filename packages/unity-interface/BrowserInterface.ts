@@ -21,8 +21,7 @@ import {
   FriendshipUpdateStatusMessage,
   FriendshipAction,
   WorldPosition,
-  AvatarRendererMessage
-  LoadableParcelScene,
+  AvatarRendererMessage,
   GetFriendsPayload
 } from 'shared/types'
 import {
