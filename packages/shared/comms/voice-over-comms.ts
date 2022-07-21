@@ -33,7 +33,11 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
   ) {
     if (voiceCommunicator) {
       voiceCommunicator
-        .playEncodedAudio(peerTrackingInfo.ethereumAddress, getSpatialParamsFor(peerTrackingInfo.position), message.data)
+        .playEncodedAudio(
+          peerTrackingInfo.ethereumAddress,
+          getSpatialParamsFor(peerTrackingInfo.position),
+          message.data
+        )
         .catch((e) => logger.error('Error playing encoded audio!', e))
     }
   }
