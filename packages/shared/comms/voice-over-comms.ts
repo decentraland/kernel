@@ -15,6 +15,7 @@ import { shouldPlayVoice } from './voice-selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { NotificationType } from 'shared/types'
+import { trackEvent } from 'shared/analytics'
 
 const logger = createLogger('VoiceCommunicator: ')
 
@@ -82,6 +83,11 @@ export function* initVoiceCommunicator() {
       message,
       buttonMessage: 'OK',
       timer: 5
+    })
+    trackEvent('error', {
+      context: 'voice-chat',
+      message: 'stream recording error: ' + message,
+      stack: 'addStreamRecordingErrorListener'
     })
   })
 
