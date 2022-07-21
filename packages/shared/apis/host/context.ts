@@ -21,6 +21,4 @@ export type PortContext = {
   sendSceneEvent<K extends keyof IEvents>(id: K, event: IEvents[K]): void
   sendProtoSceneEvent(event: EventData): void
   logger: ILogger
-  crdtMessages: Uint8Array[]
-  sendCrdtMessage(payload: Uint8Array): void
 }

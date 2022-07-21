@@ -14,11 +14,9 @@ export function registerExperimentalAPIServiceServerImplementation(port: RpcServ
     },
 
     async messageFromRenderer(_, ctx) {
-      const data: Uint8Array[] = ctx.crdtMessages
-      if (data.length) {
-        ctx.crdtMessages = []
-      }
-      return { data }
+      const protocol = await rendererProtocol
+      const response = await protocol.crdtService.pullCrdt({ sceneId: ctx.sceneData.id })
+      return { data: [response.payload] }
     }
   }))
 }
