@@ -31,15 +31,17 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
     peerTrackingInfo.position &&
     shouldPlayVoice(state, profile, peerTrackingInfo.ethereumAddress)
   ) {
-    voiceCommunicator
-      .playEncodedAudio(peerTrackingInfo.ethereumAddress, getSpatialParamsFor(peerTrackingInfo.position), message.data)
-      .catch((e) => logger.error('Error playing encoded audio!', e))
+    if (voiceCommunicator) {
+      voiceCommunicator
+        .playEncodedAudio(peerTrackingInfo.ethereumAddress, getSpatialParamsFor(peerTrackingInfo.position), message.data)
+        .catch((e) => logger.error('Error playing encoded audio!', e))
+    }
   }
 }
 
 function setListenerSpatialParams(position: Position) {
   const state = store.getState()
-  getVoiceCommunicator(state).setListenerSpatialParams(getSpatialParamsFor(position))
+  getVoiceCommunicator(state)?.setListenerSpatialParams(getSpatialParamsFor(position))
 }
 
 export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
