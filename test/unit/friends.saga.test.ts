@@ -161,15 +161,15 @@ describe('Friends sagas', () => {
     describe("When there're sent and received friend requests", () => {
       it("Should call unity with the declared parameters", () => {
         const request: GetFriendRequestsPayload = {
-          sentLimit: 0,
-          sentSkip: 10,
-          receivedLimit: 0,
-          receivedSkip: 10,
+          sentLimit: 10,
+          sentSkip: 0,
+          receivedLimit: 10,
+          receivedSkip: 0,
         }
 
         const addedFriendRequests = {
-          requestTo: friendsFromStore.toFriendRequests.map((friend) => friend.userId),
-          requestFrom: friendsFromStore.fromFriendRequests.map((friend) => friend.userId),
+          requestedTo: friendsFromStore.toFriendRequests.map((friend) => friend.userId),
+          requestedFrom: friendsFromStore.fromFriendRequests.map((friend) => friend.userId),
           totalReceivedFriendRequests: 1,
           totalSentFriendRequests: 1,
         }
