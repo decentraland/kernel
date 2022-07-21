@@ -9,15 +9,15 @@ endif
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
-BFF_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/bff/*.proto)
-COMMS_PROTO_FILES := $(wildcard packages/shared/comms/v4/proto/*.proto)
+BFF_PROTO_FILES := $(wildcard packages/shared/comms/v3/proto/bff/*.proto)
+COMMS_PROTO_FILES := $(wildcard packages/shared/comms/v3/proto/*.proto)
 
 SCENE_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
 RENDERER_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/renderer-protocol/*.proto)
 PBS_TS = $(SCENE_PROTO_FILES:node_modules/@dcl/protocol/kernel/apis/%.proto=packages/shared/apis/proto/%.gen.ts)
 PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/renderer-protocol/proto/%.gen.ts)
-BFF_TS = $(BFF_PROTO_FILES:packages/shared/comms/v4/proto/bff/%.proto=packages/shared/comms/v4/proto/bff/%.gen.ts)
-COMMS_TS = $(COMMS_PROTO_FILES:packages/shared/comms/v4/proto/%.proto=packages/shared/comms/v4/proto/%.gen.ts)
+BFF_TS = $(BFF_PROTO_FILES:packages/shared/comms/v3/proto/bff/%.proto=packages/shared/comms/v3/proto/bff/%.gen.ts)
+COMMS_TS = $(COMMS_PROTO_FILES:packages/shared/comms/v3/proto/%.proto=packages/shared/comms/v3/proto/%.gen.ts)
 
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protobuf/bin/protoc
@@ -208,21 +208,21 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
 			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
-packages/shared/comms/v4/proto/bff/%.gen.ts: packages/shared/comms/v4/proto/bff/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/v3/proto/bff/%.gen.ts: packages/shared/comms/v3/proto/bff/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/comms/v4/proto/bff" -I="$(PWD)/packages/shared/comms/v4/proto/bff" \
-			"$(PWD)/packages/shared/comms/v4/proto/bff/$*.proto"
+			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto/bff" -I="$(PWD)/packages/shared/comms/v3/proto/bff" \
+			"$(PWD)/packages/shared/comms/v3/proto/bff/$*.proto"
 
-packages/shared/comms/v4/proto/%.gen.ts: packages/shared/comms/v4/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/v3/proto/%.gen.ts: packages/shared/comms/v3/proto/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,oneof=unions\
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/comms/v4/proto" -I="$(PWD)/packages/shared/comms/v4/proto" \
-			"$(PWD)/packages/shared/comms/v4/proto/$*.proto" 
+			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto" -I="$(PWD)/packages/shared/comms/v3/proto" \
+			"$(PWD)/packages/shared/comms/v3/proto/$*.proto" 
 
 compile_apis: ${BFF_TS} ${COMMS_TS} ${PBS_TS} 
 
