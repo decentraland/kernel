@@ -1,6 +1,5 @@
-// import { expect } from 'chai'
 import { buildStore } from 'shared/store/store'
-import { GetFriendsPayload } from 'shared/types'
+import { GetFriendRequestsPayload, GetFriendsPayload } from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import * as friendsSelectors from 'shared/friends/selectors'
@@ -8,8 +7,7 @@ import * as profilesSelectors from 'shared/profiles/selectors'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-// import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-// import Sinon from 'sinon'
+import { FriendRequest, FriendsState } from 'shared/friends/types'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -37,6 +35,24 @@ function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
 
 const friendIds = ['0xa1', '0xb1', '0xc1', '0xd1']
 
+const fromFriendRequest: FriendRequest = {
+  userId: '0xa1',
+  createdAt: 123123132
+}
+
+const toFriendRequest: FriendRequest = {
+  userId: '0xa2',
+  createdAt: 123123132
+}
+
+const friendsFromStore: FriendsState = {
+  client: null,
+  socialInfo: null,
+  friends: [],
+  fromFriendRequests: [fromFriendRequest],
+  toFriendRequests: [toFriendRequest]
+}
+
 const profilesFromStore = [
   getMockedAvatar('0xa1', 'john'),
   getMockedAvatar('0xa2', 'mike'),
@@ -46,6 +62,7 @@ const profilesFromStore = [
 
 function mockStoreCalls() {
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
+  sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
   sinon.stub(profilesSelectors, 'getProfilesFromStore').callsFake(() => profilesFromStore)
 }
 
@@ -80,6 +97,7 @@ describe('Friends sagas', () => {
           friends: expectedFriends.map((friend) => friend.userId),
           totalFriends: 2
         }
+
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
         friendsSagas.getFriends(request)
@@ -120,6 +138,64 @@ describe('Friends sagas', () => {
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
         friendsSagas.getFriends(request2)
+        sinon.verify()
+      })
+    })
+  })
+
+  describe('get friend requests', () => {
+    beforeEach(() => {
+      const { store } = buildStore()
+      globalThis.globalStore = store
+
+      mockStoreCalls()
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    describe("When there're sent and received friend requests", () => {
+      it('Should call unity with the declared parameters', () => {
+        const request: GetFriendRequestsPayload = {
+          sentLimit: 10,
+          sentSkip: 0,
+          receivedLimit: 10,
+          receivedSkip: 0
+        }
+
+        const addedFriendRequests = {
+          requestedTo: friendsFromStore.toFriendRequests.map((friend) => friend.userId),
+          requestedFrom: friendsFromStore.fromFriendRequests.map((friend) => friend.userId),
+          totalReceivedFriendRequests: 1,
+          totalSentFriendRequests: 1
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
+        friendsSagas.getFriendRequests(request)
+        sinon.verify()
+      })
+    })
+
+    describe("When there're friend requests, but there's also a skip", () => {
+      it('Should filter the requests to skip the expected amount', () => {
+        const request: GetFriendRequestsPayload = {
+          sentLimit: 10,
+          sentSkip: 5,
+          receivedLimit: 10,
+          receivedSkip: 5
+        }
+
+        const addedFriendRequests = {
+          requestedTo: friendsFromStore.toFriendRequests.slice(5).map((friend) => friend.userId),
+          requestedFrom: friendsFromStore.fromFriendRequests.slice(5).map((friend) => friend.userId),
+          totalReceivedFriendRequests: 0,
+          totalSentFriendRequests: 0
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
+        friendsSagas.getFriendRequests(request)
         sinon.verify()
       })
     })

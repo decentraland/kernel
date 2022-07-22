@@ -27,14 +27,16 @@ import {
   FriendsInitializationMessage,
   UnseenPrivateMessage,
   GetFriendsPayload,
-  AddFriendsPayload
+  AddFriendsPayload,
+  GetFriendRequestsPayload,
+  AddFriendRequestsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getProfile, getProfilesFromStore } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
-import { SocialData, FriendsState } from 'shared/friends/types'
+import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
   getSocialClient,
   findPrivateMessagingFriendsByUserId,
@@ -292,12 +294,14 @@ function* refreshFriends() {
     const friendRequests: FriendshipRequest[] = yield client.getPendingRequests()
 
     // filter my requests to others
-    const toFriendRequests = friendRequests.filter((request) => request.from === ownId).map((request) => request.to)
-    const toFriendRequestsSocial = toSocialData(toFriendRequests)
+    const toFriendRequests = friendRequests.filter((request) => request.from === ownId)
+    const toFriendRequestsIds = toFriendRequests.map((request) => request.to)
+    const toFriendRequestsSocial = toSocialData(toFriendRequestsIds)
 
     // filter other requests to me
-    const fromFriendRequests = friendRequests.filter((request) => request.to === ownId).map((request) => request.from)
-    const fromFriendRequestsSocial = toSocialData(fromFriendRequests)
+    const fromFriendRequests = friendRequests.filter((request) => request.to === ownId)
+    const fromFriendRequestsIds = fromFriendRequests.map((request) => request.from)
+    const fromFriendRequestsSocial = toSocialData(fromFriendRequestsIds)
 
     const socialInfo: Record<string, SocialData> = [
       ...friendsSocial,
@@ -312,8 +316,18 @@ function* refreshFriends() {
     )
 
     const friendIds = friends.map(($) => parseUserId($)).filter(Boolean) as string[]
-    const requestedFromIds = fromFriendRequestsSocial.map(($) => $.userId)
-    const requestedToIds = toFriendRequestsSocial.map(($) => $.userId)
+    const requestedFromIds = fromFriendRequests.map(
+      (request): FriendRequest => ({
+        createdAt: request.createdAt,
+        userId: request.from
+      })
+    )
+    const requestedToIds = toFriendRequests.map(
+      (request): FriendRequest => ({
+        createdAt: request.createdAt,
+        userId: request.to
+      })
+    )
 
     // explorer information
     const conversationsWithUnreadMessages: Conversation[] = yield client.getAllConversationsWithUnreadMessages()
@@ -322,7 +336,7 @@ function* refreshFriends() {
       (convDict, conv) => {
         const userId = conv.userIds?.find((userId) => userId !== ownId)
 
-        if (!userId || fromFriendRequests.some((fromRequestUserId) => fromRequestUserId === userId)) {
+        if (!userId || fromFriendRequestsIds.some((fromRequestUserId) => fromRequestUserId === userId)) {
           return convDict
         }
 
@@ -400,6 +414,25 @@ export function getFriends(request: GetFriendsPayload) {
 
   store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
   // TODO: verify if we need to call receivePeerUserData here
+}
+
+export function getFriendRequests(request: GetFriendRequestsPayload) {
+  const friends: FriendsState = getPrivateMessaging(store.getState())
+
+  const fromFriendRequests = friends.fromFriendRequests.slice(
+    request.receivedSkip,
+    request.receivedSkip + request.receivedLimit
+  )
+  const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
+
+  const addFriendRequestsPayload: AddFriendRequestsPayload = {
+    requestedTo: toFriendRequests.map((friend) => friend.userId),
+    requestedFrom: fromFriendRequests.map((friend) => friend.userId),
+    totalReceivedFriendRequests: fromFriendRequests.length,
+    totalSentFriendRequests: toFriendRequests.length
+  }
+
+  getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
 function* initializeReceivedMessagesCleanUp() {
@@ -575,6 +608,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
+    const selector = incoming ? 'toFriendRequests' : 'fromFriendRequests'
+
     switch (action) {
       case FriendshipAction.NONE: {
         // do nothing
@@ -582,10 +617,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       }
       case FriendshipAction.APPROVED:
       case FriendshipAction.REJECTED: {
-        const selector = incoming ? 'toFriendRequests' : 'fromFriendRequests'
         const requests = [...state[selector]]
 
-        const index = requests.indexOf(userId)
+        const index = requests.findIndex((request) => request.userId === userId)
 
         logger.info(`requests[${selector}]`, requests, index, userId)
         if (index !== -1) {
@@ -611,10 +645,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
       case FriendshipAction.CANCELED: {
-        const selector = incoming ? 'fromFriendRequests' : 'toFriendRequests'
         const requests = [...state[selector]]
 
-        const index = requests.indexOf(userId)
+        const index = requests.findIndex((request) => request.userId === userId)
 
         if (index !== -1) {
           requests.splice(index, 1)
@@ -625,19 +658,25 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
-        const exists = state.fromFriendRequests.includes(userId)
+        const request = state.fromFriendRequests.find((request) => request.userId === userId)
 
-        if (!exists) {
-          newState = { ...state, fromFriendRequests: [...state.fromFriendRequests, userId] }
+        if (request) {
+          newState = {
+            ...state,
+            fromFriendRequests: [...state.fromFriendRequests, { createdAt: request.createdAt, userId }]
+          }
         }
 
         break
       }
       case FriendshipAction.REQUESTED_TO: {
-        const exists = state.toFriendRequests.includes(userId)
+        const request = state.toFriendRequests.find((request) => request.userId === userId)
 
-        if (!exists) {
-          newState = { ...state, toFriendRequests: [...state.toFriendRequests, userId] }
+        if (request) {
+          newState = {
+            ...state,
+            toFriendRequests: [...state.toFriendRequests, { createdAt: request.createdAt, userId }]
+          }
         }
 
         break

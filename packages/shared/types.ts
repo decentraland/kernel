@@ -542,6 +542,13 @@ export interface GetFriendsPayload {
   skip: number // amount of entries to skip
 }
 
+export interface GetFriendRequestsPayload {
+  sentLimit: number // max amount of entries of sent friend requests to request
+  sentSkip: number // the amount of entries of sent friend requests to skip
+  receivedLimit: number // max amount of entries of received friend requests to request
+  receivedSkip: number // the amount of entries of received friend requests to skip
+}
+
 export enum FriendshipAction {
   NONE,
   APPROVED,
@@ -578,6 +585,13 @@ export type UpdateUserStatusMessage = {
 export interface AddFriendsPayload {
   friends: string[] // ids of each friend added
   totalFriends: number // total amount of friends
+}
+
+export interface AddFriendRequestsPayload {
+  requestedTo: string[] // user ids which you sent a request
+  requestedFrom: string[] // user ids which you received a request
+  totalReceivedFriendRequests: number // total amount of friend requests received
+  totalSentFriendRequests: number // total amount of friend requests sent
 }
 
 export type BuilderConfiguration = {
