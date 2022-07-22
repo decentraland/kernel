@@ -12,7 +12,7 @@ declare let window: Window & {
 
 export async function getAppNetwork(): Promise<ETHEREUM_NETWORK> {
   const web3Network = await requestManager.net_version()
-  const web3net = parseInt(web3Network, 10) === 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
+  const web3net = parseInt(web3Network, 10) === 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.GOERLI
   return web3net
 }
 
