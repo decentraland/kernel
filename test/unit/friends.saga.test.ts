@@ -1,4 +1,3 @@
-// import { expect } from 'chai'
 import { buildStore } from 'shared/store/store'
 import { GetFriendRequestsPayload, GetFriendsPayload } from 'shared/types'
 import sinon from 'sinon'
@@ -9,7 +8,6 @@ import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { FriendRequest, FriendsState } from 'shared/friends/types'
-// import Sinon from 'sinon'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {

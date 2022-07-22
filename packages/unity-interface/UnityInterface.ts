@@ -340,6 +340,7 @@ export class UnityInterface implements IUnityInterface {
   public AddUserProfilesToCatalog(peerProfile: NewProfileForRenderer[]): void {
     this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(peerProfile))
   }
+  
   public AddFriends(addFriendsPayload: AddFriendsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
   }

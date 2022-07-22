@@ -539,10 +539,10 @@ export interface GetFriendsPayload {
 }
 
 export interface GetFriendRequestsPayload {
-  sentLimit: number // max amount of entries to receive
-  sentSkip: number // the amount of sent requests to skip
-  receivedLimit: number // max amount of entries to receive
-  receivedSkip: number // the amount of received requests to skip
+  sentLimit: number // max amount of entries of sent friend requests to request
+  sentSkip: number // the amount of entries of sent friend requests to skip
+  receivedLimit: number // max amount of entries of received friend requests to request
+  receivedSkip: number // the amount of entries of received friend requests to skip
 }
 
 export enum FriendshipAction {

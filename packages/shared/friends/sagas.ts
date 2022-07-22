@@ -431,8 +431,8 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   const addFriendRequestsPayload: AddFriendRequestsPayload = {
     requestedTo: toFriendRequests.map((friend) => friend.userId),
     requestedFrom: fromFriendRequests.map((friend) => friend.userId),
-    totalReceivedFriendRequests: fromFriendRequests.map((friend) => friend.userId).length,
-    totalSentFriendRequests: toFriendRequests.map((friend) => friend.userId).length
+    totalReceivedFriendRequests: fromFriendRequests.length,
+    totalSentFriendRequests: toFriendRequests.length
   }
 
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
