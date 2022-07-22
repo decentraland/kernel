@@ -98,8 +98,6 @@ describe('Friends sagas', () => {
           totalFriends: 2
         }
 
-        console.log('getUnityInstance()', getUnityInstance())
-
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
         friendsSagas.getFriends(request)
