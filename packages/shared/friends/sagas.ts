@@ -423,10 +423,7 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
     request.receivedSkip,
     request.receivedSkip + request.receivedLimit
   )
-  const toFriendRequests = friends.toFriendRequests.slice(
-    request.sentSkip,
-    request.sentSkip + request.sentLimit
-  )
+  const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
 
   const addFriendRequestsPayload: AddFriendRequestsPayload = {
     requestedTo: toFriendRequests.map((friend) => friend.userId),
