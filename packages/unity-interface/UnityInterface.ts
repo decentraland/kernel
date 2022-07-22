@@ -20,7 +20,8 @@ import {
   TutorialInitializationMessage,
   WorldPosition,
   HeaderRequest,
-  AddFriendsPayload
+  AddFriendsPayload,
+  AddFriendRequestsPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -340,8 +341,13 @@ export class UnityInterface implements IUnityInterface {
   public AddUserProfilesToCatalog(peerProfile: NewProfileForRenderer[]): void {
     this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(peerProfile))
   }
+
   public AddFriends(addFriendsPayload: AddFriendsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
+  }
+
+  public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
 
   public UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage) {
