@@ -32,7 +32,6 @@ const EXPECTED: Candidate = {
   lighthouseVersion: '1.0.0',
   maxUsers: 1000,
   status: 0,
-  type: 'islands-based',
   usersCount: 59,
   usersParcels: undefined
 }

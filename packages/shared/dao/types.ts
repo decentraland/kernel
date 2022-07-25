@@ -32,7 +32,6 @@ type BaseCandidate = {
 }
 
 export type Candidate = {
-  type: 'islands-based'
   usersCount: number
   usersParcels?: Parcel[]
   maxUsers?: number
