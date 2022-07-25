@@ -56,7 +56,6 @@ async function fetchCatalystStatus(domain: string): Promise<Candidate | undefine
   ) {
     if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
       return {
-        type: 'islands-based',
         protocol: 'v2',
         catalystName: result.name,
         domain: domain,
