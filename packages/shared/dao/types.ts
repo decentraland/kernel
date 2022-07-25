@@ -15,7 +15,6 @@ export enum ServerConnectionStatus {
 export type CatalystStatus = {
   name: string
   version: string
-  layers?: Layer[]
   usersCount?: number
   maxUsers?: number
   usersParcels?: Parcel[]
