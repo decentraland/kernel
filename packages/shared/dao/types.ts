@@ -1,12 +1,5 @@
 import type { ETHEREUM_NETWORK } from 'config'
 
-export type Layer = {
-  name: string
-  usersCount: number
-  maxUsers: number
-  usersParcels?: [number, number][]
-}
-
 export enum ServerConnectionStatus {
   OK,
   UNREACHABLE
@@ -71,4 +64,11 @@ export type PingResult = {
   elapsed?: number
   status?: ServerConnectionStatus
   result?: CatalystStatus
+}
+
+export type AskResult = {
+  httpStatus?: number
+  elapsed?: number
+  status?: ServerConnectionStatus
+  result?: any
 }

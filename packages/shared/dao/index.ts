@@ -1,11 +1,11 @@
 import defaultLogger from '../logger'
-import { Realm, ServerConnectionStatus, Candidate } from './types'
+import { Realm, ServerConnectionStatus, Candidate, Parcel } from './types'
 import { getAllCatalystCandidates } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
-import { ping } from './utils/ping'
+import { ping, ask } from './utils/ping'
 import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
 import { connectComms } from 'shared/comms'
 import { setWorldContext } from 'shared/comms/actions'
@@ -43,18 +43,62 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
 }
 
 async function fetchCatalystStatus(domain: string): Promise<Candidate | undefined> {
+  const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
+
+  if (aboutResponse.httpStatus !== 404 && parcelsResponse.httpStatus !== 404) {
+    const result = aboutResponse.result
+    if (
+      aboutResponse.status === ServerConnectionStatus.OK &&
+      parcelsResponse.status === ServerConnectionStatus.OK &&
+      result &&
+      result.comms &&
+      result.configurations &&
+      result.bff &&
+      parcelsResponse.result &&
+      parcelsResponse.result.parcels
+    ) {
+      const { comms, configurations, bff } = result
+
+      // TODO(hugo): this is kind of hacky, the original representation is much better,
+      // but I don't want to change the whole pick-realm algorithm now
+      const usersParcels: Parcel[] = []
+      for (const {
+        peersCount,
+        parcel: { x, y }
+      } of parcelsResponse.result.parcels) {
+        const parcel: Parcel = [x, y]
+        for (let i = 0; i < peersCount; i++) {
+          usersParcels.push(parcel)
+        }
+      }
+
+      return {
+        protocol: comms.protocol,
+        catalystName: configurations.name,
+        domain: domain,
+        status: aboutResponse.status,
+        elapsed: aboutResponse.elapsed!,
+        usersCount: bff.userCount ?? 0,
+        maxUsers: -1, // TODO
+        usersParcels
+      }
+    }
+
+    return undefined
+  }
+
   const [commsResponse, lambdasResponse] = await Promise.all([
     ping(`${domain}/comms/status?includeUsersParcels=true`),
     ping(`${domain}/lambdas/health`)
   ])
-  const result = commsResponse.result
 
   if (
-    result &&
+    commsResponse.result &&
     commsResponse.status === ServerConnectionStatus.OK &&
     lambdasResponse.status === ServerConnectionStatus.OK &&
-    (result.maxUsers ?? 0) > (result.usersCount ?? -1)
+    (commsResponse.result.maxUsers ?? 0) > (commsResponse.result.usersCount ?? -1)
   ) {
+    const result = commsResponse.result
     return {
       protocol: 'v2',
       catalystName: result.name,
