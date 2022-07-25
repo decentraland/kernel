@@ -52,20 +52,19 @@ async function fetchCatalystStatus(domain: string): Promise<Candidate | undefine
   if (
     result &&
     commsResponse.status === ServerConnectionStatus.OK &&
-    lambdasResponse.status === ServerConnectionStatus.OK
+    lambdasResponse.status === ServerConnectionStatus.OK &&
+    (result.maxUsers ?? 0) > (result.usersCount ?? -1)
   ) {
-    if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
-      return {
-        protocol: 'v2',
-        catalystName: result.name,
-        domain: domain,
-        status: commsResponse.status,
-        elapsed: commsResponse.elapsed!,
-        lighthouseVersion: result.version,
-        usersCount: result.usersCount ?? 0,
-        maxUsers: result.maxUsers ?? -1,
-        usersParcels: result.usersParcels
-      }
+    return {
+      protocol: 'v2',
+      catalystName: result.name,
+      domain: domain,
+      status: commsResponse.status,
+      elapsed: commsResponse.elapsed!,
+      lighthouseVersion: result.version,
+      usersCount: result.usersCount ?? 0,
+      maxUsers: result.maxUsers ?? -1,
+      usersParcels: result.usersParcels
     }
   }
 }
