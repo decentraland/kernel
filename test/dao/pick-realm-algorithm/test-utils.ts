@@ -116,7 +116,6 @@ export function buildCandidate(params: Partial<Candidate>): Candidate {
     catalystName: 'test',
     domain: 'foo.bar',
     elapsed: 200,
-    lighthouseVersion: '1.0.0',
     status: ServerConnectionStatus.OK,
     usersCount,
     usersParcels: circularSlice(usersCount, someRandomParcels),

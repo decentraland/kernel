@@ -27,7 +27,6 @@ type BaseCandidate = {
   catalystName: string
   elapsed: number
   status: ServerConnectionStatus
-  lighthouseVersion: string
 }
 
 export type Candidate = {

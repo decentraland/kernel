@@ -29,7 +29,6 @@ const EXPECTED: Candidate = {
   catalystName: 'loki',
   domain: 'peer.decentraland.org',
   elapsed: 309,
-  lighthouseVersion: '1.0.0',
   maxUsers: 1000,
   status: 0,
   usersCount: 59,

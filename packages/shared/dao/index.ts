@@ -61,7 +61,6 @@ async function fetchCatalystStatus(domain: string): Promise<Candidate | undefine
       domain: domain,
       status: commsResponse.status,
       elapsed: commsResponse.elapsed!,
-      lighthouseVersion: result.version,
       usersCount: result.usersCount ?? 0,
       maxUsers: result.maxUsers ?? -1,
       usersParcels: result.usersParcels
