@@ -127,7 +127,8 @@ describe('RestrictedActions tests', () => {
       },
       sendBatch() {
         throw new Error('not implemented')
-      }
+      },
+      playgroundCode: ''
     }
   }
 

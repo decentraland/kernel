@@ -17,12 +17,10 @@ import {
   PreviewModeResponse
 } from '../proto/EnvironmentAPI.gen'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
-import { PortContextService } from './context'
+import { PortContext } from './context'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 
-export function registerEnvironmentAPIServiceServerImplementation(
-  port: RpcServerPort<PortContextService<'sceneData'>>
-) {
+export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
     async getBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
       return {
@@ -58,12 +56,13 @@ export function registerEnvironmentAPIServiceServerImplementation(
 
       return { currentRealm: toEnvironmentRealmType(realm, island) }
     },
-    async getExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
+    async getExplorerConfiguration(req, ctx): Promise<GetExplorerConfigurationResponse> {
       return {
         clientUri: location.href,
         configurations: {
           questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl,
-          enableBinaryTransform: `${transformSerializeOpt.useBinaryTransform}`
+          enableBinaryTransform: `${transformSerializeOpt.useBinaryTransform}`,
+          playgroundCode: ctx.playgroundCode
         }
       }
     },

@@ -262,7 +262,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   if (options.previewMode) {
     i.SetDisableAssetBundles()
-    await startPreview(i)
+    await startPreview(options, i)
   }
 
   setTimeout(() => store.dispatch(signalEngineReady()), 0)
@@ -270,10 +270,12 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   return true
 }
 
-export async function startPreview(unityInterface: IUnityInterface) {
-  getPreviewSceneId()
+export async function startPreview(options: KernelOptions['kernelOptions'], unityInterface: IUnityInterface) {
+  let previewSceneId = ''
+  getPreviewSceneId(options.baseUrl)
     .then((sceneData) => {
       if (sceneData.sceneId) {
+        previewSceneId = sceneData.sceneId
         unityInterface.SetKernelConfiguration({
           debugConfig: {
             sceneDebugPanelTargetSceneId: sceneData.sceneId,
@@ -304,6 +306,21 @@ export async function startPreview(unityInterface: IUnityInterface) {
       logger.log('Update message from CLI', msg.data)
       const message: sdk.Messages = JSON.parse(msg.data)
       handleServerMessage(message)
+    }
+  })
+
+  window.addEventListener('message', (msg) => {
+    if (typeof msg.data === 'string') {
+      if (msg.data.startsWith('{')) {
+        handleServerMessage({
+          type: sdk.SCENE_UPDATE,
+          payload: {
+            sceneId: previewSceneId,
+            sceneType: sdk.ProjectType.SCENE
+          }
+        })
+        logger.log('Update message from Parent', msg.data)
+      }
     }
   })
 }
