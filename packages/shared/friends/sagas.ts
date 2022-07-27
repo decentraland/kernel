@@ -29,7 +29,9 @@ import {
   GetFriendsPayload,
   AddFriendsPayload,
   GetFriendRequestsPayload,
-  AddFriendRequestsPayload
+  AddFriendRequestsPayload,
+  GetFriendsWithDirectMessagesPayload,
+  AddFriendsWithDirectMessagesPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -383,22 +385,12 @@ export function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
 
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
-  const friendsProfiles: Array<ProfileUserInfo | null> = getProfilesFromStore(store.getState(), friendsIds)
 
-  const filteredFriends: Array<ProfileUserInfo> = friendsProfiles.filter((friend) => {
-    if (!friend || friend.status !== 'ok') {
-      return false
-    }
-    if (request.userNameOrId) {
-      // keep the ones userId or name includes the filter
-      return (
-        friend.data.userId.toLocaleLowerCase().includes(request.userNameOrId.toLocaleLowerCase()) ||
-        friend.data.name.toLocaleLowerCase().includes(request.userNameOrId.toLocaleLowerCase())
-      )
-    }
-
-    return true
-  }) as Array<ProfileUserInfo>
+  const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
+    store.getState(),
+    friendsIds,
+    request.userNameOrId
+  )
 
   const friendsToReturn = filteredFriends.slice(request.skip, request.skip + request.limit)
 
@@ -433,6 +425,64 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   }
 
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
+}
+
+export async function getUnseenMessagesByUser() {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const conversations = client.getAllCurrentConversations()
+
+  const conversationsWithMessages = conversations.filter((conv) => conv.conversation.hasMessages)
+  const unseenPrivateMessages = {}
+
+  for (const conversation of conversationsWithMessages) {
+    unseenPrivateMessages[conversation.conversation.userIds![1]] = conversation.conversation.unreadMessages?.length || 0
+  }
+
+  const totalUnseenMessages = {
+    unseenPrivateMessages
+  }
+  getUnityInstance().UpdateTotalUnseenMessagesByUser(totalUnseenMessages)
+}
+
+export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const conversations = client.getAllCurrentConversations()
+
+  const conversationsWithMessages = conversations.filter((conv) => conv.conversation.hasMessages)
+
+  const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
+  const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
+    store.getState(),
+    friendsIds,
+    request.userNameOrId
+  )
+
+  const friendsConversations: Array<{ userId: string; conversation: Conversation }> = []
+
+  for (const friend of filteredFriends) {
+    const conversation = conversationsWithMessages.find((conv) => conv.conversation.userIds![1] === friend.data.userId)
+
+    if (conversation) {
+      friendsConversations.push({
+        userId: friend.data.userId,
+        conversation: conversation.conversation
+      })
+    }
+  }
+
+  const addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
+    currentFriendsWithDirectMessages: friendsConversations.map((friend) => ({
+      lastMessageTimestamp: friend.conversation.lastEventTimestamp!,
+      userId: friend.userId
+    })),
+    totalFriendsWithDirectMessages: filteredFriends.length
+  }
+
+  getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
 }
 
 function* initializeReceivedMessagesCleanUp() {

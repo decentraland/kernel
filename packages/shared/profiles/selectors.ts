@@ -20,8 +20,26 @@ export const getProfileFromStore = (store: RootProfileState, userId: string): Pr
     () => null
   )
 
-export const getProfilesFromStore = (store: RootProfileState, userIds: string[]): Array<ProfileUserInfo | null> =>
-  userIds.map((userId) => getProfileFromStore(store, userId))
+export const getProfilesFromStore = (
+  store: RootProfileState,
+  userIds: string[],
+  userNameOrId?: string
+): Array<ProfileUserInfo> => {
+  const profiles = userIds.map((userId) => getProfileFromStore(store, userId))
+  return profiles.filter((friend) => {
+    if (!friend || friend.status !== 'ok') {
+      return false
+    }
+    if (!userNameOrId) {
+      return true
+    }
+    // keep the ones userId or name includes the filter
+    return (
+      friend.data.userId.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase()) ||
+      friend.data.name.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase())
+    )
+  }) as Array<ProfileUserInfo>
+}
 
 export const getProfile = (store: RootProfileState, userId: string): Avatar | null =>
   getProfileValueIfOkOrLoading(
