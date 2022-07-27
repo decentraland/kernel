@@ -149,14 +149,8 @@ export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   }
 }
 
-export async function getPreviewSceneId(baseUrl?: string): Promise<{ sceneId: string | null; sceneBase: string }> {
-  const result = await fetch(
-    new URL(
-      'scene.json?nocache=' + Math.random(),
-      baseUrl?.substring(0, baseUrl.length - '@/artifacts'.length)
-    ).toString()
-  )
-
+export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
+  const result = await fetch(new URL('scene.json?nocache=' + Math.random(), rootURLPreviewMode()).toString())
   if (result.ok) {
     const scene = (await result.json()) as Scene
 
