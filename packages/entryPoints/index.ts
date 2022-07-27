@@ -272,7 +272,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
 export async function startPreview(options: KernelOptions['kernelOptions'], unityInterface: IUnityInterface) {
   let previewSceneId = ''
-  getPreviewSceneId(options.baseUrl)
+  getPreviewSceneId()
     .then((sceneData) => {
       if (sceneData.sceneId) {
         previewSceneId = sceneData.sceneId
