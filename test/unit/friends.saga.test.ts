@@ -104,7 +104,7 @@ function mockStoreCalls() {
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
 }
 
-describe.only('Friends sagas', () => {
+describe('Friends sagas', () => {
   sinon.mock()
 
   describe('get friends', () => {
