@@ -461,7 +461,7 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     request.userNameOrId
   )
 
-  const friendsConversations: Array<{ userId: string; conversation: Conversation }> = []
+  const friendsConversations: Array<{ userId: string; conversation: Conversation; avatar: Avatar }> = []
 
   for (const friend of filteredFriends) {
     const conversation = conversationsWithMessages.find((conv) => conv.conversation.userIds![1] === friend.data.userId)
@@ -469,7 +469,8 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     if (conversation) {
       friendsConversations.push({
         userId: friend.data.userId,
-        conversation: conversation.conversation
+        conversation: conversation.conversation,
+        avatar: friend.data
       })
     }
   }
@@ -479,10 +480,15 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
       lastMessageTimestamp: friend.conversation.lastEventTimestamp!,
       userId: friend.userId
     })),
-    totalFriendsWithDirectMessages: filteredFriends.length
+    totalFriendsWithDirectMessages: friendsConversations.length
   }
 
   getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
+
+  const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
+  getUnityInstance().AddUserProfilesToCatalog(profilesForRenderer)
+
+  store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
 }
 
 function* initializeReceivedMessagesCleanUp() {

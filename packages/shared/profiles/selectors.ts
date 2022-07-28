@@ -26,19 +26,7 @@ export const getProfilesFromStore = (
   userNameOrId?: string
 ): Array<ProfileUserInfo> => {
   const profiles = userIds.map((userId) => getProfileFromStore(store, userId))
-  return profiles.filter((friend) => {
-    if (!friend || friend.status !== 'ok') {
-      return false
-    }
-    if (!userNameOrId) {
-      return true
-    }
-    // keep the ones userId or name includes the filter
-    return (
-      friend.data.userId.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase()) ||
-      friend.data.name.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase())
-    )
-  }) as Array<ProfileUserInfo>
+  return filterProfilesByUserNameOrId(profiles, userNameOrId)
 }
 
 export const getProfile = (store: RootProfileState, userId: string): Avatar | null =>
@@ -88,6 +76,25 @@ export const getEthereumAddress = (store: RootProfileState, userId: string): str
     (info) => (info.data as Avatar).userId,
     () => undefined
   )
+
+export function filterProfilesByUserNameOrId(
+  profiles: Array<ProfileUserInfo | null>,
+  userNameOrId: string | undefined
+): Array<ProfileUserInfo> {
+  return profiles.filter((friend) => {
+    if (!friend || friend.status !== 'ok') {
+      return false
+    }
+    if (!userNameOrId) {
+      return true
+    }
+    // keep the ones userId or name includes the filter
+    return (
+      friend.data.userId.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase()) ||
+      friend.data.name.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase())
+    )
+  }) as Array<ProfileUserInfo>
+}
 
 function getProfileValueIfOkOrLoading<T>(
   store: RootProfileState,
