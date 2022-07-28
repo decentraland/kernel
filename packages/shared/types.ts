@@ -590,6 +590,15 @@ export interface AddFriendRequestsPayload {
   totalSentFriendRequests: number // total amount of friend requests sent
 }
 
+export interface UpdateTotalUnseenMessagesPayload {
+  total: number
+}
+
+export interface UpdateUserUnseenMessagesPayload {
+  userId: string
+  total: number
+}
+
 export type BuilderConfiguration = {
   camera: {
     zoomMin: number

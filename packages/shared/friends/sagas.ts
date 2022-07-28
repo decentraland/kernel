@@ -29,7 +29,9 @@ import {
   GetFriendsPayload,
   AddFriendsPayload,
   GetFriendRequestsPayload,
-  AddFriendRequestsPayload
+  AddFriendRequestsPayload,
+  UpdateUserUnseenMessagesPayload,
+  UpdateTotalUnseenMessagesPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -433,6 +435,34 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   }
 
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
+}
+
+export function markAsSeenPrivateChatMessages(userId: string) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
+  if (!socialData?.conversationId) return
+
+  const ownId = client.getUserId()
+
+  // mark as seen all the messages in the conversation
+  client.markMessagesAsSeen(socialData.conversationId)
+
+  // get total and user's chat unread messages
+  const unreadMessages = client.getConversationUnreadMessages(socialData.conversationId).length
+  const totalUnreadMessages = client.getTotalUnseenMessages()
+
+  const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
+    userId: ownId,
+    total: unreadMessages
+  }
+  const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+    total: totalUnreadMessages
+  }
+
+  getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
+  getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
 }
 
 function* initializeReceivedMessagesCleanUp() {

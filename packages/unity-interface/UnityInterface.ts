@@ -21,7 +21,9 @@ import {
   WorldPosition,
   HeaderRequest,
   AddFriendsPayload,
-  AddFriendRequestsPayload
+  AddFriendRequestsPayload,
+  UpdateTotalUnseenMessagesPayload,
+  UpdateUserUnseenMessagesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -347,6 +349,14 @@ export class UnityInterface implements IUnityInterface {
 
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
+  }
+
+  public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(updateTotalUnseenMessagesPayload))
+  }
+
+  public UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void {    
+    this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(updateUserUnseenMessagesPayload))
   }
 
   public UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage) {
