@@ -335,6 +335,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
+  public AddChatMessages(messages: ChatMessage[]): void {
+    // WIP
+  }
+
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
   }
@@ -355,7 +359,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(updateTotalUnseenMessagesPayload))
   }
 
-  public UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void {    
+  public UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(updateUserUnseenMessagesPayload))
   }
 

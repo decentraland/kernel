@@ -437,7 +437,7 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
-export function markAsSeenPrivateChatMessages(userId: string) {
+export async function markAsSeenPrivateChatMessages(userId: string) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
@@ -447,7 +447,7 @@ export function markAsSeenPrivateChatMessages(userId: string) {
   const ownId = client.getUserId()
 
   // mark as seen all the messages in the conversation
-  client.markMessagesAsSeen(socialData.conversationId)
+  await client.markMessagesAsSeen(socialData.conversationId)
 
   // get total and user's chat unread messages
   const unreadMessages = client.getConversationUnreadMessages(socialData.conversationId).length
@@ -463,6 +463,22 @@ export function markAsSeenPrivateChatMessages(userId: string) {
 
   getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
   getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+}
+
+export async function getPrivateMessages(userId: string, limit: number, from: number) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
+  if (!socialData?.conversationId) return
+
+  // const ownId = client.getUserId()
+
+  // get cursor on the last message of the conversation
+
+  // get messages
+
+  // getUnityInstance().AddChatMessages(chatMessagesPayload)
 }
 
 function* initializeReceivedMessagesCleanUp() {

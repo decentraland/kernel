@@ -129,6 +129,7 @@ export interface IUnityInterface {
   SetTutorialEnabledForUsersThatAlreadyDidTheTutorial(tutorialConfig: TutorialInitializationMessage): void
   TriggerAirdropDisplay(data: AirdropInfo): void
   AddMessageToChatWindow(message: ChatMessage): void
+  AddChatMessages(messages: ChatMessage[]): void
 
   // *********************************************************************************
   // ************** Chat messages **************

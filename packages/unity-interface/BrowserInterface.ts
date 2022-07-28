@@ -69,7 +69,7 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
-import { getFriendRequests, getFriends, markAsSeenPrivateChatMessages } from 'shared/friends/sagas'
+import { getFriendRequests, getFriends, getPrivateMessages, markAsSeenPrivateChatMessages } from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -409,12 +409,12 @@ export class BrowserInterface {
     getFriendRequests(getFriendRequestsPayload)
   }
 
-  public MarkMessagesAsSeen(userId: string) {
-    markAsSeenPrivateChatMessages(userId)
+  public async MarkMessagesAsSeen(userId: string) {
+    await markAsSeenPrivateChatMessages(userId)
   }
 
-  public GetPrivateMessages(userId: string, limit: number, from: number) {
-    // WIP
+  public async GetPrivateMessages(userId: string, limit: number, from: number) {
+    await getPrivateMessages(userId, limit, from)
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
