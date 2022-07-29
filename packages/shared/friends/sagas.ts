@@ -43,7 +43,8 @@ import {
   getSocialClient,
   findPrivateMessagingFriendsByUserId,
   getPrivateMessaging,
-  getPrivateMessagingFriends
+  getPrivateMessagingFriends,
+  getAllConversationsWithMessages
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -428,12 +429,12 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
 }
 
 export function getUnseenMessagesByUser() {
-  const client: SocialAPI | null = getSocialClient(store.getState())
-  if (!client) return
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
 
-  const conversations = client.getAllCurrentConversations()
+  if (conversationsWithMessages.length === 0) {
+    return
+  }
 
-  const conversationsWithMessages = conversations.filter((conv) => conv.conversation.hasMessages)
   const unseenPrivateMessages = {}
 
   for (const conversation of conversationsWithMessages) {
@@ -447,12 +448,11 @@ export function getUnseenMessagesByUser() {
 }
 
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
-  const client: SocialAPI | null = getSocialClient(store.getState())
-  if (!client) return
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
 
-  const conversations = client.getAllCurrentConversations()
-
-  const conversationsWithMessages = conversations.filter((conv) => conv.conversation.hasMessages)
+  if (conversationsWithMessages.length === 0) {
+    return
+  }
 
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
