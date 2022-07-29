@@ -336,7 +336,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddChatMessages(messages: ChatMessage[]): void {
-    // WIP
+    this.SendMessageToUnity('Main', 'AddChatMessages', JSON.stringify(messages))
   }
 
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {

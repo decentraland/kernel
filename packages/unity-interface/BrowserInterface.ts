@@ -413,7 +413,7 @@ export class BrowserInterface {
     await markAsSeenPrivateChatMessages(userId)
   }
 
-  public async GetPrivateMessages(userId: string, limit: number, from: number) {
+  public async GetPrivateMessages(userId: string, limit: number, from: string) {
     await getPrivateMessages(userId, limit, from)
   }
 
