@@ -70,7 +70,12 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
-import { getFriendRequests, getFriends, getFriendsWithDirectMessages, getUnseenMessagesByUser } from 'shared/friends/sagas'
+import {
+  getFriendRequests,
+  getFriends,
+  getFriendsWithDirectMessages,
+  getUnseenMessagesByUser
+} from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}

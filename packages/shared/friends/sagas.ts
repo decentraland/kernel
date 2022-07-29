@@ -427,7 +427,7 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
-export async function getUnseenMessagesByUser() {
+export function getUnseenMessagesByUser() {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
