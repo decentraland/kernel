@@ -29,7 +29,9 @@ import {
   GetFriendsPayload,
   AddFriendsPayload,
   GetFriendRequestsPayload,
-  AddFriendRequestsPayload
+  AddFriendRequestsPayload,
+  GetFriendsWithDirectMessagesPayload,
+  AddFriendsWithDirectMessagesPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -41,7 +43,8 @@ import {
   getSocialClient,
   findPrivateMessagingFriendsByUserId,
   getPrivateMessaging,
-  getPrivateMessagingFriends
+  getPrivateMessagingFriends,
+  getAllConversationsWithMessages
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -383,22 +386,12 @@ export function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
 
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
-  const friendsProfiles: Array<ProfileUserInfo | null> = getProfilesFromStore(store.getState(), friendsIds)
 
-  const filteredFriends: Array<ProfileUserInfo> = friendsProfiles.filter((friend) => {
-    if (!friend || friend.status !== 'ok') {
-      return false
-    }
-    if (request.userNameOrId) {
-      // keep the ones userId or name includes the filter
-      return (
-        friend.data.userId.toLocaleLowerCase().includes(request.userNameOrId.toLocaleLowerCase()) ||
-        friend.data.name.toLocaleLowerCase().includes(request.userNameOrId.toLocaleLowerCase())
-      )
-    }
-
-    return true
-  }) as Array<ProfileUserInfo>
+  const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
+    store.getState(),
+    friendsIds,
+    request.userNameOrId
+  )
 
   const friendsToReturn = filteredFriends.slice(request.skip, request.skip + request.limit)
 
@@ -433,6 +426,69 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   }
 
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
+}
+
+export function getUnseenMessagesByUser() {
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
+
+  if (conversationsWithMessages.length === 0) {
+    return
+  }
+
+  const unseenPrivateMessages = {}
+
+  for (const conversation of conversationsWithMessages) {
+    unseenPrivateMessages[conversation.conversation.userIds![1]] = conversation.conversation.unreadMessages?.length || 0
+  }
+
+  const totalUnseenMessages = {
+    unseenPrivateMessages
+  }
+  getUnityInstance().UpdateTotalUnseenMessagesByUser(totalUnseenMessages)
+}
+
+export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
+
+  if (conversationsWithMessages.length === 0) {
+    return
+  }
+
+  const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
+  const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
+    store.getState(),
+    friendsIds,
+    request.userNameOrId
+  )
+
+  const friendsConversations: Array<{ userId: string; conversation: Conversation; avatar: Avatar }> = []
+
+  for (const friend of filteredFriends) {
+    const conversation = conversationsWithMessages.find((conv) => conv.conversation.userIds![1] === friend.data.userId)
+
+    if (conversation) {
+      friendsConversations.push({
+        userId: friend.data.userId,
+        conversation: conversation.conversation,
+        avatar: friend.data
+      })
+    }
+  }
+
+  const addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
+    currentFriendsWithDirectMessages: friendsConversations.map((friend) => ({
+      lastMessageTimestamp: friend.conversation.lastEventTimestamp!,
+      userId: friend.userId
+    })),
+    totalFriendsWithDirectMessages: friendsConversations.length
+  }
+
+  getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
+
+  const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
+  getUnityInstance().AddUserProfilesToCatalog(profilesForRenderer)
+
+  store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
 }
 
 function* initializeReceivedMessagesCleanUp() {
