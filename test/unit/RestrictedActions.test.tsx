@@ -14,7 +14,7 @@ describe('RestrictedActions tests', () => {
   beforeEach(() => {
     sinon.reset()
     sinon.restore()
-    setUnityInstance({ Teleport: () => {}, TriggerSelfUserExpression: () => {} } as any)
+    setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
   })
 
   describe('TriggerEmote tests', () => {
@@ -126,10 +126,6 @@ describe('RestrictedActions tests', () => {
         throw new Error('not implemented')
       },
       sendBatch() {
-        throw new Error('not implemented')
-      },
-      crdtMessages: [],
-      sendCrdtMessage() {
         throw new Error('not implemented')
       }
     }

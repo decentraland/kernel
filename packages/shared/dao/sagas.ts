@@ -41,7 +41,12 @@ import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getCommsContext, getRealm } from 'shared/comms/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { CatalystNode } from 'shared/types'
-import { candidateToRealm, resolveCommsConnectionString, resolveCommsV3Urls } from 'shared/comms/v3/resolver'
+import {
+  candidateToRealm,
+  resolveCommsConnectionString,
+  resolveCommsV4Urls,
+  resolveCommsV3Urls
+} from 'shared/comms/v3/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 
@@ -230,6 +235,13 @@ export async function checkValidRealm(realm: Realm) {
     const { pingUrl } = resolveCommsV3Urls(realm)!
     const pingResult = await ping(pingUrl)
 
+    return pingResult.status === ServerConnectionStatus.OK
+  } else if (realm.protocol === 'v4') {
+    const { pingUrl } = resolveCommsV4Urls(realm)!
+    const pingResult = await ping(pingUrl)
+    if (pingResult.status !== ServerConnectionStatus.OK) {
+      commsLogger.warn(`ping failed for ${pingUrl}`)
+    }
     return pingResult.status === ServerConnectionStatus.OK
   }
   return false

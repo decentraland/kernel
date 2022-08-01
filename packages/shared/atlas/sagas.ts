@@ -185,7 +185,7 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   const result: Array<LoadableScene> = yield call(fetchScenesByLocation, tiles)
 
   // filter non null & distinct
-  const sceneIds = Array.from(new Set<string>(result.map(($) => $.id)))
+  const sceneIds = Array.from(new Set<string>(result.filter(($) => !$.id.includes(',')).map(($) => $.id)))
 
   yield put(querySceneData(sceneIds))
 
