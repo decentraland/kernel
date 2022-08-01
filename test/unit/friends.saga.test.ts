@@ -436,4 +436,48 @@ describe('Friends sagas', () => {
       })
     })
   })
+
+  describe('getFriendsWithDirectMessages', () => {
+    describe("when there's a client", () => {
+      beforeEach(() => {
+        const { store } = buildStore()
+        globalThis.globalStore = store
+
+        mockStoreCalls()
+      })
+
+      afterEach(() => {
+        sinon.restore()
+        sinon.reset()
+      })
+
+      it('Should send unity the expected profiles and the expected friend conversations', () => {
+        const request: GetFriendsWithDirectMessagesPayload = {
+          limit: 1000,
+          skip: 0,
+          userNameOrId: '0xa' // this will only bring the friend 0xa2
+        }
+        const expectedFriends = [profileToRendererFormat(profilesFromStore[1].data, {})]
+
+        const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
+          currentFriendsWithDirectMessages: [
+            {
+              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp,
+              userId: profilesFromStore[1].data.userId
+            }
+          ],
+          totalFriendsWithDirectMessages: 1
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
+        sinon
+          .mock(getUnityInstance())
+          .expects('AddFriendsWithDirectMessages')
+          .once()
+          .withExactArgs(expectedAddFriendsWithDirectMessagesPayload)
+        friendsSagas.getFriendsWithDirectMessages(request)
+        sinon.mock(getUnityInstance()).verify()
+      })
+    })
+  })
 })
