@@ -1,5 +1,10 @@
 import { buildStore } from 'shared/store/store'
-import { GetFriendRequestsPayload, GetFriendsPayload } from 'shared/types'
+import {
+  AddFriendsWithDirectMessagesPayload,
+  GetFriendRequestsPayload,
+  GetFriendsPayload,
+  GetFriendsWithDirectMessagesPayload
+} from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import * as friendsSelectors from 'shared/friends/selectors'
@@ -8,6 +13,7 @@ import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { FriendRequest, FriendsState } from 'shared/friends/types'
+import { Conversation, ConversationType, SocialAPI } from 'dcl-social-client'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -60,10 +66,42 @@ const profilesFromStore = [
   getMockedAvatar('0xd1', 'boris')
 ]
 
+const getMockedConversation = (userIds: string[]): Conversation => ({
+  type: ConversationType.DIRECT,
+  id: userIds.join('-'),
+  userIds,
+  lastEventTimestamp: Date.now(),
+  hasMessages: true
+})
+
+const allCurrentConversations: Array<{ conversation: Conversation; unreadMessages: boolean }> = [
+  {
+    conversation: getMockedConversation([profilesFromStore[0].data.userId, profilesFromStore[1].data.userId]),
+    unreadMessages: false
+  },
+  {
+    conversation: getMockedConversation([profilesFromStore[0].data.userId, profilesFromStore[2].data.userId]),
+    unreadMessages: false
+  },
+  {
+    conversation: getMockedConversation([profilesFromStore[0].data.userId, profilesFromStore[3].data.userId]),
+    unreadMessages: false
+  }
+]
+
+const stubClient = {
+  getAllCurrentConversations: () => allCurrentConversations
+} as SocialAPI
+
 function mockStoreCalls() {
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
-  sinon.stub(profilesSelectors, 'getProfilesFromStore').callsFake(() => profilesFromStore)
+  sinon
+    .stub(profilesSelectors, 'getProfilesFromStore')
+    .callsFake((_, _userIds, userNameOrId) =>
+      profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore, userNameOrId)
+    )
+  sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
 }
 
 describe('Friends sagas', () => {
@@ -101,7 +139,7 @@ describe('Friends sagas', () => {
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
         friendsSagas.getFriends(request)
-        sinon.verify()
+        sinon.mock(getUnityInstance()).verify()
       })
     })
 
@@ -120,7 +158,7 @@ describe('Friends sagas', () => {
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
         friendsSagas.getFriends(request2)
-        sinon.verify()
+        sinon.mock(getUnityInstance()).verify()
       })
     })
 
@@ -138,7 +176,7 @@ describe('Friends sagas', () => {
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
         friendsSagas.getFriends(request2)
-        sinon.verify()
+        sinon.mock(getUnityInstance()).verify()
       })
     })
   })
@@ -197,6 +235,50 @@ describe('Friends sagas', () => {
         sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
         friendsSagas.getFriendRequests(request)
         sinon.verify()
+      })
+    })
+  })
+
+  describe('getFriendsWithDirectMessages', () => {
+    describe("when there's a client", () => {
+      beforeEach(() => {
+        const { store } = buildStore()
+        globalThis.globalStore = store
+
+        mockStoreCalls()
+      })
+
+      afterEach(() => {
+        sinon.restore()
+        sinon.reset()
+      })
+
+      it('Should send unity the expected profiles and the expected friend conversations', () => {
+        const request: GetFriendsWithDirectMessagesPayload = {
+          limit: 1000,
+          skip: 0,
+          userNameOrId: '0xa' // this will only bring the friend 0xa2
+        }
+        const expectedFriends = [profileToRendererFormat(profilesFromStore[1].data, {})]
+
+        const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
+          currentFriendsWithDirectMessages: [
+            {
+              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp,
+              userId: profilesFromStore[1].data.userId
+            }
+          ],
+          totalFriendsWithDirectMessages: 1
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
+        sinon
+          .mock(getUnityInstance())
+          .expects('AddFriendsWithDirectMessages')
+          .once()
+          .withExactArgs(expectedAddFriendsWithDirectMessagesPayload)
+        friendsSagas.getFriendsWithDirectMessages(request)
+        sinon.mock(getUnityInstance()).verify()
       })
     })
   })
