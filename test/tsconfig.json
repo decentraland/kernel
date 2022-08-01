@@ -4,7 +4,7 @@
     "outDir": "out",
     "declaration": false,
     "strictNullChecks": false,
-    "lib": ["es2020", "dom"],
+    "lib": ["es2020"],
     "baseUrl": "../packages",
     "types": ["mocha", "@dcl/posix"],
     "typeRoots": ["../node_modules/"]

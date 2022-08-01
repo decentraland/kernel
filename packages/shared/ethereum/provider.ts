@@ -1,6 +1,6 @@
 import { RequestManager } from 'eth-connect'
 
-export const requestManager = new RequestManager((window as any).ethereum ?? null)
+export const requestManager = new RequestManager((globalThis as any).ethereum ?? null)
 
 export function isSessionExpired(userData: any) {
   return !userData || !userData.identity || new Date(userData.identity.expiration) < new Date()

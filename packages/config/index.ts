@@ -64,15 +64,15 @@ export const PREVIEW: boolean = !!(globalThis as any).preview
 export const EDITOR: boolean = !!(globalThis as any).isEditor
 export const WORLD_EXPLORER = !EDITOR && !PREVIEW
 
-export const RENDERER_WS = location.search.includes('ws')
+export const RENDERER_WS = globalThis.location.search.includes('ws')
 
-export const OPEN_AVATAR_EDITOR = location.search.includes('OPEN_AVATAR_EDITOR') && WORLD_EXPLORER
+export const OPEN_AVATAR_EDITOR = globalThis.location.search.includes('OPEN_AVATAR_EDITOR') && WORLD_EXPLORER
 
 // Development
-export const ENV_OVERRIDE = location.search.includes('ENV')
-export const GIF_WORKERS = location.search.includes('GIF_WORKERS')
+export const ENV_OVERRIDE = globalThis.location.search.includes('ENV')
+export const GIF_WORKERS = globalThis.location.search.includes('GIF_WORKERS')
 
-const qs = new URLSearchParams(location.search)
+const qs = new URLSearchParams(globalThis.location.search)
 
 function ensureQueryStringUrl(value: string | null): string | null {
   if (!value) return null
@@ -86,7 +86,7 @@ function ensureSingleString(value: string | string[] | null): string | null {
 }
 
 // Comms
-const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
+const USE_LOCAL_COMMS = globalThis.location.search.includes('LOCAL_COMMS') || PREVIEW
 export const COMMS =
   !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2' // by default
 export const COMMS_PROFILE_TIMEOUT = 10000
@@ -106,27 +106,27 @@ export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
 
 export const LOS = ensureSingleString(qs.get('LOS'))
 
-export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
-export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
-export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
-export const DEBUG_MESSAGES = location.search.includes('DEBUG_MESSAGES')
-export const DEBUG_MESSAGES_QUEUE_PERF = location.search.includes('DEBUG_MESSAGES_QUEUE_PERF')
-export const DEBUG_WS_MESSAGES = location.search.includes('DEBUG_WS_MESSAGES')
-export const DEBUG_REDUX = location.search.includes('DEBUG_REDUX')
-export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
-export const DEBUG_PM = location.search.includes('DEBUG_PM')
-export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
-export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
+export const DEBUG = globalThis.location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
+export const DEBUG_ANALYTICS = globalThis.location.search.includes('DEBUG_ANALYTICS')
+export const DEBUG_MOBILE = globalThis.location.search.includes('DEBUG_MOBILE')
+export const DEBUG_MESSAGES = globalThis.location.search.includes('DEBUG_MESSAGES')
+export const DEBUG_MESSAGES_QUEUE_PERF = globalThis.location.search.includes('DEBUG_MESSAGES_QUEUE_PERF')
+export const DEBUG_WS_MESSAGES = globalThis.location.search.includes('DEBUG_WS_MESSAGES')
+export const DEBUG_REDUX = globalThis.location.search.includes('DEBUG_REDUX')
+export const DEBUG_LOGIN = globalThis.location.search.includes('DEBUG_LOGIN')
+export const DEBUG_PM = globalThis.location.search.includes('DEBUG_PM')
+export const DEBUG_SCENE_LOG = DEBUG || globalThis.location.search.includes('DEBUG_SCENE_LOG')
+export const DEBUG_KERNEL_LOG = !PREVIEW || globalThis.location.search.includes('DEBUG_KERNEL_LOG')
 export const DEBUG_PREFIX = ensureSingleString(qs.get('DEBUG_PREFIX'))
 
-export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
+export const RESET_TUTORIAL = globalThis.location.search.includes('RESET_TUTORIAL')
 
-export const ENGINE_DEBUG_PANEL = location.search.includes('ENGINE_DEBUG_PANEL')
-export const SCENE_DEBUG_PANEL = location.search.includes('SCENE_DEBUG_PANEL') && !ENGINE_DEBUG_PANEL
-export const SHOW_FPS_COUNTER = location.search.includes('SHOW_FPS_COUNTER') || DEBUG
-export const HAS_INITIAL_POSITION_MARK = location.search.includes('position')
+export const ENGINE_DEBUG_PANEL = globalThis.location.search.includes('ENGINE_DEBUG_PANEL')
+export const SCENE_DEBUG_PANEL = globalThis.location.search.includes('SCENE_DEBUG_PANEL') && !ENGINE_DEBUG_PANEL
+export const SHOW_FPS_COUNTER = globalThis.location.search.includes('SHOW_FPS_COUNTER') || DEBUG
+export const HAS_INITIAL_POSITION_MARK = globalThis.location.search.includes('position')
 export const WSS_ENABLED = !!ensureSingleString(qs.get('ws'))
-export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
+export const FORCE_SEND_MESSAGE = globalThis.location.search.includes('FORCE_SEND_MESSAGE')
 
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.get('ASSET_BUNDLES_DOMAIN'))
 
@@ -174,7 +174,7 @@ export namespace commConfigurations {
     }
   ]
 
-  export const voiceChatUseHRTF = location.search.includes('VOICE_CHAT_USE_HRTF')
+  export const voiceChatUseHRTF = globalThis.location.search.includes('VOICE_CHAT_USE_HRTF')
 }
 
 // take address from http://contracts.decentraland.org/addresses.json
@@ -189,9 +189,9 @@ export const knownTLDs = ['zone', 'org', 'today']
 // return one of org zone today
 export function getTLD() {
   if (ENV_OVERRIDE) {
-    return location.search.match(/ENV=(\w+)/)![1]
+    return globalThis.location.search.match(/ENV=(\w+)/)![1]
   }
-  const previsionalTld = location.hostname.match(/(\w+)$/)![0]
+  const previsionalTld = globalThis.location.hostname.match(/(\w+)$/)![0]
   if (knownTLDs.includes(previsionalTld)) return previsionalTld
   return 'org'
 }

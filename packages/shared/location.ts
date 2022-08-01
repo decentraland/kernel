@@ -1,7 +1,7 @@
-let base = new URL('.', document.location.toString()).toString()
+let base = new URL('.', globalThis.location.toString()).toString()
 
 export function setResourcesURL(baseUrl: string) {
-  base = new URL(baseUrl, document.location.toString()).toString()
+  base = new URL(baseUrl, globalThis.location.toString()).toString()
 }
 
 export function getResourcesURL(path: string) {

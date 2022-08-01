@@ -6,7 +6,7 @@ import { Fetcher } from 'dcl-catalyst-commons'
 import { requestManager } from './ethereum/provider'
 import { ContractFactory, bytesToHex } from 'eth-connect'
 
-declare let window: Window & {
+declare let globalThis: {
   ethereum: any
 }
 
@@ -399,7 +399,7 @@ async function queryGraph(url: string, query: string, variables: any, totalAttem
  * TODO: move to explorer-website
  */
 export function registerProviderNetChanges() {
-  if (window.ethereum && typeof window.ethereum.on === 'function') {
-    window.ethereum.on('chainChanged', () => location.reload())
+  if (globalThis.ethereum && typeof globalThis.ethereum.on === 'function') {
+    globalThis.ethereum.on('chainChanged', () => location.reload())
   }
 }

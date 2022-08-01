@@ -1,4 +1,9 @@
+
+;(globalThis as any).location = new URL("https://play.decentraland.org")
+
+
 globalThis['isRunningTests'] = true
+;(globalThis as any)['self'] = globalThis
 
 /**
  * Hello, this file is the tests entry point.
@@ -7,37 +12,38 @@ globalThis['isRunningTests'] = true
 
 beforeEach(() => history.replaceState({}, '', `?`))
 
+
+const mochax = require('mocha/mocha')
+
 /* HELPERS */
-import './atomicHelpers/parcelScenePositions.test'
-import './atomicHelpers/landHelpers.test'
-import './atomicHelpers/vectorHelpers.test'
-import './atomicHelpers/OrderedRingBuffer.test'
-import './atomicHelpers/SortedLimitedQueue.test'
+require('./atomicHelpers/parcelScenePositions.test')
+require('./atomicHelpers/landHelpers.test')
+require('./atomicHelpers/vectorHelpers.test')
+require('./atomicHelpers/OrderedRingBuffer.test')
+require('./atomicHelpers/SortedLimitedQueue.test')
 
 /* UNIT */
-import './unit/ethereum.test'
-import './unit/objectComparison.test'
-import './unit/jsonFetch.test'
-import './unit/profiles.saga.test'
-import './unit/getPerformanceInfo.test'
-import './unit/positionThings.test'
-import './unit/RestrictedActions.test'
-import './unit/engine.test'
-import './unit/catalog.saga.test'
-import './unit/portable-experiences.test'
-import './unit/logger.spec'
-import './unit/comms-resolver.test'
+require('./unit/ethereum.test')
+require('./unit/objectComparison.test')
+require('./unit/jsonFetch.test')
+require('./unit/profiles.saga.test')
+require('./unit/getPerformanceInfo.test')
+require('./unit/positionThings.test')
+require('./unit/RestrictedActions.test')
+require('./unit/engine.test')
+require('./unit/catalog.saga.test')
+require('./unit/portable-experiences.test')
+require('./unit/logger.spec')
+require('./unit/comms-resolver.test')
 
 /* SCENE EVENTS */
-import './sceneEvents/visibleAvatars.spec'
-import './sceneEvents/comms.spec'
+require('./sceneEvents/visibleAvatars.spec')
+require('./sceneEvents/comms.spec')
 
-import './dao'
+require('./dao')
 
-import './scene-system/websocketWrapper.spec'
-import './scene-system/fetchWrapper.spec'
+require('./scene-system/websocketWrapper.spec')
+require('./scene-system/fetchWrapper.spec')
 
-declare var mocha: Mocha
-declare var globalThis: any
-
-mocha.run()
+mochax.setup('bdd')
+mochax.run()

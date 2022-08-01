@@ -67,6 +67,10 @@ if (!process.env.ESSENTIALS_ONLY) {
 
   build({
     ...commonOptions,
+    debug: true,
+    clear: true,
+    minify: false,
+    sourcemap: 'both',
     entry: 'test/index.ts',
     outfile: 'test/out/index.js',
     tsconfig: 'test/tsconfig.json',

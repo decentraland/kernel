@@ -1,9 +1,7 @@
 import { resolve } from 'path'
 import express = require('express')
 import path = require('path')
-import fs = require('fs')
 import { Role } from '../packages/shared/comms/v1/proto/broker'
-import titere = require('titere')
 import WebSocket = require('ws')
 import http = require('http')
 import proto = require('../packages/shared/comms/v1/proto/broker')
@@ -11,7 +9,6 @@ import proto = require('../packages/shared/comms/v1/proto/broker')
 const url = require('url')
 
 // defines if we should run headless tests and exit (true) or keep the server on (false)
-const singleRun = !(process.env.SINGLE_RUN === 'true')
 const port = process.env.PORT || 8080
 const app = express()
 
@@ -184,32 +181,6 @@ wss.on('connection', function connection(ws, req) {
 
   server.listen(port, function () {
     console.info('==>     Listening on port %s. Open up http://localhost:%s/test to run tests', port, port)
-    console.info('                              Open up http://localhost:%s/ to test the client.', port)
-
-    const options: titere.Options = {
-      file: `http://localhost:${port}/test`,
-      visible: true,
-      height: 600,
-      width: 800,
-      timeout: 5 * 60 * 1000,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--debug-devtools-frontend', '--js-flags="--expose-gc"']
-    }
-
-    if (!singleRun) {
-      titere
-        .run(options)
-        .then((result) => {
-          if (result.coverage) {
-            fs.mkdirSync('test/tmp', { recursive: true })
-            fs.writeFileSync('test/tmp/out.json', JSON.stringify(result.coverage))
-          }
-          process.exit(result.result.stats.failures)
-        })
-        .catch((err: Error) => {
-          console.error(err.message || JSON.stringify(err))
-          console.dir(err)
-          process.exit(1)
-        })
-    }
+    console.info('                                Open up http://localhost:%s/ to test the client.', port)
   })
 }

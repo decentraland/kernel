@@ -66,7 +66,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
   switch (protocol) {
     case 'v1': {
-      let location = document.location.toString()
+      let location = globalThis.location.toString()
       if (location.indexOf('#') > -1) {
         location = location.substring(0, location.indexOf('#')) // drop fragment identifier
       }
