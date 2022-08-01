@@ -18,6 +18,7 @@ import {
 } from '../proto/EnvironmentAPI.gen'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
+import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 
 export function registerEnvironmentAPIServiceServerImplementation(
   port: RpcServerPort<PortContextService<'sceneData'>>
@@ -61,7 +62,8 @@ export function registerEnvironmentAPIServiceServerImplementation(
       return {
         clientUri: location.href,
         configurations: {
-          questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl
+          questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl,
+          enableBinaryTransform: `${transformSerializeOpt.useBinaryTransform}`
         }
       }
     },
