@@ -250,7 +250,7 @@ describe('Friends sagas', () => {
         const request = {
           userId: '0xa3',
           limit: 10,
-          from: '0',
+          fromMessageId: '0',
         }
 
         // parse messages
@@ -266,7 +266,7 @@ describe('Friends sagas', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddMessageToChatWindow').once().withExactArgs(addChatMessagesPayload)
-        friendsSagas.getPrivateMessages(request.userId, request.limit, request.from)
+        friendsSagas.getPrivateMessages(request.userId, request.limit, request.fromMessageId)
         sinon.mock(getUnityInstance()).verify()
       })
     })

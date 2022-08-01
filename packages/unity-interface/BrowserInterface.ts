@@ -413,8 +413,8 @@ export class BrowserInterface {
     await markAsSeenPrivateChatMessages(userId)
   }
 
-  public async GetPrivateMessages(userId: string, limit: number, from: string) {
-    await getPrivateMessages(userId, limit, from)
+  public async GetPrivateMessages(userId: string, limit: number, fromMessageId: string) {
+    await getPrivateMessages(userId, limit, fromMessageId)
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {

@@ -466,7 +466,7 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
 }
 
-export async function getPrivateMessages(userId: string, limit: number, from: string) {
+export async function getPrivateMessages(userId: string, limit: number, fromMessageId: string) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
@@ -476,8 +476,8 @@ export async function getPrivateMessages(userId: string, limit: number, from: st
   const ownId = client.getUserId()
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
-  const fromMessageId: string | undefined = from === null ? undefined : from
-  const cursorLastMessage = await client.getCursorOnMessage(socialData.conversationId, fromMessageId, {
+  const messageId: string | undefined = fromMessageId === null ? undefined : fromMessageId
+  const cursorLastMessage = await client.getCursorOnMessage(socialData.conversationId, messageId, {
     initialSize: limit,
     limit: limit
   })
