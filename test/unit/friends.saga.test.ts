@@ -1,5 +1,5 @@
 import { buildStore } from 'shared/store/store'
-import { ChatMessage, ChatMessageType, GetFriendRequestsPayload, GetFriendsPayload } from 'shared/types'
+import { AddChatMessagesPayload, ChatMessageType, GetFriendRequestsPayload, GetFriendsPayload } from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import * as friendsSelectors from 'shared/friends/selectors'
@@ -254,20 +254,18 @@ describe('Friends sagas', () => {
         }
 
         // parse messages
-        const chatMessagesPayload = textMessages.map((message) => {
-          return {
-            chatMessage: {
-              messageId: message.id,
-              messageType: ChatMessageType.PRIVATE,
-              timestamp: message.timestamp,
-              body: message.text,
-              sender: message.sender === '0xa2' ? '0xa2' : request.userId,
-              recipient: message.sender === '0xa2' ? request.userId : '0xa2'
-            }
-          }
-        })
-        
-        sinon.mock(getUnityInstance()).expects('AddMessageToChatWindow').once().withExactArgs(chatMessagesPayload.map((conv): ChatMessage => conv.chatMessage))
+        const addChatMessagesPayload: AddChatMessagesPayload = {
+          messages: textMessages.map((message) => ({
+            messageId: message.id,
+            messageType: ChatMessageType.PRIVATE,
+            timestamp: message.timestamp,
+            body: message.text,
+            sender: message.sender === '0xa2' ? '0xa2' : request.userId,
+            recipient: message.sender === '0xa2' ? request.userId : '0xa2'
+          }))
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddMessageToChatWindow').once().withExactArgs(addChatMessagesPayload)
         friendsSagas.getPrivateMessages(request.userId, request.limit, request.from)
         sinon.mock(getUnityInstance()).verify()
       })

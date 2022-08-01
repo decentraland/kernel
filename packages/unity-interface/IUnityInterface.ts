@@ -25,7 +25,8 @@ import {
   AddFriendsPayload,
   AddFriendRequestsPayload,
   UpdateTotalUnseenMessagesPayload,
-  UpdateUserUnseenMessagesPayload
+  UpdateUserUnseenMessagesPayload,
+  AddChatMessagesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -129,7 +130,7 @@ export interface IUnityInterface {
   SetTutorialEnabledForUsersThatAlreadyDidTheTutorial(tutorialConfig: TutorialInitializationMessage): void
   TriggerAirdropDisplay(data: AirdropInfo): void
   AddMessageToChatWindow(message: ChatMessage): void
-  AddChatMessages(messages: ChatMessage[]): void
+  AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void
 
   // *********************************************************************************
   // ************** Chat messages **************

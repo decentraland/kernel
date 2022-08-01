@@ -513,6 +513,10 @@ export type ChatMessage = {
   body: string
 }
 
+export type AddChatMessagesPayload = {
+  messages: ChatMessage[]
+}
+
 export interface UnseenPrivateMessage {
   count: number
 }

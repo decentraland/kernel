@@ -31,7 +31,8 @@ import {
   GetFriendRequestsPayload,
   AddFriendRequestsPayload,
   UpdateUserUnseenMessagesPayload,
-  UpdateTotalUnseenMessagesPayload
+  UpdateTotalUnseenMessagesPayload,
+  AddChatMessagesPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -475,7 +476,7 @@ export async function getPrivateMessages(userId: string, limit: number, from: st
   const ownId = client.getUserId()
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
-  const fromMessageId: string | undefined = from === '0' ? undefined : from
+  const fromMessageId: string | undefined = from === null ? undefined : from
   const cursorLastMessage = await client.getCursorOnMessage(socialData.conversationId, fromMessageId, {
     initialSize: limit,
     limit: limit
@@ -484,20 +485,18 @@ export async function getPrivateMessages(userId: string, limit: number, from: st
   const messages = cursorLastMessage.getMessages()
 
   // parse messages
-  const chatMessagesPayload = messages.map((message) => {
-    return {
-      chatMessage: {
-        messageId: message.id,
-        messageType: ChatMessageType.PRIVATE,
-        timestamp: message.timestamp,
-        body: message.text,
-        sender: message.sender === ownId ? ownId : userId,
-        recipient: message.sender === ownId ? userId : ownId
-      }
-    }
-  })
+  const addChatMessagesPayload: AddChatMessagesPayload = {
+    messages: messages.map((message) => ({
+      messageId: message.id,
+      messageType: ChatMessageType.PRIVATE,
+      timestamp: message.timestamp,
+      body: message.text,
+      sender: message.sender === ownId ? ownId : userId,
+      recipient: message.sender === ownId ? userId : ownId
+    }))
+  }
 
-  getUnityInstance().AddChatMessages(chatMessagesPayload.map((conv): ChatMessage => conv.chatMessage))
+  getUnityInstance().AddChatMessages(addChatMessagesPayload)
 }
 
 function* initializeReceivedMessagesCleanUp() {

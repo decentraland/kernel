@@ -23,7 +23,8 @@ import {
   AddFriendsPayload,
   AddFriendRequestsPayload,
   UpdateTotalUnseenMessagesPayload,
-  UpdateUserUnseenMessagesPayload
+  UpdateUserUnseenMessagesPayload,
+  AddChatMessagesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -335,8 +336,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
-  public AddChatMessages(messages: ChatMessage[]): void {
-    this.SendMessageToUnity('Main', 'AddChatMessages', JSON.stringify(messages))
+  public AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddChatMessages', JSON.stringify(addChatMessagesPayload))
   }
 
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {
