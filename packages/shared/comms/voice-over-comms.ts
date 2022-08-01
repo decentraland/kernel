@@ -96,5 +96,11 @@ export function* initVoiceCommunicator() {
   })
   ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
 
+  trackEvent('error', {
+    context: 'voice-chat',
+    message: 'demo message by kuruk',
+    stack: 'addStreamRecordingErrorListener'
+  })
+
   yield put(setVoiceCommunicator(voiceCommunicator))
 }
