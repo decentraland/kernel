@@ -23,7 +23,8 @@ import {
   WorldPosition,
   AvatarRendererMessage,
   GetFriendsPayload,
-  GetFriendRequestsPayload
+  GetFriendRequestsPayload,
+  GetFriendsWithDirectMessagesPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -69,7 +70,12 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
-import { getFriendRequests, getFriends } from 'shared/friends/sagas'
+import {
+  getFriendRequests,
+  getFriends,
+  getFriendsWithDirectMessages,
+  getUnseenMessagesByUser
+} from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -473,6 +479,14 @@ export class BrowserInterface {
     renderDistanceObservable.notifyObservers({
       distanceInParcels: parcelLimits.visibleRadius
     })
+  }
+
+  public GetUnseenMessagesByUser() {
+    getUnseenMessagesByUser()
+  }
+
+  public GetFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload: GetFriendsWithDirectMessagesPayload) {
+    getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload)
   }
 
   public ReportScene(sceneId: string) {

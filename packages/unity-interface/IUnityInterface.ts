@@ -23,7 +23,9 @@ import {
   UpdateUserStatusMessage,
   WorldPosition,
   AddFriendsPayload,
-  AddFriendRequestsPayload
+  AddFriendRequestsPayload,
+  UpdateTotalUnseenMessagesByUserPayload,
+  AddFriendsWithDirectMessagesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -138,6 +140,8 @@ export interface IUnityInterface {
   FriendNotFound(queryString: string): void
   AddFriends(addFriendsPayload: AddFriendsPayload): void
   AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
+  UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload): void
+  AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
