@@ -17,7 +17,6 @@ import {
   INITIALIZE_POI_TILES,
   InitializePoiTiles
 } from './actions'
-import { getSceneNameFromAtlasState, getSceneNameWithMarketAndAtlas, postProcessSceneName } from './selectors'
 import { AtlasState, MapSceneData, MarketData } from './types'
 
 const ATLAS_INITIAL_STATE: AtlasState = {
@@ -32,7 +31,6 @@ const ATLAS_INITIAL_STATE: AtlasState = {
 
 const MAP_SCENE_DATA_INITIAL_STATE: MapSceneData = {
   sceneId: '',
-  name: '',
   type: 0,
   estateId: 0,
   sceneJsonData: undefined,
@@ -128,7 +126,6 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: LoadableSce
       if (scene) {
         mapScene = {
           ...mapScene,
-          name: scene.name,
           type: scene.type,
           estateId: scene.estateId
         }
@@ -138,9 +135,6 @@ function reduceSuccessDataFromSceneJson(state: AtlasState, landData: LoadableSce
     mapScene.requestStatus = 'ok'
     mapScene.sceneJsonData = metadata
     mapScene.contents = land.entity.content
-
-    const name = getSceneNameFromAtlasState(mapScene.sceneJsonData) ?? mapScene.name
-    mapScene.name = postProcessSceneName(name)
 
     mapScene.sceneJsonData.scene.parcels.forEach((x) => {
       tileToScene[x] = mapScene
@@ -191,21 +185,17 @@ function reduceMarketData(state: AtlasState, marketData: MarketData) {
 
     const value = marketData.data[key]
 
-    const sceneName = postProcessSceneName(getSceneNameWithMarketAndAtlas(marketData, tileToScene, value.x, value.y))
-
     let newScene: MapSceneData
 
     if (existingScene) {
       newScene = {
         ...existingScene,
-        name: sceneName,
         type: value.type,
         estateId: value.estate_id
       }
     } else {
       newScene = {
         sceneId: '',
-        name: sceneName,
         type: value.type,
         estateId: value.estate_id,
         sceneJsonData: undefined,

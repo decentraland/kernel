@@ -15,7 +15,6 @@ export type AtlasState = {
 
 export type MapSceneData = {
   sceneId: string
-  name: string
   type: number
   estateId?: number
   sceneJsonData?: Scene

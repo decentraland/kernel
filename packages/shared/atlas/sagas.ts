@@ -7,6 +7,7 @@ import { fetchScenesByLocation } from '../../decentraland-loader/lifecycle/utils
 import {
   getOwnerNameFromJsonData,
   getSceneDescriptionFromJsonData,
+  getSceneNameFromJsonData,
   getThumbnailUrlFromJsonDataAndContent
 } from 'shared/selectors'
 import defaultLogger from '../logger'
@@ -32,7 +33,7 @@ import {
   reportScenesFromTiles,
   REPORT_SCENES_FROM_TILES
 } from './actions'
-import { shouldLoadSceneJsonData, isMarketDataInitialized, getPoiTiles } from './selectors'
+import { shouldLoadSceneJsonData, isMarketDataInitialized, getPoiTiles, postProcessSceneName } from './selectors'
 import { AtlasState, RootAtlasState } from './types'
 import { getTilesRectFromCenter } from '../getTilesRectFromCenter'
 import { LoadableScene } from 'shared/types'
@@ -231,6 +232,7 @@ function* reportScenes(sceneIds: string[]): any {
       })
 
       minimapSceneInfoResult.push({
+        name: postProcessSceneName(getSceneNameFromJsonData(scene.sceneJsonData)),
         owner: getOwnerNameFromJsonData(scene.sceneJsonData),
         description: getSceneDescriptionFromJsonData(scene.sceneJsonData),
         previewImageUrl: getThumbnailUrlFromJsonDataAndContent(
@@ -238,7 +240,6 @@ function* reportScenes(sceneIds: string[]): any {
           scene.contents,
           getFetchContentServer(store.getState())
         ),
-        name: scene.name,
         type: scene.type,
         parcels,
         isPOI
