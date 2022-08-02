@@ -396,7 +396,7 @@ export function getFriends(request: GetFriendsPayload) {
   const friendsToReturn = filteredFriends.slice(request.skip, request.skip + request.limit)
 
   const profilesForRenderer = friendsToReturn.map((profile) => profileToRendererFormat(profile.data, {}))
-  getUnityInstance().AddUserProfilesToCatalog(profilesForRenderer)
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
 
   const addFriendsPayload: AddFriendsPayload = {
     friends: friendsToReturn.map((friend) => friend.data.userId),
@@ -486,7 +486,7 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
   getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
 
   const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
-  getUnityInstance().AddUserProfilesToCatalog(profilesForRenderer)
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
 
   store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
 }

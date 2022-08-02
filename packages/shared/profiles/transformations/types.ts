@@ -30,3 +30,7 @@ export type NewProfileForRenderer = {
   inventory: string[]
   tutorialFlagsMask: number
 }
+
+export interface AddUserProfilesToCatalogPayload {
+  users: NewProfileForRenderer[]
+}

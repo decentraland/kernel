@@ -40,8 +40,8 @@ import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { incrementCounter } from '../shared/occurences'
+import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -344,8 +344,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
   }
 
-  public AddUserProfilesToCatalog(peerProfile: NewProfileForRenderer[]): void {
-    this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(peerProfile))
+  public AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void {
+    this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(payload))
   }
 
   public AddFriends(addFriendsPayload: AddFriendsPayload): void {
