@@ -57,9 +57,9 @@ export function logTrace(type: string, payload: string | number | undefined, dir
     const now = performance.now().toFixed(1)
 
     function trace(text: string) {
-      if (traceType == 'file') {
+      if (traceType === 'file') {
         currentTrace.push(text)
-      } else if (traceType == 'console') {
+      } else if (traceType === 'console') {
         console.log('[TRACE]', text)
       }
     }

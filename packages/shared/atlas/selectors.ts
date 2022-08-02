@@ -25,4 +25,3 @@ export function postProcessSceneName(name: string | undefined | null): string {
 
   return name
 }
-
