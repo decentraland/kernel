@@ -329,7 +329,7 @@ describe('Friends sagas', () => {
         const request = {
           userId: '0xa3',
           limit: 10,
-          fromMessageId: '0',
+          fromMessageId: null,
         }
 
         // parse messages

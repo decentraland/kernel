@@ -438,18 +438,15 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
   if (!socialData?.conversationId) return
 
-  const ownId = client.getUserId()
-
   // mark as seen all the messages in the conversation
   await client.markMessagesAsSeen(socialData.conversationId)
 
-  // get total and user's chat unread messages
-  const unreadMessages = client.getConversationUnreadMessages(socialData.conversationId).length
+  // get total user unread messages
   const totalUnreadMessages = client.getTotalUnseenMessages()
 
   const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
-    userId: ownId,
-    total: unreadMessages
+    userId: userId,
+    total: 0
   }
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
     total: totalUnreadMessages
@@ -472,7 +469,7 @@ export async function getPrivateMessages(userId: string, limit: number, fromMess
   const messageId: string | undefined = fromMessageId === null ? undefined : fromMessageId
   const cursorLastMessage = await client.getCursorOnMessage(socialData.conversationId, messageId, {
     initialSize: limit,
-    limit: limit
+    limit
   })
 
   const messages = cursorLastMessage.getMessages()
