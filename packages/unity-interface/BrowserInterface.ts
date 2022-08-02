@@ -418,11 +418,15 @@ export class BrowserInterface {
   }
 
   public async MarkMessagesAsSeen(userId: string) {
-    markAsSeenPrivateChatMessages(userId).catch((err) => defaultLogger.error('error markAsSeenPrivateChatMessages', err))
+    markAsSeenPrivateChatMessages(userId).catch((err) =>
+      defaultLogger.error('error markAsSeenPrivateChatMessages', err)
+    )
   }
 
   public async GetPrivateMessages(userId: string, limit: number, fromMessageId: string) {
-    getPrivateMessages(userId, limit, fromMessageId).catch((err) => defaultLogger.error('error getPrivateMessages', err))
+    getPrivateMessages(userId, limit, fromMessageId).catch((err) =>
+      defaultLogger.error('error getPrivateMessages', err)
+    )
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
