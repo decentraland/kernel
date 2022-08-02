@@ -603,6 +603,24 @@ export interface UpdateUserUnseenMessagesPayload {
   total: number
 }
 
+export interface UpdateTotalUnseenMessagesByUserPayload {
+  unseenPrivateMessages: Record<string, number> // the unseen private messages for each user
+}
+
+export interface GetFriendsWithDirectMessagesPayload {
+  userNameOrId: string // text to match
+  limit: number // max amount of entries to receive
+  skip: number // amount of messages already received
+}
+
+export interface AddFriendsWithDirectMessagesPayload {
+  currentFriendsWithDirectMessages: {
+    userId: string // id of the friend with direct messages
+    lastMessageTimestamp: number //: timestamp of the last message
+  }[]
+  totalFriendsWithDirectMessages: number // total amount of friends with direct messages
+}
+
 export type BuilderConfiguration = {
   camera: {
     zoomMin: number

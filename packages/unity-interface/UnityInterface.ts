@@ -24,7 +24,9 @@ import {
   AddFriendRequestsPayload,
   UpdateTotalUnseenMessagesPayload,
   UpdateUserUnseenMessagesPayload,
-  AddChatMessagesPayload
+  AddChatMessagesPayload,
+  UpdateTotalUnseenMessagesByUserPayload,
+  AddFriendsWithDirectMessagesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -354,6 +356,20 @@ export class UnityInterface implements IUnityInterface {
 
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
+  }
+
+  public UpdateTotalUnseenMessagesByUser(
+    updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload
+  ): void {
+    this.SendMessageToUnity(
+      'Main',
+      'UpdateTotalUnseenMessagesByUser',
+      JSON.stringify(updateTotalUnseenMessagesByUserPayload)
+    )
+  }
+
+  public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
   }
 
   public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {

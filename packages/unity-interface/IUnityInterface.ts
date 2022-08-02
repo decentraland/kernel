@@ -26,7 +26,9 @@ import {
   AddFriendRequestsPayload,
   UpdateTotalUnseenMessagesPayload,
   UpdateUserUnseenMessagesPayload,
-  AddChatMessagesPayload
+  AddChatMessagesPayload,
+  UpdateTotalUnseenMessagesByUserPayload,
+  AddFriendsWithDirectMessagesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -144,6 +146,8 @@ export interface IUnityInterface {
   AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
   UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
   UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void
+  UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload): void
+  AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
