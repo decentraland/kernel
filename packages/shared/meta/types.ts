@@ -1,4 +1,3 @@
-import { Vector2Component } from 'atomicHelpers/landHelpers'
 import { RenderProfile } from 'shared/types'
 import { FeatureFlagVariant } from '@dcl/feature-flags'
 
@@ -45,7 +44,6 @@ export type Ban = {
 }
 
 export type WorldConfig = {
-  pois: Vector2Component[]
   renderProfile?: RenderProfile
   enableNewTutorialCamera?: boolean
 }

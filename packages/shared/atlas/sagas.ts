@@ -30,7 +30,6 @@ import { LoadableScene } from 'shared/types'
 import { SCENE_LOAD } from 'shared/loading/actions'
 import { parseParcelPosition, worldToGrid } from '../../atomicHelpers/parcelScenePositions'
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
-import { getPois } from '../meta/selectors'
 import { META_CONFIGURATION_INITIALIZED } from '../meta/actions'
 import { getFetchContentServer, getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
@@ -88,18 +87,14 @@ function* reportScenesAroundParcelAction(action: ReportScenesAroundParcel) {
 }
 
 function* initializePois() {
-  const pois: Vector2Component[] = yield select(getPois)
-  const metaPOIs = pois.map((position) => `${position.x},${position.y}`)
-
   yield call(waitForRealmInitialized)
 
-  const daoPOIs: string[] | undefined = yield fetchPOIsFromDAO()
+  const daoPOIs: string[] | undefined = yield call(fetchPOIsFromDAO)
 
   if (daoPOIs) {
-    const pois = [...new Set(metaPOIs.concat(daoPOIs))]
-    yield put(initializePoiTiles(pois))
+    yield put(initializePoiTiles(daoPOIs))
   } else {
-    yield put(initializePoiTiles(metaPOIs))
+    yield put(initializePoiTiles([]))
   }
 }
 
