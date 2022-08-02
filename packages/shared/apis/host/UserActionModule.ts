@@ -1,4 +1,8 @@
-import { getOwnerNameFromJsonData, getThumbnailUrlFromJsonDataAndContent } from 'shared/selectors'
+import {
+  getOwnerNameFromJsonData,
+  getSceneNameFromJsonData,
+  getThumbnailUrlFromJsonDataAndContent
+} from 'shared/selectors'
 import { getFetchContentServer } from 'shared/dao/selectors'
 import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -8,15 +12,10 @@ import { UserActionModuleServiceDefinition } from '../proto/UserActionModule.gen
 import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { getSceneNameFromAtlasState, postProcessSceneName } from 'shared/atlas/selectors'
 import { Scene } from '@dcl/schemas'
+import { postProcessSceneName } from 'shared/atlas/selectors'
 
 export function registerUserActionModuleServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  function getSceneName(baseCoord: string, sceneJsonData?: Scene): string {
-    const sceneName = getSceneNameFromAtlasState(sceneJsonData) ?? store.getState().atlas.tileToScene[baseCoord]?.name
-    return postProcessSceneName(sceneName)
-  }
-
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
     async requestTeleport(req, ctx) {
       const { destination } = req
@@ -28,35 +27,28 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
         return {}
       }
 
-      let sceneThumbnailUrl: string | undefined
-      let sceneName: string = destination
-      let sceneCreator: string = 'Unknown'
       let sceneEvent = {}
+      const sceneData = {
+        name: 'Unnamed',
+        owner: 'Unknown',
+        previewImageUrl: ''
+      }
 
       const mapSceneData = (await fetchScenesByLocation([destination]))[0]
 
-      const metadata: Scene | undefined = mapSceneData?.entity.metadata
-
-      sceneName = getSceneName(destination, metadata)
-      sceneCreator = getOwnerNameFromJsonData(metadata)
-
       if (mapSceneData) {
-        sceneThumbnailUrl = getThumbnailUrlFromJsonDataAndContent(
-          mapSceneData.entity.metadata,
-          mapSceneData.entity.content,
-          getFetchContentServer(store.getState())
-        )
+        const metadata: Scene | undefined = mapSceneData?.entity.metadata
+
+        sceneData.name = postProcessSceneName(getSceneNameFromJsonData(metadata))
+        sceneData.owner = getOwnerNameFromJsonData(metadata)
+        sceneData.previewImageUrl =
+          getThumbnailUrlFromJsonDataAndContent(
+            mapSceneData.entity.metadata,
+            mapSceneData.entity.content,
+            getFetchContentServer(store.getState())
+          ) || sceneData.previewImageUrl
       } else {
         debugger
-      }
-      if (!sceneThumbnailUrl) {
-        let sceneParcels = [destination]
-        if (metadata && metadata.scene.parcels) {
-          sceneParcels = metadata.scene.parcels
-        }
-        sceneThumbnailUrl = `https://api.decentraland.org/v1/map.png?width=480&height=237&size=10&center=${destination}&selected=${sceneParcels.join(
-          ';'
-        )}`
       }
 
       try {
@@ -77,11 +69,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
       getUnityInstance().RequestTeleport({
         destination,
         sceneEvent,
-        sceneData: {
-          name: sceneName,
-          owner: sceneCreator,
-          previewImageUrl: sceneThumbnailUrl ?? ''
-        }
+        sceneData
       })
       return {}
     }
