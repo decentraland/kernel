@@ -40,7 +40,7 @@ import {
   UnpublishedWearableType
 } from './types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { CatalystClient, OwnedWearablesWithDefinition } from 'dcl-catalyst-client'
+import { CatalystClient, OwnedItemsWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
@@ -184,7 +184,7 @@ function* fetchItemsFromCatalyst(
         result.push(...v2Wearables)
       }
     } else {
-      let ownedWearables: OwnedWearablesWithDefinition[]
+      let ownedWearables: OwnedItemsWithDefinition[]
       if (filters.thirdPartyId) {
         ownedWearables = yield call(fetchOwnedThirdPartyWearables, filters.ownedByUser, filters.thirdPartyId, client)
       } else {
@@ -309,7 +309,7 @@ function* fetchWearablesFromCatalyst(filters: WearablesRequestFilters) {
         result.push(...v2Wearables)
       }
     } else {
-      let ownedWearables: OwnedWearablesWithDefinition[]
+      let ownedWearables: OwnedItemsWithDefinition[]
       if (filters.thirdPartyId) {
         ownedWearables = yield call(fetchOwnedThirdPartyWearables, filters.ownedByUser, filters.thirdPartyId, client)
       } else {
