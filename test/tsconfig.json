@@ -3,7 +3,7 @@
     "target": "es2017",
     "outDir": "out",
     "declaration": false,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "lib": ["es2017", "dom"],
     "baseUrl": "../packages",
     "types": ["mocha", "@dcl/posix", "segment-analytics"],

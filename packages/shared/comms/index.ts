@@ -21,8 +21,9 @@ import { InstanceConnection as V3InstanceConnection } from './v3/InstanceConnect
 import { removePeerByUUID, removeMissingPeers } from './peers'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { ProfileType } from 'shared/profiles/types'
+import { OfflineRoomConnection } from './offline-room-connection'
 
-export type CommsVersion = 'v1' | 'v2' | 'v3' | 'v4'
+export type CommsVersion = 'v1' | 'v2' | 'v3' | 'v4' | 'offline'
 export type CommsMode = CommsV1Mode | CommsV2Mode
 export type CommsV1Mode = 'local' | 'remote'
 export type CommsV2Mode = 'p2p' | 'server'
@@ -183,6 +184,11 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       commsLogger.log('Using WebSocket comms: ' + finalUrl)
       const commsBroker = new CliBrokerConnection(finalUrl)
       connection = new BrokerWorldInstanceConnection(commsBroker)
+
+      break
+    }
+    case 'offline': {
+      connection = new OfflineRoomConnection()
 
       break
     }

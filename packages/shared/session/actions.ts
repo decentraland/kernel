@@ -15,7 +15,7 @@ export const authenticate = (provider: IEthereumProvider, isGuest: boolean) =>
 export type AuthenticateAction = ReturnType<typeof authenticate>
 
 export const SIGNUP = '[SESSION] SignUp'
-export const signUp = (email: string) => action(SIGNUP, { email })
+export const signUp = (email: string, name: string) => action(SIGNUP, { email, name })
 export type SignUpAction = ReturnType<typeof signUp>
 
 export const USER_AUTHENTIFIED = '[SESSION] User authentified'
