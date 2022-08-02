@@ -457,7 +457,9 @@ describe('Friends sagas', () => {
           skip: 0,
           userNameOrId: '0xa' // this will only bring the friend 0xa2
         }
-        const expectedFriends = [profileToRendererFormat(profilesFromStore[1].data, {})]
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: [profileToRendererFormat(profilesFromStore[1].data, {})]
+        }
 
         const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
           currentFriendsWithDirectMessages: [
