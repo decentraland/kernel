@@ -6,7 +6,6 @@ import { fetchScenesByLocation } from '../../decentraland-loader/lifecycle/utils
 import {
   getOwnerNameFromJsonData,
   getSceneDescriptionFromJsonData,
-  getSceneNameFromJsonData,
   getThumbnailUrlFromJsonDataAndContent
 } from 'shared/selectors'
 import defaultLogger from '../logger'
@@ -118,13 +117,14 @@ function* reportScenes(scenes: LoadableScene[]): any {
     const metadata: Scene | undefined = scene.entity.metadata
 
     if (metadata) {
-      const sceneName = getSceneNameFromJsonData(metadata)
+      let sceneName = metadata.display?.title || ''
 
       metadata.scene.parcels.forEach((parcel) => {
         const xy: Vector2Component = parseParcelPosition(parcel)
 
-        if (pois.includes(parcel) && sceneName && sceneName !== 'Unnamed') {
+        if (pois.includes(parcel)) {
           isPOI = true
+          sceneName = sceneName || metadata.scene.base
         }
 
         parcels.push(xy)
