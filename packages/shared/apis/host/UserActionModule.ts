@@ -47,16 +47,6 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
             mapSceneData.entity.content,
             getFetchContentServer(store.getState())
           ) || sceneData.previewImageUrl
-
-        if (!sceneData.previewImageUrl) {
-          let sceneParcels = [destination]
-          if (metadata && metadata.scene.parcels) {
-            sceneParcels = metadata.scene.parcels
-          }
-          sceneData.previewImageUrl = `https://api.decentraland.org/v1/map.png?width=480&height=237&size=10&center=${destination}&selected=${sceneParcels.join(
-            ';'
-          )}`
-        }
       } else {
         debugger
       }
