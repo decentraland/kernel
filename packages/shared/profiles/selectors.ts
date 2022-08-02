@@ -33,6 +33,13 @@ export const getCurrentUserProfile = (store: RootProfileState & RootSessionState
   return currentUserId ? getProfile(store, currentUserId) : null
 }
 
+export const getCurrentUserProfileDirty = (store: RootProfileState & RootSessionState): Avatar | null => {
+  const currentUserId = getCurrentUserId(store)
+  if (!currentUserId) return null
+  const [_status, data] = getProfileStatusAndData(store, currentUserId)
+  return data || null
+}
+
 export const getCurrentUserProfileStatusAndData = (
   store: RootProfileState & RootSessionState
 ): [ProfileStatus | undefined, Avatar | undefined] => {

@@ -23,7 +23,7 @@ import {
   ProfileSuccessAction,
   profileFailure
 } from './actions'
-import { getCurrentUserProfile, getProfileFromStore } from './selectors'
+import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
 import { ContentFile, ProfileType, ProfileUserInfo } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -258,13 +258,18 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
   const userId: string = yield select(getCurrentUserId)
 
   try {
-    const savedProfile: Avatar | null = yield select(getCurrentUserProfile)
+    // get the avatar, no matter if it is in a loading or dirty state
+    const savedProfile: Avatar | null = yield select(getCurrentUserProfileDirty)
     const currentVersion: number = Math.max(savedProfile?.version || 0, 0)
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
 
-    const profile = {
+    const profile: Avatar = {
+      hasClaimedName: false,
+      name: createFakeName(),
+      description: '',
+      tutorialStep: 0,
       ...savedProfile,
       ...saveAvatar.payload.profile,
       userId,
@@ -281,7 +286,7 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
     }
 
     // save the profile in the local storage
-    yield localProfilesRepo.persist(profile.ethAddress, network, profile)
+    yield apply(localProfilesRepo, 'persist', [profile.ethAddress, network, profile])
 
     // save the profile in the store
     yield put(profileSuccess(profile))
