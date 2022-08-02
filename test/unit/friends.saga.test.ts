@@ -16,6 +16,7 @@ import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { FriendRequest, FriendsState, SocialData } from 'shared/friends/types'
 import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
+import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -72,7 +73,7 @@ const toFriendRequest: FriendRequest = {
 
 const friendsFromStore: FriendsState = {
   client: null,
-  socialInfo: null,
+  socialInfo: {},
   friends: [],
   fromFriendRequests: [fromFriendRequest],
   toFriendRequests: [toFriendRequest]
@@ -155,12 +156,14 @@ describe('Friends sagas', () => {
           skip: 0,
           userNameOrId: '0xa'
         }
-        const expectedFriends = [
-          profileToRendererFormat(profilesFromStore[0].data, {}),
-          profileToRendererFormat(profilesFromStore[1].data, {})
-        ]
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: [
+            profileToRendererFormat(profilesFromStore[0].data, {}),
+            profileToRendererFormat(profilesFromStore[1].data, {})
+          ]
+        }
         const addedFriends = {
-          friends: expectedFriends.map((friend) => friend.userId),
+          friends: expectedFriends.users.map((friend) => friend.userId),
           totalFriends: 2
         }
 
@@ -178,9 +181,11 @@ describe('Friends sagas', () => {
           skip: 0,
           userNameOrId: 'MiKe'
         }
-        const expectedFriends = [profileToRendererFormat(profilesFromStore[1].data, {})]
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: [profileToRendererFormat(profilesFromStore[1].data, {})]
+        }
         const addedFriends = {
-          friends: expectedFriends.map((friend) => friend.userId),
+          friends: expectedFriends.users.map((friend) => friend.userId),
           totalFriends: 1
         }
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
@@ -196,9 +201,11 @@ describe('Friends sagas', () => {
           limit: 1000,
           skip: 1
         }
-        const expectedFriends = profilesFromStore.slice(1).map((profile) => profileToRendererFormat(profile.data, {}))
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: profilesFromStore.slice(1).map((profile) => profileToRendererFormat(profile.data, {}))
+        }
         const addedFriends = {
-          friends: expectedFriends.map((friend) => friend.userId),
+          friends: expectedFriends.users.map((friend) => friend.userId),
           totalFriends: 4
         }
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
@@ -287,12 +294,14 @@ describe('Friends sagas', () => {
           skip: 0,
           userNameOrId: '0xa' // this will only bring the friend 0xa2
         }
-        const expectedFriends = [profileToRendererFormat(profilesFromStore[1].data, {})]
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: [profileToRendererFormat(profilesFromStore[1].data, {})]
+        }
 
         const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
           currentFriendsWithDirectMessages: [
             {
-              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp,
+              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp!,
               userId: profilesFromStore[1].data.userId
             }
           ],

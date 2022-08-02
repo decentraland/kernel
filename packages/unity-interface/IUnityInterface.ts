@@ -34,7 +34,7 @@ import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 export type RealmInfo = {
   serverName: string
@@ -117,7 +117,7 @@ export interface IUnityInterface {
   UnlockCursor(): void
   SetCursorState(locked: boolean): void
   SetBuilderReady(): void
-  AddUserProfilesToCatalog(peerProfile: NewProfileForRenderer[]): void
+  AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void
   AddUserProfileToCatalog(peerProfile: NewProfileForRenderer): void
   AddWearablesToCatalog(wearables: WearableV2[], context?: string): void
   WearablesRequestFailed(error: string, context: string | undefined): void
