@@ -54,7 +54,7 @@ const toFriendRequest: FriendRequest = {
 
 const friendsFromStore: FriendsState = {
   client: null,
-  socialInfo: null,
+  socialInfo: {},
   friends: [],
   fromFriendRequests: [fromFriendRequest],
   toFriendRequests: [toFriendRequest]
@@ -273,7 +273,7 @@ describe('Friends sagas', () => {
         const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
           currentFriendsWithDirectMessages: [
             {
-              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp,
+              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp!,
               userId: profilesFromStore[1].data.userId
             }
           ],
