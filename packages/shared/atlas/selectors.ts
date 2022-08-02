@@ -2,14 +2,6 @@ import { RootAtlasState } from './types'
 
 export const EMPTY_PARCEL_NAME = 'Empty parcel'
 
-export function shouldLoadSceneJsonData(state: RootAtlasState, sceneId: string) {
-  return !state.atlas.idToScene.hasOwnProperty(sceneId) || state.atlas.idToScene[sceneId].requestStatus !== 'ok'
-}
-
-export function isMarketDataInitialized(state: RootAtlasState): boolean {
-  return state.atlas.hasMarketData
-}
-
 export function getPoiTiles(state: RootAtlasState) {
   return state.atlas.pois
 }
