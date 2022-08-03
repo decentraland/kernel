@@ -44,6 +44,9 @@ export const getBannedUsers = (store: RootMetaState): BannedUsers =>
 export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmChainConfig | undefined =>
   getFeatureFlagVariantValue(store, 'pick_realm_algorithm_config') as AlgorithmChainConfig | undefined
 
+export const getDisabledCatalystConfig = (store: RootMetaState): string[] | undefined =>
+  getFeatureFlagVariantValue(store, 'disabled-catalyst') as string[] | undefined
+
 export function getMaxVisiblePeers(store: RootMetaState): number {
   return (
     QS_MAX_VISIBLE_PEERS ||
@@ -61,10 +64,11 @@ export function getFeatureFlagVariantValue(store: RootMetaState, featureName: Fe
   if (variant) {
     try {
       if (variant.type === 'json') return JSON.parse(variant.value)
-    } catch (e) {
+      if (variant.type === 'csv') return (variant.value ?? '').split(',')
+    }
+    catch (e) {
       console.warn(`Couldn't parse value for ${featureName} from variants.`)
     }
-
     return variant.value
   }
   return undefined

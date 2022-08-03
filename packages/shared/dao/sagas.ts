@@ -13,6 +13,7 @@ import { ping } from './utils/ping'
 import {
   getAddedServers,
   getCatalystNodesEndpoint,
+  getDisabledCatalystConfig,
   getMinCatalystVersion,
   getPickRealmsAlgorithmConfig
 } from 'shared/meta/selectors'
@@ -99,9 +100,9 @@ function qsRealm() {
  * This method will try to load the candidates as well as the selected realm.
  *
  * The strategy to select the realm in terms of priority is:
- * 1- Realm configured in the URL and cached candidate for that realm (uses cache, forks async candidadte initialization)
+ * 1- Realm configured in the URL and cached candidate for that realm (uses cache, forks async candidate initialization)
  * 2- Realm configured in the URL but no corresponding cached candidate (implies sync candidate initialization)
- * 3- Last cached realm (uses cache, forks async candidadte initialization)
+ * 3- Last cached realm (uses cache, forks async candidate initialization)
  * 4- Best pick from candidate scan (implies sync candidate initialization)
  */
 export function* selectAndReconnectRealm() {
@@ -211,8 +212,10 @@ function* initializeCatalystCandidates() {
 
   const nodes: CatalystNode[] = yield call(fetchCatalystRealms, catalystsNodesEndpointURL)
   const added: string[] = yield select(getAddedServers)
+  
+  const denylistedCatalysts: string[] = (yield call(getDisabledCatalystConfig)) ?? []
 
-  const candidates: Candidate[] = yield call(fetchCatalystStatuses, added.map((url) => ({ domain: url })).concat(nodes))
+  const candidates: Candidate[] = yield call(fetchCatalystStatuses, added.map((url) => ({ domain: url })).concat(nodes), denylistedCatalysts)
 
   yield put(setCatalystCandidates(candidates))
 }
