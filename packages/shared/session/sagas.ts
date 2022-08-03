@@ -36,7 +36,7 @@ import { localProfilesRepo } from '../profiles/sagas'
 import { getCurrentIdentity, getIsGuestLogin, isLoginCompleted } from './selectors'
 import { waitForRealmInitialized } from '../dao/sagas'
 import { profileRequest, PROFILE_SUCCESS, saveProfileDelta, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
-import { LoginState } from '@dcl/kernel-interface'
+import { DecentralandIdentity, LoginState } from '@dcl/kernel-interface'
 import { RequestManager } from 'eth-connect'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { Store } from 'redux'
@@ -196,6 +196,7 @@ function* signUpHandler(action: SignUpAction) {
 
   yield put(
     saveProfileDelta({
+      name: action.payload.name,
       userId: identity.address,
       ethAddress: identity.rawAddress,
       version: 0,
@@ -330,7 +331,8 @@ export function initializeSessionObserver() {
     globalObservable.emit('accountState', {
       hasProvider: !!session.provider,
       loginStatus: session.loginState as LoginState,
-      identity: session.identity,
+      // TODO: the authChain may have an undefined field. DecentralandIdentity got outdated
+      identity: session.identity as any as DecentralandIdentity | undefined,
       network: session.network,
       isGuest: !!session.isGuestLogin
     })

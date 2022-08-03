@@ -6,7 +6,7 @@ class FakeWebSocket {
 }
 
 describe('Websocket wrapped for scenes', () => {
-  let originalWebSocket = WebSocket
+  let originalWebSocket: any = WebSocket
   before(() => {
     originalWebSocket = WebSocket
     // @ts-ignore

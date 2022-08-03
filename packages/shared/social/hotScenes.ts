@@ -1,15 +1,15 @@
 import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { reportScenesFromTiles } from 'shared/atlas/actions'
-import { getSceneNameFromAtlasState, postProcessSceneName, getPoiTiles } from 'shared/atlas/selectors'
+import { postProcessSceneName, getPoiTiles } from 'shared/atlas/selectors'
 import { getFetchContentServer, getHotScenesService } from 'shared/dao/selectors'
 import {
   getOwnerNameFromJsonData,
   getThumbnailUrlFromJsonDataAndContent,
-  getSceneDescriptionFromJsonData
+  getSceneDescriptionFromJsonData,
+  getSceneNameFromJsonData
 } from 'shared/selectors'
 import { getUnityInstance, HotSceneInfo, RealmInfo } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
-import { Scene } from '@dcl/schemas'
 
 export async function fetchHotScenes(): Promise<HotSceneInfo[]> {
   const url = getHotScenesService(store.getState())
@@ -50,11 +50,6 @@ export async function reportHotScenes() {
   getUnityInstance().UpdateHotScenesList(report)
 }
 
-function getSceneName(baseCoord: string, sceneJsonData: Scene | undefined): string {
-  const sceneName = getSceneNameFromAtlasState(sceneJsonData) ?? store.getState().atlas.tileToScene[baseCoord]?.name
-  return postProcessSceneName(sceneName)
-}
-
 async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
   const tiles = getPoiTiles(store.getState())
   const scenesLand = (await fetchScenesByLocation(tiles)).filter((land) => land.entity.metadata)
@@ -62,7 +57,7 @@ async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
   return scenesLand.map((land) => {
     return {
       id: land.id,
-      name: getSceneName(land.entity.metadata.scene.base, land.entity.metadata),
+      name: postProcessSceneName(getSceneNameFromJsonData(land.entity.metadata)),
       creator: getOwnerNameFromJsonData(land.entity.metadata),
       description: getSceneDescriptionFromJsonData(land.entity.metadata),
       thumbnail:
