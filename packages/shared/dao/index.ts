@@ -114,7 +114,10 @@ async function fetchCatalystStatus(domain: string, denylistedCatalysts: string[]
   }
 }
 
-export async function fetchCatalystStatuses(nodes: { domain: string }[], denylistedCatalysts: string[]): Promise<Candidate[]> {
+export async function fetchCatalystStatuses(
+  nodes: { domain: string }[],
+  denylistedCatalysts: string[]
+): Promise<Candidate[]> {
   const results: Candidate[] = []
 
   await Promise.all(

@@ -65,8 +65,7 @@ export function getFeatureFlagVariantValue(store: RootMetaState, featureName: Fe
     try {
       if (variant.type === 'json') return JSON.parse(variant.value)
       if (variant.type === 'csv') return (variant.value ?? '').split(',')
-    }
-    catch (e) {
+    } catch (e) {
       console.warn(`Couldn't parse value for ${featureName} from variants.`)
     }
     return variant.value
