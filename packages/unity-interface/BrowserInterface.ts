@@ -49,8 +49,8 @@ import { GIFProcessor } from 'gif-processor/processor'
 import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatRecording } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
-import { wearablesRequest } from 'shared/catalogs/actions'
-import { WearablesRequestFilters } from 'shared/catalogs/types'
+import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
+import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
 import { getSelectedNetwork } from 'shared/dao/selectors'
@@ -702,6 +702,25 @@ export class BrowserInterface {
       collectionIds: arrayCleanup(filters.collectionIds)
     }
     store.dispatch(wearablesRequest(newFilters, context))
+  }
+
+  public RequestEmotes(data: {
+    filters: {
+      ownedByUser: string | null
+      emoteIds?: string[] | null
+      collectionIds?: string[] | null
+      thirdPartyId?: string | null
+    }
+    context?: string
+  }) {
+    const { filters, context } = data
+    const newFilters: EmotesRequestFilters = {
+      ownedByUser: filters.ownedByUser ?? undefined,
+      thirdPartyId: filters.thirdPartyId ?? undefined,
+      emoteIds: arrayCleanup(filters.emoteIds),
+      collectionIds: arrayCleanup(filters.collectionIds)
+    }
+    store.dispatch(emotesRequest(newFilters, context))
   }
 
   public RequestUserProfile(userIdPayload: { value: string }) {
