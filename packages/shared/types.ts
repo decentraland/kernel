@@ -595,7 +595,7 @@ export interface AddFriendRequestsPayload {
 }
 
 export interface UpdateTotalUnseenMessagesByUserPayload {
-  unseenPrivateMessages: Record<string, number> // the unseen private messages for each user
+  unseenPrivateMessages: Array<{ userId: string; count: number }> // the unseen private messages for each user
 }
 
 export interface GetFriendsWithDirectMessagesPayload {

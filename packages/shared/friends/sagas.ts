@@ -31,7 +31,8 @@ import {
   GetFriendRequestsPayload,
   AddFriendRequestsPayload,
   GetFriendsWithDirectMessagesPayload,
-  AddFriendsWithDirectMessagesPayload
+  AddFriendsWithDirectMessagesPayload,
+  UpdateTotalUnseenMessagesByUserPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -95,6 +96,8 @@ export function* friendsSaga() {
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
   yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
 }
+
+//TODO! review live updates (accept/reject/new message)
 
 function* initializeFriendsSaga() {
   let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
@@ -425,6 +428,11 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
     totalSentFriendRequests: toFriendRequests.length
   }
 
+  //TODO! send user profiles
+  const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
+
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
@@ -435,16 +443,17 @@ export function getUnseenMessagesByUser() {
     return
   }
 
-  const unseenPrivateMessages = {}
+  const updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload = { unseenPrivateMessages: [] }
 
   for (const conversation of conversationsWithMessages) {
-    unseenPrivateMessages[conversation.conversation.userIds![1]] = conversation.conversation.unreadMessages?.length || 0
+    // unseenPrivateMessages[conversation.conversation.userIds![1]] = conversation.conversation.unreadMessages?.length || 0
+    updateTotalUnseenMessagesByUserPayload.unseenPrivateMessages.push({
+      count: conversation.conversation.unreadMessages?.length || 0,
+      userId: conversation.conversation.userIds![1]
+    })
   }
 
-  const totalUnseenMessages = {
-    unseenPrivateMessages
-  }
-  getUnityInstance().UpdateTotalUnseenMessagesByUser(totalUnseenMessages)
+  getUnityInstance().UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload)
 }
 
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
@@ -483,6 +492,7 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     totalFriendsWithDirectMessages: friendsConversations.length
   }
 
+  // TODO! review why this is always empty
   getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
 
   const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
