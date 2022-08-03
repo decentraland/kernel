@@ -1,14 +1,22 @@
 import { expectSaga } from 'redux-saga-test-plan'
 import { call, select } from 'redux-saga/effects'
 import {
-  handleWearablesFailure,
-  handleWearablesRequest,
-  handleWearablesSuccess,
+  handleItemsRequestFailure,
+  handleItemRequest,
+  handleItemsRequestSuccess,
   informRequestFailure,
   sendWearablesCatalog,
-  WRONG_FILTERS_ERROR
+  WRONG_FILTERS_ERROR,
+  sendEmotesCatalog
 } from 'shared/catalogs/sagas'
-import { wearablesFailure, wearablesRequest, wearablesSuccess } from 'shared/catalogs/actions'
+import {
+  emotesFailure,
+  emotesRequest,
+  emotesSuccess,
+  wearablesFailure,
+  wearablesRequest,
+  wearablesSuccess
+} from 'shared/catalogs/actions'
 import { baseCatalogsLoaded, getPlatformCatalog } from 'shared/catalogs/selectors'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 
@@ -20,49 +28,86 @@ const wearable1 = {
   baseUrlBundles: 'https://content-assets-as-bundle.decentraland.zone/'
 } as any
 
+const emoteId1 = 'EmoteId1'
+const emote1 = {
+  id: emoteId1,
+  baseUrl: serverUrl + 'contents/',
+  baseUrlBundles: 'https://content-assets-as-bundle.decentraland.zone/'
+} as any
+
 const userId = 'userId'
 const context = 'someContext'
 
-describe('Wearables Saga', () => {
-  it('When wearables fetch is successful, then it is sent to the renderer with the same context', () => {
-    const wearables = [wearable1]
-    return expectSaga(handleWearablesSuccess, wearablesSuccess(wearables, context))
-      .call(sendWearablesCatalog, wearables, context)
-      .provide([
-        [call(waitForRendererInstance), true],
-        [call(sendWearablesCatalog, wearables, context), null]
-      ])
-      .run()
-  })
+describe('Items saga', () => {
+  const runs = [
+    {
+      it: 'wearables',
+      options: {
+        items: [wearable1],
+        requestAction: wearablesRequest,
+        requestParams: {
+          wearableIds: ['some-id']
+        },
+        successAction: wearablesSuccess,
+        failureAction: wearablesFailure,
+        catalogAction: sendWearablesCatalog
+      }
+    },
+    {
+      it: 'emotes',
+      options: {
+        items: [emote1],
+        requestAction: emotesRequest,
+        requestParams: {
+          emoteIds: ['some-id']
+        },
+        successAction: emotesSuccess,
+        failureAction: emotesFailure,
+        catalogAction: sendEmotesCatalog
+      }
+    }
+  ]
 
-  it('When more than one filter is set, then the request fails', () => {
-    return expectSaga(
-      handleWearablesRequest,
-      wearablesRequest({ wearableIds: ['some-id'], ownedByUser: userId }, context)
-    )
-      .put(wearablesFailure(context, WRONG_FILTERS_ERROR))
-      .provide([
-        [select(baseCatalogsLoaded), true],
-        [select(getPlatformCatalog), {}]
-      ])
-      .run()
-  })
+  runs.forEach((run) => {
+    describe(`When fetching ${run.it}`, () => {
+      const { items, catalogAction, requestAction, requestParams, successAction, failureAction } = run.options
+      it(`When ${run.it} fetch is successful, then it is sent to the renderer with the same context`, () => {
+        return expectSaga(handleItemsRequestSuccess, successAction(items, context))
+          .call(catalogAction, items, context)
+          .provide([
+            [call(waitForRendererInstance), true],
+            [call(catalogAction, items, context), null]
+          ])
+          .run()
+      })
 
-  it('When collection id is not base-avatars, then the request fails', () => {
-    return expectSaga(handleWearablesRequest, wearablesRequest({ collectionIds: ['some-other-collection'] }, context))
-      .put(wearablesFailure(context, WRONG_FILTERS_ERROR))
-      .provide([[select(baseCatalogsLoaded), true]])
-      .run()
-  })
+      it('When more than one filter is set, then the request fails', () => {
+        return expectSaga(handleItemRequest, requestAction({ ...requestParams, ownedByUser: userId }, context))
+          .put(failureAction(context, WRONG_FILTERS_ERROR))
+          .provide([
+            [select(baseCatalogsLoaded), true],
+            [select(getPlatformCatalog), {}]
+          ])
+          .run()
+      })
 
-  it('When request fails, then the failure is informed', () => {
-    const errorMessage = 'Something failed'
-    return expectSaga(handleWearablesFailure, wearablesFailure(context, errorMessage))
-      .call(informRequestFailure, errorMessage, context)
-      .provide([
-        [call(waitForRendererInstance), true],
-        [call(informRequestFailure, errorMessage, context), null]
-      ])
-      .run()
+      it('When collection id is not base-avatars, then the request fails', () => {
+        return expectSaga(handleItemRequest, requestAction({ collectionIds: ['some-other-collection'] }, context))
+          .put(failureAction(context, WRONG_FILTERS_ERROR))
+          .provide([[select(baseCatalogsLoaded), true]])
+          .run()
+      })
+
+      it('When request fails, then the failure is informed', () => {
+        const errorMessage = 'Something failed'
+        return expectSaga(handleItemsRequestFailure, failureAction(context, errorMessage))
+          .call(informRequestFailure, errorMessage, context)
+          .provide([
+            [call(waitForRendererInstance), true],
+            [call(informRequestFailure, errorMessage, context), null]
+          ])
+          .run()
+      })
+    })
   })
 })

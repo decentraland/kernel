@@ -129,4 +129,8 @@ export type WearablesRequestFilters = {
   thirdPartyId?: string
 }
 
+export const areWearablesRequestFilters = (
+  filters: WearablesRequestFilters | EmotesRequestFilters
+): filters is WearablesRequestFilters => !!(filters as WearablesRequestFilters).wearableIds
+
 export type EmotesRequestFilters = Omit<WearablesRequestFilters, 'wearableIds'> & { emoteIds?: EmoteId[] }
