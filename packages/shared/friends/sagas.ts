@@ -690,7 +690,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
       case FriendshipAction.APPROVED: {
+<<<<<<< HEAD
         totalFriends += 1
+=======
+        totalFriends -= 1
+>>>>>>> b5a5cf0 (fixes due to integration with unity)
       }
       // The approved should not have a break since it should execute all the code as the rejected case
       // Also the rejected needs to be directly after the Approved to make sure this works
