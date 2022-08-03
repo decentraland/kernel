@@ -32,7 +32,10 @@ import {
   AddFriendRequestsPayload,
   GetFriendsWithDirectMessagesPayload,
   AddFriendsWithDirectMessagesPayload,
-  UpdateTotalUnseenMessagesByUserPayload
+  UpdateTotalUnseenMessagesByUserPayload,
+  UpdateTotalFriendRequestsPayload,
+  FriendsInitializeChatPayload,
+  UpdateTotalFriendsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -45,7 +48,9 @@ import {
   findPrivateMessagingFriendsByUserId,
   getPrivateMessaging,
   getPrivateMessagingFriends,
-  getAllConversationsWithMessages
+  getAllConversationsWithMessages,
+  getTotalFriendRequests,
+  getTotalFriends
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -338,34 +343,29 @@ function* refreshFriends() {
     // explorer information
     const conversationsWithUnreadMessages: Conversation[] = yield client.getAllConversationsWithUnreadMessages()
 
-    const unseenPrivateMessages: Record<string, UnseenPrivateMessage> = conversationsWithUnreadMessages.reduce(
-      (convDict, conv) => {
-        const userId = conv.userIds?.find((userId) => userId !== ownId)
+    let totalUnseenMessages = 0
 
-        if (!userId || fromFriendRequestsIds.some((fromRequestUserId) => fromRequestUserId === userId)) {
-          return convDict
-        }
+    for (const conv of conversationsWithUnreadMessages) {
+      const userId = conv.userIds?.find((userId) => userId !== ownId)
 
-        return {
-          ...convDict,
-          [userId]: { count: conv.unreadMessages?.length }
-        }
-      },
-      {}
-    )
+      if (!userId || fromFriendRequestsIds.some((fromRequestUserId) => fromRequestUserId === userId)) {
+        continue
+      }
 
-    const initMessage: FriendsInitializationMessage = {
-      friends: { total: friendIds.length },
-      requests: {
-        lastSeenTimestamp: 1,
-        total: requestedFromIds.length
-      },
-      unseenPrivateMessages
+      totalUnseenMessages += conv.unreadMessages?.length || 0
     }
 
-    defaultLogger.log('____ initMessage ____', initMessage)
+    const initFriendsMessage: FriendsInitializationMessage = {
+      totalReceivedRequests: requestedFromIds.length
+    }
+    const initChatMessage: FriendsInitializeChatPayload = {
+      totalUnseenMessages
+    }
 
-    getUnityInstance().InitializeFriends(initMessage)
+    defaultLogger.log('____ initMessage ____', initFriendsMessage)
+
+    getUnityInstance().InitializeFriends(initFriendsMessage)
+    getUnityInstance().InitializeChat(initChatMessage)
 
     yield ensureFriendsProfile(friendIds).catch(logger.error)
 
@@ -429,9 +429,9 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   }
 
   //TODO! send user profiles
-  const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
-  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
-  store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
+  // const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
+  // getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  // store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
 
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
@@ -675,13 +675,23 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
 
     const selector = incoming ? 'toFriendRequests' : 'fromFriendRequests'
+    const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = incoming
+      ? 'totalReceivedRequests'
+      : 'totalSentRequests'
+
+    let updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload = yield select(getTotalFriendRequests)
+    let totalFriends: number = yield select(getTotalFriends)
 
     switch (action) {
       case FriendshipAction.NONE: {
         // do nothing
         break
       }
-      case FriendshipAction.APPROVED:
+      case FriendshipAction.APPROVED: {
+        totalFriends -= 1
+      }
+      // The approved should not have a break since it should execute all the code as the rejected case
+      // Also the rejected needs to be directly after the Approved to make sure this works
       case FriendshipAction.REJECTED: {
         const requests = [...state[selector]]
 
@@ -708,6 +718,12 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           }
         }
 
+        updateTotalFriendRequestsPayload = {
+          ...updateTotalFriendRequestsPayload,
+          [updateTotalFriendRequestsPayloadSelector]:
+            updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
+        }
+
         break
       }
       case FriendshipAction.CANCELED: {
@@ -719,6 +735,12 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           requests.splice(index, 1)
 
           newState = { ...state, [selector]: requests }
+        }
+
+        updateTotalFriendRequestsPayload = {
+          ...updateTotalFriendRequestsPayload,
+          [updateTotalFriendRequestsPayloadSelector]:
+            updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
         break
@@ -733,6 +755,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           }
         }
 
+        updateTotalFriendRequestsPayload = {
+          ...updateTotalFriendRequestsPayload,
+          totalReceivedRequests: updateTotalFriendRequestsPayload.totalReceivedRequests + 1
+        }
+
         break
       }
       case FriendshipAction.REQUESTED_TO: {
@@ -743,6 +770,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             ...state,
             toFriendRequests: [...state.toFriendRequests, { createdAt: request.createdAt, userId }]
           }
+        }
+
+        updateTotalFriendRequestsPayload = {
+          ...updateTotalFriendRequestsPayload,
+          totalSentRequests: updateTotalFriendRequestsPayload.totalSentRequests + 1
         }
 
         break
@@ -757,9 +789,16 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           newState = { ...state, friends }
         }
 
+        totalFriends -= 1
+
         break
       }
     }
+
+    getUnityInstance().UpdateTotalFriendRequests(updateTotalFriendRequestsPayload)
+    getUnityInstance().UpdateTotalFriends({
+      totalFriends
+    })
 
     if (newState) {
       yield put(updatePrivateMessagingState(newState))

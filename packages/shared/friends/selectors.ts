@@ -1,4 +1,5 @@
 import { Conversation } from 'dcl-social-client'
+import { UpdateTotalFriendRequestsPayload } from 'shared/types'
 import { RootFriendsState } from './types'
 
 export const getSocialClient = (store: RootFriendsState) => store.friends.client
@@ -12,6 +13,13 @@ export const getAllConversationsWithMessages = (
 
   return conversations.filter((conv) => conv.conversation.hasMessages)
 }
+
+export const getTotalFriendRequests = (store: RootFriendsState): UpdateTotalFriendRequestsPayload => ({
+  totalReceivedRequests: store.friends.fromFriendRequests.length,
+  totalSentRequests: store.friends.toFriendRequests.length
+})
+
+export const getTotalFriends = (store: RootFriendsState): number => store.friends.friends.length
 
 export const getPrivateMessaging = (store: RootFriendsState) => store.friends
 export const getPrivateMessagingFriends = (store: RootFriendsState): string[] => store.friends?.friends || []
