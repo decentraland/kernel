@@ -213,7 +213,7 @@ function* initializeCatalystCandidates() {
   const nodes: CatalystNode[] = yield call(fetchCatalystRealms, catalystsNodesEndpointURL)
   const added: string[] = yield select(getAddedServers)
   
-  const denylistedCatalysts: string[] = (yield call(getDisabledCatalystConfig)) ?? []
+  const denylistedCatalysts: string[] = (yield select(getDisabledCatalystConfig)) ?? []
 
   const candidates: Candidate[] = yield call(fetchCatalystStatuses, added.map((url) => ({ domain: url })).concat(nodes), denylistedCatalysts)
 
