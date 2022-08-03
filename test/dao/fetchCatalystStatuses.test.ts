@@ -45,7 +45,7 @@ describe('Fetch catalyst server status', () => {
     const stub = sinon.stub(ping, 'ping')
 
     stub.callsFake(async (domain) => ({ ...pingResult(), domain }))
-    const results = await fetchCatalystStatuses(NODES)
+    const results = await fetchCatalystStatuses(NODES, [])
     expect(results).to.eql(NODES.map((n) => ({ ...EXPECTED, domain: n.domain })))
   })
 
@@ -59,7 +59,7 @@ describe('Fetch catalyst server status', () => {
         domain
       }
     })
-    const results = await fetchCatalystStatuses(NODES)
+    const results = await fetchCatalystStatuses(NODES, [])
     expect(results).to.eql(NODES.slice(1).map((n) => ({ ...EXPECTED, domain: n.domain })))
   })
 })
