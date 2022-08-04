@@ -105,7 +105,7 @@ export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl
   const wearableContent = wearable.data.representations.filter((representation) =>
     representation.contents.some((c) => c.key.endsWith('game.js'))
   )[0].contents
-  const sceneJson = wearableContent.find(($) => $.key === 'scene.json')
+  const sceneJson = wearableContent.find(($) => $.key.endsWith('scene.json'))
 
   // In the deployment the content was replicated when the bodyShape selected was 'both'
   //  this add the prefix 'female/' or 'male/' if they have more than one representations.
