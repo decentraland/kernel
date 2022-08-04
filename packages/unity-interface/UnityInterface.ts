@@ -37,6 +37,7 @@ import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { incrementCounter } from '../shared/occurences'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -595,18 +596,15 @@ export class UnityInterface implements IUnityInterface {
       return
     }
 
+    incrementCounter(method)
+
     const originalSetThrew = this.Module['setThrew']
     const unityModule = this.Module
 
     function overrideSetThrew() {
       unityModule['setThrew'] = function () {
-        trackEvent('renderer_set_threw', {
-          method,
-          object,
-          payload,
-          stack: new Error().stack || '?'
-        })
-        const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}. Payload: ${payload}.`
+        incrementCounter(`setThrew:${method}`)
+        const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}.`
         unityLogger.error(error)
         // eslint-disable-next-line prefer-rest-params
         return originalSetThrew.apply(this, arguments)
