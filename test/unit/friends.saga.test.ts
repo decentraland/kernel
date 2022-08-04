@@ -94,13 +94,13 @@ const stubClient = {
   getAllCurrentConversations: () => allCurrentConversations
 } as SocialAPI
 
-function mockStoreCalls() {
+function mockStoreCalls(opts?: { profiles: number[], i: number }) {
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
   sinon
     .stub(profilesSelectors, 'getProfilesFromStore')
     .callsFake((_, _userIds, userNameOrId) =>
-      profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore, userNameOrId)
+      profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore.slice(0, opts?.profiles[opts.i]), userNameOrId)
     )
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
 }
@@ -189,14 +189,20 @@ describe('Friends sagas', () => {
   })
 
   describe('get friend requests', () => {
+    let opts = {
+      profiles: [2, 0],
+      i: 0
+    }
+
     beforeEach(() => {
       const { store } = buildStore()
       globalThis.globalStore = store
 
-      mockStoreCalls()
+      mockStoreCalls(opts)
     })
 
     afterEach(() => {
+      opts.i = + 1
       sinon.restore()
       sinon.reset()
     })
