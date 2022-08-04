@@ -4,7 +4,7 @@ import * as sinon from 'sinon'
 import { sleep } from 'atomicHelpers/sleep'
 import { createFetch, FetchFunction } from 'scene-system/sdk/Fetch'
 
-const originalFetch: FetchFunction = async (resource: RequestInfo, init?: RequestInit) => {
+const originalFetch: FetchFunction = async (resource, init) => {
   return new Response()
 }
 
@@ -34,10 +34,10 @@ describe('Fetch Wrapped for scenes', () => {
   const wrappedDelayFetch = createFetch({
     canUseFetch: true,
     log,
-    originalFetch: async (_resource: RequestInfo, init?: RequestInit) => {
+    originalFetch: async (_resource, init) => {
       await sleep(timePerFetchSleep)
 
-      if (init.signal?.aborted) {
+      if (init!.signal?.aborted) {
         const a = new Error('Abort')
         a.name = 'AbortError'
         throw a
@@ -107,7 +107,7 @@ describe('Fetch Wrapped for scenes', () => {
   })
 
   it('should abort fetch if reaches the timeout opt 1', async () => {
-    let error: Error = null
+    let error: Error | null = null
 
     try {
       await wrappedDelayFetch('https://test.test/', { timeout: 10 })
@@ -115,11 +115,11 @@ describe('Fetch Wrapped for scenes', () => {
       console.log(err)
       error = err
     }
-    expect(error.name).to.eql('AbortError')
+    expect(error!.name).to.eql('AbortError')
   })
 
   it('should abort fetch if reaches the timeout opt 2', async () => {
-    let error: Error = null
+    let error: Error | null = null
     let counter = 0
     await Promise.all([
       wrappedDelayFetch('https://test.test/', { timeout: 5 }).catch((err) => {
@@ -128,7 +128,7 @@ describe('Fetch Wrapped for scenes', () => {
       }),
       wrappedDelayFetch('https://test.test/', {}).then(() => counter++)
     ])
-    expect(error.name).to.eql('AbortError')
+    expect(error!.name).to.eql('AbortError')
     expect(counter).to.eql(2)
   })
 })
