@@ -424,11 +424,17 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
     totalSentFriendRequests: toFriendRequests.length
   }
 
-  //TODO! send user profiles
-  // const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
-  // getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
-  // store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
 
+  // get friend requests profiles
+  const friendsIds = addFriendRequestsPayload.requestedTo.concat(addFriendRequestsPayload.requestedFrom)
+  const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
+  const profilesForRenderer = friendRequestsProfiles.map((friend) => profileToRendererFormat(friend.data, {}))
+
+  // send friend requests profiles
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
+
+  // send friend requests
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
