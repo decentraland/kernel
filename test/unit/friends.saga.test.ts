@@ -217,9 +217,17 @@ describe('Friends sagas', () => {
           totalSentFriendRequests: 1
         }
 
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: [
+            profileToRendererFormat(profilesFromStore[0].data, {}),
+            profileToRendererFormat(profilesFromStore[1].data, {})
+          ]
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
         friendsSagas.getFriendRequests(request)
-        sinon.verify()
+        sinon.mock(getUnityInstance()).verify()
       })
     })
 
@@ -239,9 +247,14 @@ describe('Friends sagas', () => {
           totalSentFriendRequests: 0
         }
 
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: profilesFromStore.slice(5).map((profile) => profileToRendererFormat(profile.data, {}))
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
         friendsSagas.getFriendRequests(request)
-        sinon.verify()
+        sinon.mock(getUnityInstance()).verify()
       })
     })
   })
