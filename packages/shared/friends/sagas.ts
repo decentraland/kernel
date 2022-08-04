@@ -102,8 +102,6 @@ export function* friendsSaga() {
   yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
 }
 
-//TODO! review live updates (accept/reject/new message)
-
 function* initializeFriendsSaga() {
   let secondsToRetry = MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS
 
