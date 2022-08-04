@@ -14,7 +14,7 @@ import { establishingComms } from 'shared/loading/types'
 import { commsLogger } from 'shared/comms/context'
 import { realmToConnectionString, resolveCommsConnectionString } from 'shared/comms/v3/resolver'
 
-async function fetchCatalystNodes(endpoint: string | undefined) {
+async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {
     try {
       const response = await fetch(endpoint)
@@ -42,7 +42,9 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
   return nodes
 }
 
-async function fetchCatalystStatus(domain: string): Promise<Candidate | undefined> {
+async function fetchCatalystStatus(domain: string, denylistedCatalysts: string[]): Promise<Candidate | undefined> {
+  if (denylistedCatalysts.includes(domain)) return undefined
+
   const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
 
   if (aboutResponse.httpStatus !== 404 && parcelsResponse.httpStatus !== 404) {
@@ -112,12 +114,15 @@ async function fetchCatalystStatus(domain: string): Promise<Candidate | undefine
   }
 }
 
-export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promise<Candidate[]> {
+export async function fetchCatalystStatuses(
+  nodes: { domain: string }[],
+  denylistedCatalysts: string[]
+): Promise<Candidate[]> {
   const results: Candidate[] = []
 
   await Promise.all(
     nodes.map(async (node) => {
-      const result = await fetchCatalystStatus(node.domain)
+      const result = await fetchCatalystStatus(node.domain, denylistedCatalysts)
       if (result) {
         results.push(result)
       }
@@ -142,7 +147,7 @@ export async function realmInitialized(): Promise<void> {
   })
 }
 
-export async function changeRealm(realmString: string, forceChange: boolean = false) {
+export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
   const candidates = getAllCatalystCandidates(store.getState())
 
   const realm = await resolveCommsConnectionString(realmString, candidates)
