@@ -33,7 +33,7 @@ import {
   AddFriendsWithDirectMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload,
   UpdateTotalFriendRequestsPayload,
-  FriendsInitializeChatPayload,
+  FriendsInitializeChatPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
