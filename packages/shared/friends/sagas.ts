@@ -77,6 +77,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
+import { getUserIdFromMatrixId } from './utils'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -424,7 +425,6 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
     totalSentFriendRequests: toFriendRequests.length
   }
 
-
   // get friend requests profiles
   const friendsIds = addFriendRequestsPayload.requestedTo.concat(addFriendRequestsPayload.requestedFrom)
   const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
@@ -690,11 +690,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
       case FriendshipAction.APPROVED: {
-<<<<<<< HEAD
         totalFriends += 1
-=======
         totalFriends -= 1
->>>>>>> b5a5cf0 (fixes due to integration with unity)
       }
       // The approved should not have a break since it should execute all the code as the rejected case
       // Also the rejected needs to be directly after the Approved to make sure this works
@@ -944,16 +941,4 @@ function logAndTrackError(message: string, e: any) {
     message: message,
     stack: '' + e
   })
-}
-
-/**
- * Get the local part of the userId from matrixUserId
- * @param userId a string with the matrixUserId pattern
- *
- * @example
- * from: '@0x1111ada11111:decentraland.org'
- * to: '0x1111ada11111'
- * */
-function getUserIdFromMatrixId(userId: string) {
-  return userId.split(':')[0].substring(1)
 }
