@@ -25,7 +25,6 @@ import {
   FriendshipAction,
   PresenceStatus,
   FriendsInitializationMessage,
-  UnseenPrivateMessage,
   GetFriendsPayload,
   AddFriendsPayload,
   GetFriendRequestsPayload,
@@ -35,7 +34,6 @@ import {
   UpdateTotalUnseenMessagesByUserPayload,
   UpdateTotalFriendRequestsPayload,
   FriendsInitializeChatPayload,
-  UpdateTotalFriendsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
