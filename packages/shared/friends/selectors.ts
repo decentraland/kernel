@@ -23,7 +23,6 @@ export const getAllConversationsWithMessages = (
     }))
 }
 
-
 export const getTotalFriendRequests = (store: RootFriendsState): UpdateTotalFriendRequestsPayload => ({
   totalReceivedRequests: store.friends.fromFriendRequests.length,
   totalSentRequests: store.friends.toFriendRequests.length
