@@ -80,7 +80,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrixId } from './utils'
+import { getUserIdFromMatrix } from './utils'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -330,13 +330,13 @@ function* refreshFriends() {
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrixId(request.from)
+        userId: getUserIdFromMatrix(request.from)
       })
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrixId(request.to)
+        userId: getUserIdFromMatrix(request.to)
       })
     )
 
@@ -1012,16 +1012,4 @@ function logAndTrackError(message: string, e: any) {
     message: message,
     stack: '' + e
   })
-}
-
-/**
- * Get the local part of the userId from matrixUserId
- * @param userId a string with the matrixUserId pattern
- *
- * @example
- * from: '@0x1111ada11111:decentraland.org'
- * to: '0x1111ada11111'
- * */
-function getUserIdFromMatrixId(userId: string) {
-  return userId.split(':')[0].substring(1)
 }
