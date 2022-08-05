@@ -19,17 +19,28 @@ export function urlWithProtocol(urlOrHostname: string) {
 export function resolveCommsV3Urls(realm: Realm): { pingUrl: string; wsUrl: string } | undefined {
   if (realm.protocol !== 'v3') return
 
-  let server: string
+  let pingUrl: string
+  let wsUrl: string
   if (realm.serverName === 'local') {
-    server = 'http://127.0.0.1:3000'
+    const server = 'http://127.0.0.1:3000'
+    pingUrl = `${server}/status` // use status because we don't care for lambdas/content health
+    wsUrl = httpToWs(`${server}/rpc`)
   } else if (realm.hostname === 'remote') {
-    server = 'https://explorer-bff.decentraland.io'
+    const server = 'https://explorer-bff.decentraland.io'
+    pingUrl = `${server}/status` // use status because we don't care for lambdas/content health
+    wsUrl = httpToWs(`${server}/rpc`)
   } else {
-    server = (realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname) + '/bff'
+    const server = realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname
+    const url = new URL(server)
+    if (url.host === 'localhost') {
+      // if the catalyst is in localhost, let's also ignore the content status
+      pingUrl = `${server}/bff/status`
+      wsUrl = httpToWs(`${server}/bff/rpc`)
+    } else {
+      pingUrl = `${server}/about`
+      wsUrl = httpToWs(`${server}/bff/rpc`)
+    }
   }
-
-  const pingUrl = `${server}/status`
-  const wsUrl = httpToWs(`${server}/rpc`)
 
   return { pingUrl, wsUrl }
 }
@@ -55,7 +66,12 @@ export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: stri
 }
 
 export function realmToConnectionString(realm: Realm) {
-  if (realm.protocol === 'v2' && realm.serverName !== realm.hostname && realm.serverName.match(/^[a-z]+$/i)) {
+  if (
+    realm.protocol === 'v2' &&
+    realm.serverName &&
+    realm.serverName !== realm.hostname &&
+    realm.serverName.match(/^[a-z]+$/i)
+  ) {
     return realm.serverName
   }
 

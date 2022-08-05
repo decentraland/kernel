@@ -47,30 +47,30 @@ async function fetchCatalystStatus(domain: string, denylistedCatalysts: string[]
 
   const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
 
-  if (aboutResponse.httpStatus !== 404 && parcelsResponse.httpStatus !== 404) {
+  if (aboutResponse.httpStatus !== 404) {
     const result = aboutResponse.result
     if (
       aboutResponse.status === ServerConnectionStatus.OK &&
-      parcelsResponse.status === ServerConnectionStatus.OK &&
       result &&
       result.comms &&
       result.configurations &&
-      result.bff &&
-      parcelsResponse.result &&
-      parcelsResponse.result.parcels
+      result.bff
     ) {
       const { comms, configurations, bff } = result
 
       // TODO(hugo): this is kind of hacky, the original representation is much better,
       // but I don't want to change the whole pick-realm algorithm now
       const usersParcels: Parcel[] = []
-      for (const {
-        peersCount,
-        parcel: { x, y }
-      } of parcelsResponse.result.parcels) {
-        const parcel: Parcel = [x, y]
-        for (let i = 0; i < peersCount; i++) {
-          usersParcels.push(parcel)
+
+      if (parcelsResponse.result && parcelsResponse.result.parcels) {
+        for (const {
+          peersCount,
+          parcel: { x, y }
+        } of parcelsResponse.result.parcels) {
+          const parcel: Parcel = [x, y]
+          for (let i = 0; i < peersCount; i++) {
+            usersParcels.push(parcel)
+          }
         }
       }
 
