@@ -351,7 +351,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public InitializeChat(initializationMessage: FriendsInitializeChatPayload): void {
-    this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
+    this.SendMessageToUnity('Main', 'InitializeChat', JSON.stringify(initializationMessage))
   }
 
   public AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void {

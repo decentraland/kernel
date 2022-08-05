@@ -485,6 +485,7 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
+  // TODO: check why this always returns empty!! 
   const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
   if (!socialData?.conversationId) return
 
@@ -498,9 +499,12 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
     userId: userId,
     total: 0
   }
+  console.log('updateUnseenMessages', updateUnseenMessages)
+
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
     total: totalUnreadMessages
   }
+  console.log('updateTotalUnseenMessages', updateTotalUnseenMessages)
 
   getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
   getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
@@ -510,6 +514,7 @@ export async function getPrivateMessages(userId: string, limit: number, fromMess
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
+  // TODO: check why this always returns empty!! 
   const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
   if (!socialData?.conversationId) return
 
@@ -606,12 +611,14 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     totalFriendsWithDirectMessages: friendsConversations.length
   }
 
-  getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
-
   const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
-  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
 
+  console.log('profilesForRenderer', profilesForRenderer)
+
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
+
+  getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
 }
 
 function* initializeReceivedMessagesCleanUp() {
