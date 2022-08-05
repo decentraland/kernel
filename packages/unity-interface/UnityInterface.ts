@@ -22,6 +22,9 @@ import {
   HeaderRequest,
   AddFriendsPayload,
   AddFriendRequestsPayload,
+  UpdateTotalUnseenMessagesPayload,
+  UpdateUserUnseenMessagesPayload,
+  AddChatMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload,
   AddFriendsWithDirectMessagesPayload
 } from 'shared/types'
@@ -335,6 +338,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
+  public AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddChatMessages', JSON.stringify(addChatMessagesPayload))
+  }
+
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
   }
@@ -350,6 +357,7 @@ export class UnityInterface implements IUnityInterface {
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
+
   public UpdateTotalUnseenMessagesByUser(
     updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload
   ): void {
@@ -362,6 +370,14 @@ export class UnityInterface implements IUnityInterface {
 
   public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
+  }
+
+  public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalUnseenMessages', JSON.stringify(updateTotalUnseenMessagesPayload))
+  }
+
+  public UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateUserUnseenMessages', JSON.stringify(updateUserUnseenMessagesPayload))
   }
 
   public UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage) {

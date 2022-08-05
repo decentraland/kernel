@@ -24,6 +24,9 @@ import {
   WorldPosition,
   AddFriendsPayload,
   AddFriendRequestsPayload,
+  UpdateTotalUnseenMessagesPayload,
+  UpdateUserUnseenMessagesPayload,
+  AddChatMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload,
   AddFriendsWithDirectMessagesPayload
 } from '../shared/types'
@@ -129,6 +132,7 @@ export interface IUnityInterface {
   SetTutorialEnabledForUsersThatAlreadyDidTheTutorial(tutorialConfig: TutorialInitializationMessage): void
   TriggerAirdropDisplay(data: AirdropInfo): void
   AddMessageToChatWindow(message: ChatMessage): void
+  AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void
 
   // *********************************************************************************
   // ************** Chat messages **************
@@ -140,6 +144,8 @@ export interface IUnityInterface {
   FriendNotFound(queryString: string): void
   AddFriends(addFriendsPayload: AddFriendsPayload): void
   AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
+  UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
+  UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void
   UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload): void
   AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
 
