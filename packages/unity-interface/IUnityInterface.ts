@@ -28,7 +28,10 @@ import {
   UpdateUserUnseenMessagesPayload,
   AddChatMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload,
-  AddFriendsWithDirectMessagesPayload
+  AddFriendsWithDirectMessagesPayload,
+  UpdateTotalFriendRequestsPayload,
+  FriendsInitializeChatPayload,
+  UpdateTotalFriendsPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -139,6 +142,7 @@ export interface IUnityInterface {
   // *********************************************************************************
 
   InitializeFriends(initializationMessage: FriendsInitializationMessage): void
+  InitializeChat(initializationMessage: FriendsInitializeChatPayload): void
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
@@ -148,6 +152,8 @@ export interface IUnityInterface {
   UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void
   UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload): void
   AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
+  UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
+  UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
