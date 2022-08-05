@@ -1,7 +1,7 @@
 import { Conversation } from 'dcl-social-client'
 import { UpdateTotalFriendRequestsPayload } from 'shared/types'
 import { RootFriendsState } from './types'
-import { getUserIdFromMatrixId } from './utils'
+import { getUserIdFromMatrix } from './utils'
 
 export const getSocialClient = (store: RootFriendsState) => store.friends.client
 export const getAllConversationsWithMessages = (
@@ -18,7 +18,7 @@ export const getAllConversationsWithMessages = (
       ...conv,
       conversation: {
         ...conv.conversation,
-        userIds: conv.conversation.userIds?.map((userId) => getUserIdFromMatrixId(userId))
+        userIds: conv.conversation.userIds?.map((userId) => getUserIdFromMatrix(userId))
       }
     }))
 }
