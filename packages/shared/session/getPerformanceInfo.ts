@@ -1,3 +1,4 @@
+import { getAndClearOccurenceCounters } from 'shared/occurences'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
 let kernelToRendererMessageCounter = 0
@@ -79,7 +80,6 @@ export function getPerformanceInfo(data: {
   // summarizes all frames
   totalGCAlloc: number
 }) {
-  console.dir(data)
   const entries: number[] = []
   const length = data.samples.length
   let sumTotalSamples = 0
@@ -181,7 +181,10 @@ export function getPerformanceInfo(data: {
     totalGCAlloc: data.totalGCAlloc,
 
     // replace sceneScores by the values only
-    sceneScores: (data.sceneScores && Object.values(data.sceneScores)) || null
+    sceneScores: (data.sceneScores && Object.values(data.sceneScores)) || null,
+
+    // misc metric counters
+    metrics: getAndClearOccurenceCounters()
   }
 
   sentCommsMessagesCounter = 0

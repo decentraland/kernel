@@ -15,6 +15,7 @@ export type AudioCommunicatorChannel = {
 
 export type StreamPlayingListener = (streamId: string, playing: boolean) => any
 export type StreamRecordingListener = (recording: boolean) => any
+export type StreamRecordingErrorListener = (message: string) => any
 
 type VoiceOutput = {
   encodedFramesQueue: SortedLimitedQueue<EncodedFrame>
@@ -74,12 +75,15 @@ export class VoiceCommunicator {
 
   private streamPlayingListeners: StreamPlayingListener[] = []
   private streamRecordingListeners: StreamRecordingListener[] = []
+  private streamRecordingErrorListeners: StreamRecordingErrorListener[] = []
 
   private readonly sampleRate: number
   private readonly outputBufferLength: number
   private readonly outputExpireTime = 60 * 1000
 
   private inputFramesIndex = 0
+
+  private checkStateTimeout: any | undefined = undefined
 
   private get context(): AudioContext {
     return this.contextWithInitPromise[0]
@@ -117,6 +121,10 @@ export class VoiceCommunicator {
 
   public addStreamRecordingListener(listener: StreamRecordingListener) {
     this.streamRecordingListeners.push(listener)
+  }
+
+  public addStreamRecordingErrorListener(listener: StreamRecordingErrorListener) {
+    this.streamRecordingErrorListeners.push(listener)
   }
 
   public hasInput() {
@@ -236,10 +244,20 @@ export class VoiceCommunicator {
     }
   }
 
+  checkStatusTimeout() {
+    if (this.checkStateTimeout === undefined) {
+      this.checkStateTimeout = setTimeout(() => {
+        this.sendToInputWorklet(InputWorkletRequestTopic.CHECK_STATUS)
+        this.checkStateTimeout = undefined
+      }, 1200)
+    }
+  }
+
   start() {
     if (this.input) {
       this.input.workletNode.connect(this.input.recordingContext[0].destination)
       this.sendToInputWorklet(InputWorkletRequestTopic.RESUME)
+      this.checkStatusTimeout()
     } else {
       this.notifyRecording(false)
     }
@@ -248,6 +266,7 @@ export class VoiceCommunicator {
   pause() {
     if (this.input) {
       this.sendToInputWorklet(InputWorkletRequestTopic.PAUSE)
+      this.checkStatusTimeout()
     } else {
       this.notifyRecording(false)
     }
@@ -413,6 +432,7 @@ export class VoiceCommunicator {
       numberOfInputs: 1,
       numberOfOutputs: 1
     })
+
     streamSource.connect(workletNode)
     return {
       recordingContext: context,
@@ -447,6 +467,14 @@ export class VoiceCommunicator {
       if (e.data.topic === InputWorkletRequestTopic.ON_RECORDING) {
         this.notifyRecording(true)
       }
+
+      if (e.data.topic === InputWorkletRequestTopic.TIMEOUT) {
+        this.notifyRecordingError('Something went wrong with the microphone. No message was recorded.')
+      }
+    }
+
+    workletNode.onprocessorerror = (e) => {
+      this.notifyRecording(false)
     }
 
     return encodeStream
@@ -459,6 +487,10 @@ export class VoiceCommunicator {
 
   private notifyRecording(recording: boolean) {
     this.streamRecordingListeners.forEach((listener) => listener(recording))
+  }
+
+  private notifyRecordingError(message: string) {
+    this.streamRecordingErrorListeners.forEach((listener) => listener(message))
   }
 
   private startOutputsExpiration() {

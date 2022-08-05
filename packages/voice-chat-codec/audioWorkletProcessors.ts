@@ -31,6 +31,7 @@ enum InputProcessorStatus {
 class InputProcessor extends AudioWorkletProcessor {
   status: InputProcessorStatus = InputProcessorStatus.PAUSED
   inputSamplesCount: number = 0
+  lastProcess: number = 0
 
   constructor(...args: any[]) {
     super(...args)
@@ -44,10 +45,25 @@ class InputProcessor extends AudioWorkletProcessor {
         this.status = InputProcessorStatus.RECORDING
         this.notify(InputWorkletRequestTopic.ON_RECORDING)
       }
+
+      if (e.data.topic === InputWorkletRequestTopic.CHECK_STATUS) {
+        if (this.status === InputProcessorStatus.RECORDING || this.status === InputProcessorStatus.PAUSE_REQUESTED) {
+          if (this.isTimeout()) {
+            this.status = InputProcessorStatus.PAUSED
+            this.notify(InputWorkletRequestTopic.TIMEOUT)
+            this.notify(InputWorkletRequestTopic.ON_PAUSED)
+          }
+        }
+      }
     }
   }
 
+  isTimeout(): boolean {
+    return Date.now() - this.lastProcess > 1000
+  }
+
   process(inputs: Float32Array[][], _outputs: Float32Array[][], _parameters: Record<string, Float32Array>) {
+    this.lastProcess = Date.now()
     if (this.status === InputProcessorStatus.PAUSED) return true
     let inputData = inputs?.[0]?.[0] ?? new Float32Array()
 

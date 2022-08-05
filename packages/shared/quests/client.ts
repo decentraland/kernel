@@ -11,7 +11,7 @@ export async function questsClient() {
   const servers = getServerConfigurations(net)
   return new QuestsClient({
     baseUrl: servers.questsUrl,
-    authChainProvider: (payload) => Authenticator.signPayload(identity!, payload)
+    authChainProvider: (payload) => Authenticator.signPayload(identity!, payload) as any
   })
 }
 

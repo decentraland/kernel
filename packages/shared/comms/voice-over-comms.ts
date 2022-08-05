@@ -13,6 +13,9 @@ import { put } from 'redux-saga/effects'
 import { setupPeer } from './peers'
 import { shouldPlayVoice } from './voice-selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { NotificationType } from 'shared/types'
+import { trackEvent } from 'shared/analytics'
 
 const logger = createLogger('VoiceCommunicator: ')
 
@@ -72,6 +75,20 @@ export function* initVoiceCommunicator() {
 
   voiceCommunicator.addStreamRecordingListener((recording) => {
     store.dispatch(voiceRecordingUpdate(recording))
+  })
+
+  voiceCommunicator.addStreamRecordingErrorListener((message) => {
+    getUnityInstance().ShowNotification({
+      type: NotificationType.GENERIC,
+      message,
+      buttonMessage: 'OK',
+      timer: 5
+    })
+    trackEvent('error', {
+      context: 'voice-chat',
+      message: 'stream recording error: ' + message,
+      stack: 'addStreamRecordingErrorListener'
+    })
   })
 
   positionObservable.add((obj: Readonly<PositionReport>) => {

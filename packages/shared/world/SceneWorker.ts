@@ -130,11 +130,7 @@ export class SceneWorker {
       sendProtoSceneEvent: (e) => {
         this.rpcContext.events.push(e)
       },
-      sendBatch: this.sendBatch.bind(this),
-      crdtMessages: [],
-      sendCrdtMessage: (payload) => {
-        this.rpcContext.crdtMessages.push(payload)
-      }
+      sendBatch: this.sendBatch.bind(this)
     }
 
     // if the scene metadata has a base parcel, then we set it as the position
@@ -167,10 +163,6 @@ export class SceneWorker {
     // and enable external customizations to this.rpcContext as it could be the
     // permissions of the scene or the FPS limit
     queueMicrotask(() => this.attachTransport())
-  }
-
-  sendCrdtMessage(payload: Uint8Array) {
-    this.rpcContext.sendCrdtMessage(payload)
   }
 
   dispose() {
@@ -367,9 +359,12 @@ export class SceneWorker {
       this.sceneStarted = true
       this.rpcContext.sendSceneEvent('sceneStart', {})
 
+      const baseParcel = this.metadata.scene.base
+
       trackEvent('scene_start_event', {
         scene_id: this.loadableScene.id,
-        time_since_creation: performance.now() - this.startLoadingTime
+        time_since_creation: performance.now() - this.startLoadingTime,
+        base: baseParcel
       })
 
       workerStatusObservable.notifyObservers(signalSceneStart(this.loadableScene))

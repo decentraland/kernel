@@ -1,5 +1,4 @@
 import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
-import type { Vector2Component } from 'atomicHelpers/landHelpers'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 import { QS_MAX_VISIBLE_PEERS } from 'config'
@@ -33,8 +32,6 @@ export const getMinCatalystVersion = (store: RootMetaState): string | undefined 
 export const isMetaConfigurationInitiazed = (store: RootMetaState): boolean => store.meta.initialized
 
 export const getWorldConfig = (store: RootMetaState): WorldConfig => store.meta.config.world as WorldConfig
-
-export const getPois = (store: RootMetaState): Vector2Component[] => getWorldConfig(store)?.pois || []
 
 export const getCommsConfig = (store: RootMetaState): CommsConfig => store.meta.config.comms ?? {}
 

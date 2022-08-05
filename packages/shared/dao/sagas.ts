@@ -44,8 +44,8 @@ import { CatalystNode } from 'shared/types'
 import {
   candidateToRealm,
   resolveCommsConnectionString,
-  resolveCommsV3Urls,
-  resolveCommsV4Urls
+  resolveCommsV4Urls,
+  resolveCommsV3Urls
 } from 'shared/comms/v3/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
@@ -70,6 +70,8 @@ export function* daoSaga(): any {
 
 function* pickCatalystRealm() {
   const candidates: Candidate[] = yield select(getAllCatalystCandidates)
+  if (candidates.length === 0) return undefined
+
   let config: AlgorithmChainConfig | undefined = yield select(getPickRealmsAlgorithmConfig)
 
   if (!config || config.length === 0) {
@@ -165,10 +167,10 @@ function* selectRealm() {
     (PREVIEW ? PREVIEW_REALM : null) ||
     // CATALYST from url parameter
     (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
-    // cached in local storage
-    (yield call(getRealmFromLocalStorage, network)) ||
     // fetch catalysts and select one using the load balancing
-    (yield call(pickCatalystRealm))
+    (yield call(pickCatalystRealm)) ||
+    // cached in local storage
+    (yield call(getRealmFromLocalStorage, network))
 
   if (!realm) debugger
 
@@ -217,7 +219,7 @@ function* initializeCatalystCandidates() {
 }
 
 export async function checkValidRealm(realm: Realm) {
-  if (realm.protocol === 'v1') {
+  if (realm.protocol === 'v1' || realm.protocol === 'offline') {
     return true
   } else if (realm.protocol === 'v2') {
     const realmHasValues = realm && realm.hostname

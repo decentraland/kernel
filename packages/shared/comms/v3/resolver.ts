@@ -19,6 +19,25 @@ export function urlWithProtocol(urlOrHostname: string) {
 export function resolveCommsV3Urls(realm: Realm): { pingUrl: string; wsUrl: string } | undefined {
   if (realm.protocol !== 'v3') return
 
+  let server: string
+  if (realm.serverName === 'local') {
+    server = 'http://127.0.0.1:3000'
+  } else if (realm.hostname === 'remote') {
+    server = 'https://explorer-bff.decentraland.io'
+  } else {
+    server = (realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname) + '/bff'
+  }
+
+  const pingUrl = `${server}/status`
+  const wsUrl = httpToWs(`${server}/rpc`)
+
+  return { pingUrl, wsUrl }
+}
+
+// TODO: Can merge with resolveCommsV3Urls?
+export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: string } | undefined {
+  if (realm.protocol !== 'v4') return
+
   let server = 'https://explorer-bff.decentraland.io'
 
   if (realm.hostname === 'local') {
@@ -31,24 +50,6 @@ export function resolveCommsV3Urls(realm: Realm): { pingUrl: string; wsUrl: stri
 
   const pingUrl = new URL('./status', server).toString()
   const wsUrl = httpToWs(new URL('./ws', server).toString())
-
-  return { pingUrl, wsUrl }
-}
-
-export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: string } | undefined {
-  if (realm.protocol !== 'v4') return
-
-  let server: string
-  if (realm.serverName === 'local') {
-    server = 'http://127.0.0.1:3000'
-  } else if (realm.hostname === 'remote') {
-    server = 'https://explorer-bff.decentraland.io'
-  } else {
-    server = (realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname) + '/bff'
-  }
-
-  const pingUrl = `${server}/status`
-  const wsUrl = httpToWs(`${server}/rpc`)
 
   return { pingUrl, wsUrl }
 }
