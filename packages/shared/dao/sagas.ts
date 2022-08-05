@@ -218,7 +218,7 @@ function* initializeCatalystCandidates() {
 }
 
 export async function checkValidRealm(realm: Realm) {
-  if (realm.protocol === 'v1') {
+  if (realm.protocol === 'v1' || realm.protocol === 'offline') {
     return true
   } else if (realm.protocol === 'v2') {
     const realmHasValues = realm && realm.hostname

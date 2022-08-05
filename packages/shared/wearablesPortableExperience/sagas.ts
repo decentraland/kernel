@@ -91,46 +91,50 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
 }
 
 export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl: string): Promise<LoadableScene> {
+  const defaultSceneJson = {
+    main: 'bin/game.js',
+    scene: {
+      parcels: ['0,0'],
+      base: '0,0'
+    },
+    requiredPermissions: []
+  }
   const baseUrl = wearable.baseUrl ?? defaultBaseUrl
 
   // Get the wearable content containing the game.js
   const wearableContent = wearable.data.representations.filter((representation) =>
     representation.contents.some((c) => c.key.endsWith('game.js'))
   )[0].contents
-  const sceneJson = wearableContent.find(($) => $.key === 'scene.json')
+  const sceneJson = wearableContent.find(($) => $.key.endsWith('scene.json'))
 
-  if (sceneJson) {
-    // In the deployment the content was replicated when the bodyShape selected was 'both'
-    //  this add the prefix 'female/' or 'male/' if they have more than one representations.
-    // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
+  // In the deployment the content was replicated when the bodyShape selected was 'both'
+  //  this add the prefix 'female/' or 'male/' if they have more than one representations.
+  // So, the scene (for now) is the same for both. We crop this prefix and keep the scene tree folder
 
-    const femaleCrop =
-      wearableContent.filter(($) => $.key.substring(0, 7) === 'female/').length === wearableContent.length
-    const maleCrop = wearableContent.filter(($) => $.key.substring(0, 5) === 'male/').length === wearableContent.length
+  const femaleCrop =
+    wearableContent.filter(($) => $.key.substring(0, 7) === 'female/').length === wearableContent.length
+  const maleCrop = wearableContent.filter(($) => $.key.substring(0, 5) === 'male/').length === wearableContent.length
 
-    const getFile = (key: string): string => {
-      if (femaleCrop) return key.substring(7)
-      if (maleCrop) return key.substring(5)
-      return key
-    }
+  const getFile = (key: string): string => {
+    if (femaleCrop) return key.substring(7)
+    if (maleCrop) return key.substring(5)
+    return key
+  }
 
-    const content = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
-    const metadata: Scene = await jsonFetch(baseUrl + sceneJson.hash)
+  const content = wearableContent.map(($) => ({ file: getFile($.key), hash: $.hash }))
+  const metadata: Scene = sceneJson ? await jsonFetch(baseUrl + sceneJson.hash) : defaultSceneJson
 
-    return {
-      id: wearable.id,
-      baseUrl,
-      parentCid: 'avatar',
-      entity: {
-        content,
-        metadata,
-        pointers: [wearable.id],
-        timestamp: 0,
-        type: EntityType.SCENE,
-        version: 'v3'
-      }
+  return {
+    id: wearable.id,
+    baseUrl,
+    parentCid: 'avatar',
+    entity: {
+      content,
+      metadata,
+      pointers: [wearable.id],
+      timestamp: 0,
+      type: EntityType.SCENE,
+      version: 'v3'
     }
   }
-  console.dir(wearable)
-  throw new Error('The wearable has no scene.json')
 }

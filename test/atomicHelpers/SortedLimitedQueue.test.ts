@@ -41,7 +41,7 @@ describe('SortedLimitedQueue', () => {
   })
 
   it('can queue more than the length limit and the first elements get removed', () => {
-    const queued = []
+    const queued: number[] = []
     const length = 20
 
     for (let i = 0; i < length; i++) {
