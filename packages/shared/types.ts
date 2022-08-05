@@ -517,6 +517,10 @@ export type ChatMessage = {
   body: string
 }
 
+export type AddChatMessagesPayload = {
+  messages: ChatMessage[]
+}
+
 export interface UnseenPrivateMessage {
   count: number
 }
@@ -592,6 +596,15 @@ export interface AddFriendRequestsPayload {
   requestedFrom: string[] // user ids which you received a request
   totalReceivedFriendRequests: number // total amount of friend requests received
   totalSentFriendRequests: number // total amount of friend requests sent
+}
+
+export interface UpdateTotalUnseenMessagesPayload {
+  total: number
+}
+
+export interface UpdateUserUnseenMessagesPayload {
+  userId: string
+  total: number
 }
 
 export interface UpdateTotalUnseenMessagesByUserPayload {

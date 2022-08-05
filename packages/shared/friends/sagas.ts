@@ -30,6 +30,9 @@ import {
   AddFriendsPayload,
   GetFriendRequestsPayload,
   AddFriendRequestsPayload,
+  UpdateUserUnseenMessagesPayload,
+  UpdateTotalUnseenMessagesPayload,
+  AddChatMessagesPayload,
   GetFriendsWithDirectMessagesPayload,
   AddFriendsWithDirectMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload
@@ -439,6 +442,64 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
 
   // send friend requests
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
+}
+
+export async function markAsSeenPrivateChatMessages(userId: string) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
+  if (!socialData?.conversationId) return
+
+  // mark as seen all the messages in the conversation
+  await client.markMessagesAsSeen(socialData.conversationId)
+
+  // get total user unread messages
+  const totalUnreadMessages = client.getTotalUnseenMessages()
+
+  const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
+    userId: userId,
+    total: 0
+  }
+  const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+    total: totalUnreadMessages
+  }
+
+  getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
+  getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+}
+
+export async function getPrivateMessages(userId: string, limit: number, fromMessageId: string) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
+  if (!socialData?.conversationId) return
+
+  const ownId = client.getUserId()
+
+  // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
+  const messageId: string | undefined = fromMessageId === null ? undefined : fromMessageId
+  const cursorLastMessage = await client.getCursorOnMessage(socialData.conversationId, messageId, {
+    initialSize: limit,
+    limit
+  })
+
+  const messages = cursorLastMessage.getMessages()
+
+  // parse messages
+  const addChatMessagesPayload: AddChatMessagesPayload = {
+    messages: messages.map((message) => ({
+      messageId: message.id,
+      messageType: ChatMessageType.PRIVATE,
+      timestamp: message.timestamp,
+      body: message.text,
+      sender: message.sender === ownId ? ownId : userId,
+      recipient: message.sender === ownId ? userId : ownId
+    }))
+  }
+
+  getUnityInstance().AddChatMessages(addChatMessagesPayload)
 }
 
 export function getUnseenMessagesByUser() {
