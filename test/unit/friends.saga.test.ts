@@ -35,7 +35,7 @@ function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
       hasClaimedName: false,
       name,
       tutorialStep: 1,
-      userId: userId,
+      userId,
       version: 1
     },
     status: 'ok'
