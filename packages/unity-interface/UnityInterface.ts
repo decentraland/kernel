@@ -365,6 +365,7 @@ export class UnityInterface implements IUnityInterface {
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
+
   public UpdateTotalUnseenMessagesByUser(
     updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload
   ): void {
