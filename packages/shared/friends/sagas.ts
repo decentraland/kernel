@@ -469,7 +469,7 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
 }
 
-export async function getPrivateMessages(userId: string, limit: number, fromMessageId: string) {
+export async function getPrivateMessages(userId: string, limit: number, fromMessageId: string | null) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
