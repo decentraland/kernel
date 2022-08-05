@@ -74,7 +74,9 @@ import {
   getFriendRequests,
   getFriends,
   getFriendsWithDirectMessages,
-  getUnseenMessagesByUser
+  getUnseenMessagesByUser,
+  getPrivateMessages,
+  markAsSeenPrivateChatMessages
 } from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
@@ -412,6 +414,28 @@ export class BrowserInterface {
 
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
     getFriendRequests(getFriendRequestsPayload)
+  }
+
+  public async MarkMessagesAsSeen(userId: string) {
+    markAsSeenPrivateChatMessages(userId).catch((err) => {
+      defaultLogger.error('error markAsSeenPrivateChatMessages', err),
+        trackEvent('error', {
+          message: `error marking private messages as seen ${userId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'markAsSeenPrivateChatMessages'
+        })
+    })
+  }
+
+  public async GetPrivateMessages(userId: string, limit: number, fromMessageId: string) {
+    getPrivateMessages(userId, limit, fromMessageId).catch((err) => {
+      defaultLogger.error('error getPrivateMessages', err),
+        trackEvent('error', {
+          message: `error getting private messages ${userId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getPrivateMessages'
+        })
+    })
   }
 
   public CloseUserAvatar(isSignUpFlow = false) {
