@@ -26,7 +26,10 @@ import {
   UpdateUserUnseenMessagesPayload,
   AddChatMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload,
-  AddFriendsWithDirectMessagesPayload
+  AddFriendsWithDirectMessagesPayload,
+  FriendsInitializeChatPayload,
+  UpdateTotalFriendRequestsPayload,
+  UpdateTotalFriendsPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -351,6 +354,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
   }
 
+  public InitializeChat(initializationMessage: FriendsInitializeChatPayload): void {
+    this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
+  }
+
   public AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void {
     this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(payload))
   }
@@ -371,6 +378,14 @@ export class UnityInterface implements IUnityInterface {
       'UpdateTotalUnseenMessagesByUser',
       JSON.stringify(updateTotalUnseenMessagesByUserPayload)
     )
+  }
+
+  public UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalFriendRequests', JSON.stringify(updateTotalFriendRequestsPayload))
+  }
+
+  public UpdateTotalFriends(updateTotalFriendPayload: UpdateTotalFriendsPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalFriends', JSON.stringify(updateTotalFriendPayload))
   }
 
   public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {

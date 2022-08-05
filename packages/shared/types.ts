@@ -525,19 +525,12 @@ export interface UnseenPrivateMessage {
   count: number
 }
 
+export interface FriendsInitializeChatPayload {
+  totalUnseenMessages: number
+}
+
 export type FriendsInitializationMessage = {
-  // the unseen received friend requests
-  requests: {
-    total: number
-    lastSeenTimestamp: number
-  }
-
-  friends: {
-    total: number
-  }
-
-  // the unseen private messages for each user
-  unseenPrivateMessages: Record<string, UnseenPrivateMessage>
+  totalReceivedRequests: number
 }
 
 export interface GetFriendsPayload {
@@ -609,6 +602,15 @@ export interface UpdateUserUnseenMessagesPayload {
 
 export interface UpdateTotalUnseenMessagesByUserPayload {
   unseenPrivateMessages: Array<{ userId: string; count: number }> // the unseen private messages for each user
+}
+
+export interface UpdateTotalFriendRequestsPayload {
+  totalReceivedRequests: number
+  totalSentRequests: number
+}
+
+export interface UpdateTotalFriendsPayload {
+  totalFriends: number
 }
 
 export interface GetFriendsWithDirectMessagesPayload {
