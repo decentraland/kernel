@@ -245,7 +245,7 @@ export namespace ethereumConfigurations {
     CatalystProxy: assertValue(contractInfo.mainnet.CatalystProxy),
     MANAToken: assertValue(contractInfo.mainnet.MANAToken)
   }
-  export const ropsten = {
+  export const goerli = {
     wss: 'wss://goerli.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa',
     http: 'https://goerli.infura.io/v3/f54f2e10b59647778de06d884121f8fa/',
     etherscan: 'https://goerli.etherscan.io',
