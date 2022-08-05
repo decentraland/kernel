@@ -234,8 +234,8 @@ function assertValue<T>(val: T | undefined | null): T {
 
 export namespace ethereumConfigurations {
   export const mainnet = {
-    wss: 'wss://mainnet.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa',
-    http: 'https://mainnet.infura.io/v3/f54f2e10b59647778de06d884121f8fa/',
+    wss: 'wss://rpc.decentraland.org/mainnet',
+    http: 'https://rpc.decentraland.org/mainnet',
     etherscan: 'https://etherscan.io',
     names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace',
 
@@ -246,8 +246,8 @@ export namespace ethereumConfigurations {
     MANAToken: assertValue(contractInfo.mainnet.MANAToken)
   }
   export const goerli = {
-    wss: 'wss://goerli.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa',
-    http: 'https://goerli.infura.io/v3/f54f2e10b59647778de06d884121f8fa/',
+    wss: 'wss://rpc.decentraland.org/goerli',
+    http: 'https://rpc.decentraland.org/goerli',
     etherscan: 'https://goerli.etherscan.io',
     names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-goerli',
 

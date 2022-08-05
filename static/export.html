@@ -551,7 +551,7 @@
       function rootURL() {
         return location.origin + location.pathname
       }
-      
+
       function handleError(title, message) {
         const titleElement = document.getElementsByClassName('error-overlay-title')[0]
         const descElement = document.getElementsByClassName('error-overlay-description')[0]
@@ -580,7 +580,7 @@
         if (qs.has('renderer-version')) {
           return `https://cdn.decentraland.org/@dcl/unity-renderer/${qs.get('renderer-version')}`
         }
-        
+
         return new URL(rootURL() + 'unity-renderer').toString()
       }
 
@@ -652,7 +652,7 @@
             kernel.authenticate(globalThis.ethereum, false)
           }
         } else {
-          kernel.authenticate('wss://mainnet.infura.io/ws/v3/f54f2e10b59647778de06d884121f8fa', true)
+          kernel.authenticate('wss://rpc.decentraland.org/mainnet?project=cli-preview', true)
         }
       }
 
