@@ -65,7 +65,7 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_downloading_end']: { renderer_version: string; loading_time: number }
   ['unity_initializing_start']: { renderer_version: string }
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
-  ['scene_start_event']: { scene_id: string; time_since_creation: number }
+  ['scene_start_event']: { scene_id: string; time_since_creation: number; base: string }
   ['invalid_schema']: { schema: string; payload: any }
   // TODO - these are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Control Friend request approved']: Record<string, never> // {}
