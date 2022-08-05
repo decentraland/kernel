@@ -7,5 +7,9 @@
  * to: '0x1111ada11111'
  * */
 export function getUserIdFromMatrixId(userId: string) {
-  return userId.split(':')[0].substring(1)
+  // this means that the id comes from matrix
+  if (userId.indexOf('@') === 0) {
+    return userId.split(':')[0].substring(1)
+  }
+  return userId
 }

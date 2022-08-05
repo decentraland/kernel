@@ -461,6 +461,8 @@ export function getUnseenMessagesByUser() {
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
 
+  console.log('conversationsWithMessages', JSON.stringify(conversationsWithMessages, null, 4))
+
   if (conversationsWithMessages.length === 0) {
     return
   }
@@ -472,9 +474,16 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     request.userNameOrId
   )
 
+  console.log('filteredFriends', filteredFriends)
+
   const friendsConversations: Array<{ userId: string; conversation: Conversation; avatar: Avatar }> = []
 
   for (const friend of filteredFriends) {
+    console.log(
+      'friend',
+      friend,
+      conversationsWithMessages.find((conv) => conv.conversation.userIds![1] === friend.data.userId)
+    )
     const conversation = conversationsWithMessages.find((conv) => conv.conversation.userIds![1] === friend.data.userId)
 
     if (conversation) {
@@ -486,6 +495,8 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     }
   }
 
+  console.log('friendsConversations', friendsConversations)
+
   const addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
     currentFriendsWithDirectMessages: friendsConversations.map((friend) => ({
       lastMessageTimestamp: friend.conversation.lastEventTimestamp!,
@@ -494,7 +505,6 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     totalFriendsWithDirectMessages: friendsConversations.length
   }
 
-  // TODO! review why this is always empty
   getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
 
   const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
