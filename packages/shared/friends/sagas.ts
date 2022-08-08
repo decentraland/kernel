@@ -795,7 +795,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         updateTotalFriendRequestsPayload = {
           ...updateTotalFriendRequestsPayload,
           [updateTotalFriendRequestsPayloadSelector]:
-            updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
+            updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] === 0
+              ? 0
+              : updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
         break
@@ -814,7 +816,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         updateTotalFriendRequestsPayload = {
           ...updateTotalFriendRequestsPayload,
           [updateTotalFriendRequestsPayloadSelector]:
-            updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
+            updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] === 0
+              ? 0
+              : updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
         break
