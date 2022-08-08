@@ -76,7 +76,7 @@ async function fetchCatalystStatus(domain: string, denylistedCatalysts: string[]
 
       return {
         protocol: comms.protocol,
-        catalystName: configurations.name,
+        catalystName: configurations.realmName,
         domain: domain,
         status: aboutResponse.status,
         elapsed: aboutResponse.elapsed!,
