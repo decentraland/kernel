@@ -76,23 +76,25 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
   const { filters, context } = action.payload
 
   const valid = areFiltersValid(filters)
-  const failureAction = action.type === EMOTES_REQUEST ? emotesFailure : wearablesFailure
+  const isRequestingEmotes = action.type === EMOTES_REQUEST
+  const failureAction = isRequestingEmotes ? emotesFailure : wearablesFailure
   if (valid) {
     try {
       const fetchContentServer: string = yield select(getFetchContentServer)
 
-      const response: PartialWearableV2[] = yield call(fetchItemsFromCatalyst, action, filters)
+      const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
+      defaultLogger.info('response from handleItemRequest:', response)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'
 
-      const v2Items: (WearableV2 | Emote)[] = response.map((wearable) => ({
-        ...wearable,
-        baseUrl: wearable.baseUrl ?? fetchContentServer + '/contents/',
+      const v2Items: (WearableV2 | Emote)[] = response.map((item) => ({
+        ...item,
+        baseUrl: item.baseUrl ?? fetchContentServer + '/contents/',
         baseUrlBundles: assetBundlesBaseUrl
       }))
 
       yield put(
-        action.type === EMOTES_REQUEST
+        isRequestingEmotes
           ? emotesSuccess(v2Items as Emote[], context)
           : wearablesSuccess(v2Items as WearableV2[], context)
       )
@@ -229,11 +231,11 @@ function* fetchItemsFromCatalyst(
         return mapCatalystItemIntoV2(item)
       } catch (err) {
         trackEvent('fetchWearablesFromCatalyst_failed', { wearableId: item.id })
-        defaultLogger.log(`There was an error with wearable ${item.id}.`, err)
+        defaultLogger.log(`There was an error with item ${item.id}.`, err)
         return undefined
       }
     })
-    .filter((wearable) => !!wearable)
+    .filter((item) => !!item)
 }
 
 function fetchOwnedThirdPartyWearables(ethAddress: string, thirdPartyId: string, client: CatalystClient) {
@@ -388,7 +390,10 @@ export function* handleItemsRequestSuccess(action: WearablesSuccess | EmotesSucc
 export function* handleItemsRequestFailure(action: WearablesFailure | EmotesFailure) {
   const { context, error } = action.payload
 
-  defaultLogger.error(`Failed to fetch wearables for context '${context}'`, error)
+  defaultLogger.error(
+    `Failed to fetch ${action.type === WEARABLES_FAILURE ? 'wearables' : 'emotes'} for context '${context}'`,
+    error
+  )
 
   yield call(waitForRendererInstance)
   yield call(informRequestFailure, error, context)
