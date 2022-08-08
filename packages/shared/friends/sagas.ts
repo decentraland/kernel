@@ -485,12 +485,14 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // TODO: check why this always returns empty!!
-  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
-  if (!socialData?.conversationId) return
+  // get conversation id
+  // TODO !! createDirectConversation needs the userId with the format @fofo:decentraland.org.
+  const socialId = userId
+  const conversation: Conversation = await client.createDirectConversation(socialId)
+  if (!conversation) return
 
   // mark as seen all the messages in the conversation
-  await client.markMessagesAsSeen(socialData.conversationId)
+  await client.markMessagesAsSeen(conversation.id)
 
   // get total user unread messages
   const totalUnreadMessages = client.getTotalUnseenMessages()
@@ -499,12 +501,9 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
     userId: userId,
     total: 0
   }
-  console.log('updateUnseenMessages', updateUnseenMessages)
-
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
     total: totalUnreadMessages
   }
-  console.log('updateTotalUnseenMessages', updateTotalUnseenMessages)
 
   getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
   getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
@@ -514,15 +513,17 @@ export async function getPrivateMessages(userId: string, limit: number, fromMess
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // TODO: check why this always returns empty!!
-  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
-  if (!socialData?.conversationId) return
+  // get conversation id
+  // TODO !! createDirectConversation needs the userId with the format @fofo:decentraland.org.
+  const socialId = userId
+  const conversation: Conversation = await client.createDirectConversation(socialId)
+  if (!conversation) return
 
   const ownId = client.getUserId()
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
   const messageId: string | undefined = fromMessageId === null ? undefined : fromMessageId
-  const cursorLastMessage = await client.getCursorOnMessage(socialData.conversationId, messageId, {
+  const cursorLastMessage = await client.getCursorOnMessage(conversation.id, messageId, {
     initialSize: limit,
     limit
   })
@@ -612,8 +613,6 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
   }
 
   const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
-
-  console.log('profilesForRenderer', profilesForRenderer)
 
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))

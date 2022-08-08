@@ -14,7 +14,7 @@ import * as profilesSelectors from 'shared/profiles/selectors'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { FriendRequest, FriendsState, SocialData } from 'shared/friends/types'
+import { FriendRequest, FriendsState } from 'shared/friends/types'
 import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
 
@@ -109,16 +109,11 @@ const allCurrentConversations: Array<{ conversation: Conversation; unreadMessage
   }
 ]
 
-const socialData: SocialData = {
-  userId: '0xa2',
-  socialId: '0xa2',
-  conversationId: '0xa2-0xa3'
-}
-
 const stubClient = {
   getAllCurrentConversations: () => allCurrentConversations,
   getCursorOnMessage: () => Promise.resolve({ getMessages: () => textMessages }),
-  getUserId: () => '0xa2'
+  getUserId: () => '0xa2',
+  createDirectConversation: () => allCurrentConversations[0].conversation
 } as unknown as SocialAPI
 
 function mockStoreCalls(opts?: { profiles: number[], i: number }) {
@@ -130,7 +125,6 @@ function mockStoreCalls(opts?: { profiles: number[], i: number }) {
       profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore.slice(0, opts?.profiles[opts.i]), userNameOrId)
     )
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
-  sinon.stub(friendsSelectors, 'findPrivateMessagingFriendsByUserId').callsFake(() => socialData)
 }
 
 describe('Friends sagas', () => {
