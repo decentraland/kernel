@@ -203,7 +203,11 @@ function* getPinnedCatalyst() {
 
   const candidate = yield call(fetchCatalystStatus, PIN_CATALYST, [])
   if (!candidate) {
-    return undefined
+    return {
+      protocol: 'v2',
+      hostname: PIN_CATALYST,
+      serverName: 'pinned-catalyst'
+    }
   }
 
   return {
