@@ -8,7 +8,7 @@ import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization, waitForNetworkSelected } from '../meta/sagas'
 import { Candidate, Realm, ServerConnectionStatus } from './types'
-import { fetchCatalystRealms, fetchCatalystStatuses, changeRealmObject } from '.'
+import { fetchCatalystRealms, fetchCatalystStatuses, changeRealmObject, fetchCatalystStatus } from '.'
 import { ping } from './utils/ping'
 import {
   getAddedServers,
@@ -130,14 +130,6 @@ function* waitForCandidates() {
   }
 }
 
-function realmFromPinnedCatalyst(): Realm {
-  return {
-    protocol: 'v2',
-    hostname: PIN_CATALYST || 'peer.decentraland.org',
-    serverName: 'pinned-catalyst'
-  }
-}
-
 function* selectRealm() {
   const network: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
 
@@ -166,7 +158,7 @@ function* selectRealm() {
     // preview mode
     (PREVIEW ? PREVIEW_REALM : null) ||
     // CATALYST from url parameter
-    (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
+    (yield call(getPinnedCatalyst)) ||
     // cached in local storage
     (yield call(getRealmFromLocalStorage, network)) ||
     // fetch catalysts and select one using the load balancing
@@ -201,6 +193,23 @@ function* getConfiguredRealm(candidates: Candidate[]) {
     } else {
       commsLogger.warn(`Provided realm is not valid: ${realmName}`)
     }
+  }
+}
+
+function* getPinnedCatalyst() {
+  if (!PIN_CATALYST) {
+    return undefined
+  }
+
+  const candidate = yield call(fetchCatalystStatus, PIN_CATALYST, [])
+  if (!candidate) {
+    return undefined
+  }
+
+  return {
+    protocol: candidate.protocol,
+    hostname: PIN_CATALYST,
+    serverName: candidate.catalystName
   }
 }
 

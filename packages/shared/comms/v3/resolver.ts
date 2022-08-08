@@ -67,7 +67,7 @@ export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: stri
 
 export function realmToConnectionString(realm: Realm) {
   if (
-    realm.protocol === 'v2' &&
+    (realm.protocol === 'v2' || realm.protocol === 'v3') &&
     realm.serverName &&
     realm.serverName !== realm.hostname &&
     realm.serverName.match(/^[a-z]+$/i)

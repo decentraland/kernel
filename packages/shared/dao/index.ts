@@ -42,7 +42,10 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
   return nodes
 }
 
-async function fetchCatalystStatus(domain: string, denylistedCatalysts: string[]): Promise<Candidate | undefined> {
+export async function fetchCatalystStatus(
+  domain: string,
+  denylistedCatalysts: string[]
+): Promise<Candidate | undefined> {
   if (denylistedCatalysts.includes(domain)) return undefined
 
   const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
