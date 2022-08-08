@@ -70,7 +70,9 @@ export type WearableV2 = {
   emoteDataV0?: EmoteDataV0
 }
 
-export type Emote = Omit<WearableV2, 'data'> & { data: Omit<EmoteDataADR74, 'contents'> & { contents: KeyAndHash[] } }
+export type Emote = Omit<WearableV2, 'data'> & {
+  emoteDataADR74: Omit<EmoteDataADR74, 'contents'> & { contents: KeyAndHash[] }
+}
 
 export type EmoteDataV0 = {
   loop: boolean
@@ -93,6 +95,9 @@ export type PartialWearableV2 = PartialBy<Omit<WearableV2, 'baseUrlBundles'>, 'b
 export type PartialEmote = PartialBy<Omit<Emote, 'baseUrlBundles'>, 'baseUrl'>
 export type PartialItem = PartialWearableV2 | PartialEmote
 type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+export const isPartialWearable = (partialItem: PartialItem): partialItem is PartialWearableV2 =>
+  !!(partialItem as PartialWearableV2).data
 
 export type BodyShapeRepresentation = {
   bodyShapes: string[]
