@@ -485,7 +485,7 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // TODO: check why this always returns empty!! 
+  // TODO: check why this always returns empty!!
   const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
   if (!socialData?.conversationId) return
 
@@ -514,7 +514,7 @@ export async function getPrivateMessages(userId: string, limit: number, fromMess
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // TODO: check why this always returns empty!! 
+  // TODO: check why this always returns empty!!
   const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
   if (!socialData?.conversationId) return
 
