@@ -72,6 +72,8 @@ export function* daoSaga(): any {
 
 function* pickCatalystRealm() {
   const candidates: Candidate[] = yield select(getAllCatalystCandidates)
+  if (candidates.length === 0) return undefined
+
   let config: AlgorithmChainConfig | undefined = yield select(getPickRealmsAlgorithmConfig)
 
   if (!config || config.length === 0) {
@@ -167,10 +169,10 @@ function* selectRealm() {
     (PREVIEW ? PREVIEW_REALM : null) ||
     // CATALYST from url parameter
     (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
-    // cached in local storage
-    (yield call(getRealmFromLocalStorage, network)) ||
     // fetch catalysts and select one using the load balancing
-    (yield call(pickCatalystRealm))
+    (yield call(pickCatalystRealm)) ||
+    // cached in local storage
+    (yield call(getRealmFromLocalStorage, network))
 
   if (!realm) debugger
 
