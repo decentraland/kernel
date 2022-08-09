@@ -493,7 +493,6 @@ export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPa
   const socialId = getMatrixIdFromUser(userId.userId)
   const conversation: Conversation = await client.createDirectConversation(socialId)
   if (!conversation) return
-  // TODO add info to the store !!
 
   // mark as seen all the messages in the conversation
   await client.markMessagesAsSeen(conversation.id)
@@ -518,7 +517,6 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
   if (!client) return
 
   // get the conversation.id
-  // TODO get the info from the store!! 
   const socialId = getMatrixIdFromUser(getPrivateMessagesPayload.userId)
   const conversation: Conversation = await client.createDirectConversation(socialId)
   if (!conversation) return
