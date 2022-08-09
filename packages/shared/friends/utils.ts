@@ -13,3 +13,16 @@ export function getUserIdFromMatrix(userId: string) {
   }
   return userId
 }
+
+/**
+ * Get the matrixUserId from userId
+ * @param userId a string with the userId pattern
+ *
+ * @example
+ * from: '0x1111ada11111'
+ * to: '@0x1111ada11111:decentraland.org'
+ * */
+export function getMatrixIdFromUser(userId: string) {
+  // TODO check how'd be the correct way to do this
+  return '@' + userId.toString() + ':decentraland.org'
+}

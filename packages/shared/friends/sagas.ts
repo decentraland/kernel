@@ -37,7 +37,9 @@ import {
   AddFriendsWithDirectMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload,
   UpdateTotalFriendRequestsPayload,
-  FriendsInitializeChatPayload
+  FriendsInitializeChatPayload,
+  MarkMessagesAsSeenPayload,
+  GetPrivateMessagesPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -81,7 +83,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix } from './utils'
+import { getMatrixIdFromUser, getUserIdFromMatrix } from './utils'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -481,15 +483,17 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
-export async function markAsSeenPrivateChatMessages(userId: string) {
+export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {
+  if (userId.userId === 'nearby') return
+
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // get conversation id
-  // TODO !! createDirectConversation needs the userId with the format @fofo:decentraland.org.
-  const socialId = userId
+  // get the conversation.id
+  const socialId = getMatrixIdFromUser(userId.userId)
   const conversation: Conversation = await client.createDirectConversation(socialId)
   if (!conversation) return
+  // TODO add info to the store !!
 
   // mark as seen all the messages in the conversation
   await client.markMessagesAsSeen(conversation.id)
@@ -498,7 +502,7 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   const totalUnreadMessages = client.getTotalUnseenMessages()
 
   const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
-    userId: userId,
+    userId: userId.userId,
     total: 0
   }
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
@@ -509,23 +513,24 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
 }
 
-export async function getPrivateMessages(userId: string, limit: number, fromMessageId: string | null) {
+export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMessagesPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // get conversation id
-  // TODO !! createDirectConversation needs the userId with the format @fofo:decentraland.org.
-  const socialId = userId
+  // get the conversation.id
+  // TODO get the info from the store!! 
+  const socialId = getMatrixIdFromUser(getPrivateMessagesPayload.userId)
   const conversation: Conversation = await client.createDirectConversation(socialId)
   if (!conversation) return
 
   const ownId = client.getUserId()
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
-  const messageId: string | undefined = fromMessageId === null ? undefined : fromMessageId
+  const messageId: string | undefined =
+    getPrivateMessagesPayload.fromMessageId === null ? undefined : getPrivateMessagesPayload.fromMessageId
   const cursorLastMessage = await client.getCursorOnMessage(conversation.id, messageId, {
-    initialSize: limit,
-    limit
+    initialSize: getPrivateMessagesPayload.limit,
+    limit: getPrivateMessagesPayload.limit
   })
 
   const messages = cursorLastMessage.getMessages()
@@ -537,8 +542,8 @@ export async function getPrivateMessages(userId: string, limit: number, fromMess
       messageType: ChatMessageType.PRIVATE,
       timestamp: message.timestamp,
       body: message.text,
-      sender: message.sender === ownId ? ownId : userId,
-      recipient: message.sender === ownId ? userId : ownId
+      sender: message.sender === ownId ? getUserIdFromMatrix(ownId) : getPrivateMessagesPayload.userId,
+      recipient: message.sender === ownId ? getPrivateMessagesPayload.userId : getUserIdFromMatrix(ownId)
     }))
   }
 

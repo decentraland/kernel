@@ -5,7 +5,8 @@ import {
   AddFriendsWithDirectMessagesPayload,
   GetFriendRequestsPayload,
   GetFriendsPayload,
-  GetFriendsWithDirectMessagesPayload
+  GetFriendsWithDirectMessagesPayload,
+  GetPrivateMessagesPayload
 } from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
@@ -348,7 +349,7 @@ describe('Friends sagas', () => {
 
     describe("When a private chat is opened", () => {
       it('Should call unity with the expected private messages', () => {
-        const request = {
+        const request: GetPrivateMessagesPayload = {
           userId: '0xa3',
           limit: 10,
           fromMessageId: null,
@@ -367,7 +368,7 @@ describe('Friends sagas', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddMessageToChatWindow').once().withExactArgs(addChatMessagesPayload)
-        friendsSagas.getPrivateMessages(request.userId, request.limit, request.fromMessageId)
+        friendsSagas.getPrivateMessages(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })

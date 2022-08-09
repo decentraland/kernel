@@ -600,6 +600,16 @@ export interface AddFriendRequestsPayload {
   totalSentFriendRequests: number // total amount of friend requests sent
 }
 
+export interface MarkMessagesAsSeenPayload {
+  userId: string
+}
+
+export interface GetPrivateMessagesPayload {
+  userId: string
+  limit: number
+  fromMessageId: string | null
+}
+
 export interface UpdateTotalUnseenMessagesPayload {
   total: number
 }
