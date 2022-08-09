@@ -84,7 +84,7 @@ export async function fetchCatalystStatus(
         status: aboutResponse.status,
         elapsed: aboutResponse.elapsed!,
         usersCount: bff.userCount ?? 0,
-        maxUsers: -1, // TODO
+        maxUsers: -1,
         usersParcels
       }
     }
