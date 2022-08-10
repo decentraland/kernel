@@ -463,13 +463,13 @@ export class BrowserInterface {
     })
   }
 
-  public ReportScene(data: {sceneId: string}) {
+  public ReportScene(data: { sceneId: string }) {
     this.OpenWebURL({
       url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
     })
   }
 
-  public ReportPlayer(data: {userId: string}) {
+  public ReportPlayer(data: { userId: string }) {
     this.OpenWebURL({
       url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.userId}`
     })
