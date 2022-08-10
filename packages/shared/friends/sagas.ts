@@ -484,8 +484,6 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
 }
 
 export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {
-  if (userId.userId === 'nearby') return
-
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 

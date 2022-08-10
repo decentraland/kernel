@@ -399,7 +399,6 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
-    console.log('AddFriendsWithDirectMessages', addFriendsWithDirectMessagesPayload)
     this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
   }
 

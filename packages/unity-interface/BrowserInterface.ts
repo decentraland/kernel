@@ -419,6 +419,7 @@ export class BrowserInterface {
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
+    if (userId.userId === 'nearby') return
     markAsSeenPrivateChatMessages(userId).catch((err) => {
       defaultLogger.error('error markAsSeenPrivateChatMessages', err),
         trackEvent('error', {
