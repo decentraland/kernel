@@ -83,7 +83,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix, getConversationId } from './utils'
+import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1055,4 +1055,51 @@ function logAndTrackError(message: string, e: any) {
     message: message,
     stack: '' + e
   })
+}
+
+/**
+ * Get the conversation id from the store when possible.
+ * If not, then fetch it from matrix and update the private messaging state
+ * @param client SocialAPI client
+ * @param userId a string with the userId pattern
+ */
+async function getConversationId(client: SocialAPI, userId: string) {
+  let conversationId = findPrivateMessagingFriendsByUserId(store.getState(), userId)?.conversationId
+
+  if (!conversationId) {
+    const socialId = getMatrixIdFromUser(userId)
+    const conversation: Conversation = await client.createDirectConversation(socialId)
+
+    const socialData: SocialData = {
+      userId: userId,
+      socialId: socialId,
+      conversationId: conversation.id
+    }
+
+    updateSocialInfo(socialData)
+    conversationId = conversation.id
+  }
+
+  return conversationId
+}
+
+/**
+ * Update the social info from the private messaging state
+ * @param socialData the social data to add to the record.
+ */
+function updateSocialInfo(socialData: SocialData) {
+  const friends: FriendsState = getPrivateMessaging(store.getState())
+
+  // add social info
+  friends.socialInfo[socialData.socialId] = socialData
+
+  put(
+    updatePrivateMessagingState({
+      client: friends.client,
+      socialInfo: friends.socialInfo,
+      friends: friends.friends,
+      fromFriendRequests: friends.fromFriendRequests,
+      toFriendRequests: friends.toFriendRequests
+    })
+  )
 }
