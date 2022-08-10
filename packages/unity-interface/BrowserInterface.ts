@@ -463,12 +463,16 @@ export class BrowserInterface {
     })
   }
 
-  public ReportScene(sceneId: string) {
-    this.OpenWebURL({ url: `https://decentralandofficial.typeform.com/to/KzaUxh?sceneId=${sceneId}` })
+  public ReportScene(data: { sceneId: string }) {
+    this.OpenWebURL({
+      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
+    })
   }
 
-  public ReportPlayer(username: string) {
-    this.OpenWebURL({ url: `https://decentralandofficial.typeform.com/to/owLkla?username=${username}` })
+  public ReportPlayer(data: { userId: string }) {
+    this.OpenWebURL({
+      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.userId}`
+    })
   }
 
   public BlockPlayer(data: { userId: string }) {
