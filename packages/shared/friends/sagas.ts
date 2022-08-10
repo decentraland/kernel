@@ -83,7 +83,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getMatrixIdFromUser, getUserIdFromMatrix } from './utils'
+import { getUserIdFromMatrix, getConversationId } from './utils'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -487,13 +487,11 @@ export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPa
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // get the conversation.id
-  const socialId = getMatrixIdFromUser(userId.userId)
-  const conversation: Conversation = await client.createDirectConversation(socialId)
-  if (!conversation) return
+  // get conversation id
+  const conversationId = await getConversationId(client, userId.userId)
 
   // mark as seen all the messages in the conversation
-  await client.markMessagesAsSeen(conversation.id)
+  await client.markMessagesAsSeen(conversationId)
 
   // get total user unread messages
   const totalUnreadMessages = client.getTotalUnseenMessages()
@@ -515,16 +513,14 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
   if (!client) return
 
   // get the conversation.id
-  const socialId = getMatrixIdFromUser(getPrivateMessagesPayload.userId)
-  const conversation: Conversation = await client.createDirectConversation(socialId)
-  if (!conversation) return
+  const conversationId = await getConversationId(client, getPrivateMessagesPayload.userId)
 
   const ownId = client.getUserId()
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
   const messageId: string | undefined =
     getPrivateMessagesPayload.fromMessageId === null ? undefined : getPrivateMessagesPayload.fromMessageId
-  const cursorLastMessage = await client.getCursorOnMessage(conversation.id, messageId, {
+  const cursorLastMessage = await client.getCursorOnMessage(conversationId, messageId, {
     initialSize: getPrivateMessagesPayload.limit,
     limit: getPrivateMessagesPayload.limit
   })
