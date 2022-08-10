@@ -463,15 +463,15 @@ export class BrowserInterface {
     })
   }
 
-  public ReportScene(sceneId: string) {
+  public ReportScene(data: {sceneId: string}) {
     this.OpenWebURL({
-      url: `https://docs.google.com/forms/d/e/1FAIpQLSdpetm5TWVt2gjc27LJ96wl5JLR2bB9m5O-9KqDrvMYvB3Vpw/viewform?entry.21285629=${sceneId}`
-    })  
+      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
+    })
   }
 
-  public ReportPlayer(username: string) {
+  public ReportPlayer(data: {userId: string}) {
     this.OpenWebURL({
-      url: `https://docs.google.com/forms/d/e/1FAIpQLSdpetm5TWVt2gjc27LJ96wl5JLR2bB9m5O-9KqDrvMYvB3Vpw/viewform?entry.21285629=${username}`
+      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.userId}`
     })
   }
 
