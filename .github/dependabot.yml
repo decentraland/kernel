@@ -7,4 +7,6 @@ updates:
     allow:
       - dependency-name: "@dcl/*"
       - dependency-name: "dcl-*"
+      - dependency-name: "decentraland*"
     versioning-strategy: increase
+    open-pull-requests-limit: 10
