@@ -29,10 +29,8 @@ const EXPECTED: Candidate = {
   catalystName: 'loki',
   domain: 'peer.decentraland.org',
   elapsed: 309,
-  lighthouseVersion: '1.0.0',
   maxUsers: 1000,
   status: 0,
-  type: 'islands-based',
   usersCount: 59,
   usersParcels: undefined
 }
@@ -47,7 +45,7 @@ describe('Fetch catalyst server status', () => {
     const stub = sinon.stub(ping, 'ping')
 
     stub.callsFake(async (domain) => ({ ...pingResult(), domain }))
-    const results = await fetchCatalystStatuses(NODES)
+    const results = await fetchCatalystStatuses(NODES, [])
     expect(results).to.eql(NODES.map((n) => ({ ...EXPECTED, domain: n.domain })))
   })
 
@@ -61,7 +59,7 @@ describe('Fetch catalyst server status', () => {
         domain
       }
     })
-    const results = await fetchCatalystStatuses(NODES)
+    const results = await fetchCatalystStatuses(NODES, [])
     expect(results).to.eql(NODES.slice(1).map((n) => ({ ...EXPECTED, domain: n.domain })))
   })
 })
