@@ -464,11 +464,15 @@ export class BrowserInterface {
   }
 
   public ReportScene(sceneId: string) {
-    this.OpenWebURL({ url: `https://docs.google.com/forms/d/e/1FAIpQLSdpetm5TWVt2gjc27LJ96wl5JLR2bB9m5O-9KqDrvMYvB3Vpw/viewform?entry.21285629=${sceneId}` })
+    this.OpenWebURL({
+      url: `https://docs.google.com/forms/d/e/1FAIpQLSdpetm5TWVt2gjc27LJ96wl5JLR2bB9m5O-9KqDrvMYvB3Vpw/viewform?entry.21285629=${sceneId}`
+    })  
   }
 
   public ReportPlayer(username: string) {
-    this.OpenWebURL({ url: `https://docs.google.com/forms/d/e/1FAIpQLSdpetm5TWVt2gjc27LJ96wl5JLR2bB9m5O-9KqDrvMYvB3Vpw/viewform?entry.21285629=${username}` })
+    this.OpenWebURL({
+      url: `https://docs.google.com/forms/d/e/1FAIpQLSdpetm5TWVt2gjc27LJ96wl5JLR2bB9m5O-9KqDrvMYvB3Vpw/viewform?entry.21285629=${username}`
+    })
   }
 
   public BlockPlayer(data: { userId: string }) {
