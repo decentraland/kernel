@@ -161,7 +161,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId))) ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
@@ -270,24 +270,18 @@ export async function profileServerRequest(userId: string, version?: number): Pr
   const catalystUrl = getCatalystServer(state)
 
   try {
-    let url = `${catalystUrl}/lambdas/profiles`
+    let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ids: userId })
-    })
+    const response = await fetch(url)
 
     if (!response.ok) {
       throw new Error(`Invalid response from ${url}`)
     }
 
-    const res = await response.json()
+    const res: RemoteProfile[] = await response.json()
 
-    return res || [{ avatars: [], timestamp: Date.now }]
+    return res[0] || { avatars: [], timestamp: Date.now() }
   } catch (e: any) {
     defaultLogger.error(e)
     return { avatars: [], timestamp: Date.now() }
