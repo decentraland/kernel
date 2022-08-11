@@ -161,7 +161,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfiles, [userId], version)))[0] ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
@@ -278,7 +278,7 @@ export async function profileServerRequest(userId: string, version?: number): Pr
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ ids: userIds })
+      body: JSON.stringify({ ids: userId })
     })
 
     if (!response.ok) {

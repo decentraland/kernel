@@ -176,7 +176,7 @@ async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, so
   store.dispatch(updateUserData(userId, socialId))
 
   // ensure user profile is initialized and send to renderer
-  await ensureFriendProfile([userId])
+  await ensureFriendProfile(userId)
 
   // add to friendRequests & update renderer
   store.dispatch(updateFriendship(action, userId, true))
@@ -375,42 +375,6 @@ function* refreshFriends() {
       .concat(requestedToIds.map((x) => x.userId))
 
     yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
-
-    // explorer information
-    // const conversationsWithUnreadMessages: Array<{ unreadMessages: BasicMessageInfo[] }> =
-    //   yield client.getAllConversationsWithUnreadMessages()
-
-    // const unreadMessages: UnseenPrivateMessage = conversationsWithUnreadMessages.map(
-    //   (conv) =>
-    //     ({
-    //       count: conv.unreadMessages.length,
-    //       userId: conv.userIds.find((x) => x !== ownId)
-    //     } as UnseenPrivateMessage)
-    // )
-
-    // const initMessage: FriendsInitializationMessage = {
-    //   friends: { total: friendIds.length },
-    //   requests: {
-    //     lastSeenTimestamp: 1,
-    //     total: requestedFromIds.length
-    //   },
-    //   unseenPrivateMessages: []
-    // }
-
-    const initMessage = {
-      currentFriends: friendIds,
-      requestedTo: requestedToIds,
-      requestedFrom: requestedFromIds
-    }
-
-    getUnityInstance().InitializeFriends(initMessage)
-
-    // getUnityInstance().InitializeFriends(initMessage)
-
-    // initialize friends internal for kernel
-    // filter unread messages
-    // const allConversations: Array<{ conversation: Conversation; unreadMessages: boolean }> =
-    //   yield client.getAllCurrentConversations()
 
     // ensure friend profiles are sent to renderer
     yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
@@ -938,7 +902,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
   } catch (e) {
     if (e instanceof UnknownUsersError) {
-      const profile: Avatar = yield call(ensureFriendProfile, [userId])
+      const profile: Avatar = yield call(ensureFriendProfile, userId)
       const id = profile?.name ? profile.name : `with address '${userId}'`
       showErrorNotification(`User ${id} must log in at least once before befriending them`)
     }
