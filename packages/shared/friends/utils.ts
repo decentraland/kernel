@@ -1,3 +1,6 @@
+import { getSynapseUrl } from "shared/meta/selectors"
+import { store } from "shared/store/isolatedStore"
+
 /**
  * Get the local part of the userId from matrixUserId
  * @param userId a string with the matrixUserId pattern
@@ -23,6 +26,7 @@ export function getUserIdFromMatrix(userId: string) {
  * to: '@0x1111ada11111:decentraland.org'
  * */
 export function getMatrixIdFromUser(userId: string) {
-  // TODO check how'd be the correct way to do this
-  return '@' + userId.toString() + ':decentraland.org'
+  const domain = getSynapseUrl(store.getState()).split('.')
+
+  return '@' + userId.toString() + ':decentraland' + domain[domain.length - 1]
 }
