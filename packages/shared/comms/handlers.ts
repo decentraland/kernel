@@ -23,7 +23,7 @@ import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
 import { CommsContext } from './context'
-import { processVoiceFragment } from './voice-over-comms'
+//import { processVoiceFragment } from './voice-over-comms'
 import future, { IFuture } from 'fp-future'
 import { handleCommsDisconnection } from './actions'
 import { Avatar } from '@dcl/schemas'
@@ -52,7 +52,7 @@ export async function bindHandlersToCommsContext(context: CommsContext) {
   connection.events.on('sceneMessageBus', processParcelSceneCommsMessage)
   connection.events.on('profileRequest', processProfileRequest)
   connection.events.on('profileResponse', processProfileResponse)
-  connection.events.on('voiceMessage', processVoiceFragment)
+  //connection.events.on('voiceMessage', processVoiceFragment)
 }
 
 const pendingProfileRequests: Map<string, Set<IFuture<Avatar | null>>> = new Map()

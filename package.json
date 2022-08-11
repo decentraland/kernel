@@ -98,6 +98,7 @@
     "gifuct-js": "^2.0.0",
     "google-protobuf": "^3.6.1",
     "hls.js": "^0.14.17",
+    "livekit-client": "^1.2.10",
     "mitt": "^3.0.0",
     "mz-observable": "^1.0.1",
     "p-queue": "^7.1.0",
