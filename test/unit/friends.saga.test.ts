@@ -459,7 +459,7 @@ describe('Friends sagas', () => {
         const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
           currentFriendsWithDirectMessages: [
             {
-              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp,
+              lastMessageTimestamp: allCurrentConversations[0].conversation.lastEventTimestamp!,
               userId: profilesFromStore[1].data.userId
             }
           ],
