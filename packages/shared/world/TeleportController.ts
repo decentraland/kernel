@@ -87,8 +87,6 @@ async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
 
       if (parcelsResponse.ok) {
         const parcelsBody = await parcelsResponse.json()
-        // TODO(hugo): this is kind of hacky, the original representation is much better,
-        // but I don't want to change the whole pick-realm algorithm now
         const usersParcels: Parcel[] = []
 
         if (parcelsBody.parcels) {
