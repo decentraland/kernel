@@ -9,12 +9,13 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { getCommsServer } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsContext } from 'shared/comms/selectors'
+import { Parcel } from 'shared/dao/types'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
   .join(' or ')
 
-// TODO: don't do classess if it holds no state. Use namespaces or functions instead.
+// TODO: don't do classes if it holds no state. Use namespaces or functions instead.
 export class TeleportController {
   public static async goToCrowd(): Promise<{ message: string; success: boolean }> {
     try {
@@ -82,12 +83,26 @@ async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
 
   try {
     if (context) {
-      const commsStatusResponse = await fetch(
-        `${getCommsServer(context.realm.hostname)}/status?includeUsersParcels=true`
-      )
-      if (commsStatusResponse.ok) {
-        const layerUsers = await commsStatusResponse.json()
-        return layerUsers.usersParcels
+      const parcelsResponse = await fetch(`${getCommsServer(context.realm.hostname)}/stats/parcels`)
+
+      if (parcelsResponse.ok) {
+        const parcelsBody = await parcelsResponse.json()
+        // TODO(hugo): this is kind of hacky, the original representation is much better,
+        // but I don't want to change the whole pick-realm algorithm now
+        const usersParcels: Parcel[] = []
+
+        if (parcelsBody.parcels) {
+          for (const {
+            peersCount,
+            parcel: { x, y }
+          } of parcelsBody.parcels) {
+            const parcel: Parcel = [x, y]
+            for (let i = 0; i < peersCount; i++) {
+              usersParcels.push(parcel)
+            }
+          }
+        }
+        return usersParcels
       }
     }
   } catch {}
