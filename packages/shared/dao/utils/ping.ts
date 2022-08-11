@@ -1,9 +1,9 @@
 import defaultLogger from '../../logger'
-import { PingResult, ServerConnectionStatus } from '../types'
+import { PingResult, AskResult, ServerConnectionStatus } from '../types'
 
-export async function ping(url: string, timeoutMs: number = 5000): Promise<PingResult> {
+export async function ask(url: string, timeoutMs: number = 5000): Promise<AskResult> {
   try {
-    return await new Promise<PingResult>((resolve) => {
+    return await new Promise<AskResult>((resolve) => {
       const http = new XMLHttpRequest()
 
       const started = new Date()
@@ -14,10 +14,12 @@ export async function ping(url: string, timeoutMs: number = 5000): Promise<PingR
           try {
             if (http.status !== 200) {
               resolve({
+                httpStatus: http.status,
                 status: ServerConnectionStatus.UNREACHABLE
               })
             } else {
               resolve({
+                httpStatus: http.status,
                 status: ServerConnectionStatus.OK,
                 elapsed: new Date().getTime() - started.getTime(),
                 result: JSON.parse(http.responseText)
@@ -47,4 +49,8 @@ export async function ping(url: string, timeoutMs: number = 5000): Promise<PingR
       status: ServerConnectionStatus.UNREACHABLE
     }
   }
+}
+
+export async function ping(url: string, timeoutMs: number = 5000): Promise<PingResult> {
+  return ask(url, timeoutMs)
 }

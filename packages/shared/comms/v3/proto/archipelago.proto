@@ -28,3 +28,15 @@ message JoinIslandMessage {
   string island_id = 1;
   string peer_id = 2;
 }
+
+message IslandData {
+  string id = 1;
+  repeated string peers = 2;
+  uint32 maxPeers = 3;
+  Position3DMessage center = 4;
+  double radius = 5;
+}
+
+message IslandStatusMessage {
+  repeated IslandData data = 1;
+}

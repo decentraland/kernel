@@ -8,11 +8,12 @@ import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization, waitForNetworkSelected } from '../meta/sagas'
 import { Candidate, Realm, ServerConnectionStatus } from './types'
-import { fetchCatalystRealms, fetchCatalystStatuses, commsStatusUrl, changeRealmObject } from '.'
+import { fetchCatalystRealms, fetchCatalystStatuses, changeRealmObject, fetchCatalystStatus } from '.'
 import { ping } from './utils/ping'
 import {
   getAddedServers,
   getCatalystNodesEndpoint,
+  getDisabledCatalystConfig,
   getMinCatalystVersion,
   getPickRealmsAlgorithmConfig
 } from 'shared/meta/selectors'
@@ -47,6 +48,7 @@ import {
   resolveCommsV4Urls,
   resolveCommsV3Urls
 } from 'shared/comms/v3/resolver'
+import { resolveCommsV2Url } from 'shared/comms/v2/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 
@@ -100,9 +102,9 @@ function qsRealm() {
  * This method will try to load the candidates as well as the selected realm.
  *
  * The strategy to select the realm in terms of priority is:
- * 1- Realm configured in the URL and cached candidate for that realm (uses cache, forks async candidadte initialization)
+ * 1- Realm configured in the URL and cached candidate for that realm (uses cache, forks async candidate initialization)
  * 2- Realm configured in the URL but no corresponding cached candidate (implies sync candidate initialization)
- * 3- Last cached realm (uses cache, forks async candidadte initialization)
+ * 3- Last cached realm (uses cache, forks async candidate initialization)
  * 4- Best pick from candidate scan (implies sync candidate initialization)
  */
 export function* selectAndReconnectRealm() {
@@ -127,14 +129,6 @@ export function* selectAndReconnectRealm() {
 function* waitForCandidates() {
   while (!(yield select(getCatalystCandidatesReceived))) {
     yield take(SET_CATALYST_CANDIDATES)
-  }
-}
-
-function realmFromPinnedCatalyst(): Realm {
-  return {
-    protocol: 'v2',
-    hostname: PIN_CATALYST || 'peer.decentraland.org',
-    serverName: 'pinned-catalyst'
   }
 }
 
@@ -166,7 +160,7 @@ function* selectRealm() {
     // preview mode
     (PREVIEW ? PREVIEW_REALM : null) ||
     // CATALYST from url parameter
-    (PIN_CATALYST ? realmFromPinnedCatalyst() : null) ||
+    (yield call(getPinnedCatalyst)) ||
     // fetch catalysts and select one using the load balancing
     (yield call(pickCatalystRealm)) ||
     // cached in local storage
@@ -204,6 +198,27 @@ function* getConfiguredRealm(candidates: Candidate[]) {
   }
 }
 
+function* getPinnedCatalyst() {
+  if (!PIN_CATALYST) {
+    return undefined
+  }
+
+  const candidate = yield call(fetchCatalystStatus, PIN_CATALYST, [])
+  if (!candidate) {
+    return {
+      protocol: 'v2',
+      hostname: PIN_CATALYST,
+      serverName: 'pinned-catalyst'
+    }
+  }
+
+  return {
+    protocol: candidate.protocol,
+    hostname: PIN_CATALYST,
+    serverName: candidate.catalystName
+  }
+}
+
 function* initializeCatalystCandidates() {
   yield call(waitForMetaConfigurationInitialization)
   yield put(catalystRealmsScanRequested())
@@ -213,7 +228,13 @@ function* initializeCatalystCandidates() {
   const nodes: CatalystNode[] = yield call(fetchCatalystRealms, catalystsNodesEndpointURL)
   const added: string[] = yield select(getAddedServers)
 
-  const candidates: Candidate[] = yield call(fetchCatalystStatuses, added.map((url) => ({ domain: url })).concat(nodes))
+  const denylistedCatalysts: string[] = (yield select(getDisabledCatalystConfig)) ?? []
+
+  const candidates: Candidate[] = yield call(
+    fetchCatalystStatuses,
+    added.map((url) => ({ domain: url })).concat(nodes),
+    denylistedCatalysts
+  )
 
   yield put(setCatalystCandidates(candidates))
 }
@@ -228,7 +249,7 @@ export async function checkValidRealm(realm: Realm) {
     }
 
     const minCatalystVersion: string | undefined = getMinCatalystVersion(store.getState())
-    const pingResult = await ping(commsStatusUrl(realm.hostname))
+    const pingResult = await ping(resolveCommsV2Url(realm))
 
     if (pingResult.status === ServerConnectionStatus.UNREACHABLE) return false
 
@@ -237,13 +258,14 @@ export async function checkValidRealm(realm: Realm) {
     const { pingUrl } = resolveCommsV3Urls(realm)!
     const pingResult = await ping(pingUrl)
 
+    if (pingResult.status !== ServerConnectionStatus.OK) {
+      commsLogger.warn(`ping failed for ${pingUrl}`)
+    }
+
     return pingResult.status === ServerConnectionStatus.OK
   } else if (realm.protocol === 'v4') {
     const { pingUrl } = resolveCommsV4Urls(realm)!
     const pingResult = await ping(pingUrl)
-    if (pingResult.status !== ServerConnectionStatus.OK) {
-      commsLogger.warn(`ping failed for ${pingUrl}`)
-    }
     return pingResult.status === ServerConnectionStatus.OK
   }
   return false
