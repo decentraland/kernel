@@ -370,7 +370,11 @@ function* refreshFriends() {
     getUnityInstance().InitializeFriends(initFriendsMessage)
     getUnityInstance().InitializeChat(initChatMessage)
 
-    yield ensureFriendsProfile(friendIds).catch(logger.error)
+    const allProfilesToObtain = friendIds
+      .concat(requestedFromIds.map((x) => x.userId))
+      .concat(requestedToIds.map((x) => x.userId))
+
+    yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
 
     // explorer information
     // const conversationsWithUnreadMessages: Array<{ unreadMessages: BasicMessageInfo[] }> =
