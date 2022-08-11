@@ -6,10 +6,10 @@ import defaultLogger from 'shared/logger'
 
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
-import { getCommsServer } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsContext } from 'shared/comms/selectors'
 import { Parcel } from 'shared/dao/types'
+import { urlWithProtocol } from 'shared/comms/v3/resolver'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -83,7 +83,7 @@ async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
 
   try {
     if (context) {
-      const parcelsResponse = await fetch(`${getCommsServer(context.realm.hostname)}/stats/parcels`)
+      const parcelsResponse = await fetch(`${urlWithProtocol(context.realm.hostname)}/stats/parcels`)
 
       if (parcelsResponse.ok) {
         const parcelsBody = await parcelsResponse.json()
