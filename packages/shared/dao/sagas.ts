@@ -167,9 +167,10 @@ function* selectRealm() {
     (yield call(getRealmFromLocalStorage, network))
 
   if (!realm) debugger
+  
 
-  // return realm
-  return { hostname: 'https://peer-testing.decentraland.org', protocol: 'v2', serverName: 'testing' }
+  return realm
+  // return { hostname: 'https://peer-testing.decentraland.org', protocol: 'v3', serverName: 'testing' }
 }
 
 // load realm from local storage
