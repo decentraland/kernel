@@ -65,7 +65,7 @@ function realmProperties(realm: Realm, network: ETHEREUM_NETWORK | null): Partia
   if (realm.protocol === 'v1' || realm.protocol === 'v2') {
     return lighthouseBasedPartial(domain)
   } else if (network === ETHEREUM_NETWORK.GOERLI) {
-    return lighthouseBasedPartial('https://peer.decentraland.zone')
+    return lighthouseBasedPartial('https://peer-ap1.decentraland.zone')
   } else {
     return lighthouseBasedPartial('https://peer.decentraland.org')
   }
