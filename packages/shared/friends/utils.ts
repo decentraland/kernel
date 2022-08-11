@@ -1,5 +1,5 @@
-import { getSynapseUrl } from "shared/meta/selectors"
-import { store } from "shared/store/isolatedStore"
+import { getSynapseUrl } from 'shared/meta/selectors'
+import { store } from 'shared/store/isolatedStore'
 
 /**
  * Get the local part of the userId from matrixUserId
