@@ -380,26 +380,12 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
   }
 
-  public UpdateTotalUnseenMessagesByUser(
-    updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload
-  ): void {
-    this.SendMessageToUnity(
-      'Main',
-      'UpdateTotalUnseenMessagesByUser',
-      JSON.stringify(updateTotalUnseenMessagesByUserPayload)
-    )
-  }
-
   public UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'UpdateTotalFriendRequests', JSON.stringify(updateTotalFriendRequestsPayload))
   }
 
   public UpdateTotalFriends(updateTotalFriendPayload: UpdateTotalFriendsPayload): void {
     this.SendMessageToUnity('Main', 'UpdateTotalFriends', JSON.stringify(updateTotalFriendPayload))
-  }
-
-  public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
-    this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
   }
 
   public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {

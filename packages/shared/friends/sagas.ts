@@ -9,8 +9,7 @@ import {
   CurrentUserStatus,
   UnknownUsersError,
   SocialAPI,
-  UpdateUserStatus,
-  BasicMessageInfo
+  UpdateUserStatus
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'

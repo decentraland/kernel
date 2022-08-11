@@ -561,7 +561,7 @@ export class BrowserInterface {
 
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     if (message.action === FriendshipAction.REQUESTED_TO) {
-      const avatar = await ensureFriendProfile([userId])[0]
+      const avatar = await ensureFriendProfile(userId)
 
       if (isAddress(userId)) {
         found = avatar.hasConnectedWeb3 || false
