@@ -84,7 +84,6 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
       const fetchContentServer: string = yield select(getFetchContentServer)
 
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
-      defaultLogger.info('response from handleItemRequest:', response)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'
 
@@ -117,8 +116,8 @@ function* fetchItemsFromCatalyst(
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
   const COLLECTIONS_OR_ITEMS_ALLOWED =
     PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
-
-  const catalystFetchFn = action.type === EMOTES_REQUEST ? client.fetchEmotes : client.fetchWearables
+  const isRequestingEmotes = action.type === EMOTES_REQUEST
+  const catalystFetchFn = isRequestingEmotes ? client.fetchEmotes : client.fetchWearables
 
   const result: PartialItem[] = []
   if (filters.ownedByUser) {
@@ -129,15 +128,14 @@ function* fetchItemsFromCatalyst(
 
       if (identity) {
         if (itemUuids.length > 0) {
-          const v2Wearables: PartialItem[] = yield call(fetchWearablesByIdFromBuilder, itemUuids, identity)
-          result.push(...v2Wearables)
+          const v2Items: PartialItem[] = yield call(fetchItemsByIdFromBuilder, itemUuids, identity)
+          result.push(...v2Items)
         }
 
         if (itemURNs.length > 0) {
-          const zoneItems: PartialItem[] =
-            action.type === EMOTES_REQUEST
-              ? yield client.fetchEmotes({ emoteIds: itemURNs })
-              : yield client.fetchWearables({ wearableIds: itemURNs })
+          const zoneItems: PartialItem[] = isRequestingEmotes
+            ? yield client.fetchEmotes({ emoteIds: itemURNs })
+            : yield client.fetchWearables({ wearableIds: itemURNs })
 
           result.push(...zoneItems)
         }
@@ -157,23 +155,28 @@ function* fetchItemsFromCatalyst(
       // Fetch unpublished collections from builder server
       const uuidCollections = collectionIds.filter((collectionId) => !collectionId.startsWith('urn'))
       if (uuidCollections.length > 0 && identity) {
-        const v2Wearables: PartialItem[] = yield call(
-          fetchWearablesByCollectionFromBuilder,
+        const v2Items: PartialItem[] = yield call(
+          fetchItemsByCollectionFromBuilder,
+          action,
           uuidCollections,
           filters,
           identity
         )
-        result.push(...v2Wearables)
+        result.push(...v2Items)
       }
     } else {
-      let ownedWearables: OwnedItemsWithDefinition[]
+      let ownedItems: OwnedItemsWithDefinition[]
       if (filters.thirdPartyId) {
-        ownedWearables = yield call(fetchOwnedThirdPartyWearables, filters.ownedByUser, filters.thirdPartyId, client)
+        ownedItems = yield call(fetchOwnedThirdPartyWearables, filters.ownedByUser, filters.thirdPartyId, client)
       } else {
-        ownedWearables = yield call(fetchOwnedWearables, filters.ownedByUser, client)
+        ownedItems = yield call(
+          isRequestingEmotes ? fetchOwnedEmotes : fetchOwnedWearables,
+          filters.ownedByUser,
+          client
+        )
       }
 
-      for (const { amount, definition } of ownedWearables) {
+      for (const { amount, definition } of ownedItems) {
         if (definition) {
           for (let i = 0; i < amount; i++) {
             result.push(definition)
@@ -196,8 +199,8 @@ function* fetchItemsFromCatalyst(
 
       if (identity) {
         if (itemUuids.length > 0) {
-          const v2Wearables: PartialWearableV2[] = yield call(fetchWearablesByIdFromBuilder, itemUuids, identity)
-          result.push(...v2Wearables)
+          const v2Items: PartialWearableV2[] = yield call(fetchItemsByIdFromBuilder, itemUuids, identity)
+          result.push(...v2Items)
         }
 
         if (itemURNs.length > 0) {
@@ -210,13 +213,14 @@ function* fetchItemsFromCatalyst(
         (collectionId) => !collectionId.startsWith('urn')
       )
       if (uuidCollections.length > 0 && identity) {
-        const v2Wearables: PartialWearableV2[] = yield call(
-          fetchWearablesByCollectionFromBuilder,
+        const v2Items: PartialWearableV2[] = yield call(
+          fetchItemsByCollectionFromBuilder,
+          action,
           uuidCollections,
           filters,
           identity
         )
-        result.push(...v2Wearables)
+        result.push(...v2Items)
       }
     }
   }
@@ -247,6 +251,10 @@ function fetchOwnedWearables(ethAddress: string, client: CatalystClient) {
   return client.fetchOwnedWearables(ethAddress, true)
 }
 
+function fetchOwnedEmotes(ethAddress: string, client: CatalystClient) {
+  return client.fetchOwnedEmotes(ethAddress, true)
+}
+
 async function fetchWearablesByFilters(filters: WearablesRequestFilters, client: CatalystClient) {
   return client.fetchWearables(filters)
 }
@@ -258,7 +266,7 @@ async function fetchEmotesByFilters(filters: EmotesRequestFilters, client: Catal
 /**
  * Fetches a single item from the Builder Server. Retrieves both wearables and emotes
  */
-async function fetchWearablesByIdFromBuilder(uuidsItems: string[], identity: ExplorerIdentity): Promise<WearableV2[]> {
+async function fetchItemsByIdFromBuilder(uuidsItems: string[], identity: ExplorerIdentity): Promise<WearableV2[]> {
   return Promise.all(
     uuidsItems.map(async (uuid) => {
       const path = `items/${uuid}`
@@ -275,11 +283,13 @@ async function fetchWearablesByIdFromBuilder(uuidsItems: string[], identity: Exp
   )
 }
 
-async function fetchWearablesByCollectionFromBuilder(
+async function fetchItemsByCollectionFromBuilder(
+  action: EmotesRequest | WearablesRequest,
   uuidCollections: string[],
-  filters: WearablesRequestFilters | undefined,
+  filters: WearablesRequestFilters | EmotesRequestFilters | undefined,
   identity: ExplorerIdentity
 ) {
+  const isRequestingEmotes = action.type === EMOTES_REQUEST
   const result: WearableV2[] = []
   for (const collectionUuid of uuidCollections) {
     if (filters?.collectionIds && !filters.collectionIds.includes(collectionUuid)) {
@@ -291,11 +301,19 @@ async function fetchWearablesByCollectionFromBuilder(
     const collection: { data: UnpublishedWearable[] } = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
       headers
     })) as any
-    const v2Wearables = collection.data.map((wearable) => mapUnpublishedWearableIntoCatalystWearable(wearable))
-    result.push(...v2Wearables)
+    const items = collection.data.map((item) => mapUnpublishedWearableIntoCatalystWearable(item))
+    result.push(
+      ...items.filter((item) =>
+        isRequestingEmotes
+          ? item.type === UnpublishedWearableType.EMOTE
+          : item.type === UnpublishedWearableType.WEARABLE
+      )
+    )
   }
-  if (filters?.wearableIds) {
-    return result.filter((w) => filters.wearableIds!.includes(w.id))
+  if (filters && areWearablesRequestFilters(filters) && filters.wearableIds) {
+    return result.filter((item) => filters.wearableIds!.includes(item.id))
+  } else if (filters && !areWearablesRequestFilters(filters) && filters.emoteIds) {
+    return result.filter((item) => filters.emoteIds!.includes(item.id))
   }
   return result
 }
