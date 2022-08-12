@@ -40,7 +40,7 @@ async function getSceneId(_req: GetSceneIdRequest, ctx: PortContext): Promise<Ge
   return { sceneId }
 }
 
-async function getIsEmpty(_req: GetIsEmptyRequest, ctx: PortContext): Promise<GetIsEmptyResponse> {
+async function getIsEmpty(_req: GetIsEmptyRequest, _ctx: PortContext): Promise<GetIsEmptyResponse> {
   return { isEmpty: false }
 }
 

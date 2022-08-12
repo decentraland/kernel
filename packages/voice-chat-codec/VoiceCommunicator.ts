@@ -473,7 +473,7 @@ export class VoiceCommunicator {
       }
     }
 
-    workletNode.onprocessorerror = (e) => {
+    workletNode.onprocessorerror = (_e) => {
       this.notifyRecording(false)
     }
 
