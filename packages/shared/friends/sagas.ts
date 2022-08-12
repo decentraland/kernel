@@ -236,6 +236,21 @@ function* configureMatrixClient(action: SetMatrixClient) {
       sender: message.sender === ownId ? identity.address : senderUserId,
       recipient: message.sender === ownId ? senderUserId : identity.address
     }
+
+    // get total user unread messages
+    const totalUnreadMessages = client.getTotalUnseenMessages()
+    const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
+
+    const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
+      userId: identity.address,
+      total: unreadMessages
+    }
+    const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+      total: totalUnreadMessages
+    }
+
+    getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
+    getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
     addNewChatMessage(chatMessage)
   })
 
@@ -457,8 +472,13 @@ export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPa
   // get conversation id
   const conversationId = await getConversationId(client, userId.userId)
 
-  // mark as seen all the messages in the conversation
-  await client.markMessagesAsSeen(conversationId)
+  // get user's chat unread messages
+  const unreadMessages = client.getConversationUnreadMessages(conversationId).length
+
+  if (unreadMessages > 0) {
+    // mark as seen all the messages in the conversation
+    await client.markMessagesAsSeen(conversationId)
+  }
 
   // get total user unread messages
   const totalUnreadMessages = client.getTotalUnseenMessages()
@@ -696,9 +716,6 @@ function parseUserId(socialId: string) {
 
 function addNewChatMessage(chatMessage: ChatMessage) {
   getUnityInstance().AddMessageToChatWindow(chatMessage)
-
-  // TODO!: Add calls to unity for UpdateTotalUnseenMessages
-  // TODO!: Add calls to unity for UpdateUserUnseenMessages
 }
 
 function* handleSendPrivateMessage(action: SendPrivateMessage) {
