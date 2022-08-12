@@ -823,7 +823,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         break
       }
 
-      // TODO!: Review we're not updating the state correctly and not notifying explorer as expected
       case FriendshipAction.CANCELED: {
         const requests = [...state[friendRequestTypeSelector]]
 
@@ -860,7 +859,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         break
       }
-      // TODO!: Review
       case FriendshipAction.REQUESTED_TO: {
         const request = state.toFriendRequests.find((request) => request.userId === userId)
 
