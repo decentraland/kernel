@@ -485,14 +485,20 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
   const ownId = client.getUserId()
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
-  const messageId: string | undefined =
-    getPrivateMessagesPayload.fromMessageId === null ? undefined : getPrivateMessagesPayload.fromMessageId
+  const messageId: string | undefined = !getPrivateMessagesPayload.fromMessageId
+    ? undefined
+    : getPrivateMessagesPayload.fromMessageId
+
   const cursorLastMessage = await client.getCursorOnMessage(conversationId, messageId, {
     initialSize: getPrivateMessagesPayload.limit,
     limit: getPrivateMessagesPayload.limit
   })
 
   const messages = cursorLastMessage.getMessages()
+  if (messageId !== undefined) {
+    // we remove the last message from the list since it's the pivot and they already have it.
+    messages.pop()
+  }
 
   // parse messages
   const addChatMessagesPayload: AddChatMessagesPayload = {

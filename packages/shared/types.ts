@@ -607,7 +607,7 @@ export interface MarkMessagesAsSeenPayload {
 export interface GetPrivateMessagesPayload {
   userId: string
   limit: number
-  fromMessageId: string | null
+  fromMessageId: string
 }
 
 export interface UpdateTotalUnseenMessagesPayload {

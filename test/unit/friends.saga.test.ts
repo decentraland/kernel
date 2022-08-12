@@ -352,7 +352,7 @@ describe('Friends sagas', () => {
         const request: GetPrivateMessagesPayload = {
           userId: '0xa3',
           limit: 10,
-          fromMessageId: null,
+          fromMessageId: '',
         }
 
         // parse messages
