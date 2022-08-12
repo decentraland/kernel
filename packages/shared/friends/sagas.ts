@@ -696,6 +696,9 @@ function parseUserId(socialId: string) {
 
 function addNewChatMessage(chatMessage: ChatMessage) {
   getUnityInstance().AddMessageToChatWindow(chatMessage)
+
+  // TODO!: Add calls to unity for UpdateTotalUnseenMessages
+  // TODO!: Add calls to unity for UpdateUserUnseenMessages
 }
 
 function* handleSendPrivateMessage(action: SendPrivateMessage) {
@@ -763,7 +766,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    const selector = incoming ? 'toFriendRequests' : 'fromFriendRequests'
+    const selector = incoming ? 'fromFriendRequests' : 'toFriendRequests'
     const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = incoming
       ? 'totalReceivedRequests'
       : 'totalSentRequests'
@@ -816,6 +819,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         break
       }
+
+      // TODO!: Review we're not updating the state correctly and not notifying explorer as expected
       case FriendshipAction.CANCELED: {
         const requests = [...state[selector]]
 
@@ -852,6 +857,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         break
       }
+      // TODO!: Review
       case FriendshipAction.REQUESTED_TO: {
         const request = state.toFriendRequests.find((request) => request.userId === userId)
 
@@ -895,10 +901,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
       if (incoming) {
         yield call(waitForRendererInstance)
-        getUnityInstance().UpdateFriendshipStatus(payload)
       } else {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
+
+      getUnityInstance().UpdateFriendshipStatus(payload)
     }
 
     if (!incoming) {
@@ -975,6 +982,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
     switch (update.action) {
       case FriendshipAction.NONE: {
         // do nothing in this case
+        // this action should never happen
         break
       }
       case FriendshipAction.APPROVED: {
