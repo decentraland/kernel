@@ -764,9 +764,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    const incoming = meta.incoming || state.fromFriendRequests.some((request) => request.userId === userId)
+    const incoming = meta.incoming
+    const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
-    const selector = incoming ? 'fromFriendRequests' : 'toFriendRequests'
+    const friendRequestTypeSelector = hasSentFriendshipRequest ? 'toFriendRequests' : 'fromFriendRequests'
     const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = incoming
       ? 'totalReceivedRequests'
       : 'totalSentRequests'
@@ -788,15 +789,15 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (action === FriendshipAction.REJECTED) {
           totalFriends -= 1
         }
-        const requests = [...state[selector]]
+        const requests = [...state[friendRequestTypeSelector]]
 
         const index = requests.findIndex((request) => request.userId === userId)
 
-        logger.info(`requests[${selector}]`, requests, index, userId)
+        logger.info(`requests[${friendRequestTypeSelector}]`, requests, index, userId)
         if (index !== -1) {
           requests.splice(index, 1)
 
-          newState = { ...state, [selector]: requests }
+          newState = { ...state, [friendRequestTypeSelector]: requests }
 
           if (action === FriendshipAction.APPROVED && !state.friends.includes(userId)) {
             newState.friends.push(userId)
@@ -824,14 +825,14 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
       // TODO!: Review we're not updating the state correctly and not notifying explorer as expected
       case FriendshipAction.CANCELED: {
-        const requests = [...state[selector]]
+        const requests = [...state[friendRequestTypeSelector]]
 
         const index = requests.findIndex((request) => request.userId === userId)
 
         if (index !== -1) {
           requests.splice(index, 1)
 
-          newState = { ...state, [selector]: requests }
+          newState = { ...state, [friendRequestTypeSelector]: requests }
         }
 
         updateTotalFriendRequestsPayload = {
