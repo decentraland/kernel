@@ -768,7 +768,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
     const friendRequestTypeSelector = hasSentFriendshipRequest ? 'toFriendRequests' : 'fromFriendRequests'
-    const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = incoming
+    const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = hasSentFriendshipRequest
       ? 'totalReceivedRequests'
       : 'totalSentRequests'
 
