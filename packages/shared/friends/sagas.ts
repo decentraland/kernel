@@ -745,8 +745,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   }
 
   try {
-    const { incoming } = meta
-
     const state: ReturnType<typeof getPrivateMessaging> = yield select(getPrivateMessaging)
 
     let newState: FriendsState | undefined
@@ -766,6 +764,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
+    const incoming = meta.incoming || state.fromFriendRequests.some((request) => request.userId === userId)
+
     const selector = incoming ? 'fromFriendRequests' : 'toFriendRequests'
     const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = incoming
       ? 'totalReceivedRequests'
@@ -781,11 +781,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       }
       case FriendshipAction.APPROVED: {
         totalFriends += 1
-        totalFriends -= 1
       }
       // The approved should not have a break since it should execute all the code as the rejected case
       // Also the rejected needs to be directly after the Approved to make sure this works
       case FriendshipAction.REJECTED: {
+        if (action === FriendshipAction.REJECTED) {
+          totalFriends -= 1
+        }
         const requests = [...state[selector]]
 
         const index = requests.findIndex((request) => request.userId === userId)
