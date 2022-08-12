@@ -35,7 +35,7 @@ export async function initializeUnityEditor(
     }
   }
 
-  createRendererRpcClient(transport).catch((e) => {})
+  createRendererRpcClient(transport).catch((_e) => {})
 
   return gameInstance
 }

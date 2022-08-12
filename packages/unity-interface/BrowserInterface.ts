@@ -663,11 +663,11 @@ export class BrowserInterface {
     defaultLogger.warn('RequestBIWCatalogHeader')
   }
 
-  public RequestHeaderForUrl(data: { method: string; url: string }) {
+  public RequestHeaderForUrl(_data: { method: string; url: string }) {
     defaultLogger.warn('RequestHeaderForUrl')
   }
 
-  public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
+  public RequestSignedHeaderForBuilder(_data: { method: string; url: string }) {
     defaultLogger.warn('RequestSignedHeaderForBuilder')
   }
 
