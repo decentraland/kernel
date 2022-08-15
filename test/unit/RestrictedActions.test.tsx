@@ -153,6 +153,7 @@ describe('RestrictedActions tests', () => {
       id: 'test',
       isPortableExperience: false,
       useFPSThrottling: false,
+      sceneNumber: 3,
       baseUrl: '',
       entity: {
         version: 'v3',
