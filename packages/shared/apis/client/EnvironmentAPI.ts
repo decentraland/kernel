@@ -2,7 +2,6 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { ContentMapping, Scene } from '@dcl/schemas'
 import { EnvironmentAPIServiceDefinition } from '../proto/EnvironmentAPI.gen'
-import { getSceneNumber } from '../sceneNumber'
 
 export type Realm = {
   domain: string

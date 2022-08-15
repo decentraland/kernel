@@ -1,11 +1,11 @@
 const fs = require("fs")
 const path = require("path")
-const fetch = require("node-fetch")
+const fetch = require("undici")
 
 const contentsDir = "contents"
 
 const downloadFile = async (url, path) => {
-  const res = await fetch(url)
+  const res = await fetch.fetch(url)
   const fileStream = fs.createWriteStream(path)
   await new Promise((resolve, reject) => {
     res.body.pipe(fileStream)

@@ -7,10 +7,11 @@
  * The scene will be downloaded in the public/downloaded-scenes folder. This can be overriden with the OUTPUT_DIR variable
  */
 
-import fetch from 'node-fetch'
+import {fetch} from 'undici'
 import { CatalystClient } from 'dcl-catalyst-client'
 import { EntityType, EntityContentItemReference } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
+import * as fsp from 'fs/promises'
 
 const sceneId = process.env.SCENE_ID
 const parcel = process.env.PARCEL
@@ -26,14 +27,6 @@ if (!sceneId && !parcel) {
     'Please specify the scene id or pointer for which to download its contents using the SCENE_ID or POINTER env variables respectively'
   )
   process.exit(1)
-}
-
-function restrictLength(pending: string[]) {
-  if (pending.length > 5) {
-    return `${pending.length}`
-  } else {
-    return JSON.stringify(pending)
-  }
 }
 
 async function main() {
@@ -59,34 +52,10 @@ async function main() {
             const folder = pathParts.join('/')
             await fs.promises.mkdir(`${scenePath}/${folder}`, { recursive: true })
           }
-          const fileStream = fs.createWriteStream(`${scenePath}/${content.file}`)
-
-          await new Promise<void>((resolve, reject) => {
-            response.body.pipe(fileStream)
-            response.body.on('error', (e) => {
-              delete pending[content.file]
-              console.log(
-                `Error downloading file ${content.file}. Pending: ${restrictLength(
-                  Object.keys(pending)
-                )}. Queued: ${restrictLength(queued.map((it) => it.file))}`,
-                e
-              )
-              reject(e)
-            })
-            fileStream.on('finish', () => {
-              delete pending[content.file]
-              console.log(
-                `Finished downloading file ${content.file}. Pending: ${restrictLength(
-                  Object.keys(pending)
-                )}  Queued: ${restrictLength(queued.map((it) => it.file))}`
-              )
-              resolve()
-            })
-          }).finally(() => {
-            if (queued.length > 0) {
-              download(queued.shift())
-            }
-          })
+          await fsp.writeFile(`${scenePath}/${content.file}`, Buffer.from(await response.arrayBuffer()))
+          if (queued.length > 0) {
+            download(queued.shift())
+          }
         } else {
           const text = await response.text()
           console.log(
