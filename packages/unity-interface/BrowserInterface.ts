@@ -123,6 +123,10 @@ export type RendererSaveProfile = {
       a: number
     }
     wearables: string[]
+    emotes: {
+      slot: number
+      urn: string
+    }[]
   }
   face256: string
   body: string
@@ -155,7 +159,8 @@ export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
         eyeColor: color3Schema,
         hairColor: color3Schema,
         skinColor: color3Schema,
-        wearables: { type: 'array', items: { type: 'string' } }
+        wearables: { type: 'array', items: { type: 'string' } },
+        emotes: { type: 'array', items: { type: 'string' } }
       }
     }
   }
@@ -359,6 +364,7 @@ export class BrowserInterface {
           hair: { color: changes.avatar.hairColor },
           skin: { color: changes.avatar.skinColor },
           wearables: changes.avatar.wearables,
+          emotes: changes.avatar.emotes,
           snapshots: {
             body: changes.body,
             face256: changes.face256
@@ -663,11 +669,11 @@ export class BrowserInterface {
     defaultLogger.warn('RequestBIWCatalogHeader')
   }
 
-  public RequestHeaderForUrl(data: { method: string; url: string }) {
+  public RequestHeaderForUrl(_data: { method: string; url: string }) {
     defaultLogger.warn('RequestHeaderForUrl')
   }
 
-  public RequestSignedHeaderForBuilder(data: { method: string; url: string }) {
+  public RequestSignedHeaderForBuilder(_data: { method: string; url: string }) {
     defaultLogger.warn('RequestSignedHeaderForBuilder')
   }
 
