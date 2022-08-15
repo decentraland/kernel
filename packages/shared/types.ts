@@ -546,6 +546,19 @@ export interface GetFriendRequestsPayload {
   receivedSkip: number // the amount of entries of received friend requests to skip
 }
 
+export interface GetFriendsPayload {
+  userNameOrId?: string // text to match
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+}
+
+export interface GetFriendRequestsPayload {
+  sentLimit: number // max amount of entries of sent friend requests to request
+  sentSkip: number // the amount of entries of sent friend requests to skip
+  receivedLimit: number // max amount of entries of received friend requests to request
+  receivedSkip: number // the amount of entries of received friend requests to skip
+}
+
 export enum FriendshipAction {
   NONE,
   APPROVED,
@@ -589,6 +602,16 @@ export interface AddFriendRequestsPayload {
   requestedFrom: string[] // user ids which you received a request
   totalReceivedFriendRequests: number // total amount of friend requests received
   totalSentFriendRequests: number // total amount of friend requests sent
+}
+
+export interface MarkMessagesAsSeenPayload {
+  userId: string
+}
+
+export interface GetPrivateMessagesPayload {
+  userId: string
+  limit: number
+  fromMessageId: string
 }
 
 export interface UpdateTotalUnseenMessagesPayload {

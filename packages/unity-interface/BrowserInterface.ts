@@ -24,7 +24,9 @@ import {
   AvatarRendererMessage,
   GetFriendsPayload,
   GetFriendRequestsPayload,
-  GetFriendsWithDirectMessagesPayload
+  GetFriendsWithDirectMessagesPayload,
+  MarkMessagesAsSeenPayload,
+  GetPrivateMessagesPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -429,22 +431,23 @@ export class BrowserInterface {
     getFriendRequests(getFriendRequestsPayload)
   }
 
-  public async MarkMessagesAsSeen(userId: string) {
+  public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
+    if (userId.userId === 'nearby') return
     markAsSeenPrivateChatMessages(userId).catch((err) => {
       defaultLogger.error('error markAsSeenPrivateChatMessages', err),
         trackEvent('error', {
-          message: `error marking private messages as seen ${userId} ` + err.message,
+          message: `error marking private messages as seen ${userId.userId} ` + err.message,
           context: 'kernel#friendsSaga',
           stack: 'markAsSeenPrivateChatMessages'
         })
     })
   }
 
-  public async GetPrivateMessages(userId: string, limit: number, fromMessageId: string) {
-    getPrivateMessages(userId, limit, fromMessageId).catch((err) => {
+  public async GetPrivateMessages(getPrivateMessagesPayload: GetPrivateMessagesPayload) {
+    getPrivateMessages(getPrivateMessagesPayload).catch((err) => {
       defaultLogger.error('error getPrivateMessages', err),
         trackEvent('error', {
-          message: `error getting private messages ${userId} ` + err.message,
+          message: `error getting private messages ${getPrivateMessagesPayload.userId} ` + err.message,
           context: 'kernel#friendsSaga',
           stack: 'getPrivateMessages'
         })

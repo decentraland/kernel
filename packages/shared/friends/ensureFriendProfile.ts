@@ -1,9 +1,9 @@
 import { Avatar } from '@dcl/schemas'
-import { ProfilesAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { ProfileAsPromise, ProfilesAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { ProfileType } from 'shared/profiles/types'
 
 export async function ensureFriendProfile(userId: string): Promise<Avatar> {
-  return ensureFriendsProfile([userId])[0]
+  return ProfileAsPromise(userId)
 }
 
 export async function ensureFriendsProfile(userIds: string[]): Promise<Avatar[]> {
