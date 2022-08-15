@@ -1,9 +1,9 @@
 import { LoadableScene } from 'shared/types'
 import { getServer } from '../manager'
 
-export async function fetchSceneJson(sceneIds: string[]): Promise<LoadableScene[]> {
+export async function fetchSceneJson(entityIds: string[]): Promise<LoadableScene[]> {
   const server = getServer()
   if (!server) return []
-  const lands = await Promise.all(sceneIds.map((sceneId) => server.getLoadableSceneBySceneId(sceneId)))
+  const lands = await Promise.all(entityIds.map((entityId) => server.getLoadableSceneBySceneId(entityId)))
   return lands.filter(($) => !!$) as Array<LoadableScene>
 }

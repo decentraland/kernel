@@ -22,13 +22,13 @@ const worker: Worker = new Worker(lifecycleWorkerUrl, { name: 'LifecycleWorker' 
 worker.onerror = (e) => defaultLogger.error('Loader worker error', e)
 
 export class LifecycleManager extends TransportBasedServer {
-  sceneIdToRequest: Map<string, IFuture<LoadableScene | null>> = new Map()
+  entityIdToRequest: Map<string, IFuture<LoadableScene | null>> = new Map()
   positionToRequest: Map<string, IFuture<LoadableScene | null>> = new Map()
 
   enable() {
     super.enable()
-    this.on('Scene.dataResponse', (result: { sceneId: string; data: LoadableScene | null }) => {
-      const future = this.sceneIdToRequest.get(result.sceneId)
+    this.on('Scene.dataResponse', (result: { entityId: string; data: LoadableScene | null }) => {
+      const future = this.entityIdToRequest.get(result.entityId)
 
       if (future) {
         future.resolve(result.data)
@@ -45,12 +45,12 @@ export class LifecycleManager extends TransportBasedServer {
     })
   }
 
-  getLoadableSceneBySceneId(sceneId: string): Promise<LoadableScene | null> {
-    let theFuture = this.sceneIdToRequest.get(sceneId)
+  getLoadableSceneBySceneId(entityId: string): Promise<LoadableScene | null> {
+    let theFuture = this.entityIdToRequest.get(entityId)
     if (!theFuture) {
       theFuture = future<LoadableScene | null>()
-      this.sceneIdToRequest.set(sceneId, theFuture)
-      this.notify('Scene.dataRequest', { sceneId })
+      this.entityIdToRequest.set(entityId, theFuture)
+      this.notify('Scene.dataRequest', { entityId })
     }
     return theFuture
   }

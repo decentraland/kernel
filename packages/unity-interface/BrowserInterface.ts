@@ -412,7 +412,7 @@ export class BrowserInterface {
     switch (eventType) {
       case 'SceneReady': {
         const { sceneId } = payload
-        sceneLifeCycleObservable.notifyObservers({ sceneId, status: 'ready' })
+        sceneLifeCycleObservable.notifyObservers({ entityId: sceneId, status: 'ready' })
         break
       }
       case 'DeactivateRenderingACK': {

@@ -28,7 +28,7 @@ let emptyParcelController: EmptyParcelController
  * - 'Position.settled'
  * - 'Position.unsettled'
  * - 'Scene.shouldStart' (entity: Entity)
- * - 'Scene.shouldUnload' (sceneId: string)
+ * - 'Scene.shouldUnload' (entityId: string)
  *
  * Make sure the main thread reports:
  * - 'User.setPosition' { position: {x: number, y: number } }
@@ -70,8 +70,8 @@ let emptyParcelController: EmptyParcelController
       sceneController.on('Start scene', (entity) => {
         connector.notify('Scene.shouldStart', { entity })
       })
-      sceneController.on('Unload scene', (sceneId) => {
-        connector.notify('Scene.shouldUnload', { sceneId })
+      sceneController.on('Unload scene', (entityId) => {
+        connector.notify('Scene.shouldUnload', { entityId })
       })
 
       connector.on('User.setPosition', (opt: { position: { x: number; y: number }; teleported: boolean }) => {
@@ -80,15 +80,15 @@ let emptyParcelController: EmptyParcelController
         })
       })
 
-      function sendData(sceneId: string, scene: LoadableScene | null) {
+      function sendData(entityId: string, scene: LoadableScene | null) {
         connector.notify('Scene.dataResponse', {
-          sceneId: sceneId,
+          entityId,
           data: scene
         })
       }
 
-      connector.on('Scene.dataRequest', async (data: { sceneId: string }) => {
-        sendData(data.sceneId, await downloadManager.getParcelDataByEntityId(data.sceneId))
+      connector.on('Scene.dataRequest', async (data: { entityId: string }) => {
+        sendData(data.entityId, await downloadManager.getParcelDataByEntityId(data.entityId))
       })
 
       connector.on('Scene.getByPosition', async (data: { positions: string[] }) => {
@@ -100,7 +100,7 @@ let emptyParcelController: EmptyParcelController
       })
 
       connector.on('Scene.status', (data: SceneLifeCycleStatusReport) => {
-        sceneController.reportStatus(data.sceneId, data.status)
+        sceneController.reportStatus(data.entityId, data.status)
       })
 
       connector.on('SetScenesLoadRadius', (data: NewDrawingDistanceReport) => {

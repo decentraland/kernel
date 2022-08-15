@@ -70,6 +70,8 @@ function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
   return WebWorkerTransport(worker)
 }
 
+let globalSceneNumberCounter = 0
+
 export class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
 
@@ -94,6 +96,7 @@ export class SceneWorker {
     public readonly loadableScene: Readonly<LoadableScene>,
     public readonly transport: Transport = buildWebWorkerTransport(loadableScene)
   ) {
+    const sceneNumber = ++globalSceneNumberCounter
     const skipErrors = ['Transport closed while waiting the ACK']
 
     this.metadata = loadableScene.entity.metadata
@@ -110,7 +113,8 @@ export class SceneWorker {
       sceneData: {
         ...loadableScene,
         isPortableExperience: false,
-        useFPSThrottling: true
+        useFPSThrottling: true,
+        sceneNumber
       },
       logger: this.logger,
       permissionGranted: new Set(),
@@ -269,7 +273,7 @@ export class SceneWorker {
         continue
       }
 
-      const part = protobufMsgBridge.encodeSceneMessage(sceneId, action.type, action.payload, action.tag)
+      const part = protobufMsgBridge.encodeSceneMessage(sceneId, this.rpcContext.sceneData.sceneNumber, action.type, action.payload, action.tag)
       messages.push(part)
       len += part.length
 
@@ -285,7 +289,7 @@ export class SceneWorker {
     const sceneId = this.loadableScene.id
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
-      nativeMsgBridge.SendNativeMessage(sceneId, action)
+      nativeMsgBridge.SendNativeMessage(sceneId, this.rpcContext.sceneData.sceneNumber, action)
     }
   }
 
@@ -344,7 +348,7 @@ export class SceneWorker {
 
   private subscribeToSceneLifeCycleEvents() {
     this.sceneLifeCycleObserver = sceneLifeCycleObservable.add((obj) => {
-      if (this.loadableScene.id === obj.sceneId && obj.status === 'ready') {
+      if (this.loadableScene.id === obj.entityId && obj.status === 'ready') {
         this.ready |= SceneWorkerReadyState.STARTED
 
         this.sceneReady = true

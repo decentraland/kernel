@@ -260,7 +260,7 @@ export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams)
     }
 
     const sceneStatus: SceneLifeCycleStatusReport = {
-      sceneId: action.payload.id,
+      entityId: action.payload.id,
       status
     }
 

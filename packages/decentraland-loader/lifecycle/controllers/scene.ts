@@ -3,14 +3,14 @@ import { EventEmitter } from 'events'
 import { SceneDataDownloadManager } from './download'
 import defaultLogger from 'shared/logger'
 
-export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
+export type SceneLifeCycleStatusReport = { entityId: string; status: SceneLifeCycleStatusType }
 export type NewDrawingDistanceReport = { distanceInParcels: number }
 
-type SceneId = string
+type EntityId = string
 
 export class SceneLifeCycleController extends EventEmitter {
   private downloadManager: SceneDataDownloadManager
-  private sceneStatus = new Map<SceneId, SceneLifeCycleStatus>()
+  private sceneStatus = new Map<EntityId, SceneLifeCycleStatus>()
 
   constructor(opts: { downloadManager: SceneDataDownloadManager }) {
     super()
@@ -44,36 +44,36 @@ export class SceneLifeCycleController extends EventEmitter {
     return { sighted: sighted.map((entity) => entity.id), lostSight: difference }
   }
 
-  isRenderable(sceneId: SceneId): boolean {
-    const status = this.sceneStatus.get(sceneId)
+  isRenderable(entityId: EntityId): boolean {
+    const status = this.sceneStatus.get(entityId)
     return !!status && (status.isReady() || status.isFailed())
   }
 
-  reportStatus(sceneId: string, status: SceneLifeCycleStatusType) {
-    const lifeCycleStatus = this.sceneStatus.get(sceneId)
+  reportStatus(entityId: string, status: SceneLifeCycleStatusType) {
+    const lifeCycleStatus = this.sceneStatus.get(entityId)
     if (!lifeCycleStatus) {
-      defaultLogger.info(`no lifecycle status for scene ${sceneId}`)
+      defaultLogger.info(`no lifecycle status for scene ${entityId}`)
       return
     }
     lifeCycleStatus.status = status
 
-    this.emit('Scene status', { sceneId, status })
+    this.emit('Scene status', { entityId, status })
   }
 
-  isSceneRunning(sceneId: string): boolean {
-    const lifeCycleStatus = this.sceneStatus.get(sceneId)
+  isSceneRunning(entityId: string): boolean {
+    const lifeCycleStatus = this.sceneStatus.get(entityId)
     if (!lifeCycleStatus) {
       return false
     }
     return lifeCycleStatus.isReady()
   }
 
-  private unloadScenes(sceneIds: string[]) {
-    sceneIds.forEach((sceneId) => {
-      const sceneStatus = this.sceneStatus.get(sceneId)
+  private unloadScenes(entityIds: string[]) {
+    entityIds.forEach((entityId) => {
+      const sceneStatus = this.sceneStatus.get(entityId)
       if (sceneStatus && sceneStatus.isAwake()) {
         sceneStatus.status = 'unloaded'
-        this.emit('Unload scene', sceneId)
+        this.emit('Unload scene', entityId)
       }
     })
   }

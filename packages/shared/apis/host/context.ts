@@ -12,6 +12,7 @@ export type PortContext = {
   sceneData: LoadableScene & {
     isPortableExperience: boolean
     useFPSThrottling: boolean
+    readonly sceneNumber: number
   }
   subscribedEvents: Set<string>
   events: EventData[]
