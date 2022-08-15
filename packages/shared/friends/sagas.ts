@@ -237,21 +237,24 @@ function* configureMatrixClient(action: SetMatrixClient) {
       recipient: message.sender === ownId ? senderUserId : identity.address
     }
 
-    // get total user unread messages
-    const totalUnreadMessages = client.getTotalUnseenMessages()
-    const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
-
-    const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
-      userId: identity.address,
-      total: unreadMessages
-    }
-    const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
-      total: totalUnreadMessages
-    }
-
-    getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
-    getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
     addNewChatMessage(chatMessage)
+
+    // get total user unread messages
+    if (message.sender !== ownId) {
+      const totalUnreadMessages = client.getTotalUnseenMessages()
+      const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
+
+      const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
+        userId: senderUserId,
+        total: unreadMessages
+      }
+      const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+        total: totalUnreadMessages
+      }
+
+      getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
+      getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+    }
   })
 
   client.onFriendshipRequest((socialId) =>

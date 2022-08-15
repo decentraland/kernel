@@ -335,19 +335,19 @@ describe('Friends sagas', () => {
   })
 
   describe('get private messages from specific chat', () => {
-    beforeEach(() => {
-      const { store } = buildStore()
-      globalThis.globalStore = store
-
-      mockStoreCalls()
-    })
-
-    afterEach(() => {
-      sinon.restore()
-      sinon.reset()
-    })
-
     describe("When a private chat is opened", () => {
+      beforeEach(() => {
+        const { store } = buildStore()
+        globalThis.globalStore = store
+
+        mockStoreCalls()
+      })
+
+      afterEach(() => {
+        sinon.restore()
+        sinon.reset()
+      })
+
       it('Should call unity with the expected private messages', () => {
         const request: GetPrivateMessagesPayload = {
           userId: '0xa3',
