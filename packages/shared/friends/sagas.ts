@@ -512,15 +512,22 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
     ? undefined
     : getPrivateMessagesPayload.fromMessageId
 
-  const cursorLastMessage = await client.getCursorOnMessage(conversationId, messageId, {
-    initialSize: getPrivateMessagesPayload.limit,
-    limit: getPrivateMessagesPayload.limit
+  // the message in question is in the middle of a window, so we multiply by two the limit in order to get the required messages.
+  let limit = getPrivateMessagesPayload.limit
+  if (messageId !== undefined) {
+    limit = limit * 2
+  }
+
+  const cursorMessage = await client.getCursorOnMessage(conversationId, messageId, {
+    initialSize: limit,
+    limit
   })
 
-  const messages = cursorLastMessage.getMessages()
+  const messages = cursorMessage.getMessages()
   if (messageId !== undefined) {
-    // we remove the last message from the list since it's the pivot and they already have it.
-    messages.pop()
+    // we remove the messages they already have.
+    const index = messages.map((messages) => messages.id).indexOf(messageId)
+    messages.splice(index)
   }
 
   // parse messages
