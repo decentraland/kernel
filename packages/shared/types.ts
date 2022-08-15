@@ -41,6 +41,10 @@ export type AvatarForUserData = {
   hairColor: ColorString
   eyeColor: ColorString
   wearables: WearableId[]
+  emotes?: {
+    slot: number
+    urn: string
+  }[]
   snapshots: Snapshots
 }
 
