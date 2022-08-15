@@ -37,7 +37,7 @@ import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
 import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, isCurrentUserId } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { ProfilesAsPromise } from './ProfileAsPromise'
+import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
@@ -103,7 +103,7 @@ function* initialRemoteProfileLoad() {
   let profile: Avatar
 
   try {
-    profile = yield call(ProfilesAsPromise, [userId], isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
+    profile = yield call(ProfileAsPromise, userId, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
   } catch (e: any) {
     ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
     BringDownClientAndShowError(UNEXPECTED_ERROR)
@@ -279,9 +279,9 @@ export async function profileServerRequest(userId: string, version?: number): Pr
       throw new Error(`Invalid response from ${url}`)
     }
 
-    const res = await response.json()
+    const res: RemoteProfile[] = await response.json()
 
-    return res[0] || { avatars: [] }
+    return res[0] || { avatars: [], timestamp: Date.now() }
   } catch (e: any) {
     defaultLogger.error(e)
     return { avatars: [], timestamp: Date.now() }

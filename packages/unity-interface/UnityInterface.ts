@@ -355,7 +355,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public InitializeChat(initializationMessage: FriendsInitializeChatPayload): void {
-    this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
+    this.SendMessageToUnity('Main', 'InitializeChat', JSON.stringify(initializationMessage))
   }
 
   public AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void {
@@ -380,16 +380,16 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
+  public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
+  }
+
   public UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'UpdateTotalFriendRequests', JSON.stringify(updateTotalFriendRequestsPayload))
   }
 
   public UpdateTotalFriends(updateTotalFriendPayload: UpdateTotalFriendsPayload): void {
     this.SendMessageToUnity('Main', 'UpdateTotalFriends', JSON.stringify(updateTotalFriendPayload))
-  }
-
-  public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
-    this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
   }
 
   public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {

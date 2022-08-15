@@ -36,7 +36,9 @@ import {
   AddFriendsWithDirectMessagesPayload,
   UpdateTotalUnseenMessagesByUserPayload,
   UpdateTotalFriendRequestsPayload,
-  FriendsInitializeChatPayload
+  FriendsInitializeChatPayload,
+  MarkMessagesAsSeenPayload,
+  GetPrivateMessagesPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -80,7 +82,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix } from './utils'
+import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -234,7 +236,25 @@ function* configureMatrixClient(action: SetMatrixClient) {
       sender: message.sender === ownId ? identity.address : senderUserId,
       recipient: message.sender === ownId ? senderUserId : identity.address
     }
+
     addNewChatMessage(chatMessage)
+
+    // get total user unread messages
+    if (message.sender !== ownId) {
+      const totalUnreadMessages = client.getTotalUnseenMessages()
+      const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
+
+      const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
+        userId: senderUserId,
+        total: unreadMessages
+      }
+      const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+        total: totalUnreadMessages
+      }
+
+      getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
+      getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+    }
   })
 
   client.onFriendshipRequest((socialId) =>
@@ -367,7 +387,14 @@ function* refreshFriends() {
     getUnityInstance().InitializeFriends(initFriendsMessage)
     getUnityInstance().InitializeChat(initChatMessage)
 
-    yield ensureFriendsProfile(friendIds).catch(logger.error)
+    const allProfilesToObtain = friendIds
+      .concat(requestedFromIds.map((x) => x.userId))
+      .concat(requestedToIds.map((x) => x.userId))
+
+    yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
+
+    // ensure friend profiles are sent to renderer
+    yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
 
     yield put(
       updatePrivateMessagingState({
@@ -441,21 +468,26 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
-export async function markAsSeenPrivateChatMessages(userId: string) {
+export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
-  if (!socialData?.conversationId) return
+  // get conversation id
+  const conversationId = await getConversationId(client, userId.userId)
 
-  // mark as seen all the messages in the conversation
-  await client.markMessagesAsSeen(socialData.conversationId)
+  // get user's chat unread messages
+  const unreadMessages = client.getConversationUnreadMessages(conversationId).length
+
+  if (unreadMessages > 0) {
+    // mark as seen all the messages in the conversation
+    await client.markMessagesAsSeen(conversationId)
+  }
 
   // get total user unread messages
   const totalUnreadMessages = client.getTotalUnseenMessages()
 
   const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
-    userId: userId,
+    userId: userId.userId,
     total: 0
   }
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
@@ -466,23 +498,30 @@ export async function markAsSeenPrivateChatMessages(userId: string) {
   getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
 }
 
-export async function getPrivateMessages(userId: string, limit: number, fromMessageId: string | null) {
+export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMessagesPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const socialData: SocialData | undefined = findPrivateMessagingFriendsByUserId(store.getState(), userId)
-  if (!socialData?.conversationId) return
+  // get the conversation.id
+  const conversationId = await getConversationId(client, getPrivateMessagesPayload.userId)
 
   const ownId = client.getUserId()
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
-  const messageId: string | undefined = fromMessageId === null ? undefined : fromMessageId
-  const cursorLastMessage = await client.getCursorOnMessage(socialData.conversationId, messageId, {
-    initialSize: limit,
-    limit
+  const messageId: string | undefined = !getPrivateMessagesPayload.fromMessageId
+    ? undefined
+    : getPrivateMessagesPayload.fromMessageId
+
+  const cursorLastMessage = await client.getCursorOnMessage(conversationId, messageId, {
+    initialSize: getPrivateMessagesPayload.limit,
+    limit: getPrivateMessagesPayload.limit
   })
 
   const messages = cursorLastMessage.getMessages()
+  if (messageId !== undefined) {
+    // we remove the last message from the list since it's the pivot and they already have it.
+    messages.pop()
+  }
 
   // parse messages
   const addChatMessagesPayload: AddChatMessagesPayload = {
@@ -491,8 +530,8 @@ export async function getPrivateMessages(userId: string, limit: number, fromMess
       messageType: ChatMessageType.PRIVATE,
       timestamp: message.timestamp,
       body: message.text,
-      sender: message.sender === ownId ? ownId : userId,
-      recipient: message.sender === ownId ? userId : ownId
+      sender: message.sender === ownId ? getUserIdFromMatrix(ownId) : getPrivateMessagesPayload.userId,
+      recipient: message.sender === ownId ? getPrivateMessagesPayload.userId : getUserIdFromMatrix(ownId)
     }))
   }
 
@@ -566,12 +605,12 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     totalFriendsWithDirectMessages: friendsConversations.length
   }
 
-  getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
-
   const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
-  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
 
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
+
+  getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
 }
 
 function* initializeReceivedMessagesCleanUp() {
@@ -726,8 +765,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   }
 
   try {
-    const { incoming } = meta
-
     const state: ReturnType<typeof getPrivateMessaging> = yield select(getPrivateMessaging)
 
     let newState: FriendsState | undefined
@@ -747,8 +784,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    const selector = incoming ? 'toFriendRequests' : 'fromFriendRequests'
-    const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = incoming
+    const incoming = meta.incoming
+    const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
+
+    const friendRequestTypeSelector = hasSentFriendshipRequest ? 'toFriendRequests' : 'fromFriendRequests'
+    const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = hasSentFriendshipRequest
       ? 'totalReceivedRequests'
       : 'totalSentRequests'
 
@@ -762,20 +802,22 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       }
       case FriendshipAction.APPROVED: {
         totalFriends += 1
-        totalFriends -= 1
       }
       // The approved should not have a break since it should execute all the code as the rejected case
       // Also the rejected needs to be directly after the Approved to make sure this works
       case FriendshipAction.REJECTED: {
-        const requests = [...state[selector]]
+        if (action === FriendshipAction.REJECTED) {
+          totalFriends -= 1
+        }
+        const requests = [...state[friendRequestTypeSelector]]
 
         const index = requests.findIndex((request) => request.userId === userId)
 
-        logger.info(`requests[${selector}]`, requests, index, userId)
+        logger.info(`requests[${friendRequestTypeSelector}]`, requests, index, userId)
         if (index !== -1) {
           requests.splice(index, 1)
 
-          newState = { ...state, [selector]: requests }
+          newState = { ...state, [friendRequestTypeSelector]: requests }
 
           if (action === FriendshipAction.APPROVED && !state.friends.includes(userId)) {
             newState.friends.push(userId)
@@ -800,15 +842,16 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         break
       }
+
       case FriendshipAction.CANCELED: {
-        const requests = [...state[selector]]
+        const requests = [...state[friendRequestTypeSelector]]
 
         const index = requests.findIndex((request) => request.userId === userId)
 
         if (index !== -1) {
           requests.splice(index, 1)
 
-          newState = { ...state, [selector]: requests }
+          newState = { ...state, [friendRequestTypeSelector]: requests }
         }
 
         updateTotalFriendRequestsPayload = {
@@ -822,10 +865,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       case FriendshipAction.REQUESTED_FROM: {
         const request = state.fromFriendRequests.find((request) => request.userId === userId)
 
-        if (request) {
+        if (!request) {
           newState = {
             ...state,
-            fromFriendRequests: [...state.fromFriendRequests, { createdAt: request.createdAt, userId }]
+            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId }]
           }
         }
 
@@ -839,10 +882,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       case FriendshipAction.REQUESTED_TO: {
         const request = state.toFriendRequests.find((request) => request.userId === userId)
 
-        if (request) {
+        if (!request) {
           newState = {
             ...state,
-            toFriendRequests: [...state.toFriendRequests, { createdAt: request.createdAt, userId }]
+            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId }]
           }
         }
 
@@ -879,10 +922,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
       if (incoming) {
         yield call(waitForRendererInstance)
-        getUnityInstance().UpdateFriendshipStatus(payload)
       } else {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
+
+      getUnityInstance().UpdateFriendshipStatus(payload)
     }
 
     if (!incoming) {
@@ -959,6 +1003,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
     switch (update.action) {
       case FriendshipAction.NONE: {
         // do nothing in this case
+        // this action should never happen
         break
       }
       case FriendshipAction.APPROVED: {
@@ -1012,4 +1057,51 @@ function logAndTrackError(message: string, e: any) {
     message: message,
     stack: '' + e
   })
+}
+
+/**
+ * Get the conversation id from the store when possible.
+ * If not, then fetch it from matrix and update the private messaging state
+ * @param client SocialAPI client
+ * @param userId a string with the userId pattern
+ */
+async function getConversationId(client: SocialAPI, userId: string) {
+  let conversationId = findPrivateMessagingFriendsByUserId(store.getState(), userId)?.conversationId
+
+  if (!conversationId) {
+    const socialId = getMatrixIdFromUser(userId)
+    const conversation: Conversation = await client.createDirectConversation(socialId)
+
+    const socialData: SocialData = {
+      userId: userId,
+      socialId: socialId,
+      conversationId: conversation.id
+    }
+
+    updateSocialInfo(socialData)
+    conversationId = conversation.id
+  }
+
+  return conversationId
+}
+
+/**
+ * Update the social info from the private messaging state
+ * @param socialData the social data to add to the record.
+ */
+function updateSocialInfo(socialData: SocialData) {
+  const friends: FriendsState = getPrivateMessaging(store.getState())
+
+  // add social info
+  friends.socialInfo[socialData.socialId] = socialData
+
+  put(
+    updatePrivateMessagingState({
+      client: friends.client,
+      socialInfo: friends.socialInfo,
+      friends: friends.friends,
+      fromFriendRequests: friends.fromFriendRequests,
+      toFriendRequests: friends.toFriendRequests
+    })
+  )
 }

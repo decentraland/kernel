@@ -5,7 +5,8 @@ import {
   AddFriendsWithDirectMessagesPayload,
   GetFriendRequestsPayload,
   GetFriendsPayload,
-  GetFriendsWithDirectMessagesPayload
+  GetFriendsWithDirectMessagesPayload,
+  GetPrivateMessagesPayload
 } from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
@@ -14,7 +15,7 @@ import * as profilesSelectors from 'shared/profiles/selectors'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { FriendRequest, FriendsState, SocialData } from 'shared/friends/types'
+import { FriendRequest, FriendsState } from 'shared/friends/types'
 import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
 
@@ -109,16 +110,11 @@ const allCurrentConversations: Array<{ conversation: Conversation; unreadMessage
   }
 ]
 
-const socialData: SocialData = {
-  userId: '0xa2',
-  socialId: '0xa2',
-  conversationId: '0xa2-0xa3'
-}
-
 const stubClient = {
   getAllCurrentConversations: () => allCurrentConversations,
   getCursorOnMessage: () => Promise.resolve({ getMessages: () => textMessages }),
-  getUserId: () => '0xa2'
+  getUserId: () => '0xa2',
+  createDirectConversation: () => allCurrentConversations[0].conversation
 } as unknown as SocialAPI
 
 function mockStoreCalls(opts?: { profiles: number[], i: number }) {
@@ -130,7 +126,6 @@ function mockStoreCalls(opts?: { profiles: number[], i: number }) {
       profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore.slice(0, opts?.profiles[opts.i]), userNameOrId)
     )
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
-  sinon.stub(friendsSelectors, 'findPrivateMessagingFriendsByUserId').callsFake(() => socialData)
 }
 
 describe('Friends sagas', () => {
@@ -340,24 +335,24 @@ describe('Friends sagas', () => {
   })
 
   describe('get private messages from specific chat', () => {
-    beforeEach(() => {
-      const { store } = buildStore()
-      globalThis.globalStore = store
-
-      mockStoreCalls()
-    })
-
-    afterEach(() => {
-      sinon.restore()
-      sinon.reset()
-    })
-
     describe("When a private chat is opened", () => {
+      beforeEach(() => {
+        const { store } = buildStore()
+        globalThis.globalStore = store
+
+        mockStoreCalls()
+      })
+
+      afterEach(() => {
+        sinon.restore()
+        sinon.reset()
+      })
+
       it('Should call unity with the expected private messages', () => {
-        const request = {
+        const request: GetPrivateMessagesPayload = {
           userId: '0xa3',
           limit: 10,
-          fromMessageId: null,
+          fromMessageId: '',
         }
 
         // parse messages
@@ -373,7 +368,7 @@ describe('Friends sagas', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddMessageToChatWindow').once().withExactArgs(addChatMessagesPayload)
-        friendsSagas.getPrivateMessages(request.userId, request.limit, request.fromMessageId)
+        friendsSagas.getPrivateMessages(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
