@@ -143,6 +143,15 @@ const color3Schema: JSONSchema<{ r: number; g: number; b: number; a: number }> =
   }
 } as any
 
+const emoteSchema: JSONSchema<{ slot: number; urn: string }> = {
+  type: 'object',
+  required: ['slot', 'urn'],
+  properties: {
+    slot: { type: 'number', nullable: false },
+    urn: { type: 'string', nullable: false }
+  }
+}
+
 export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
   type: 'object',
   required: ['avatar', 'body', 'face256'],
@@ -160,7 +169,7 @@ export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
         hairColor: color3Schema,
         skinColor: color3Schema,
         wearables: { type: 'array', items: { type: 'string' } },
-        emotes: { type: 'array', items: { type: 'string' } }
+        emotes: { type: 'array', items: emoteSchema }
       }
     }
   }
