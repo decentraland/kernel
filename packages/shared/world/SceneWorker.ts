@@ -364,9 +364,12 @@ export class SceneWorker {
       this.sceneStarted = true
       this.rpcContext.sendSceneEvent('sceneStart', {})
 
+      const baseParcel = this.metadata.scene.base
+
       trackEvent('scene_start_event', {
         scene_id: this.loadableScene.id,
-        time_since_creation: performance.now() - this.startLoadingTime
+        time_since_creation: performance.now() - this.startLoadingTime,
+        base: baseParcel
       })
 
       workerStatusObservable.notifyObservers(signalSceneStart(this.loadableScene))

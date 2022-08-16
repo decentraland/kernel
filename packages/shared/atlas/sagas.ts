@@ -1,8 +1,7 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
 import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
-import { call, fork, put, select, take, takeEvery, race, takeLatest } from 'redux-saga/effects'
+import { call, put, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 import { parcelLimits } from 'config'
-import { fetchSceneJson } from '../../decentraland-loader/lifecycle/utils/fetchSceneJson'
 import { fetchScenesByLocation } from '../../decentraland-loader/lifecycle/utils/fetchSceneIds'
 import {
   getOwnerNameFromJsonData,
@@ -12,18 +11,9 @@ import {
 import defaultLogger from '../logger'
 import { lastPlayerPosition } from '../world/positionThings'
 import {
-  fetchDataFromSceneJsonFailure,
-  fetchDataFromSceneJsonSuccess,
-  marketData,
-  querySceneData,
-  QuerySceneData,
   ReportScenesAroundParcel,
   reportedScenes,
-  QUERY_DATA_FROM_SCENE_JSON,
   REPORT_SCENES_AROUND_PARCEL,
-  MARKET_DATA,
-  SUCCESS_DATA_FROM_SCENE_JSON,
-  FAILURE_DATA_FROM_SCENE_JSON,
   reportScenesAroundParcel,
   reportLastPosition,
   initializePoiTiles,
@@ -32,32 +22,20 @@ import {
   reportScenesFromTiles,
   REPORT_SCENES_FROM_TILES
 } from './actions'
-import { shouldLoadSceneJsonData, isMarketDataInitialized, getPoiTiles } from './selectors'
-import { AtlasState, RootAtlasState } from './types'
+import { getPoiTiles, postProcessSceneName } from './selectors'
+import { RootAtlasState } from './types'
 import { getTilesRectFromCenter } from '../getTilesRectFromCenter'
 import { LoadableScene } from 'shared/types'
 import { SCENE_LOAD } from 'shared/loading/actions'
-import { worldToGrid } from '../../atomicHelpers/parcelScenePositions'
+import { parseParcelPosition, worldToGrid } from '../../atomicHelpers/parcelScenePositions'
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
-import { getPois } from '../meta/selectors'
 import { META_CONFIGURATION_INITIALIZED } from '../meta/actions'
-import { retrieve, store as cacheStore } from 'shared/cache'
 import { getFetchContentServer, getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { MarketData } from 'shared/atlas/types'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
-
-const tiles = {
-  id: 'tiles',
-  url: 'https://api.decentraland.org/v1/tiles',
-  build: marketData
-}
-
-type MarketplaceConfig = typeof tiles
-
-type CachedMarketplaceTiles = { version: string; data: string }
+import { Scene } from '@dcl/schemas'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -65,57 +43,8 @@ export function* atlasSaga(): any {
   yield takeLatest(META_CONFIGURATION_INITIALIZED, initializePois)
   yield takeLatest(PARCEL_LOADING_STARTED, reportPois)
 
-  yield takeEvery(QUERY_DATA_FROM_SCENE_JSON, querySceneDataAction)
   yield takeLatest(REPORT_SCENES_AROUND_PARCEL, reportScenesAroundParcelAction)
   yield takeEvery(REPORT_SCENES_FROM_TILES, reportScenesFromTilesAction)
-
-  yield fork(loadMarketplace, tiles)
-}
-
-function* loadMarketplace(config: MarketplaceConfig) {
-  try {
-    const cachedKey = `market-${config.id}`
-
-    const cached: CachedMarketplaceTiles | undefined = yield retrieve(cachedKey)
-
-    let data: MarketData | string | undefined
-    if (cached) {
-      const currentEtag: string = yield call(() =>
-        fetch(config.url, { method: 'HEAD' }).then((e) => e.headers.get('etag'))
-      )
-
-      if (cached.version === currentEtag) {
-        data = cached.data
-      }
-    }
-
-    if (!data) {
-      // no cached data or cached does not correspond
-      const response: Response = yield call(() => fetch(config.url))
-      const etag = response.headers.get('etag')
-      const resp: MarketData = yield call(() => response.json())
-      data = resp
-
-      if (etag) {
-        // if we get an etag from the response => cache both etag & data
-        yield cacheStore(cachedKey, { version: etag, data })
-      }
-    }
-
-    yield put(config.build(data as any))
-  } catch (e: any) {
-    defaultLogger.error(e)
-  }
-}
-
-function* querySceneDataAction(action: QuerySceneData) {
-  const sceneIds = action.payload
-  try {
-    const lands: Array<LoadableScene> = yield call(fetchSceneJson, sceneIds)
-    yield put(fetchDataFromSceneJsonSuccess(sceneIds, lands))
-  } catch (e) {
-    yield put(fetchDataFromSceneJsonFailure(sceneIds, e))
-  }
 }
 
 const TRIGGER_DISTANCE = 10 * parcelLimits.parcelSize
@@ -157,93 +86,66 @@ function* reportScenesAroundParcelAction(action: ReportScenesAroundParcel) {
 }
 
 function* initializePois() {
-  const pois: Vector2Component[] = yield select(getPois)
-  const metaPOIs = pois.map((position) => `${position.x},${position.y}`)
-
   yield call(waitForRealmInitialized)
 
-  const daoPOIs: string[] | undefined = yield fetchPOIsFromDAO()
+  const daoPOIs: string[] | undefined = yield call(fetchPOIsFromDAO)
 
   if (daoPOIs) {
-    const pois = [...new Set(metaPOIs.concat(daoPOIs))]
-    yield put(initializePoiTiles(pois))
+    yield put(initializePoiTiles(daoPOIs))
   } else {
-    yield put(initializePoiTiles(metaPOIs))
-  }
-}
-
-function* waitForMarketInitialized() {
-  while (!(yield select(isMarketDataInitialized))) {
-    yield take(MARKET_DATA)
+    yield put(initializePoiTiles([]))
   }
 }
 
 function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
-  yield call(waitForMarketInitialized)
-
   const tiles = action.payload.tiles
   const result: Array<LoadableScene> = yield call(fetchScenesByLocation, tiles)
 
-  // filter non null & distinct
-  const sceneIds = Array.from(new Set<string>(result.filter(($) => !$.id.includes(',')).map(($) => $.id)))
-
-  yield put(querySceneData(sceneIds))
-
-  for (const id of sceneIds) {
-    const shouldFetch: boolean = yield select(shouldLoadSceneJsonData, id)
-    if (shouldFetch) {
-      yield race({
-        success: take(SUCCESS_DATA_FROM_SCENE_JSON),
-        failure: take(FAILURE_DATA_FROM_SCENE_JSON)
-      })
-    }
-  }
-
-  yield call(reportScenes, sceneIds)
+  yield call(reportScenes, result)
   yield put(reportedScenes(tiles))
 }
 
-function* reportScenes(sceneIds: string[]): any {
+function* reportScenes(scenes: LoadableScene[]): any {
   yield call(waitForPoiTilesInitialization)
   const pois = yield select(getPoiTiles)
 
-  const atlas: AtlasState = yield select((state) => state.atlas)
-
-  const scenes = sceneIds.map((sceneId) => atlas.idToScene[sceneId])
-
   const minimapSceneInfoResult: MinimapSceneInfo[] = []
 
-  scenes
-    .filter((scene) => !scene.alreadyReported)
-    .forEach((scene) => {
-      const parcels: Vector2Component[] = []
-      let isPOI: boolean = false
+  scenes.forEach((scene) => {
+    const parcels: Vector2Component[] = []
+    let isPOI: boolean = false
+    const metadata: Scene | undefined = scene.entity.metadata
 
-      scene.sceneJsonData?.scene.parcels.forEach((parcel) => {
-        const xyStr = parcel.split(',')
-        const xy: Vector2Component = { x: parseInt(xyStr[0], 10), y: parseInt(xyStr[1], 10) }
+    if (metadata) {
+      let sceneName = metadata.display?.title || ''
+
+      metadata.scene.parcels.forEach((parcel) => {
+        const xy: Vector2Component = parseParcelPosition(parcel)
 
         if (pois.includes(parcel)) {
           isPOI = true
+          sceneName = sceneName || metadata.scene.base
         }
 
         parcels.push(xy)
       })
 
       minimapSceneInfoResult.push({
-        owner: getOwnerNameFromJsonData(scene.sceneJsonData),
-        description: getSceneDescriptionFromJsonData(scene.sceneJsonData),
+        name: postProcessSceneName(sceneName),
+        owner: getOwnerNameFromJsonData(metadata),
+        description: getSceneDescriptionFromJsonData(metadata),
         previewImageUrl: getThumbnailUrlFromJsonDataAndContent(
-          scene.sceneJsonData,
-          scene.contents,
+          metadata,
+          scene.entity.content,
           getFetchContentServer(store.getState())
         ),
-        name: scene.name,
-        type: scene.type,
+        // type is not used by renderer
+        type: undefined as any,
         parcels,
         isPOI
       })
-    })
+    }
+  })
 
   yield call(waitForRendererInstance)
   getUnityInstance().UpdateMinimapSceneInformation(minimapSceneInfoResult)

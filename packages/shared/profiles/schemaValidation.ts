@@ -1,4 +1,4 @@
-import { Avatar, AvatarInfo, generateValidator, JSONSchema } from '@dcl/schemas'
+import { Avatar, AvatarInfo, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 
 /**
  * The schema validation requires strict IPFS "snapshots"
@@ -20,4 +20,4 @@ const stringSnapshotAvatarSchema: JSONSchema<Avatar> = {
   }
 } as any
 
-export const validateAvatar = generateValidator<Avatar>(stringSnapshotAvatarSchema)
+export const validateAvatar = generateLazyValidator<Avatar>(stringSnapshotAvatarSchema)

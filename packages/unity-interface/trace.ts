@@ -9,6 +9,7 @@ import type { CommonRendererOptions } from './loader'
 
 let pendingMessagesInTrace = 0
 const currentTrace: string[] = []
+let traceType: 'console' | 'file' = 'file'
 
 export function traceDecoratorRendererOptions(options: CommonRendererOptions): CommonRendererOptions {
   const originalOnMessage = options.onMessage
@@ -37,10 +38,11 @@ export function traceDecoratorUnityGame(game: UnityGame): UnityGame {
   return game
 }
 
-export function beginTrace(messagesCount: number) {
+export function beginTrace(messagesCount: number, download: boolean = true) {
   if (messagesCount > 0) {
     currentTrace.length = 0
     pendingMessagesInTrace = messagesCount
+    traceType = download ? 'file' : 'console'
     defaultLogger.log('[TRACING] Beginning trace')
   }
 }
@@ -53,14 +55,23 @@ export function beginTrace(messagesCount: number) {
 export function logTrace(type: string, payload: string | number | undefined, direction: 'RK' | 'KR' | 'KK') {
   if (pendingMessagesInTrace > 0) {
     const now = performance.now().toFixed(1)
+
+    function trace(text: string) {
+      if (traceType === 'file') {
+        currentTrace.push(text)
+      } else if (traceType === 'console') {
+        console.log('[TRACE]', text)
+      }
+    }
+
     if (direction === 'KK') {
       try {
-        currentTrace.push(`${direction}\t${now}\t${JSON.stringify(type)}\t${JSON.stringify(payload)}`)
+        trace(`${direction}\t${now}\t${JSON.stringify(type)}\t${JSON.stringify(payload)}`)
       } catch (e) {
-        currentTrace.push(`${direction}\t${now}\t${JSON.stringify(type)}\tCIRCULAR`)
+        trace(`${direction}\t${now}\t${JSON.stringify(type)}\tCIRCULAR`)
       }
     } else {
-      currentTrace.push(
+      trace(
         `${direction}\t${now}\t${JSON.stringify(type)}\t${
           payload === undefined ? '' : payload.toString().replace(/\n/g, '\\n')
         }`

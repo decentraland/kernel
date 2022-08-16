@@ -64,7 +64,7 @@ import { getAuthHeaders } from 'atomicHelpers/signedFetch'
 import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
-import { Avatar, generateValidator, JSONSchema } from '@dcl/schemas'
+import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 
@@ -161,7 +161,7 @@ export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
   }
 } as any
 
-const validateRendererSaveProfile = generateValidator<RendererSaveProfile>(rendererSaveProfileSchema)
+const validateRendererSaveProfile = generateLazyValidator<RendererSaveProfile>(rendererSaveProfileSchema)
 
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {
@@ -378,8 +378,7 @@ export class BrowserInterface {
   }
 
   public SendPassport(passport: { name: string; email: string }) {
-    store.dispatch(saveProfileDelta({ name: passport.name }))
-    store.dispatch(signUp(passport.email))
+    store.dispatch(signUp(passport.email, passport.name))
   }
 
   public RequestOwnProfileUpdate() {
