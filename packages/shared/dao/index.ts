@@ -1,11 +1,11 @@
 import defaultLogger from '../logger'
-import { Realm, ServerConnectionStatus, HealthStatus, Candidate } from './types'
+import { Realm, ServerConnectionStatus, Candidate, Parcel } from './types'
 import { getAllCatalystCandidates } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
-import { ping } from './utils/ping'
+import { ping, ask } from './utils/ping'
 import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
 import { connectComms } from 'shared/comms'
 import { setWorldContext } from 'shared/comms/actions'
@@ -14,7 +14,7 @@ import { establishingComms } from 'shared/loading/types'
 import { commsLogger } from 'shared/comms/context'
 import { realmToConnectionString, resolveCommsConnectionString } from 'shared/comms/v3/resolver'
 
-async function fetchCatalystNodes(endpoint: string | undefined) {
+async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {
     try {
       const response = await fetch(endpoint)
@@ -42,64 +42,92 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
   return nodes
 }
 
-export function isPeerHealthy(peerStatus: Record<string, HealthStatus>) {
-  return (
-    Object.keys(peerStatus).length > 0 &&
-    !Object.keys(peerStatus).some((server) => {
-      return peerStatus[server] !== HealthStatus.HEALTHY
-    })
-  )
-}
+export async function fetchCatalystStatus(
+  domain: string,
+  denylistedCatalysts: string[]
+): Promise<Candidate | undefined> {
+  if (denylistedCatalysts.includes(domain)) return undefined
 
-export function lambdasHealthUrl(domain: string) {
-  return `${domain}/lambdas/health`
-}
+  const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
 
-export function commsStatusUrl(domain: string, includeUsersParcels: boolean = false) {
-  let url = `${domain}/comms/status`
-  const queryParameters: string[] = []
+  if (aboutResponse.httpStatus !== 404) {
+    const result = aboutResponse.result
+    if (
+      aboutResponse.status === ServerConnectionStatus.OK &&
+      result &&
+      result.comms &&
+      result.configurations &&
+      result.bff
+    ) {
+      const { comms, configurations, bff } = result
 
-  if (includeUsersParcels) {
-    queryParameters.push('includeUsersParcels=true')
+      // TODO(hugo): this is kind of hacky, the original representation is much better,
+      // but I don't want to change the whole pick-realm algorithm now
+      const usersParcels: Parcel[] = []
+
+      if (parcelsResponse.result && parcelsResponse.result.parcels) {
+        for (const {
+          peersCount,
+          parcel: { x, y }
+        } of parcelsResponse.result.parcels) {
+          const parcel: Parcel = [x, y]
+          for (let i = 0; i < peersCount; i++) {
+            usersParcels.push(parcel)
+          }
+        }
+      }
+
+      return {
+        protocol: comms.protocol,
+        catalystName: configurations.realmName,
+        domain: domain,
+        status: aboutResponse.status,
+        elapsed: aboutResponse.elapsed!,
+        usersCount: bff.userCount ?? 0,
+        maxUsers: -1,
+        usersParcels
+      }
+    }
+
+    return undefined
   }
 
-  if (queryParameters.length > 0) {
-    url += '?' + queryParameters.join('&')
-  }
+  const [commsResponse, lambdasResponse] = await Promise.all([
+    ping(`${domain}/comms/status?includeUsersParcels=true`),
+    ping(`${domain}/lambdas/health`)
+  ])
 
-  return url
+  if (
+    commsResponse.result &&
+    commsResponse.status === ServerConnectionStatus.OK &&
+    lambdasResponse.status === ServerConnectionStatus.OK &&
+    (commsResponse.result.maxUsers ?? 0) > (commsResponse.result.usersCount ?? -1)
+  ) {
+    const result = commsResponse.result
+    return {
+      protocol: 'v2',
+      catalystName: result.name,
+      domain: domain,
+      status: commsResponse.status,
+      elapsed: commsResponse.elapsed!,
+      usersCount: result.usersCount ?? 0,
+      maxUsers: result.maxUsers ?? -1,
+      usersParcels: result.usersParcels
+    }
+  }
 }
 
-export async function fetchCatalystStatuses(nodes: { domain: string }[]): Promise<Candidate[]> {
+export async function fetchCatalystStatuses(
+  nodes: { domain: string }[],
+  denylistedCatalysts: string[]
+): Promise<Candidate[]> {
   const results: Candidate[] = []
 
   await Promise.all(
     nodes.map(async (node) => {
-      const [commsResponse, lambdasResponse] = await Promise.all([
-        ping(commsStatusUrl(node.domain, true)),
-        ping(lambdasHealthUrl(node.domain))
-      ])
-      const result = commsResponse.result
-
-      if (
-        result &&
-        commsResponse.status === ServerConnectionStatus.OK &&
-        lambdasResponse.status === ServerConnectionStatus.OK
-      ) {
-        if ((result.maxUsers ?? 0) > (result.usersCount ?? -1)) {
-          results.push({
-            type: 'islands-based',
-            protocol: 'v2',
-            catalystName: result.name,
-            domain: node.domain,
-            status: commsResponse.status,
-            elapsed: commsResponse.elapsed!,
-            lighthouseVersion: result.version,
-            usersCount: result.usersCount ?? 0,
-            maxUsers: result.maxUsers ?? -1,
-            usersParcels: result.usersParcels
-          })
-        }
+      const result = await fetchCatalystStatus(node.domain, denylistedCatalysts)
+      if (result) {
+        results.push(result)
       }
     })
   )
@@ -122,7 +150,7 @@ export async function realmInitialized(): Promise<void> {
   })
 }
 
-export async function changeRealm(realmString: string, forceChange: boolean = false) {
+export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
   const candidates = getAllCatalystCandidates(store.getState())
 
   const realm = await resolveCommsConnectionString(realmString, candidates)

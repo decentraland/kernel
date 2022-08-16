@@ -184,7 +184,7 @@ export namespace commConfigurations {
 
 export enum ETHEREUM_NETWORK {
   MAINNET = 'mainnet',
-  ROPSTEN = 'ropsten'
+  GOERLI = 'goerli'
 }
 
 export const knownTLDs = ['zone', 'org', 'today']
@@ -248,17 +248,17 @@ export namespace ethereumConfigurations {
     CatalystProxy: assertValue(contractInfo.mainnet.CatalystProxy),
     MANAToken: assertValue(contractInfo.mainnet.MANAToken)
   }
-  export const ropsten = {
-    wss: 'wss://rpc.decentraland.org/ropsten',
-    http: 'https://rpc.decentraland.org/ropsten',
-    etherscan: 'https://ropsten.etherscan.io',
-    names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-ropsten',
+  export const goerli = {
+    wss: 'wss://rpc.decentraland.org/goerli',
+    http: 'https://rpc.decentraland.org/goerli',
+    etherscan: 'https://goerli.etherscan.io',
+    names: 'https://api.thegraph.com/subgraphs/name/decentraland/marketplace-goerli',
 
     // contracts
-    LANDProxy: assertValue(contractInfo.ropsten.LANDProxy),
-    EstateProxy: assertValue(contractInfo.ropsten.EstateProxy),
-    CatalystProxy: assertValue(contractInfo.ropsten.CatalystProxy || contractInfo.ropsten.Catalyst),
-    MANAToken: assertValue(contractInfo.ropsten.MANAToken)
+    LANDProxy: assertValue(contractInfo.goerli.LANDProxy),
+    EstateProxy: assertValue(contractInfo.goerli.EstateProxy),
+    CatalystProxy: assertValue(contractInfo.goerli.CatalystProxy || contractInfo.goerli.Catalyst),
+    MANAToken: assertValue(contractInfo.goerli.MANAToken)
   }
 }
 

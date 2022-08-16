@@ -1,12 +1,5 @@
 import type { ETHEREUM_NETWORK } from 'config'
 
-export type Layer = {
-  name: string
-  usersCount: number
-  maxUsers: number
-  usersParcels?: [number, number][]
-}
-
 export enum ServerConnectionStatus {
   OK,
   UNREACHABLE
@@ -15,7 +8,6 @@ export enum ServerConnectionStatus {
 export type CatalystStatus = {
   name: string
   version: string
-  layers?: Layer[]
   usersCount?: number
   maxUsers?: number
   usersParcels?: Parcel[]
@@ -28,11 +20,9 @@ type BaseCandidate = {
   catalystName: string
   elapsed: number
   status: ServerConnectionStatus
-  lighthouseVersion: string
 }
 
 export type Candidate = {
-  type: 'islands-based'
   usersCount: number
   usersParcels?: Parcel[]
   maxUsers?: number
@@ -76,8 +66,9 @@ export type PingResult = {
   result?: CatalystStatus
 }
 
-export enum HealthStatus {
-  HEALTHY = 'Healthy',
-  UNHEALTHY = 'Unhealthy',
-  DOWN = 'Down'
+export type AskResult = {
+  httpStatus?: number
+  elapsed?: number
+  status?: ServerConnectionStatus
+  result?: any
 }

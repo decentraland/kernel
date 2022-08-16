@@ -62,10 +62,10 @@ function realmProperties(realm: Realm, network: ETHEREUM_NETWORK | null): Partia
   }
 
   // this condition exists until the BFF is finished and the "services" become interfaces
-  if (realm.protocol === 'v1' || realm.protocol === 'v2') {
+  if (realm.protocol === 'v1' || realm.protocol === 'v2' || realm.protocol === 'v3') {
     return lighthouseBasedPartial(domain)
-  } else if (network === ETHEREUM_NETWORK.ROPSTEN) {
-    return lighthouseBasedPartial('https://peer.decentraland.zone')
+  } else if (network === ETHEREUM_NETWORK.GOERLI) {
+    return lighthouseBasedPartial('https://peer-ap1.decentraland.zone')
   } else {
     return lighthouseBasedPartial('https://peer.decentraland.org')
   }

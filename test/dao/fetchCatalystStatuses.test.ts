@@ -2,39 +2,21 @@ import sinon from 'sinon'
 import { expect } from 'chai'
 import { fetchCatalystStatuses } from 'shared/dao'
 import * as ping from 'shared/dao/utils/ping'
-import { Candidate, PingResult } from 'shared/dao/types'
-
-const pingResult = (maxUsers?: number): PingResult => ({
-  status: 0,
-  elapsed: 309,
-  result: {
-    name: 'loki',
-    version: '1.0.0',
-    usersCount: 59,
-    maxUsers: maxUsers || 1000
-  }
-})
-
-const NODES = [
-  {
-    domain: 'peer.decentraland.org'
-  },
-  {
-    domain: 'peer-ec1.decentraland.org'
-  }
-]
+import { Candidate } from 'shared/dao/types'
 
 const EXPECTED: Candidate = {
   protocol: 'v2',
   catalystName: 'loki',
   domain: 'peer.decentraland.org',
   elapsed: 309,
-  lighthouseVersion: '1.0.0',
-  maxUsers: 1000,
+  maxUsers: -1,
   status: 0,
-  type: 'islands-based',
   usersCount: 59,
-  usersParcels: undefined
+  usersParcels: [
+    [1, 1],
+    [1, 1],
+    [1, 1]
+  ]
 }
 
 describe('Fetch catalyst server status', () => {
@@ -43,25 +25,59 @@ describe('Fetch catalyst server status', () => {
     sinon.restore()
   })
 
-  it('Should return all the catalyst status servers', async () => {
-    const stub = sinon.stub(ping, 'ping')
-
-    stub.callsFake(async (domain) => ({ ...pingResult(), domain }))
-    const results = await fetchCatalystStatuses(NODES)
-    expect(results).to.eql(NODES.map((n) => ({ ...EXPECTED, domain: n.domain })))
-  })
-
-  it('Should filter the servers where the usersCount > maxUsers', async () => {
-    const stub = sinon.stub(ping, 'ping')
+  it('Should return catalyst status servers not included in the deny list', async () => {
+    const stub = sinon.stub(ping, 'ask')
 
     stub.callsFake(async (domain) => {
-      const maxUsers = domain.startsWith(NODES[0].domain) ? 10 : 1000
-      return {
-        ...pingResult(maxUsers),
-        domain
+      if (domain.endsWith('/about')) {
+        return {
+          status: 0,
+          elapsed: 309,
+          httpStatus: 200,
+          result: {
+            comms: {
+              protocol: EXPECTED.protocol
+            },
+            configurations: {
+              realmName: EXPECTED.catalystName
+            },
+            bff: {
+              userCount: EXPECTED.usersCount
+            }
+          }
+        }
+      } else {
+        return {
+          status: 0,
+          elapsed: 309,
+          httpStatus: 200,
+          result: {
+            parcels: [
+              {
+                peersCount: 3,
+                parcel: {
+                  x: 1,
+                  y: 1
+                }
+              }
+            ]
+          }
+        }
       }
     })
-    const results = await fetchCatalystStatuses(NODES)
-    expect(results).to.eql(NODES.slice(1).map((n) => ({ ...EXPECTED, domain: n.domain })))
+
+    const NODES = [
+      {
+        domain: 'peer.decentraland.org'
+      },
+      {
+        domain: 'peer-ec1.decentraland.org'
+      }
+    ]
+
+    const results = await fetchCatalystStatuses(NODES, ['peer-ec1.decentraland.org'])
+    expect(results.length).to.eql(1)
+    console.log(results[0])
+    expect(results[0]).to.eql(EXPECTED)
   })
 })

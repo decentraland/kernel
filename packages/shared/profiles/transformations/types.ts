@@ -14,7 +14,13 @@ export type NewProfileForRenderer = {
   tutorialStep: number
   hasConnectedWeb3: boolean
   hasClaimedName: boolean
-  avatar: ProfileForRenderer['avatar']
+  avatar: ProfileForRenderer['avatar'] & {
+    emotes: {
+      slot: number
+      urn: string
+    }[]
+    version: number // @TODO: remove this once Emotes is fully released. This helps the Renderer to know if it should fetch Emotes separately.
+  }
 
   // TODO evaluate usage of the following
   version: number
