@@ -108,8 +108,6 @@ export class SceneWorker {
 
     const playgroundCode = loadableScene.id.startsWith('b64') ? globalThis.PlaygroundCode : '' || ''
 
-    console.log({ playgroundCode })
-
     this.rpcContext = {
       sceneData: {
         ...loadableScene,
