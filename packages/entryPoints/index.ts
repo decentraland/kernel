@@ -141,7 +141,7 @@ globalThis.DecentralandKernel = {
 
         const profile = await localProfilesRepo.get(
           address,
-          networkId === 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.GOERLI
+          networkId === 1 ? ETHEREUM_NETWORK.MAINNET : ETHEREUM_NETWORK.ROPSTEN
         )
 
         return { result: !!profile, profile: profile || null } as any

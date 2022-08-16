@@ -199,7 +199,7 @@ async function fetchLand(_address: string): Promise<Land[]> {
   const landManagerUrl =
     net === ETHEREUM_NETWORK.MAINNET
       ? 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager'
-      : 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-goerli'
+      : 'https://api.thegraph.com/subgraphs/name/decentraland/land-manager-ropsten'
 
   const data = await fetcher.queryGraph<LandQueryResult>(landManagerUrl, getLandQuery(), { address })
 
