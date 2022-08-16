@@ -1,18 +1,18 @@
-const fs = require("fs")
-const path = require("path")
-const fetch = require("undici")
+const fs = require('fs')
+const path = require('path')
+const { fetch } = require('undici')
 
-const contentsDir = "contents"
+const contentsDir = 'contents'
 
 const downloadFile = async (url, path) => {
   const res = await fetch.fetch(url)
   const fileStream = fs.createWriteStream(path)
   await new Promise((resolve, reject) => {
     res.body.pipe(fileStream)
-    res.body.on("error", (err) => {
+    res.body.on('error', (err) => {
       reject(err)
     })
-    fileStream.on("finish", function () {
+    fileStream.on('finish', function () {
       resolve()
     })
   })
@@ -27,23 +27,23 @@ try {
 const downloadUrls = new Set()
 
 const filterUrn = new Set([
-  "urn:decentraland:off-chain:base-avatars:BaseFemale",
-  "urn:decentraland:off-chain:base-avatars:bun_shoes",
-  "urn:decentraland:off-chain:base-avatars:f_eyebrows_00",
-  "urn:decentraland:off-chain:base-avatars:f_eyes_00",
-  "urn:decentraland:off-chain:base-avatars:f_jeans",
-  "urn:decentraland:off-chain:base-avatars:f_mouth_00",
-  "urn:decentraland:off-chain:base-avatars:f_sweater",
-  "urn:decentraland:off-chain:base-avatars:standard_hair",
+  'urn:decentraland:off-chain:base-avatars:BaseFemale',
+  'urn:decentraland:off-chain:base-avatars:bun_shoes',
+  'urn:decentraland:off-chain:base-avatars:f_eyebrows_00',
+  'urn:decentraland:off-chain:base-avatars:f_eyes_00',
+  'urn:decentraland:off-chain:base-avatars:f_jeans',
+  'urn:decentraland:off-chain:base-avatars:f_mouth_00',
+  'urn:decentraland:off-chain:base-avatars:f_sweater',
+  'urn:decentraland:off-chain:base-avatars:standard_hair'
 ])
 
 async function main() {
   const response = await fetch(
-    "https://peer.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars"
+    'https://peer.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars'
   )
   if (!response.ok)
     throw new Error(
-      "https://peer.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars not ok"
+      'https://peer.decentraland.org/lambdas/collections/wearables?collectionId=urn:decentraland:off-chain:base-avatars not ok'
     )
   const catalog = await response.json()
 
@@ -59,7 +59,7 @@ async function main() {
   }
 
   for (let url of downloadUrls) {
-    const parts = url.split("/")
+    const parts = url.split('/')
     const finalPath = path.join(contentPath, parts[parts.length - 1])
     if (!fs.existsSync(finalPath)) {
       console.log(`Downloading ${finalPath} from ${url}`)

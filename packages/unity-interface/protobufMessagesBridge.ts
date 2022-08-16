@@ -12,7 +12,7 @@ import {
   PBOpenExternalUrl,
   PBOpenNFTDialog,
   PBSendSceneMessage
-} from 'renderer-protocol/proto/engineinterface.gen'
+} from '../renderer-protocol/proto/engineinterface.gen'
 import {
   CreateEntityPayload,
   RemoveEntityPayload,
