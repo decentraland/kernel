@@ -273,7 +273,13 @@ export class SceneWorker {
         continue
       }
 
-      const part = protobufMsgBridge.encodeSceneMessage(sceneId, this.rpcContext.sceneData.sceneNumber, action.type, action.payload, action.tag)
+      const part = protobufMsgBridge.encodeSceneMessage(
+        sceneId,
+        this.rpcContext.sceneData.sceneNumber,
+        action.type,
+        action.payload,
+        action.tag
+      )
       messages.push(part)
       len += part.length
 

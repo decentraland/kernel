@@ -51,11 +51,7 @@ function serializeTransform(transform: Transform): string {
   pbTransform.rotation.copyFrom(transform.rotation)
 
   // Scale
-  pbTransform.scale.set(
-    Math.fround(transform.scale.x),
-    Math.fround(transform.scale.y),
-    Math.fround(transform.scale.z)
-  )
+  pbTransform.scale.set(Math.fround(transform.scale.x), Math.fround(transform.scale.y), Math.fround(transform.scale.z))
   capVector(pbTransform.scale, VECTOR3_MEMBER_CAP)
 
   const arrayBuffer: Uint8Array = PBTransform.encode(pbTransform).finish()

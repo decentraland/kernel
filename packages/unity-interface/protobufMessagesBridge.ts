@@ -31,7 +31,13 @@ import {
 const updateEntityComponent: PBUpdateEntityComponent = { classId: 0, data: '', entityId: '', name: '' }
 
 export class ProtobufMessagesBridge {
-  encodeSceneMessage(parcelSceneId: string, sceneNumber: number, method: string, payload: any, tag: string = ''): string {
+  encodeSceneMessage(
+    parcelSceneId: string,
+    sceneNumber: number,
+    method: string,
+    payload: any,
+    tag: string = ''
+  ): string {
     const message: PBSendSceneMessage = {
       sceneId: parcelSceneId,
       tag,

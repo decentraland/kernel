@@ -79,7 +79,7 @@ function* initAvatarVisibilityProcess() {
  * This handler sends profile responses over comms.
  */
 function* respondCommsProfileRequests() {
-  const chan: EventChannel<{}> = yield call(createSendMyProfileOverCommsChannel)
+  const chan: EventChannel<Record<string, unknown>> = yield call(createSendMyProfileOverCommsChannel)
 
   let lastMessage = 0
   while (true) {
