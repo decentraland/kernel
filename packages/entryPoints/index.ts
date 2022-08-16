@@ -262,7 +262,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   if (options.previewMode) {
     i.SetDisableAssetBundles()
-    await startPreview(options, i)
+    await startPreview(i)
   }
 
   setTimeout(() => store.dispatch(signalEngineReady()), 0)
@@ -270,7 +270,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   return true
 }
 
-export async function startPreview(options: KernelOptions['kernelOptions'], unityInterface: IUnityInterface) {
+export async function startPreview(unityInterface: IUnityInterface) {
   let previewSceneId = ''
   getPreviewSceneId()
     .then((sceneData) => {
