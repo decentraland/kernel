@@ -2,7 +2,7 @@ const fs = require('fs')
 const fsp = require('fs/promises')
 const path = require('path')
 const { fetch } = require('undici')
-
+console.log({fetch})
 const contentsDir = 'contents'
 
 const downloadFile = async (url, path) => {
