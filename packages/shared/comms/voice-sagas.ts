@@ -19,6 +19,7 @@ import { isVoiceChatRecording, getVoiceCommunicator, isVoiceChatAllowedByCurrent
 import { initializeVoiceChat, destroyVoiceChat } from './voice-over-comms'
 
 export function* voiceSaga() {
+  yield call(initializeVoiceChat)
   yield takeEvery(JOIN_VOICE_CHAT, initializeVoiceChat)
   yield takeEvery(LEAVE_VOICE_CHAT, destroyVoiceChat)
 
