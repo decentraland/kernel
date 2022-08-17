@@ -52,6 +52,10 @@ export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
 }
 
 export function* initializeVoiceChat() {
+  if (getVoiceCommunicator(store.getState())) {
+    logger.info('VoiceCommunicator already initialized')
+    return
+  }
   logger.info('Initializing VoiceCommunicator')
   const voiceCommunicator = new VoiceCommunicator(
     {
