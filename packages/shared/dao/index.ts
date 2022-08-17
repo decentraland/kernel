@@ -83,8 +83,8 @@ export async function fetchCatalystStatus(
         domain: domain,
         status: aboutResponse.status,
         elapsed: aboutResponse.elapsed!,
-        usersCount: bff.userCount ?? 0,
-        maxUsers: -1,
+        usersCount: bff.userCount ?? comms.usersCount ?? 0,
+        maxUsers: 2000,
         usersParcels
       }
     }
@@ -101,7 +101,7 @@ export async function fetchCatalystStatus(
     commsResponse.result &&
     commsResponse.status === ServerConnectionStatus.OK &&
     lambdasResponse.status === ServerConnectionStatus.OK &&
-    (commsResponse.result.maxUsers ?? 0) > (commsResponse.result.usersCount ?? -1)
+    (commsResponse.result.maxUsers ?? 2000) > (commsResponse.result.usersCount ?? -1)
   ) {
     const result = commsResponse.result
     return {
@@ -111,7 +111,7 @@ export async function fetchCatalystStatus(
       status: commsResponse.status,
       elapsed: commsResponse.elapsed!,
       usersCount: result.usersCount ?? 0,
-      maxUsers: result.maxUsers ?? -1,
+      maxUsers: result.maxUsers ?? 2000,
       usersParcels: result.usersParcels
     }
   }
