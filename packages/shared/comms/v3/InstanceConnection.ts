@@ -6,7 +6,7 @@ import { Data, Profile_ProfileType } from './proto/comms.gen'
 import { Position } from '../../comms/interface/utils'
 import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
-import { createLogger } from 'shared/logger'
+import { createDummyLogger, createLogger } from 'shared/logger'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
@@ -16,6 +16,7 @@ import mitt from 'mitt'
 import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
 import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago.gen'
+import { DEBUG } from 'config'
 
 export type Config = {
   onPeerLeft: (peerId: string) => void
@@ -24,7 +25,7 @@ export type Config = {
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
-  private logger = createLogger('CommsV4: ')
+  private logger = DEBUG ? createLogger('CommsV4: ') : createDummyLogger()
   private transport: Transport = new DummyTransport()
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
