@@ -21,7 +21,13 @@ import {
   FriendshipUpdateStatusMessage,
   FriendshipAction,
   WorldPosition,
-  AvatarRendererMessage
+  AvatarRendererMessage,
+  MarkChannelMessagesAsSeenPayload,
+  JoinOrCreateChannelPayload,
+  GetChannelsPayload,
+  GetChannelMessagesPayload,
+  GetJoinedChannelsPayload,
+  LeaveChannelPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -553,6 +559,41 @@ export class BrowserInterface {
 
     store.dispatch(updateUserData(userId.toLowerCase(), toSocialId(userId)))
     store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+  }
+
+  // Join or create via command line
+  public JoinOrCreateChannel(joinOrCreateChannel: JoinOrCreateChannelPayload) {
+    // joinOrCreateChannel(joinOrCreateChannel)
+  }
+
+  // Create channel
+  public CreateChannel(createChannelPayload: JoinOrCreateChannelPayload) {
+    // createChannel(createChannelPayload)
+  }
+
+  public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+    if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
+    // markChannelMessagesAsSeen(markChannelMessagesAsSeenPayload)
+  }
+
+  public GetChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
+    // getChannelMessages(getChannelMessagesPayload)
+  }
+
+  public GetChannels(getChannelsPayload: GetChannelsPayload) {
+    // getChannels(GetChannelsPayload)
+  }
+
+  public GetUnseenMessagesByChannel() {
+    // getUnseenMessagesByChannel()
+  }
+
+  public GetJoinedChannels(getJoinedChannelsPayload: GetJoinedChannelsPayload) {
+    // getJoinedChannels(getJoinedChannelsPayload)
+  }
+
+  public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
+    // leaveChannel(leaveChannelPayload)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {

@@ -21,7 +21,11 @@ import {
   TutorialInitializationMessage,
   Notification,
   UpdateUserStatusMessage,
-  WorldPosition
+  WorldPosition,
+  ChannelInfoPayload,
+  UpdateTotalUnseenMessagesByChannelPayload,
+  JoinOrCreateChannelErrorPayload,
+  LeaveChannelErrorPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -128,6 +132,19 @@ export interface IUnityInterface {
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
+
+  // *********************************************************************************
+  // ************** Channels **************
+  // *********************************************************************************
+
+  JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayload): void
+  JoinChannelError(joinOrCreateChannelErrorPayload: JoinOrCreateChannelErrorPayload): void
+  UpdateTotalUnseenMessagesByChannel(
+    updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
+  ): void
+  UpdateChannelInfo(channelInfoPayload: ChannelInfoPayload): void
+  LeaveChannelError(leaveChannelErrorPayload: LeaveChannelErrorPayload): void
+
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
   ConnectionToRealmSuccess(successData: WorldPosition): void

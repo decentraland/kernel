@@ -636,3 +636,65 @@ export type AvatarRendererRemovedMessage = {
 } & AvatarRendererBasePayload
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
+
+// Check if we could have the same type for join or create via command line and create
+export type JoinOrCreateChannelPayload = {
+  channelId: string
+}
+
+export type JoinOrCreateChannelErrorPayload = {
+  channelId: string
+  message: string
+}
+
+// Check if we should change it like this cause otherwise I think it does not work
+export type ChannelInfoPayload = {
+  channelId: string
+  unseenMessages: number
+  lastMessageTimestamp: number
+  memberCount: number
+  description: string
+  joined: boolean
+  muted: boolean
+}
+
+export type ChannelsInfoPayload = {
+  channelsInfoPayload: ChannelInfoPayload[]
+}
+
+export type MarkChannelMessagesAsSeenPayload = {
+  channelId: string
+}
+
+export type UpdateTotalUnseenMessagesByChannelPayload = {
+  unseenChannelMessages: {
+    channelId: string
+    count: number
+  }[] // the unseen messages for each channel
+}
+
+export type GetChannelMessagesPayload = {
+  channelId: string
+  limit: number // max amount of entries to request
+  fromMessageId: string // pivot id to skip entries
+}
+
+export type GetChannelsPayload = {
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+  name: string // text to match
+}
+
+export type GetJoinedChannelsPayload = {
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+}
+
+export type LeaveChannelPayload = {
+  channelId: string
+}
+
+export type LeaveChannelErrorPayload = {
+  channelId: string
+  message: string
+}
