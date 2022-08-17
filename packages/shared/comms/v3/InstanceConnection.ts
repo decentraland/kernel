@@ -16,7 +16,7 @@ import mitt from 'mitt'
 import { Avatar } from '@dcl/schemas'
 import { Reader } from 'protobufjs/minimal'
 import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago.gen'
-import { DEBUG } from 'config'
+import { DEBUG, DEBUG_COMMS } from 'config'
 
 export type Config = {
   onPeerLeft: (peerId: string) => void
@@ -25,7 +25,7 @@ export type Config = {
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
-  private logger = DEBUG ? createLogger('CommsV4: ') : createDummyLogger()
+  private logger = DEBUG || DEBUG_COMMS ? createLogger('CommsV4: ') : createDummyLogger()
   private transport: Transport = new DummyTransport()
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
@@ -47,14 +47,14 @@ export class InstanceConnection implements RoomConnection {
       selfPosition: this.selfPosition,
       peerId,
       p2p: {
-        verbose: true,
-        debugWebRtcEnabled: false
+        verbose: DEBUG_COMMS,
+        debugWebRtcEnabled: DEBUG_COMMS
       },
       livekit: {
-        verbose: false
+        verbose: DEBUG_COMMS
       },
       ws: {
-        verbose: false
+        verbose: DEBUG_COMMS
       }
     }
 
