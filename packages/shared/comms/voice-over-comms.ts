@@ -8,8 +8,8 @@ import { createLogger } from 'shared/logger'
 import { commConfigurations } from 'config'
 import Html from 'shared/Html'
 import { EncodedFrame } from 'voice-chat-codec/types'
-import { setVoiceCommunicator, voicePlayingUpdate, voiceRecordingUpdate } from './actions'
-import { put } from 'redux-saga/effects'
+import { leaveVoiceChat, setVoiceCommunicator, voicePlayingUpdate, voiceRecordingUpdate } from './actions'
+import { put, select } from 'redux-saga/effects'
 import { setupPeer } from './peers'
 import { shouldPlayVoice } from './voice-selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
@@ -27,6 +27,7 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
   const peerTrackingInfo = setupPeer(message.sender)
 
   if (
+    voiceCommunicator &&
     profile &&
     peerTrackingInfo.ethereumAddress &&
     peerTrackingInfo.position &&
@@ -40,7 +41,7 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
 
 function setListenerSpatialParams(position: Position) {
   const state = store.getState()
-  getVoiceCommunicator(state).setListenerSpatialParams(getSpatialParamsFor(position))
+  getVoiceCommunicator(state)?.setListenerSpatialParams(getSpatialParamsFor(position))
 }
 
 export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
@@ -50,7 +51,11 @@ export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
   }
 }
 
-export function* initVoiceCommunicator() {
+export function* initializeVoiceChat() {
+  if (yield select(getVoiceCommunicator)) {
+    logger.info('VoiceCommunicator already initialized')
+    return
+  }
   logger.info('Initializing VoiceCommunicator')
   const voiceCommunicator = new VoiceCommunicator(
     {
@@ -77,7 +82,7 @@ export function* initVoiceCommunicator() {
     store.dispatch(voiceRecordingUpdate(recording))
   })
 
-  voiceCommunicator.addStreamRecordingErrorListener((message) => {
+  voiceCommunicator.addStreamRecordingErrorListener(function (message) {
     getUnityInstance().ShowNotification({
       type: NotificationType.GENERIC,
       message,
@@ -89,6 +94,7 @@ export function* initVoiceCommunicator() {
       message: 'stream recording error: ' + message,
       stack: 'addStreamRecordingErrorListener'
     })
+    store.dispatch(leaveVoiceChat())
   })
 
   positionObservable.add((obj: Readonly<PositionReport>) => {
@@ -97,4 +103,12 @@ export function* initVoiceCommunicator() {
   ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
 
   yield put(setVoiceCommunicator(voiceCommunicator))
+  getUnityInstance().SetVoiceChatStatus({ isConnected: true })
+}
+
+export function* destroyVoiceChat() {
+  getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+  yield put(setVoiceCommunicator(null))
+  ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = null
+  logger.info('Leave Voice Chat')
 }
