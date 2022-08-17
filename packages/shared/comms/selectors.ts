@@ -12,7 +12,6 @@ export const getCommsIsland = (store: RootCommsState): string | undefined => sto
 export const getRealm = (store: RootCommsState): Realm | undefined => store.comms.context?.realm
 export const getCommsContext = (state: RootCommsState): CommsContext | undefined => state.comms.context
 export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator | null => {
-  if (!store.comms.voiceCommunicator) return null
   return store.comms.voiceCommunicator
 }
 
