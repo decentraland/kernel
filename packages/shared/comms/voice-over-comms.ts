@@ -27,6 +27,7 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
   const peerTrackingInfo = setupPeer(message.sender)
 
   if (
+    voiceCommunicator &&
     profile &&
     peerTrackingInfo.ethereumAddress &&
     peerTrackingInfo.position &&
@@ -40,7 +41,7 @@ export function processVoiceFragment(message: Package<VoiceFragment>) {
 
 function setListenerSpatialParams(position: Position) {
   const state = store.getState()
-  getVoiceCommunicator(state).setListenerSpatialParams(getSpatialParamsFor(position))
+  getVoiceCommunicator(state)?.setListenerSpatialParams(getSpatialParamsFor(position))
 }
 
 export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
@@ -50,7 +51,7 @@ export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
   }
 }
 
-export function* initVoiceCommunicator() {
+export function* initializeVoiceChat() {
   logger.info('Initializing VoiceCommunicator')
   const voiceCommunicator = new VoiceCommunicator(
     {
@@ -89,6 +90,7 @@ export function* initVoiceCommunicator() {
       message: 'stream recording error: ' + message,
       stack: 'addStreamRecordingErrorListener'
     })
+    destroyVoiceChat()
   })
 
   positionObservable.add((obj: Readonly<PositionReport>) => {
@@ -97,4 +99,11 @@ export function* initVoiceCommunicator() {
   ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = voiceCommunicator
 
   yield put(setVoiceCommunicator(voiceCommunicator))
+  getUnityInstance().SetVoiceChatStatus(true)
+}
+
+export function* destroyVoiceChat() {
+  ;(globalThis as any).__DEBUG_VOICE_COMMUNICATOR = null
+  yield put(setVoiceCommunicator(null))
+  getUnityInstance().SetVoiceChatStatus(false)
 }
