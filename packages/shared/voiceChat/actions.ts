@@ -1,10 +1,15 @@
 import { action } from 'typesafe-actions'
 import { VoicePolicy } from './types'
-import { VoiceHandler } from '../../voice-chat-codec/VoiceChat'
+import { VoiceHandler } from 'voice-chat-codec/VoiceChat'
 
-export const JOIN_VOICE_CHAT = '[VC] JoinVoiceChat'
-export const joinVoiceChat = () => action(JOIN_VOICE_CHAT, {})
-export type JoinVoiceChatAction = ReturnType<typeof joinVoiceChat>
+export const JOIN_LIVE_KIT_ROOM_VOICE_CHAT = '[VC] JoinLiveKitRoomVoiceChat'
+export const joinLiveKitRoomVoiceChat = (room: any, token: string) =>
+  action(JOIN_LIVE_KIT_ROOM_VOICE_CHAT, { room, token })
+export type JoinLiveKitRoomVoiceChatAction = ReturnType<typeof joinLiveKitRoomVoiceChat>
+
+export const JOIN_OPUS_VOICE_CHAT = '[VC] JoinOpusVoiceChat'
+export const joinOpusVoiceChat = () => action(JOIN_OPUS_VOICE_CHAT, {})
+export type JoinOpusVoiceChatAction = ReturnType<typeof joinOpusVoiceChat>
 
 export const LEAVE_VOICE_CHAT = '[VC] LeaveVoiceChat'
 export const leaveVoiceChat = () => action(LEAVE_VOICE_CHAT, {})
@@ -16,7 +21,8 @@ export const voicePlayingUpdate = (userId: string, playing: boolean) =>
 export type VoicePlayingUpdate = ReturnType<typeof voicePlayingUpdate>
 
 export const SET_VOICE_CHAT_HANDLER = '[VC] setVoiceChatHandler'
-export const setVoiceChatHandler = (voiceChat: VoiceHandler) => action(SET_VOICE_CHAT_HANDLER, { voiceChat })
+export const setVoiceChatHandler = (voiceChat: VoiceHandler | undefined) =>
+  action(SET_VOICE_CHAT_HANDLER, { voiceChat })
 export type SetVoiceChatHandlerAction = ReturnType<typeof setVoiceChatHandler>
 
 /**
@@ -53,7 +59,8 @@ export const setVoiceChatPolicy = (policy: VoicePolicy) => action(SET_VOICE_CHAT
 export type SetVoiceChatPolicy = ReturnType<typeof setVoiceChatPolicy>
 
 export type VoiceChatActions =
-  | JoinVoiceChatAction
+  | JoinLiveKitRoomVoiceChatAction
+  | JoinOpusVoiceChatAction
   | LeaveVoiceChatAction
   | VoicePlayingUpdate
   | SetVoiceChatHandlerAction

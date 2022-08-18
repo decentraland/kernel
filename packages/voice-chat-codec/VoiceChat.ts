@@ -1,7 +1,3 @@
-import { RoomConnection } from 'shared/comms/interface/index'
-import * as liveKit from 'livekit-client'
-import defaultLogger from 'shared/logger'
-import { createOpusVoiceHandler } from './opusVoiceHandler'
 import { Position } from 'shared/comms/interface/utils'
 import { EncodedFrame } from './types'
 

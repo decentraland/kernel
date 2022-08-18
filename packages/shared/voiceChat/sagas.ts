@@ -5,7 +5,6 @@ import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
 import { VoiceHandler } from 'voice-chat-codec/VoiceChat'
 import {
-  JOIN_VOICE_CHAT,
   LEAVE_VOICE_CHAT,
   SET_VOICE_CHAT_MUTE,
   SET_VOICE_CHAT_VOLUME,
@@ -15,15 +14,27 @@ import {
   VoicePlayingUpdate,
   SetVoiceChatVolume,
   SetVoiceChatMute,
-  setVoiceChatHandler
+  setVoiceChatHandler,
+  JOIN_LIVE_KIT_ROOM_VOICE_CHAT,
+  JOIN_OPUS_VOICE_CHAT,
+  voiceRecordingUpdate,
+  voicePlayingUpdate,
+  SET_VOICE_CHAT_HANDLER,
+  SetVoiceChatHandlerAction
 } from './actions'
 import { voiceChatLogger } from './context'
-
+import { store } from 'shared/store/isolatedStore'
 import { isVoiceChatRecording, getVoiceHandler, isVoiceChatAllowedByCurrentScene } from './selectors'
+import { positionObservable, PositionReport } from 'shared/world/positionThings'
+import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 export function* voiceChatSaga() {
-  yield takeEvery(JOIN_VOICE_CHAT, handleJoinVoiceChat)
+  yield takeEvery(JOIN_LIVE_KIT_ROOM_VOICE_CHAT, handleJoinLiveKitRoomVoiceChat)
+  yield takeEvery(JOIN_OPUS_VOICE_CHAT, handleJoinOpusVoiceChat)
   yield takeEvery(LEAVE_VOICE_CHAT, handleLeaveVoiceChat)
+
+  yield takeEvery(SET_VOICE_CHAT_HANDLER, handleChangeVoiceChatHandler)
 
   yield takeLatest(REQUEST_VOICE_CHAT_RECORDING, handleVoiceChatRecordingStatus)
   yield takeLatest(REQUEST_TOGGLE_VOICE_CHAT_RECORDING, handleVoiceChatRecordingStatus)
@@ -48,20 +59,46 @@ function* handleVoiceChatRecordingStatus() {
   }
 }
 
-function* handleJoinVoiceChat() {
-  voiceChatLogger.log('join voice chat')
+function* handleJoinLiveKitRoomVoiceChat() {
+  voiceChatLogger.log('join livekit voice chat')
+
+  // TODO: On error, join opus
+}
+
+function* handleJoinOpusVoiceChat() {
+  voiceChatLogger.log('join opus voice chat')
   const commsContext = yield select(getCommsContext)
   if (commsContext) {
     const voiceHandler = createOpusVoiceHandler(commsContext.worldInstanceConnection)
+
+    voiceHandler.onRecording((recording) => {
+      store.dispatch(voiceRecordingUpdate(recording))
+    })
+
+    voiceHandler.onUserTalking((userId, talking) => {
+      store.dispatch(voicePlayingUpdate(userId, talking))
+    })
+
+    positionObservable.add((obj: Readonly<PositionReport>) => {
+      voiceHandler.reportPosition(positionReportToCommsPosition(obj))
+    })
+
     yield put(setVoiceChatHandler(voiceHandler))
   }
 }
 
 function* handleLeaveVoiceChat() {
-  voiceChatLogger.log('leave voice chat')
+  yield put(setVoiceChatHandler(undefined))
 }
 
-// TODO: bind this function to a "Request Microphone" button
+function* handleChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
+  if (action.payload.voiceChat) {
+    getUnityInstance().SetVoiceChatStatus({ isConnected: true })
+  } else {
+    getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+  }
+}
+
 function* requestUserMedia() {
   const voiceHandler: VoiceHandler = yield select(getVoiceHandler)
   if (!voiceHandler.hasInput()) {
