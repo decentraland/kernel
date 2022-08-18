@@ -5,7 +5,7 @@ export type CommsState = {
   voiceChatRecording: boolean
   voicePolicy: VoicePolicy
   island?: string
-  voiceCommunicator: any | null
+  voiceChat: any
   context: CommsContext | undefined
 }
 

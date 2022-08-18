@@ -1,5 +1,5 @@
 import { action } from 'typesafe-actions'
-import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
+import type { VoiceChat } from 'voice-chat-codec/VoiceChat'
 import type { CommsContext } from './context'
 import type { VoicePolicy } from './types'
 
@@ -8,9 +8,8 @@ export const voicePlayingUpdate = (userId: string, playing: boolean) =>
   action(VOICE_PLAYING_UPDATE, { userId, playing })
 export type VoicePlayingUpdate = ReturnType<typeof voicePlayingUpdate>
 
-export const INIT_VOICE_COMMUNICATOR = '[COMMS] setVoiceCommunicator'
-export const setVoiceCommunicator = (voiceCommunicator: VoiceCommunicator | null) =>
-  action(INIT_VOICE_COMMUNICATOR, { voiceCommunicator })
+export const INIT_VOICE_CHAT = '[COMMS] setVoiceCommunicator'
+export const setVoiceChat = (voiceChat: VoiceChat) => action(INIT_VOICE_CHAT, { voiceChat })
 
 /**
  * Action to join voice chat

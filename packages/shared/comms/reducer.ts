@@ -4,7 +4,7 @@ import { COMMS_ESTABLISHED } from 'shared/loading/types'
 
 import { CommsState, VoicePolicy } from './types'
 import {
-  INIT_VOICE_COMMUNICATOR,
+  INIT_VOICE_CHAT,
   SET_COMMS_ISLAND,
   SET_VOICE_CHAT_RECORDING,
   SET_VOICE_POLICY,
@@ -17,7 +17,7 @@ const INITIAL_COMMS: CommsState = {
   voiceChatRecording: false,
   voicePolicy: VoicePolicy.ALLOW_ALL,
   context: undefined,
-  voiceCommunicator: null
+  voiceChat: null
 }
 
 export function commsReducer(state?: CommsState, action?: AnyAction): CommsState {
@@ -30,8 +30,8 @@ export function commsReducer(state?: CommsState, action?: AnyAction): CommsState
   switch (action.type) {
     case COMMS_ESTABLISHED:
       return { ...state, initialized: true }
-    case INIT_VOICE_COMMUNICATOR:
-      return { ...state, voiceCommunicator: action.payload.voiceCommunicator }
+    case INIT_VOICE_CHAT:
+      return { ...state, voiceChat: action.payload.voiceChat }
     case SET_VOICE_CHAT_RECORDING:
       if (action.payload.recording === state.voiceChatRecording) return state
       return { ...state, voiceChatRecording: action.payload.recording }

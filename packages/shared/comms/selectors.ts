@@ -2,7 +2,7 @@ import { Realm } from 'shared/dao/types'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { lastPlayerScene } from 'shared/world/sceneState'
-import type { VoiceCommunicator } from 'voice-chat-codec/VoiceCommunicator'
+import type { VoiceChat } from 'voice-chat-codec/VoiceChat'
 import type { CommsContext } from './context'
 import { RootCommsState } from './types'
 
@@ -11,8 +11,9 @@ export const getVoicePolicy = (store: RootCommsState) => store.comms.voicePolicy
 export const getCommsIsland = (store: RootCommsState): string | undefined => store.comms.island
 export const getRealm = (store: RootCommsState): Realm | undefined => store.comms.context?.realm
 export const getCommsContext = (state: RootCommsState): CommsContext | undefined => state.comms.context
-export const getVoiceCommunicator = (store: RootCommsState): VoiceCommunicator | null => {
-  return store.comms.voiceCommunicator
+export const getVoiceChat = (store: RootCommsState): VoiceChat => {
+  if (!store.comms.voiceChat) throw new Error('VoiceChat is not set')
+  return store.comms.voiceChat
 }
 
 export function isVoiceChatAllowedByCurrentScene() {
