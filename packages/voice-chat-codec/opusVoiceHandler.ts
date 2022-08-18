@@ -55,10 +55,19 @@ export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler 
       currentPosition = position
       voiceCommunicator.setListenerSpatialParams(getSpatialParamsFor(position))
     },
-    setVolume: voiceCommunicator.setVolume,
-    setMute: voiceCommunicator.setMute,
-    setInputStream: voiceCommunicator.setInputStream,
-    hasInput: voiceCommunicator.hasInput,
+    setVolume: function (volume) {
+      logger.log('setVolume... voiceCommunicator:', voiceCommunicator)
+      voiceCommunicator.setVolume(volume)
+    },
+    setMute: (mute) => {
+      voiceCommunicator.setMute(mute)
+    },
+    setInputStream: (stream) => {
+      return voiceCommunicator.setInputStream(stream)
+    },
+    hasInput: () => {
+      return voiceCommunicator.hasInput()
+    },
     playEncodedAudio: (src, position, encoded) => {
       return voiceCommunicator.playEncodedAudio(src, getSpatialParamsFor(position), encoded)
     }

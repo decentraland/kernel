@@ -29,6 +29,7 @@ export type VoiceHandler = {
   playEncodedAudio?(src: string, relativePosition: Position, encoded: EncodedFrame): Promise<void>
 }
 
+/*
 export type VoiceChat = {
   // Connection Methods
   // connects or disconnects a room
@@ -54,15 +55,18 @@ export const createVoiceChat = (): VoiceChat => {
 
   // connects or disconnects a transport for legacy voiceChat
   function setTransport(transport: RoomConnection | null): void {
-    defaultLogger.log('setTransport')
+    defaultLogger.log('setTransport', transport)
     if (transport) {
       voiceHandler = createOpusVoiceHandler(transport)
-      if (currentPosition) voiceHandler.reportPosition(currentPosition)
-      voiceHandler.setMute(currentMute)
-      voiceHandler.setVolume(currentVolume)
-      voiceHandler.setInputStream(currentStream).catch(() => defaultLogger.log('Stream set!'))
-      if (onUserTalkingCB) voiceHandler.onUserTalking(onUserTalkingCB)
-      if (onRecordingCB) voiceHandler.onRecording(onRecordingCB)
+      defaultLogger.log('voiceHandler', voiceHandler)
+      if (voiceHandler) {
+        if (currentPosition) voiceHandler.reportPosition(currentPosition)
+        voiceHandler.setVolume(currentVolume)
+        voiceHandler.setMute(currentMute)
+        voiceHandler.setInputStream(currentStream).catch(() => defaultLogger.log('Stream set!'))
+        if (onUserTalkingCB) voiceHandler.onUserTalking(onUserTalkingCB)
+        if (onRecordingCB) voiceHandler.onRecording(onRecordingCB)
+      }
     } else {
       voiceHandler = undefined
     }
@@ -132,3 +136,4 @@ export const createVoiceChat = (): VoiceChat => {
     playEncodedAudio
   }
 }
+*/
