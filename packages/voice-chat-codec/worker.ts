@@ -1,6 +1,6 @@
-import { VoiceChatWorkerResponse, RequestTopic, ResponseTopic } from './opus/types'
-import { Resampler } from './opus/resampler'
-import { OPUS_BITS_PER_SECOND, OPUS_FRAME_SIZE_MS } from './opus/constants'
+import { VoiceChatWorkerResponse, RequestTopic, ResponseTopic } from './types'
+import { Resampler } from './resampler'
+import { OPUS_BITS_PER_SECOND, OPUS_FRAME_SIZE_MS } from './constants'
 
 declare function postMessage(message: any, transferables: any[]): void
 
