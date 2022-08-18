@@ -23,13 +23,6 @@ import { fetchParcelsWithAccess } from 'shared/profiles/fetchLand'
 import { UPDATE_LOADING_SCREEN } from 'shared/loading/actions'
 import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selectors'
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
-import {
-  SET_WORLD_CONTEXT,
-  VoicePlayingUpdate,
-  VoiceRecordingUpdate,
-  VOICE_PLAYING_UPDATE,
-  VOICE_RECORDING_UPDATE
-} from 'shared/comms/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { sceneObservable } from 'shared/world/sceneState'
@@ -43,6 +36,15 @@ import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { waitForRendererInstance } from './sagas-helper'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import {
+  SetVoiceChatHandlerAction,
+  SET_VOICE_CHAT_HANDLER,
+  VoicePlayingUpdate,
+  VoiceRecordingUpdate,
+  VOICE_PLAYING_UPDATE,
+  VOICE_RECORDING_UPDATE
+} from 'shared/voiceChat/actions'
+import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -50,6 +52,7 @@ export function* rendererSaga() {
   yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreen)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
+  yield takeEvery(SET_VOICE_CHAT_HANDLER, updateChangeVoiceChatHandler)
 
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
@@ -111,6 +114,14 @@ function* updateUserVoicePlayingRenderer(action: VoicePlayingUpdate) {
 function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdate) {
   yield call(waitForRendererInstance)
   getUnityInstance().SetPlayerTalking(action.payload.recording)
+}
+
+function* updateChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
+  if (action.payload.voiceChat) {
+    getUnityInstance().SetVoiceChatStatus({ isConnected: true })
+  } else {
+    getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+  }
 }
 
 function* listenToWhetherSceneSupportsVoiceChat() {

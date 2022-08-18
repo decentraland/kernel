@@ -19,22 +19,18 @@ import {
   JOIN_OPUS_VOICE_CHAT,
   voiceRecordingUpdate,
   voicePlayingUpdate,
-  SET_VOICE_CHAT_HANDLER,
-  SetVoiceChatHandlerAction
+  SET_VOICE_CHAT_HANDLER
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
 import { isVoiceChatRecording, getVoiceHandler, isVoiceChatAllowedByCurrentScene } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 export function* voiceChatSaga() {
   yield takeEvery(JOIN_LIVE_KIT_ROOM_VOICE_CHAT, handleJoinLiveKitRoomVoiceChat)
   yield takeEvery(JOIN_OPUS_VOICE_CHAT, handleJoinOpusVoiceChat)
   yield takeEvery(LEAVE_VOICE_CHAT, handleLeaveVoiceChat)
-
-  yield takeEvery(SET_VOICE_CHAT_HANDLER, handleChangeVoiceChatHandler)
 
   yield takeLatest(REQUEST_VOICE_CHAT_RECORDING, handleVoiceChatRecordingStatus)
   yield takeLatest(REQUEST_TOGGLE_VOICE_CHAT_RECORDING, handleVoiceChatRecordingStatus)
@@ -89,14 +85,6 @@ function* handleJoinOpusVoiceChat() {
 
 function* handleLeaveVoiceChat() {
   yield put(setVoiceChatHandler(undefined))
-}
-
-function* handleChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
-  if (action.payload.voiceChat) {
-    getUnityInstance().SetVoiceChatStatus({ isConnected: true })
-  } else {
-    getUnityInstance().SetVoiceChatStatus({ isConnected: false })
-  }
 }
 
 function* requestUserMedia() {
