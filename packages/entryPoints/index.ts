@@ -314,7 +314,7 @@ export async function startPreview(unityInterface: IUnityInterface) {
 
   window.addEventListener('message', async (msg) => {
     if (typeof msg.data === 'string') {
-      if (msg.data.startsWith('{')) {
+      if (msg.data === 'sdk-playground-update') {
         await reloadPlaygroundScene()
       }
     }
