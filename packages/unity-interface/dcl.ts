@@ -19,7 +19,7 @@ import {
   onPositionUnsettledObservable,
   reloadScene,
   addDesiredParcel,
-  forceStopScene
+  unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
 import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
 import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
@@ -40,6 +40,7 @@ import { workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 import { delay } from 'redux-saga/effects'
+import { sleep } from 'atomicHelpers/sleep'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -215,14 +216,14 @@ export async function reloadPlaygroundScene() {
     return
   }
 
+  const sceneId = 'dcl-sdk-playground'
 
-  const sceneUrn = 'dcl-sdk-playground'
-  forceStopScene(sceneUrn)
-  await delay(200)
+  await unloadParcelSceneById(sceneId)
+  await sleep(300)
 
   const hudWorkerBLOB = new Blob([playgroundCode])
   const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
-  await startGlobalScene(sceneUrn, 'SDK Playground', hudWorkerUrl)
+  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl)
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {
