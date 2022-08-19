@@ -128,7 +128,7 @@ function* fetchItemsFromCatalyst(
 
       if (identity) {
         if (itemUuids.length > 0) {
-          const v2Items: PartialItem[] = yield call(fetchItemsByIdFromBuilder, itemUuids, identity)
+          const v2Items: PartialItem[] = yield call(fetchItemsByIdFromBuilder, action, itemUuids, identity)
           result.push(...v2Items)
         }
 
@@ -199,7 +199,7 @@ function* fetchItemsFromCatalyst(
 
       if (identity) {
         if (itemUuids.length > 0) {
-          const v2Items: PartialWearableV2[] = yield call(fetchItemsByIdFromBuilder, itemUuids, identity)
+          const v2Items: PartialItem[] = yield call(fetchItemsByIdFromBuilder, action, itemUuids, identity)
           result.push(...v2Items)
         }
 
@@ -213,7 +213,7 @@ function* fetchItemsFromCatalyst(
         (collectionId) => !collectionId.startsWith('urn')
       )
       if (uuidCollections.length > 0 && identity) {
-        const v2Items: PartialWearableV2[] = yield call(
+        const v2Items: PartialItem[] = yield call(
           fetchItemsByCollectionFromBuilder,
           action,
           uuidCollections,
@@ -266,7 +266,11 @@ async function fetchEmotesByFilters(filters: EmotesRequestFilters, client: Catal
 /**
  * Fetches a single item from the Builder Server. Retrieves both wearables and emotes
  */
-async function fetchItemsByIdFromBuilder(uuidsItems: string[], identity: ExplorerIdentity): Promise<WearableV2[]> {
+async function fetchItemsByIdFromBuilder(
+  action: EmotesRequest | WearablesRequest,
+  uuidsItems: string[],
+  identity: ExplorerIdentity
+): Promise<WearableV2[]> {
   return Promise.all(
     uuidsItems.map(async (uuid) => {
       const path = `items/${uuid}`
@@ -278,7 +282,7 @@ async function fetchItemsByIdFromBuilder(uuidsItems: string[], identity: Explore
         throw new Error(itemResponse.error)
       }
 
-      return mapUnpublishedWearableIntoCatalystWearable(itemResponse.data) as WearableV2
+      return mapUnpublishedItemIntoCatalystItem(action, itemResponse.data) as WearableV2
     })
   )
 }
@@ -290,7 +294,7 @@ async function fetchItemsByCollectionFromBuilder(
   identity: ExplorerIdentity
 ) {
   const isRequestingEmotes = action.type === EMOTES_REQUEST
-  const result: WearableV2[] = []
+  const result: PartialItem[] = []
   for (const collectionUuid of uuidCollections) {
     if (filters?.collectionIds && !filters.collectionIds.includes(collectionUuid)) {
       continue
@@ -301,7 +305,7 @@ async function fetchItemsByCollectionFromBuilder(
     const collection: { data: UnpublishedWearable[] } = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
       headers
     })) as any
-    const items = collection.data.map((item) => mapUnpublishedWearableIntoCatalystWearable(item))
+    const items = collection.data.map((item) => mapUnpublishedItemIntoCatalystItem(action, item))
     result.push(
       ...items.filter((item) =>
         isRequestingEmotes
@@ -337,24 +341,37 @@ async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesReque
 /**
  * We are now mapping wearables that were fetched from the builder server into the same format that is returned by the catalysts
  */
-function mapUnpublishedWearableIntoCatalystWearable(wearable: UnpublishedWearable): any {
-  const { id, rarity, name, thumbnail, description, data, contents: contentToHash, type } = wearable
-  return {
+function mapUnpublishedItemIntoCatalystItem(action: EmotesRequest | WearablesRequest, item: UnpublishedWearable): any {
+  const { id, rarity, name, thumbnail, description, data, contents: contentToHash, type } = item
+  const baseItem = {
     id,
     rarity,
     i18n: [{ code: 'en', text: name }],
     thumbnail: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[thumbnail]}`,
-    description,
-    emoteDataV0: type === UnpublishedWearableType.EMOTE ? { loop: data.category === 'loop' } : undefined,
-    data: {
-      ...data,
-      representations: data.representations.map(({ contents, ...other }) => ({
-        ...other,
-        contents: contents.map((key) => ({
-          key,
-          url: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[key]}`
-        }))
-      }))
+    description
+  }
+
+  const representations = data.representations.map(({ contents, ...other }) => ({
+    ...other,
+    contents: contents.map((key) => ({
+      key,
+      url: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[key]}`
+    }))
+  }))
+
+  if (action.type === WEARABLES_REQUEST) {
+    return {
+      ...baseItem,
+      emoteDataV0: type === UnpublishedWearableType.EMOTE ? { loop: data.category === 'loop' } : undefined,
+      data: {
+        ...data,
+        representations
+      }
+    }
+  } else {
+    return {
+      ...baseItem,
+      emoteDataADR74: { ...data, representations }
     }
   }
 }
@@ -414,6 +431,7 @@ export function* handleItemsRequestSuccess(action: WearablesSuccess | EmotesSucc
 
 export function* handleItemsRequestFailure(action: WearablesFailure | EmotesFailure) {
   const { context, error } = action.payload
+  defaultLogger.info(`kernel: error handleItemsRequestFailure: ${JSON.stringify(error)}`)
 
   defaultLogger.error(
     `Failed to fetch ${action.type === WEARABLES_FAILURE ? 'wearables' : 'emotes'} for context '${context}'`,

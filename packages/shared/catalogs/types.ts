@@ -39,6 +39,7 @@ export type UnpublishedWearable = {
     hides?: string[]
     replaces?: string[]
     representations: UnpublishedBodyShapeRepresentation[]
+    loop?: boolean
   }
   contents: Record<string, string> // from file name to hash
 }
