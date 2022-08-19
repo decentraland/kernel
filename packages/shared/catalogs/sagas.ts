@@ -99,6 +99,7 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
           : wearablesSuccess(v2Items as WearableV2[], context)
       )
     } catch (error: any) {
+      defaultLogger.info(`kernel: error in catch: ${JSON.stringify(error)}`)
       yield put(failureAction(context, error.message))
     }
   } else {
