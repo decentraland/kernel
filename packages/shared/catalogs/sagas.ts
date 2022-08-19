@@ -302,6 +302,7 @@ async function fetchItemsByCollectionFromBuilder(
   identity: ExplorerIdentity
 ) {
   const isRequestingEmotes = action.type === EMOTES_REQUEST
+  defaultLogger.info(`kernel: @emotes isRequestingEmotes: ${JSON.stringify(isRequestingEmotes)}`)
   const result: PartialItem[] = []
   for (const collectionUuid of uuidCollections) {
     if (filters?.collectionIds && !filters.collectionIds.includes(collectionUuid)) {
@@ -314,13 +315,21 @@ async function fetchItemsByCollectionFromBuilder(
       headers,
       timeout: '5m'
     })) as any
-    const items = collection.data.map((item) => mapUnpublishedItemIntoCatalystItem(action, item))
-    result.push(
-      ...items.filter((item) =>
+    defaultLogger.info(`kernel: @emotes collection from builder: ${JSON.stringify(collection)}`)
+    defaultLogger.info(
+      `kernel: @emotes isRequestingEmotes: ${isRequestingEmotes} result pre-push: ${JSON.stringify(result)}`
+    )
+    const items = collection.data
+      .filter((item) =>
         isRequestingEmotes
           ? item.type === UnpublishedWearableType.EMOTE
           : item.type === UnpublishedWearableType.WEARABLE
       )
+      .map((item) => mapUnpublishedItemIntoCatalystItem(action, item))
+    defaultLogger.info(`kernel: @emotes collection from items: ${JSON.stringify(items)}`)
+    result.push(...items)
+    defaultLogger.info(
+      `kernel: @emotes isRequestingEmotes: ${isRequestingEmotes} result post-push: ${JSON.stringify(result)}`
     )
   }
   if (filters && areWearablesRequestFilters(filters) && filters.wearableIds) {
@@ -328,6 +337,7 @@ async function fetchItemsByCollectionFromBuilder(
   } else if (filters && !areWearablesRequestFilters(filters) && filters.emoteIds) {
     return result.filter((item) => filters.emoteIds!.includes(item.id))
   }
+  defaultLogger.info(`kernel: @emotes isRequestingEmotes: ${isRequestingEmotes}result: ${JSON.stringify(result)}`)
   return result
 }
 
