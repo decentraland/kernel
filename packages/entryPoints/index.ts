@@ -15,7 +15,12 @@ import {
 } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
+import {
+  getPreviewSceneId,
+  loadPreviewScene,
+  reloadPlaygroundScene,
+  startUnitySceneWorkers
+} from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -271,11 +276,9 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 }
 
 export async function startPreview(unityInterface: IUnityInterface) {
-  let previewSceneId = ''
   getPreviewSceneId()
     .then((sceneData) => {
       if (sceneData.sceneId) {
-        previewSceneId = sceneData.sceneId
         unityInterface.SetKernelConfiguration({
           debugConfig: {
             sceneDebugPanelTargetSceneId: sceneData.sceneId,
@@ -309,17 +312,10 @@ export async function startPreview(unityInterface: IUnityInterface) {
     }
   })
 
-  window.addEventListener('message', (msg) => {
+  window.addEventListener('message', async (msg) => {
     if (typeof msg.data === 'string') {
       if (msg.data.startsWith('{')) {
-        handleServerMessage({
-          type: sdk.SCENE_UPDATE,
-          payload: {
-            sceneId: previewSceneId,
-            sceneType: sdk.ProjectType.SCENE
-          }
-        })
-        logger.log('Update message from Parent', msg.data)
+        await reloadPlaygroundScene()
       }
     }
   })

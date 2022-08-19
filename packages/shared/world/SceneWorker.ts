@@ -106,8 +106,6 @@ export class SceneWorker {
       defaultLogger.error('Invalid scene metadata', loadableScene.entity.metadata, Scene.validate.errors)
     }
 
-    const playgroundCode = loadableScene.id.startsWith('b64') ? globalThis.PlaygroundCode : '' || ''
-
     this.rpcContext = {
       sceneData: {
         ...loadableScene,
@@ -132,8 +130,7 @@ export class SceneWorker {
       sendProtoSceneEvent: (e) => {
         this.rpcContext.events.push(e)
       },
-      sendBatch: this.sendBatch.bind(this),
-      playgroundCode
+      sendBatch: this.sendBatch.bind(this)
     }
 
     // if the scene metadata has a base parcel, then we set it as the position

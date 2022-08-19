@@ -56,26 +56,17 @@ export async function startSceneRuntime(client: RpcClient) {
     throw new Error(`SDK: Error while loading scene. Main file missing.`)
   }
 
-  const loadFromPlayground: boolean =
-    isPreview && explorerConfiguration.configurations['playgroundCode'] !== '' && mapping.hash.startsWith('b64')
+  const url = resolveMapping(mapping.hash, mappingName, bootstrapData.baseUrl)
+  const codeRequest = await fetch(url)
 
-  let sourceCode = ''
-  if (loadFromPlayground) {
-    sourceCode =
-      (explorerConfiguration.configurations['playgroundCode'] as string) || 'dcl.log("cannot run the PLAYGROUND code")'
-  } else {
-    const url = resolveMapping(mapping.hash, mappingName, bootstrapData.baseUrl)
-    const codeRequest = await fetch(url)
-
-    if (!codeRequest.ok) {
-      await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
-      throw new Error(
-        `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
-      )
-    }
-
-    sourceCode = await codeRequest.text()
+  if (!codeRequest.ok) {
+    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+    throw new Error(
+      `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
+    )
   }
+
+  const sourceCode = await codeRequest.text()
 
   componentSerializeOpt.useBinaryTransform = explorerConfiguration.configurations['enableBinaryTransform'] === 'true'
 

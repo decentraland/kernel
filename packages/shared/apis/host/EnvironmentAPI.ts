@@ -56,13 +56,12 @@ export function registerEnvironmentAPIServiceServerImplementation(port: RpcServe
 
       return { currentRealm: toEnvironmentRealmType(realm, island) }
     },
-    async getExplorerConfiguration(req, ctx): Promise<GetExplorerConfigurationResponse> {
+    async getExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
       return {
         clientUri: location.href,
         configurations: {
           questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl,
-          enableBinaryTransform: `${transformSerializeOpt.useBinaryTransform}`,
-          playgroundCode: ctx.playgroundCode
+          enableBinaryTransform: `${transformSerializeOpt.useBinaryTransform}`
         }
       }
     },

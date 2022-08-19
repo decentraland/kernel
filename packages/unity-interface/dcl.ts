@@ -18,7 +18,8 @@ import {
   onPositionSettledObservable,
   onPositionUnsettledObservable,
   reloadScene,
-  addDesiredParcel
+  addDesiredParcel,
+  forceStopScene
 } from 'shared/world/parcelSceneManager'
 import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
 import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
@@ -38,6 +39,7 @@ import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
 import { workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
+import { delay } from 'redux-saga/effects'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -89,7 +91,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 }
 
-async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
+export async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
   const metadata: Scene = {
     display: {
       title: title
@@ -203,6 +205,24 @@ export async function loadPreviewScene(message: sdk.Messages) {
   } else {
     defaultLogger.log(`Unable to process message in loadPreviewScene`, { message })
   }
+}
+
+export async function reloadPlaygroundScene() {
+  const playgroundCode: string = (globalThis as any).PlaygroundCode
+
+  if (!playgroundCode) {
+    console.log('There is no playground code')
+    return
+  }
+
+
+  const sceneUrn = 'dcl-sdk-playground'
+  forceStopScene(sceneUrn)
+  await delay(200)
+
+  const hudWorkerBLOB = new Blob([playgroundCode])
+  const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
+  await startGlobalScene(sceneUrn, 'SDK Playground', hudWorkerUrl)
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {
