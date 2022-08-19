@@ -796,8 +796,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
     const friendRequestTypeSelector = hasSentFriendshipRequest ? 'toFriendRequests' : 'fromFriendRequests'
     const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = hasSentFriendshipRequest
-      ? 'totalReceivedRequests'
-      : 'totalSentRequests'
+      ? 'totalSentRequests'
+      : 'totalReceivedRequests'
 
     let updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload = yield select(getTotalFriendRequests)
     let totalFriends: number = yield select(getTotalFriends)
