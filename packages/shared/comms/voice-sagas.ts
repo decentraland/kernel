@@ -9,15 +9,19 @@ import {
   SET_VOICE_MUTE,
   SET_VOICE_VOLUME,
   TOGGLE_VOICE_CHAT_RECORDING,
-  VOICE_PLAYING_UPDATE
+  VOICE_PLAYING_UPDATE,
+  JOIN_VOICE_CHAT,
+  LEAVE_VOICE_CHAT
 } from './actions'
 import { commsLogger } from './context'
 import { receiveUserTalking } from './peers'
 import { isVoiceChatRecording, getVoiceCommunicator, isVoiceChatAllowedByCurrentScene } from './selectors'
-import { initVoiceCommunicator } from './voice-over-comms'
+import { initializeVoiceChat, destroyVoiceChat } from './voice-over-comms'
 
 export function* voiceSaga() {
-  yield call(initVoiceCommunicator)
+  yield call(initializeVoiceChat)
+  yield takeEvery(JOIN_VOICE_CHAT, initializeVoiceChat)
+  yield takeEvery(LEAVE_VOICE_CHAT, destroyVoiceChat)
 
   yield takeLatest(SET_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
   yield takeEvery(TOGGLE_VOICE_CHAT_RECORDING, updateVoiceChatRecordingStatus)
@@ -28,7 +32,8 @@ export function* voiceSaga() {
 
 function* updateVoiceChatRecordingStatus() {
   const recording = yield select(isVoiceChatRecording)
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
+  const voiceCommunicator: VoiceCommunicator | null = yield select(getVoiceCommunicator)
+  if (!voiceCommunicator) return
 
   if (!isVoiceChatAllowedByCurrentScene() || !recording) {
     voiceCommunicator.pause()
@@ -40,11 +45,13 @@ function* updateVoiceChatRecordingStatus() {
 
 // TODO: bind this function to a "Request Microphone" button
 function* requestUserMedia() {
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
-  if (!voiceCommunicator.hasInput()) {
-    const media = yield call(requestMediaDevice)
-    if (media) {
-      yield voiceCommunicator.setInputStream(media)
+  const voiceCommunicator: VoiceCommunicator | null = yield select(getVoiceCommunicator)
+  if (voiceCommunicator) {
+    if (!voiceCommunicator.hasInput()) {
+      const media = yield call(requestMediaDevice)
+      if (media) {
+        yield voiceCommunicator.setInputStream(media)
+      }
     }
   }
 }
@@ -56,13 +63,13 @@ function* updateUserVoicePlaying(action: VoicePlayingUpdate) {
 }
 
 function* updateVoiceChatVolume(action: SetVoiceVolume) {
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
-  voiceCommunicator.setVolume(action.payload.volume)
+  const voiceCommunicator: VoiceCommunicator | null = yield select(getVoiceCommunicator)
+  voiceCommunicator?.setVolume(action.payload.volume)
 }
 
 function* updateVoiceChatMute(action: SetVoiceMute) {
-  const voiceCommunicator: VoiceCommunicator = yield select(getVoiceCommunicator)
-  voiceCommunicator.setMute(action.payload.mute)
+  const voiceCommunicator: VoiceCommunicator | null = yield select(getVoiceCommunicator)
+  voiceCommunicator?.setMute(action.payload.mute)
 }
 
 let audioRequestPending = false

@@ -46,7 +46,14 @@ import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { IFuture } from 'fp-future'
 import { reportHotScenes } from 'shared/social/hotScenes'
 import { GIFProcessor } from 'gif-processor/processor'
-import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatRecording } from 'shared/comms/actions'
+import {
+  joinVoiceChat,
+  leaveVoiceChat,
+  setVoiceChatRecording,
+  setVoicePolicy,
+  setVoiceVolume,
+  toggleVoiceChatRecording
+} from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { wearablesRequest } from 'shared/catalogs/actions'
@@ -503,6 +510,14 @@ export class BrowserInterface {
 
   public SetVoiceChatRecording(recordingMessage: { recording: boolean }) {
     store.dispatch(setVoiceChatRecording(recordingMessage.recording))
+  }
+
+  public JoinVoiceChat() {
+    store.dispatch(joinVoiceChat())
+  }
+
+  public LeaveVoiceChat() {
+    store.dispatch(leaveVoiceChat())
   }
 
   public ToggleVoiceChatRecording() {
