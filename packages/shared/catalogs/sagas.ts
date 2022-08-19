@@ -84,7 +84,11 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
       const fetchContentServer: string = yield select(getFetchContentServer)
 
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
-      defaultLogger.info(`kernel: @emotes response: ${JSON.stringify(response)}`)
+      if (isRequestingEmotes) {
+        defaultLogger.info(
+          `kernel: @emotes isRequestingEmotes:${isRequestingEmotes} response: ${JSON.stringify(response)}`
+        )
+      }
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'
 
@@ -120,7 +124,7 @@ function* fetchItemsFromCatalyst(
     PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
   const isRequestingEmotes = action.type === EMOTES_REQUEST
   const catalystFetchFn = isRequestingEmotes ? client.fetchEmotes : client.fetchWearables
-  defaultLogger.info(`kernel: @emotes filters: ${JSON.stringify(filters)}`)
+  defaultLogger.info(`kernel: @emotes isRequestingEmotes:${isRequestingEmotes} filters: ${JSON.stringify(filters)}`)
   const result: PartialItem[] = []
   if (filters.ownedByUser) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
@@ -223,6 +227,7 @@ function* fetchItemsFromCatalyst(
           filters,
           identity
         )
+        defaultLogger.info(`kernel: @emotes v2Items from builder: ${JSON.stringify(v2Items)}`)
         result.push(...v2Items)
       }
     }
