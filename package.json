@@ -27,7 +27,7 @@
   "devDependencies": {
     "@dcl/eslint-config": "^1.0.5-20220608210046.commit-d51d9ec",
     "@dcl/posix": "^1.0.3",
-    "@dcl/unity-renderer": "^1.0.41205-20220623213209.commit-67ba18f",
+    "@dcl/unity-renderer": "^1.0.49884-20220818143841.commit-421e39d",
     "@microsoft/api-documenter": "^7.2.2",
     "@microsoft/api-extractor": "^7.1.7",
     "@tweenjs/tween.js": "^17.2.0",
