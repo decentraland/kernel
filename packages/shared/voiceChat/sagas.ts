@@ -4,7 +4,7 @@ import { getCommsContext } from 'shared/comms/selectors'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
 import { createLiveKitVoiceHandler } from 'voice-chat-codec/liveKitVoiceHandler'
-import { VoiceHandler } from 'voice-chat-codec/VoiceChat'
+import { VoiceHandler } from 'voice-chat-codec/VoiceHandler'
 import {
   LEAVE_VOICE_CHAT,
   SET_VOICE_CHAT_MUTE,
@@ -28,7 +28,8 @@ import {
   setVoiceChatMedia,
   SET_VOICE_CHAT_MEDIA,
   setVoiceChatLiveKitRoom,
-  joinVoiceChat
+  joinVoiceChat,
+  clearVoiceChatError
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
@@ -47,6 +48,8 @@ import { VoiceChatState } from './types'
 import { Observer } from 'mz-observable'
 
 import { Room } from 'livekit-client' // temp
+import { SetCommsIsland, SET_COMMS_ISLAND } from 'shared/comms/actions'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -66,15 +69,32 @@ export function* voiceChatSaga() {
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
-  // Temp, create room
+  yield takeEvery(SET_COMMS_ISLAND, handleIslandChange)
+}
+
+function* handleIslandChange(action: SetCommsIsland) {
+  // TODO: Fetching
   const qs = new URLSearchParams(location.search)
-  const token = qs.get('token') as string
-  // creates a new room with options
-  const room = new Room({
-    // optimize publishing bandwidth and CPU for published tracks
-    dynacast: true
-  })
-  yield put(setVoiceChatLiveKitRoom(room, token))
+  const tokenUrlServer = qs.get('token-url-server')
+  if (tokenUrlServer) {
+    const profile = yield select(getCurrentUserProfile)
+
+    const url = tokenUrlServer + `/getToken/${action.payload.island}/${profile.userId}`
+    const res: Response = yield fetch(url)
+    if (!res.ok) return
+    const data = yield res.json()
+
+    // creates a new room with options
+    const room = new Room({
+      // optimize publishing bandwidth and CPU for published tracks
+      dynacast: true
+    })
+
+    voiceChatLogger.log('connecting to token:', data.token)
+
+    yield room.connect('wss://test-livekit.decentraland.today', data.token)
+    yield put(setVoiceChatLiveKitRoom(room))
+  }
 }
 
 function* handleRecordingRequest() {
@@ -98,8 +118,8 @@ function* handleRecordingRequest() {
 function* handleSetVoiceChatLiveKitRoom() {
   voiceChatLogger.log('handleSetVoiceChatLiveKitRoom')
   if (yield select(hasJoined)) {
-    store.dispatch(leaveVoiceChat())
-    store.dispatch(joinVoiceChat())
+    yield put(leaveVoiceChat())
+    yield put(joinVoiceChat())
   }
 }
 
@@ -109,9 +129,11 @@ function* handleJoinVoiceChat() {
   const voiceChatState: VoiceChatState = yield select(getVoiceChatState)
   if (commsContext) {
     const voiceHandler =
-      voiceChatState.liveKit !== undefined
-        ? createLiveKitVoiceHandler(voiceChatState.liveKit.room, voiceChatState.liveKit.token)
+      voiceChatState.liveKitRoom !== null
+        ? createLiveKitVoiceHandler(voiceChatState.liveKitRoom)
         : createOpusVoiceHandler(commsContext.worldInstanceConnection)
+
+    yield put(clearVoiceChatError())
 
     voiceHandler.onRecording((recording) => {
       store.dispatch(voiceRecordingUpdate(recording))
@@ -122,7 +144,8 @@ function* handleJoinVoiceChat() {
     })
 
     voiceHandler.onError((message) => {
-      store.dispatch(setVoiceChatError(message))
+      //store.dispatch(setVoiceChatError(message))
+      put(setVoiceChatError(message))
     })
 
     if (positionObserver) {

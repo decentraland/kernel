@@ -1,11 +1,10 @@
 import { action } from 'typesafe-actions'
 import { VoicePolicy } from './types'
-import { VoiceHandler } from 'voice-chat-codec/VoiceChat'
+import { VoiceHandler } from 'voice-chat-codec/VoiceHandler'
 
 export const SET_VOICE_CHAT_LIVE_KIT_ROOM = '[VC] SetVoiceChatLiveKitRoom'
-export const setVoiceChatLiveKitRoom = (room: any, token: string) =>
-  action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room, token })
-export const clearVoiceChatLiveKitRoom = () => action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room: null, token: null })
+export const setVoiceChatLiveKitRoom = (room: any) => action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room })
+export const clearVoiceChatLiveKitRoom = () => action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room: null })
 export type SetVoiceChatLiveKitRoomAction = ReturnType<typeof setVoiceChatLiveKitRoom>
 
 export const JOIN_VOICE_CHAT = '[VC] JoinVoiceChat'

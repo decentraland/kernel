@@ -3,15 +3,12 @@ export type VoiceChatState = {
   recording: boolean
   requestRecording: boolean
   policy: VoicePolicy
-  voiceHandler: any | null
+  voiceHandler: any | null // TODO: Replace any by VoiceHandler
   error: string | null
   media?: any
   volume: number
   mute: boolean
-  liveKit?: {
-    room: any
-    token: string
-  }
+  liveKitRoom: any | null
 }
 
 export enum VoicePolicy {

@@ -14,17 +14,8 @@ import Html from 'shared/Html'
 import defaultLogger, { createLogger } from 'shared/logger'
 import { VoiceHandler } from './VoiceChat'
 
-export const createLiveKitVoiceHandler = (room: Room, token: string): VoiceHandler => {
+export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
   const logger = createLogger('LiveKitVoiceCommunicator: ')
-  //let currentPosition: Position | undefined
-  // Temporal
-  //const qs = new URLSearchParams(location.search)
-  //const token = qs.get('token') as string
-  // creates a new room with options
-  //const room = new Room({
-  //  // optimize publishing bandwidth and CPU for published tracks
-  //  dynacast: true
-  //})
 
   const parentElement = Html.loopbackAudioElement()
 
@@ -53,17 +44,9 @@ export const createLiveKitVoiceHandler = (room: Room, token: string): VoiceHandl
   }
 
   room
-    .connect('wss://test-livekit.decentraland.today', token)
-    .then(() => {
-      defaultLogger.log('[voice-chat] Connected!')
-      room
-        .on(RoomEvent.Disconnected, () => defaultLogger.log('[voice-chat] Disconnected!'))
-        .on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
-        .on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
-    })
-    .catch((err) => {
-      if (errorListener) errorListener('[voice-chat] room connect error: ' + err)
-    })
+    .on(RoomEvent.Disconnected, () => defaultLogger.log('[voice-chat] Disconnected!'))
+    .on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
+    .on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
 
   return {
     setRecording(recording) {

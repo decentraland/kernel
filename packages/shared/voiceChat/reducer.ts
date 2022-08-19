@@ -3,6 +3,7 @@ import {
   LEAVE_VOICE_CHAT,
   REQUEST_TOGGLE_VOICE_CHAT_RECORDING,
   REQUEST_VOICE_CHAT_RECORDING,
+  SET_VOICE_CHAT_ERROR,
   SET_VOICE_CHAT_HANDLER,
   SET_VOICE_CHAT_LIVE_KIT_ROOM,
   SET_VOICE_CHAT_MEDIA,
@@ -22,7 +23,8 @@ const INITIAL_STATE: VoiceChatState = {
   policy: VoicePolicy.ALLOW_ALL,
   volume: 1.0,
   mute: false,
-  error: null
+  error: null,
+  liveKitRoom: null
 }
 
 export function voiceChatReducer(state?: VoiceChatState, action?: VoiceChatActions): VoiceChatState {
@@ -37,11 +39,7 @@ export function voiceChatReducer(state?: VoiceChatState, action?: VoiceChatActio
   switch (action.type) {
     case SET_VOICE_CHAT_LIVE_KIT_ROOM: {
       const { payload } = action
-      if (payload.room && payload.token) {
-        return { ...state, liveKit: { room: payload.room, token: payload.token } }
-      } else {
-        return { ...state, liveKit: undefined }
-      }
+      return { ...state, liveKitRoom: payload.room }
     }
     case SET_VOICE_CHAT_HANDLER: {
       const { payload } = action
@@ -73,6 +71,10 @@ export function voiceChatReducer(state?: VoiceChatState, action?: VoiceChatActio
     case SET_VOICE_CHAT_MEDIA: {
       const { payload } = action
       return { ...state, media: payload.media }
+    }
+    case SET_VOICE_CHAT_ERROR: {
+      const { payload } = action
+      return { ...state, error: payload.message }
     }
     case JOIN_VOICE_CHAT: {
       return { ...state, joined: true }
