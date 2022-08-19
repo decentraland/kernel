@@ -15,7 +15,12 @@ import {
 } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
+import {
+  getPreviewSceneId,
+  loadPreviewScene,
+  reloadPlaygroundScene,
+  startUnitySceneWorkers
+} from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -304,6 +309,14 @@ export async function startPreview(unityInterface: IUnityInterface) {
       logger.log('Update message from CLI', msg.data)
       const message: sdk.Messages = JSON.parse(msg.data)
       handleServerMessage(message)
+    }
+  })
+
+  window.addEventListener('message', async (msg) => {
+    if (typeof msg.data === 'string') {
+      if (msg.data === 'sdk-playground-update') {
+        await reloadPlaygroundScene()
+      }
     }
   })
 }

@@ -158,7 +158,7 @@ export async function reloadScene(sceneId: string) {
   await setDesiredParcelScenes(getDesiredParcelScenes())
 }
 
-function unloadParcelSceneById(sceneId: string) {
+export function unloadParcelSceneById(sceneId: string) {
   const worker = loadedSceneWorkers.get(sceneId)
   if (!worker) {
     return
