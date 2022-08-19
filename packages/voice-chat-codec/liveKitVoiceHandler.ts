@@ -61,7 +61,9 @@ export const createLiveKitVoiceHandler = (room: Room, token: string): VoiceHandl
         .on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
         .on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
     })
-    .catch((err) => defaultLogger.error('[voice-chat] room connect error: ', err))
+    .catch((err) => {
+      if (errorListener) errorListener('[voice-chat] room connect error: ' + err)
+    })
 
   return {
     setRecording(recording) {
