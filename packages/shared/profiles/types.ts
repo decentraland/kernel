@@ -1,5 +1,7 @@
 import { Avatar } from '@dcl/schemas'
 
+export const REMOTE_AVATAR_IS_INVALID = `Remote avatar for profile is invalid`
+
 export type ProfileStatus = 'ok' | 'error' | 'loading'
 
 export type ProfileUserInfo = { status: 'ok' | 'loading' | 'error'; data: Avatar; addedToCatalog?: boolean }

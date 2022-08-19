@@ -1,6 +1,6 @@
 import { getProfile, getProfileStatusAndData } from './selectors'
 import { profileRequest, profilesRequest } from './actions'
-import { ProfileType } from './types'
+import { ProfileType, REMOTE_AVATAR_IS_INVALID } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { Avatar } from '@dcl/schemas'
@@ -77,14 +77,20 @@ export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType):
   return new Promise<Avatar[]>((resolve, reject) => {
     const unsubscribe = store.subscribe(() => {
       const avatars: Avatar[] = []
+      let failedAvatars = 0
 
       for (const userId of userIds) {
         const [status, data] = getProfileStatusAndData(store.getState(), userId)
 
         if (status === 'error') {
-          unsubscribe()
-          pending = false
-          return reject(data)
+          // If it's an error the data can be a string
+          if ((data as any) === REMOTE_AVATAR_IS_INVALID) {
+            failedAvatars += 1
+          } else {
+            unsubscribe()
+            pending = false
+            return reject(data)
+          }
         }
 
         const profile = getProfile(store.getState(), userId)
@@ -93,7 +99,7 @@ export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType):
         }
       }
 
-      if (avatars.length === userIds.length) {
+      if (avatars.length + failedAvatars === userIds.length) {
         unsubscribe()
         pending = false
         resolve(avatars)
