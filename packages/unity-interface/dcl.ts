@@ -39,7 +39,6 @@ import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
 import { workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
-import { delay } from 'redux-saga/effects'
 import { sleep } from 'atomicHelpers/sleep'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires

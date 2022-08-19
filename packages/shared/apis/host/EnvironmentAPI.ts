@@ -17,10 +17,12 @@ import {
   PreviewModeResponse
 } from '../proto/EnvironmentAPI.gen'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
-import { PortContext } from './context'
+import { PortContextService } from './context'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 
-export function registerEnvironmentAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
+export function registerEnvironmentAPIServiceServerImplementation(
+  port: RpcServerPort<PortContextService<'sceneData'>>
+) {
   codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
     async getBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
       return {

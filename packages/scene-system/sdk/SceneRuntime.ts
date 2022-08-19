@@ -66,9 +66,9 @@ export async function startSceneRuntime(client: RpcClient) {
     )
   }
 
-  const sourceCode = await codeRequest.text()
-
   componentSerializeOpt.useBinaryTransform = explorerConfiguration.configurations['enableBinaryTransform'] === 'true'
+
+  const sourceCode = await codeRequest.text()
 
   let didStart = false
   let updateIntervalMs: number = 1000 / 30
