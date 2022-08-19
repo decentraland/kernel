@@ -257,7 +257,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddEmotesToCatalog(emotes: Emote[], context?: string) {
-    this.SendMessageToUnity('Main', 'AddEmotesToCatalog', JSON.stringify({ emotes, context }))
+    this.SendMessageToUnity('Bridges', 'AddEmotesToCatalog', JSON.stringify({ emotes, context }))
   }
 
   public WearablesRequestFailed(error: string, context: string | undefined) {
