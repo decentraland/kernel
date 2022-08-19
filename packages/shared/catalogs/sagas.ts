@@ -84,6 +84,7 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
       const fetchContentServer: string = yield select(getFetchContentServer)
 
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
+      defaultLogger.info(`kernel: @emotes response: ${JSON.stringify(response)}`)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'
 
@@ -119,7 +120,7 @@ function* fetchItemsFromCatalyst(
     PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
   const isRequestingEmotes = action.type === EMOTES_REQUEST
   const catalystFetchFn = isRequestingEmotes ? client.fetchEmotes : client.fetchWearables
-
+  defaultLogger.info(`kernel: @emotes filters: ${JSON.stringify(filters)}`)
   const result: PartialItem[] = []
   if (filters.ownedByUser) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
@@ -213,6 +214,7 @@ function* fetchItemsFromCatalyst(
       const uuidCollections = WITH_FIXED_COLLECTIONS.split(',').filter(
         (collectionId) => !collectionId.startsWith('urn')
       )
+      defaultLogger.info(`kernel: @emotes uuidCollections: ${JSON.stringify(uuidCollections)}`)
       if (uuidCollections.length > 0 && identity) {
         const v2Items: PartialItem[] = yield call(
           fetchItemsByCollectionFromBuilder,
@@ -304,7 +306,8 @@ async function fetchItemsByCollectionFromBuilder(
     const path = `collections/${collectionUuid}/items`
     const headers = authorizeBuilderHeaders(identity, 'get', `/${path}`)
     const collection: { data: UnpublishedWearable[] } = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
-      headers
+      headers,
+      timeout: '5m'
     })) as any
     const items = collection.data.map((item) => mapUnpublishedItemIntoCatalystItem(action, item))
     result.push(
