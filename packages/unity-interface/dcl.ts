@@ -91,7 +91,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 }
 
-export async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
+async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
   const metadata: Scene = {
     display: {
       title: title
@@ -153,6 +153,7 @@ export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
   const result = await fetch(new URL('scene.json?nocache=' + Math.random(), rootURLPreviewMode()).toString())
+
   if (result.ok) {
     const scene = (await result.json()) as Scene
 
