@@ -230,7 +230,7 @@ function* getRemoteProfile(userId: string, version?: number): Generator<CallEffe
   return null
 }
 
-function* getRemoteProfiles(userIds: string[]): Generator<CallEffect<RemoteProfile[]> | Array<Avatar | null>> {
+function* getRemoteProfiles(userIds: string[]): Generator<CallEffect<RemoteProfile[]> | Array<Avatar>> {
   try {
     const profiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds)) as any
 
@@ -243,24 +243,26 @@ function* getRemoteProfiles(userIds: string[]): Generator<CallEffect<RemoteProfi
   return null
 }
 
-function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Array<Avatar | null> {
-  const avatars: Array<Avatar | null> = profiles.map((profile): Avatar | null => {
-    let avatar = profile.avatars[0]
-    if (!avatar) {
-      return null
-    }
+function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Array<Avatar> {
+  const avatars: Array<Avatar> = profiles
+    .map((profile): Avatar | null => {
+      let avatar = profile.avatars[0]
+      if (!avatar) {
+        return null
+      }
 
-    avatar = ensureAvatarCompatibilityFormat(avatar)
-    if (!validateAvatar(avatar)) {
-      defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
-      return null
-    }
+      avatar = ensureAvatarCompatibilityFormat(avatar)
+      if (!validateAvatar(avatar)) {
+        defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
+        return null
+      }
 
-    avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
-    avatar.hasConnectedWeb3 = true
+      avatar.hasClaimedName = !!avatar.name && avatar.hasClaimedName // old lambdas profiles don't have claimed names if they don't have the "name" property
+      avatar.hasConnectedWeb3 = true
 
-    return avatar
-  })
+      return avatar
+    })
+    .filter((avatar: Avatar | null): boolean => avatar !== null) as Array<Avatar>
 
   return avatars
 }
