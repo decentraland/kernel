@@ -29,7 +29,7 @@ import {
 } from './actions'
 import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
-import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile } from './types'
+import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { getUpdateProfileServer, getCatalystServer } from '../dao/selectors'
@@ -253,7 +253,11 @@ function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Ar
 
       avatar = ensureAvatarCompatibilityFormat(avatar)
       if (!validateAvatar(avatar)) {
-        defaultLogger.warn(`Remote avatar for users is invalid.`, userIds, avatar, validateAvatar.errors)
+        defaultLogger.warn(`Remote avatar for users is invalid.`, avatar, validateAvatar.errors)
+        trackEvent(REMOTE_AVATAR_IS_INVALID, {
+          avatar
+        })
+        store.dispatch(profileFailure(avatar, REMOTE_AVATAR_IS_INVALID))
         return null
       }
 

@@ -393,8 +393,8 @@ function* refreshFriends() {
 
     yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
 
-    // ensure friend profiles are sent to renderer
-    yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
+    // // ensure friend profiles are sent to renderer
+    // yield Promise.all(Object.values(socialInfo).map(({ userId }) => ensureFriendProfile(userId))).catch(logger.error)
 
     yield put(
       updatePrivateMessagingState({
