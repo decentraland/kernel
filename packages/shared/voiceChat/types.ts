@@ -2,9 +2,15 @@ export type VoiceChatState = {
   recording: boolean
   requestRecording: boolean
   policy: VoicePolicy
-  voiceHandler: any | undefined
+  voiceHandler: any | null
+  error: string | null
+  media?: any
   volume: number
   mute: boolean
+  liveKit?: {
+    room: any
+    token: string
+  }
 }
 
 export enum VoicePolicy {

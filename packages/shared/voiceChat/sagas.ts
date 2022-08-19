@@ -11,61 +11,88 @@ import {
   VOICE_PLAYING_UPDATE,
   REQUEST_VOICE_CHAT_RECORDING,
   REQUEST_TOGGLE_VOICE_CHAT_RECORDING,
-  VoicePlayingUpdate,
-  SetVoiceChatVolume,
-  SetVoiceChatMute,
+  VoicePlayingUpdateAction,
+  SetVoiceChatVolumeAction,
+  SetVoiceChatMuteAction,
   setVoiceChatHandler,
-  JOIN_LIVE_KIT_ROOM_VOICE_CHAT,
-  JOIN_OPUS_VOICE_CHAT,
+  JOIN_VOICE_CHAT,
   voiceRecordingUpdate,
   voicePlayingUpdate,
-  SET_VOICE_CHAT_HANDLER
+  setVoiceChatError,
+  leaveVoiceChat,
+  SetVoiceChatErrorAction,
+  SET_VOICE_CHAT_ERROR,
+  SET_VOICE_CHAT_LIVE_KIT_ROOM,
+  SetVoiceChatMediaAction,
+  setVoiceChatMedia,
+  SET_VOICE_CHAT_MEDIA
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
-import { isVoiceChatRecording, getVoiceHandler, isVoiceChatAllowedByCurrentScene } from './selectors'
+import {
+  getVoiceHandler,
+  isVoiceChatAllowedByCurrentScene,
+  isRequestedVoiceChatRecording,
+  getVoiceChatState
+} from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
+import defaultLogger from 'shared/logger'
+import { trackEvent } from 'shared/analytics'
+import { VoiceChatState } from './types'
+import { Observer } from 'mz-observable'
+
+let positionObserver: Observer<Readonly<PositionReport>> | null
 
 export function* voiceChatSaga() {
-  yield takeEvery(JOIN_LIVE_KIT_ROOM_VOICE_CHAT, handleJoinLiveKitRoomVoiceChat)
-  yield takeEvery(JOIN_OPUS_VOICE_CHAT, handleJoinOpusVoiceChat)
+  yield takeEvery(SET_VOICE_CHAT_LIVE_KIT_ROOM, handleSetVoiceChatLiveKitRoom)
+  yield takeEvery(JOIN_VOICE_CHAT, handleJoinVoiceChat)
   yield takeEvery(LEAVE_VOICE_CHAT, handleLeaveVoiceChat)
 
-  yield takeLatest(REQUEST_VOICE_CHAT_RECORDING, handleVoiceChatRecordingStatus)
-  yield takeLatest(REQUEST_TOGGLE_VOICE_CHAT_RECORDING, handleVoiceChatRecordingStatus)
+  yield takeLatest(REQUEST_VOICE_CHAT_RECORDING, handleRecordingRequest)
+  yield takeLatest(REQUEST_TOGGLE_VOICE_CHAT_RECORDING, handleRecordingRequest)
 
   yield takeEvery(VOICE_PLAYING_UPDATE, handleUserVoicePlaying)
 
   yield takeEvery(SET_VOICE_CHAT_VOLUME, handleVoiceChatVolume)
   yield takeEvery(SET_VOICE_CHAT_MUTE, handleVoiceChatMute)
+  yield takeEvery(SET_VOICE_CHAT_MEDIA, handleVoiceChatMedia)
+
+  yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 }
 
-function* handleVoiceChatRecordingStatus() {
-  const recording = yield select(isVoiceChatRecording)
-  const voiceHandler: VoiceHandler | undefined = yield select(getVoiceHandler)
+function* handleRecordingRequest() {
+  const requestedRecording = yield select(isRequestedVoiceChatRecording)
+  const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
+
+  defaultLogger.log('handleVoiceChatRecordingStatus', requestedRecording, voiceHandler)
 
   if (voiceHandler) {
-    if (!isVoiceChatAllowedByCurrentScene() || !recording) {
+    if (!isVoiceChatAllowedByCurrentScene() || !requestedRecording) {
       voiceHandler.setRecording(false)
     } else {
       yield call(requestUserMedia)
       voiceHandler.setRecording(true)
+      defaultLogger.log('voiceHandler.setRecording(true)')
     }
   }
 }
 
-function* handleJoinLiveKitRoomVoiceChat() {
-  voiceChatLogger.log('join livekit voice chat')
-
-  // TODO: On error, join opus
+// on change the livekit room or token, we just leave and join the room to use (or not) the LiveKit
+function* handleSetVoiceChatLiveKitRoom() {
+  yield call(handleLeaveVoiceChat)
+  yield call(handleJoinVoiceChat)
 }
 
-function* handleJoinOpusVoiceChat() {
-  voiceChatLogger.log('join opus voice chat')
+function* handleJoinVoiceChat() {
+  voiceChatLogger.log('join voice chat')
   const commsContext = yield select(getCommsContext)
+  const voiceChatState: VoiceChatState = yield select(getVoiceChatState)
   if (commsContext) {
-    const voiceHandler = createOpusVoiceHandler(commsContext.worldInstanceConnection)
+    const voiceHandler =
+      voiceChatState.liveKit !== undefined
+        ? createOpusVoiceHandler(commsContext.worldInstanceConnection)
+        : createOpusVoiceHandler(commsContext.worldInstanceConnection)
 
     voiceHandler.onRecording((recording) => {
       store.dispatch(voiceRecordingUpdate(recording))
@@ -75,40 +102,72 @@ function* handleJoinOpusVoiceChat() {
       store.dispatch(voicePlayingUpdate(userId, talking))
     })
 
-    positionObservable.add((obj: Readonly<PositionReport>) => {
+    voiceHandler.onError((message) => {
+      store.dispatch(setVoiceChatError(message))
+    })
+
+    if (positionObserver) {
+      positionObservable.remove(positionObserver)
+    }
+    positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
       voiceHandler.reportPosition(positionReportToCommsPosition(obj))
     })
+
+    voiceHandler.setVolume(voiceChatState.volume)
+    voiceHandler.setMute(voiceChatState.mute)
+    if (voiceChatState.media) {
+      yield voiceHandler.setInputStream(voiceChatState.media)
+    }
 
     yield put(setVoiceChatHandler(voiceHandler))
   }
 }
 
+function* handleVoiceChatError({ payload }: SetVoiceChatErrorAction) {
+  trackEvent('error', {
+    context: 'voice-chat',
+    message: 'stream recording error: ' + payload.message,
+    stack: 'addStreamRecordingErrorListener'
+  })
+  store.dispatch(leaveVoiceChat())
+}
+
 function* handleLeaveVoiceChat() {
-  yield put(setVoiceChatHandler(undefined))
+  if (positionObserver) {
+    positionObservable.remove(positionObserver)
+  }
+  yield put(setVoiceChatHandler(null))
+}
+
+function* handleVoiceChatMedia({ payload }: SetVoiceChatMediaAction) {
+  const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
+  if (voiceHandler) {
+    yield voiceHandler.setInputStream(payload.media)
+  }
 }
 
 function* requestUserMedia() {
-  const voiceHandler: VoiceHandler = yield select(getVoiceHandler)
-  if (!voiceHandler.hasInput()) {
-    const media = yield call(requestMediaDevice)
-    if (media) {
-      yield voiceHandler.setInputStream(media)
+  const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
+  if (voiceHandler) {
+    if (!voiceHandler.hasInput()) {
+      const media = yield call(requestMediaDevice)
+      yield put(setVoiceChatMedia(media))
     }
   }
 }
 
-function* handleUserVoicePlaying(action: VoicePlayingUpdate) {
+function* handleUserVoicePlaying(action: VoicePlayingUpdateAction) {
   const { userId, playing } = action.payload
   receiveUserTalking(userId, playing)
 }
 
-function* handleVoiceChatVolume(action: SetVoiceChatVolume) {
-  const voiceHandler: VoiceHandler | undefined = yield select(getVoiceHandler)
+function* handleVoiceChatVolume(action: SetVoiceChatVolumeAction) {
+  const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
   voiceHandler?.setVolume(action.payload.volume)
 }
 
-function* handleVoiceChatMute(action: SetVoiceChatMute) {
-  const voiceHandler: VoiceHandler | undefined = yield select(getVoiceHandler)
+function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
+  const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
   voiceHandler?.setMute(action.payload.mute)
 }
 

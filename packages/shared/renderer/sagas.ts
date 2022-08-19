@@ -24,7 +24,7 @@ import { UPDATE_LOADING_SCREEN } from 'shared/loading/actions'
 import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selectors'
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
-import { CurrentRealmInfoForRenderer, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
+import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getCommsContext } from 'shared/comms/selectors'
@@ -37,10 +37,12 @@ import { deepEqual } from 'atomicHelpers/deepEqual'
 import { waitForRendererInstance } from './sagas-helper'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import {
+  SetVoiceChatErrorAction,
   SetVoiceChatHandlerAction,
+  SET_VOICE_CHAT_ERROR,
   SET_VOICE_CHAT_HANDLER,
-  VoicePlayingUpdate,
-  VoiceRecordingUpdate,
+  VoicePlayingUpdateAction,
+  VoiceRecordingUpdateAction,
   VOICE_PLAYING_UPDATE,
   VOICE_RECORDING_UPDATE
 } from 'shared/voiceChat/actions'
@@ -53,6 +55,7 @@ export function* rendererSaga() {
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
   yield takeEvery(SET_VOICE_CHAT_HANDLER, updateChangeVoiceChatHandler)
+  yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
@@ -106,21 +109,33 @@ function convertCurrentRealmType(realm: Realm, contentServerUrl: string): Curren
   }
 }
 
-function* updateUserVoicePlayingRenderer(action: VoicePlayingUpdate) {
+function* updateUserVoicePlayingRenderer(action: VoicePlayingUpdateAction) {
   const { playing, userId } = action.payload
   getUnityInstance().SetUserTalking(userId, playing)
 }
 
-function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdate) {
+function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdateAction) {
   yield call(waitForRendererInstance)
   getUnityInstance().SetPlayerTalking(action.payload.recording)
 }
 
 function* updateChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
-  if (action.payload.voiceChat) {
+  if (action.payload.voiceHandler) {
     getUnityInstance().SetVoiceChatStatus({ isConnected: true })
   } else {
     getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+  }
+}
+
+function* handleVoiceChatError(action: SetVoiceChatErrorAction) {
+  const message = action.payload.message
+  if (message) {
+    getUnityInstance().ShowNotification({
+      type: NotificationType.GENERIC,
+      message,
+      buttonMessage: 'OK',
+      timer: 5
+    })
   }
 }
 

@@ -51,12 +51,17 @@ export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler 
         cb(recording)
       })
     },
+    onError(cb) {
+      voiceCommunicator.addStreamRecordingErrorListener((message) => {
+        cb(message)
+      })
+    },
     reportPosition(position: Position) {
       currentPosition = position
       voiceCommunicator.setListenerSpatialParams(getSpatialParamsFor(position))
     },
     setVolume: function (volume) {
-      logger.log('setVolume... voiceCommunicator:', voiceCommunicator)
+      logger.log('setVolume ', volume, voiceCommunicator)
       voiceCommunicator.setVolume(volume)
     },
     setMute: (mute) => {

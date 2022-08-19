@@ -1,5 +1,4 @@
 import { Avatar } from '@dcl/schemas'
-import { isFeatureToggleEnabled } from 'shared/selectors'
 import { isFriend } from 'shared/friends/selectors'
 import { RootFriendsState } from 'shared/friends/types'
 import { getBannedUsers } from 'shared/meta/selectors'
@@ -7,25 +6,8 @@ import { BannedUsers, RootMetaState } from 'shared/meta/types'
 import { getProfile } from 'shared/profiles/selectors'
 import { RootProfileState } from 'shared/profiles/types'
 import { getIdentity } from 'shared/session'
-import { RootVoiceChatState, VoicePolicy } from './types'
-import { VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
-import { lastPlayerScene } from 'shared/world/sceneState'
-
-export const getVoiceChatState = (store: RootVoiceChatState) => store.voiceChat
-
-export const hasLiveKitRoom = (store: RootVoiceChatState) => store.voiceChat.liveKit !== undefined
-
-export const isRequestedVoiceChatRecording = (store: RootVoiceChatState) => store.voiceChat.requestRecording
-
-export const isVoiceChatRecording = (store: RootVoiceChatState) => store.voiceChat.recording
-
-export const getVoicePolicy = (store: RootVoiceChatState) => store.voiceChat.policy
-
-export const getVoiceHandler = (store: RootVoiceChatState) => store.voiceChat.voiceHandler
-
-export function isVoiceChatAllowedByCurrentScene() {
-  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, lastPlayerScene?.entity.metadata)
-}
+import { isVoiceChatAllowedByCurrentScene, getVoicePolicy } from './selectors'
+import { RootCommsState, VoicePolicy } from './types'
 
 export function isBlockedOrBanned(profile: Avatar, bannedUsers: BannedUsers, userId: string): boolean {
   return isBlocked(profile, userId) || isBannedFromChat(bannedUsers, userId)
@@ -51,7 +33,7 @@ function isMuted(profile: Avatar, userId: string): boolean {
 }
 
 export function shouldPlayVoice(
-  state: RootVoiceChatState & RootFriendsState & RootProfileState & RootMetaState,
+  state: RootCommsState & RootFriendsState & RootProfileState & RootMetaState,
   profile: Avatar,
   voiceUserId: string
 ) {
@@ -66,7 +48,7 @@ export function shouldPlayVoice(
 }
 
 export function isVoiceAllowedByPolicy(
-  state: RootVoiceChatState & RootFriendsState & RootProfileState,
+  state: RootCommsState & RootFriendsState & RootProfileState,
   voiceUserId: string
 ): boolean {
   const policy = getVoicePolicy(state)

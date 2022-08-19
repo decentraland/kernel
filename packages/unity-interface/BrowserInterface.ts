@@ -47,7 +47,7 @@ import { IFuture } from 'fp-future'
 import { reportHotScenes } from 'shared/social/hotScenes'
 import { GIFProcessor } from 'gif-processor/processor'
 import {
-  joinOpusVoiceChat,
+  joinVoiceChat,
   leaveVoiceChat,
   requestVoiceChatRecording,
   setVoiceChatPolicy,
@@ -513,7 +513,7 @@ export class BrowserInterface {
   }
 
   public JoinVoiceChat() {
-    store.dispatch(joinOpusVoiceChat())
+    store.dispatch(joinVoiceChat())
   }
 
   public LeaveVoiceChat() {
