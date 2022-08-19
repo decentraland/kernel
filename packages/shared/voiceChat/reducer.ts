@@ -1,4 +1,6 @@
 import {
+  JOIN_VOICE_CHAT,
+  LEAVE_VOICE_CHAT,
   REQUEST_TOGGLE_VOICE_CHAT_RECORDING,
   REQUEST_VOICE_CHAT_RECORDING,
   SET_VOICE_CHAT_HANDLER,
@@ -13,6 +15,7 @@ import {
 import { VoiceChatState, VoicePolicy } from './types'
 
 const INITIAL_STATE: VoiceChatState = {
+  joined: false,
   voiceHandler: null,
   recording: false,
   requestRecording: false,
@@ -70,6 +73,12 @@ export function voiceChatReducer(state?: VoiceChatState, action?: VoiceChatActio
     case SET_VOICE_CHAT_MEDIA: {
       const { payload } = action
       return { ...state, media: payload.media }
+    }
+    case JOIN_VOICE_CHAT: {
+      return { ...state, joined: true }
+    }
+    case LEAVE_VOICE_CHAT: {
+      return { ...state, joined: false }
     }
   }
 

@@ -3,6 +3,7 @@ import { receiveUserTalking } from 'shared/comms/peers'
 import { getCommsContext } from 'shared/comms/selectors'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
+import { createLiveKitVoiceHandler } from 'voice-chat-codec/liveKitVoiceHandler'
 import { VoiceHandler } from 'voice-chat-codec/VoiceChat'
 import {
   LEAVE_VOICE_CHAT,
@@ -25,7 +26,9 @@ import {
   SET_VOICE_CHAT_LIVE_KIT_ROOM,
   SetVoiceChatMediaAction,
   setVoiceChatMedia,
-  SET_VOICE_CHAT_MEDIA
+  SET_VOICE_CHAT_MEDIA,
+  setVoiceChatLiveKitRoom,
+  joinVoiceChat
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
@@ -33,7 +36,8 @@ import {
   getVoiceHandler,
   isVoiceChatAllowedByCurrentScene,
   isRequestedVoiceChatRecording,
-  getVoiceChatState
+  getVoiceChatState,
+  hasJoined
 } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
@@ -41,6 +45,8 @@ import defaultLogger from 'shared/logger'
 import { trackEvent } from 'shared/analytics'
 import { VoiceChatState } from './types'
 import { Observer } from 'mz-observable'
+
+import { Room } from 'livekit-client' // temp
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -59,6 +65,16 @@ export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_MEDIA, handleVoiceChatMedia)
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
+
+  // Temp, create room
+  const qs = new URLSearchParams(location.search)
+  const token = qs.get('token') as string
+  // creates a new room with options
+  const room = new Room({
+    // optimize publishing bandwidth and CPU for published tracks
+    dynacast: true
+  })
+  yield put(setVoiceChatLiveKitRoom(room, token))
 }
 
 function* handleRecordingRequest() {
@@ -80,8 +96,11 @@ function* handleRecordingRequest() {
 
 // on change the livekit room or token, we just leave and join the room to use (or not) the LiveKit
 function* handleSetVoiceChatLiveKitRoom() {
-  yield call(handleLeaveVoiceChat)
-  yield call(handleJoinVoiceChat)
+  voiceChatLogger.log('handleSetVoiceChatLiveKitRoom')
+  if (yield select(hasJoined)) {
+    store.dispatch(leaveVoiceChat())
+    store.dispatch(joinVoiceChat())
+  }
 }
 
 function* handleJoinVoiceChat() {
@@ -91,7 +110,7 @@ function* handleJoinVoiceChat() {
   if (commsContext) {
     const voiceHandler =
       voiceChatState.liveKit !== undefined
-        ? createOpusVoiceHandler(commsContext.worldInstanceConnection)
+        ? createLiveKitVoiceHandler(voiceChatState.liveKit.room, voiceChatState.liveKit.token)
         : createOpusVoiceHandler(commsContext.worldInstanceConnection)
 
     voiceHandler.onRecording((recording) => {

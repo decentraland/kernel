@@ -1,4 +1,5 @@
 export type VoiceChatState = {
+  joined: boolean
   recording: boolean
   requestRecording: boolean
   policy: VoicePolicy
