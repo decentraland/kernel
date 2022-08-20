@@ -1,5 +1,5 @@
 import { createLogger } from 'shared/logger'
-import { VoiceHandler } from 'voice-chat-codec/VoiceChat'
+import { VoiceHandler } from './VoiceHandler'
 import { EncodedFrame } from './types'
 import { VoiceCommunicator, VoiceSpatialParams } from './VoiceCommunicator'
 import { commConfigurations } from 'config'
@@ -32,6 +32,8 @@ export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler 
       loopbackAudioElement: Html.loopbackAudioElement()
     }
   )
+
+  logger.log('initialized')
 
   return {
     setRecording(recording) {

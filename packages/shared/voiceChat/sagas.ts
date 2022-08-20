@@ -48,8 +48,7 @@ import { VoiceChatState } from './types'
 import { Observer } from 'mz-observable'
 
 import { Room } from 'livekit-client' // temp
-import { SetCommsIsland, SET_COMMS_ISLAND } from 'shared/comms/actions'
-import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { getIdentity } from 'shared/session'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -68,32 +67,32 @@ export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_MEDIA, handleVoiceChatMedia)
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
-
-  yield takeEvery(SET_COMMS_ISLAND, handleIslandChange)
 }
 
-function* handleIslandChange(action: SetCommsIsland) {
+export function* test_setLiveKitRoom() {
+  voiceChatLogger.log('test_setLiveKitRoom')
   // TODO: Fetching
   const qs = new URLSearchParams(location.search)
   const tokenUrlServer = qs.get('token-url-server')
   if (tokenUrlServer) {
-    const profile = yield select(getCurrentUserProfile)
+    const identity = yield select(getIdentity)
+    if (identity) {
+      const url = tokenUrlServer + `?island=global&userId=${identity.address}`
+      const res: Response = yield fetch(url)
+      if (!res.ok) return
+      const data = yield res.json()
 
-    const url = tokenUrlServer + `/getToken/${action.payload.island}/${profile.userId}`
-    const res: Response = yield fetch(url)
-    if (!res.ok) return
-    const data = yield res.json()
+      // creates a new room with options
+      const room = new Room({
+        // optimize publishing bandwidth and CPU for published tracks
+        dynacast: true
+      })
 
-    // creates a new room with options
-    const room = new Room({
-      // optimize publishing bandwidth and CPU for published tracks
-      dynacast: true
-    })
+      voiceChatLogger.log('connecting to token:', data.token, url)
 
-    voiceChatLogger.log('connecting to token:', data.token)
-
-    yield room.connect('wss://test-livekit.decentraland.today', data.token)
-    yield put(setVoiceChatLiveKitRoom(room))
+      yield room.connect('wss://test-livekit.decentraland.today', data.token)
+      yield put(setVoiceChatLiveKitRoom(room))
+    }
   }
 }
 
@@ -166,12 +165,14 @@ function* handleJoinVoiceChat() {
 }
 
 function* handleVoiceChatError({ payload }: SetVoiceChatErrorAction) {
-  trackEvent('error', {
-    context: 'voice-chat',
-    message: 'stream recording error: ' + payload.message,
-    stack: 'addStreamRecordingErrorListener'
-  })
-  store.dispatch(leaveVoiceChat())
+  if (payload.message) {
+    trackEvent('error', {
+      context: 'voice-chat',
+      message: 'stream recording error: ' + payload.message,
+      stack: ''
+    })
+    store.dispatch(leaveVoiceChat())
+  }
 }
 
 function* handleLeaveVoiceChat() {

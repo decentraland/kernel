@@ -12,7 +12,7 @@ import { Position } from 'shared/comms/interface/utils'
 
 import Html from 'shared/Html'
 import defaultLogger, { createLogger } from 'shared/logger'
-import { VoiceHandler } from './VoiceChat'
+import { VoiceHandler } from './VoiceHandler'
 
 export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
   const logger = createLogger('LiveKitVoiceCommunicator: ')
@@ -20,7 +20,7 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
   const parentElement = Html.loopbackAudioElement()
 
   let recordingListener: ((state: boolean) => void) | undefined
-  let errorListener: ((message: string) => void) | undefined
+  //let errorListener: ((message: string) => void) | undefined
 
   function handleTrackSubscribed(
     track: RemoteTrack,
@@ -47,7 +47,11 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
     .on(RoomEvent.Disconnected, () => defaultLogger.log('[voice-chat] Disconnected!'))
     .on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
     .on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
+    .on(RoomEvent.MediaDevicesError, () => {
+      //if (errorListener) errorListener('Media Device Error')
+    })
 
+  logger.log('initialized')
   return {
     setRecording(recording) {
       room.localParticipant
@@ -69,7 +73,7 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
       recordingListener = cb
     },
     onError(cb) {
-      errorListener = cb
+      //errorListener = cb
     },
     reportPosition(position: Position) {
       //currentPosition = position

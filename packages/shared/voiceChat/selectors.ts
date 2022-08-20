@@ -15,7 +15,7 @@ export const hasJoined = (store: RootVoiceChatState) => store.voiceChat.joined
 
 export const getVoiceChatState = (store: RootVoiceChatState) => store.voiceChat
 
-export const hasLiveKitRoom = (store: RootVoiceChatState) => store.voiceChat.liveKit !== undefined
+export const hasLiveKitRoom = (store: RootVoiceChatState) => store.voiceChat.liveKitRoom !== null
 
 export const isRequestedVoiceChatRecording = (store: RootVoiceChatState) => store.voiceChat.requestRecording
 
