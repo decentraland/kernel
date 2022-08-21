@@ -26,4 +26,6 @@ export type VoiceHandler = {
 
   // Play audio when we recive it from comms (only for opus)
   playEncodedAudio?(src: string, relativePosition: Position, encoded: EncodedFrame): Promise<void>
+
+  leave?(): void
 }

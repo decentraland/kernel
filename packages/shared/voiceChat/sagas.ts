@@ -179,6 +179,10 @@ function* handleLeaveVoiceChat() {
   if (positionObserver) {
     positionObservable.remove(positionObserver)
   }
+  const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
+  if (voiceHandler && voiceHandler.leave) {
+    yield voiceHandler.leave()
+  }
   yield put(setVoiceChatHandler(null))
 }
 
