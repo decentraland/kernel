@@ -28,7 +28,6 @@ import { selectAndReconnectRealm } from 'shared/dao/sagas'
 import { realmToConnectionString } from './v3/resolver'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { getMaxVisiblePeers } from 'shared/meta/selectors'
-import { test_setLiveKitRoom } from 'shared/voiceChat/sagas'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -186,7 +185,6 @@ function* handleNewCommsContext() {
       yield call(bindHandlersToCommsContext, currentContext)
       yield put(commsEstablished())
       notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
-      yield call(test_setLiveKitRoom)
     }
 
     if (oldContext && oldContext !== currentContext) {

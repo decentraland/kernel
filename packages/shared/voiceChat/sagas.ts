@@ -1,6 +1,6 @@
 import { call, select, takeEvery, takeLatest, put } from 'redux-saga/effects'
 import { receiveUserTalking } from 'shared/comms/peers'
-import { getCommsContext } from 'shared/comms/selectors'
+import { getCommsContext, getCommsIsland, getRealm } from 'shared/comms/selectors'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
 import { createLiveKitVoiceHandler } from 'voice-chat-codec/liveKitVoiceHandler'
@@ -49,6 +49,8 @@ import { Observer } from 'mz-observable'
 
 import { Room } from 'livekit-client' // temp
 import { getIdentity } from 'shared/session'
+import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { realmToConnectionString } from 'shared/comms/v3/resolver'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -67,17 +69,24 @@ export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_MEDIA, handleVoiceChatMedia)
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
+
+  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], test_setLiveKitRoom)
 }
 
 export function* test_setLiveKitRoom() {
-  voiceChatLogger.log('test_setLiveKitRoom')
+  const realm = yield select(getRealm)
+  const realmName = realm ? realmToConnectionString(realm) : 'global'
+  const island = (yield select(getCommsIsland)) ?? 'global'
+  const roomName = `${realmName}-${island}`
+
+  voiceChatLogger.log(`test_setLiveKitRoom roomName=${roomName}`)
   // TODO: Fetching
   const qs = new URLSearchParams(location.search)
   const tokenUrlServer = qs.get('token-url-server')
   if (tokenUrlServer) {
     const identity = yield select(getIdentity)
     if (identity) {
-      const url = tokenUrlServer + `?island=global&userId=${identity.address}`
+      const url = `https://${tokenUrlServer}/getToken?island=${island}&userId=${identity.address}`
       const res: Response = yield fetch(url)
       if (!res.ok) return
       const data = yield res.json()
@@ -88,7 +97,7 @@ export function* test_setLiveKitRoom() {
         dynacast: true
       })
 
-      voiceChatLogger.log('connecting to token:', data.token, url)
+      voiceChatLogger.log('connecting to token:', data.token, url, identity.address)
 
       yield room.connect('wss://test-livekit.decentraland.today', data.token)
       yield put(setVoiceChatLiveKitRoom(room))
