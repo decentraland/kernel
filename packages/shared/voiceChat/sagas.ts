@@ -73,17 +73,22 @@ export function* voiceChatSaga() {
   yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], test_setLiveKitRoom)
 }
 
+/*
+ * Test function until we have the room from the transport or a catalyst
+ * This will get the token from a custom/temporal server which generates token for LiveKit
+ * TODO: Move this to Comms v3 with LiveKit, and set the room there
+ */
 export function* test_setLiveKitRoom() {
-  const realm = yield select(getRealm)
-  const realmName = realm ? realmToConnectionString(realm) : 'global'
-  const island = (yield select(getCommsIsland)) ?? 'global'
-  const roomName = `${realmName}-${island}`
-
-  voiceChatLogger.log(`test_setLiveKitRoom roomName=${roomName}`)
-  // TODO: Fetching
   const qs = new URLSearchParams(location.search)
   const tokenUrlServer = qs.get('token-url-server')
   if (tokenUrlServer) {
+    const realm = yield select(getRealm)
+    const realmName = realm ? realmToConnectionString(realm) : 'global'
+    const island = (yield select(getCommsIsland)) ?? 'global'
+    const roomName = `${realmName}-${island}`
+
+    voiceChatLogger.log(`test_setLiveKitRoom roomName=${roomName}`)
+
     const identity = yield select(getIdentity)
     if (identity) {
       const url = `https://${tokenUrlServer}/getToken?island=${island}&userId=${identity.address}`
