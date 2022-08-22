@@ -81,7 +81,7 @@
     "@dcl/protocol": "^1.0.0-2825359340.commit-a339b67",
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
     "@dcl/schemas": "^5.8.1",
-    "@dcl/urn-resolver": "^1.4.0",
+    "@dcl/urn-resolver": "^2.0.1",
     "@redux-saga/simple-saga-monitor": "^1.1.2",
     "@types/redux-logger": "^3.0.9",
     "blob-to-buffer": "^1.2.8",
