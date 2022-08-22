@@ -13,7 +13,8 @@ import {
   PROFILES_FAILURE,
   ProfilesRequestAction,
   AddedProfilesToCatalog,
-  ADDED_PROFILES_TO_CATALOG
+  ADDED_PROFILES_TO_CATALOG,
+  ProfileFailureAction
 } from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
@@ -101,11 +102,13 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         }
       }
     case PROFILE_FAILURE:
+      const { userId } = (action as ProfileFailureAction).payload
+
       return {
         ...state,
         userInfo: {
           ...state.userInfo,
-          [action.payload.userId]: { status: 'error', data: action.payload.error }
+          [userId]: { status: 'error', data: action.payload.error }
         }
       }
     case ADDED_PROFILE_TO_CATALOG:

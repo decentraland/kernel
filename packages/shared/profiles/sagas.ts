@@ -257,7 +257,7 @@ function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Ar
         trackEvent(REMOTE_AVATAR_IS_INVALID, {
           avatar
         })
-        store.dispatch(profileFailure(avatar, REMOTE_AVATAR_IS_INVALID))
+        store.dispatch(profileFailure((avatar as Avatar).userId, REMOTE_AVATAR_IS_INVALID))
         return null
       }
 
