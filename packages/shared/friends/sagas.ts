@@ -26,7 +26,8 @@ import {
   PresenceStatus,
   CreateChannelPayload,
   ChannelInfoPayload,
-  JoinOrCreateChannelErrorPayload
+  JoinOrCreateChannelErrorPayload,
+  UpdateTotalUnseenMessagesByChannelPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -827,7 +828,7 @@ export function createChannel(createChannel: CreateChannelPayload) {
   }
 
   // Create channel
-  // const {created, channel} = client.createChannel(channelId)
+  // const [created, channel] = client.createChannel(channelId)
   // if(!created) { joinChannelError(channelId, 'Exists already') return}
 
   // Parse channel info
@@ -841,14 +842,14 @@ export function createChannel(createChannel: CreateChannelPayload) {
     muted: false
   }
 
-  // Dispatch store update
+  // Dispatch store update ?)
 
   // Send confirmation message to unity
   getUnityInstance().JoinChannelConfirmation(channelInfoPayload)
 }
 
 /**
- *
+ * Send error message to unity
  * @param channelId
  * @param message
  */
@@ -858,5 +859,31 @@ function joinChannelError(channelId: string, message: string) {
     message: message
   }
 
+  // Send error message to unity
   getUnityInstance().JoinChannelError(joinChannelError)
+}
+
+// Get unseen messages by channel
+export function getUnseenMessagesByChannel() {
+  // Get conversations messages from the store
+  const conversationsWithMessages = [] // getAllConversationsWithMessages(store.getState()).filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+
+  // The user is not joined to any channel
+  if (conversationsWithMessages.length === 0) {
+    return
+  }
+
+  const updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload = {
+    unseenChannelMessages: []
+  }
+
+  for (const _ of conversationsWithMessages) {
+    updateTotalUnseenMessagesByChannelPayload.unseenChannelMessages.push({
+      count: 0, // conv.conversation.unreadMessages?.length || 0,
+      channelId: '' // conv.conversation.!name
+    })
+  }
+
+  // Send total unseen messages by channels to unity
+  getUnityInstance().UpdateTotalUnseenMessagesByChannel(updateTotalUnseenMessagesByChannelPayload)
 }

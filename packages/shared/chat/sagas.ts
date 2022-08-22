@@ -466,7 +466,7 @@ function initChatCommands() {
     }
 
     // Join or create channel
-    // const channel: Channel = client.createChannel(message)
+    // const channel: Channel = client.joinOrCreateChannel(message)
 
     // Parse channel info
     const channelInfoPayload: ChannelInfoPayload = {

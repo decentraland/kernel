@@ -23,7 +23,7 @@ import {
   WorldPosition,
   AvatarRendererMessage,
   MarkChannelMessagesAsSeenPayload,
-  JoinOrCreateChannelPayload,
+  CreateChannelPayload,
   GetChannelsPayload,
   GetChannelMessagesPayload,
   GetJoinedChannelsPayload,
@@ -73,6 +73,7 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
+import { createChannel, getUnseenMessagesByChannel } from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -561,9 +562,8 @@ export class BrowserInterface {
     store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
   }
 
-  // Create channel
-  public CreateChannel(createChannelPayload: JoinOrCreateChannelPayload) {
-    // createChannel(createChannelPayload)
+  public CreateChannel(createChannelPayload: CreateChannelPayload) {
+    createChannel(createChannelPayload)
   }
 
   public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
@@ -580,7 +580,7 @@ export class BrowserInterface {
   }
 
   public GetUnseenMessagesByChannel() {
-    // getUnseenMessagesByChannel()
+    getUnseenMessagesByChannel()
   }
 
   public GetJoinedChannels(getJoinedChannelsPayload: GetJoinedChannelsPayload) {
