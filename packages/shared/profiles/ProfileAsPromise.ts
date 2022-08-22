@@ -75,9 +75,11 @@ export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType):
   let pending = true
 
   return new Promise<Avatar[]>((resolve, reject) => {
+    let failedAvatars = 0
+
     const unsubscribe = store.subscribe(() => {
       const avatars: Avatar[] = []
-      let failedAvatars = 0
+      failedAvatars = 0
 
       for (const userId of userIds) {
         const [status, data] = getProfileStatusAndData(store.getState(), userId)
@@ -119,7 +121,7 @@ export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType):
         .map((userId) => getProfile(store.getState(), userId))
         .filter((profile) => !!profile) as Avatar[]
 
-      if (profiles.length === userIds.length) {
+      if (profiles.length + failedAvatars === userIds.length) {
         unsubscribe()
         pending = false
         resolve(profiles)
