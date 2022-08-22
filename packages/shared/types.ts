@@ -637,11 +637,11 @@ export type AvatarRendererRemovedMessage = {
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
 
-// Check if we could have the same type for join or create via command line and create
-export type JoinOrCreateChannelPayload = {
+export type CreateChannelPayload = {
   channelId: string
 }
 
+// Check if we can use the same for join/create and create
 export type JoinOrCreateChannelErrorPayload = {
   channelId: string
   message: string

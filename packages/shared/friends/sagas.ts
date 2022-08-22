@@ -18,7 +18,16 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import { createLogger, createDummyLogger } from 'shared/logger'
-import { ChatMessage, NotificationType, ChatMessageType, FriendshipAction, PresenceStatus } from 'shared/types'
+import {
+  ChatMessage,
+  NotificationType,
+  ChatMessageType,
+  FriendshipAction,
+  PresenceStatus,
+  CreateChannelPayload,
+  ChannelInfoPayload,
+  JoinOrCreateChannelErrorPayload
+} from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
@@ -56,6 +65,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { sleep } from 'atomicHelpers/sleep'
+import { CHANNEL_RESERVED_IDS, validateRegexChannelId } from './utils'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -798,4 +808,55 @@ function logAndTrackError(message: string, e: any) {
     message: message,
     stack: '' + e
   })
+}
+
+// Create channel
+export function createChannel(createChannel: CreateChannelPayload) {
+  const channelId = createChannel.channelId
+
+  // Reserved
+  if (CHANNEL_RESERVED_IDS.includes(channelId)) {
+    joinChannelError(channelId, 'Reserved')
+    return
+  }
+
+  // Regex
+  if (!validateRegexChannelId(channelId)) {
+    joinChannelError(channelId, 'Regex')
+    return
+  }
+
+  // Create channel
+  // const {created, channel} = client.createChannel(channelId)
+  // if(!created) { joinChannelError(channelId, 'Exists already') return}
+
+  // Parse channel info
+  const channelInfoPayload: ChannelInfoPayload = {
+    channelId: channelId,
+    unseenMessages: 0,
+    lastMessageTimestamp: 0,
+    memberCount: 1,
+    description: '',
+    joined: true,
+    muted: false
+  }
+
+  // Dispatch store update
+
+  // Send confirmation message to unity
+  getUnityInstance().JoinChannelConfirmation(channelInfoPayload)
+}
+
+/**
+ *
+ * @param channelId
+ * @param message
+ */
+function joinChannelError(channelId: string, message: string) {
+  const joinChannelError: JoinOrCreateChannelErrorPayload = {
+    channelId: channelId,
+    message: message
+  }
+
+  getUnityInstance().JoinChannelError(joinChannelError)
 }
