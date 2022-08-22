@@ -57,7 +57,7 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
   }
 
   function handleDisconnect() {
-    logger.log('[voice-chat] Disconnected!')
+    logger.log('Disconnected!')
   }
 
   function handleMediaDevicesError() {
@@ -86,7 +86,6 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
       room.localParticipant
         .setMicrophoneEnabled(recording)
         .then(() => {
-          logger.log('Set recording', recording)
           if (recordingListener) recordingListener(recording)
         })
         .catch((err) => logger.error('Error: ', err, ', recording=', recording))
@@ -110,9 +109,8 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
         const peer = setupPeer(userId)
         if (peer && peer.position) {
           const distance = squareDistance(peer.position, position)
-          const volMod = 1.0 - Math.min(distance, 5000.0) / 5000.0
+          const volMod = 1.0 - Math.log10(Math.min(distance, 5000.0)) / 5000.0
           peerVolumeMod.set(userId, volMod)
-          logger.log('distance:', distance, volMod)
           participant.setVolume(getGlobalVolume() * volMod)
         }
       }
