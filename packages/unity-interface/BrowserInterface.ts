@@ -561,11 +561,6 @@ export class BrowserInterface {
     store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
   }
 
-  // Join or create via command line
-  public JoinOrCreateChannel(joinOrCreateChannel: JoinOrCreateChannelPayload) {
-    // joinOrCreateChannel(joinOrCreateChannel)
-  }
-
   // Create channel
   public CreateChannel(createChannelPayload: JoinOrCreateChannelPayload) {
     // createChannel(createChannelPayload)

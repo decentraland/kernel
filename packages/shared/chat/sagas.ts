@@ -9,7 +9,13 @@ import {
   sendPrivateMessage
 } from './actions'
 import { uuid } from 'atomicHelpers/math'
-import { ChatMessageType, ChatMessagePlayerType, ChatMessage } from 'shared/types'
+import {
+  ChatMessageType,
+  ChatMessagePlayerType,
+  ChatMessage,
+  JoinOrCreateChannelErrorPayload,
+  ChannelInfoPayload
+} from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
@@ -30,6 +36,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
+import { CHANNEL_RESERVED_IDS, validateRegexChannelId } from 'shared/friends/utils'
 
 interface IChatCommand {
   name: string
@@ -448,6 +455,43 @@ function initChatCommands() {
       body: 'Looking for other players...'
     }
   })
+
+  addChatCommand('join', 'Join or create channel', (channelId) => {
+    if (CHANNEL_RESERVED_IDS.includes(channelId)) {
+      return joinChannelError(channelId, 'Error joining/creating channel. Reserved.')
+    }
+
+    if (!validateRegexChannelId(channelId)) {
+      return joinChannelError(channelId, 'Error joining/creating channel. Regex.')
+    }
+
+    // Join or create channel
+    // const channel: Channel = client.createChannel(message)
+
+    // Parse channel info
+    const channelInfoPayload: ChannelInfoPayload = {
+      channelId: channelId,
+      unseenMessages: 0,
+      lastMessageTimestamp: 0,
+      memberCount: 1,
+      description: '',
+      joined: true,
+      muted: false
+    }
+
+    // Dispatch store update ?)
+
+    // Send confirmation message to unity
+    getUnityInstance().JoinChannelConfirmation(channelInfoPayload)
+
+    return {
+      messageId: uuid(),
+      sender: 'Decentraland',
+      messageType: ChatMessageType.SYSTEM,
+      timestamp: Date.now(),
+      body: 'Success'
+    }
+  })
 }
 
 function getDebugPanelMessage() {
@@ -473,4 +517,27 @@ function parseWhisperExpression(expression: string) {
   const restOfMessage = words.join(' ')
 
   return [userName, restOfMessage]
+}
+
+/**
+ * Send error message to unity
+ * @param channelId
+ * @param message
+ */
+function joinChannelError(channelId: string, message: string) {
+  const joinChannelError: JoinOrCreateChannelErrorPayload = {
+    channelId: channelId,
+    message: message
+  }
+
+  // Send error message to unity
+  getUnityInstance().JoinChannelError(joinChannelError)
+
+  return {
+    messageId: uuid(),
+    messageType: ChatMessageType.SYSTEM,
+    sender: 'Decentraland',
+    timestamp: Date.now(),
+    body: message
+  }
 }
