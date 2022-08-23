@@ -25,9 +25,10 @@ import {
   FriendshipAction,
   PresenceStatus,
   CreateChannelPayload,
-  ChannelInfoPayload,
   JoinOrCreateChannelErrorPayload,
-  UpdateTotalUnseenMessagesByChannelPayload
+  UpdateTotalUnseenMessagesByChannelPayload,
+  GetJoinedChannelsPayload,
+  ChannelsInfoPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -812,8 +813,8 @@ function logAndTrackError(message: string, e: any) {
 }
 
 // Create channel
-export function createChannel(createChannel: CreateChannelPayload) {
-  const channelId = createChannel.channelId
+export function createChannel(request: CreateChannelPayload) {
+  const channelId = request.channelId
 
   // Reserved
   if (CHANNEL_RESERVED_IDS.includes(channelId)) {
@@ -832,14 +833,18 @@ export function createChannel(createChannel: CreateChannelPayload) {
   // if(!created) { joinChannelError(channelId, 'Exists already') return}
 
   // Parse channel info
-  const channelInfoPayload: ChannelInfoPayload = {
-    channelId: channelId,
-    unseenMessages: 0,
-    lastMessageTimestamp: 0,
-    memberCount: 1,
-    description: '',
-    joined: true,
-    muted: false
+  const channelInfoPayload: ChannelsInfoPayload = {
+    channelsInfoPayload: [
+      {
+        channelId: channelId,
+        unseenMessages: 0,
+        lastMessageTimestamp: 0,
+        memberCount: 1,
+        description: '',
+        joined: true,
+        muted: false
+      }
+    ]
   }
 
   // Dispatch store update ?)
@@ -870,6 +875,7 @@ export function getUnseenMessagesByChannel() {
 
   // The user is not joined to any channel
   if (conversationsWithMessages.length === 0) {
+    // Todo!: Check if i should just return or do sth else
     return
   }
 
@@ -886,4 +892,37 @@ export function getUnseenMessagesByChannel() {
 
   // Send total unseen messages by channels to unity
   getUnityInstance().UpdateTotalUnseenMessagesByChannel(updateTotalUnseenMessagesByChannelPayload)
+}
+
+export function getJoinedChannels(request: GetJoinedChannelsPayload) {
+  // Get conversations messages from the store
+  const conversationsWithMessages = [] // getAllConversationsWithMessages(store.getState()).filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+
+  // The user is not joined to any channel
+  if (conversationsWithMessages.length === 0) {
+    // Todo!: Check if i should just return or do sth else
+    return
+  }
+
+  conversationsWithMessages.slice(request.skip, request.skip + request.limit)
+
+  // Parse channel info
+  const channelsInfoPayload: ChannelsInfoPayload = {
+    channelsInfoPayload: []
+  }
+
+  for (const _ of conversationsWithMessages) {
+    channelsInfoPayload.channelsInfoPayload.push({
+      channelId: '', // conv.conversation.!name
+      unseenMessages: 0, // conv.conversation.!unreadMessages.length
+      lastMessageTimestamp: 0, // conv.conversation.!lastEventTimestamp
+      memberCount: 0, // conv.conversation.!usersIds.length
+      description: '',
+      joined: true,
+      muted: false
+    })
+  }
+
+  // Send total unseen messages by channels to unity
+  getUnityInstance().UpdateChannelInfo(channelsInfoPayload)
 }

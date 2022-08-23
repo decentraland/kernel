@@ -14,7 +14,7 @@ import {
   ChatMessagePlayerType,
   ChatMessage,
   JoinOrCreateChannelErrorPayload,
-  ChannelInfoPayload
+  ChannelsInfoPayload
 } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
@@ -469,14 +469,18 @@ function initChatCommands() {
     // const channel: Channel = client.joinOrCreateChannel(message)
 
     // Parse channel info
-    const channelInfoPayload: ChannelInfoPayload = {
-      channelId: channelId,
-      unseenMessages: 0,
-      lastMessageTimestamp: 0,
-      memberCount: 1,
-      description: '',
-      joined: true,
-      muted: false
+    const channelInfoPayload: ChannelsInfoPayload = {
+      channelsInfoPayload: [
+        {
+          channelId: channelId,
+          unseenMessages: 0,
+          lastMessageTimestamp: 0,
+          memberCount: 1,
+          description: '',
+          joined: true,
+          muted: false
+        }
+      ]
     }
 
     // Dispatch store update ?)

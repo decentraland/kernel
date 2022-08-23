@@ -20,10 +20,10 @@ import {
   TutorialInitializationMessage,
   WorldPosition,
   HeaderRequest,
-  ChannelInfoPayload,
   JoinOrCreateChannelErrorPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
-  LeaveChannelErrorPayload
+  LeaveChannelErrorPayload,
+  ChannelsInfoPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -352,7 +352,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
   }
 
-  public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayload) {
+  public JoinChannelConfirmation(channelInfoPayload: ChannelsInfoPayload) {
     this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
   }
 
@@ -370,7 +370,7 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
-  public UpdateChannelInfo(channelInfoPayload: ChannelInfoPayload) {
+  public UpdateChannelInfo(channelInfoPayload: ChannelsInfoPayload) {
     this.SendMessageToUnity('Main', 'UpdateChannelInfo', JSON.stringify(channelInfoPayload))
   }
 
