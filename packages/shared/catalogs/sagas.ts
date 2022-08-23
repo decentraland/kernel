@@ -84,11 +84,6 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
       const fetchContentServer: string = yield select(getFetchContentServer)
 
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
-      if (isRequestingEmotes) {
-        defaultLogger.info(
-          `kernel: @emotes isRequestingEmotes:${isRequestingEmotes} response: ${JSON.stringify(response)}`
-        )
-      }
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'
 
