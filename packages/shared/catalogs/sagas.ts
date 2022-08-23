@@ -104,7 +104,6 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
           : wearablesSuccess(v2Items as WearableV2[], context)
       )
     } catch (error: any) {
-      defaultLogger.info(`kernel: error in catch: ${JSON.stringify(error)}`)
       yield put(failureAction(context, error.message))
     }
   } else {
@@ -124,7 +123,6 @@ function* fetchItemsFromCatalyst(
     PREVIEW || ((DEBUG || getTLD() !== 'org') && network !== ETHEREUM_NETWORK.MAINNET)
   const isRequestingEmotes = action.type === EMOTES_REQUEST
   const catalystFetchFn = isRequestingEmotes ? client.fetchEmotes : client.fetchWearables
-  defaultLogger.info(`kernel: @emotes isRequestingEmotes:${isRequestingEmotes} filters: ${JSON.stringify(filters)}`)
   const result: PartialItem[] = []
   if (filters.ownedByUser) {
     if (WITH_FIXED_ITEMS && COLLECTIONS_OR_ITEMS_ALLOWED) {
@@ -218,7 +216,6 @@ function* fetchItemsFromCatalyst(
       const uuidCollections = WITH_FIXED_COLLECTIONS.split(',').filter(
         (collectionId) => !collectionId.startsWith('urn')
       )
-      defaultLogger.info(`kernel: @emotes uuidCollections: ${JSON.stringify(uuidCollections)}`)
       if (uuidCollections.length > 0 && identity) {
         const v2Items: PartialItem[] = yield call(
           fetchItemsByCollectionFromBuilder,
@@ -227,7 +224,6 @@ function* fetchItemsFromCatalyst(
           filters,
           identity
         )
-        defaultLogger.info(`kernel: @emotes v2Items from builder: ${JSON.stringify(v2Items)}`)
         result.push(...v2Items)
       }
     }
@@ -302,7 +298,6 @@ async function fetchItemsByCollectionFromBuilder(
   identity: ExplorerIdentity
 ) {
   const isRequestingEmotes = action.type === EMOTES_REQUEST
-  defaultLogger.info(`kernel: @emotes isRequestingEmotes: ${JSON.stringify(isRequestingEmotes)}`)
   const result: PartialItem[] = []
   for (const collectionUuid of uuidCollections) {
     if (filters?.collectionIds && !filters.collectionIds.includes(collectionUuid)) {
@@ -315,10 +310,6 @@ async function fetchItemsByCollectionFromBuilder(
       headers,
       timeout: '5m'
     })) as any
-    defaultLogger.info(`kernel: @emotes collection from builder: ${JSON.stringify(collection)}`)
-    defaultLogger.info(
-      `kernel: @emotes isRequestingEmotes: ${isRequestingEmotes} result pre-push: ${JSON.stringify(result)}`
-    )
     const items = collection.data
       .filter((item) =>
         isRequestingEmotes
@@ -326,18 +317,13 @@ async function fetchItemsByCollectionFromBuilder(
           : item.type === UnpublishedWearableType.WEARABLE
       )
       .map((item) => mapUnpublishedItemIntoCatalystItem(action, item))
-    defaultLogger.info(`kernel: @emotes collection from items: ${JSON.stringify(items)}`)
     result.push(...items)
-    defaultLogger.info(
-      `kernel: @emotes isRequestingEmotes: ${isRequestingEmotes} result post-push: ${JSON.stringify(result)}`
-    )
   }
   if (filters && areWearablesRequestFilters(filters) && filters.wearableIds) {
     return result.filter((item) => filters.wearableIds!.includes(item.id))
   } else if (filters && !areWearablesRequestFilters(filters) && filters.emoteIds) {
     return result.filter((item) => filters.emoteIds!.includes(item.id))
   }
-  defaultLogger.info(`kernel: @emotes isRequestingEmotes: ${isRequestingEmotes}result: ${JSON.stringify(result)}`)
   return result
 }
 
@@ -450,7 +436,6 @@ export function* handleItemsRequestSuccess(action: WearablesSuccess | EmotesSucc
 
 export function* handleItemsRequestFailure(action: WearablesFailure | EmotesFailure) {
   const { context, error } = action.payload
-  defaultLogger.info(`kernel: error handleItemsRequestFailure: ${JSON.stringify(error)}`)
 
   defaultLogger.error(
     `Failed to fetch ${action.type === WEARABLES_FAILURE ? 'wearables' : 'emotes'} for context '${context}'`,
