@@ -109,8 +109,9 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   yield put(reportedScenes(tiles))
 }
 
-function* setHomeSceneAction(position: SetHomeScene) {
-  defaultLogger.warn(`Setting home scene to ${position}`)
+function* setHomeSceneAction(action: SetHomeScene) {
+  defaultLogger.warn(`Setting home scene to ${action.payload.position}`)
+  yield put(setHomeScene(action.payload.position))
 }
 
 function* reportScenes(scenes: LoadableScene[]): any {
