@@ -88,7 +88,6 @@ const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
 const receivedMessages: Record<string, number> = {}
 
-// const INITIAL_CHAT_SIZE = 50
 const MESSAGE_LIFESPAN_MILLIS = 1_000
 const SEND_STATUS_INTERVAL_MILLIS = 60_000
 const MIN_TIME_BETWEEN_FRIENDS_INITIALIZATION_RETRIES_MILLIS = 1000
@@ -552,7 +551,6 @@ export function getUnseenMessagesByUser() {
   const updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload = { unseenPrivateMessages: [] }
 
   for (const conversation of conversationsWithMessages) {
-    // unseenPrivateMessages[conversation.conversation.userIds![1]] = conversation.conversation.unreadMessages?.length || 0
     updateTotalUnseenMessagesByUserPayload.unseenPrivateMessages.push({
       count: conversation.conversation.unreadMessages?.length || 0,
       userId: conversation.conversation.userIds![1]
@@ -565,29 +563,23 @@ export function getUnseenMessagesByUser() {
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
 
-  console.log('conversationsWithMessages', JSON.stringify(conversationsWithMessages, null, 4))
-
   if (conversationsWithMessages.length === 0) {
     return
   }
 
-  const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
+  const friendsIds: string[] = getPrivateMessagingFriends(store.getState()).slice(
+    request.skip,
+    request.skip + request.limit
+  )
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
     friendsIds,
     request.userNameOrId
   )
 
-  console.log('filteredFriends', filteredFriends)
-
   const friendsConversations: Array<{ userId: string; conversation: Conversation; avatar: Avatar }> = []
 
   for (const friend of filteredFriends) {
-    console.log(
-      'friend',
-      friend,
-      conversationsWithMessages.find((conv) => conv.conversation.userIds![1] === friend.data.userId)
-    )
     const conversation = conversationsWithMessages.find((conv) => conv.conversation.userIds![1] === friend.data.userId)
 
     if (conversation) {
@@ -598,8 +590,6 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
       })
     }
   }
-
-  console.log('friendsConversations', friendsConversations)
 
   const addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
     currentFriendsWithDirectMessages: friendsConversations.map((friend) => ({

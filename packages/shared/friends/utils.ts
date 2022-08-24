@@ -1,4 +1,3 @@
-import { getSynapseUrl } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
 
 /**
@@ -26,7 +25,6 @@ export function getUserIdFromMatrix(userId: string) {
  * to: '@0x1111ada11111:decentraland.org'
  * */
 export function getMatrixIdFromUser(userId: string) {
-  const domain = getSynapseUrl(store.getState()).split('.')
-
-  return '@' + userId.toString() + ':decentraland' + domain[domain.length - 1]
+  const domain = store.getState().friends.client?.getDomain() ?? 'decentraland.org'
+  return `@${userId.toLowerCase()}:${domain}`
 }

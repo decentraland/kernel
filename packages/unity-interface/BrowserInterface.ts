@@ -87,15 +87,10 @@ import {
   getPrivateMessages,
   markAsSeenPrivateChatMessages
 } from 'shared/friends/sagas'
+import { getMatrixIdFromUser } from 'shared/friends/utils'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
-
-// ** TODO - move to friends related file - moliva - 15/07/2020
-function toSocialId(userId: string) {
-  const domain = store.getState().friends.client?.getDomain()
-  return `@${userId.toLowerCase()}:${domain}`
-}
 
 const positionEvent = {
   position: Vector3.Zero(),
@@ -622,7 +617,7 @@ export class BrowserInterface {
       return
     }
 
-    store.dispatch(updateUserData(userId.toLowerCase(), toSocialId(userId)))
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
     store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
   }
 
