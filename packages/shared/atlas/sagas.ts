@@ -109,7 +109,7 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   yield put(reportedScenes(tiles))
 }
 
-function* setHomeScene(position: Vector2Component) {
+function* setHomeScene(position: SetHomeScene) {
   defaultLogger.warn(`Setting home scene to ${position}`)
 }
 
