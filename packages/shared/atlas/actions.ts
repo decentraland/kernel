@@ -21,3 +21,7 @@ export type ReportLastPosition = ReturnType<typeof reportLastPosition>
 export const INITIALIZE_POI_TILES = 'Initialize POI tiles'
 export const initializePoiTiles = (tiles: string[]) => action(INITIALIZE_POI_TILES, { tiles })
 export type InitializePoiTiles = ReturnType<typeof initializePoiTiles>
+
+export const SET_HOME_SCENE = 'Set home scene'
+export const setHomeScene = (position: Vector2Component) => action(SET_HOME_SCENE, {position})
+export type SetHomeScene = ReturnType<typeof setHomeScene>

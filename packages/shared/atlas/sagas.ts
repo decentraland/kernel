@@ -20,7 +20,10 @@ import {
   INITIALIZE_POI_TILES,
   ReportScenesFromTile,
   reportScenesFromTiles,
-  REPORT_SCENES_FROM_TILES
+  REPORT_SCENES_FROM_TILES,
+  SetHomeScene,
+  setHomeScene,
+  SET_HOME_SCENE
 } from './actions'
 import { getPoiTiles, postProcessSceneName } from './selectors'
 import { RootAtlasState } from './types'
@@ -45,6 +48,7 @@ export function* atlasSaga(): any {
 
   yield takeLatest(REPORT_SCENES_AROUND_PARCEL, reportScenesAroundParcelAction)
   yield takeEvery(REPORT_SCENES_FROM_TILES, reportScenesFromTilesAction)
+  yield takeEvery(SET_HOME_SCENE, setHomeScene)
 }
 
 const TRIGGER_DISTANCE = 10 * parcelLimits.parcelSize
@@ -103,6 +107,10 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
 
   yield call(reportScenes, result)
   yield put(reportedScenes(tiles))
+}
+
+function* setHomeScene(position: Vector2Component) {
+  defaultLogger.warn(`Setting home scene to ${position}`)
 }
 
 function* reportScenes(scenes: LoadableScene[]): any {

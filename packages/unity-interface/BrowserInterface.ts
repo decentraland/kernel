@@ -482,6 +482,10 @@ export class BrowserInterface {
     })
   }
 
+  public SetHomeScene(data: {sceneId: string }) {
+    
+  }
+
   public ReportPlayer(data: { userId: string }) {
     this.OpenWebURL({
       url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.userId}`
