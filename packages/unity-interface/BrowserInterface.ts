@@ -4,7 +4,7 @@ import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
-import { reportScenesAroundParcel } from 'shared/atlas/actions'
+import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { trackEvent } from 'shared/analytics'
@@ -482,8 +482,8 @@ export class BrowserInterface {
     })
   }
 
-  public SetHomeScene(data: {sceneId: string }) {
-    
+  public SetHomeScene(data: { sceneId: string }) {
+    store.dispatch(setHomeScene([data.sceneId]))
   }
 
   public ReportPlayer(data: { userId: string }) {
