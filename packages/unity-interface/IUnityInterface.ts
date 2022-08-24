@@ -70,6 +70,7 @@ export interface IUnityInterface {
   SendGenericMessage(object: string, method: string, payload: string): void
   SetDebug(): void
   LoadProfile(profile: NewProfileForRenderer): void
+  UpdateHomeScene(sceneId: string): void
   SetRenderProfile(id: RenderProfile): void
   CreateGlobalScene(data: {
     id: string
