@@ -119,7 +119,7 @@ function* setHomeSceneAction(action: SetHomeScene) {
 }
 
 function* sendHomeSceneToUnityAction(action: SendHomeScene) {
-  defaultLogger.warn(`Setting home scene to ${action.payload.position}`)
+  defaultLogger.warn(`Send home scene ${action.payload.position}`)
   yield put(sendHomeSceneCompleted(action.payload.position))
 }
 
