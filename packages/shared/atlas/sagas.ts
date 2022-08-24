@@ -121,6 +121,8 @@ function* setHomeSceneAction(action: SetHomeScene) {
 function* sendHomeSceneToUnityAction(action: SendHomeScene) {
   defaultLogger.warn(`Send home scene ${action.payload.position}`)
   yield put(sendHomeSceneCompleted(action.payload.position))
+  yield call(waitForRendererInstance)
+  getUnityInstance().UpdateHomeScene(action.payload.position)
 }
 
 function* reportScenes(scenes: LoadableScene[]): any {
