@@ -112,7 +112,6 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
 function* setHomeSceneAction(action: SetHomeScene) {
   defaultLogger.warn(`Setting home scene to ${action.payload.position}`)
   yield call(setHomeScene(action.payload.position))
-  getUnityInstance().UpdateHomeScene(action.payload.position)
 }
 
 function* reportScenes(scenes: LoadableScene[]): any {
