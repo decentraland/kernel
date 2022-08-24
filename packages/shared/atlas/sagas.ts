@@ -22,7 +22,6 @@ import {
   reportScenesFromTiles,
   REPORT_SCENES_FROM_TILES,
   SetHomeScene,
-  setHomeScene,
   SET_HOME_SCENE,
   sendHomeScene
 } from './actions'
