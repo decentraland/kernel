@@ -25,8 +25,7 @@ import {
   SET_HOME_SCENE,
   SendHomeScene,
   sendHomeScene,
-  SEND_HOME_SCENE_TO_UNITY,
-  sendHomeSceneCompleted
+  SEND_HOME_SCENE_TO_UNITY
 } from './actions'
 import { getPoiTiles, postProcessSceneName } from './selectors'
 import { RootAtlasState } from './types'
@@ -120,7 +119,7 @@ function* setHomeSceneAction(action: SetHomeScene) {
 
 function* sendHomeSceneToUnityAction(action: SendHomeScene) {
   defaultLogger.warn(`Send home scene ${action.payload.position}`)
-  yield put(sendHomeSceneCompleted(action.payload.position))
+
   yield call(waitForRendererInstance)
   getUnityInstance().UpdateHomeScene(action.payload.position)
 }
