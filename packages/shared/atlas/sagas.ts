@@ -48,7 +48,7 @@ export function* atlasSaga(): any {
 
   yield takeLatest(REPORT_SCENES_AROUND_PARCEL, reportScenesAroundParcelAction)
   yield takeEvery(REPORT_SCENES_FROM_TILES, reportScenesFromTilesAction)
-  yield takeEvery(SET_HOME_SCENE, setHomeScene)
+  yield takeEvery(SET_HOME_SCENE, setHomeSceneAction)
 }
 
 const TRIGGER_DISTANCE = 10 * parcelLimits.parcelSize
@@ -109,7 +109,7 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   yield put(reportedScenes(tiles))
 }
 
-function* setHomeScene(position: SetHomeScene) {
+function* setHomeSceneAction(position: SetHomeScene) {
   defaultLogger.warn(`Setting home scene to ${position}`)
 }
 
