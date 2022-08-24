@@ -483,7 +483,7 @@ export class BrowserInterface {
   }
 
   public SetHomeScene(data: { sceneId: string }) {
-    store.dispatch(setHomeScene([data.sceneId]))
+    store.dispatch(setHomeScene(data.sceneId))
   }
 
   public ReportPlayer(data: { userId: string }) {

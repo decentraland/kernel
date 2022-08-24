@@ -23,5 +23,5 @@ export const initializePoiTiles = (tiles: string[]) => action(INITIALIZE_POI_TIL
 export type InitializePoiTiles = ReturnType<typeof initializePoiTiles>
 
 export const SET_HOME_SCENE = 'Set home scene'
-export const setHomeScene = (position: Vector2Component) => action(SET_HOME_SCENE, { position })
+export const setHomeScene = (position: string) => action(SET_HOME_SCENE, { position })
 export type SetHomeScene = ReturnType<typeof setHomeScene>
