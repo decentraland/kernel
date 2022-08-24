@@ -23,7 +23,8 @@ import {
   REPORT_SCENES_FROM_TILES,
   SetHomeScene,
   setHomeScene,
-  SET_HOME_SCENE
+  SET_HOME_SCENE,
+  sendHomeScene
 } from './actions'
 import { getPoiTiles, postProcessSceneName } from './selectors'
 import { RootAtlasState } from './types'
@@ -111,7 +112,7 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
 
 function* setHomeSceneAction(action: SetHomeScene) {
   defaultLogger.warn(`Setting home scene to ${action.payload.position}`)
-  yield call(setHomeScene(action.payload.position))
+  yield put(sendHomeScene(action.payload.position))
 }
 
 function* reportScenes(scenes: LoadableScene[]): any {
