@@ -30,5 +30,6 @@ export const SEND_HOME_SCENE_TO_UNITY = 'Send home scene to unity'
 export const sendHomeScene = (position: string) => action(SEND_HOME_SCENE_TO_UNITY, { position })
 export type SendHomeScene = ReturnType<typeof sendHomeScene>
 
+export const SEND_HOME_SCENE_COMPLETED = 'Send home scene to unity completed'
 export const sendHomeSceneCompleted = (position: string) =>
   action(SEND_HOME_SCENE_COMPLETED, { position })
