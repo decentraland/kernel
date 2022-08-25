@@ -621,6 +621,14 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
   store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
 
   getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
+
+  const client = getSocialClient(store.getState())
+  if (!client) {
+    return
+  }
+
+  const friendsSocialIds = filteredFriends.map((friend) => getMatrixIdFromUser(friend.data.userId))
+  updateUserStatus(client, ...friendsSocialIds)
 }
 
 function* initializeReceivedMessagesCleanUp() {
