@@ -83,6 +83,7 @@ import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
+import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -297,7 +298,7 @@ function* initializePrivateMessaging() {
     synapseUrl,
     ethAddress,
     timestamp,
-    authChain,
+    authChain as AuthChain,
     {
       disablePresence
     }
@@ -365,9 +366,14 @@ function* refreshFriends() {
     let totalUnseenMessages = 0
 
     for (const conv of conversationsWithUnreadMessages) {
-      const userId = conv.userIds?.find((userId) => userId !== ownId)
+      const socialId = conv.userIds?.find((userId) => userId !== ownId)
+      if (!socialId) {
+        continue
+      }
 
-      if (!userId || fromFriendRequestsIds.some((fromRequestUserId) => fromRequestUserId === userId)) {
+      const userId = getUserIdFromMatrix(socialId)
+
+      if (!friendIds.some((friendIds) => friendIds === userId)) {
         continue
       }
 
@@ -382,6 +388,7 @@ function* refreshFriends() {
     }
 
     defaultLogger.log('____ initMessage ____', initFriendsMessage)
+    defaultLogger.log('____ initChatMessage ____', initChatMessage)
 
     getUnityInstance().InitializeFriends(initFriendsMessage)
     getUnityInstance().InitializeChat(initChatMessage)
@@ -424,15 +431,24 @@ export function getFriends(request: GetFriendsPayload) {
   const profilesForRenderer = friendsToReturn.map((profile) => profileToRendererFormat(profile.data, {}))
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
 
+  const friendIdsToReturn = friendsToReturn.map((friend) => friend.data.userId)
+
   const addFriendsPayload: AddFriendsPayload = {
-    friends: friendsToReturn.map((friend) => friend.data.userId),
-    totalFriends: filteredFriends.length
+    friends: friendIdsToReturn,
+    totalFriends: friendsIds.length
   }
 
   getUnityInstance().AddFriends(addFriendsPayload)
 
   store.dispatch(addedProfilesToCatalog(friendsToReturn.map((friend) => friend.data)))
-  // TODO: verify if we need to call receivePeerUserData here
+
+  const client = getSocialClient(store.getState())
+  if (!client) {
+    return
+  }
+
+  const friendsSocialIds = friendIdsToReturn.map(getMatrixIdFromUser)
+  updateUserStatus(client, ...friendsSocialIds)
 }
 
 export function getFriendRequests(request: GetFriendRequestsPayload) {
