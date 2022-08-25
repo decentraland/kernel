@@ -127,6 +127,7 @@ export type RendererSaveProfile = {
       slot: number
       urn: string
     }[]
+    version: number
   }
   face256: string
   body: string
@@ -373,12 +374,14 @@ export class BrowserInterface {
           hair: { color: changes.avatar.hairColor },
           skin: { color: changes.avatar.skinColor },
           wearables: changes.avatar.wearables,
-          emotes: changes.avatar.emotes,
           snapshots: {
             body: changes.body,
             face256: changes.face256
           }
         }
+      }
+      if (changes.avatar.version === 1 && update.avatar) {
+        update.avatar.emotes = changes.avatar.emotes
       }
       store.dispatch(saveProfileDelta(update))
     } else {
