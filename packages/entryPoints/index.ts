@@ -48,6 +48,7 @@ import { signalEngineReady } from 'shared/renderer/actions'
 import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { sendHomeScene } from '../shared/atlas/actions'
+import { homePointKey } from '../shared/atlas/utils'
 
 const logger = createLogger('kernel: ')
 
@@ -265,7 +266,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   })
 
   if (!HAS_INITIAL_POSITION_MARK) {
-    const homePoint: string = await getFromPersistentStorage('home-point')
+    const homePoint: string = await getFromPersistentStorage(homePointKey)
     if (homePoint) {
       store.dispatch(sendHomeScene(homePoint))
       const [x, y] = homePoint.split(',').map((p) => parseFloat(p))

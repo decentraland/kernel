@@ -42,6 +42,7 @@ import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
+import { homePointKey } from './utils'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -115,7 +116,7 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
 
 function* setHomeSceneAction(action: SetHomeScene) {
   defaultLogger.warn(`Setting home scene to ${action.payload.position}`)
-  yield call(saveToPersistentStorage, 'homePoint', action.payload.position)
+  yield call(saveToPersistentStorage, homePointKey, action.payload.position)
   yield put(sendHomeScene(action.payload.position))
 }
 
