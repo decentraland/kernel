@@ -35,6 +35,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     },
 
     openExternalUrl(url: string) {
+      try {
+        const u = new URL(url)
+        if (u.protocol !== 'https:') throw new Error('Only https: external links are allowed')
+      } catch (err: any) {
+        onError(err)
+        return
+      }
+
       if (JSON.stringify(url).length > 49000) {
         onError(new Error('URL payload cannot exceed 49.000 bytes'))
         return
