@@ -1,1 +1,1 @@
-export const homePointKey = "homePointKey"
+export const homePointKey = 'home-point'
