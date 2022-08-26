@@ -65,26 +65,10 @@ export async function startSceneRuntime(client: RpcClient) {
       `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
     )
   }
-
   componentSerializeOpt.useBinaryTransform = explorerConfiguration.configurations['enableBinaryTransform'] === 'true'
-
-  const sourceCode = await codeRequest.text()
 
   let didStart = false
   let updateIntervalMs: number = 1000 / 30
-
-  async function sendBatchAndProcessEvents() {
-    const actions = batchEvents.events
-
-    if (actions.length) {
-      batchEvents.events = []
-    }
-
-    const res = await EngineAPI.sendBatch({ actions })
-    for (const e of res.events) {
-      eventReceiver(EventDataToRuntimeEvent(e))
-    }
-  }
 
   function eventReceiver(event: RuntimeEvent) {
     if (event.type === 'raycastResponse') {
@@ -119,6 +103,19 @@ export async function startSceneRuntime(client: RpcClient) {
     eventState.allowOpenExternalUrl = false
   }
 
+  async function sendBatchAndProcessEvents() {
+    const actions = batchEvents.events
+
+    if (actions.length) {
+      batchEvents.events = []
+    }
+
+    const res = await EngineAPI.sendBatch({ actions })
+    for (const e of res.events) {
+      eventReceiver(EventDataToRuntimeEvent(e))
+    }
+  }
+
   let start = performance.now()
 
   function reschedule() {
@@ -144,36 +141,48 @@ export async function startSceneRuntime(client: RpcClient) {
     sendBatchAndProcessEvents().catch(devToolsAdapter.error).finally(reschedule)
   }
 
-  const dcl = createDecentralandInterface({
-    clientPort,
-    onError: (err: Error) => devToolsAdapter.error(err),
-    onLog: (...args: any) => devToolsAdapter.log(...args),
-    sceneId: bootstrapData.sceneId,
-    eventState,
-    batchEvents,
-    EngineAPI,
-    onEventFunctions,
-    onStartFunctions,
-    onUpdateFunctions
-  })
+  try {
+    const sourceCode = await codeRequest.text()
 
-  // create the context for the scene
-  const runtimeExecutionContext = prepareSandboxContext({
-    dcl,
-    canUseFetch,
-    canUseWebsocket,
-    log: dcl.log,
-    previewMode: isPreview || unsafeAllowed
-  })
-
-  if (bootstrapData.useFPSThrottling === true) {
-    setupFpsThrottling(dcl, fullData.scene.parcels.map(parseParcelPosition), (newValue) => {
-      updateIntervalMs = newValue
+    const dcl = createDecentralandInterface({
+      clientPort,
+      onError: (err: Error) => devToolsAdapter.error(err),
+      onLog: (...args: any) => devToolsAdapter.log(...args),
+      sceneId: bootstrapData.sceneId,
+      eventState,
+      batchEvents,
+      EngineAPI,
+      onEventFunctions,
+      onStartFunctions,
+      onUpdateFunctions
     })
+
+    // create the context for the scene
+    const runtimeExecutionContext = prepareSandboxContext({
+      dcl,
+      canUseFetch,
+      canUseWebsocket,
+      log: dcl.log,
+      previewMode: isPreview || unsafeAllowed
+    })
+
+    if (bootstrapData.useFPSThrottling === true) {
+      setupFpsThrottling(dcl, fullData.scene.parcels.map(parseParcelPosition), (newValue) => {
+        updateIntervalMs = newValue
+      })
+    }
+
+    // run the code of the scene
+    await customEval(sourceCode, runtimeExecutionContext)
+  } catch (err) {
+    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+
+    devToolsAdapter.error(new Error(`SceneRuntime: Error while evaluating the scene ${workerName}`))
+    await sleep(100)
+
+    throw err
   }
 
-  // run the code of the scene
-  await customEval(sourceCode, runtimeExecutionContext)
   // then notify the kernel that the initial scene was loaded
   batchEvents.events.push(initMessagesFinished())
 
