@@ -43,7 +43,7 @@ import {
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getProfile, getProfilesFromStore } from 'shared/profiles/selectors'
+import { getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -53,7 +53,8 @@ import {
   getPrivateMessagingFriends,
   getAllConversationsWithMessages,
   getTotalFriendRequests,
-  getTotalFriends
+  getTotalFriends,
+  isFriend
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -199,9 +200,19 @@ function* configureMatrixClient(action: SetMatrixClient) {
   }
 
   // initialize conversations
-  client.onStatusChange((socialId, status) => {
+  client.onStatusChange(async (socialId, status) => {
     const userId = parseUserId(socialId)
     if (userId) {
+      // When it's a friend and is not added to catalog
+      // unity needs to know this information to show that the user has connected
+      if (isFriend(store.getState(), userId) && !isAddedToCatalog(store.getState(), userId)) {
+        await ensureFriendProfile(userId)
+        getUnityInstance().AddFriends({
+          friends: [userId],
+          totalFriends: getTotalFriends(store.getState())
+        })
+      }
+
       sendUpdateUserStatus(userId, status)
     }
   })
@@ -241,7 +252,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
     // get total user unread messages
     if (message.sender !== ownId) {
-      const totalUnreadMessages = client.getTotalUnseenMessages()
+      const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
       const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
 
       const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
