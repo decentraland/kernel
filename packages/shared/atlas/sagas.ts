@@ -42,7 +42,7 @@ import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
-import { homePointKey } from './utils'
+import { homePointKey } from 'shared/atlas/utils'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
