@@ -179,6 +179,9 @@ export async function startSceneRuntime(client: RpcClient) {
     await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
 
     devToolsAdapter.error(new Error(`SceneRuntime: Error while evaluating the scene ${workerName}`))
+
+    // The devToolsAdapter.error isn't a async function
+    //  and the port can be closed because the finishing of the worker
     await sleep(100)
 
     throw err
