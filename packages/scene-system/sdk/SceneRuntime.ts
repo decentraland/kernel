@@ -65,10 +65,24 @@ export async function startSceneRuntime(client: RpcClient) {
       `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
     )
   }
+
   componentSerializeOpt.useBinaryTransform = explorerConfiguration.configurations['enableBinaryTransform'] === 'true'
 
   let didStart = false
   let updateIntervalMs: number = 1000 / 30
+
+  async function sendBatchAndProcessEvents() {
+    const actions = batchEvents.events
+
+    if (actions.length) {
+      batchEvents.events = []
+    }
+
+    const res = await EngineAPI.sendBatch({ actions })
+    for (const e of res.events) {
+      eventReceiver(EventDataToRuntimeEvent(e))
+    }
+  }
 
   function eventReceiver(event: RuntimeEvent) {
     if (event.type === 'raycastResponse') {
@@ -101,19 +115,6 @@ export async function startSceneRuntime(client: RpcClient) {
       }
     }
     eventState.allowOpenExternalUrl = false
-  }
-
-  async function sendBatchAndProcessEvents() {
-    const actions = batchEvents.events
-
-    if (actions.length) {
-      batchEvents.events = []
-    }
-
-    const res = await EngineAPI.sendBatch({ actions })
-    for (const e of res.events) {
-      eventReceiver(EventDataToRuntimeEvent(e))
-    }
   }
 
   let start = performance.now()
@@ -182,7 +183,6 @@ export async function startSceneRuntime(client: RpcClient) {
 
     throw err
   }
-
   // then notify the kernel that the initial scene was loaded
   batchEvents.events.push(initMessagesFinished())
 
