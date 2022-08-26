@@ -14,7 +14,6 @@ import {
   ChatMessagePlayerType,
   ChatMessage,
   JoinOrCreateChannelErrorPayload,
-  ChannelsInfoPayload
 } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
@@ -28,7 +27,7 @@ import { changeRealm } from 'shared/dao'
 import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
 import { SHOW_FPS_COUNTER } from 'config'
 import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
-import { isFriend } from 'shared/friends/selectors'
+import { getSocialClient, isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
 import { getCurrentUserId, hasWallet } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
@@ -37,6 +36,8 @@ import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { CHANNEL_RESERVED_IDS, validateRegexChannelId } from 'shared/friends/utils'
+import { SocialAPI } from 'dcl-social-client'
+import { joinOrCreateChannel } from 'shared/friends/actions'
 
 interface IChatCommand {
   name: string
@@ -457,6 +458,18 @@ function initChatCommands() {
   })
 
   addChatCommand('join', 'Join or create channel', (channelId) => {
+    const client: SocialAPI | null = getSocialClient(store.getState())
+    // Todo Juli!: Check if I should notify unity about this
+    if (!client) {
+      return {
+        messageId: uuid(),
+        sender: 'Decentraland',
+        messageType: ChatMessageType.SYSTEM,
+        timestamp: Date.now(),
+        body: 'Error joining/creating channel.'
+      }
+    }
+
     if (CHANNEL_RESERVED_IDS.includes(channelId)) {
       return joinChannelError(channelId, 'Error joining/creating channel. Reserved.')
     }
@@ -465,35 +478,17 @@ function initChatCommands() {
       return joinChannelError(channelId, 'Error joining/creating channel. Regex.')
     }
 
+    const ownId = client.getUserId()
+
     // Join or create channel
-    // const channel: Channel = client.joinOrCreateChannel(message)
-
-    // Parse channel info
-    const channelInfoPayload: ChannelsInfoPayload = {
-      channelsInfoPayload: [
-        {
-          channelId: channelId,
-          unseenMessages: 0,
-          lastMessageTimestamp: 0,
-          memberCount: 1,
-          description: '',
-          joined: true,
-          muted: false
-        }
-      ]
-    }
-
-    // Dispatch store update ?)
-
-    // Send confirmation message to unity
-    getUnityInstance().JoinChannelConfirmation(channelInfoPayload)
+    store.dispatch(joinOrCreateChannel(channelId, [ownId]))
 
     return {
       messageId: uuid(),
       sender: 'Decentraland',
       messageType: ChatMessageType.SYSTEM,
       timestamp: Date.now(),
-      body: 'Success'
+      body: 'Success.'
     }
   })
 }

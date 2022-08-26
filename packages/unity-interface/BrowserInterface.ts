@@ -562,8 +562,15 @@ export class BrowserInterface {
     store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
   }
 
-  public CreateChannel(createChannelPayload: CreateChannelPayload) {
-    createChannel(createChannelPayload)
+  public async CreateChannel(createChannelPayload: CreateChannelPayload) {
+    createChannel(createChannelPayload).catch((err) => {
+      defaultLogger.error('error createChannel', err),
+        trackEvent('error', {
+          message: `error creating channel ${createChannelPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'createChannel'
+        })
+    })
   }
 
   public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {

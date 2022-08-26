@@ -641,13 +641,13 @@ export type CreateChannelPayload = {
   channelId: string
 }
 
-// Todo!: Check if we can use the same for join/create and create
+// Todo Juli!: Check if we can use the same for join/create and create
 export type JoinOrCreateChannelErrorPayload = {
   channelId: string
   message: string
 }
 
-// Todo!: Check if we should change it like this cause otherwise I think it does not work
+// Todo Juli!: Check if we should change it like this cause otherwise I think it does not work
 export type ChannelInfoPayload = {
   channelId: string
   unseenMessages: number

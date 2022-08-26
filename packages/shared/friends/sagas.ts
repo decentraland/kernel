@@ -9,7 +9,8 @@ import {
   CurrentUserStatus,
   UnknownUsersError,
   SocialAPI,
-  UpdateUserStatus
+  UpdateUserStatus,
+  ConversationType
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -40,7 +41,8 @@ import {
   getSocialClient,
   findPrivateMessagingFriendsByUserId,
   getPrivateMessaging,
-  getPrivateMessagingFriends
+  getPrivateMessagingFriends,
+  getAllConversationsWithMessages
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -68,6 +70,7 @@ import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { sleep } from 'atomicHelpers/sleep'
 import { CHANNEL_RESERVED_IDS, validateRegexChannelId } from './utils'
+import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -331,7 +334,7 @@ function* initializePrivateMessaging() {
     synapseUrl,
     ethAddress,
     timestamp,
-    authChain,
+    authChain as AuthChain,
     {
       disablePresence
     }
@@ -813,24 +816,32 @@ function logAndTrackError(message: string, e: any) {
 }
 
 // Create channel
-export function createChannel(request: CreateChannelPayload) {
+export async function createChannel(request: CreateChannelPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
   const channelId = request.channelId
+  const ownId = client.getUserId()
 
   // Reserved
   if (CHANNEL_RESERVED_IDS.includes(channelId)) {
-    joinChannelError(channelId, 'Reserved')
+    joinChannelError(channelId, 'Reserved name')
     return
   }
 
   // Regex
   if (!validateRegexChannelId(channelId)) {
-    joinChannelError(channelId, 'Regex')
+    joinChannelError(channelId, 'Bad regex')
     return
   }
 
   // Create channel
-  // const [created, channel] = client.createChannel(channelId)
-  // if(!created) { joinChannelError(channelId, 'Exists already') return}
+  const { created } = await client.getOrCreateChannel(channelId, [ownId])
+
+  if (!created) {
+    joinChannelError(channelId, 'Already exists')
+    return
+  }
 
   // Parse channel info
   const channelInfoPayload: ChannelsInfoPayload = {
@@ -871,11 +882,13 @@ function joinChannelError(channelId: string, message: string) {
 // Get unseen messages by channel
 export function getUnseenMessagesByChannel() {
   // Get conversations messages from the store
-  const conversationsWithMessages = [] // getAllConversationsWithMessages(store.getState()).filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.CHANNEL
+  )
 
   // The user is not joined to any channel
   if (conversationsWithMessages.length === 0) {
-    // Todo!: Check if i should just return or do sth else
+    // Todo Juli!: Check if i should just return or do sth else
     return
   }
 
@@ -883,10 +896,10 @@ export function getUnseenMessagesByChannel() {
     unseenChannelMessages: []
   }
 
-  for (const _ of conversationsWithMessages) {
+  for (const conv of conversationsWithMessages) {
     updateTotalUnseenMessagesByChannelPayload.unseenChannelMessages.push({
-      count: 0, // conv.conversation.unreadMessages?.length || 0,
-      channelId: '' // conv.conversation.!name
+      count: conv.conversation.unreadMessages?.length || 0,
+      channelId: conv.conversation.name!
     })
   }
 
@@ -894,13 +907,16 @@ export function getUnseenMessagesByChannel() {
   getUnityInstance().UpdateTotalUnseenMessagesByChannel(updateTotalUnseenMessagesByChannelPayload)
 }
 
+// Get user's joined channels
 export function getJoinedChannels(request: GetJoinedChannelsPayload) {
   // Get conversations messages from the store
-  const conversationsWithMessages = [] // getAllConversationsWithMessages(store.getState()).filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.CHANNEL
+  )
 
   // The user is not joined to any channel
   if (conversationsWithMessages.length === 0) {
-    // Todo!: Check if i should just return or do sth else
+    // Todo Juli!: Check if i should just return or do sth else
     return
   }
 
@@ -911,12 +927,12 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     channelsInfoPayload: []
   }
 
-  for (const _ of conversationsWithMessages) {
+  for (const conv of conversationsWithMessages) {
     channelsInfoPayload.channelsInfoPayload.push({
-      channelId: '', // conv.conversation.!name
-      unseenMessages: 0, // conv.conversation.!unreadMessages.length
-      lastMessageTimestamp: 0, // conv.conversation.!lastEventTimestamp
-      memberCount: 0, // conv.conversation.!usersIds.length
+      channelId: conv.conversation.name!,
+      unseenMessages: conv.conversation.unreadMessages?.length || 0,
+      lastMessageTimestamp: conv.conversation.lastEventTimestamp || 0,
+      memberCount: conv.conversation.userIds?.length || 1,
       description: '',
       joined: true,
       muted: false
