@@ -317,8 +317,7 @@ function* refreshFriends() {
 
     // init friends
     // const friends: string[] = []
-    const friends: string[] = yield client.getAllFriends()
-
+    const friendIds: string[] = yield getFriendIds(client)
     const friendsSocial: SocialData[] = []
 
     // init friend requests
@@ -346,7 +345,6 @@ function* refreshFriends() {
       {}
     )
 
-    const friendIds = friends.map(($) => parseUserId($)).filter(Boolean) as string[]
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
         createdAt: request.createdAt,
@@ -361,24 +359,7 @@ function* refreshFriends() {
     )
 
     // explorer information
-    const conversationsWithUnreadMessages: Conversation[] = yield client.getAllConversationsWithUnreadMessages()
-
-    let totalUnseenMessages = 0
-
-    for (const conv of conversationsWithUnreadMessages) {
-      const socialId = conv.userIds?.find((userId) => userId !== ownId)
-      if (!socialId) {
-        continue
-      }
-
-      const userId = getUserIdFromMatrix(socialId)
-
-      if (!friendIds.some((friendIds) => friendIds === userId)) {
-        continue
-      }
-
-      totalUnseenMessages += conv.unreadMessages?.length || 0
-    }
+    const totalUnseenMessages = getTotalUnseenMessages(client, ownId, friendIds)
 
     const initFriendsMessage: FriendsInitializationMessage = {
       totalReceivedRequests: requestedFromIds.length
@@ -413,6 +394,35 @@ function* refreshFriends() {
   } catch (e) {
     logAndTrackError('Error while refreshing friends', e)
   }
+}
+
+function getFriendIds(client: SocialAPI): string[] {
+  const friends: string[] = client.getAllFriends()
+
+  return friends.map(($) => parseUserId($)).filter(Boolean) as string[]
+}
+
+function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: string[]): number {
+  const conversationsWithUnreadMessages: Conversation[] = client.getAllConversationsWithUnreadMessages()
+
+  let totalUnseenMessages = 0
+
+  for (const conv of conversationsWithUnreadMessages) {
+    const socialId = conv.userIds?.find((userId) => userId !== ownId)
+    if (!socialId) {
+      continue
+    }
+
+    const userId = getUserIdFromMatrix(socialId)
+
+    if (!friendIds.some((friendIds) => friendIds === userId)) {
+      continue
+    }
+
+    totalUnseenMessages += conv.unreadMessages?.length || 0
+  }
+
+  return totalUnseenMessages
 }
 
 export function getFriends(request: GetFriendsPayload) {
@@ -496,7 +506,7 @@ export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPa
   }
 
   // get total user unread messages
-  const totalUnreadMessages = client.getTotalUnseenMessages()
+  const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), getFriendIds(client))
 
   const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
     userId: userId.userId,
