@@ -38,7 +38,8 @@ import {
   isVoiceChatAllowedByCurrentScene,
   isRequestedVoiceChatRecording,
   getVoiceChatState,
-  hasJoined
+  hasJoined,
+  getLiveKitVoiceChat
 } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
@@ -70,7 +71,7 @@ export function* voiceChatSaga() {
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
-  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], test_setLiveKitRoom)
+  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], customLiveKitRoom)
 }
 
 /*
@@ -78,31 +79,22 @@ export function* voiceChatSaga() {
  * This will get the token from a custom/temporal server which generates token for LiveKit
  * TODO: Move this to Comms v3 with LiveKit, and set the room there
  */
-export function* test_setLiveKitRoom() {
-  const qs = new URLSearchParams(location.search)
-  const tokenUrlServer = qs.get('token-url-server')
-  if (tokenUrlServer) {
+export function* customLiveKitRoom() {
+  if (yield select(getLiveKitVoiceChat)) {
     const realm = yield select(getRealm)
     const realmName = realm ? realmToConnectionString(realm) : 'global'
     const island = (yield select(getCommsIsland)) ?? 'global'
     const roomName = `${realmName}-${island}`
 
-    voiceChatLogger.log(`test_setLiveKitRoom roomName=${roomName}`)
-
     const identity = yield select(getIdentity)
     if (identity) {
-      const url = `https://${tokenUrlServer}/getToken?island=${island}&userId=${identity.address}`
+      const url = `https://livekit-token.decentraland.io/create?participantName=${identity.address}&roomName=${roomName}`
       const res: Response = yield fetch(url)
       if (!res.ok) return
       const data = yield res.json()
 
       // creates a new room with options
-      const room = new Room({
-        // optimize publishing bandwidth and CPU for published tracks
-        dynacast: true
-      })
-
-      voiceChatLogger.log('connecting to token:', data.token, url, identity.address)
+      const room = new Room()
 
       yield room.connect('wss://test-livekit.decentraland.today', data.token)
       yield put(setVoiceChatLiveKitRoom(room))

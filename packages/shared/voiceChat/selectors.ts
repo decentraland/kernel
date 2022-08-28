@@ -2,7 +2,7 @@ import { Avatar } from '@dcl/schemas'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { isFriend } from 'shared/friends/selectors'
 import { RootFriendsState } from 'shared/friends/types'
-import { getBannedUsers } from 'shared/meta/selectors'
+import { getBannedUsers, getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { BannedUsers, RootMetaState } from 'shared/meta/types'
 import { getProfile } from 'shared/profiles/selectors'
 import { RootProfileState } from 'shared/profiles/types'
@@ -83,3 +83,6 @@ export function isVoiceAllowedByPolicy(
       return true
   }
 }
+
+export const getLiveKitVoiceChat = (store: RootMetaState): boolean | undefined =>
+  getFeatureFlagVariantValue(store, 'livekit-voicechat') as boolean | undefined

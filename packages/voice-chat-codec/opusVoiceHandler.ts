@@ -1,18 +1,12 @@
 import { createLogger } from 'shared/logger'
 import { VoiceHandler } from './VoiceHandler'
 import { EncodedFrame } from './types'
-import { VoiceCommunicator, VoiceSpatialParams } from './VoiceCommunicator'
+import { VoiceCommunicator } from './VoiceCommunicator'
 import { commConfigurations } from 'config'
 import Html from 'shared/Html'
 import { RoomConnection } from 'shared/comms/interface'
-import { Position, rotateUsingQuaternion } from 'shared/comms/interface/utils'
-
-function getSpatialParamsFor(position: Position): VoiceSpatialParams {
-  return {
-    position: position.slice(0, 3) as [number, number, number],
-    orientation: rotateUsingQuaternion(position, 0, 0, -1)
-  }
-}
+import { Position } from 'shared/comms/interface/utils'
+import { getSpatialParamsFor } from './utils'
 
 export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler => {
   const logger = createLogger('OpusVoiceCommunicator: ')
