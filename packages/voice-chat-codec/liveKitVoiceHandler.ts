@@ -13,8 +13,20 @@ import { Position } from 'shared/comms/interface/utils'
 import Html from 'shared/Html'
 import { createLogger } from 'shared/logger'
 import { VoiceHandler } from './VoiceHandler'
-import { setupPeer } from 'shared/comms/peers'
+import { getAllPeers } from 'shared/comms/peers'
 import { getSpatialParamsFor } from './utils'
+
+//const AudioContext = (window as any).webkitAudioContext || window.AudioContext
+
+const getPeerByAddress = (address: string) => {
+  const peers = getAllPeers()
+  for (const [_, peer] of peers) {
+    if (peer.ethereumAddress === address) {
+      return peer
+    }
+  }
+  return undefined
+}
 
 type ParticipantInfo = {
   streamNode: MediaStreamAudioSourceNode
@@ -31,22 +43,27 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
   let errorListener: ((message: string) => void) | undefined
   let globalVolume: number = 1.0
   let globalMuted: boolean = false
-  let validInput = true
+  const validInput = true
 
   const participantsInfo = new Map<string, ParticipantInfo>()
   const audioContext = new AudioContext()
   const destination = audioContext.createMediaStreamDestination()
-  destination.stream
+  if (parentElement) {
+    parentElement.srcObject = destination.stream
+  }
 
   function getGlobalVolume(): number {
     return globalMuted ? 0.0 : globalVolume
   }
 
   function addTrack(userId: string, track: RemoteTrack) {
+    logger.log('track', track.mediaStream, track.kind)
     if (track.kind === Track.Kind.Audio) {
       // attach it to a new HTMLVideoElement or HTMLAudioElement
-      const element = track.attach()
-      parentElement?.appendChild(element)
+      //const element = track.attach()
+      //parentElement?.appendChild(element)
+      //track.attach()
+
       if (track.mediaStream) {
         const streamNode = audioContext.createMediaStreamSource(track.mediaStream)
         const options = {
@@ -58,6 +75,7 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
 
         const panNode = audioContext.createPanner()
         const gainNode = audioContext.createGain()
+        //gainNode.gain.value = 0
 
         streamNode.connect(panNode)
         panNode.connect(gainNode)
@@ -78,6 +96,7 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
           gainNode,
           streamNode
         })
+        logger.log('addTrack! ', userId)
       }
     }
   }
@@ -102,7 +121,7 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
     participant: RemoteParticipant
   ) {
     // remove tracks from all attached elements
-    track.detach()
+    //track.detach()
     const userId = participant.identity
     const participantInfo = participantsInfo.get(userId)
     if (participantInfo) {
@@ -165,33 +184,40 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
     reportPosition(position: Position) {
       const spatialParams = getSpatialParamsFor(position)
       const listener = audioContext.listener
-      if (listener) {
-        listener.setPosition(spatialParams.position[0], spatialParams.position[1], spatialParams.position[2])
-        listener.setOrientation(
-          spatialParams.orientation[0],
-          spatialParams.orientation[1],
-          spatialParams.orientation[2],
-          0,
-          1,
-          0
-        )
-      }
+      listener.setPosition(spatialParams.position[0], spatialParams.position[1], spatialParams.position[2])
+      listener.setOrientation(
+        spatialParams.orientation[0],
+        spatialParams.orientation[1],
+        spatialParams.orientation[2],
+        0,
+        1,
+        0
+      )
+
+      /*listener.positionX.value = spatialParams.position[0]
+      listener.positionY.value = spatialParams.position[1]
+      listener.positionZ.value = spatialParams.position[2]
+      listener.forwardX.value = spatialParams.orientation[0]
+      listener.forwardY.value = spatialParams.orientation[1]
+      listener.forwardZ.value = spatialParams.orientation[2]
+      listener.upX.value = 0
+      listener.upY.value = 1
+      listener.upZ.value = 0*/
 
       for (const [_, participant] of room.participants) {
         const userId = participant.identity
-        const peer = setupPeer(userId)
+        const peer = getPeerByAddress(userId)
         const participantInfo = participantsInfo.get(userId)
+        logger.log('update peer pos', userId, participantInfo, peer)
         if (peer && peer.position && participantInfo) {
           const panNode = participantInfo.panNode
-          if (panNode) {
-            const spatialParams = getSpatialParamsFor(peer.position)
-            panNode.positionX.value = spatialParams.position[0]
-            panNode.positionY.value = spatialParams.position[1]
-            panNode.positionZ.value = spatialParams.position[2]
-            panNode.orientationX.value = spatialParams.orientation[0]
-            panNode.orientationY.value = spatialParams.orientation[1]
-            panNode.orientationZ.value = spatialParams.orientation[2]
-          }
+          const spatialParams = getSpatialParamsFor(peer.position)
+          panNode.positionX.value = spatialParams.position[0]
+          panNode.positionY.value = spatialParams.position[1]
+          panNode.positionZ.value = spatialParams.position[2]
+          panNode.orientationX.value = spatialParams.orientation[0]
+          panNode.orientationY.value = spatialParams.orientation[1]
+          panNode.orientationZ.value = spatialParams.orientation[2]
           /*const distance = squareDistance(peer.position, position)
           const volMod = 1.0 - Math.log10(Math.min(distance, 5000.0)) / 5000.0
           //peerVolumeMod.set(userId, volMod)
@@ -210,14 +236,14 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
     setMute: (mute) => {
       globalMuted = mute
     },
-    setInputStream: async (stream) => {
-      try {
-        await room.switchActiveDevice('audioinput', stream.id)
+    setInputStream: async (localStream) => {
+      /*try {
+        await room.switchActiveDevice('audioinput', localStream.id)
         validInput = true
       } catch (e) {
         validInput = false
         if (errorListener) errorListener('setInputStream catch' + JSON.stringify(e))
-      }
+      }*/
     },
     hasInput: () => {
       return validInput
@@ -230,11 +256,11 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
         .off(RoomEvent.MediaDevicesError, handleMediaDevicesError)
 
       // Remove all childs
-      if (parentElement) {
+      /*if (parentElement) {
         while (parentElement.firstChild) {
           parentElement.removeChild(parentElement.firstChild)
         }
-      }
+      }*/
     }
   }
 }

@@ -80,7 +80,8 @@ export function* voiceChatSaga() {
  * TODO: Move this to Comms v3 with LiveKit, and set the room there
  */
 export function* customLiveKitRoom() {
-  if (yield select(getLiveKitVoiceChat)) {
+  if (true) {
+    voiceChatLogger.log('yield select(getLiveKitVoiceChat)', yield select(getLiveKitVoiceChat))
     const realm = yield select(getRealm)
     const realmName = realm ? realmToConnectionString(realm) : 'global'
     const island = (yield select(getCommsIsland)) ?? 'global'
