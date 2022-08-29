@@ -1,9 +1,11 @@
-import { getProfile, getProfileStatusAndData } from './selectors'
-import { profileRequest, profilesRequest } from './actions'
+import { getProfile, getProfileStatusAndData, isAddedToCatalog } from './selectors'
+import { addedProfileToCatalog, profileRequest, profilesRequest } from './actions'
 import { ProfileType, REMOTE_AVATAR_IS_INVALID } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { Avatar } from '@dcl/schemas'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { profileToRendererFormat } from './transformations/profileToRendererFormat'
 
 // We resolve a profile with an older version after this time, if there is that info
 const PROFILE_SOFT_TIMEOUT_MS = 5000
@@ -11,6 +13,7 @@ const PROFILE_SOFT_TIMEOUT_MS = 5000
 // We reject the profile promise if more time than this has passed
 const PROFILE_HARD_TIMEOUT_MS = COMMS_PROFILE_TIMEOUT + 20000
 
+// This method creates a promise that makes sure that a profile was downloaded AND added to renderer's catalog
 export function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Avatar> {
   function isExpectedVersion(aProfile: Avatar) {
     return !version || aProfile.version >= version
@@ -18,7 +21,12 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
 
   const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+  const isInCatalog = isAddedToCatalog(store.getState(), userId)
   if (existingProfile && existingProfileWithCorrectVersion) {
+    if (!isInCatalog) {
+      getUnityInstance().AddUserProfileToCatalog(profileToRendererFormat(existingProfile, {}))
+      store.dispatch(addedProfileToCatalog(userId, existingProfile))
+    }
     return Promise.resolve(existingProfile)
   }
   return new Promise<Avatar>((resolve, reject) => {
@@ -33,7 +41,7 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
       }
 
       const profile = getProfile(store.getState(), userId)
-      if (profile && isExpectedVersion(profile) && status === 'ok') {
+      if (profile && isExpectedVersion(profile) && status === 'ok' && isAddedToCatalog(store.getState(), userId)) {
         unsubscribe()
         pending = false
         return resolve(profile)
@@ -63,6 +71,8 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
   })
 }
 
+// This method creates a promise that makes sure that an array of profiles were downloaded
+// but they will not be added to renderer's catalog
 export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType): Promise<Avatar[]> {
   const usersToFech = userIds.filter((userId) => {
     const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)

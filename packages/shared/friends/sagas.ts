@@ -248,9 +248,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
       recipient: message.sender === ownId ? senderUserId : identity.address
     }
 
-    const userProfile = getProfile(store.getState(), message.sender)
-    if (!userProfile) {
-      await ensureFriendProfile(message.sender)
+    let userProfile = getProfile(store.getState(), senderUserId)
+    if (!userProfile || !isAddedToCatalog(store.getState(), senderUserId)) {
+      await ensureFriendProfile(senderUserId)
     }
 
     addNewChatMessage(chatMessage)
