@@ -115,14 +115,11 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
 }
 
 function* setHomeSceneAction(action: SetHomeScene) {
-  defaultLogger.warn(`Setting home scene to ${action.payload.position}`)
   yield call(saveToPersistentStorage, homePointKey, action.payload.position)
   yield put(sendHomeScene(action.payload.position))
 }
 
 function* sendHomeSceneToUnityAction(action: SendHomeScene) {
-  defaultLogger.warn(`Send home scene ${action.payload.position}`)
-
   yield call(waitForRendererInstance)
   getUnityInstance().UpdateHomeScene(action.payload.position)
 }
