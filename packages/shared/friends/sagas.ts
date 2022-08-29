@@ -217,7 +217,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
     }
   })
 
-  client.onMessage((conversation, message) => {
+  client.onMessage(async (conversation, message) => {
     if (receivedMessages.hasOwnProperty(message.id)) {
       // message already processed, skipping
       return
@@ -246,6 +246,11 @@ function* configureMatrixClient(action: SetMatrixClient) {
       body: message.text,
       sender: message.sender === ownId ? identity.address : senderUserId,
       recipient: message.sender === ownId ? senderUserId : identity.address
+    }
+
+    const userProfile = getProfile(store.getState(), message.sender)
+    if (!userProfile) {
+      await ensureFriendProfile(message.sender)
     }
 
     addNewChatMessage(chatMessage)
