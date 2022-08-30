@@ -850,9 +850,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       // The approved should not have a break since it should execute all the code as the rejected case
       // Also the rejected needs to be directly after the Approved to make sure this works
       case FriendshipAction.REJECTED: {
-        if (action === FriendshipAction.REJECTED) {
-          totalFriends -= 1
-        }
         const requests = [...state[friendRequestTypeSelector]]
 
         const index = requests.findIndex((request) => request.userId === userId)
