@@ -20,10 +20,11 @@ import {
   TutorialInitializationMessage,
   WorldPosition,
   HeaderRequest,
-  JoinOrCreateChannelErrorPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
-  LeaveChannelErrorPayload,
-  ChannelsInfoPayload
+  ChannelsInfoPayload,
+  ChannelErrorPayload,
+  AddChatMessagesPayload,
+  UpdateTotalUnseenMessagesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -336,6 +337,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
+  public AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddChatMessages', JSON.stringify(addChatMessagesPayload))
+  }
+
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
   }
@@ -352,12 +357,16 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
   }
 
+  public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalUnseenMessages', JSON.stringify(updateTotalUnseenMessagesPayload))
+  }
+
   public JoinChannelConfirmation(channelInfoPayload: ChannelsInfoPayload) {
     this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
   }
 
-  public JoinChannelError(joinOrCreateChannelErrorPayload: JoinOrCreateChannelErrorPayload) {
-    this.SendMessageToUnity('Main', 'JoinChannelError', JSON.stringify(joinOrCreateChannelErrorPayload))
+  public JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'JoinChannelError', JSON.stringify(joinChannelErrorPayload))
   }
 
   public UpdateTotalUnseenMessagesByChannel(
@@ -374,7 +383,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'UpdateChannelInfo', JSON.stringify(channelInfoPayload))
   }
 
-  public LeaveChannelError(leaveChannelErrorPayload: LeaveChannelErrorPayload) {
+  public LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload) {
     this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
   }
 

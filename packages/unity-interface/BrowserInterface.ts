@@ -80,7 +80,7 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
-import { createChannel, getUnseenMessagesByChannel } from 'shared/friends/sagas'
+import { createChannel, getUnseenMessagesByChannel, markAsSeenChannelMessages } from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -588,9 +588,17 @@ export class BrowserInterface {
     })
   }
 
-  public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+  public async MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
     if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
-    // markChannelMessagesAsSeen(markChannelMessagesAsSeenPayload)
+    markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
+      defaultLogger.error('error createChannel', err),
+        trackEvent('error', {
+          message:
+            `error marking channel messages as seen ${markChannelMessagesAsSeenPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'markAsSeenChannelMessages'
+        })
+    })
   }
 
   public GetChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {

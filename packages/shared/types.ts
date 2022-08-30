@@ -517,6 +517,10 @@ export type ChatMessage = {
   body: string
 }
 
+export type AddChatMessagesPayload = {
+  messages: ChatMessage[]
+}
+
 export type FriendsInitializationMessage = {
   currentFriends: string[]
   requestedTo: string[]
@@ -637,19 +641,21 @@ export type AvatarRendererRemovedMessage = {
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
 
+export interface UpdateTotalUnseenMessagesPayload {
+  total: number
+}
+
 export type CreateChannelPayload = {
   channelId: string
 }
 
-// Todo Juli!: Check if we can use the same for join/create and create
-export type JoinOrCreateChannelErrorPayload = {
+export type ChannelErrorPayload = {
   channelId: string
   message: string
 }
 
-// Todo Juli!: Check if we should change it like this cause otherwise I think it does not work
 export type ChannelInfoPayload = {
-  name: string // the name of the channel (eg. my-channel-name)
+  name: string // the name of the channel
   channelId: string // the conversation id
   unseenMessages: number
   lastMessageTimestamp: number | undefined
@@ -693,9 +699,4 @@ export type GetJoinedChannelsPayload = {
 
 export type LeaveChannelPayload = {
   channelId: string
-}
-
-export type LeaveChannelErrorPayload = {
-  channelId: string
-  message: string
 }

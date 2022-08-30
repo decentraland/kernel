@@ -23,9 +23,10 @@ import {
   UpdateUserStatusMessage,
   WorldPosition,
   UpdateTotalUnseenMessagesByChannelPayload,
-  JoinOrCreateChannelErrorPayload,
-  LeaveChannelErrorPayload,
-  ChannelsInfoPayload
+  ChannelErrorPayload,
+  ChannelsInfoPayload,
+  UpdateTotalUnseenMessagesPayload,
+  AddChatMessagesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -137,13 +138,15 @@ export interface IUnityInterface {
   // ************** Channels **************
   // *********************************************************************************
 
-  JoinChannelConfirmation(channelInfoPayload: ChannelsInfoPayload): void
-  JoinChannelError(joinOrCreateChannelErrorPayload: JoinOrCreateChannelErrorPayload): void
+  JoinChannelConfirmation(channelsInfoPayload: ChannelsInfoPayload): void
+  JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload): void
   UpdateTotalUnseenMessagesByChannel(
     updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
   ): void
-  UpdateChannelInfo(channelInfoPayload: ChannelsInfoPayload): void
-  LeaveChannelError(leaveChannelErrorPayload: LeaveChannelErrorPayload): void
+  UpdateChannelInfo(channelsInfoPayload: ChannelsInfoPayload): void
+  LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
+  AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
