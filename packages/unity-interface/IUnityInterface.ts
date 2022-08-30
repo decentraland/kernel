@@ -159,6 +159,7 @@ export interface IUnityInterface {
   SetUserTalking(userId: string, talking: boolean): void
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
+  SetVoiceChatStatus(status: { isConnected: boolean }): void
   SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void

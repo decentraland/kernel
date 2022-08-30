@@ -465,6 +465,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'SetVoiceChatEnabledByScene', enabled ? 1 : 0)
   }
 
+  public SetVoiceChatStatus(status: { isConnected: boolean }): void {
+    this.SendMessageToUnity('VoiceChatController', 'VoiceChatStatus', JSON.stringify(status))
+  }
+
   public SetKernelConfiguration(config: any) {
     this.SendMessageToUnity('Bridges', 'SetKernelConfiguration', JSON.stringify(config))
   }

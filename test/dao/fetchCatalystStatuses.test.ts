@@ -9,7 +9,7 @@ const EXPECTED: Candidate = {
   catalystName: 'loki',
   domain: 'peer.decentraland.org',
   elapsed: 309,
-  maxUsers: -1,
+  maxUsers: 2000,
   status: 0,
   usersCount: 59,
   usersParcels: [

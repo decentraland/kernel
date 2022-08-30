@@ -9,8 +9,20 @@ export const voicePlayingUpdate = (userId: string, playing: boolean) =>
 export type VoicePlayingUpdate = ReturnType<typeof voicePlayingUpdate>
 
 export const INIT_VOICE_COMMUNICATOR = '[COMMS] setVoiceCommunicator'
-export const setVoiceCommunicator = (voiceCommunicator: VoiceCommunicator) =>
+export const setVoiceCommunicator = (voiceCommunicator: VoiceCommunicator | null) =>
   action(INIT_VOICE_COMMUNICATOR, { voiceCommunicator })
+
+/**
+ * Action to join voice chat
+ */
+export const JOIN_VOICE_CHAT = '[COMMS] joinVoiceChat'
+export const joinVoiceChat = () => action(JOIN_VOICE_CHAT)
+
+/**
+ * Action to leave voice chat
+ */
+export const LEAVE_VOICE_CHAT = '[COMMS] leaveVoiceChat'
+export const leaveVoiceChat = () => action(LEAVE_VOICE_CHAT)
 
 /**
  * Action to trigger voice chat recording
