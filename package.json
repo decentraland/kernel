@@ -80,7 +80,7 @@
     "@dcl/legacy-ecs": "^6.10.1-2191620277.commit-7b74643",
     "@dcl/protocol": "^1.0.0-2825359340.commit-a339b67",
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
-    "@dcl/schemas": "^5.8.1",
+    "@dcl/schemas": "^5.14.0",
     "@dcl/urn-resolver": "^1.4.0",
     "@redux-saga/simple-saga-monitor": "^1.1.2",
     "@types/redux-logger": "^3.0.9",
