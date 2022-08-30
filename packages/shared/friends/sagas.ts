@@ -29,7 +29,8 @@ import {
   JoinOrCreateChannelErrorPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   GetJoinedChannelsPayload,
-  ChannelsInfoPayload
+  ChannelsInfoPayload,
+  ChannelInfoPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -54,7 +55,9 @@ import {
   updateUserData,
   setMatrixClient,
   SET_MATRIX_CLIENT,
-  SetMatrixClient
+  SetMatrixClient,
+  JOIN_OR_CREATE_CHANNEL,
+  JoinOrCreateChannel
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -92,6 +95,7 @@ export function* friendsSaga() {
   yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
   yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
+  yield takeEvery(JOIN_OR_CREATE_CHANNEL, handleJoinOrCreateChannel)
 }
 
 function* initializeFriendsSaga() {
@@ -815,6 +819,47 @@ function logAndTrackError(message: string, e: any) {
   })
 }
 
+// Join or create channel
+async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channelId = action.payload.channelId
+  const ownId = client.getUserId()
+
+  // Get or create channel
+  const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
+
+  const channelInfoPayload: ChannelInfoPayload = {
+    name: conversation.name!,
+    channelId: conversation.id,
+    unseenMessages: 0,
+    lastMessageTimestamp: undefined,
+    memberCount: 1,
+    description: '',
+    joined: true,
+    muted: false
+  }
+
+  if (!created) {
+    await client.joinChannel(conversation.id)
+
+    const joinedChannel = client.getChannel(conversation.id)
+
+    channelInfoPayload.unseenMessages = joinedChannel?.unreadMessages?.length || 0
+    channelInfoPayload.lastMessageTimestamp = joinedChannel?.lastEventTimestamp
+    channelInfoPayload.memberCount = joinedChannel?.userIds?.length || 0
+  }
+
+  // Parse channel info
+  const channelsInfoPayload: ChannelsInfoPayload = {
+    channelsInfoPayload: [channelInfoPayload]
+  }
+
+  // Send confirmation message to unity
+  getUnityInstance().JoinChannelConfirmation(channelsInfoPayload)
+}
+
 // Create channel
 export async function createChannel(request: CreateChannelPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
@@ -836,7 +881,7 @@ export async function createChannel(request: CreateChannelPayload) {
   }
 
   // Create channel
-  const { created } = await client.getOrCreateChannel(channelId, [ownId])
+  const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
 
   if (!created) {
     joinChannelError(channelId, 'Already exists')
@@ -847,9 +892,10 @@ export async function createChannel(request: CreateChannelPayload) {
   const channelInfoPayload: ChannelsInfoPayload = {
     channelsInfoPayload: [
       {
-        channelId: channelId,
+        name: conversation.name!,
+        channelId: conversation.id,
         unseenMessages: 0,
-        lastMessageTimestamp: 0,
+        lastMessageTimestamp: undefined,
         memberCount: 1,
         description: '',
         joined: true,
@@ -857,8 +903,6 @@ export async function createChannel(request: CreateChannelPayload) {
       }
     ]
   }
-
-  // Dispatch store update ?)
 
   // Send confirmation message to unity
   getUnityInstance().JoinChannelConfirmation(channelInfoPayload)
@@ -929,9 +973,10 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
 
   for (const conv of conversationsWithMessages) {
     channelsInfoPayload.channelsInfoPayload.push({
-      channelId: conv.conversation.name!,
+      name: conv.conversation.name!,
+      channelId: conv.conversation.id,
       unseenMessages: conv.conversation.unreadMessages?.length || 0,
-      lastMessageTimestamp: conv.conversation.lastEventTimestamp || 0,
+      lastMessageTimestamp: conv.conversation.lastEventTimestamp || undefined,
       memberCount: conv.conversation.userIds?.length || 1,
       description: '',
       joined: true,

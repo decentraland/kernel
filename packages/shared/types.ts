@@ -649,9 +649,10 @@ export type JoinOrCreateChannelErrorPayload = {
 
 // Todo Juli!: Check if we should change it like this cause otherwise I think it does not work
 export type ChannelInfoPayload = {
-  channelId: string
+  name: string // the name of the channel (eg. my-channel-name)
+  channelId: string // the conversation id
   unseenMessages: number
-  lastMessageTimestamp: number
+  lastMessageTimestamp: number | undefined
   memberCount: number
   description: string
   joined: boolean

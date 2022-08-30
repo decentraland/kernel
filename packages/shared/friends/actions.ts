@@ -24,5 +24,6 @@ export const updateUserData = (userId: string, socialId: string, conversationId?
 export type UpdateUserData = ReturnType<typeof updateUserData>
 
 export const JOIN_OR_CREATE_CHANNEL = 'Join or create channel'
-export const joinOrCreateChannel = (channelId: string, userIds: SocialId[]) => action(JOIN_OR_CREATE_CHANNEL, {channelId, userIds})
+export const joinOrCreateChannel = (channelId: string, userIds: SocialId[]) =>
+  action(JOIN_OR_CREATE_CHANNEL, { channelId, userIds })
 export type JoinOrCreateChannel = ReturnType<typeof joinOrCreateChannel>
