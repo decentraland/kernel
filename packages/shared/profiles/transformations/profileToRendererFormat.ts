@@ -20,6 +20,7 @@ export function profileToRendererFormat(
 
   return {
     ...stage,
+    userId: stage.userId.toLowerCase(),
     name: calculateDisplayName(stage),
     description: stage.description || '',
     version: stage.version || -1,
