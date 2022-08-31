@@ -45,7 +45,7 @@ export const getDisabledCatalystConfig = (store: RootMetaState): string[] | unde
   getFeatureFlagVariantValue(store, 'disabled-catalyst') as string[] | undefined
 
 export const getLiveKitVoiceChat = (store: RootMetaState): boolean | undefined =>
-  getFeatureFlagVariantValue(store, 'livekit-voicechat') as boolean | undefined
+  getFeatureFlagEnabled(store, 'livekit-voicechat') as boolean | undefined
 
 export function getMaxVisiblePeers(store: RootMetaState): number {
   return (
