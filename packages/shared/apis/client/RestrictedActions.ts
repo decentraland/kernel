@@ -26,31 +26,42 @@ export const enum PredefinedEmote {
   DAB = 'dab',
   HEAD_EXPLODDE = 'headexplode'
 }
+export namespace RestrictedActionsServiceClient {
+  export function create<Context>(clientPort: RpcClientPort) {
+    return codegen.loadService<Context, RestrictedActionsServiceDefinition>(
+      clientPort,
+      RestrictedActionsServiceDefinition
+    )
+  }
 
-export function createRestrictedActionsServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = codegen.loadService<Context, RestrictedActionsServiceDefinition>(
-    clientPort,
-    RestrictedActionsServiceDefinition
-  )
+  export function createLegacy<Context>(clientPort: RpcClientPort) {
+    const originalService = codegen.loadService<Context, RestrictedActionsServiceDefinition>(
+      clientPort,
+      RestrictedActionsServiceDefinition
+    )
 
-  return {
-    ...originalService,
-    /**
-     * move player to a position inside the scene
-     *
-     * @param position PositionType
-     * @param cameraTarget PositionType
-     */
-    async movePlayerTo(newPosition: PositionType, cameraTarget?: PositionType): Promise<void> {
-      await originalService.movePlayerTo({ newRelativePosition: newPosition, cameraTarget: cameraTarget || undefined })
-    },
-    /**
-     * trigger an emote on the current player
-     *
-     * @param emote the emote to perform
-     */
-    async triggerEmote(emote: Emote): Promise<void> {
-      await originalService.triggerEmote({ predefinedEmote: emote.predefined })
+    return {
+      ...originalService,
+      /**
+       * move player to a position inside the scene
+       *
+       * @param position PositionType
+       * @param cameraTarget PositionType
+       */
+      async movePlayerTo(newPosition: PositionType, cameraTarget?: PositionType): Promise<void> {
+        await originalService.movePlayerTo({
+          newRelativePosition: newPosition,
+          cameraTarget: cameraTarget || undefined
+        })
+      },
+      /**
+       * trigger an emote on the current player
+       *
+       * @param emote the emote to perform
+       */
+      async triggerEmote(emote: Emote): Promise<void> {
+        await originalService.triggerEmote({ predefinedEmote: emote.predefined })
+      }
     }
   }
 }

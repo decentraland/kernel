@@ -1,44 +1,47 @@
-import { createEngineAPIServiceClient } from './EngineAPI'
-import { createUserActionModuleServiceClient } from './UserActionModule'
-import { createUserIdentityServiceClient } from './UserIdentity'
-import { createEnvironmentAPIServiceClient } from './EnvironmentAPI'
+import { CommunicationsControllerServiceClient } from './CommunicationsController'
 import { createDevToolsServiceClient } from './DevTools'
-import { createPermissionsServiceClient } from './Permissions'
-import { createEthereumControllerServiceClient } from './EthereumController'
-import { createSocialControllerServiceClient } from './SocialController'
-import { createCommunicationsControllerServiceClient } from './CommunicationsController'
-import { createSignedFetchServiceClient } from './SignedFetch'
-import { createRestrictedActionsServiceClient } from './RestrictedActions'
-import { createParcelIdentityServiceClient } from './ParcelIdentity'
-import { createPlayersServiceClient } from './Players'
-import { createPortableExperiencesServiceClient } from './PortableExperiences'
+import { createEngineAPIServiceClient } from './EngineAPI'
+import { EnvironmentAPIServiceClient } from './EnvironmentAPI'
+import { EthereumControllerServiceClient } from './EthereumController'
 import { createExperimentalAPIServiceClient } from './ExperimentalAPI'
-import { createWeb3Provider } from './Web3Provider'
+import { ParcelIdentityServiceClient } from './ParcelIdentity'
+import { createPermissionsServiceClient } from './Permissions'
+import { PlayersServiceClient } from './Players'
+import { PortableExperienceServiceClient } from './PortableExperiences'
+import { RestrictedActionsServiceClient } from './RestrictedActions'
+import { SignedFetchServiceClient } from './SignedFetch'
+import { createSocialControllerServiceClient } from './SocialController'
+import { UserActionModuleServiceClient } from './UserActionModule'
+import { UserIdentityServiceClient } from './UserIdentity'
+import { createLegacyWeb3Provider } from './Web3Provider'
 
 export const LoadableAPIs = {
-  CommunicationsController: createCommunicationsControllerServiceClient,
   DevTools: createDevToolsServiceClient,
   EngineAPI: createEngineAPIServiceClient,
-  EnvironmentAPI: createEnvironmentAPIServiceClient,
-  EthereumController: createEthereumControllerServiceClient,
   ExperimentalAPI: createExperimentalAPIServiceClient,
-  ParcelIdentity: createParcelIdentityServiceClient,
   Permissions: createPermissionsServiceClient,
-  Players: createPlayersServiceClient,
-  PortableExpierences: createPortableExperiencesServiceClient,
+
+  // Legacy
+  LegacySignedFetch: SignedFetchServiceClient.createLegacy,
+  LegacyCommunicationsController: CommunicationsControllerServiceClient.createLegacy,
+  LegacyEnvironmentAPI: EnvironmentAPIServiceClient.createLegacy,
+  LegacyEthereumController: EthereumControllerServiceClient.createLegacy,
+  LegacyParcelIdentity: ParcelIdentityServiceClient.createLegacy,
+  LegacyPlayers: PlayersServiceClient.createLegacy,
+  LegacyPortableExperience: PortableExperienceServiceClient.createLegacy,
 
   // TODO: validate which of the following is actually used.
-  RestrictedActions: createRestrictedActionsServiceClient,
-  RestrictedActionModule: createRestrictedActionsServiceClient,
+  LegacyRestrictedActions: RestrictedActionsServiceClient.createLegacy,
+  LegacyRestrictedActionModule: RestrictedActionsServiceClient.createLegacy,
 
-  SignedFetch: createSignedFetchServiceClient,
-  SocialController: createSocialControllerServiceClient,
-  UserActionModule: createUserActionModuleServiceClient,
+  LegacyUserActionModule: UserActionModuleServiceClient.createLegacy,
   // This is UserIdentity in the host-side
-  Identity: createUserIdentityServiceClient,
+  LegacyIdentity: UserIdentityServiceClient.createLegacy,
 
   // This is required by the scenes
-  ['web3-provider']: createWeb3Provider
+  ['Legacyweb3-provider']: createLegacyWeb3Provider,
+
+  LegacySocialController: createSocialControllerServiceClient
 }
 
 export type ILoadedModules<T> = {

@@ -280,7 +280,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 }
 
 function loadSceneModule(clientPort: RpcClientPort, moduleName: string): GenericRpcModule {
-  const moduleToLoad = moduleName.replace(/^@decentraland\//, '')
+  const moduleToLoad = moduleName.replace(/^@decentraland\//, 'Legacy').replace('~rpc', '')
   try {
     if (moduleToLoad in LoadableAPIs) {
       return (LoadableAPIs as any)[moduleToLoad](clientPort)

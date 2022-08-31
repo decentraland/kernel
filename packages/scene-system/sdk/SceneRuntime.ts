@@ -17,7 +17,7 @@ export async function startSceneRuntime(client: RpcClient) {
 
   const [EngineAPI, EnvironmentAPI, Permissions, DevTools] = await Promise.all([
     LoadableAPIs.EngineAPI(clientPort),
-    LoadableAPIs.EnvironmentAPI(clientPort),
+    LoadableAPIs.LegacyEnvironmentAPI(clientPort),
     LoadableAPIs.Permissions(clientPort),
     LoadableAPIs.DevTools(clientPort)
   ])
