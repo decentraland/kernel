@@ -6,6 +6,7 @@ import { store } from 'shared/store/isolatedStore'
 import { Avatar } from '@dcl/schemas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { profileToRendererFormat } from './transformations/profileToRendererFormat'
+import { ensureUnityInterface } from 'shared/renderer/index'
 
 // We resolve a profile with an older version after this time, if there is that info
 const PROFILE_SOFT_TIMEOUT_MS = 5000
@@ -14,7 +15,7 @@ const PROFILE_SOFT_TIMEOUT_MS = 5000
 const PROFILE_HARD_TIMEOUT_MS = COMMS_PROFILE_TIMEOUT + 20000
 
 // This method creates a promise that makes sure that a profile was downloaded AND added to renderer's catalog
-export function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Avatar> {
+export async function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Avatar> {
   function isExpectedVersion(aProfile: Avatar) {
     return !version || aProfile.version >= version
   }
@@ -24,10 +25,11 @@ export function ProfileAsPromise(userId: string, version?: number, profileType?:
   const isInCatalog = isAddedToCatalog(store.getState(), userId)
   if (existingProfile && existingProfileWithCorrectVersion) {
     if (!isInCatalog) {
+      await ensureUnityInterface()
       getUnityInstance().AddUserProfileToCatalog(profileToRendererFormat(existingProfile, {}))
       store.dispatch(addedProfileToCatalog(userId, existingProfile))
     }
-    return Promise.resolve(existingProfile)
+    return existingProfile
   }
   return new Promise<Avatar>((resolve, reject) => {
     let pending = true

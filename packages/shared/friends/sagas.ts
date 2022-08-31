@@ -332,7 +332,6 @@ function* refreshFriends() {
     const ownId = client.getUserId()
 
     // init friends
-    // const friends: string[] = []
     const friendIds: string[] = yield getFriendIds(client)
     const friendsSocial: SocialData[] = []
 
