@@ -64,7 +64,7 @@ export const setVoiceChatPolicy = (policy: VoicePolicy) => action(SET_VOICE_CHAT
 export type SetVoiceChatPolicyAction = ReturnType<typeof setVoiceChatPolicy>
 
 export const SET_VOICE_CHAT_MEDIA = '[VC] setVoiceChatMedia'
-export const setVoiceChatMedia = (media: any | undefined) => action(SET_VOICE_CHAT_MEDIA, { media })
+export const setVoiceChatMedia = (media: MediaStream | undefined) => action(SET_VOICE_CHAT_MEDIA, { media })
 export type SetVoiceChatMediaAction = ReturnType<typeof setVoiceChatMedia>
 
 export type VoiceChatActions =

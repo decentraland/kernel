@@ -111,6 +111,7 @@ function convertCurrentRealmType(realm: Realm, contentServerUrl: string): Curren
 
 function* updateUserVoicePlayingRenderer(action: VoicePlayingUpdateAction) {
   const { playing, userId } = action.payload
+  yield call(waitForRendererInstance)
   getUnityInstance().SetUserTalking(userId, playing)
 }
 
@@ -120,6 +121,7 @@ function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdateAction)
 }
 
 function* updateChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
+  yield call(waitForRendererInstance)
   if (action.payload.voiceHandler) {
     getUnityInstance().SetVoiceChatStatus({ isConnected: true })
   } else {
@@ -129,6 +131,7 @@ function* updateChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
 
 function* handleVoiceChatError(action: SetVoiceChatErrorAction) {
   const message = action.payload.message
+  yield call(waitForRendererInstance)
   if (message) {
     getUnityInstance().ShowNotification({
       type: NotificationType.GENERIC,
