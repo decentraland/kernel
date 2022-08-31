@@ -56,17 +56,19 @@ export const getCurrentUserProfileStatusAndData = (
   return currentUserId ? getProfileStatusAndData(store, currentUserId) : [undefined, undefined]
 }
 
-export const findProfileByName = (store: RootProfileState, userName: string): Avatar | null =>
-  store.profiles && store.profiles.userInfo
+export const findProfileByName = (store: RootProfileState, userName: string): Avatar | null => {
+  const lowerCasedUserName = userName.toLowerCase()
+  return store.profiles && store.profiles.userInfo
     ? Object.values(store.profiles.userInfo)
         .filter((user) => user.status === 'ok')
         .find(
           (user) =>
-            user.data?.name.toLowerCase() === userName.toLowerCase() ||
-            user.data?.userId.toLowerCase() === userName.toLowerCase() ||
-            calculateDisplayName(user.data) === userName
+            user.data?.name.toLowerCase() === lowerCasedUserName ||
+            user.data?.userId.toLowerCase() === lowerCasedUserName ||
+            calculateDisplayName(user.data).toLowerCase() === lowerCasedUserName
         )?.data || null
     : null
+}
 
 export const isAddedToCatalog = (store: RootProfileState, userId: string): boolean =>
   getProfileValueIfOkOrLoading(

@@ -243,7 +243,7 @@ function* getRemoteProfiles(userIds: string[]): Generator<CallEffect<RemoteProfi
   return null
 }
 
-function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Array<Avatar> {
+function processRemoteProfiles(profiles: RemoteProfile[], _userIds: string[]): Array<Avatar> {
   const avatars: Array<Avatar> = profiles
     .map((profile): Avatar | null => {
       let avatar = profile.avatars[0]
