@@ -114,10 +114,11 @@ const stubClient = {
   getAllCurrentConversations: () => allCurrentConversations,
   getCursorOnMessage: () => Promise.resolve({ getMessages: () => textMessages }),
   getUserId: () => '0xa2',
-  createDirectConversation: () => allCurrentConversations[0].conversation
+  createDirectConversation: () => allCurrentConversations[0].conversation,
+  getUserStatuses: () => new Map()
 } as unknown as SocialAPI
 
-function mockStoreCalls(opts?: { profiles: number[], i: number }) {
+function mockStoreCalls(opts?: { profiles: number[]; i: number }) {
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
   sinon
@@ -145,7 +146,7 @@ describe('Friends sagas', () => {
     })
 
     describe("When there's a filter by id", () => {
-      it('Should filter the responses to have only the ones that include the userId', () => {
+      it('Should filter the responses to have only the ones that include the userId and have the full friends length as total', () => {
         const request: GetFriendsPayload = {
           limit: 1000,
           skip: 0,
@@ -159,7 +160,7 @@ describe('Friends sagas', () => {
         }
         const addedFriends = {
           friends: expectedFriends.users.map((friend) => friend.userId),
-          totalFriends: 2
+          totalFriends: profilesFromStore.length
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
@@ -170,7 +171,7 @@ describe('Friends sagas', () => {
     })
 
     describe("When there's a filter by name", () => {
-      it('Should filter the responses to have only the ones that include the user name', () => {
+      it('Should filter the responses to have only the ones that include the user name and have the full friends length as total', () => {
         const request2: GetFriendsPayload = {
           limit: 1000,
           skip: 0,
@@ -181,7 +182,7 @@ describe('Friends sagas', () => {
         }
         const addedFriends = {
           friends: expectedFriends.users.map((friend) => friend.userId),
-          totalFriends: 1
+          totalFriends: profilesFromStore.length
         }
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
         sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
@@ -225,7 +226,7 @@ describe('Friends sagas', () => {
     })
 
     afterEach(() => {
-      opts.i = + 1
+      opts.i = +1
       sinon.restore()
       sinon.reset()
     })
@@ -335,7 +336,7 @@ describe('Friends sagas', () => {
   })
 
   describe('get private messages from specific chat', () => {
-    describe("When a private chat is opened", () => {
+    describe('When a private chat is opened', () => {
       beforeEach(() => {
         const { store } = buildStore()
         globalThis.globalStore = store
@@ -352,7 +353,7 @@ describe('Friends sagas', () => {
         const request: GetPrivateMessagesPayload = {
           userId: '0xa3',
           limit: 10,
-          fromMessageId: '',
+          fromMessageId: ''
         }
 
         // parse messages

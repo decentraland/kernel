@@ -692,7 +692,7 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
 function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
   const statuses = client.getUserStatuses(...socialIds)
 
-  statuses.forEach((value, key) => {
+  statuses.forEach((value: CurrentUserStatus, key: string) => {
     sendUpdateUserStatus(key, value)
   })
 }
