@@ -107,6 +107,12 @@ async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<
     flagsAndVariants.flags[key.replace(/^explorer-/, '')] = value
   }
 
+  for (const key in flagsAndVariants.variants) {
+    const value = flagsAndVariants.variants[key]
+    delete flagsAndVariants.variants[key]
+    flagsAndVariants.variants[key.replace(/^explorer-/, '')] = value
+  }
+
   if (location.search.length !== 0) {
     const flags = new URLSearchParams(location.search)
     flags.forEach((_, key) => {
