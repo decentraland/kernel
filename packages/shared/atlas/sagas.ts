@@ -20,7 +20,12 @@ import {
   INITIALIZE_POI_TILES,
   ReportScenesFromTile,
   reportScenesFromTiles,
-  REPORT_SCENES_FROM_TILES
+  REPORT_SCENES_FROM_TILES,
+  SetHomeScene,
+  SET_HOME_SCENE,
+  SendHomeScene,
+  sendHomeScene,
+  SEND_HOME_SCENE_TO_UNITY
 } from './actions'
 import { getPoiTiles, postProcessSceneName } from './selectors'
 import { RootAtlasState } from './types'
@@ -36,6 +41,8 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
+import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
+import { homePointKey } from './utils'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -45,6 +52,8 @@ export function* atlasSaga(): any {
 
   yield takeLatest(REPORT_SCENES_AROUND_PARCEL, reportScenesAroundParcelAction)
   yield takeEvery(REPORT_SCENES_FROM_TILES, reportScenesFromTilesAction)
+  yield takeEvery(SET_HOME_SCENE, setHomeSceneAction)
+  yield takeEvery(SEND_HOME_SCENE_TO_UNITY, sendHomeSceneToUnityAction)
 }
 
 const TRIGGER_DISTANCE = 10 * parcelLimits.parcelSize
@@ -103,6 +112,16 @@ function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
 
   yield call(reportScenes, result)
   yield put(reportedScenes(tiles))
+}
+
+function* setHomeSceneAction(action: SetHomeScene) {
+  yield call(saveToPersistentStorage, homePointKey, action.payload.position)
+  yield put(sendHomeScene(action.payload.position))
+}
+
+function* sendHomeSceneToUnityAction(action: SendHomeScene) {
+  yield call(waitForRendererInstance)
+  getUnityInstance().UpdateHomeScene(action.payload.position)
 }
 
 function* reportScenes(scenes: LoadableScene[]): any {
