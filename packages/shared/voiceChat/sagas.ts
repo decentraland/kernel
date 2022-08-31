@@ -43,7 +43,6 @@ import {
 } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
-import defaultLogger from 'shared/logger'
 import { trackEvent } from 'shared/analytics'
 import { VoiceChatState } from './types'
 import { Observer } from 'mz-observable'
@@ -107,22 +106,18 @@ function* handleRecordingRequest() {
   const requestedRecording = yield select(isRequestedVoiceChatRecording)
   const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
 
-  defaultLogger.log('handleVoiceChatRecordingStatus', requestedRecording, voiceHandler)
-
   if (voiceHandler) {
     if (!isVoiceChatAllowedByCurrentScene() || !requestedRecording) {
       voiceHandler.setRecording(false)
     } else {
       yield call(requestUserMedia)
       voiceHandler.setRecording(true)
-      defaultLogger.log('voiceHandler.setRecording(true)')
     }
   }
 }
 
 // on change the livekit room or token, we just leave and join the room to use (or not) the LiveKit
 function* handleSetVoiceChatLiveKitRoom() {
-  voiceChatLogger.log('handleSetVoiceChatLiveKitRoom')
   if (yield select(hasJoined)) {
     yield put(leaveVoiceChat())
     yield put(joinVoiceChat())
