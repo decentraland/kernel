@@ -975,7 +975,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
   } catch (e) {
     if (e instanceof UnknownUsersError) {
-      const profile: Avatar = yield call(ensureFriendProfile, userId)
+      const profile: Avatar | undefined = yield call(ensureFriendProfile, userId)
       const id = profile?.name ? profile.name : `with address '${userId}'`
       showErrorNotification(`User ${id} must log in at least once before befriending them`)
     }
