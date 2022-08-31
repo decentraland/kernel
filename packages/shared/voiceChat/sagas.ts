@@ -130,9 +130,9 @@ function* handleJoinVoiceChat() {
   const commsContext = yield select(getCommsContext)
   const voiceChatState: VoiceChatState = yield select(getVoiceChatState)
   if (commsContext) {
-    const voiceHandler =
+    const voiceHandler: VoiceHandler =
       voiceChatState.liveKitRoom !== null
-        ? yield createLiveKitVoiceHandler(voiceChatState.liveKitRoom)
+        ? yield call(createLiveKitVoiceHandler, voiceChatState.liveKitRoom)
         : createOpusVoiceHandler(commsContext.worldInstanceConnection)
 
     yield put(clearVoiceChatError())
@@ -146,7 +146,6 @@ function* handleJoinVoiceChat() {
     })
 
     voiceHandler.onError((message) => {
-      //store.dispatch(setVoiceChatError(message))
       put(setVoiceChatError(message))
     })
 
@@ -191,7 +190,7 @@ function* handleLeaveVoiceChat() {
 
 function* handleVoiceChatMedia({ payload }: SetVoiceChatMediaAction) {
   const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
-  if (voiceHandler) {
+  if (voiceHandler && payload.media) {
     yield voiceHandler.setInputStream(payload.media)
   }
 }
@@ -223,13 +222,14 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
 
 let audioRequestPending = false
 
-async function requestMediaDevice() {
+async function requestMediaDevice(deviceId?: string) {
   if (!audioRequestPending) {
     audioRequestPending = true
 
     try {
       const media = await navigator.mediaDevices.getUserMedia({
         audio: {
+          deviceId,
           channelCount: 1,
           sampleRate: VOICE_CHAT_SAMPLE_RATE,
           echoCancellation: true,
