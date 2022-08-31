@@ -248,7 +248,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
       recipient: message.sender === ownId ? senderUserId : identity.address
     }
 
-    let userProfile = getProfile(store.getState(), senderUserId)
+    const userProfile = getProfile(store.getState(), senderUserId)
     if (!userProfile || !isAddedToCatalog(store.getState(), senderUserId)) {
       await ensureFriendProfile(senderUserId)
     }
