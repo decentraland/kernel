@@ -81,8 +81,7 @@ export function* voiceChatSaga() {
  */
 export function* customLiveKitRoom() {
   yield call(waitForMetaConfigurationInitialization)
-  if (true) {
-    voiceChatLogger.log('yield select(getLiveKitVoiceChat)', yield select(getLiveKitVoiceChat))
+  if (yield select(getLiveKitVoiceChat)) {
     const realm = yield select(getRealm)
     const realmName = realm ? realmToConnectionString(realm) : 'global'
     const island = (yield select(getCommsIsland)) ?? 'global'
