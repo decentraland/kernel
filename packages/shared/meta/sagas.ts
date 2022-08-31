@@ -118,15 +118,19 @@ async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<
     flags.forEach((_, key) => {
       if (key.startsWith(`DISABLE_`)) {
         const featureName = key.replace('DISABLE_', '').toLowerCase() as FeatureFlagsName
-        flagsAndVariants.flags[featureName] = false
         if (featureName in flagsAndVariants.variants) {
-          flagsAndVariants.variants[featureName].enabled = false
+          flagsAndVariants.flags[featureName] = true
+          flagsAndVariants.variants[featureName].enabled = true
+          flagsAndVariants.variants[featureName].name = "disabled"
+        } else {
+          flagsAndVariants.flags[featureName] = false
         }
       } else if (key.startsWith(`ENABLE_`)) {
         const featureName = key.replace('ENABLE_', '').toLowerCase() as FeatureFlagsName
         flagsAndVariants.flags[featureName] = true
         if (featureName in flagsAndVariants.variants) {
           flagsAndVariants.variants[featureName].enabled = true
+          flagsAndVariants.variants[featureName].name = "enabled"
         } else {
         }
       }
