@@ -6,7 +6,7 @@ import { store } from 'shared/store/isolatedStore'
 import { Avatar } from '@dcl/schemas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { profileToRendererFormat } from './transformations/profileToRendererFormat'
-import { ensureUnityInterface } from 'shared/renderer/index'
+import { ensureUnityInterface } from 'shared/renderer'
 
 // We resolve a profile with an older version after this time, if there is that info
 const PROFILE_SOFT_TIMEOUT_MS = 5000
