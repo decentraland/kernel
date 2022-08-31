@@ -14,9 +14,8 @@ import Html from 'shared/Html'
 import { createLogger } from 'shared/logger'
 import { VoiceHandler } from './VoiceHandler'
 import { getAllPeers } from 'shared/comms/peers'
-import { getSpatialParamsFor } from './utils'
-
-//const AudioContext = (window as any).webkitAudioContext || window.AudioContext
+import { getSpatialParamsFor, isChrome } from './utils'
+import { startLoopback } from './loopback'
 
 const getPeerByAddress = (address: string) => {
   const peers = getAllPeers()
@@ -34,7 +33,7 @@ type ParticipantInfo = {
   gainNode: GainNode
 }
 
-export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
+export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandler> => {
   const logger = createLogger('LiveKitVoiceCommunicator: ')
 
   const parentElement = Html.loopbackAudioElement()
@@ -43,13 +42,15 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
   let errorListener: ((message: string) => void) | undefined
   let globalVolume: number = 1.0
   let globalMuted: boolean = false
-  const validInput = true
+  let validInput = true
 
   const participantsInfo = new Map<string, ParticipantInfo>()
   const audioContext = new AudioContext()
   const destination = audioContext.createMediaStreamDestination()
+  const destinationStream = isChrome() ? await startLoopback(destination.stream) : destination.stream
+
   if (parentElement) {
-    parentElement.srcObject = destination.stream
+    parentElement.srcObject = destinationStream
   }
 
   function getGlobalVolume(): number {
@@ -57,13 +58,7 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
   }
 
   function addTrack(userId: string, track: RemoteTrack) {
-    logger.log('track', track.mediaStream, track.kind)
     if (track.kind === Track.Kind.Audio) {
-      // attach it to a new HTMLVideoElement or HTMLAudioElement
-      //const element = track.attach()
-      //parentElement?.appendChild(element)
-      //track.attach()
-
       if (track.mediaStream) {
         const streamNode = audioContext.createMediaStreamSource(track.mediaStream)
         const options = {
@@ -75,7 +70,6 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
 
         const panNode = audioContext.createPanner()
         const gainNode = audioContext.createGain()
-        //gainNode.gain.value = 0
 
         streamNode.connect(panNode)
         panNode.connect(gainNode)
@@ -96,7 +90,6 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
           gainNode,
           streamNode
         })
-        logger.log('addTrack! ', userId)
       }
     }
   }
@@ -132,6 +125,12 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
 
   function handleDisconnect() {
     logger.log('Disconnected!')
+    room
+      .off(RoomEvent.Disconnected, handleDisconnect)
+      .off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
+      .off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
+      .off(RoomEvent.MediaDevicesError, handleMediaDevicesError)
+
     for (const [_, participantInfo] of participantsInfo) {
       disconnectParticipantInfo(participantInfo)
     }
@@ -194,21 +193,10 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
         0
       )
 
-      /*listener.positionX.value = spatialParams.position[0]
-      listener.positionY.value = spatialParams.position[1]
-      listener.positionZ.value = spatialParams.position[2]
-      listener.forwardX.value = spatialParams.orientation[0]
-      listener.forwardY.value = spatialParams.orientation[1]
-      listener.forwardZ.value = spatialParams.orientation[2]
-      listener.upX.value = 0
-      listener.upY.value = 1
-      listener.upZ.value = 0*/
-
       for (const [_, participant] of room.participants) {
         const userId = participant.identity
         const peer = getPeerByAddress(userId)
         const participantInfo = participantsInfo.get(userId)
-        logger.log('update peer pos', userId, participantInfo, peer)
         if (peer && peer.position && participantInfo) {
           const panNode = participantInfo.panNode
           const spatialParams = getSpatialParamsFor(peer.position)
@@ -218,49 +206,32 @@ export const createLiveKitVoiceHandler = (room: Room): VoiceHandler => {
           panNode.orientationX.value = spatialParams.orientation[0]
           panNode.orientationY.value = spatialParams.orientation[1]
           panNode.orientationZ.value = spatialParams.orientation[2]
-          /*const distance = squareDistance(peer.position, position)
-          const volMod = 1.0 - Math.log10(Math.min(distance, 5000.0)) / 5000.0
-          //peerVolumeMod.set(userId, volMod)
-          participant.setVolume(getGlobalVolume() * volMod)*/
         }
       }
     },
     setVolume: function (volume) {
       globalVolume = volume
       for (const [_, participant] of room.participants) {
-        //const userId = participant.identity
-        //const volMod = peerVolumeMod.get(userId) ?? 1.0
-        participant.setVolume(getGlobalVolume() /** volMod*/)
+        participant.setVolume(getGlobalVolume())
       }
     },
     setMute: (mute) => {
       globalMuted = mute
     },
     setInputStream: async (localStream) => {
-      /*try {
+      try {
         await room.switchActiveDevice('audioinput', localStream.id)
         validInput = true
       } catch (e) {
         validInput = false
         if (errorListener) errorListener('setInputStream catch' + JSON.stringify(e))
-      }*/
+      }
     },
     hasInput: () => {
       return validInput
     },
     leave: () => {
-      room
-        .off(RoomEvent.Disconnected, handleDisconnect)
-        .off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
-        .off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
-        .off(RoomEvent.MediaDevicesError, handleMediaDevicesError)
-
-      // Remove all childs
-      /*if (parentElement) {
-        while (parentElement.firstChild) {
-          parentElement.removeChild(parentElement.firstChild)
-        }
-      }*/
+      handleDisconnect()
     }
   }
 }

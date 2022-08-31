@@ -7,3 +7,7 @@ export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
     orientation: rotateUsingQuaternion(position, 0, 0, -1)
   }
 }
+
+export function isChrome() {
+  return window.navigator.userAgent.includes('Chrome')
+}

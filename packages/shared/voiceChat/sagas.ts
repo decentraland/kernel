@@ -136,7 +136,7 @@ function* handleJoinVoiceChat() {
   if (commsContext) {
     const voiceHandler =
       voiceChatState.liveKitRoom !== null
-        ? createLiveKitVoiceHandler(voiceChatState.liveKitRoom)
+        ? yield createLiveKitVoiceHandler(voiceChatState.liveKitRoom)
         : createOpusVoiceHandler(commsContext.worldInstanceConnection)
 
     yield put(clearVoiceChatError())
