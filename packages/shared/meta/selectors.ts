@@ -29,7 +29,7 @@ export const getMinCatalystVersion = (store: RootMetaState): string | undefined 
   return config.minCatalystVersion
 }
 
-export const isMetaConfigurationInitiazed = (store: RootMetaState): boolean => store.meta.initialized
+export const isMetaConfigurationInitialized = (store: RootMetaState): boolean => store.meta.initialized
 
 export const getWorldConfig = (store: RootMetaState): WorldConfig => store.meta.config.world as WorldConfig
 
