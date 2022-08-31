@@ -83,6 +83,3 @@ export function isVoiceAllowedByPolicy(
       return true
   }
 }
-
-export const getLiveKitVoiceChat = (store: RootMetaState): boolean | undefined =>
-  getFeatureFlagVariantValue(store, 'livekit-voicechat') as boolean | undefined

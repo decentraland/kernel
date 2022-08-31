@@ -38,8 +38,7 @@ import {
   isVoiceChatAllowedByCurrentScene,
   isRequestedVoiceChatRecording,
   getVoiceChatState,
-  hasJoined,
-  getLiveKitVoiceChat
+  hasJoined
 } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
@@ -51,6 +50,8 @@ import { Room } from 'livekit-client' // temp
 import { getIdentity } from 'shared/session'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { realmToConnectionString } from 'shared/comms/v3/resolver'
+import { getLiveKitVoiceChat } from 'shared/meta/selectors'
+import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -79,6 +80,7 @@ export function* voiceChatSaga() {
  * TODO: Move this to Comms v3 with LiveKit, and set the room there
  */
 export function* customLiveKitRoom() {
+  yield call(waitForMetaConfigurationInitialization)
   if (true) {
     voiceChatLogger.log('yield select(getLiveKitVoiceChat)', yield select(getLiveKitVoiceChat))
     const realm = yield select(getRealm)
