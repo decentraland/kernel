@@ -80,7 +80,13 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
-import { createChannel, getUnseenMessagesByChannel, markAsSeenChannelMessages } from 'shared/friends/sagas'
+import {
+  createChannel,
+  getChannelMessages,
+  getJoinedChannels,
+  getUnseenMessagesByChannel,
+  markAsSeenChannelMessages
+} from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -595,7 +601,7 @@ export class BrowserInterface {
   public async MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
     if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
     markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
-      defaultLogger.error('error createChannel', err),
+      defaultLogger.error('error markAsSeenChannelMessages', err),
         trackEvent('error', {
           message:
             `error marking channel messages as seen ${markChannelMessagesAsSeenPayload.channelId} ` + err.message,
@@ -606,7 +612,14 @@ export class BrowserInterface {
   }
 
   public GetChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
-    // getChannelMessages(getChannelMessagesPayload)
+    getChannelMessages(getChannelMessagesPayload).catch((err) => {
+      defaultLogger.error('error getChannelMessages', err),
+        trackEvent('error', {
+          message: `error getting channel messages ${getChannelMessagesPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getChannelMessages'
+        })
+    })
   }
 
   public GetChannels(getChannelsPayload: GetChannelsPayload) {
@@ -618,7 +631,7 @@ export class BrowserInterface {
   }
 
   public GetJoinedChannels(getJoinedChannelsPayload: GetJoinedChannelsPayload) {
-    // getJoinedChannels(getJoinedChannelsPayload)
+    getJoinedChannels(getJoinedChannelsPayload)
   }
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {

@@ -979,7 +979,7 @@ export async function markAsSeenChannelMessages(request: MarkChannelMessagesAsSe
 }
 
 // Get channel messages
-export async function getPrivateMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
+export async function getChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
@@ -1015,8 +1015,8 @@ export async function getPrivateMessages(getChannelMessagesPayload: GetChannelMe
       messageType: ChatMessageType.PRIVATE,
       timestamp: message.timestamp,
       body: message.text,
-      sender: message.sender === ownId ? getUserIdFromMatrix(ownId) : '',
-      recipient: message.sender === ownId ? '' : getUserIdFromMatrix(ownId)
+      sender: getUserIdFromMatrix(message.sender),
+      recipient: message.sender === ownId ? '' : getUserIdFromMatrix(ownId) // Todo Juli!: what should we send? check with explorer
     }))
   }
 
