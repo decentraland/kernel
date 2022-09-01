@@ -273,7 +273,7 @@ async function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[
     })
     .filter((avatar: Avatar | null): boolean => avatar !== null) as Array<Avatar>
 
-  // come up with a random profile for users that don't have one
+  // generate a random profile for users that don't have one
   // this is so that renderer can show them to the user
   // and show them in the chat so no ghost notification is left hanging
   const usersWithoutAvatars = userIds.filter((userId) => !avatars.some((avatar) => avatar.userId === userId))
