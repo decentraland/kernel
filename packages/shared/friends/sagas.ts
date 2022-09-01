@@ -834,7 +834,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   // get or create channel
   const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
 
-  const channelInfoPayload: ChannelInfoPayload = {
+  const channel: ChannelInfoPayload = {
     name: conversation.name!,
     channelId: conversation.id,
     unseenMessages: 0,
@@ -850,18 +850,18 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
 
     const joinedChannel = client.getChannel(conversation.id)
 
-    channelInfoPayload.unseenMessages = joinedChannel?.unreadMessages?.length || 0
-    channelInfoPayload.lastMessageTimestamp = joinedChannel?.lastEventTimestamp
-    channelInfoPayload.memberCount = joinedChannel?.userIds?.length || 0
+    channel.unseenMessages = joinedChannel?.unreadMessages?.length || 0
+    channel.lastMessageTimestamp = joinedChannel?.lastEventTimestamp
+    channel.memberCount = joinedChannel?.userIds?.length || 0
   }
 
   // parse channel info
-  const channelsInfoPayload: ChannelsInfoPayload = {
-    channelsInfoPayload: [channelInfoPayload]
+  const channelsInfo: ChannelsInfoPayload = {
+    channelsInfoPayload: [channel]
   }
 
   // send confirmation message to unity
-  getUnityInstance().JoinChannelConfirmation(channelsInfoPayload)
+  getUnityInstance().JoinChannelConfirmation(channelsInfo)
 }
 
 // Create channel
@@ -891,7 +891,7 @@ export async function createChannel(request: CreateChannelPayload) {
   }
 
   // parse channel info
-  const channelInfoPayload: ChannelsInfoPayload = {
+  const channelsInfo: ChannelsInfoPayload = {
     channelsInfoPayload: [
       {
         name: conversation.name!,
@@ -907,7 +907,7 @@ export async function createChannel(request: CreateChannelPayload) {
   }
 
   // Send confirmation message to unity
-  getUnityInstance().JoinChannelConfirmation(channelInfoPayload)
+  getUnityInstance().JoinChannelConfirmation(channelsInfo)
 }
 
 // Get unseen messages by channel
@@ -915,12 +915,6 @@ export function getUnseenMessagesByChannel() {
   // get conversations messages
   const updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload =
     getTotalUnseenMessagesByChannel()
-
-  // it means the user is not joined to any channel
-  if (updateTotalUnseenMessagesByChannelPayload.unseenChannelMessages.length === 0) {
-    // Todo Juli!: Check if i should just return or do sth else
-    return
-  }
 
   // send total unseen messages by channels to unity
   getUnityInstance().UpdateTotalUnseenMessagesByChannel(updateTotalUnseenMessagesByChannelPayload)
@@ -933,21 +927,15 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     (conv) => conv.conversation.type === ConversationType.CHANNEL
   )
 
-  // the user is not joined to any channel
-  if (conversationsWithMessages.length === 0) {
-    // Todo Juli!: Check if i should just return or do sth else
-    return
-  }
-
   conversationsWithMessages.slice(request.skip, request.skip + request.limit)
 
   // parse channel info
-  const channelsInfoPayload: ChannelsInfoPayload = {
+  const channelsInfo: ChannelsInfoPayload = {
     channelsInfoPayload: []
   }
 
   for (const conv of conversationsWithMessages) {
-    channelsInfoPayload.channelsInfoPayload.push({
+    channelsInfo.channelsInfoPayload.push({
       name: conv.conversation.name!,
       channelId: conv.conversation.id,
       unseenMessages: conv.conversation.unreadMessages?.length || 0,
@@ -960,7 +948,7 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
   }
 
   // send total unseen messages by channels to unity
-  getUnityInstance().UpdateChannelInfo(channelsInfoPayload)
+  getUnityInstance().UpdateChannelInfo(channelsInfo)
 }
 
 // Mark channel messages as seen
@@ -1021,18 +1009,18 @@ export async function getPrivateMessages(getChannelMessagesPayload: GetChannelMe
   }
 
   // parse messages
-  const addChatMessagesPayload: AddChatMessagesPayload = {
+  const addChatMessages: AddChatMessagesPayload = {
     messages: messages.map((message) => ({
       messageId: message.id,
       messageType: ChatMessageType.PRIVATE,
       timestamp: message.timestamp,
       body: message.text,
-      sender: message.sender === ownId ? getUserIdFromMatrix(ownId) : '', // Todo Juli!: Add map from list of userIds
-      recipient: message.sender === ownId ? '' : getUserIdFromMatrix(ownId) // Todo Juli!: Should be a list?
+      sender: message.sender === ownId ? getUserIdFromMatrix(ownId) : '',
+      recipient: message.sender === ownId ? '' : getUserIdFromMatrix(ownId)
     }))
   }
 
-  getUnityInstance().AddChatMessages(addChatMessagesPayload)
+  getUnityInstance().AddChatMessages(addChatMessages)
 }
 
 /**

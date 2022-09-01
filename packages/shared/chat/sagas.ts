@@ -454,7 +454,6 @@ function initChatCommands() {
 
   addChatCommand('join', 'Join or create channel', (channelId) => {
     const client: SocialAPI | null = getSocialClient(store.getState())
-    // Todo Juli!: Check if I should notify unity about this
     if (!client) {
       return {
         messageId: uuid(),
