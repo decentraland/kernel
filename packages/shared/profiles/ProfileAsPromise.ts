@@ -7,6 +7,7 @@ import { Avatar } from '@dcl/schemas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { profileToRendererFormat } from './transformations/profileToRendererFormat'
 import { ensureUnityInterface } from 'shared/renderer'
+import { isCurrentUserId } from 'shared/session/selectors'
 
 // We resolve a profile with an older version after this time, if there is that info
 const PROFILE_SOFT_TIMEOUT_MS = 5000
@@ -23,7 +24,7 @@ export async function ProfileAsPromise(userId: string, version?: number, profile
   const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
   const isInCatalog = isAddedToCatalog(store.getState(), userId)
-  if (existingProfile && existingProfileWithCorrectVersion) {
+  if (existingProfile && existingProfileWithCorrectVersion && !isCurrentUserId(store.getState(), userId)) {
     if (!isInCatalog) {
       await ensureUnityInterface()
       getUnityInstance().AddUserProfileToCatalog(profileToRendererFormat(existingProfile, {}))

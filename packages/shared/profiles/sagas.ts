@@ -155,7 +155,6 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
     const shouldFetchViaComms = commsContext && !shouldReadProfileFromLocalStorage
     const shouldLoadFromCatalyst = true
-    const shouldFallbackToRandomProfile = true
 
     const profile: Avatar =
       // first fetch avatar through comms
@@ -163,9 +162,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // and then via catalyst
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
       // then for my profile, try localStorage
-      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
-      // lastly, come up with a random profile
-      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
+      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage)))
 
     const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
     avatar.userId = userId
@@ -217,11 +214,16 @@ export function* handleFetchProfiles(action: ProfilesRequestAction): any {
   }
 }
 
-function* getRemoteProfile(userId: string, version?: number): Generator<CallEffect<RemoteProfile> | RemoteProfile> {
+function* getRemoteProfile(
+  userId: string,
+  version?: number
+): Generator<CallEffect<RemoteProfile> | CallEffect<Array<Avatar>> | RemoteProfile> {
   try {
-    const profile: RemoteProfile = (yield call(profileServerRequest, userId, version)) as any
+    const remoteProfile: RemoteProfile = (yield call(profileServerRequest, userId, version)) as any
 
-    return processRemoteProfiles([profile], [userId])[0]
+    const profiles: Avatar[] = (yield call(processRemoteProfiles, [remoteProfile], [userId])) as Array<Avatar>
+
+    return profiles[0]
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
       defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
@@ -230,11 +232,14 @@ function* getRemoteProfile(userId: string, version?: number): Generator<CallEffe
   return null
 }
 
-function* getRemoteProfiles(userIds: string[]): Generator<CallEffect<RemoteProfile[]> | Array<Avatar>> {
+function* getRemoteProfiles(
+  userIds: string[]
+): Generator<CallEffect<RemoteProfile[]> | CallEffect<Array<Avatar>> | Array<Avatar>> {
   try {
-    const profiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds)) as any
+    const remoteProfiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds)) as Array<RemoteProfile>
 
-    return processRemoteProfiles(profiles, userIds)
+    const profiles: Avatar[] = (yield call(processRemoteProfiles, remoteProfiles, userIds)) as Array<Avatar>
+    return profiles
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
       defaultLogger.log(`Error requesting profiles for auth check ${userIds}, `, error)
@@ -243,7 +248,7 @@ function* getRemoteProfiles(userIds: string[]): Generator<CallEffect<RemoteProfi
   return null
 }
 
-function processRemoteProfiles(profiles: RemoteProfile[], _userIds: string[]): Array<Avatar> {
+async function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Promise<Array<Avatar>> {
   const avatars: Array<Avatar> = profiles
     .map((profile): Avatar | null => {
       let avatar = profile.avatars[0]
@@ -268,7 +273,15 @@ function processRemoteProfiles(profiles: RemoteProfile[], _userIds: string[]): A
     })
     .filter((avatar: Avatar | null): boolean => avatar !== null) as Array<Avatar>
 
-  return avatars
+  // come up with a random profile for users that don't have one
+  // this is so that renderer can show them to the user
+  // and show them in the chat so no ghost notification is left hanging
+  const usersWithoutAvatars = userIds.filter((userId) => !avatars.some((avatar) => avatar.userId === userId))
+  const defaultAvatars = await Promise.all(
+    usersWithoutAvatars.map(async (userId): Promise<Avatar> => generateRandomUserProfile(userId))
+  )
+
+  return avatars.concat(defaultAvatars)
 }
 
 export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
