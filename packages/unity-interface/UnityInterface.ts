@@ -117,6 +117,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LoadProfile', JSON.stringify(profile))
   }
 
+  public UpdateHomeScene(sceneId: string) {
+    this.SendMessageToUnity('Main', 'UpdateHomeScene', sceneId)
+  }
+
   public SetRenderProfile(id: RenderProfile) {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
   }
