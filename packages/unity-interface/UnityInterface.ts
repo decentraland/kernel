@@ -391,6 +391,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
   }
 
+  public MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'MuteChannelError', JSON.stringify(muteChannelErrorPayload))
+  }
+
   // eslint-disable-next-line @typescript-eslint/ban-types
   public RequestTeleport(teleportData: {}) {
     this.SendMessageToUnity('HUDController', 'RequestTeleport', JSON.stringify(teleportData))

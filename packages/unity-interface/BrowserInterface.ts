@@ -27,7 +27,8 @@ import {
   GetChannelsPayload,
   GetChannelMessagesPayload,
   GetJoinedChannelsPayload,
-  LeaveChannelPayload
+  LeaveChannelPayload,
+  MuteChannelPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -85,7 +86,8 @@ import {
   getChannelMessages,
   getJoinedChannels,
   getUnseenMessagesByChannel,
-  markAsSeenChannelMessages
+  markAsSeenChannelMessages,
+  muteChannel
 } from 'shared/friends/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
@@ -636,6 +638,10 @@ export class BrowserInterface {
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
     // leaveChannel(leaveChannelPayload)
+  }
+
+  public MuteChannel(muteChannelPayload: MuteChannelPayload) {
+    muteChannel(muteChannelPayload)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {

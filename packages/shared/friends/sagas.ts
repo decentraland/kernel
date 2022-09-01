@@ -34,7 +34,8 @@ import {
   MarkChannelMessagesAsSeenPayload,
   UpdateTotalUnseenMessagesPayload,
   GetChannelMessagesPayload,
-  AddChatMessagesPayload
+  AddChatMessagesPayload,
+  MuteChannelPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -78,6 +79,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { sleep } from 'atomicHelpers/sleep'
 import { CHANNEL_RESERVED_IDS, getUserIdFromMatrix, validateRegexChannelId } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
+import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1021,6 +1023,41 @@ export async function getChannelMessages(getChannelMessagesPayload: GetChannelMe
   }
 
   getUnityInstance().AddChatMessages(addChatMessages)
+}
+
+// Enable / disable channels notifications
+export function muteChannel(muteChannel: MuteChannelPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channel: Conversation | undefined = client.getChannel(muteChannel.channelId)
+
+  const channelId = muteChannel.channelId.toLowerCase()
+
+  // add / remove channel to muted key from profile
+  if (muteChannel.muted) {
+    store.dispatch(mutePlayers([channelId]))
+  } else {
+    store.dispatch(unmutePlayers([channelId]))
+  }
+
+  const channelsInfo: ChannelsInfoPayload = {
+    channelsInfoPayload: [
+      {
+        name: channel!.name!,
+        channelId: channel!.id,
+        unseenMessages: channel!.unreadMessages!.length,
+        lastMessageTimestamp: channel!.lastEventTimestamp!,
+        memberCount: channel!.userIds!.length,
+        description: '',
+        joined: true,
+        muted: muteChannel.muted
+      }
+    ]
+  }
+
+  // send message to unity
+  getUnityInstance().UpdateChannelInfo(channelsInfo)
 }
 
 /**
