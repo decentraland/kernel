@@ -21,6 +21,17 @@ export const LoadableAPIs = {
   ExperimentalAPI: createExperimentalAPIServiceClient,
   Permissions: createPermissionsServiceClient,
 
+  SignedFetch: SignedFetchServiceClient.create,
+  CommunicationsController: CommunicationsControllerServiceClient.create,
+  EnvironmentAPI: EnvironmentAPIServiceClient.create,
+  EthereumController: EthereumControllerServiceClient.create,
+  ParcelIdentity: ParcelIdentityServiceClient.create,
+  Players: PlayersServiceClient.create,
+  PortableExperience: PortableExperienceServiceClient.create,
+  RestrictedActions: RestrictedActionsServiceClient.create,
+  UserActionModule: UserActionModuleServiceClient.create,
+  UserIdentity: UserIdentityServiceClient.create,
+
   // Legacy
   LegacySignedFetch: SignedFetchServiceClient.createLegacy,
   LegacyCommunicationsController: CommunicationsControllerServiceClient.createLegacy,
