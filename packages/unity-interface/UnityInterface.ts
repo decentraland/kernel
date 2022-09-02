@@ -117,6 +117,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LoadProfile', JSON.stringify(profile))
   }
 
+  public UpdateHomeScene(sceneId: string) {
+    this.SendMessageToUnity('Main', 'UpdateHomeScene', sceneId)
+  }
+
   public SetRenderProfile(id: RenderProfile) {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
   }
@@ -437,6 +441,10 @@ export class UnityInterface implements IUnityInterface {
 
   public SetVoiceChatEnabledByScene(enabled: boolean) {
     this.SendMessageToUnity('HUDController', 'SetVoiceChatEnabledByScene', enabled ? 1 : 0)
+  }
+
+  public SetVoiceChatStatus(status: { isConnected: boolean }): void {
+    this.SendMessageToUnity('VoiceChatController', 'VoiceChatStatus', JSON.stringify(status))
   }
 
   public SetKernelConfiguration(config: any) {

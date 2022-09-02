@@ -25,7 +25,7 @@ export type Config = {
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
-  private logger = DEBUG || DEBUG_COMMS ? createLogger('CommsV4: ') : createDummyLogger()
+  private logger = DEBUG || DEBUG_COMMS ? createLogger('CommsV3: ') : createDummyLogger()
   private transport: Transport = new DummyTransport()
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null

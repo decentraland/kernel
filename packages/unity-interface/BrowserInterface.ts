@@ -4,7 +4,7 @@ import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
-import { reportScenesAroundParcel } from 'shared/atlas/actions'
+import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { trackEvent } from 'shared/analytics'
@@ -46,7 +46,14 @@ import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { IFuture } from 'fp-future'
 import { reportHotScenes } from 'shared/social/hotScenes'
 import { GIFProcessor } from 'gif-processor/processor'
-import { setVoiceChatRecording, setVoicePolicy, setVoiceVolume, toggleVoiceChatRecording } from 'shared/comms/actions'
+import {
+  joinVoiceChat,
+  leaveVoiceChat,
+  setVoiceChatRecording,
+  setVoicePolicy,
+  setVoiceVolume,
+  toggleVoiceChatRecording
+} from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
@@ -487,6 +494,10 @@ export class BrowserInterface {
     })
   }
 
+  public SetHomeScene(data: { sceneId: string }) {
+    store.dispatch(setHomeScene(data.sceneId))
+  }
+
   public ReportPlayer(data: { userId: string }) {
     this.OpenWebURL({
       url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.userId}`
@@ -515,6 +526,14 @@ export class BrowserInterface {
 
   public SetVoiceChatRecording(recordingMessage: { recording: boolean }) {
     store.dispatch(setVoiceChatRecording(recordingMessage.recording))
+  }
+
+  public JoinVoiceChat() {
+    store.dispatch(joinVoiceChat())
+  }
+
+  public LeaveVoiceChat() {
+    store.dispatch(leaveVoiceChat())
   }
 
   public ToggleVoiceChatRecording() {

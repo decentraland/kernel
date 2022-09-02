@@ -142,6 +142,9 @@ export const BUILDER_SERVER_URL =
  * @returns Root URL with pathname where the index.html is served.
  */
 export const rootURLPreviewMode = () => {
+  if (typeof qs.get('CATALYST') === 'string' && qs.get('CATALYST')?.length !== 0) {
+    return addHttpsIfNoProtocolIsSet(qs.get('CATALYST')!)
+  }
   return `${location.origin}${location.pathname}`.replace(/\/$/, '')
 }
 

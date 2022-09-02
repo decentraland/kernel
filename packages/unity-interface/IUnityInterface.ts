@@ -71,6 +71,7 @@ export interface IUnityInterface {
   SendGenericMessage(object: string, method: string, payload: string): void
   SetDebug(): void
   LoadProfile(profile: NewProfileForRenderer): void
+  UpdateHomeScene(sceneId: string): void
   SetRenderProfile(id: RenderProfile): void
   CreateGlobalScene(data: {
     id: string
@@ -144,6 +145,7 @@ export interface IUnityInterface {
   SetUserTalking(userId: string, talking: boolean): void
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
+  SetVoiceChatStatus(status: { isConnected: boolean }): void
   SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void

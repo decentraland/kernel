@@ -68,8 +68,6 @@ export async function startSceneRuntime(client: RpcClient) {
 
   componentSerializeOpt.useBinaryTransform = explorerConfiguration.configurations['enableBinaryTransform'] === 'true'
 
-  const sourceCode = await codeRequest.text()
-
   let didStart = false
   let updateIntervalMs: number = 1000 / 30
 
@@ -144,36 +142,50 @@ export async function startSceneRuntime(client: RpcClient) {
     sendBatchAndProcessEvents().catch(devToolsAdapter.error).finally(reschedule)
   }
 
-  const dcl = createDecentralandInterface({
-    clientPort,
-    onError: (err: Error) => devToolsAdapter.error(err),
-    onLog: (...args: any) => devToolsAdapter.log(...args),
-    sceneId: bootstrapData.sceneId,
-    eventState,
-    batchEvents,
-    EngineAPI,
-    onEventFunctions,
-    onStartFunctions,
-    onUpdateFunctions
-  })
+  try {
+    const sourceCode = await codeRequest.text()
 
-  // create the context for the scene
-  const runtimeExecutionContext = prepareSandboxContext({
-    dcl,
-    canUseFetch,
-    canUseWebsocket,
-    log: dcl.log,
-    previewMode: isPreview || unsafeAllowed
-  })
-
-  if (bootstrapData.useFPSThrottling === true) {
-    setupFpsThrottling(dcl, fullData.scene.parcels.map(parseParcelPosition), (newValue) => {
-      updateIntervalMs = newValue
+    const dcl = createDecentralandInterface({
+      clientPort,
+      onError: (err: Error) => devToolsAdapter.error(err),
+      onLog: (...args: any) => devToolsAdapter.log(...args),
+      sceneId: bootstrapData.sceneId,
+      eventState,
+      batchEvents,
+      EngineAPI,
+      onEventFunctions,
+      onStartFunctions,
+      onUpdateFunctions
     })
-  }
 
-  // run the code of the scene
-  await customEval(sourceCode, runtimeExecutionContext)
+    // create the context for the scene
+    const runtimeExecutionContext = prepareSandboxContext({
+      dcl,
+      canUseFetch,
+      canUseWebsocket,
+      log: dcl.log,
+      previewMode: isPreview || unsafeAllowed
+    })
+
+    if (bootstrapData.useFPSThrottling === true) {
+      setupFpsThrottling(dcl, fullData.scene.parcels.map(parseParcelPosition), (newValue) => {
+        updateIntervalMs = newValue
+      })
+    }
+
+    // run the code of the scene
+    await customEval(sourceCode, runtimeExecutionContext)
+  } catch (err) {
+    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+
+    devToolsAdapter.error(new Error(`SceneRuntime: Error while evaluating the scene ${workerName}`))
+
+    // The devToolsAdapter.error isn't a async function
+    //  and the port can be closed because the finishing of the worker
+    await sleep(100)
+
+    throw err
+  }
   // then notify the kernel that the initial scene was loaded
   batchEvents.events.push(initMessagesFinished())
 
