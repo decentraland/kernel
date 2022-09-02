@@ -164,7 +164,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage)))
 
-    const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
+    const avatar: Avatar = ensureAvatarCompatibilityFormat(profile)
     avatar.userId = userId
 
     if (shouldReadProfileFromLocalStorage) {
@@ -219,10 +219,9 @@ function* getRemoteProfile(
   version?: number
 ): Generator<CallEffect<RemoteProfile> | CallEffect<Array<Avatar>> | RemoteProfile> {
   try {
-    const remoteProfile: RemoteProfile = (yield call(profileServerRequest, userId, version)) as any
+    const remoteProfile: RemoteProfile = (yield call(profileServerRequest, userId, version)) as RemoteProfile
 
     const profiles: Avatar[] = (yield call(processRemoteProfiles, [remoteProfile], [userId])) as Array<Avatar>
-
     return profiles[0]
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
@@ -256,13 +255,20 @@ async function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[
         return null
       }
 
-      avatar = ensureAvatarCompatibilityFormat(avatar)
-      if (!validateAvatar(avatar)) {
+      try {
+        avatar = ensureAvatarCompatibilityFormat(avatar)
+        if (!validateAvatar(avatar)) {
+          defaultLogger.warn(`Remote avatar for users is invalid.`, avatar, validateAvatar.errors)
+          trackEvent(REMOTE_AVATAR_IS_INVALID, {
+            avatar
+          })
+          return null
+        }
+      } catch (error) {
         defaultLogger.warn(`Remote avatar for users is invalid.`, avatar, validateAvatar.errors)
         trackEvent(REMOTE_AVATAR_IS_INVALID, {
           avatar
         })
-        store.dispatch(profileFailure((avatar as Avatar).userId, REMOTE_AVATAR_IS_INVALID))
         return null
       }
 
@@ -293,13 +299,11 @@ export async function profileServerRequest(userId: string, version?: number): Pr
     if (version) url = url + `&version=${version}`
 
     const response = await fetch(url)
-
     if (!response.ok) {
       throw new Error(`Invalid response from ${url}`)
     }
 
     const res: RemoteProfile[] = await response.json()
-
     return res[0] || { avatars: [], timestamp: Date.now() }
   } catch (e: any) {
     defaultLogger.error(e)
