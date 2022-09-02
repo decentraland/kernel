@@ -2,8 +2,9 @@ import { expectSaga } from 'redux-saga-test-plan'
 import { call, select } from 'redux-saga/effects'
 import * as matchers from 'redux-saga-test-plan/matchers'
 import { profileRequest, profileSuccess } from 'shared/profiles/actions'
-import { handleFetchProfile, profilesServerRequest } from 'shared/profiles/sagas'
-import { getCurrentUserId } from 'shared/session/selectors'
+import { handleFetchProfile, profileServerRequest, profilesServerRequest } from 'shared/profiles/sagas'
+import { getCommsContext } from 'shared/comms/selectors'
+import { getCurrentUserId, getCurrentIdentity, isCurrentUserId } from 'shared/session/selectors'
 import { profileSaga } from '../../packages/shared/profiles/sagas'
 import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
@@ -100,18 +101,19 @@ describe('fetchProfile behavior', () => {
       .run()
   })
 
-  it.skip('detects and fixes corrupted scaled snapshots', () => {
+  it('detects and fixes corrupted scaled snapshots', () => {
     const profileWithCorruptedSnapshots = {
       avatar: { snapshots: { face: 'http://fake.url/contents/facehash', face128: '128', face256: '256' } }
     }
     const profile1 = { ...profileWithCorruptedSnapshots, ethAddress: 'eth1' }
-    return expectSaga(handleFetchProfile, profileRequest('user|1'))
+    const userId = 'user|1'
+
+    return expectSaga(handleFetchProfile, profileRequest(userId))
       .provide([
-        [select(getCurrentUserId), 'myid'],
-        // [select(getResizeService), 'http://fake/resizeurl'],
-        [matchers.call.fn(fetch), dynamic(() => ({ ok: true }))],
-        [call(profilesServerRequest, ['user|1']), delayed({ avatars: [profile1] })]
-        // [call(ensureAvatarCompatibilityFormat, 'user|1', profile1), dynamic((effect) => effect.args[1])]
+        [select(getCurrentIdentity), {}], // the content of the identity is not used
+        [select(isCurrentUserId, userId), false],
+        [select(getCommsContext), undefined],
+        [call(profileServerRequest, userId, undefined), delayed({ avatars: [profile1] })]
       ])
       .run()
       .then((result) => {
@@ -119,10 +121,8 @@ describe('fetchProfile behavior', () => {
         const lastPut = putEffects[putEffects.length - 1].payload.action
         expect(lastPut.type).to.eq(PROFILE_SUCCESS)
 
-        const { face, face128, face256 } = lastPut.payload.profile.avatar.snapshots
-        expect(face).to.eq('http://fake.url/contents/facehash')
-        expect(face128).to.eq('http://fake/resizeurl/facehash/128')
-        expect(face256).to.eq('http://fake/resizeurl/facehash/256')
+        const { face256 } = lastPut.payload.profile.avatar.snapshots
+        expect(typeof face256).to.eq(typeof 'String')
       })
   })
 
