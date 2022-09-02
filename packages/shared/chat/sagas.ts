@@ -482,7 +482,7 @@ function initChatCommands() {
       sender: 'Decentraland',
       messageType: ChatMessageType.SYSTEM,
       timestamp: Date.now(),
-      body: 'Success.'
+      body: `Joining channel ${channelId}`
     }
   })
 }
@@ -519,8 +519,8 @@ function parseWhisperExpression(expression: string) {
  */
 function joinChannelError(channelId: string, message: string) {
   const joinChannelError: ChannelErrorPayload = {
-    channelId: channelId,
-    message: message
+    channelId,
+    message
   }
 
   // Send error message to unity
