@@ -114,7 +114,6 @@ describe('fetchProfile behavior', () => {
         [select(isCurrentUserId, userId), false],
         [select(getCommsContext), undefined],
         [call(profileServerRequest, userId, undefined), delayed({ avatars: [profile1] })]
-        // [call(ensureAvatarCompatibilityFormat, 'user|1', profile1), dynamic((effect) => effect.args[1])]
       ])
       .run()
       .then((result) => {
