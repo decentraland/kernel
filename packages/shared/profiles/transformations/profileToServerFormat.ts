@@ -4,6 +4,7 @@ import { Avatar, AvatarInfo, Profile } from '@dcl/schemas'
 import { AvatarForUserData } from 'shared/types'
 import { validateAvatar } from '../schemaValidation'
 import { trackEvent } from 'shared/analytics'
+import defaultLogger from 'shared/logger'
 
 type OldAvatar = Omit<Avatar, 'avatar'> & {
   avatar: AvatarForUserData
@@ -62,7 +63,8 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
   }
 
   if (!validateAvatar(ret)) {
-    trackEvent('invalid_schema', { schema: 'avatar', payload: ret })
+    defaultLogger.error('error validating schemas', validateAvatar.errors)
+    trackEvent('invalid_schema', { schema: 'avatar', payload: ret, errors: (validateAvatar.errors??[]).join(',') })
   }
 
   return ret
