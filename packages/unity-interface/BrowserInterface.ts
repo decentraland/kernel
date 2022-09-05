@@ -433,11 +433,11 @@ export class BrowserInterface {
       }
       store.dispatch(saveProfileDelta(update))
     } else {
-      defaultLogger.error('error validating schema', validateRendererSaveProfileV1.errors)
+      defaultLogger.error('error validating schema', validateRendererSaveProfileV0.errors)
       trackEvent('invalid_schema', {
         schema: 'SaveUserAvatar',
         payload: changes,
-        errors: (validateRendererSaveProfileV1.errors ?? []).map(($) => $.message).join(',')
+        errors: (validateRendererSaveProfileV0.errors ?? []).map(($) => $.message).join(',')
       })
       defaultLogger.error(
         'Unity sent invalid profile' +
