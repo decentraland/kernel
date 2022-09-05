@@ -26,7 +26,6 @@ import {
   FriendshipAction,
   PresenceStatus,
   CreateChannelPayload,
-  ChannelErrorPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   GetJoinedChannelsPayload,
   ChannelsInfoPayload,
@@ -34,7 +33,8 @@ import {
   MarkChannelMessagesAsSeenPayload,
   UpdateTotalUnseenMessagesPayload,
   GetChannelMessagesPayload,
-  AddChatMessagesPayload
+  AddChatMessagesPayload,
+  ChannelErrorPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -76,7 +76,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { sleep } from 'atomicHelpers/sleep'
-import { CHANNEL_RESERVED_IDS, getUserIdFromMatrix, validateRegexChannelId } from './utils'
+import { getUserIdFromMatrix } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
@@ -825,89 +825,84 @@ function logAndTrackError(message: string, e: any) {
 
 // Join or create channel
 async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
-  const client: SocialAPI | null = getSocialClient(store.getState())
-  if (!client) return
+  try {
+    const client: SocialAPI | null = getSocialClient(store.getState())
+    if (!client) return
 
-  const channelId = action.payload.channelId
-  const ownId = client.getUserId()
+    const channelId = action.payload.channelId
+    const ownId = client.getUserId()
 
-  // get or create channel
-  const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
+    // get or create channel
+    const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
 
-  const channel: ChannelInfoPayload = {
-    name: conversation.name!,
-    channelId: conversation.id,
-    unseenMessages: 0,
-    lastMessageTimestamp: undefined,
-    memberCount: 1,
-    description: '',
-    joined: true,
-    muted: false
+    const channel: ChannelInfoPayload = {
+      name: conversation.name!,
+      channelId: conversation.id,
+      unseenMessages: 0,
+      lastMessageTimestamp: undefined,
+      memberCount: 1,
+      description: '',
+      joined: true,
+      muted: false
+    }
+
+    if (!created) {
+      await client.joinChannel(conversation.id)
+
+      const joinedChannel = client.getChannel(conversation.id)
+
+      channel.unseenMessages = joinedChannel?.unreadMessages?.length || 0
+      channel.lastMessageTimestamp = joinedChannel?.lastEventTimestamp
+      channel.memberCount = joinedChannel?.userIds?.length || 0
+    }
+
+    // parse channel info
+    const channelsInfo: ChannelsInfoPayload = {
+      channelsInfoPayload: [channel]
+    }
+
+    // send confirmation message to unity
+    getUnityInstance().JoinChannelConfirmation(channelsInfo)
+  } catch {
+    // Todo Juli: Sync with custom errors from matrix
+    notifyChannelError(action.payload.channelId, '')
   }
-
-  if (!created) {
-    await client.joinChannel(conversation.id)
-
-    const joinedChannel = client.getChannel(conversation.id)
-
-    channel.unseenMessages = joinedChannel?.unreadMessages?.length || 0
-    channel.lastMessageTimestamp = joinedChannel?.lastEventTimestamp
-    channel.memberCount = joinedChannel?.userIds?.length || 0
-  }
-
-  // parse channel info
-  const channelsInfo: ChannelsInfoPayload = {
-    channelsInfoPayload: [channel]
-  }
-
-  // send confirmation message to unity
-  getUnityInstance().JoinChannelConfirmation(channelsInfo)
 }
 
 // Create channel
 export async function createChannel(request: CreateChannelPayload) {
-  const client: SocialAPI | null = getSocialClient(store.getState())
-  if (!client) return
+  try {
+    const client: SocialAPI | null = getSocialClient(store.getState())
+    if (!client) return
 
-  const channelId = request.channelId
-  const ownId = client.getUserId()
+    const channelId = request.channelId
+    const ownId = client.getUserId()
 
-  if (CHANNEL_RESERVED_IDS.includes(channelId)) {
-    joinChannelError(channelId, 'Reserved name')
-    return
+    // create channel
+    const { conversation } = await client.getOrCreateChannel(channelId, [ownId])
+
+    // parse channel info
+    const channelsInfo: ChannelsInfoPayload = {
+      channelsInfoPayload: [
+        {
+          name: conversation.name!,
+          channelId: conversation.id,
+          unseenMessages: 0,
+          lastMessageTimestamp: undefined,
+          memberCount: 1,
+          description: '',
+          joined: true,
+          muted: false
+        }
+      ]
+    }
+
+    // Send confirmation message to unity
+    getUnityInstance().JoinChannelConfirmation(channelsInfo)
+  } catch {
+    // Todo Juli: Sync with custom errors from matrix
+    notifyChannelError(request.channelId, '')
   }
-
-  if (!validateRegexChannelId(channelId)) {
-    joinChannelError(channelId, 'Bad regex')
-    return
-  }
-
-  // create channel
-  const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
-
-  if (!created) {
-    joinChannelError(channelId, 'Already exists')
-    return
-  }
-
-  // parse channel info
-  const channelsInfo: ChannelsInfoPayload = {
-    channelsInfoPayload: [
-      {
-        name: conversation.name!,
-        channelId: conversation.id,
-        unseenMessages: 0,
-        lastMessageTimestamp: undefined,
-        memberCount: 1,
-        description: '',
-        joined: true,
-        muted: false
-      }
-    ]
-  }
-
-  // Send confirmation message to unity
-  getUnityInstance().JoinChannelConfirmation(channelsInfo)
 }
 
 // Get unseen messages by channel
@@ -965,7 +960,7 @@ export async function markAsSeenChannelMessages(request: MarkChannelMessagesAsSe
   }
 
   // get total user unread messages
-  const totalUnreadMessages = client.getTotalUnseenMessages()
+  const totalUnreadMessages = client.getTotalUnseenMessages() // Todo Juli: once lazy loading is merged we should get the info from getTotalUnseenMessages()
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
     total: totalUnreadMessages
   }
@@ -979,24 +974,20 @@ export async function markAsSeenChannelMessages(request: MarkChannelMessagesAsSe
 }
 
 // Get channel messages
-export async function getChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
+export async function getChannelMessages(request: GetChannelMessagesPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const ownId = client.getUserId()
-
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
-  const messageId: string | undefined = !getChannelMessagesPayload.fromMessageId
-    ? undefined
-    : getChannelMessagesPayload.fromMessageId
+  const messageId: string | undefined = !request.fromMessageId ? undefined : request.fromMessageId
 
   // the message in question is in the middle of a window, so we multiply by two the limit in order to get the required messages.
-  let limit = getChannelMessagesPayload.limit
+  let limit = request.limit
   if (messageId !== undefined) {
     limit = limit * 2
   }
 
-  const cursorMessage = await client.getCursorOnMessage(getChannelMessagesPayload.channelId, messageId, {
+  const cursorMessage = await client.getCursorOnMessage(request.channelId, messageId, {
     initialSize: limit,
     limit
   })
@@ -1016,7 +1007,7 @@ export async function getChannelMessages(getChannelMessagesPayload: GetChannelMe
       timestamp: message.timestamp,
       body: message.text,
       sender: getUserIdFromMatrix(message.sender),
-      recipient: message.sender === ownId ? '' : getUserIdFromMatrix(ownId) // Todo Juli!: what should we send? check with explorer
+      recipient: request.channelId
     }))
   }
 
@@ -1024,11 +1015,11 @@ export async function getChannelMessages(getChannelMessagesPayload: GetChannelMe
 }
 
 /**
- * Send error message to unity
+ * Send channel error message to unity
  * @param channelId
  * @param message
  */
-function joinChannelError(channelId: string, message: string) {
+function notifyChannelError(channelId: string, message: string) {
   const joinChannelError: ChannelErrorPayload = {
     channelId: channelId,
     message: message
