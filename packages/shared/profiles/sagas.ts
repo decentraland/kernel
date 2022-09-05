@@ -546,7 +546,7 @@ async function generateRandomUserProfile(userId: string): Promise<Avatar> {
 
   let profile: Avatar | undefined = undefined
   try {
-    const profiles: RemoteProfile = await profilesServerRequest([`default${_number}`])[0]
+    const profiles: RemoteProfile = await profileServerRequest(`default${_number}`)
     if (profiles.avatars.length !== 0) {
       profile = profiles.avatars[0]
     }
