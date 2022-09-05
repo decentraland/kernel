@@ -1021,8 +1021,8 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
  */
 function notifyChannelError(channelId: string, message: string) {
   const joinChannelError: ChannelErrorPayload = {
-    channelId: channelId,
-    message: message
+    channelId,
+    message
   }
 
   // send error message to unity
