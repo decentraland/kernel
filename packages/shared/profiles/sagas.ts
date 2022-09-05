@@ -388,7 +388,8 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
     if (!validateAvatar(profile)) {
       trackEvent('invalid_schema', {
         schema: 'avatar',
-        payload: profile
+        payload: profile,
+        errors: (validateAvatar.errors ?? []).map(($) => $.message).join(',')
       })
     }
 
