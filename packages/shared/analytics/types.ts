@@ -1,3 +1,4 @@
+import { Avatar } from '@dcl/schemas'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
 import { ChatMessagePlayerType, ChatMessageType } from '../types'
 
@@ -75,4 +76,5 @@ export type TrackEvents = PositionTrackEvents & {
   ['Control Friend request sent']: Record<string, never> // {}
   ['Control Friend deleted']: Record<string, never> // {}
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
+  ['Remote avatar for profile is invalid']: { avatar: Avatar }
 }
