@@ -152,6 +152,7 @@ export type RendererSaveProfile = {
   body: string
   isSignUpFlow?: boolean
 }
+
 const color3Schema: JSONSchema<{ r: number; g: number; b: number; a: number }> = {
   type: 'object',
   required: ['r', 'g', 'b', 'a'],
@@ -163,7 +164,16 @@ const color3Schema: JSONSchema<{ r: number; g: number; b: number; a: number }> =
   }
 } as any
 
-export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
+const emoteSchema: JSONSchema<{ slot: number; urn: string }> = {
+  type: 'object',
+  required: ['slot', 'urn'],
+  properties: {
+    slot: { type: 'number', nullable: false },
+    urn: { type: 'string', nullable: false }
+  }
+}
+
+export const rendererSaveProfileSchemaV0: JSONSchema<RendererSaveProfile> = {
   type: 'object',
   required: ['avatar', 'body', 'face256'],
   properties: {
@@ -186,7 +196,34 @@ export const rendererSaveProfileSchema: JSONSchema<RendererSaveProfile> = {
   }
 } as any
 
-const validateRendererSaveProfile = generateLazyValidator<RendererSaveProfile>(rendererSaveProfileSchema)
+export const rendererSaveProfileSchemaV1: JSONSchema<RendererSaveProfile> = {
+  type: 'object',
+  required: ['avatar', 'body', 'face256'],
+  properties: {
+    face256: { type: 'string' },
+    body: { type: 'string' },
+    isSignUpFlow: { type: 'boolean', nullable: true },
+    avatar: {
+      type: 'object',
+      required: ['bodyShape', 'eyeColor', 'hairColor', 'name', 'skinColor', 'wearables'],
+      properties: {
+        bodyShape: { type: 'string' },
+        name: { type: 'string' },
+        eyeColor: color3Schema,
+        hairColor: color3Schema,
+        skinColor: color3Schema,
+        wearables: { type: 'array', items: { type: 'string' } },
+        emotes: { type: 'array', items: emoteSchema }
+      }
+    }
+  }
+} as any
+
+// This old schema should keep working until ADR74 is merged and renderer is released
+const validateRendererSaveProfileV0 = generateLazyValidator<RendererSaveProfile>(rendererSaveProfileSchemaV0)
+
+// This is the new one
+const validateRendererSaveProfileV1 = generateLazyValidator<RendererSaveProfile>(rendererSaveProfileSchemaV1)
 
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {
@@ -376,7 +413,7 @@ export class BrowserInterface {
   }
 
   public SaveUserAvatar(changes: RendererSaveProfile) {
-    if (validateRendererSaveProfile(changes)) {
+    if (validateRendererSaveProfileV1(changes as RendererSaveProfile)) {
       const update: Partial<Avatar> = {
         avatar: {
           bodyShape: changes.avatar.bodyShape,
@@ -392,13 +429,34 @@ export class BrowserInterface {
         }
       }
       store.dispatch(saveProfileDelta(update))
+    } else if (validateRendererSaveProfileV0(changes as RendererSaveProfile)) {
+      const update: Partial<Avatar> = {
+        avatar: {
+          bodyShape: changes.avatar.bodyShape,
+          eyes: { color: changes.avatar.eyeColor },
+          hair: { color: changes.avatar.hairColor },
+          skin: { color: changes.avatar.skinColor },
+          wearables: changes.avatar.wearables,
+          emotes: (changes.avatar.emotes ?? []).map((value, index) => ({ slot: index, urn: value as any as string })),
+          snapshots: {
+            body: changes.body,
+            face256: changes.face256
+          }
+        }
+      }
+      store.dispatch(saveProfileDelta(update))
     } else {
-      trackEvent('invalid_schema', { schema: 'SaveUserAvatar', payload: changes })
+      defaultLogger.error('error validating schema', validateRendererSaveProfileV0.errors)
+      trackEvent('invalid_schema', {
+        schema: 'SaveUserAvatar',
+        payload: changes,
+        errors: (validateRendererSaveProfileV0.errors ?? []).map(($) => $.message).join(',')
+      })
       defaultLogger.error(
         'Unity sent invalid profile' +
           JSON.stringify(changes) +
           ' Errors: ' +
-          JSON.stringify(validateRendererSaveProfile.errors)
+          JSON.stringify(validateRendererSaveProfileV1.errors)
       )
     }
   }
