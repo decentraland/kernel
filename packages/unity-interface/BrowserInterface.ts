@@ -600,7 +600,7 @@ export class BrowserInterface {
     if (message.action === FriendshipAction.REQUESTED_TO) {
       const avatar = await ensureFriendProfile(userId)
 
-      if (isAddress(userId)) {
+      if (isAddress(userId) && avatar) {
         found = avatar.hasConnectedWeb3 || false
       } else {
         const profileByName = findProfileByName(state, userId)
