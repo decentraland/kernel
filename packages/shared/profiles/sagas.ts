@@ -229,7 +229,7 @@ function* getRemoteProfile(
     return profiles[0]
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
-      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
+      defaultLogger.error(`Error requesting profile for auth check ${userId}, `, error)
     }
   }
   return null
@@ -245,7 +245,7 @@ function* getRemoteProfiles(
     return profiles
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
-      defaultLogger.log(`Error requesting profiles for auth check ${userIds}, `, error)
+      defaultLogger.error(`Error requesting profiles for auth check ${userIds}, `, error)
     }
   }
   return null
