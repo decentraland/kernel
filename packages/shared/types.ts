@@ -730,3 +730,59 @@ export type AvatarRendererRemovedMessage = {
 } & AvatarRendererBasePayload
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
+
+export type CreateChannelPayload = {
+  channelId: string
+}
+
+export type ChannelErrorPayload = {
+  channelId: string
+  message: string
+}
+
+export type ChannelInfoPayload = {
+  name: string // the name of the channel
+  channelId: string // the conversation id
+  unseenMessages: number
+  lastMessageTimestamp: number | undefined
+  memberCount: number
+  description: string
+  joined: boolean
+  muted: boolean
+}
+
+export type ChannelsInfoPayload = {
+  channelsInfoPayload: ChannelInfoPayload[]
+}
+
+export type MarkChannelMessagesAsSeenPayload = {
+  channelId: string
+}
+
+export type UpdateTotalUnseenMessagesByChannelPayload = {
+  unseenChannelMessages: {
+    channelId: string
+    count: number
+  }[] // the unseen messages for each channel
+}
+
+export type GetChannelMessagesPayload = {
+  channelId: string
+  limit: number // max amount of entries to request
+  fromMessageId: string // pivot id to skip entries
+}
+
+export type GetChannelsPayload = {
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+  name: string // text to match
+}
+
+export type GetJoinedChannelsPayload = {
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+}
+
+export type LeaveChannelPayload = {
+  channelId: string
+}
