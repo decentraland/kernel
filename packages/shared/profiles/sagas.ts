@@ -185,7 +185,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   }
 }
 
-export function* handleFetchProfiles(action: ProfilesRequestAction): any {
+export function* handleFetchProfiles(action: ProfilesRequestAction) {
   const { userIds } = action.payload
 
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
@@ -193,11 +193,15 @@ export function* handleFetchProfiles(action: ProfilesRequestAction): any {
   if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
 
   try {
-    const userIdsToFetch = userIds.filter((userId) => userId.toLowerCase() !== identity.address.toLowerCase())
-    const isFetchingOwnUser = userIds.some((userId) => userId.toLowerCase() === identity.address.toLowerCase())
+    const ownUserId = identity.address.toLowerCase()
 
-    const avatars: Avatar[] = yield (!isFetchingOwnUser && call(getRemoteProfiles, userIdsToFetch)) || []
+    const otherUserIdsToFetch = userIds.filter((userId) => userId.toLowerCase() !== ownUserId)
+    const isFetchingOwnUser = userIds.some((userId) => userId.toLowerCase() === ownUserId)
 
+    // fetch other user ids from remote server
+    const avatars: Avatar[] = yield call(getRemoteProfiles, otherUserIdsToFetch) || []
+
+    // if fetching the current user profile, get it from the local storage
     const ownProfile: Avatar | null = isFetchingOwnUser && (yield call(readProfileFromLocalStorage))
     if (ownProfile && ownProfile.userId.length > 0) {
       avatars.push(ownProfile)
