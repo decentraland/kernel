@@ -1,5 +1,5 @@
 import { getProfile, getProfileStatusAndData, isAddedToCatalog } from './selectors'
-import { addedProfileToCatalog, profileRequest, profilesRequest } from './actions'
+import { addedProfileToCatalog, profileRequest, profilesRequest, profileSuccess } from './actions'
 import { ProfileType, REMOTE_AVATAR_IS_INVALID } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
@@ -27,13 +27,8 @@ export async function ensureFriendProfile(
 
   const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
-  const isInCatalog = isAddedToCatalog(store.getState(), userId)
   if (existingProfile && existingProfileWithCorrectVersion && !isCurrentUserId(store.getState(), userId)) {
-    if (!isInCatalog) {
-      await ensureUnityInterface()
-      getUnityInstance().AddUserProfileToCatalog(profileToRendererFormat(existingProfile, {}))
-      store.dispatch(addedProfileToCatalog(userId, existingProfile))
-    }
+    store.dispatch(profileSuccess(existingProfile))
     return existingProfile
   }
   return new Promise<Avatar>((resolve, reject) => {
