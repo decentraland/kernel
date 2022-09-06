@@ -595,7 +595,9 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
 }
 
 export function getUnseenMessagesByUser() {
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.DIRECT
+  )
 
   if (conversationsWithMessages.length === 0) {
     return
@@ -614,7 +616,9 @@ export function getUnseenMessagesByUser() {
 }
 
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.DIRECT
+  )
 
   if (conversationsWithMessages.length === 0) {
     return
@@ -1286,6 +1290,8 @@ export async function markAsSeenChannelMessages(request: MarkChannelMessagesAsSe
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
+  const ownId = client.getUserId()
+
   // get user's chat unread messages
   const unreadMessages = client.getConversationUnreadMessages(request.channelId).length
 
@@ -1295,7 +1301,7 @@ export async function markAsSeenChannelMessages(request: MarkChannelMessagesAsSe
   }
 
   // get total user unread messages
-  const totalUnreadMessages = client.getTotalUnseenMessages() // Todo Juli: once lazy loading is merged we should get the info from getTotalUnseenMessages()
+  const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
     total: totalUnreadMessages
   }
