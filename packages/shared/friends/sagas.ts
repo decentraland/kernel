@@ -45,7 +45,7 @@ import {
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { ensureFriendProfile, ensureFriendsProfile } from './ensureFriendProfile'
+import { ensureFriendProfile, ensureFriendsProfile } from '../profiles/ensureFriendsProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'

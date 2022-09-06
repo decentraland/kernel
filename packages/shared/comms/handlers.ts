@@ -29,7 +29,7 @@ import { handleCommsDisconnection } from './actions'
 import { Avatar } from '@dcl/schemas'
 import { Observable } from 'mz-observable'
 import { eventChannel } from 'redux-saga'
-import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { ensureFriendProfile } from 'shared/profiles/ProfileAsPromise'
 import { trackEvent } from 'shared/analytics'
 import { ProfileType } from 'shared/profiles/types'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
@@ -114,7 +114,7 @@ function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
       (currentProfile.status === 'ok' && currentProfile.data.version < profileVersion)
 
     if (shouldLoadRemoteProfile) {
-      ProfileAsPromise(
+      ensureFriendProfile(
         message.data.user,
         profileVersion,
         /* we ask for LOCAL to ask information about the profile using comms o not overload the servers*/

@@ -16,7 +16,11 @@ const PROFILE_SOFT_TIMEOUT_MS = 5000
 const PROFILE_HARD_TIMEOUT_MS = COMMS_PROFILE_TIMEOUT + 20000
 
 // This method creates a promise that makes sure that a profile was downloaded AND added to renderer's catalog
-export async function ProfileAsPromise(userId: string, version?: number, profileType?: ProfileType): Promise<Avatar> {
+export async function ensureFriendProfile(
+  userId: string,
+  version?: number,
+  profileType?: ProfileType
+): Promise<Avatar> {
   function isExpectedVersion(aProfile: Avatar) {
     return !version || aProfile.version >= version
   }
@@ -76,8 +80,8 @@ export async function ProfileAsPromise(userId: string, version?: number, profile
 
 // This method creates a promise that makes sure that an array of profiles were downloaded
 // but they will not be added to renderer's catalog
-export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType): Promise<Avatar[]> {
-  const usersToFech = userIds.filter((userId) => {
+export function ensureFriendsProfile(userIds: string[], profileType?: ProfileType): Promise<Avatar[]> {
+  const usersToFetch = userIds.filter((userId) => {
     const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
     const existingProfileWithCorrectVersion = existingProfile
 
@@ -121,8 +125,8 @@ export function ProfilesAsPromise(userIds: string[], profileType?: ProfileType):
       }
     })
 
-    if (usersToFech.length > 0) {
-      store.dispatch(profilesRequest(usersToFech, profileType))
+    if (usersToFetch.length > 0) {
+      store.dispatch(profilesRequest(usersToFetch, profileType))
     }
 
     setTimeout(() => {

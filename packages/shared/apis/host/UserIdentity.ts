@@ -1,5 +1,5 @@
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
-import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { ensureFriendProfile } from 'shared/profiles/ensureFriendsProfile'
 
 import { onLoginCompleted } from 'shared/session/sagas'
 import { sdkCompatibilityAvatar } from './Players'
@@ -30,7 +30,7 @@ export function registerUserIdentityServiceServerImplementation(port: RpcServerP
         return {}
       }
 
-      const profile = await ProfileAsPromise(identity?.address)
+      const profile = await ensureFriendProfile(identity?.address)
 
       return {
         data: {
