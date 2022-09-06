@@ -56,8 +56,8 @@ import {
 } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
-import { wearablesRequest } from 'shared/catalogs/actions'
-import { WearablesRequestFilters } from 'shared/catalogs/types'
+import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
+import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
 import { getSelectedNetwork } from 'shared/dao/selectors'
@@ -134,6 +134,7 @@ export type RendererSaveProfile = {
       slot: number
       urn: string
     }[]
+    version: number
   }
   face256: string
   body: string
@@ -177,7 +178,7 @@ export const rendererSaveProfileSchemaV0: JSONSchema<RendererSaveProfile> = {
         hairColor: color3Schema,
         skinColor: color3Schema,
         wearables: { type: 'array', items: { type: 'string' } },
-        emotes: { type: 'array', items: { type: 'string' } }
+        emotes: { type: 'array', items: emoteSchema }
       }
     }
   }
@@ -408,12 +409,15 @@ export class BrowserInterface {
           hair: { color: changes.avatar.hairColor },
           skin: { color: changes.avatar.skinColor },
           wearables: changes.avatar.wearables,
-          emotes: changes.avatar.emotes,
           snapshots: {
             body: changes.body,
             face256: changes.face256
           }
         }
+      }
+      // Send the emotes as a separate field only when the version equals 1 (meaning the catalysts are supporting the ADR74 emotes)
+      if (changes.avatar.version === 1 && update.avatar) {
+        update.avatar.emotes = changes.avatar.emotes
       }
       store.dispatch(saveProfileDelta(update))
     } else if (validateRendererSaveProfileV0(changes as RendererSaveProfile)) {
@@ -433,18 +437,14 @@ export class BrowserInterface {
       }
       store.dispatch(saveProfileDelta(update))
     } else {
-      defaultLogger.error('error validating schema', validateRendererSaveProfileV0.errors)
+      const errors = validateRendererSaveProfileV1.errors ?? validateRendererSaveProfileV0.errors
+      defaultLogger.error('error validating schema', errors)
       trackEvent('invalid_schema', {
         schema: 'SaveUserAvatar',
         payload: changes,
-        errors: (validateRendererSaveProfileV0.errors ?? []).map(($) => $.message).join(',')
+        errors: (errors ?? []).map(($) => $.message).join(',')
       })
-      defaultLogger.error(
-        'Unity sent invalid profile' +
-          JSON.stringify(changes) +
-          ' Errors: ' +
-          JSON.stringify(validateRendererSaveProfileV1.errors)
-      )
+      defaultLogger.error('Unity sent invalid profile' + JSON.stringify(changes) + ' Errors: ' + JSON.stringify(errors))
     }
   }
 
@@ -789,6 +789,25 @@ export class BrowserInterface {
       collectionIds: arrayCleanup(filters.collectionIds)
     }
     store.dispatch(wearablesRequest(newFilters, context))
+  }
+
+  public RequestEmotes(data: {
+    filters: {
+      ownedByUser: string | null
+      emoteIds?: string[] | null
+      collectionIds?: string[] | null
+      thirdPartyId?: string | null
+    }
+    context?: string
+  }) {
+    const { filters, context } = data
+    const newFilters: EmotesRequestFilters = {
+      ownedByUser: filters.ownedByUser ?? undefined,
+      thirdPartyId: filters.thirdPartyId ?? undefined,
+      emoteIds: arrayCleanup(filters.emoteIds),
+      collectionIds: arrayCleanup(filters.collectionIds)
+    }
+    store.dispatch(emotesRequest(newFilters, context))
   }
 
   public RequestUserProfile(userIdPayload: { value: string }) {
