@@ -10,6 +10,7 @@ import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState, EventDataToRuntimeEvent } from './runtime/Events'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+import { Scene } from '@dcl/schemas'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -38,7 +39,7 @@ export async function startSceneRuntime(client: RpcClient) {
   }
 
   const bootstrapData = await EnvironmentAPI.getBootstrapData({})
-  const fullData = JSON.parse(bootstrapData.entity?.metadataJson || '{}')
+  const fullData: Scene = JSON.parse(bootstrapData.entity?.metadataJson || '{}')
   const isPreview = await EnvironmentAPI.isPreviewMode({})
   const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed({})
 

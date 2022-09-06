@@ -280,6 +280,9 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 }
 
 function loadSceneModule(clientPort: RpcClientPort, moduleName: string): GenericRpcModule {
+  // - moduleNames that start with @decentraland are from ECS6 and they should load the legacy ones.
+  // - moduleNames that start with ~system, are the new ones that follow the protocol buffer generation
+  //    (a single object as @param, and a single object as @returns)
   const moduleToLoad = moduleName.replace(/^@decentraland\//, 'Legacy').replace(/^~system\//, '')
   try {
     if (moduleToLoad in LoadableAPIs) {
