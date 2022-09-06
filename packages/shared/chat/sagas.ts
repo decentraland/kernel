@@ -9,7 +9,7 @@ import {
   sendPrivateMessage
 } from './actions'
 import { uuid } from 'atomicHelpers/math'
-import { ChatMessageType, ChatMessagePlayerType, ChatMessage, ChannelErrorPayload } from 'shared/types'
+import { ChatMessageType, ChatMessagePlayerType, ChatMessage } from 'shared/types'
 import { EXPERIENCE_STARTED } from 'shared/loading/types'
 import { trackEvent } from 'shared/analytics'
 import { sendPublicChatMessage } from 'shared/comms'
@@ -30,7 +30,6 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
-import { CHANNEL_RESERVED_IDS, validateRegexChannelId } from 'shared/friends/utils'
 import { SocialAPI } from 'dcl-social-client'
 import { joinOrCreateChannel } from 'shared/friends/actions'
 
@@ -464,14 +463,6 @@ function initChatCommands() {
       }
     }
 
-    if (CHANNEL_RESERVED_IDS.includes(channelId)) {
-      return joinChannelError(channelId, 'Error joining/creating channel. Reserved.')
-    }
-
-    if (!validateRegexChannelId(channelId)) {
-      return joinChannelError(channelId, 'Error joining/creating channel. Regex.')
-    }
-
     const ownId = client.getUserId()
 
     // Join or create channel
@@ -510,27 +501,4 @@ function parseWhisperExpression(expression: string) {
   const restOfMessage = words.join(' ')
 
   return [userName, restOfMessage]
-}
-
-/**
- * Send error message to unity
- * @param channelId
- * @param message
- */
-function joinChannelError(channelId: string, message: string) {
-  const joinChannelError: ChannelErrorPayload = {
-    channelId,
-    message
-  }
-
-  // Send error message to unity
-  getUnityInstance().JoinChannelError(joinChannelError)
-
-  return {
-    messageId: uuid(),
-    messageType: ChatMessageType.SYSTEM,
-    sender: 'Decentraland',
-    timestamp: Date.now(),
-    body: message
-  }
 }
