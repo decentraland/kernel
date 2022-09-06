@@ -55,7 +55,7 @@ import {
   toggleVoiceChatRecording
 } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
-import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
+import { ensureFriendProfile } from 'shared/profiles/ensureFriendsProfile'
 import { wearablesRequest } from 'shared/catalogs/actions'
 import { WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
