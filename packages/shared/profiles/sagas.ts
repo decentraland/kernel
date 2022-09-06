@@ -155,6 +155,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
     const shouldFetchViaComms = commsContext && !shouldReadProfileFromLocalStorage
     const shouldLoadFromCatalyst = true
+    const shouldFallbackToRandomProfile = true
 
     const profile: Avatar =
       // first fetch avatar through comms
@@ -162,7 +163,9 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // and then via catalyst
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
       // then for my profile, try localStorage
-      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage)))
+      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
+      // lastly, come up with a random profile
+      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
 
     const avatar: Avatar = ensureAvatarCompatibilityFormat(profile)
     avatar.userId = userId
@@ -207,7 +210,17 @@ export function* handleFetchProfiles(action: ProfilesRequestAction) {
       avatars.push(ownProfile)
     }
 
-    yield put(profilesSuccess(avatars))
+    // generate a random profile for users that don't have one
+    // this is so that renderer can show them to the user
+    // and show them in the chat so no ghost notification is left hanging
+    const usersWithoutAvatars = otherUserIdsToFetch.filter(
+      (userId) => !avatars.some((avatar) => avatar.userId === userId)
+    )
+    const defaultAvatars = yield Promise.all(
+      usersWithoutAvatars.map(async (userId): Promise<Avatar> => generateRandomUserProfile(userId))
+    )
+
+    yield put(profilesSuccess(avatars.concat(defaultAvatars)))
   } catch (error: any) {
     trackEvent('error', {
       context: 'kernel#saga',
@@ -251,7 +264,7 @@ function* getRemoteProfiles(
   return null
 }
 
-async function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[]): Promise<Array<Avatar>> {
+async function processRemoteProfiles(profiles: RemoteProfile[], _userIds: string[]): Promise<Array<Avatar>> {
   const avatars: Array<Avatar> = profiles
     .map((profile): Avatar | null => {
       let avatar = profile.avatars[0]
@@ -283,15 +296,7 @@ async function processRemoteProfiles(profiles: RemoteProfile[], userIds: string[
     })
     .filter((avatar: Avatar | null): boolean => avatar !== null) as Array<Avatar>
 
-  // generate a random profile for users that don't have one
-  // this is so that renderer can show them to the user
-  // and show them in the chat so no ghost notification is left hanging
-  const usersWithoutAvatars = userIds.filter((userId) => !avatars.some((avatar) => avatar.userId === userId))
-  const defaultAvatars = await Promise.all(
-    usersWithoutAvatars.map(async (userId): Promise<Avatar> => generateRandomUserProfile(userId))
-  )
-
-  return avatars.concat(defaultAvatars)
+  return avatars
 }
 
 export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
