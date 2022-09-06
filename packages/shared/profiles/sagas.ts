@@ -221,7 +221,7 @@ function* getRemoteProfile(
   try {
     const remoteProfile: RemoteProfile = (yield call(profileServerRequest, userId, version)) as RemoteProfile
 
-    const profiles: Avatar[] = (yield call(processRemoteProfiles, [remoteProfile], [userId]))
+    const profiles: Avatar[] = (yield call(processRemoteProfiles, [remoteProfile], [userId])) as Array<Avatar>
     return profiles[0]
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
