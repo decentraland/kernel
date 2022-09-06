@@ -56,6 +56,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { sleep } from 'atomicHelpers/sleep'
+import { ProfileType } from 'shared/profiles/types'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -148,7 +149,7 @@ async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, so
   store.dispatch(updateUserData(userId, socialId))
 
   // ensure user profile is initialized and send to renderer
-  await ensureFriendsProfile([userId])
+  await ensureFriendsProfile([userId], ProfileType.DEPLOYED)
 
   // add to friendRequests & update renderer
   store.dispatch(updateFriendship(action, userId, true))
