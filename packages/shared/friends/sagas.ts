@@ -1016,16 +1016,17 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   getUnityInstance().AddChatMessages(addChatMessages)
 }
 
-// Enable / disable channels notifications
+// Enable / disable channel notifications
 export function muteChannel(muteChannel: MuteChannelPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const channel: Conversation | undefined = client.getChannel(muteChannel.channelId)
-
   const channelId = muteChannel.channelId.toLowerCase()
 
-  // add / remove channel to muted key from profile
+  const channel: Conversation | undefined = client.getChannel(channelId)
+  if (!channel) return
+
+  // mute / unmute channel
   if (muteChannel.muted) {
     store.dispatch(mutePlayers([channelId]))
   } else {
@@ -1035,11 +1036,11 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
   const channelsInfo: ChannelsInfoPayload = {
     channelsInfoPayload: [
       {
-        name: channel!.name!,
-        channelId: channel!.id,
-        unseenMessages: channel!.unreadMessages!.length,
-        lastMessageTimestamp: channel!.lastEventTimestamp!,
-        memberCount: channel!.userIds!.length,
+        name: channel.name!,
+        channelId: channel.id,
+        unseenMessages: channel.unreadMessages?.length || 0,
+        lastMessageTimestamp: channel.lastEventTimestamp || undefined,
+        memberCount: channel.userIds?.length || 1,
         description: '',
         joined: true,
         muted: muteChannel.muted
