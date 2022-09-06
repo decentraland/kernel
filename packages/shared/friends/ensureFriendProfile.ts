@@ -1,8 +1,6 @@
 import { Avatar } from '@dcl/schemas'
 import { ProfileAsPromise, ProfilesAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { ProfileType } from 'shared/profiles/types'
-import defaultLogger from 'shared/logger'
-import { trackEvent } from 'shared/analytics'
 
 export async function ensureFriendProfile(userId: string): Promise<Avatar> {
   return ProfileAsPromise(userId)
