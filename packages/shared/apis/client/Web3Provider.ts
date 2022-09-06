@@ -13,7 +13,7 @@ export interface MessageDict {
   [key: string]: string
 }
 
-export function createWeb3Provider<Context>(clientPort: RpcClientPort) {
+export function createLegacyWeb3Provider<Context>(clientPort: RpcClientPort) {
   const originalService = codegen.loadService<Context, EthereumControllerServiceDefinition>(
     clientPort,
     EthereumControllerServiceDefinition
