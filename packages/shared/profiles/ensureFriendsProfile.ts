@@ -1,12 +1,9 @@
 import { getProfile, getProfileStatusAndData, isAddedToCatalog } from './selectors'
-import { addedProfileToCatalog, profileRequest, profilesRequest, profileSuccess } from './actions'
+import { profileRequest, profilesRequest, profileSuccess } from './actions'
 import { ProfileType, REMOTE_AVATAR_IS_INVALID } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { Avatar } from '@dcl/schemas'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { profileToRendererFormat } from './transformations/profileToRendererFormat'
-import { ensureUnityInterface } from 'shared/renderer'
 import { isCurrentUserId } from 'shared/session/selectors'
 
 // We resolve a profile with an older version after this time, if there is that info
