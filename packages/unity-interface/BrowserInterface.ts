@@ -598,16 +598,27 @@ export class BrowserInterface {
 
     // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
     if (message.action === FriendshipAction.REQUESTED_TO) {
-      const avatar = await ensureFriendProfile(userId)
+      try {
+        const avatar = await ensureFriendProfile(userId)
 
-      if (isAddress(userId) && avatar) {
-        found = avatar.hasConnectedWeb3 || false
-      } else {
-        const profileByName = findProfileByName(state, userId)
-        if (profileByName) {
-          userId = profileByName.userId
-          found = true
+        if (isAddress(userId)) {
+          found = avatar.hasConnectedWeb3 || false
+        } else {
+          const profileByName = findProfileByName(state, userId)
+          if (profileByName) {
+            userId = profileByName.userId
+            found = true
+          }
         }
+      } catch (error) {
+        const message = 'Failed while ensuring friend profile'
+        defaultLogger.error(message, error)
+
+        trackEvent('error', {
+          context: 'kernel#saga',
+          message: message,
+          stack: '' + error
+        })
       }
     }
 
