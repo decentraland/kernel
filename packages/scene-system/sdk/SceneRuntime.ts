@@ -10,6 +10,7 @@ import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState, EventDataToRuntimeEvent } from './runtime/Events'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+import { Scene } from '@dcl/schemas'
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
@@ -37,19 +38,19 @@ export async function startSceneRuntime(client: RpcClient) {
     events: []
   }
 
-  const bootstrapData = await EnvironmentAPI.getBootstrapData()
-  const fullData = bootstrapData.data
-  const isPreview = await EnvironmentAPI.isPreviewMode()
-  const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed()
+  const bootstrapData = await EnvironmentAPI.getBootstrapData({})
+  const fullData: Scene = JSON.parse(bootstrapData.entity?.metadataJson || '{}')
+  const isPreview = await EnvironmentAPI.isPreviewMode({})
+  const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed({})
 
-  const explorerConfiguration = await EnvironmentAPI.getExplorerConfiguration()
+  const explorerConfiguration = await EnvironmentAPI.getExplorerConfiguration({})
 
-  if (!bootstrapData || !bootstrapData.main) {
+  if (!fullData || !fullData.main) {
     throw new Error(`No boostrap data`)
   }
 
-  const mappingName = bootstrapData.main
-  const mapping = bootstrapData.mappings.find(($) => $.file === mappingName)
+  const mappingName = fullData.main
+  const mapping = bootstrapData.entity?.content.find(($) => $.file === mappingName)
 
   if (!mapping) {
     await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
@@ -149,7 +150,7 @@ export async function startSceneRuntime(client: RpcClient) {
       clientPort,
       onError: (err: Error) => devToolsAdapter.error(err),
       onLog: (...args: any) => devToolsAdapter.log(...args),
-      sceneId: bootstrapData.sceneId,
+      sceneId: bootstrapData.id,
       eventState,
       batchEvents,
       EngineAPI,
@@ -164,7 +165,7 @@ export async function startSceneRuntime(client: RpcClient) {
       canUseFetch,
       canUseWebsocket,
       log: dcl.log,
-      previewMode: isPreview || unsafeAllowed
+      previewMode: isPreview.isPreview || unsafeAllowed.status
     })
 
     if (bootstrapData.useFPSThrottling === true) {
