@@ -420,12 +420,14 @@ function* refreshFriends() {
     getUnityInstance().InitializeFriends(initFriendsMessage)
     getUnityInstance().InitializeChat(initChatMessage)
 
-    const allProfilesToObtain = friendIds
+    // all profiles to obtain, deduped
+    const allProfilesToObtain: string[] = friendIds
       .concat(requestedFromIds.map((x) => x.userId))
       .concat(requestedToIds.map((x) => x.userId))
+      .filter((each, i) => allProfilesToObtain.indexOf(each) === i)
 
-    // yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
-    // TODO - ensureFriendProfile for each of allProfilesToObtain - moliva - 2022/09/07
+    const ensureFriendProfilesPromises = allProfilesToObtain.map((userId) => ensureFriendProfile(userId))
+    yield Promise.all(ensureFriendProfilesPromises).catch(logger.error)
 
     yield put(
       updatePrivateMessagingState({
