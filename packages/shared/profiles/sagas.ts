@@ -150,6 +150,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
     const shouldFetchViaComms = commsContext && !shouldReadProfileFromLocalStorage
     const shouldLoadFromCatalyst = true
+    const shouldFallbackToRandomProfile = true
 
     const profile: Avatar =
       // first fetch avatar through comms
