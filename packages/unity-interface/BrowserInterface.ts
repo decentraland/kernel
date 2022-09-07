@@ -142,7 +142,6 @@ export type RendererSaveProfile = {
       slot: number
       urn: string
     }[]
-    version: number
   }
   face256: string
   body: string
@@ -420,12 +419,9 @@ export class BrowserInterface {
           snapshots: {
             body: changes.body,
             face256: changes.face256
-          }
+          },
+          emotes: changes.avatar.emotes
         }
-      }
-      // Send the emotes as a separate field only when the version equals 1 (meaning the catalysts are supporting the ADR74 emotes)
-      if (changes.avatar.version === 1 && update.avatar) {
-        update.avatar.emotes = changes.avatar.emotes
       }
       store.dispatch(saveProfileDelta(update))
     } else if (validateRendererSaveProfileV0(changes as RendererSaveProfile)) {
