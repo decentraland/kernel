@@ -47,7 +47,8 @@ import {
   ChannelInfoPayload,
   MarkChannelMessagesAsSeenPayload,
   GetChannelMessagesPayload,
-  ChannelErrorPayload
+  ChannelErrorPayload,
+  MuteChannelPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -96,6 +97,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
+import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -434,6 +436,8 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
 
   let totalUnseenMessages = 0
 
+  const mutedIds = getProfile(store.getState(), ownId)?.muted
+
   for (const conv of conversationsWithUnreadMessages) {
     const socialId = conv.userIds?.find((userId) => userId !== ownId)
     if (!socialId) {
@@ -443,6 +447,10 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
     const userId = getUserIdFromMatrix(socialId)
 
     if (!friendIds.some((friendIds) => friendIds === userId)) {
+      continue
+    }
+
+    if (mutedIds?.includes(conv.id)) {
       continue
     }
 
@@ -1396,4 +1404,40 @@ function getTotalUnseenMessagesByChannel() {
   }
 
   return updateTotalUnseenMessagesByChannelPayload
+}
+
+// Enable / disable channel notifications
+export function muteChannel(muteChannel: MuteChannelPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channelId = muteChannel.channelId.toLowerCase()
+
+  const channel: Conversation | undefined = client.getChannel(channelId)
+  if (!channel) return
+
+  // mute / unmute channel
+  if (muteChannel.muted) {
+    store.dispatch(mutePlayers([channelId]))
+  } else {
+    store.dispatch(unmutePlayers([channelId]))
+  }
+
+  const channelsInfo: ChannelsInfoPayload = {
+    channelsInfoPayload: [
+      {
+        name: channel.name!,
+        channelId: channel.id,
+        unseenMessages: channel.unreadMessages?.length || 0,
+        lastMessageTimestamp: channel.lastEventTimestamp || undefined,
+        memberCount: channel.userIds?.length || 1,
+        description: '',
+        joined: true,
+        muted: muteChannel.muted
+      }
+    ]
+  }
+
+  // send message to unity
+  getUnityInstance().UpdateChannelInfo(channelsInfo)
 }

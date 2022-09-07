@@ -170,6 +170,7 @@ export interface IUnityInterface {
   ): void
   UpdateChannelInfo(channelsInfoPayload: ChannelsInfoPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
