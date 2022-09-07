@@ -424,7 +424,7 @@ function* refreshFriends() {
     const allProfilesToObtain: string[] = friendIds
       .concat(requestedFromIds.map((x) => x.userId))
       .concat(requestedToIds.map((x) => x.userId))
-      .filter((each, i) => allProfilesToObtain.indexOf(each) === i)
+      .filter((each, i, elements) => elements.indexOf(each) === i)
 
     const ensureFriendProfilesPromises = allProfilesToObtain.map((userId) => ensureFriendProfile(userId))
     yield Promise.all(ensureFriendProfilesPromises).catch(logger.error)
