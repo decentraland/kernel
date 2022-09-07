@@ -639,44 +639,55 @@ export class BrowserInterface {
   }
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
-    let { userId } = message
-    let found = false
-    const state = store.getState()
+    try {
+      let { userId } = message
+      let found = false
+      const state = store.getState()
 
-    // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
-    if (message.action === FriendshipAction.REQUESTED_TO) {
-      const avatar = await ensureFriendProfile(userId)
+      // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
+      if (message.action === FriendshipAction.REQUESTED_TO) {
+        const avatar = await ensureFriendProfile(userId)
 
-      if (isAddress(userId) && avatar) {
-        found = avatar.hasConnectedWeb3 || false
-      } else {
-        const profileByName = findProfileByName(state, userId)
-        if (profileByName) {
-          userId = profileByName.userId
+        if (isAddress(userId)) {
+          found = avatar.hasConnectedWeb3 || false
+        } else {
+          const profileByName = findProfileByName(state, userId)
+          if (profileByName) {
+            userId = profileByName.userId
+            found = true
+          }
+        }
+      }
+
+      if (!found) {
+        // if user profile was not found on server -> no connected web3, check if it's a claimed name
+        const net = getSelectedNetwork(state)
+        const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
+        if (address) {
+          // if an address was found for the name -> set as user id & add that instead
+          userId = address
           found = true
         }
       }
-    }
 
-    if (!found) {
-      // if user profile was not found on server -> no connected web3, check if it's a claimed name
-      const net = getSelectedNetwork(state)
-      const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
-      if (address) {
-        // if an address was found for the name -> set as user id & add that instead
-        userId = address
-        found = true
+      if (message.action === FriendshipAction.REQUESTED_TO && !found) {
+        // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
+        getUnityInstance().FriendNotFound(userId)
+        return
       }
-    }
 
-    if (message.action === FriendshipAction.REQUESTED_TO && !found) {
-      // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
-      getUnityInstance().FriendNotFound(userId)
-      return
-    }
+      store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+    } catch (error) {
+      const message = 'Failed while processing updating friendship status'
+      defaultLogger.error(message, error)
 
-    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-    store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: message,
+        stack: '' + error
+      })
+    }
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {

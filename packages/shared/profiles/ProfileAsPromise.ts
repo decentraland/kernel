@@ -1,12 +1,9 @@
 import { getProfile, getProfileStatusAndData, isAddedToCatalog } from './selectors'
-import { addedProfileToCatalog, profileRequest } from './actions'
+import { profileRequest, profileSuccess } from './actions'
 import { ProfileType } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { Avatar } from '@dcl/schemas'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { profileToRendererFormat } from './transformations/profileToRendererFormat'
-import { ensureUnityInterface } from 'shared/renderer'
 import { isCurrentUserId } from 'shared/session/selectors'
 
 // We resolve a profile with an older version after this time, if there is that info
@@ -23,13 +20,8 @@ export async function ProfileAsPromise(userId: string, version?: number, profile
 
   const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
-  const isInCatalog = isAddedToCatalog(store.getState(), userId)
   if (existingProfile && existingProfileWithCorrectVersion && !isCurrentUserId(store.getState(), userId)) {
-    if (!isInCatalog) {
-      await ensureUnityInterface()
-      getUnityInstance().AddUserProfileToCatalog(profileToRendererFormat(existingProfile, {}))
-      store.dispatch(addedProfileToCatalog(userId, existingProfile))
-    }
+    store.dispatch(profileSuccess(existingProfile))
     return existingProfile
   }
   return new Promise<Avatar>((resolve, reject) => {
