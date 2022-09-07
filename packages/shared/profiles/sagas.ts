@@ -154,10 +154,12 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const profile: Avatar =
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
+      // then for my profile, try localStorage
+      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
-      // then for my profile, try localStorage
-      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage)))
+      // lastly, come up with a random profile
+      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
 
     const avatar: Avatar = ensureAvatarCompatibilityFormat(profile)
     avatar.userId = userId
@@ -336,9 +338,11 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
     } as Avatar
 
     if (!validateAvatar(profile)) {
+      defaultLogger.error('error validating schemas', validateAvatar.errors)
       trackEvent('invalid_schema', {
         schema: 'avatar',
-        payload: profile
+        payload: profile,
+        errors: (validateAvatar.errors ?? []).map(($) => $.message).join(',')
       })
     }
 

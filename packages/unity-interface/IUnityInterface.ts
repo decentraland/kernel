@@ -38,6 +38,7 @@ import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { Emote } from 'shared/catalogs/types'
 
 export type RealmInfo = {
   serverName: string
@@ -124,6 +125,7 @@ export interface IUnityInterface {
   AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void
   AddUserProfileToCatalog(peerProfile: NewProfileForRenderer): void
   AddWearablesToCatalog(wearables: WearableV2[], context?: string): void
+  AddEmotesToCatalog(emotes: Emote[], context?: string): void
   WearablesRequestFailed(error: string, context: string | undefined): void
   RemoveWearablesFromCatalog(wearableIds: string[]): void
   ClearWearableCatalog(): void

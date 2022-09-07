@@ -13,67 +13,76 @@ export interface MessageDict {
   [key: string]: string
 }
 
-export function createEthereumControllerServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = codegen.loadService<Context, EthereumControllerServiceDefinition>(
-    clientPort,
-    EthereumControllerServiceDefinition
-  )
+export namespace EthereumControllerServiceClient {
+  export function create<Context>(clientPort: RpcClientPort) {
+    return codegen.loadService<Context, EthereumControllerServiceDefinition>(
+      clientPort,
+      EthereumControllerServiceDefinition
+    )
+  }
 
-  return {
-    ...originalService,
+  export function createLegacy<Context>(clientPort: RpcClientPort) {
+    const originalService = codegen.loadService<Context, EthereumControllerServiceDefinition>(
+      clientPort,
+      EthereumControllerServiceDefinition
+    )
 
-    /**
-     * Requires a generic payment in ETH or ERC20.
-     * @param  {string} [toAddress] - NFT asset id.
-     * @param  {number} [amount] - Exact amount of the order.
-     * @param  {string} [currency] - ETH or ERC20 supported token symbol
-     */
-    async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
-      const response = await originalService.requirePayment({ toAddress, amount, currency })
-      return JSON.parse(response.jsonAnyResponse)
-    },
+    return {
+      ...originalService,
 
-    /**
-     * Takes a dictionary, converts it to string with correct format and signs it.
-     * @param  {messageToSign} [MessageDict] - Message in an object format.
-     * @return {object} - Promise of message and signature in an object.
-     */
-    async signMessage(
-      message: MessageDict
-    ): Promise<{ message: string; hexEncodedMessage: string; signature: string }> {
-      return await originalService.signMessage({ message })
-    },
+      /**
+       * Requires a generic payment in ETH or ERC20.
+       * @param  {string} [toAddress] - NFT asset id.
+       * @param  {number} [amount] - Exact amount of the order.
+       * @param  {string} [currency] - ETH or ERC20 supported token symbol
+       */
+      async requirePayment(toAddress: string, amount: number, currency: string): Promise<any> {
+        const response = await originalService.requirePayment({ toAddress, amount, currency })
+        return JSON.parse(response.jsonAnyResponse)
+      },
 
-    /**
-     * Takes a message string, parses it and converts to object.
-     * @param  {message} [string] - Message in a string format.
-     * @return {object} - Promise of message as a MessageDict.
-     * @internal
-     */
-    async convertMessageToObject(message: string): Promise<MessageDict> {
-      return (await originalService.convertMessageToObject({ message })).dict
-    },
+      /**
+       * Takes a dictionary, converts it to string with correct format and signs it.
+       * @param  {messageToSign} [MessageDict] - Message in an object format.
+       * @return {object} - Promise of message and signature in an object.
+       */
+      async signMessage(
+        message: MessageDict
+      ): Promise<{ message: string; hexEncodedMessage: string; signature: string }> {
+        return await originalService.signMessage({ message })
+      },
 
-    /**
-     * Used to build a Ethereum provider
-     */
-    async sendAsync(message: RPCSendableMessage): Promise<any> {
-      return JSON.parse(
-        (
-          await originalService.sendAsync({
-            id: message.id,
-            method: message.method,
-            jsonParams: JSON.stringify(message.params)
-          })
-        ).jsonAnyResponse
-      )
-    },
+      /**
+       * Takes a message string, parses it and converts to object.
+       * @param  {message} [string] - Message in a string format.
+       * @return {object} - Promise of message as a MessageDict.
+       * @internal
+       */
+      async convertMessageToObject(message: string): Promise<MessageDict> {
+        return (await originalService.convertMessageToObject({ message })).dict
+      },
 
-    /**
-     * Returns the user's public key (address)
-     */
-    async getUserAccount(): Promise<string> {
-      return (await originalService.getUserAccount({})).address!
+      /**
+       * Used to build a Ethereum provider
+       */
+      async sendAsync(message: RPCSendableMessage): Promise<any> {
+        return JSON.parse(
+          (
+            await originalService.sendAsync({
+              id: message.id,
+              method: message.method,
+              jsonParams: JSON.stringify(message.params)
+            })
+          ).jsonAnyResponse
+        )
+      },
+
+      /**
+       * Returns the user's public key (address)
+       */
+      async getUserAccount(): Promise<string> {
+        return (await originalService.getUserAccount({})).address!
+      }
     }
   }
 }
