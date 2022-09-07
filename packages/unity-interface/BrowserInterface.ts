@@ -416,7 +416,7 @@ export class BrowserInterface {
         }
       }
       // Send the emotes as a separate field only when the version equals 1 (meaning the catalysts are supporting the ADR74 emotes)
-      if (changes.avatar.version === 1 && update.avatar) {
+      if (changes.avatar.emotes) {
         update.avatar.emotes = changes.avatar.emotes
       }
       store.dispatch(saveProfileDelta(update))
