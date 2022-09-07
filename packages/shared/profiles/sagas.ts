@@ -98,7 +98,7 @@ function* initialRemoteProfileLoad() {
   let profile: Avatar
 
   try {
-    profile = yield call(ProfileAsPromise, userId, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
+    profile = yield call(ProfileAsPromise, userId, undefined, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
   } catch (e: any) {
     ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
     BringDownClientAndShowError(UNEXPECTED_ERROR)
@@ -261,34 +261,6 @@ export async function profileServerRequest(userId: string, version?: number): Pr
   } catch (e: any) {
     defaultLogger.error(e)
     return { avatars: [], timestamp: Date.now() }
-  }
-}
-
-export async function profilesServerRequest(userIds: string[]): Promise<RemoteProfile[]> {
-  const state = store.getState()
-  const catalystUrl = getCatalystServer(state)
-
-  try {
-    const url = `${catalystUrl}/lambdas/profiles`
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ids: userIds })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Invalid response from ${url}`)
-    }
-
-    const res = await response.json()
-
-    return res || [{ avatars: [], timestamp: Date.now }]
-  } catch (e: any) {
-    defaultLogger.error(e)
-    return [{ avatars: [], timestamp: Date.now() }]
   }
 }
 
@@ -500,7 +472,7 @@ async function generateRandomUserProfile(userId: string): Promise<Avatar> {
 
   let profile: Avatar | undefined = undefined
   try {
-    const profiles: RemoteProfile = await profilesServerRequest([`default${_number}`])[0]
+    const profiles: RemoteProfile = await profileServerRequest(`default${_number}`)
     if (profiles.avatars.length !== 0) {
       profile = profiles.avatars[0]
     }

@@ -6,12 +6,6 @@ import {
   PROFILE_FAILURE,
   PROFILE_REQUEST,
   ProfileSuccessAction,
-  PROFILES_SUCCESS,
-  PROFILES_REQUEST,
-  ProfilesSuccessAction,
-  ProfilesFailureAction,
-  PROFILES_FAILURE,
-  ProfilesRequestAction,
   AddedProfilesToCatalog,
   ADDED_PROFILES_TO_CATALOG,
   ProfileFailureAction
@@ -48,57 +42,6 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
             data: profile,
             status: 'ok'
           }
-        }
-      }
-    case PROFILES_REQUEST:
-      const loadingUserIds = (action as ProfilesRequestAction).payload.userIds
-
-      const loadingProfilesState = {}
-      for (const userId of loadingUserIds) {
-        loadingProfilesState[userId] = {
-          ...state.userInfo[userId],
-          status: 'loading'
-        }
-      }
-
-      return {
-        ...state,
-        userInfo: {
-          ...state.userInfo,
-          ...loadingProfilesState
-        }
-      }
-    case PROFILES_SUCCESS:
-      const { profiles } = (action as ProfilesSuccessAction).payload
-      const profilesState = {}
-      for (const profile of profiles) {
-        profilesState[profile.userId] = {
-          data: profile,
-          status: 'ok'
-        }
-      }
-
-      return {
-        ...state,
-        userInfo: {
-          ...state.userInfo,
-          ...profilesState
-        }
-      }
-
-    case PROFILES_FAILURE:
-      const { userIds } = (action as ProfilesFailureAction).payload
-
-      const newProfilesState = {}
-      for (const userId of userIds) {
-        newProfilesState[userId] = { status: 'error', data: action.payload.error }
-      }
-
-      return {
-        ...state,
-        userInfo: {
-          ...state.userInfo,
-          ...newProfilesState
         }
       }
     case PROFILE_FAILURE:

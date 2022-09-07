@@ -8,10 +8,6 @@ export const PROFILE_REQUEST = '[PROFILE] Fetch request'
 export const PROFILE_SUCCESS = '[PROFILE] Fetch succeeded'
 export const PROFILE_FAILURE = '[PROFILE] Fetch failed'
 
-export const PROFILES_REQUEST = '[PROFILES] Fetch request'
-export const PROFILES_SUCCESS = '[PROFILES] Fetch succeeded'
-export const PROFILES_FAILURE = '[PROFILES] Fetch failed'
-
 export const SAVE_PROFILE = 'SAVE_PROFILE'
 export const SAVE_PROFILE_FAILURE = 'SAVE_PROFILE_FAILURE'
 
