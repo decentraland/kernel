@@ -24,9 +24,6 @@ export const SEND_PROFILE_TO_RENDERER = 'SEND_PROFILE_TO_RENDERER'
 export const profileRequest = (userId: string, profileType?: ProfileType, version?: number) =>
   action(PROFILE_REQUEST, { userId, profileType, version })
 
-export const profilesRequest = (userIds: string[], profileType?: ProfileType) =>
-  action(PROFILES_REQUEST, { userIds, profileType })
-
 /**
  * profileSuccess stores locally a profile and sends it to the renderer.
  * It can be the result of either a profileRequest or local profile loading/editing
@@ -37,13 +34,6 @@ export const profileFailure = (userId: string, error: any) => action(PROFILE_FAI
 export type ProfileRequestAction = ReturnType<typeof profileRequest>
 export type ProfileSuccessAction = ReturnType<typeof profileSuccess>
 export type ProfileFailureAction = ReturnType<typeof profileFailure>
-
-export const profilesSuccess = (profiles: Avatar[]) => action(PROFILES_SUCCESS, { profiles })
-export const profilesFailure = (userIds: string[], error: any) => action(PROFILES_FAILURE, { userIds, error })
-
-export type ProfilesRequestAction = ReturnType<typeof profilesRequest>
-export type ProfilesSuccessAction = ReturnType<typeof profilesSuccess>
-export type ProfilesFailureAction = ReturnType<typeof profilesFailure>
 
 // Profile update
 

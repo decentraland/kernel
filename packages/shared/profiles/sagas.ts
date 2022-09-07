@@ -21,11 +21,7 @@ import {
   profileSuccess,
   PROFILE_SUCCESS,
   ProfileSuccessAction,
-  profileFailure,
-  PROFILES_REQUEST,
-  ProfilesRequestAction,
-  profilesSuccess,
-  profilesFailure
+  profileFailure
 } from './actions'
 import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
@@ -82,7 +78,6 @@ export function* profileSaga(): any {
   yield takeEvery(USER_AUTHENTIFIED, initialRemoteProfileLoad)
   yield takeLatestByUserId(PROFILE_REQUEST, handleFetchProfile)
   yield takeLatestByUserId(PROFILE_SUCCESS, forwardProfileToRenderer)
-  yield takeEvery(PROFILES_REQUEST, handleFetchProfiles)
   yield fork(handleCommsProfile)
   yield debounce(200, DEPLOY_PROFILE_REQUEST, handleDeployProfile)
   yield takeEvery(SAVE_PROFILE, handleSaveLocalAvatar)
@@ -185,35 +180,6 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   }
 }
 
-export function* handleFetchProfiles(action: ProfilesRequestAction): any {
-  const { userIds } = action.payload
-
-  const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
-
-  if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
-
-  try {
-    const userIdsToFetch = userIds.filter((userId) => userId.toLowerCase() !== identity.address.toLowerCase())
-    const isFetchingOwnUser = userIds.some((userId) => userId.toLowerCase() === identity.address.toLowerCase())
-
-    const avatars: Avatar[] = yield (!isFetchingOwnUser && call(getRemoteProfiles, userIdsToFetch)) || []
-
-    const ownProfile: Avatar | null = isFetchingOwnUser && (yield call(readProfileFromLocalStorage))
-    if (ownProfile && ownProfile.userId.length > 0) {
-      avatars.push(ownProfile)
-    }
-
-    yield put(profilesSuccess(avatars))
-  } catch (error: any) {
-    trackEvent('error', {
-      context: 'kernel#saga',
-      message: `Error requesting profiles for ${userIds}: ${error}`,
-      stack: error.stack || ''
-    })
-    yield put(profilesFailure(userIds, `${error}`))
-  }
-}
-
 function* getRemoteProfile(
   userId: string,
   version?: number
@@ -226,22 +192,6 @@ function* getRemoteProfile(
   } catch (error: any) {
     if (error.message !== 'Profiles not found') {
       defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
-    }
-  }
-  return null
-}
-
-function* getRemoteProfiles(
-  userIds: string[]
-): Generator<CallEffect<RemoteProfile[]> | CallEffect<Array<Avatar>> | Array<Avatar>> {
-  try {
-    const remoteProfiles: RemoteProfile[] = (yield call(profilesServerRequest, userIds)) as Array<RemoteProfile>
-
-    const profiles: Avatar[] = (yield call(processRemoteProfiles, remoteProfiles, userIds)) as Array<Avatar>
-    return profiles
-  } catch (error: any) {
-    if (error.message !== 'Profiles not found') {
-      defaultLogger.log(`Error requesting profiles for auth check ${userIds}, `, error)
     }
   }
   return null

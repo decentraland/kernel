@@ -70,7 +70,7 @@ import {
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { ensureFriendProfile, ensureFriendsProfile } from './ensureFriendProfile'
+import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
@@ -393,7 +393,8 @@ function* refreshFriends() {
       .concat(requestedFromIds.map((x) => x.userId))
       .concat(requestedToIds.map((x) => x.userId))
 
-    yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
+    // yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
+    // TODO - ensureFriendProfile for each of allProfilesToObtain - moliva - 2022/09/07
 
     yield put(
       updatePrivateMessagingState({
