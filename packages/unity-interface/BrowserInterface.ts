@@ -134,7 +134,6 @@ export type RendererSaveProfile = {
       slot: number
       urn: string
     }[]
-    version: number
   }
   face256: string
   body: string
