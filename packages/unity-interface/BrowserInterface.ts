@@ -412,11 +412,9 @@ export class BrowserInterface {
           snapshots: {
             body: changes.body,
             face256: changes.face256
-          }
+          },
+          emotes: changes.avatar.emotes
         }
-      }
-      if (changes.avatar?.emotes) {
-        update.avatar.emotes = changes.avatar.emotes
       }
       store.dispatch(saveProfileDelta(update))
     } else if (validateRendererSaveProfileV0(changes as RendererSaveProfile)) {
