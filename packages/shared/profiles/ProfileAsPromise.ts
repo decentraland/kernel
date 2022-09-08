@@ -21,8 +21,41 @@ export async function ProfileAsPromise(userId: string, version?: number, profile
   const [, existingProfile] = getProfileStatusAndData(store.getState(), userId)
   const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
   if (existingProfile && existingProfileWithCorrectVersion && !isCurrentUserId(store.getState(), userId)) {
-    store.dispatch(profileSuccess(existingProfile))
-    return existingProfile
+    // if the profile exists and is loaded in the catalog, return it; otherwise, wait for it
+    if (isAddedToCatalog(store.getState(), userId)) {
+      return existingProfile
+    } else {
+      return new Promise<Avatar>((resolve, reject) => {
+        let pending = true
+        const unsubscribe = store.subscribe(() => {
+          if (isAddedToCatalog(store.getState(), userId)) {
+            unsubscribe()
+            pending = false
+            return resolve(existingProfile)
+          }
+        })
+
+        setTimeout(() => {
+          if (pending) {
+            if (isAddedToCatalog(store.getState(), userId)) {
+              unsubscribe()
+              pending = false
+              resolve(existingProfile)
+            } else {
+              setTimeout(() => {
+                if (pending) {
+                  unsubscribe()
+                  pending = false
+                  reject(
+                    new Error(`Timed out trying to ensure profile ${userId} (version: ${version}) loaded to catalog`)
+                  )
+                }
+              }, PROFILE_HARD_TIMEOUT_MS - PROFILE_SOFT_TIMEOUT_MS)
+            }
+          }
+        }, PROFILE_SOFT_TIMEOUT_MS)
+      })
+    }
   }
   return new Promise<Avatar>((resolve, reject) => {
     let pending = true
