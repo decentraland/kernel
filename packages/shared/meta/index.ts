@@ -1,15 +1,15 @@
 import { store } from 'shared/store/isolatedStore'
-import { isMetaConfigurationInitiazed } from './selectors'
+import { isMetaConfigurationInitialized } from './selectors'
 
 export async function ensureMetaConfigurationInitialized(): Promise<void> {
-  const initialized = isMetaConfigurationInitiazed(store.getState())
+  const initialized = isMetaConfigurationInitialized(store.getState())
   if (initialized) {
     return Promise.resolve()
   }
 
   return new Promise<void>((resolve) => {
     const unsubscribe = store.subscribe(() => {
-      const initialized = isMetaConfigurationInitiazed(store.getState())
+      const initialized = isMetaConfigurationInitialized(store.getState())
       if (initialized) {
         unsubscribe()
         return resolve()
