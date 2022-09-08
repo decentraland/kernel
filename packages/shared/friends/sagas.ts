@@ -1456,18 +1456,14 @@ function getTotalUnseenMessagesByChannel() {
     return updateTotalUnseenMessagesByChannelPayload
   }
 
-  // get muted channels ids
+  // get muted channel ids
   const ownId = client.getUserId()
   const mutedIds = getProfile(store.getState(), ownId)?.muted
 
   for (const conv of conversationsWithMessages) {
-    let count = 0
     // prevent from counting unread messages of muted channels
-    if (!mutedIds?.includes(conv.conversation.id)) {
-      count = conv.conversation.unreadMessages?.length || 0
-    }
     updateTotalUnseenMessagesByChannelPayload.unseenChannelMessages.push({
-      count,
+      count: mutedIds?.includes(conv.conversation.id) ? 0 : conv.conversation.unreadMessages?.length || 0,
       channelId: conv.conversation.name!
     })
   }

@@ -197,7 +197,7 @@ describe('Friends sagas - Channels Feature', () => {
             sinon.reset()
         })
 
-        describe("When the user is joined to channels and some of them have unread messages", () => {
+        describe("When the user is joined to channels and there are unread messages in some of them", () => {
             it('Should send the total amount of unseen messages by channelId', () => {
                 const allCurrentConversationsWithMessagesFiltered = allCurrentConversations.
                     filter((conv) =>
@@ -211,6 +211,7 @@ describe('Friends sagas - Channels Feature', () => {
 
                 for (const conv of allCurrentConversationsWithMessagesFiltered) {
                     let count = 0
+                    // prevent from counting muted channels
                     if (!mutedIds.includes(conv.conversation.id)) {
                         count = conv.conversation.unreadMessages?.length || 0
                     }
