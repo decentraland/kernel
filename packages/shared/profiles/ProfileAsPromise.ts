@@ -1,5 +1,5 @@
 import { getProfile, getProfileStatusAndData, isAddedToCatalog } from './selectors'
-import { profileRequest, profileSuccess } from './actions'
+import { profileRequest } from './actions'
 import { ProfileType } from './types'
 import { COMMS_PROFILE_TIMEOUT } from 'config'
 import { store } from 'shared/store/isolatedStore'
