@@ -1437,23 +1437,37 @@ function notifyChannelError(channelId: string, message: string) {
  * Get list of total unseen messages by channelId
  */
 function getTotalUnseenMessagesByChannel() {
-  // get conversations messages
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.CHANNEL
-  )
-
   const updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload = {
     unseenChannelMessages: []
   }
+
+  // get conversations with messages
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.CHANNEL
+  )
 
   // it means the user is not joined to any channel
   if (conversationsWithMessages.length === 0) {
     return updateTotalUnseenMessagesByChannelPayload
   }
 
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) {
+    return updateTotalUnseenMessagesByChannelPayload
+  }
+
+  // get muted channels ids
+  const ownId = client.getUserId()
+  const mutedIds = getProfile(store.getState(), ownId)?.muted
+
   for (const conv of conversationsWithMessages) {
+    let count = 0
+    // prevent from counting unread messages of muted channels
+    if (!mutedIds?.includes(conv.conversation.id)) {
+      count = conv.conversation.unreadMessages?.length || 0
+    }
     updateTotalUnseenMessagesByChannelPayload.unseenChannelMessages.push({
-      count: conv.conversation.unreadMessages?.length || 0,
+      count,
       channelId: conv.conversation.name!
     })
   }

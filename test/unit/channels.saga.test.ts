@@ -1,11 +1,13 @@
 import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from "dcl-social-client"
+import * as friendsSagas from '../../packages/shared/friends/sagas'
 import * as friendsSelectors from 'shared/friends/selectors'
+import * as profilesSelectors from 'shared/profiles/selectors'
 import { getUserIdFromMatrix } from "shared/friends/utils"
 import { buildStore } from "shared/store/store"
 import { AddChatMessagesPayload, ChannelsInfoPayload, ChatMessageType, GetChannelMessagesPayload, GetJoinedChannelsPayload, UpdateTotalUnseenMessagesByChannelPayload } from "shared/types"
 import sinon from "sinon"
 import { getUnityInstance } from "unity-interface/IUnityInterface"
-import * as friendsSagas from '../../packages/shared/friends/sagas'
+import { Avatar } from "@dcl/schemas"
 
 const channelMessages: TextMessage[] = [
     {
@@ -41,6 +43,31 @@ const getMockedConversation = (channelId: string, type: ConversationType): Conve
     name: `cantique ${channelId}`,
 })
 
+const mutedIds = ['111']
+
+function getMockedAvatar(userId: string, name: string, muted: string[]): Avatar {
+    return {
+        avatar: {
+            snapshots: {
+                face256: '',
+                body: ''
+            },
+            eyes: { color: '' },
+            hair: { color: '' },
+            skin: { color: '' }
+        } as any,
+        description: '',
+        ethAddress: userId,
+        hasClaimedName: false,
+        muted: muted,
+        name,
+        tutorialStep: 1,
+        userId,
+        version: 1
+
+    }
+}
+
 const allCurrentConversations: Array<{ conversation: Conversation; unreadMessages: boolean }> = [
     {
         conversation: getMockedConversation('000', ConversationType.CHANNEL),
@@ -68,6 +95,7 @@ const stubClient = (start: number, end: number) => ({
 function mockStoreCalls(ops?: { start?: number, end?: number }) {
     sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
     sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient(ops?.start || 0, ops?.end || 0))
+    sinon.stub(profilesSelectors, 'getProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds))
 }
 
 describe('Friends sagas - Channels Feature', () => {
@@ -172,15 +200,22 @@ describe('Friends sagas - Channels Feature', () => {
         describe("When the user is joined to channels and some of them have unread messages", () => {
             it('Should send the total amount of unseen messages by channelId', () => {
                 const allCurrentConversationsWithMessagesFiltered = allCurrentConversations.
-                    filter((conv) => conv.conversation.type === ConversationType.CHANNEL && conv.unreadMessages === true)
+                    filter((conv) =>
+                        conv.conversation.type === ConversationType.CHANNEL
+                        && conv.unreadMessages === true
+                    )
 
                 const totalUnseenMessagesByChannel: UpdateTotalUnseenMessagesByChannelPayload = {
                     unseenChannelMessages: []
                 }
 
                 for (const conv of allCurrentConversationsWithMessagesFiltered) {
+                    let count = 0
+                    if (!mutedIds.includes(conv.conversation.id)) {
+                        count = conv.conversation.unreadMessages?.length || 0
+                    }
                     totalUnseenMessagesByChannel.unseenChannelMessages.push({
-                        count: conv.conversation.unreadMessages?.length || 0,
+                        count,
                         channelId: conv.conversation.name!
                     })
                 }
