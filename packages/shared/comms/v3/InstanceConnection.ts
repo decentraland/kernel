@@ -7,7 +7,7 @@ import { Position } from '../../comms/interface/utils'
 import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
 import { createDummyLogger, createLogger } from 'shared/logger'
-import { lastPlayerPositionReport } from 'shared/world/positionThings'
+import { lastPlayerPositionReport, positionObservable } from 'shared/world/positionThings'
 
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import { ProfileType } from 'shared/profiles/types'
@@ -65,7 +65,7 @@ export class InstanceConnection implements RoomConnection {
       }
     }
 
-    this.heartBeatInterval = setInterval(async () => {
+    const heartBeat = async () => {
       const position = this.selfPosition()
       if (position) {
         const d = HeartbeatMessage.encode({
@@ -82,7 +82,11 @@ export class InstanceConnection implements RoomConnection {
           await this.disconnect()
         }
       }
-    }, 2000)
+    }
+
+    this.heartBeatInterval = setInterval(heartBeat, 2000)
+
+    positionObservable.addOnce(() => heartBeat())
 
     this.islandChangedListener = await this.bff.addSystemTopicListener(
       `${peerId}.island_changed`,

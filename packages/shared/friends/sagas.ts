@@ -10,7 +10,9 @@ import {
   UnknownUsersError,
   SocialAPI,
   UpdateUserStatus,
-  ConversationType
+  ConversationType,
+  ChannelsError,
+  ChannelErrorKind
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -82,7 +84,7 @@ import {
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { ensureFriendProfile, ensureFriendsProfile } from './ensureFriendProfile'
+import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
@@ -215,80 +217,111 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
   // initialize conversations
   client.onStatusChange(async (socialId, status) => {
-    const userId = parseUserId(socialId)
-    if (userId) {
-      // When it's a friend and is not added to catalog
-      // unity needs to know this information to show that the user has connected
-      if (isFriend(store.getState(), userId) && !isAddedToCatalog(store.getState(), userId)) {
-        await ensureFriendProfile(userId)
-        getUnityInstance().AddFriends({
-          friends: [userId],
-          totalFriends: getTotalFriends(store.getState())
-        })
-      }
+    try {
+      const userId = parseUserId(socialId)
+      if (userId) {
+        // When it's a friend and is not added to catalog
+        // unity needs to know this information to show that the user has connected
+        if (isFriend(store.getState(), userId) && !isAddedToCatalog(store.getState(), userId)) {
+          await ensureFriendProfile(userId)
+          getUnityInstance().AddFriends({
+            friends: [userId],
+            totalFriends: getTotalFriends(store.getState())
+          })
+        }
 
-      sendUpdateUserStatus(userId, status)
+        sendUpdateUserStatus(userId, status)
+      }
+    } catch (error) {
+      const message = 'Failed while processing friend status change'
+      defaultLogger.error(message, error)
+
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: message,
+        stack: '' + error
+      })
     }
   })
 
   client.onMessage(async (conversation, message) => {
-    if (receivedMessages.hasOwnProperty(message.id)) {
-      // message already processed, skipping
-      return
-    } else {
-      receivedMessages[message.id] = Date.now()
-    }
-
-    const senderUserId = parseUserId(message.sender)
-
-    if (!senderUserId) {
-      logger.error('unknown message', message, conversation)
-      return
-    }
-
-    const profile = getProfile(store.getState(), identity.address)
-    const blocked = profile?.blocked ?? []
-    if (blocked.includes(senderUserId)) {
-      logger.warn(`got a message from blocked user`, message, conversation)
-      return
-    }
-
-    const chatMessage = {
-      messageId: message.id,
-      messageType: ChatMessageType.PRIVATE,
-      timestamp: message.timestamp,
-      body: message.text,
-      sender: message.sender === ownId ? identity.address : senderUserId,
-      recipient: message.sender === ownId ? senderUserId : identity.address
-    }
-
-    const userProfile = getProfile(store.getState(), senderUserId)
-    if (!userProfile || !isAddedToCatalog(store.getState(), senderUserId)) {
-      await ensureFriendProfile(senderUserId)
-    }
-
-    addNewChatMessage(chatMessage)
-
-    // get total user unread messages
-    if (message.sender !== ownId) {
-      const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
-      const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
-
-      const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
-        userId: senderUserId,
-        total: unreadMessages
-      }
-      const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
-        total: totalUnreadMessages
+    try {
+      if (receivedMessages.hasOwnProperty(message.id)) {
+        // message already processed, skipping
+        return
+      } else {
+        receivedMessages[message.id] = Date.now()
       }
 
-      getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
-      getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+      const senderUserId = parseUserId(message.sender)
+
+      if (!senderUserId) {
+        logger.error('unknown message', message, conversation)
+        return
+      }
+
+      const profile = getProfile(store.getState(), identity.address)
+      const blocked = profile?.blocked ?? []
+      if (blocked.includes(senderUserId)) {
+        logger.warn(`got a message from blocked user`, message, conversation)
+        return
+      }
+
+      const chatMessage = {
+        messageId: message.id,
+        messageType: ChatMessageType.PRIVATE,
+        timestamp: message.timestamp,
+        body: message.text,
+        sender: message.sender === ownId ? identity.address : senderUserId,
+        recipient: message.sender === ownId ? senderUserId : identity.address
+      }
+
+      const userProfile = getProfile(store.getState(), senderUserId)
+      if (!userProfile || !isAddedToCatalog(store.getState(), senderUserId)) {
+        await ensureFriendProfile(senderUserId)
+      }
+
+      addNewChatMessage(chatMessage)
+
+      // get total user unread messages
+      if (message.sender !== ownId) {
+        const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
+        const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
+
+        const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
+          userId: senderUserId,
+          total: unreadMessages
+        }
+        const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+          total: totalUnreadMessages
+        }
+
+        getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
+        getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+      }
+    } catch (error) {
+      const message = 'Failed while processing message'
+      defaultLogger.error(message, error)
+
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: message,
+        stack: '' + error
+      })
     }
   })
 
   client.onFriendshipRequest((socialId) =>
-    handleIncomingFriendshipUpdateStatus(FriendshipAction.REQUESTED_FROM, socialId)
+    handleIncomingFriendshipUpdateStatus(FriendshipAction.REQUESTED_FROM, socialId).catch((error) => {
+      const message = 'Failed while processing friendship request'
+      defaultLogger.error(message, error)
+
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: message,
+        stack: '' + error
+      })
+    })
   )
 
   client.onFriendshipRequestCancellation((socialId) =>
@@ -403,11 +436,14 @@ function* refreshFriends() {
     getUnityInstance().InitializeFriends(initFriendsMessage)
     getUnityInstance().InitializeChat(initChatMessage)
 
-    const allProfilesToObtain = friendIds
+    // all profiles to obtain, deduped
+    const allProfilesToObtain: string[] = friendIds
       .concat(requestedFromIds.map((x) => x.userId))
       .concat(requestedToIds.map((x) => x.userId))
+      .filter((each, i, elements) => elements.indexOf(each) === i)
 
-    yield ensureFriendsProfile(allProfilesToObtain).catch(logger.error)
+    const ensureFriendProfilesPromises = allProfilesToObtain.map((userId) => ensureFriendProfile(userId))
+    yield Promise.all(ensureFriendProfilesPromises).catch(logger.error)
 
     yield put(
       updatePrivateMessagingState({
@@ -1210,9 +1246,16 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
 
     // send confirmation message to unity
     getUnityInstance().JoinChannelConfirmation(channelsInfo)
-  } catch {
-    // Todo Juli: Sync with custom errors from matrix
-    notifyChannelError(action.payload.channelId, '')
+  } catch (e) {
+    if (e instanceof ChannelsError) {
+      let message = e.message
+      if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
+        message = 'Error joining/creating channel. Channel name does not meet name rules.'
+      } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
+        message = 'Error joining/creating channel. Reserved name.'
+      }
+      notifyChannelError(action.payload.channelId, message)
+    }
   }
 }
 
@@ -1226,7 +1269,12 @@ export async function createChannel(request: CreateChannelPayload) {
     const ownId = client.getUserId()
 
     // create channel
-    const { conversation } = await client.getOrCreateChannel(channelId, [ownId])
+    const { conversation, created } = await client.getOrCreateChannel(channelId, [ownId])
+
+    if (!created) {
+      notifyChannelError(request.channelId, `Channel "${channelId}" already exists`)
+      return
+    }
 
     // parse channel info
     const channelsInfo: ChannelsInfoPayload = {
@@ -1246,9 +1294,16 @@ export async function createChannel(request: CreateChannelPayload) {
 
     // Send confirmation message to unity
     getUnityInstance().JoinChannelConfirmation(channelsInfo)
-  } catch {
-    // Todo Juli: Sync with custom errors from matrix
-    notifyChannelError(request.channelId, '')
+  } catch (e) {
+    if (e instanceof ChannelsError) {
+      let message = e.message
+      if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
+        message = 'Error joining/creating channel. Channel name does not meet name rules.'
+      } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
+        message = 'Error joining/creating channel. Reserved name.'
+      }
+      notifyChannelError(request.channelId, message)
+    }
   }
 }
 
@@ -1269,14 +1324,14 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     (conv) => conv.conversation.type === ConversationType.CHANNEL
   )
 
-  conversationsWithMessages.slice(request.skip, request.skip + request.limit)
+  const conversationsToReturn = conversationsWithMessages.slice(request.skip, request.skip + request.limit)
 
   // parse channel info
   const channelsInfo: ChannelsInfoPayload = {
     channelsInfoPayload: []
   }
 
-  for (const conv of conversationsWithMessages) {
+  for (const conv of conversationsToReturn) {
     channelsInfo.channelsInfoPayload.push({
       name: conv.conversation.name!,
       channelId: conv.conversation.id,

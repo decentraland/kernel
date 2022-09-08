@@ -19,7 +19,6 @@ export type NewProfileForRenderer = {
       slot: number
       urn: string
     }[]
-    version: number // @TODO: remove this once Emotes is fully released. This helps the Renderer to know if it should fetch Emotes separately.
   }
 
   // TODO evaluate usage of the following

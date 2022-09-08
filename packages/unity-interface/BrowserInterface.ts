@@ -68,8 +68,8 @@ import {
 } from 'shared/comms/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
-import { wearablesRequest } from 'shared/catalogs/actions'
-import { WearablesRequestFilters } from 'shared/catalogs/types'
+import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
+import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
 import { getSelectedNetwork } from 'shared/dao/selectors'
@@ -198,7 +198,7 @@ export const rendererSaveProfileSchemaV0: JSONSchema<RendererSaveProfile> = {
         hairColor: color3Schema,
         skinColor: color3Schema,
         wearables: { type: 'array', items: { type: 'string' } },
-        emotes: { type: 'array', items: { type: 'string' } }
+        emotes: { type: 'array', items: emoteSchema }
       }
     }
   }
@@ -429,11 +429,11 @@ export class BrowserInterface {
           hair: { color: changes.avatar.hairColor },
           skin: { color: changes.avatar.skinColor },
           wearables: changes.avatar.wearables,
-          emotes: changes.avatar.emotes,
           snapshots: {
             body: changes.body,
             face256: changes.face256
-          }
+          },
+          emotes: changes.avatar.emotes
         }
       }
       store.dispatch(saveProfileDelta(update))
@@ -454,18 +454,14 @@ export class BrowserInterface {
       }
       store.dispatch(saveProfileDelta(update))
     } else {
-      defaultLogger.error('error validating schema', validateRendererSaveProfileV0.errors)
+      const errors = validateRendererSaveProfileV1.errors ?? validateRendererSaveProfileV0.errors
+      defaultLogger.error('error validating schema', errors)
       trackEvent('invalid_schema', {
         schema: 'SaveUserAvatar',
         payload: changes,
-        errors: (validateRendererSaveProfileV0.errors ?? []).map(($) => $.message).join(',')
+        errors: (errors ?? []).map(($) => $.message).join(',')
       })
-      defaultLogger.error(
-        'Unity sent invalid profile' +
-          JSON.stringify(changes) +
-          ' Errors: ' +
-          JSON.stringify(validateRendererSaveProfileV1.errors)
-      )
+      defaultLogger.error('Unity sent invalid profile' + JSON.stringify(changes) + ' Errors: ' + JSON.stringify(errors))
     }
   }
 
@@ -652,44 +648,55 @@ export class BrowserInterface {
   }
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
-    let { userId } = message
-    let found = false
-    const state = store.getState()
+    try {
+      let { userId } = message
+      let found = false
+      const state = store.getState()
 
-    // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
-    if (message.action === FriendshipAction.REQUESTED_TO) {
-      const avatar = await ensureFriendProfile(userId)
+      // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
+      if (message.action === FriendshipAction.REQUESTED_TO) {
+        const avatar = await ensureFriendProfile(userId)
 
-      if (isAddress(userId) && avatar) {
-        found = avatar.hasConnectedWeb3 || false
-      } else {
-        const profileByName = findProfileByName(state, userId)
-        if (profileByName) {
-          userId = profileByName.userId
+        if (isAddress(userId)) {
+          found = avatar.hasConnectedWeb3 || false
+        } else {
+          const profileByName = findProfileByName(state, userId)
+          if (profileByName) {
+            userId = profileByName.userId
+            found = true
+          }
+        }
+      }
+
+      if (!found) {
+        // if user profile was not found on server -> no connected web3, check if it's a claimed name
+        const net = getSelectedNetwork(state)
+        const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
+        if (address) {
+          // if an address was found for the name -> set as user id & add that instead
+          userId = address
           found = true
         }
       }
-    }
 
-    if (!found) {
-      // if user profile was not found on server -> no connected web3, check if it's a claimed name
-      const net = getSelectedNetwork(state)
-      const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
-      if (address) {
-        // if an address was found for the name -> set as user id & add that instead
-        userId = address
-        found = true
+      if (message.action === FriendshipAction.REQUESTED_TO && !found) {
+        // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
+        getUnityInstance().FriendNotFound(userId)
+        return
       }
-    }
 
-    if (message.action === FriendshipAction.REQUESTED_TO && !found) {
-      // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
-      getUnityInstance().FriendNotFound(userId)
-      return
-    }
+      store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+    } catch (error) {
+      const message = 'Failed while processing updating friendship status'
+      defaultLogger.error(message, error)
 
-    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-    store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: message,
+        stack: '' + error
+      })
+    }
   }
 
   public async CreateChannel(createChannelPayload: CreateChannelPayload) {
@@ -904,6 +911,25 @@ export class BrowserInterface {
       collectionIds: arrayCleanup(filters.collectionIds)
     }
     store.dispatch(wearablesRequest(newFilters, context))
+  }
+
+  public RequestEmotes(data: {
+    filters: {
+      ownedByUser: string | null
+      emoteIds?: string[] | null
+      collectionIds?: string[] | null
+      thirdPartyId?: string | null
+    }
+    context?: string
+  }) {
+    const { filters, context } = data
+    const newFilters: EmotesRequestFilters = {
+      ownedByUser: filters.ownedByUser ?? undefined,
+      thirdPartyId: filters.thirdPartyId ?? undefined,
+      emoteIds: arrayCleanup(filters.emoteIds),
+      collectionIds: arrayCleanup(filters.collectionIds)
+    }
+    store.dispatch(emotesRequest(newFilters, context))
   }
 
   public RequestUserProfile(userIdPayload: { value: string }) {
