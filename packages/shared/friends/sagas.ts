@@ -10,7 +10,9 @@ import {
   UnknownUsersError,
   SocialAPI,
   UpdateUserStatus,
-  ConversationType
+  ConversationType,
+  ChannelsError,
+  ChannelErrorKind
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -1202,9 +1204,16 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
 
     // send confirmation message to unity
     getUnityInstance().JoinChannelConfirmation(channelsInfo)
-  } catch {
-    // Todo Juli: Sync with custom errors from matrix
-    notifyChannelError(action.payload.channelId, '')
+  } catch (e) {
+    if (e instanceof ChannelsError) {
+      let message = e.message
+      if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
+        message = 'Error joining/creating channel. Channel name does not meet name rules.'
+      } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
+        message = 'Error joining/creating channel. Reserved name.'
+      }
+      notifyChannelError(action.payload.channelId, message)
+    }
   }
 }
 
@@ -1218,7 +1227,12 @@ export async function createChannel(request: CreateChannelPayload) {
     const ownId = client.getUserId()
 
     // create channel
-    const { conversation } = await client.getOrCreateChannel(channelId, [ownId])
+    const { conversation, created } = await client.getOrCreateChannel(channelId, [ownId])
+
+    if (!created) {
+      notifyChannelError(request.channelId, `Channel "${channelId}" already exists`)
+      return
+    }
 
     // parse channel info
     const channelsInfo: ChannelsInfoPayload = {
@@ -1238,9 +1252,16 @@ export async function createChannel(request: CreateChannelPayload) {
 
     // Send confirmation message to unity
     getUnityInstance().JoinChannelConfirmation(channelsInfo)
-  } catch {
-    // Todo Juli: Sync with custom errors from matrix
-    notifyChannelError(request.channelId, '')
+  } catch (e) {
+    if (e instanceof ChannelsError) {
+      let message = e.message
+      if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
+        message = 'Error joining/creating channel. Channel name does not meet name rules.'
+      } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
+        message = 'Error joining/creating channel. Reserved name.'
+      }
+      notifyChannelError(request.channelId, message)
+    }
   }
 }
 
@@ -1261,14 +1282,14 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     (conv) => conv.conversation.type === ConversationType.CHANNEL
   )
 
-  conversationsWithMessages.slice(request.skip, request.skip + request.limit)
+  const conversationsToReturn = conversationsWithMessages.slice(request.skip, request.skip + request.limit)
 
   // parse channel info
   const channelsInfo: ChannelsInfoPayload = {
     channelsInfoPayload: []
   }
 
-  for (const conv of conversationsWithMessages) {
+  for (const conv of conversationsToReturn) {
     channelsInfo.channelsInfoPayload.push({
       name: conv.conversation.name!,
       channelId: conv.conversation.id,
