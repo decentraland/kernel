@@ -39,7 +39,6 @@ export function profileToRendererFormat(
     avatar: {
       wearables: profile.avatar?.wearables || [],
       emotes: profile.avatar?.emotes || [],
-      version: profile.avatar?.emotes !== undefined ? 1 : 0,
       bodyShape: profile.avatar?.bodyShape || '',
       eyeColor: convertToRGBObject(profile.avatar?.eyes.color),
       hairColor: convertToRGBObject(profile.avatar?.hair.color),
