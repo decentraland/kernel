@@ -9,9 +9,9 @@ export const PENDING_SCENES = '[SCENE MANAGER] Pending count'
 export const UPDATE_LOADING_SCREEN = '[RENDERER] Refresh loading screen visible'
 
 export const scenesChanged = () => action(SCENE_CHANGED)
-export const signalSceneLoad = (sceneId: LoadableScene) => action(SCENE_LOAD, sceneId)
-export const signalSceneStart = (sceneId: LoadableScene) => action(SCENE_START, sceneId)
-export const signalSceneFail = (sceneId: LoadableScene) => action(SCENE_FAIL, sceneId)
+export const signalSceneLoad = (scene: LoadableScene) => action(SCENE_LOAD, scene)
+export const signalSceneStart = (scene: LoadableScene) => action(SCENE_START, scene)
+export const signalSceneFail = (scene: LoadableScene) => action(SCENE_FAIL, scene)
 export const informPendingScenes = (pendingScenes: number, totalScenes: number) =>
   action(PENDING_SCENES, { pendingScenes, totalScenes })
 

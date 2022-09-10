@@ -1,5 +1,5 @@
 import { LoadableScene } from '../shared/types'
-import { forceStopScene, getSceneWorkerBySceneID, loadParcelSceneWorker } from 'shared/world/parcelSceneManager'
+import { forceStopScene, getSceneWorkerByEntityID, loadParcelSceneWorker } from 'shared/world/parcelSceneManager'
 import { getUnityInstance } from './IUnityInterface'
 import { parseUrn, resolveContentUrl } from '@dcl/urn-resolver'
 import { Entity } from '@dcl/schemas'
@@ -34,8 +34,8 @@ export function killScenePortableExperience(urn: string) {
   store.dispatch(removeScenePortableExperience(urn))
 }
 
-export function getRunningPortableExperience(sceneId: string): SceneWorker | undefined {
-  return currentPortableExperiences.get(sceneId)
+export function getRunningPortableExperience(entityId: string): SceneWorker | undefined {
+  return currentPortableExperiences.get(entityId)
 }
 
 export async function getPortableExperienceFromUrn(sceneUrn: string): Promise<LoadableScene> {
@@ -95,11 +95,11 @@ export async function declareWantedPortableExperiences(pxs: LoadableScene[]) {
 }
 
 function spawnPortableExperience(spawnData: LoadableScene): PortableExperienceHandle {
-  const sceneId = spawnData.id
-  if (currentPortableExperiences.has(sceneId) || getSceneWorkerBySceneID(sceneId)) {
-    throw new Error(`Portable Experience: "${sceneId}" is already running.`)
+  const entityId = spawnData.id
+  if (currentPortableExperiences.has(entityId) || getSceneWorkerByEntityID(entityId)) {
+    throw new Error(`Portable Experience: "${entityId}" is already running.`)
   }
-  if (!sceneId) debugger
+  if (!entityId) debugger
 
   const scene = loadParcelSceneWorker(spawnData, undefined)
   // add default permissions for portable experience based scenes
@@ -108,10 +108,10 @@ function spawnPortableExperience(spawnData: LoadableScene): PortableExperienceHa
   // portable experiences have no FPS limit
   scene.rpcContext.sceneData.useFPSThrottling = false
 
-  currentPortableExperiences.set(sceneId, scene)
+  currentPortableExperiences.set(entityId, scene)
 
   getUnityInstance().CreateGlobalScene({
-    id: sceneId,
+    id: entityId,
     name: getSceneNameFromJsonData(scene.loadableScene.entity.metadata),
     baseUrl: scene.loadableScene.baseUrl,
     contents: scene.loadableScene.entity.content,
@@ -119,5 +119,5 @@ function spawnPortableExperience(spawnData: LoadableScene): PortableExperienceHa
     isPortableExperience: true
   })
 
-  return { pid: sceneId, parentCid: spawnData.parentCid || '' }
+  return { pid: entityId, parentCid: spawnData.parentCid || '' }
 }

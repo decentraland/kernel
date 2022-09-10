@@ -24,7 +24,7 @@ import {
   AvatarRendererMessage
 } from 'shared/types'
 import {
-  getSceneWorkerBySceneID,
+  getSceneWorkerByEntityID,
   allScenesEvent,
   AllScenesEvents,
   renderDistanceObservable
@@ -279,7 +279,7 @@ export class BrowserInterface {
   }
 
   public SceneEvent(data: { sceneId: string; eventType: string; payload: any }) {
-    const scene = getSceneWorkerBySceneID(data.sceneId)
+    const scene = getSceneWorkerByEntityID(data.sceneId)
     if (scene) {
       scene.rpcContext.sendSceneEvent(data.eventType as IEventNames, data.payload)
 
@@ -832,7 +832,7 @@ export class BrowserInterface {
     currentOffset: number
     videoLength: number
   }) {
-    const scene = getSceneWorkerBySceneID(videoEvent.sceneId)
+    const scene = getSceneWorkerByEntityID(videoEvent.sceneId)
     if (scene) {
       scene.rpcContext.sendSceneEvent('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,

@@ -117,8 +117,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LoadProfile', JSON.stringify(profile))
   }
 
-  public UpdateHomeScene(sceneId: string) {
-    this.SendMessageToUnity('Main', 'UpdateHomeScene', sceneId)
+  public UpdateHomeScene(entityId: string) {
+    this.SendMessageToUnity('Main', 'UpdateHomeScene', entityId)
   }
 
   public SetRenderProfile(id: RenderProfile) {
@@ -166,8 +166,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LoadParcelScenes', JSON.stringify(parcelsToLoad[0]))
   }
 
-  public UnloadScene(sceneId: string) {
-    this.SendMessageToUnity('Main', 'UnloadScene', sceneId)
+  public UnloadScene(entityId: string) {
+    this.SendMessageToUnity('Main', 'UnloadScene', entityId)
   }
 
   public SendSceneMessage(messages: string) {

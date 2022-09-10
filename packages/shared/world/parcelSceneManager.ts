@@ -68,15 +68,15 @@ globalThis['sceneWorkers'] = loadedSceneWorkers
 /**
  * Retrieve the Scene based on it's ID, usually RootCID
  */
-export function getSceneWorkerBySceneID(sceneId: string) {
-  return loadedSceneWorkers.get(sceneId)
+export function getSceneWorkerByEntityID(entityId: string) {
+  return loadedSceneWorkers.get(entityId)
 }
 
-export function forceStopScene(sceneId: string) {
-  const worker = loadedSceneWorkers.get(sceneId)
+export function forceStopScene(entityId: string) {
+  const worker = loadedSceneWorkers.get(entityId)
   if (worker) {
     worker.dispose()
-    loadedSceneWorkers.delete(sceneId)
+    loadedSceneWorkers.delete(entityId)
     store.dispatch(scenesChanged())
   }
 }
@@ -85,8 +85,8 @@ export function forceStopScene(sceneId: string) {
  * Creates a worker for the ParcelSceneAPI
  */
 export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: Transport) {
-  const sceneId = loadableScene.id
-  let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
+  const entityId = loadableScene.id
+  let parcelSceneWorker = loadedSceneWorkers.get(entityId)
 
   if (!parcelSceneWorker) {
     parcelSceneWorker = new SceneWorker(loadableScene, transport)
@@ -101,17 +101,17 @@ export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: 
  * idempotent
  */
 function setNewParcelScene(worker: SceneWorker) {
-  const sceneId = worker.loadableScene.id
+  const entityId = worker.loadableScene.id
   const parcelSceneWorker = loadedSceneWorkers.get(worker.loadableScene.id)
 
   if (worker === parcelSceneWorker) return
 
   if (parcelSceneWorker) {
     // stop the current scene, forcing a reload
-    forceStopScene(sceneId)
+    forceStopScene(entityId)
   }
 
-  loadedSceneWorkers.set(sceneId, worker)
+  loadedSceneWorkers.set(entityId, worker)
 }
 
 // @internal
@@ -145,38 +145,38 @@ async function setDesiredParcelScenes(desiredParcelScenes: Map<string, LoadableS
     }
   }
 
-  for (const [newSceneId, entity] of newSet) {
-    if (!loadedSceneWorkers.has(newSceneId)) {
+  for (const [newEntityId, entity] of newSet) {
+    if (!loadedSceneWorkers.has(newEntityId)) {
       // create new scene
-      await loadParcelSceneByIdIfMissing(newSceneId, entity)
+      await loadParcelSceneByIdIfMissing(newEntityId, entity)
     }
   }
 }
 
-export async function reloadScene(sceneId: string) {
-  unloadParcelSceneById(sceneId)
+export async function reloadScene(entityId: string) {
+  unloadParcelSceneById(entityId)
   await setDesiredParcelScenes(getDesiredParcelScenes())
 }
 
-export function unloadParcelSceneById(sceneId: string) {
-  const worker = loadedSceneWorkers.get(sceneId)
+export function unloadParcelSceneById(entityId: string) {
+  const worker = loadedSceneWorkers.get(entityId)
   if (!worker) {
     return
   }
   //We notify that the scene has been unloaded, the sceneId must have the same name
   parcelSceneLoadingState.lifecycleManager?.notify('Scene.status', {
-    sceneId: sceneId,
+    entityId,
     status: 'unloaded'
   })
-  forceStopScene(sceneId)
+  forceStopScene(entityId)
 }
 
 /**
  * @internal
  **/
-export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableScene) {
+export async function loadParcelSceneByIdIfMissing(entityId: string, entity: LoadableScene) {
   // create the worker if don't exis
-  if (!getSceneWorkerBySceneID(sceneId)) {
+  if (!getSceneWorkerByEntityID(entityId)) {
     // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
     const denyListed = isParcelDenyListed(entity.entity.metadata.scene.parcels)
     const usedEntity = denyListed ? generateBannedLoadableScene(entity) : entity
@@ -194,10 +194,10 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: Load
   }
 }
 
-async function removeDesiredParcel(sceneId: string) {
+async function removeDesiredParcel(entityId: string) {
   const desiredScenes = getDesiredParcelScenes()
-  if (!hasDesiredParcelScenes(sceneId)) return
-  desiredScenes.delete(sceneId)
+  if (!hasDesiredParcelScenes(entityId)) return
+  desiredScenes.delete(entityId)
   await setDesiredParcelScenes(desiredScenes)
 }
 
@@ -208,8 +208,8 @@ export async function addDesiredParcel(entity: LoadableScene) {
   await setDesiredParcelScenes(desiredScenes)
 }
 
-function hasDesiredParcelScenes(sceneId: string): boolean {
-  return parcelSceneLoadingState.desiredParcelScenes.has(sceneId)
+function hasDesiredParcelScenes(entityId: string): boolean {
+  return parcelSceneLoadingState.desiredParcelScenes.has(entityId)
 }
 
 export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams) {
@@ -221,8 +221,8 @@ export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams)
     await addDesiredParcel(opts.entity)
   })
 
-  lifecycleManager.on('Scene.shouldUnload', async (opts: { sceneId: string }) => {
-    await removeDesiredParcel(opts.sceneId)
+  lifecycleManager.on('Scene.shouldUnload', async (opts: { entityId: string }) => {
+    await removeDesiredParcel(opts.entityId)
   })
 
   lifecycleManager.on('Position.settled', async (opts: { spawnPoint: InstancedSpawnPoint }) => {

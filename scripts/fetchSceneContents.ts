@@ -13,7 +13,7 @@ import { EntityType, EntityContentItemReference } from 'dcl-catalyst-commons'
 import * as fs from 'fs'
 import * as fsp from 'fs/promises'
 
-const sceneId = process.env.SCENE_ID
+const entityId = process.env.SCENE_ID
 const parcel = process.env.PARCEL
 const contentServerUrl = process.env.CONTENT_SERVER_URL ?? 'https://peer.decentraland.org'
 const outputRoot = process.env.OUTPUT_DIR ?? 'public/downloaded-scenes'
@@ -22,7 +22,7 @@ const maxDownloads = parseInt(process.env.MAX_DOWNLOADS ?? '50')
 
 const client = new CatalystClient({ catalystUrl: contentServerUrl })
 
-if (!sceneId && !parcel) {
+if (!entityId && !parcel) {
   console.log(
     'Please specify the scene id or pointer for which to download its contents using the SCENE_ID or POINTER env variables respectively'
   )
@@ -30,8 +30,8 @@ if (!sceneId && !parcel) {
 }
 
 async function main() {
-  const sceneData = sceneId
-    ? await client.fetchEntityById(EntityType.SCENE, sceneId)
+  const sceneData = entityId
+    ? await client.fetchEntityById(EntityType.SCENE, entityId)
     : (await client.fetchEntitiesByPointers(EntityType.SCENE, [parcel]))[0]
 
   const pending: Record<string, Promise<any>> = {}

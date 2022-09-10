@@ -250,7 +250,6 @@ export class SceneWorker {
   }
 
   private sendBatchWss(actions: EntityAction[]): void {
-    const sceneId = this.loadableScene.id
     const messages: string[] = []
     let len = 0
 
@@ -274,7 +273,7 @@ export class SceneWorker {
       }
 
       const part = protobufMsgBridge.encodeSceneMessage(
-        sceneId,
+        this.loadableScene.id,
         this.rpcContext.sceneData.sceneNumber,
         action.type,
         action.payload,
@@ -292,10 +291,9 @@ export class SceneWorker {
   }
 
   private sendBatchNative(actions: EntityAction[]): void {
-    const sceneId = this.loadableScene.id
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
-      nativeMsgBridge.SendNativeMessage(sceneId, this.rpcContext.sceneData.sceneNumber, action)
+      nativeMsgBridge.SendNativeMessage(this.loadableScene.id, this.rpcContext.sceneData.sceneNumber, action)
     }
   }
 
@@ -342,10 +340,10 @@ export class SceneWorker {
     this.sceneChangeObserver = sceneObservable.add((report) => {
       const userId = getCurrentUserId(store.getState())
       if (userId) {
-        const sceneId = this.loadableScene.id
-        if (report.newScene?.id === sceneId) {
+        const entityId = this.loadableScene.id
+        if (report.newScene?.id === entityId) {
           this.rpcContext.sendSceneEvent('onEnterScene', { userId })
-        } else if (report.previousScene?.id === sceneId) {
+        } else if (report.previousScene?.id === entityId) {
           this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
         }
       }

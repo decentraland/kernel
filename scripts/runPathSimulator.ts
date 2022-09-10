@@ -181,14 +181,14 @@ wss.on('connection', function connection(ws, req) {
       }
       case 'LoadParcelScenes': {
         // delay + answer scene ready message
-        const sceneId = JSON.parse(data.payload).id
-        console.log(`${alias}: loading parcel ${sceneId}`)
+        const entityId = JSON.parse(data.payload).id
+        console.log(`${alias}: loading parcel ${entityId}`)
         const response = {
           type: 'ControlEvent',
-          payload: JSON.stringify({ eventType: 'SceneReady', payload: { sceneId } })
+          payload: JSON.stringify({ eventType: 'SceneReady', payload: { sceneId: entityId } })
         }
         setTimeout(() => {
-          console.log(`${alias}: scene ready ${sceneId}`)
+          console.log(`${alias}: scene ready ${entityId}`)
           ws.send(JSON.stringify(response))
         }, 200)
         break

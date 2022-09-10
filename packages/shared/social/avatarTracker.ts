@@ -1,9 +1,9 @@
-import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
+import { getSceneWorkerByEntityID } from 'shared/world/parcelSceneManager'
 import { AvatarRendererMessage, AvatarRendererMessageType } from 'shared/types'
 
-export function* getInSceneAvatarsUserId(sceneId: string): Iterable<string> {
+export function* getInSceneAvatarsUserId(entityId: string): Iterable<string> {
   for (const [userId, avatarData] of rendererAvatars) {
-    if (avatarData.sceneId === sceneId) yield userId
+    if (avatarData.sceneId === entityId) yield userId
   }
 }
 
@@ -38,11 +38,11 @@ function handleRendererAvatarSceneChanged(userId: string, sceneId: string) {
   const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
 
   if (avatarData?.sceneId) {
-    const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
+    const sceneWorker = getSceneWorkerByEntityID(avatarData.sceneId)
     sceneWorker?.rpcContext.sendSceneEvent('onLeaveScene', { userId })
   }
 
-  const sceneWorker = getSceneWorkerBySceneID(sceneId)
+  const sceneWorker = getSceneWorkerByEntityID(sceneId)
   sceneWorker?.rpcContext.sendSceneEvent('onEnterScene', { userId })
 
   rendererAvatars.set(userId, { sceneId: sceneId })
@@ -51,7 +51,7 @@ function handleRendererAvatarSceneChanged(userId: string, sceneId: string) {
 function handleRendererAvatarRemoved(userId: string) {
   const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
   if (avatarData) {
-    const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
+    const sceneWorker = getSceneWorkerByEntityID(avatarData.sceneId)
     sceneWorker?.rpcContext.sendSceneEvent('onLeaveScene', { userId })
     rendererAvatars.delete(userId)
   }
