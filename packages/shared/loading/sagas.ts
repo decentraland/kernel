@@ -105,7 +105,9 @@ export function* trackLoadTime(action: SceneLoad): any {
   const { id } = action.payload
   const entityId = id
   const result = yield race({
-    start: take((action: AnyAction) => action.type === SCENE_START && (action.payload as LoadableScene).id === entityId),
+    start: take(
+      (action: AnyAction) => action.type === SCENE_START && (action.payload as LoadableScene).id === entityId
+    ),
     fail: take((action: AnyAction) => action.type === SCENE_FAIL && (action.payload as LoadableScene).id === entityId)
   })
   const userId = yield select(getCurrentUserId)
