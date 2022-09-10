@@ -4,7 +4,6 @@ import { commsEstablished, FATAL_ERROR } from 'shared/loading/types'
 import { CommsContext, commsLogger } from './context'
 import { getCommsContext, getRealm } from './selectors'
 import { BEFORE_UNLOAD } from 'shared/protocol/actions'
-import { voiceSaga } from './voice-sagas'
 import {
   HandleCommsDisconnection,
   HANDLE_COMMS_DISCONNECTION,
@@ -192,8 +191,6 @@ function* handleNewCommsContext() {
       // disconnect previous context
       yield call(disconnectContext, oldContext)
     }
-
-    yield call(voiceSaga)
   })
 }
 

@@ -28,6 +28,7 @@ import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { Emote } from 'shared/catalogs/types'
 
 export type RealmInfo = {
   serverName: string
@@ -70,6 +71,7 @@ export interface IUnityInterface {
   SendGenericMessage(object: string, method: string, payload: string): void
   SetDebug(): void
   LoadProfile(profile: NewProfileForRenderer): void
+  UpdateHomeScene(sceneId: string): void
   SetRenderProfile(id: RenderProfile): void
   CreateGlobalScene(data: {
     id: string
@@ -112,6 +114,7 @@ export interface IUnityInterface {
   SetBuilderReady(): void
   AddUserProfileToCatalog(peerProfile: NewProfileForRenderer): void
   AddWearablesToCatalog(wearables: WearableV2[], context?: string): void
+  AddEmotesToCatalog(emotes: Emote[], context?: string): void
   WearablesRequestFailed(error: string, context: string | undefined): void
   RemoveWearablesFromCatalog(wearableIds: string[]): void
   ClearWearableCatalog(): void
@@ -142,6 +145,7 @@ export interface IUnityInterface {
   SetUserTalking(userId: string, talking: boolean): void
   SetUsersMuted(usersId: string[], muted: boolean): void
   SetVoiceChatEnabledByScene(enabled: boolean): void
+  SetVoiceChatStatus(status: { isConnected: boolean }): void
   SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void

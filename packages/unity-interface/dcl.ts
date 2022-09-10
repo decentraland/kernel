@@ -18,7 +18,8 @@ import {
   onPositionSettledObservable,
   onPositionUnsettledObservable,
   reloadScene,
-  addDesiredParcel
+  addDesiredParcel,
+  unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
 import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
 import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
@@ -38,6 +39,7 @@ import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
 import { workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
+import { sleep } from 'atomicHelpers/sleep'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -150,7 +152,7 @@ export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
-  const result = await fetch('/scene.json?nocache=' + Math.random())
+  const result = await fetch(new URL('scene.json?nocache=' + Math.random(), rootURLPreviewMode()).toString())
 
   if (result.ok) {
     const scene = (await result.json()) as Scene
@@ -204,6 +206,24 @@ export async function loadPreviewScene(message: sdk.Messages) {
   } else {
     defaultLogger.log(`Unable to process message in loadPreviewScene`, { message })
   }
+}
+
+export async function reloadPlaygroundScene() {
+  const playgroundCode: string = (globalThis as any).PlaygroundCode
+
+  if (!playgroundCode) {
+    console.log('There is no playground code')
+    return
+  }
+
+  const sceneId = 'dcl-sdk-playground'
+
+  await unloadParcelSceneById(sceneId)
+  await sleep(300)
+
+  const hudWorkerBLOB = new Blob([playgroundCode])
+  const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
+  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl)
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {

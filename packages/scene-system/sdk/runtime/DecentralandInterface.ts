@@ -35,6 +35,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     },
 
     openExternalUrl(url: string) {
+      try {
+        const u = new URL(url)
+        if (u.protocol !== 'https:') throw new Error('Only https: external links are allowed')
+      } catch (err: any) {
+        onError(err)
+        return
+      }
+
       if (JSON.stringify(url).length > 49000) {
         onError(new Error('URL payload cannot exceed 49.000 bytes'))
         return
@@ -272,7 +280,10 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 }
 
 function loadSceneModule(clientPort: RpcClientPort, moduleName: string): GenericRpcModule {
-  const moduleToLoad = moduleName.replace(/^@decentraland\//, '')
+  // - moduleNames that start with @decentraland are from ECS6 and they should load the legacy ones.
+  // - moduleNames that start with ~system, are the new ones that follow the protocol buffer generation
+  //    (a single object as @param, and a single object as @returns)
+  const moduleToLoad = moduleName.replace(/^@decentraland\//, 'Legacy').replace(/^~system\//, '')
   try {
     if (moduleToLoad in LoadableAPIs) {
       return (LoadableAPIs as any)[moduleToLoad](clientPort)

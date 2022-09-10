@@ -5,7 +5,7 @@ import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
-import { worldToGrid } from '../atomicHelpers/parcelScenePositions'
+import { gridToWorld, worldToGrid } from '../atomicHelpers/parcelScenePositions'
 import {
   DEBUG_WS_MESSAGES,
   ETHEREUM_NETWORK,
@@ -15,7 +15,12 @@ import {
 } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import { getPreviewSceneId, loadPreviewScene, startUnitySceneWorkers } from '../unity-interface/dcl'
+import {
+  getPreviewSceneId,
+  loadPreviewScene,
+  reloadPlaygroundScene,
+  startUnitySceneWorkers
+} from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -36,12 +41,14 @@ import { onLoginCompleted } from 'shared/session/sagas'
 import { authenticate, initSession } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
-import { setPersistentStorage } from 'atomicHelpers/persistentStorage'
+import { getFromPersistentStorage, setPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { clientDebug } from 'unity-interface/ClientDebug'
 import { signalEngineReady } from 'shared/renderer/actions'
 import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { sendHomeScene } from '../shared/atlas/actions'
+import { homePointKey } from '../shared/atlas/utils'
 
 const logger = createLogger('kernel: ')
 
@@ -258,6 +265,15 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     worldConfig: getWorldConfig(state)
   })
 
+  if (!HAS_INITIAL_POSITION_MARK) {
+    const homePoint: string = await getFromPersistentStorage(homePointKey)
+    if (homePoint) {
+      store.dispatch(sendHomeScene(homePoint))
+      const [x, y] = homePoint.split(',').map((p) => parseFloat(p))
+      gridToWorld(x, y, lastPlayerPosition)
+    }
+  }
+
   teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
 
   if (options.previewMode) {
@@ -304,6 +320,14 @@ export async function startPreview(unityInterface: IUnityInterface) {
       logger.log('Update message from CLI', msg.data)
       const message: sdk.Messages = JSON.parse(msg.data)
       handleServerMessage(message)
+    }
+  })
+
+  window.addEventListener('message', async (msg) => {
+    if (typeof msg.data === 'string') {
+      if (msg.data === 'sdk-playground-update') {
+        await reloadPlaygroundScene()
+      }
     }
   })
 }

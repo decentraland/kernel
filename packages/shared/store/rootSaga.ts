@@ -10,6 +10,7 @@ import { chatSaga } from '../chat/sagas'
 import { sessionSaga } from '../session/sagas'
 import { friendsSaga } from '../friends/sagas'
 import { commsSaga } from '../comms/sagas'
+import { voiceChatSaga } from '../voiceChat/sagas'
 import { socialSaga } from '../social/sagas'
 import { catalogsSaga } from '../catalogs/sagas'
 import { questsSaga } from '../quests/sagas'
@@ -23,6 +24,7 @@ export function createRootSaga() {
     yield fork(friendsSaga)
     yield fork(sessionSaga)
     yield fork(commsSaga)
+    yield fork(voiceChatSaga)
     yield fork(catalogsSaga)
     yield fork(profileSaga)
     yield fork(chatSaga)

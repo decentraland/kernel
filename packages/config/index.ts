@@ -107,6 +107,7 @@ export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
 export const LOS = ensureSingleString(qs.get('LOS'))
 
 export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
+export const DEBUG_COMMS = qs.has('DEBUG_COMMS')
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
 export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
 export const DEBUG_MESSAGES = location.search.includes('DEBUG_MESSAGES')
@@ -141,6 +142,9 @@ export const BUILDER_SERVER_URL =
  * @returns Root URL with pathname where the index.html is served.
  */
 export const rootURLPreviewMode = () => {
+  if (typeof qs.get('CATALYST') === 'string' && qs.get('CATALYST')?.length !== 0) {
+    return addHttpsIfNoProtocolIsSet(qs.get('CATALYST')!)
+  }
   return `${location.origin}${location.pathname}`.replace(/\/$/, '')
 }
 
