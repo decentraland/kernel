@@ -77,7 +77,7 @@
     "@dcl/feature-flags": "^1.1.0",
     "@dcl/hashing": "^1.1.0",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
-    "@dcl/legacy-ecs": "^6.10.1-2191620277.commit-7b74643",
+    "@dcl/legacy-ecs": "^6.11.6",
     "@dcl/protocol": "^1.0.0-3015628754.commit-7713e2e",
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
     "@dcl/schemas": "^5.8.1",
