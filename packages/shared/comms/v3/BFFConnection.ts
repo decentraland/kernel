@@ -33,6 +33,7 @@ export class BFFConnection {
   private sceneTopics = new Map<string, TopicListener>()
 
   private commsService: CommsService | null = null
+  private disposed = false
 
   constructor(private url: string, private config: BFFConfig) {}
 
@@ -106,6 +107,9 @@ export class BFFConnection {
 
   public async removePeerTopicListener({ subscriptionId }: TopicListener): Promise<void> {
     if (!this.commsService) {
+      if (this.disposed) {
+        return
+      }
       throw new Error('BFF is not connected')
     }
 
@@ -114,6 +118,9 @@ export class BFFConnection {
 
   public async removeSystemTopicListener({ subscriptionId }: TopicListener): Promise<void> {
     if (!this.commsService) {
+      if (this.disposed) {
+        return
+      }
       throw new Error('BFF is not connected')
     }
 
@@ -121,6 +128,10 @@ export class BFFConnection {
   }
 
   public async publishToTopic(topic: string, payload: Uint8Array): Promise<void> {
+    if (this.disposed) {
+      return
+    }
+
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
@@ -130,6 +141,9 @@ export class BFFConnection {
 
   // TODO: replace this method with a listener
   public async setTopics(topics: string[]): Promise<void> {
+    if (this.disposed) {
+      return
+    }
     const newTopics = new Set<string>(topics)
     const topicsToRemove = new Set<string>()
     const topicsToAdd = new Set<string>()
@@ -162,11 +176,17 @@ export class BFFConnection {
   }
 
   disconnect() {
+    if (this.disposed) {
+      return
+    }
+
+    this.disposed = true
     if (this.wsTransport) {
       this.wsTransport.close()
       this.wsTransport = null
       this.onDisconnectObservable.notifyObservers()
     }
+    this.commsService = null
   }
 
   private async authenticate(port: RpcClientPort): Promise<string> {
@@ -176,9 +196,6 @@ export class BFFConnection {
     const auth = loadService(port, BffAuthenticationServiceDefinition)
 
     const getChallengeResponse = await auth.getChallenge({ address })
-    if (getChallengeResponse.alreadyConnected) {
-      return address
-    }
 
     const authChainJson = JSON.stringify(Authenticator.signPayload(identity, getChallengeResponse.challengeToSign))
     const authResponse: WelcomePeerInformation = await auth.authenticate({ authChainJson })

@@ -256,6 +256,7 @@ export class InstanceConnection implements RoomConnection {
 
     if (this.transport) {
       await this.transport.disconnect()
+      globalThis.__DEBUG_PEER = undefined
     }
     return this.bff.disconnect()
   }
