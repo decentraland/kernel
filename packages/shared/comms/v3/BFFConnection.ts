@@ -196,9 +196,6 @@ export class BFFConnection {
     const auth = loadService(port, BffAuthenticationServiceDefinition)
 
     const getChallengeResponse = await auth.getChallenge({ address })
-    if (getChallengeResponse.alreadyConnected) {
-      return address
-    }
 
     const authChainJson = JSON.stringify(Authenticator.signPayload(identity, getChallengeResponse.challengeToSign))
     const authResponse: WelcomePeerInformation = await auth.authenticate({ authChainJson })
