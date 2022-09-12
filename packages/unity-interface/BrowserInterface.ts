@@ -43,7 +43,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -745,7 +745,7 @@ export class BrowserInterface {
   }
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
-    // leaveChannel(leaveChannelPayload)
+    leaveChannel(leaveChannelPayload.channelId)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
