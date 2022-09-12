@@ -49,7 +49,8 @@ import {
   ChannelInfoPayload,
   MarkChannelMessagesAsSeenPayload,
   GetChannelMessagesPayload,
-  ChannelErrorPayload
+  ChannelErrorPayload,
+  GetChannelsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -1408,6 +1409,42 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   }
 
   getUnityInstance().AddChatMessages(addChatMessages)
+}
+
+// Search channels
+export async function searchChannels(request: GetChannelsPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const searchTerm: string = !request.name ? '' : request.name
+  const since: string | undefined = !request.since ? undefined : request.since
+
+  // search channels
+  const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, since)
+
+  const channelsToReturn: ChannelInfoPayload[] = []
+
+  for (const channel of channels) {
+    channelsToReturn.push({
+      name: channel.name!,
+      channelId: channel.id,
+      unseenMessages: 0,
+      lastMessageTimestamp: undefined,
+      memberCount: channel.memberCount,
+      description: channel.description || '',
+      joined: false,
+      muted: false
+    })
+  }
+
+  // parse channel info
+  const searchResult = {
+    since: !nextBatch ? null : nextBatch,
+    channels: channelsToReturn
+  }
+
+  // send search result to unity
+  getUnityInstance().UpdateChannelSearchResults({ channelSearchResultsPayload: searchResult })
 }
 
 /**

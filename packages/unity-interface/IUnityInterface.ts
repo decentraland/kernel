@@ -34,7 +34,8 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelErrorPayload,
-  ChannelsInfoPayload
+  ChannelsInfoPayload,
+  ChannelSearchResultsPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -171,6 +172,7 @@ export interface IUnityInterface {
     updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
   ): void
   UpdateChannelInfo(channelsInfoPayload: ChannelsInfoPayload): void
+  UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload)
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
 
   RequestTeleport(teleportData: {}): void
