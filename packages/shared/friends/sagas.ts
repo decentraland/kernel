@@ -79,7 +79,9 @@ import {
   SET_MATRIX_CLIENT,
   SetMatrixClient,
   JOIN_OR_CREATE_CHANNEL,
-  JoinOrCreateChannel
+  JoinOrCreateChannel,
+  LeaveChannel,
+  LEAVE_CHANNEL
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -119,6 +121,7 @@ export function* friendsSaga() {
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
   yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
   yield takeEvery(JOIN_OR_CREATE_CHANNEL, handleJoinOrCreateChannel)
+  yield takeEvery(LEAVE_CHANNEL, handleLeaveChannel)
 }
 
 function* initializeFriendsSaga() {
@@ -1198,6 +1201,33 @@ function updateSocialInfo(socialData: SocialData) {
   )
 }
 
+async function* handleLeaveChannel(action: LeaveChannel) {
+  try {
+    const client = getSocialClient(store.getState())
+    if (!client) return
+
+    const channelId = action.payload.channelId
+    await client.leaveChannel(channelId)
+
+    const leavingChannelPayload: ChannelInfoPayload = {
+      name: '',
+      channelId: channelId,
+      unseenMessages: 0,
+      lastMessageTimestamp: undefined,
+      memberCount: 0,
+      description: '',
+      joined: false,
+      muted: false
+    }
+
+    getUnityInstance().UpdateChannelInfo({ channelsInfoPayload: [leavingChannelPayload] })
+  } catch (e) {
+    if (e instanceof ChannelsError) {
+      notifyLeaveChannelError(action.payload.channelId, `Couldn't leave channel: ${action.payload.channelId}`)
+    }
+  }
+}
+
 // Join or create channel
 async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
@@ -1423,6 +1453,19 @@ function notifyJoinChannelError(channelId: string, message: string) {
 
   // send error message to unity
   getUnityInstance().JoinChannelError(joinChannelError)
+}
+
+/**
+ * Send leave channel related error message to unity
+ * @param channelId
+ * @param message
+ */
+function notifyLeaveChannelError(channelId: string, message: string) {
+  const leaveChannelError: ChannelErrorPayload = {
+    channelId,
+    message
+  }
+  getUnityInstance().LeaveChannelError(leaveChannelError)
 }
 
 /**
