@@ -1254,7 +1254,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
         message = 'Error joining/creating channel. Reserved name.'
       }
-      notifyChannelError(action.payload.channelId, message)
+      notifyJoinChannelError(action.payload.channelId, message)
     }
   }
 }
@@ -1272,7 +1272,7 @@ export async function createChannel(request: CreateChannelPayload) {
     const { conversation, created } = await client.getOrCreateChannel(channelId, [ownId])
 
     if (!created) {
-      notifyChannelError(request.channelId, `Channel "${channelId}" already exists`)
+      notifyJoinChannelError(request.channelId, `Channel "${channelId}" already exists`)
       return
     }
 
@@ -1302,7 +1302,7 @@ export async function createChannel(request: CreateChannelPayload) {
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
         message = 'Error joining/creating channel. Reserved name.'
       }
-      notifyChannelError(request.channelId, message)
+      notifyJoinChannelError(request.channelId, message)
     }
   }
 }
@@ -1419,11 +1419,11 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
 }
 
 /**
- * Send channel error message to unity
+ * Send join/create channel related error message to unity
  * @param channelId
  * @param message
  */
-function notifyChannelError(channelId: string, message: string) {
+function notifyJoinChannelError(channelId: string, message: string) {
   const joinChannelError: ChannelErrorPayload = {
     channelId,
     message
