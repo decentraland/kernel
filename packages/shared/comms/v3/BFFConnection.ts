@@ -6,6 +6,7 @@ import { WebSocketTransport } from '@dcl/rpc/dist/transports/WebSocket'
 import { loadService, RpcClientModule } from '@dcl/rpc/dist/codegen'
 import { BffAuthenticationServiceDefinition, WelcomePeerInformation } from './proto/bff/authentication-service.gen'
 import { CommsServiceDefinition } from './proto/bff/comms-service.gen'
+import { trackEvent } from 'shared/analytics'
 
 type CommsService = RpcClientModule<CommsServiceDefinition, any>
 
@@ -196,6 +197,11 @@ export class BFFConnection {
     const auth = loadService(port, BffAuthenticationServiceDefinition)
 
     const getChallengeResponse = await auth.getChallenge({ address })
+    if (getChallengeResponse.alreadyConnected) {
+      trackEvent('bff_auth_already_connected', {
+        address
+      })
+    }
 
     const authChainJson = JSON.stringify(Authenticator.signPayload(identity, getChallengeResponse.challengeToSign))
     const authResponse: WelcomePeerInformation = await auth.authenticate({ authChainJson })
