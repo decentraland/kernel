@@ -54,7 +54,7 @@ import {
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
+import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -100,6 +100,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
+import { unmutePlayers } from 'shared/social/actions'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1208,6 +1209,12 @@ async function* handleLeaveChannel(action: LeaveChannel) {
 
     const channelId = action.payload.channelId
     await client.leaveChannel(channelId)
+
+    const profile = getCurrentUserProfile(store.getState())
+    // if channel is muted, let's reset that config
+    if (profile?.muted?.includes(channelId)) {
+      store.dispatch(unmutePlayers([channelId]))
+    }
 
     const leavingChannelPayload: ChannelInfoPayload = {
       name: '',
