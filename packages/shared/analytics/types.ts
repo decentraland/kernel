@@ -17,6 +17,7 @@ export type TrackEvents = PositionTrackEvents & {
   }
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
+  ['bff_auth_already_connected']: { address: string }
 
   // Info logs, such as networks or things we want to track
   ['SNAPSHOT_IMAGE_NOT_FOUND']: { userId: string }
