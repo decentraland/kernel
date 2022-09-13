@@ -1418,9 +1418,6 @@ export async function searchChannels(request: GetChannelsPayload) {
 
   const searchTerm: string = request.name
 
-  // search channels
-  const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, request.since)
-
   // get user joined channelIds
   const joinedChannelIds = getAllConversationsWithMessages(store.getState())
     .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
@@ -1429,13 +1426,16 @@ export async function searchChannels(request: GetChannelsPayload) {
   // get user profile
   const profile = getCurrentUserProfile(store.getState())
 
+  // search channels
+  const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, request.since)
+
   // parse channel info
   const channelsToReturn: ChannelInfoPayload[] = []
 
-  let joined = false
-  let muted = false
-
   for (const channel of channels) {
+    let joined = false
+    let muted = false
+
     if (joinedChannelIds.includes(channel.id)) {
       joined = true
     }
