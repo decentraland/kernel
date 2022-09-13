@@ -55,7 +55,7 @@ import {
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
+import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -1422,9 +1422,27 @@ export async function searchChannels(request: GetChannelsPayload) {
   // search channels
   const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, since)
 
+  // get user joined channelIds
+  const joinedChannelIds = getAllConversationsWithMessages(store.getState())
+    .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+    .map((conv) => conv.conversation.id)
+
+  // get user profile
+  const profile = getCurrentUserProfile(store.getState())
+
+  // parse channel info
   const channelsToReturn: ChannelInfoPayload[] = []
 
+  let joined = false
+  let muted = false
+
   for (const channel of channels) {
+    if (joinedChannelIds.includes(channel.id)) {
+      joined = true
+    }
+    if (profile?.muted?.includes(channel.id)) {
+      muted = true
+    }
     channelsToReturn.push({
       name: channel.name!,
       channelId: channel.id,
@@ -1432,12 +1450,11 @@ export async function searchChannels(request: GetChannelsPayload) {
       lastMessageTimestamp: undefined,
       memberCount: channel.memberCount,
       description: channel.description || '',
-      joined: false,
-      muted: false
+      joined,
+      muted
     })
   }
 
-  // parse channel info
   const searchResult = {
     since: !nextBatch ? null : nextBatch,
     channels: channelsToReturn
