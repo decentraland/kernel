@@ -242,7 +242,11 @@ async function requestMediaDevice(deviceId?: string) {
 
       return media
     } catch (e) {
-      voiceChatLogger.log('Error requesting audio: ', e)
+      trackEvent('error', {
+        context: 'voice-chat',
+        message: 'Error requesting audio: ' + e,
+        stack: ''
+      })
     } finally {
       audioRequestPending = false
     }
