@@ -1416,11 +1416,10 @@ export async function searchChannels(request: GetChannelsPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const searchTerm: string = !request.name ? '' : request.name
-  const since: string | undefined = !request.since ? undefined : request.since
+  const searchTerm: string = request.name
 
   // search channels
-  const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, since)
+  const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, request.since)
 
   // get user joined channelIds
   const joinedChannelIds = getAllConversationsWithMessages(store.getState())
@@ -1456,7 +1455,7 @@ export async function searchChannels(request: GetChannelsPayload) {
   }
 
   const searchResult = {
-    since: !nextBatch ? null : nextBatch,
+    since: nextBatch,
     channels: channelsToReturn
   }
 

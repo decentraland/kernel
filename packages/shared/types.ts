@@ -757,7 +757,7 @@ export type ChannelsInfoPayload = {
 
 export type ChannelSearchResultsPayload = {
   channelSearchResultsPayload: {
-    since: string | null // nullable pagination token
+    since: string | undefined // nullable pagination token
     channels: ChannelInfoPayload[]
   }
 }
@@ -781,8 +781,8 @@ export type GetChannelMessagesPayload = {
 
 export type GetChannelsPayload = {
   limit: number // max amount of entries to request
-  since: string // a pagination token
   name: string // text to match
+  since?: string // a pagination token
 }
 
 export type GetJoinedChannelsPayload = {
