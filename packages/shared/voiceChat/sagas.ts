@@ -52,6 +52,7 @@ import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { getLiveKitVoiceChat } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
+import { incrementCounter } from 'shared/occurences'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -173,6 +174,7 @@ function* handleVoiceChatError({ payload }: SetVoiceChatErrorAction) {
       message: 'stream recording error: ' + payload.message,
       stack: ''
     })
+    incrementCounter('voiceChatHandlerError')
     store.dispatch(leaveVoiceChat())
   }
 }
@@ -247,6 +249,7 @@ async function requestMediaDevice(deviceId?: string) {
         message: 'Error requesting audio: ' + e,
         stack: ''
       })
+      incrementCounter('voiceChatRequestMediaDeviceFail')
     } finally {
       audioRequestPending = false
     }
