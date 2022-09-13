@@ -1,3 +1,6 @@
+// WARNING: This protocol is deprecated, it only exists as a migration plan to the
+// new CRDT based protocol.
+
 syntax = "proto3";
 
 package engineinterface;
@@ -186,6 +189,7 @@ message PB_SendSceneMessage {
         PB_OpenExternalUrl openExternalUrl = 14;
         PB_OpenNFTDialog openNFTDialog = 15;
     }
+    int32 sceneNumber = 99;
 }
 
 message PB_SetPosition {
@@ -204,28 +208,6 @@ message PB_Position {
     float y = 2;
 }
 
-// export interface ILand {
-//   sceneId: string
-//   scene: IScene
-//   baseUrl: string
-//   mappingsResponse: MappingsResponse
-// }
-
-// export interface IScene {
-//   assets?: Record<any, string>
-//   main: string
-//   communications: ISceneCommunications | null
-//   scene: {
-//     base: string
-//     parcels: string[]
-//   }
-//   _mappings?: Record<string, string>
-// }
-
-// export interface ISceneCommunications {
-//   commServerUrl: string | null
-// }
-
 message PB_LoadParcelScenes {
     string id = 1;
     PB_Position basePosition = 2;
@@ -233,15 +215,18 @@ message PB_LoadParcelScenes {
     repeated PB_ContentMapping contents = 4;
     string baseUrl = 5;
     // ILand land = 6;
+    int32 sceneNumber = 99;
 }
 
 message PB_CreateUIScene {
     string id = 1;
     string baseUrl = 2;
+    int32 sceneNumber = 99;
 }
 
 message PB_UnloadScene {
     string sceneId = 1;
+    int32 sceneNumber = 99;
 }
 
 message PB_DclMessage {
@@ -303,6 +288,8 @@ message PB_AvatarShape {
 
   string expressionTriggerId = 12;
   uint64 expressionTriggerTimestamp = 14;
+
+  repeated string emotes = 15;
 }
 
 message PB_Wearable {

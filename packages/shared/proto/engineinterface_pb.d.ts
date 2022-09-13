@@ -844,6 +844,9 @@ export class PB_SendSceneMessage extends jspb.Message {
   getOpennftdialog(): PB_OpenNFTDialog | undefined;
   setOpennftdialog(value?: PB_OpenNFTDialog): void;
 
+  getScenenumber(): number;
+  setScenenumber(value: number): void;
+
   getPayloadCase(): PB_SendSceneMessage.PayloadCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PB_SendSceneMessage.AsObject;
@@ -872,6 +875,7 @@ export namespace PB_SendSceneMessage {
     scenestarted?: google_protobuf_empty_pb.Empty.AsObject,
     openexternalurl?: PB_OpenExternalUrl.AsObject,
     opennftdialog?: PB_OpenNFTDialog.AsObject,
+    scenenumber: number,
   }
 
   export enum PayloadCase {
@@ -990,6 +994,9 @@ export class PB_LoadParcelScenes extends jspb.Message {
   getBaseurl(): string;
   setBaseurl(value: string): void;
 
+  getScenenumber(): number;
+  setScenenumber(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PB_LoadParcelScenes.AsObject;
   static toObject(includeInstance: boolean, msg: PB_LoadParcelScenes): PB_LoadParcelScenes.AsObject;
@@ -1007,6 +1014,7 @@ export namespace PB_LoadParcelScenes {
     parcelsList: Array<PB_Position.AsObject>,
     contentsList: Array<PB_ContentMapping.AsObject>,
     baseurl: string,
+    scenenumber: number,
   }
 }
 
@@ -1016,6 +1024,9 @@ export class PB_CreateUIScene extends jspb.Message {
 
   getBaseurl(): string;
   setBaseurl(value: string): void;
+
+  getScenenumber(): number;
+  setScenenumber(value: number): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PB_CreateUIScene.AsObject;
@@ -1031,12 +1042,16 @@ export namespace PB_CreateUIScene {
   export type AsObject = {
     id: string,
     baseurl: string,
+    scenenumber: number,
   }
 }
 
 export class PB_UnloadScene extends jspb.Message {
   getSceneid(): string;
   setSceneid(value: string): void;
+
+  getScenenumber(): number;
+  setScenenumber(value: number): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PB_UnloadScene.AsObject;
@@ -1051,6 +1066,7 @@ export class PB_UnloadScene extends jspb.Message {
 export namespace PB_UnloadScene {
   export type AsObject = {
     sceneid: string,
+    scenenumber: number,
   }
 }
 
@@ -1326,6 +1342,11 @@ export class PB_AvatarShape extends jspb.Message {
   getExpressiontriggertimestamp(): number;
   setExpressiontriggertimestamp(value: number): void;
 
+  clearEmotesList(): void;
+  getEmotesList(): Array<string>;
+  setEmotesList(value: Array<string>): void;
+  addEmotes(value: string, index?: number): string;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PB_AvatarShape.AsObject;
   static toObject(includeInstance: boolean, msg: PB_AvatarShape): PB_AvatarShape.AsObject;
@@ -1351,6 +1372,7 @@ export namespace PB_AvatarShape {
     usedummymodel: boolean,
     expressiontriggerid: string,
     expressiontriggertimestamp: number,
+    emotesList: Array<string>,
   }
 }
 

@@ -2,15 +2,24 @@
 /**
  * @fileoverview
  * @enhanceable
+ * @suppress {missingRequire} reports error on implicit type usages.
  * @suppress {messageConventions} JS Compiler reports an error if a variable or
  *     field starts with 'MSG_' and isn't a translatable message.
  * @public
  */
 // GENERATED CODE -- DO NOT EDIT!
+/* eslint-disable */
+// @ts-nocheck
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global = Function('return this')();
+var global = (function() {
+  if (this) { return this; }
+  if (typeof window !== 'undefined') { return window; }
+  if (typeof global !== 'undefined') { return global; }
+  if (typeof self !== 'undefined') { return self; }
+  return Function('return this')();
+}.call(null));
 
 var google_protobuf_empty_pb = require('google-protobuf/google/protobuf/empty_pb.js');
 goog.object.extend(proto, google_protobuf_empty_pb);
@@ -6962,7 +6971,8 @@ proto.engineinterface.PB_SendSceneMessage.toObject = function(includeInstance, m
     query: (f = msg.getQuery()) && proto.engineinterface.PB_Query.toObject(includeInstance, f),
     scenestarted: (f = msg.getScenestarted()) && google_protobuf_empty_pb.Empty.toObject(includeInstance, f),
     openexternalurl: (f = msg.getOpenexternalurl()) && proto.engineinterface.PB_OpenExternalUrl.toObject(includeInstance, f),
-    opennftdialog: (f = msg.getOpennftdialog()) && proto.engineinterface.PB_OpenNFTDialog.toObject(includeInstance, f)
+    opennftdialog: (f = msg.getOpennftdialog()) && proto.engineinterface.PB_OpenNFTDialog.toObject(includeInstance, f),
+    scenenumber: jspb.Message.getFieldWithDefault(msg, 99, 0)
   };
 
   if (includeInstance) {
@@ -7071,6 +7081,10 @@ proto.engineinterface.PB_SendSceneMessage.deserializeBinaryFromReader = function
       var value = new proto.engineinterface.PB_OpenNFTDialog;
       reader.readMessage(value,proto.engineinterface.PB_OpenNFTDialog.deserializeBinaryFromReader);
       msg.setOpennftdialog(value);
+      break;
+    case 99:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setScenenumber(value);
       break;
     default:
       reader.skipField();
@@ -7217,6 +7231,13 @@ proto.engineinterface.PB_SendSceneMessage.serializeBinaryToWriter = function(mes
       15,
       f,
       proto.engineinterface.PB_OpenNFTDialog.serializeBinaryToWriter
+    );
+  }
+  f = message.getScenenumber();
+  if (f !== 0) {
+    writer.writeInt32(
+      99,
+      f
     );
   }
 };
@@ -7736,6 +7757,24 @@ proto.engineinterface.PB_SendSceneMessage.prototype.clearOpennftdialog = functio
  */
 proto.engineinterface.PB_SendSceneMessage.prototype.hasOpennftdialog = function() {
   return jspb.Message.getField(this, 15) != null;
+};
+
+
+/**
+ * optional int32 sceneNumber = 99;
+ * @return {number}
+ */
+proto.engineinterface.PB_SendSceneMessage.prototype.getScenenumber = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 99, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.engineinterface.PB_SendSceneMessage} returns this
+ */
+proto.engineinterface.PB_SendSceneMessage.prototype.setScenenumber = function(value) {
+  return jspb.Message.setProto3IntField(this, 99, value);
 };
 
 
@@ -8294,7 +8333,8 @@ proto.engineinterface.PB_LoadParcelScenes.toObject = function(includeInstance, m
     proto.engineinterface.PB_Position.toObject, includeInstance),
     contentsList: jspb.Message.toObjectList(msg.getContentsList(),
     proto.engineinterface.PB_ContentMapping.toObject, includeInstance),
-    baseurl: jspb.Message.getFieldWithDefault(msg, 5, "")
+    baseurl: jspb.Message.getFieldWithDefault(msg, 5, ""),
+    scenenumber: jspb.Message.getFieldWithDefault(msg, 99, 0)
   };
 
   if (includeInstance) {
@@ -8353,6 +8393,10 @@ proto.engineinterface.PB_LoadParcelScenes.deserializeBinaryFromReader = function
     case 5:
       var value = /** @type {string} */ (reader.readString());
       msg.setBaseurl(value);
+      break;
+    case 99:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setScenenumber(value);
       break;
     default:
       reader.skipField();
@@ -8418,6 +8462,13 @@ proto.engineinterface.PB_LoadParcelScenes.serializeBinaryToWriter = function(mes
   if (f.length > 0) {
     writer.writeString(
       5,
+      f
+    );
+  }
+  f = message.getScenenumber();
+  if (f !== 0) {
+    writer.writeInt32(
+      99,
       f
     );
   }
@@ -8573,6 +8624,24 @@ proto.engineinterface.PB_LoadParcelScenes.prototype.setBaseurl = function(value)
 };
 
 
+/**
+ * optional int32 sceneNumber = 99;
+ * @return {number}
+ */
+proto.engineinterface.PB_LoadParcelScenes.prototype.getScenenumber = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 99, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.engineinterface.PB_LoadParcelScenes} returns this
+ */
+proto.engineinterface.PB_LoadParcelScenes.prototype.setScenenumber = function(value) {
+  return jspb.Message.setProto3IntField(this, 99, value);
+};
+
+
 
 
 
@@ -8606,7 +8675,8 @@ proto.engineinterface.PB_CreateUIScene.prototype.toObject = function(opt_include
 proto.engineinterface.PB_CreateUIScene.toObject = function(includeInstance, msg) {
   var f, obj = {
     id: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    baseurl: jspb.Message.getFieldWithDefault(msg, 2, "")
+    baseurl: jspb.Message.getFieldWithDefault(msg, 2, ""),
+    scenenumber: jspb.Message.getFieldWithDefault(msg, 99, 0)
   };
 
   if (includeInstance) {
@@ -8651,6 +8721,10 @@ proto.engineinterface.PB_CreateUIScene.deserializeBinaryFromReader = function(ms
       var value = /** @type {string} */ (reader.readString());
       msg.setBaseurl(value);
       break;
+    case 99:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setScenenumber(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -8694,6 +8768,13 @@ proto.engineinterface.PB_CreateUIScene.serializeBinaryToWriter = function(messag
       f
     );
   }
+  f = message.getScenenumber();
+  if (f !== 0) {
+    writer.writeInt32(
+      99,
+      f
+    );
+  }
 };
 
 
@@ -8733,6 +8814,24 @@ proto.engineinterface.PB_CreateUIScene.prototype.setBaseurl = function(value) {
 };
 
 
+/**
+ * optional int32 sceneNumber = 99;
+ * @return {number}
+ */
+proto.engineinterface.PB_CreateUIScene.prototype.getScenenumber = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 99, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.engineinterface.PB_CreateUIScene} returns this
+ */
+proto.engineinterface.PB_CreateUIScene.prototype.setScenenumber = function(value) {
+  return jspb.Message.setProto3IntField(this, 99, value);
+};
+
+
 
 
 
@@ -8765,7 +8864,8 @@ proto.engineinterface.PB_UnloadScene.prototype.toObject = function(opt_includeIn
  */
 proto.engineinterface.PB_UnloadScene.toObject = function(includeInstance, msg) {
   var f, obj = {
-    sceneid: jspb.Message.getFieldWithDefault(msg, 1, "")
+    sceneid: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    scenenumber: jspb.Message.getFieldWithDefault(msg, 99, 0)
   };
 
   if (includeInstance) {
@@ -8806,6 +8906,10 @@ proto.engineinterface.PB_UnloadScene.deserializeBinaryFromReader = function(msg,
       var value = /** @type {string} */ (reader.readString());
       msg.setSceneid(value);
       break;
+    case 99:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setScenenumber(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -8842,6 +8946,13 @@ proto.engineinterface.PB_UnloadScene.serializeBinaryToWriter = function(message,
       f
     );
   }
+  f = message.getScenenumber();
+  if (f !== 0) {
+    writer.writeInt32(
+      99,
+      f
+    );
+  }
 };
 
 
@@ -8860,6 +8971,24 @@ proto.engineinterface.PB_UnloadScene.prototype.getSceneid = function() {
  */
 proto.engineinterface.PB_UnloadScene.prototype.setSceneid = function(value) {
   return jspb.Message.setProto3StringField(this, 1, value);
+};
+
+
+/**
+ * optional int32 sceneNumber = 99;
+ * @return {number}
+ */
+proto.engineinterface.PB_UnloadScene.prototype.getScenenumber = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 99, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.engineinterface.PB_UnloadScene} returns this
+ */
+proto.engineinterface.PB_UnloadScene.prototype.setScenenumber = function(value) {
+  return jspb.Message.setProto3IntField(this, 99, value);
 };
 
 
@@ -10392,7 +10521,7 @@ proto.engineinterface.PB_AudioSource.prototype.setPitch = function(value) {
  * @private {!Array<number>}
  * @const
  */
-proto.engineinterface.PB_AvatarShape.repeatedFields_ = [5];
+proto.engineinterface.PB_AvatarShape.repeatedFields_ = [5,15];
 
 
 
@@ -10438,7 +10567,8 @@ proto.engineinterface.PB_AvatarShape.toObject = function(includeInstance, msg) {
     mouth: (f = msg.getMouth()) && proto.engineinterface.PB_Face.toObject(includeInstance, f),
     usedummymodel: jspb.Message.getBooleanFieldWithDefault(msg, 11, false),
     expressiontriggerid: jspb.Message.getFieldWithDefault(msg, 12, ""),
-    expressiontriggertimestamp: jspb.Message.getFieldWithDefault(msg, 14, 0)
+    expressiontriggertimestamp: jspb.Message.getFieldWithDefault(msg, 14, 0),
+    emotesList: (f = jspb.Message.getRepeatedField(msg, 15)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -10533,6 +10663,10 @@ proto.engineinterface.PB_AvatarShape.deserializeBinaryFromReader = function(msg,
     case 14:
       var value = /** @type {number} */ (reader.readUint64());
       msg.setExpressiontriggertimestamp(value);
+      break;
+    case 15:
+      var value = /** @type {string} */ (reader.readString());
+      msg.addEmotes(value);
       break;
     default:
       reader.skipField();
@@ -10658,6 +10792,13 @@ proto.engineinterface.PB_AvatarShape.serializeBinaryToWriter = function(message,
   if (f !== 0) {
     writer.writeUint64(
       14,
+      f
+    );
+  }
+  f = message.getEmotesList();
+  if (f.length > 0) {
+    writer.writeRepeatedString(
+      15,
       f
     );
   }
@@ -11029,6 +11170,43 @@ proto.engineinterface.PB_AvatarShape.prototype.getExpressiontriggertimestamp = f
  */
 proto.engineinterface.PB_AvatarShape.prototype.setExpressiontriggertimestamp = function(value) {
   return jspb.Message.setProto3IntField(this, 14, value);
+};
+
+
+/**
+ * repeated string emotes = 15;
+ * @return {!Array<string>}
+ */
+proto.engineinterface.PB_AvatarShape.prototype.getEmotesList = function() {
+  return /** @type {!Array<string>} */ (jspb.Message.getRepeatedField(this, 15));
+};
+
+
+/**
+ * @param {!Array<string>} value
+ * @return {!proto.engineinterface.PB_AvatarShape} returns this
+ */
+proto.engineinterface.PB_AvatarShape.prototype.setEmotesList = function(value) {
+  return jspb.Message.setField(this, 15, value || []);
+};
+
+
+/**
+ * @param {string} value
+ * @param {number=} opt_index
+ * @return {!proto.engineinterface.PB_AvatarShape} returns this
+ */
+proto.engineinterface.PB_AvatarShape.prototype.addEmotes = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 15, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.engineinterface.PB_AvatarShape} returns this
+ */
+proto.engineinterface.PB_AvatarShape.prototype.clearEmotesList = function() {
+  return this.setEmotesList([]);
 };
 
 
@@ -12353,8 +12531,10 @@ proto.engineinterface.PB_BoxShape.deserializeBinaryFromReader = function(msg, re
       msg.setVisible(value);
       break;
     case 3:
-      var value = /** @type {!Array<number>} */ (reader.readPackedFloat());
-      msg.setUvsList(value);
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedFloat() : [reader.readFloat()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addUvs(values[i]);
+      }
       break;
     default:
       reader.skipField();
@@ -15302,8 +15482,10 @@ proto.engineinterface.PB_PlaneShape.deserializeBinaryFromReader = function(msg, 
       msg.setHeight(value);
       break;
     case 5:
-      var value = /** @type {!Array<number>} */ (reader.readPackedFloat());
-      msg.setUvsList(value);
+      var values = /** @type {!Array<number>} */ (reader.isDelimited() ? reader.readPackedFloat() : [reader.readFloat()]);
+      for (var i = 0; i < values.length; i++) {
+        msg.addUvs(values[i]);
+      }
       break;
     default:
       reader.skipField();
