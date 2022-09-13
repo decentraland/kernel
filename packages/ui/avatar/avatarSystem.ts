@@ -71,13 +71,7 @@ export class AvatarEntity extends Entity {
 
       shape.bodyShape = avatar.bodyShape
       shape.wearables = avatar.wearables
-
-      // Hack to enable emotes with the new profile format
-      // this should be deleted once this PR is merged and implemented in renderer
-      // https://github.com/decentraland/protocol/pull/39
-      if (profile.avatar.emotes) {
-        shape.wearables.push(...profile.avatar.emotes.map(($) => $.urn))
-      }
+      shape.emotes = avatar.emotes
 
       shape.skinColor = avatar.skinColor
       shape.hairColor = avatar.hairColor
