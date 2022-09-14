@@ -76,12 +76,10 @@ export class AvatarEntity extends Entity {
       // this should be deleted once this PR is merged and implemented in renderer
       // https://github.com/decentraland/protocol/pull/39
       if (profile.avatar.emotes) {
-        ;(shape as any).emotes.push(
-          ...profile.avatar.emotes.map(($) => ({
-            urn: $.urn,
-            slot: $.slot
-          }))
-        )
+        ;(shape as any).emotes = profile.avatar.emotes.map(($) => ({
+          urn: $.urn,
+          slot: $.slot
+        }))
       }
 
       shape.skinColor = avatar.skinColor
