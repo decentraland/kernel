@@ -71,16 +71,7 @@ export class AvatarEntity extends Entity {
 
       shape.bodyShape = avatar.bodyShape
       shape.wearables = avatar.wearables
-
-      // Hack to enable emotes with the new profile format
-      // this should be deleted once this PR is merged and implemented in renderer
-      // https://github.com/decentraland/protocol/pull/39
-      if (profile.avatar.emotes) {
-        ;(shape as any).emotes = profile.avatar.emotes.map(($) => ({
-          urn: $.urn,
-          slot: $.slot
-        }))
-      }
+      shape.emotes = profile.avatar.emotes
 
       shape.skinColor = avatar.skinColor
       shape.hairColor = avatar.hairColor
@@ -210,6 +201,7 @@ function handleUserRemoved({ userId }: UserRemovedMessage): void {
 }
 
 avatarMessageObservable.add((evt) => {
+  dcl.log({ evt })
   if (evt.type === 'USER_DATA') {
     handleUserData(evt)
   } else if (evt.type === 'USER_VISIBLE') {
