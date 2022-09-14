@@ -790,3 +790,15 @@ export type LeaveChannelPayload = {
 export type GetChannelInfoPayload = {
   channelsIds: string[]
 }
+
+export type GetChannelMembersPayload = {
+  channelId: string
+  limit: number
+  skip: number
+  userName: string // text to match
+}
+
+export type UpdateChannelMembersPayload = {
+  channelId: string
+  members: string[]
+}

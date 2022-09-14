@@ -32,7 +32,8 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelsInfoPayload,
-  ChannelErrorPayload
+  ChannelErrorPayload,
+  UpdateChannelMembersPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -443,6 +444,10 @@ export class UnityInterface implements IUnityInterface {
 
   public LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload) {
     this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
+  }
+
+  public UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload) {
+    this.SendMessageToUnity('Main', 'UpdateChannelMembers', JSON.stringify(updateChannelMembersPayload))
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types

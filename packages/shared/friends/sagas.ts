@@ -50,7 +50,9 @@ import {
   MarkChannelMessagesAsSeenPayload,
   GetChannelMessagesPayload,
   ChannelErrorPayload,
-  GetChannelInfoPayload
+  GetChannelInfoPayload,
+  GetChannelMembersPayload,
+  UpdateChannelMembersPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -1489,4 +1491,43 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
   // send channel info to unity
   getUnityInstance().UpdateChannelInfo(channelsInfo)
+}
+
+// Get channel members
+export function getChannelMembers(request: GetChannelMembersPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channel = client.getChannel(request.channelId)
+  if (!channel) return
+
+  const channelMembers: UpdateChannelMembersPayload = {
+    channelId: request.channelId,
+    members: []
+  }
+
+  const channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
+  if (!channelMemberIds) {
+    // it means the channel has no members
+    getUnityInstance().UpdateChannelMembers(channelMembers)
+    return
+  }
+
+  const filteredProfiles = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
+
+  for (const profile of filteredProfiles) {
+    const member = channelMemberIds.find((id) => id === profile.data.userId)
+
+    if (member) {
+      channelMembers.members.push()
+    }
+  }
+
+  // update profiles to catalog
+  const profilesForRenderer = filteredProfiles.map((profile) => profileToRendererFormat(profile.data, {}))
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  store.dispatch(addedProfilesToCatalog(filteredProfiles.map((profile) => profile.data)))
+
+  // send channel members to unity
+  getUnityInstance().UpdateChannelMembers(channelMembers)
 }
