@@ -258,7 +258,8 @@ export class InstanceConnection implements RoomConnection {
       await this.transport.disconnect()
       globalThis.__DEBUG_PEER = undefined
     }
-    return this.bff.disconnect()
+    this.bff.disconnect()
+    this.events.emit('DISCONNECTION')
   }
 
   async sendVoiceMessage(_: Position, frame: EncodedFrame): Promise<void> {
