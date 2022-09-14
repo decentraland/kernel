@@ -41,11 +41,11 @@ export class BFFConnection {
   async connect(): Promise<string> {
     this.wsTransport = WebSocketTransport(new WebSocket(this.url, 'comms'))
     this.wsTransport.on('close', async () => {
-      this.logger.log('transport closed')
+      this.logger.log('BFF transport closed')
       this.disconnect()
     })
     this.wsTransport.on('error', async () => {
-      this.logger.log('transport closed')
+      this.logger.log('BFF transport closed')
       this.disconnect()
     })
     const rpcClient = await createRpcClient(this.wsTransport)
@@ -182,12 +182,12 @@ export class BFFConnection {
     }
 
     this.disposed = true
+    this.commsService = null
     if (this.wsTransport) {
       this.wsTransport.close()
       this.wsTransport = null
-      this.onDisconnectObservable.notifyObservers()
     }
-    this.commsService = null
+    this.onDisconnectObservable.notifyObservers()
   }
 
   private async authenticate(port: RpcClientPort): Promise<string> {
