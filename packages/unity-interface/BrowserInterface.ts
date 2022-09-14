@@ -32,7 +32,8 @@ import {
   GetChannelsPayload,
   GetChannelMessagesPayload,
   GetJoinedChannelsPayload,
-  LeaveChannelPayload
+  LeaveChannelPayload,
+  GetChannelInfoPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -96,7 +97,8 @@ import {
   getChannelMessages,
   getJoinedChannels,
   getUnseenMessagesByChannel,
-  markAsSeenChannelMessages
+  markAsSeenChannelMessages,
+  getChannelInfo
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
 
@@ -746,6 +748,10 @@ export class BrowserInterface {
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
     // leaveChannel(leaveChannelPayload)
+  }
+
+  public GetChannelInfo(getChannelInfoPayload: GetChannelInfoPayload) {
+    getChannelInfo(getChannelInfoPayload)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {

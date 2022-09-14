@@ -49,12 +49,13 @@ import {
   ChannelInfoPayload,
   MarkChannelMessagesAsSeenPayload,
   GetChannelMessagesPayload,
-  ChannelErrorPayload
+  ChannelErrorPayload,
+  GetChannelInfoPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
+import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -1451,4 +1452,41 @@ function getTotalUnseenMessagesByChannel() {
   }
 
   return updateTotalUnseenMessagesByChannelPayload
+}
+
+// Get channel info
+export function getChannelInfo(request: GetChannelInfoPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channelsInfo: ChannelsInfoPayload = {
+    channelsInfoPayload: []
+  }
+
+  // Todo Juli: give context about this
+  const channelId = request.channelsIds[0]
+
+  // get channel info
+  const channelInfo: Conversation | undefined = client.getChannel(channelId)
+
+  // get notification settings
+  const profile = getCurrentUserProfile(store.getState())
+  const muted = profile?.muted?.includes(channelId) ? true : false
+
+  // parse channel info
+  if (channelInfo) {
+    channelsInfo.channelsInfoPayload.push({
+      name: channelInfo.name!,
+      channelId: channelInfo.id,
+      unseenMessages: muted ? 0 : channelInfo.unreadMessages?.length || 0,
+      lastMessageTimestamp: channelInfo.lastEventTimestamp || undefined,
+      memberCount: channelInfo.userIds?.length || 1,
+      description: '',
+      joined: true,
+      muted
+    })
+  }
+
+  // send channel info to unity
+  getUnityInstance().UpdateChannelInfo(channelsInfo)
 }

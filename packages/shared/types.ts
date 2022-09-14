@@ -786,3 +786,7 @@ export type GetJoinedChannelsPayload = {
 export type LeaveChannelPayload = {
   channelId: string
 }
+
+export type GetChannelInfoPayload = {
+  channelsIds: string[]
+}
