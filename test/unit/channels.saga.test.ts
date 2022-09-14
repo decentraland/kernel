@@ -64,7 +64,6 @@ function getMockedAvatar(userId: string, name: string, muted: string[]): Avatar 
     tutorialStep: 1,
     userId,
     version: 1
-
   }
 }
 
