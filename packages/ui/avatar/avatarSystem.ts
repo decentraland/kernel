@@ -201,7 +201,6 @@ function handleUserRemoved({ userId }: UserRemovedMessage): void {
 }
 
 avatarMessageObservable.add((evt) => {
-  dcl.log({ evt })
   if (evt.type === 'USER_DATA') {
     handleUserData(evt)
   } else if (evt.type === 'USER_VISIBLE') {
