@@ -1488,21 +1488,17 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
     store.dispatch(unmutePlayers([channelId]))
   }
 
-  const channelsInfo: ChannelsInfoPayload = {
-    channelsInfoPayload: [
-      {
-        name: channel.name!,
-        channelId: channel.id,
-        unseenMessages: channel.unreadMessages?.length || 0,
-        lastMessageTimestamp: channel.lastEventTimestamp || undefined,
-        memberCount: channel.userIds?.length || 1,
-        description: '',
-        joined: true,
-        muted: muteChannel.muted
-      }
-    ]
+  const channelInfo: ChannelInfoPayload = {
+    name: channel.name!,
+    channelId: channel.id,
+    unseenMessages: channel.unreadMessages?.length || 0,
+    lastMessageTimestamp: channel.lastEventTimestamp || undefined,
+    memberCount: channel.userIds?.length || 1,
+    description: '',
+    joined: true,
+    muted: muteChannel.muted
   }
 
   // send message to unity
-  getUnityInstance().UpdateChannelInfo(channelsInfo)
+  getUnityInstance().UpdateChannelInfo({ channelsInfoPayload: [channelInfo] })
 }
