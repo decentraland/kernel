@@ -1454,9 +1454,12 @@ export async function searchChannels(request: GetChannelsPayload) {
     })
   }
 
+  // sort in descending order by memberCount value
+  const channelsSorted = channelsToReturn.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
+
   const searchResult = {
     since: nextBatch,
-    channels: channelsToReturn
+    channels: channelsSorted
   }
 
   // send search result to unity
