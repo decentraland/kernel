@@ -485,7 +485,7 @@ function initChatCommands() {
       sender: 'Decentraland',
       messageType: ChatMessageType.SYSTEM,
       timestamp: Date.now(),
-      body: `Leaving channel ${channelId}`
+      body: `Leaving channel`
     }
   })
 }
