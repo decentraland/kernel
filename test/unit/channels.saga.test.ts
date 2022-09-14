@@ -43,12 +43,12 @@ const getMockedConversation = (channelId: string, type: ConversationType): Conve
   name: `cantique ${channelId}`,
 })
 
-const getMockedChannels = (channelId: string): Channel => ({
+const getMockedChannels = (channelId: string, memberCount: number): Channel => ({
   type: ConversationType.CHANNEL,
   id: channelId,
   name: `cantique ${channelId}`,
   description: '',
-  memberCount: 0
+  memberCount
 })
 
 const mutedIds = ['111']
@@ -96,11 +96,11 @@ const allCurrentConversations: Array<{ conversation: Conversation; unreadMessage
 
 const publicRooms: SearchChannelsResponse[] = [
   {
-    channels: [getMockedChannels('000'), getMockedChannels('111'), getMockedChannels('009')],
+    channels: [getMockedChannels('000', 10), getMockedChannels('111', 2), getMockedChannels('009', 75)],
     nextBatch: 'next00'
   },
   {
-    channels: [getMockedChannels('000'), getMockedChannels('009')],
+    channels: [getMockedChannels('000', 1), getMockedChannels('009', 12)],
     nextBatch: undefined
   }
 ]
@@ -346,6 +346,8 @@ describe('Friends sagas - Channels Feature', () => {
 
         const { channels, nextBatch } = publicRooms[opts.index]
 
+        channels.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
+
         for (const channel of channels) {
           let joined = false
           let muted = false
@@ -395,6 +397,8 @@ describe('Friends sagas - Channels Feature', () => {
           .map((conv) => conv.conversation.id)
 
         const { channels, nextBatch } = publicRooms[opts.index]
+
+        channels.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
 
         for (const channel of channels) {
           let joined = false
