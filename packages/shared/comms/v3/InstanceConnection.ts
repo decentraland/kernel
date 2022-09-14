@@ -25,7 +25,7 @@ export type Config = {
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
-  private logger = DEBUG || DEBUG_COMMS ? createLogger('CommsV3: ') : createDummyLogger()
+  private logger = createLogger('CommsV3: ')
   private transport: Transport = new DummyTransport()
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
@@ -42,7 +42,7 @@ export class InstanceConnection implements RoomConnection {
     const peerId = await this.bff.connect()
     const commsConfig = getCommsConfig(store.getState())
     const config: TransportsConfig = {
-      logger: this.logger,
+      logger: DEBUG || DEBUG_COMMS ? this.logger : createDummyLogger(),
       bff: this.bff,
       selfPosition: this.selfPosition,
       peerId,
