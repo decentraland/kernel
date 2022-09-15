@@ -1,6 +1,6 @@
 import { RpcClientPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { CRDTServiceDefinition } from '../proto/RendererProtocol.gen'
+import { CRDTServiceDefinition } from '../proto/CRDT.gen'
 
 export function registerCRDTService<Context>(
   clientPort: RpcClientPort
