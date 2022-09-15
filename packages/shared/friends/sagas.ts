@@ -1465,7 +1465,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
     channelsInfoPayload: []
   }
 
-  // Todo Juli: give context about this
+  // although it is not the current scenario, we want to be able to request information for several channels at the same time
   const channelId = request.channelsIds[0]
 
   // get channel info
@@ -1475,7 +1475,6 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
   const profile = getCurrentUserProfile(store.getState())
   const muted = profile?.muted?.includes(channelId) ? true : false
 
-  // parse channel info
   if (channelInfo) {
     channelsInfo.channelsInfoPayload.push({
       name: channelInfo.name!,
@@ -1516,10 +1515,9 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   const filteredProfiles = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
 
   for (const profile of filteredProfiles) {
-    // Todo Juli: Check -- Have the ids we're comparing the same formart?
+    // Todo Juli: Check -- Do the ids we're comparing have the same format?
     const member = channelMemberIds.find((id) => id === profile.data.userId)
     if (member) {
-      // Todo Juli: Check -- What are we gonnna do with `isOnline`?
       channelMembers.members.push({ userId: member, isOnline: false })
     }
   }
