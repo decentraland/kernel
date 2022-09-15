@@ -8,15 +8,8 @@ import {
   receiveUserPosition,
   removeAllPeers
 } from './peers'
-import {
-  Package,
-  ChatMessage,
-  ProfileVersion,
-  AvatarMessageType,
-  ProfileRequest,
-  ProfileResponse
-} from './interface/types'
-import { Position } from './interface/utils'
+import { AvatarMessageType, Package } from './interface/types'
+import * as proto from './comms-rfc-4.gen'
 import { store } from 'shared/store/isolatedStore'
 import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/selectors'
 import { messageReceived } from '../chat/actions'
@@ -35,6 +28,7 @@ import { ProfileType } from 'shared/profiles/types'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
 import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
+import { uuid } from 'atomicHelpers/math'
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
@@ -91,7 +85,7 @@ export async function requestProfileToPeers(
   }
 }
 
-function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
+function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVersion>) {
   const msgTimestamp = message.time
 
   const peerTrackingInfo = setupPeer(message.sender)
@@ -131,63 +125,58 @@ function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
 }
 
 // TODO: Change ChatData to the new class once it is added to the .proto
-function processParcelSceneCommsMessage(message: Package<ChatMessage>) {
+function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
   const peer = getPeer(message.sender)
 
   if (peer) {
-    const { id: cid, text } = message.data
+    const { sceneId, data } = message.data
     scenesSubscribedToCommsEvents.forEach(($) => {
-      if ($.cid === cid) {
-        $.receiveCommsMessage(text, peer)
+      if ($.cid === sceneId) {
+        $.receiveCommsMessage(data, peer)
       }
     })
   }
 }
 
-function processChatMessage(message: Package<ChatMessage>) {
-  const msgId = message.data.id
+function processChatMessage(message: Package<proto.Chat>) {
   const myProfile = getCurrentUserProfile(store.getState())
   const fromAlias: string = message.sender
   const senderPeer = setupPeer(fromAlias)
 
-  if (!senderPeer.receivedPublicChatMessages.has(msgId)) {
-    const text = message.data.text
-    senderPeer.receivedPublicChatMessages.add(msgId)
-    senderPeer.lastUpdate = Date.now()
+  senderPeer.lastUpdate = Date.now()
 
-    if (senderPeer.ethereumAddress) {
-      if (text.startsWith('␐')) {
-        const [id, timestamp] = text.split(' ')
-        avatarMessageObservable.notifyObservers({
-          type: AvatarMessageType.USER_EXPRESSION,
-          userId: senderPeer.ethereumAddress,
-          expressionId: id.slice(1),
-          timestamp: parseInt(timestamp, 10)
-        })
-      } else {
-        const isBanned =
-          !myProfile ||
-          (senderPeer.ethereumAddress &&
-            isBlockedOrBanned(myProfile, getBannedUsers(store.getState()), senderPeer.ethereumAddress)) ||
-          false
+  if (senderPeer.ethereumAddress) {
+    if (message.data.message.startsWith('␐')) {
+      const [id, timestamp] = message.data.message.split(' ')
+      avatarMessageObservable.notifyObservers({
+        type: AvatarMessageType.USER_EXPRESSION,
+        userId: senderPeer.ethereumAddress,
+        expressionId: id.slice(1),
+        timestamp: parseInt(timestamp, 10)
+      })
+    } else {
+      const isBanned =
+        !myProfile ||
+        (senderPeer.ethereumAddress &&
+          isBlockedOrBanned(myProfile, getBannedUsers(store.getState()), senderPeer.ethereumAddress)) ||
+        false
 
-        if (!isBanned) {
-          const messageEntry: InternalChatMessage = {
-            messageType: ChatMessageType.PUBLIC,
-            messageId: msgId,
-            sender: senderPeer.ethereumAddress,
-            body: text,
-            timestamp: Date.now()
-          }
-          store.dispatch(messageReceived(messageEntry))
+      if (!isBanned) {
+        const messageEntry: InternalChatMessage = {
+          messageType: ChatMessageType.PUBLIC,
+          messageId: uuid(),
+          sender: senderPeer.ethereumAddress,
+          body: message.data.message,
+          timestamp: message.time
         }
+        store.dispatch(messageReceived(messageEntry))
       }
     }
   }
 }
 
 // Receive a "rpc" signal over comms to send our profile
-function processProfileRequest(message: Package<ProfileRequest>) {
+function processProfileRequest(message: Package<proto.ProfileRequest>) {
   const myIdentity = getIdentity()
   const myAddress = myIdentity?.address
 
@@ -197,7 +186,7 @@ function processProfileRequest(message: Package<ProfileRequest>) {
   }
 }
 
-function processProfileResponse(message: Package<ProfileResponse>) {
+function processProfileResponse(message: Package<proto.ProfileResponse>) {
   const peerTrackingInfo = setupPeer(message.sender)
 
   const profile = ensureAvatarCompatibilityFormat(message.data.profile)
@@ -233,6 +222,6 @@ export function createReceiveProfileOverCommsChannel() {
   })
 }
 
-function processPositionMessage(message: Package<Position>) {
+function processPositionMessage(message: Package<proto.Position>) {
   receiveUserPosition(message.sender, message.data, message.time)
 }

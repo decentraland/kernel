@@ -62,7 +62,6 @@ export function setupPeer(uuid: UUID): PeerInformation {
       lastPositionUpdate: 0,
       lastProfileUpdate: 0,
       lastUpdate: Date.now(),
-      receivedPublicChatMessages: new Set(),
       talking: false,
       visible: true
     }

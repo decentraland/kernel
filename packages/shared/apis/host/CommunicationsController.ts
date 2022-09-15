@@ -16,7 +16,8 @@ export function registerCommunicationsControllerServiceServerImplementation(port
   codegen.registerService(port, CommunicationsControllerServiceDefinition, async (port, ctx) => {
     const commsController: ICommunicationsController = {
       cid: ctx.sceneData.id,
-      receiveCommsMessage(message: string, sender: PeerInformation) {
+      receiveCommsMessage(data: Uint8Array, sender: PeerInformation) {
+        const message = new TextDecoder().decode(data)
         ctx.sendSceneEvent('comms', {
           message,
           sender: sender.ethereumAddress || sender.uuid
@@ -32,7 +33,8 @@ export function registerCommunicationsControllerServiceServerImplementation(port
 
     return {
       async send(req, ctx) {
-        sendParcelSceneCommsMessage(ctx.sceneData.id, req.message)
+        const message = new TextEncoder().encode(req.message)
+        sendParcelSceneCommsMessage(ctx.sceneData.id, message)
         return {}
       }
     }

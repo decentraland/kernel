@@ -1,6 +1,5 @@
 import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
 
-import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
@@ -353,10 +352,9 @@ export class BrowserInterface {
       }
     })
 
-    const messageId = uuid()
     const body = `␐${data.id} ${data.timestamp}`
 
-    sendPublicChatMessage(messageId, body)
+    sendPublicChatMessage(body)
   }
 
   public TermsOfServiceResponse(data: { sceneId: string; accepted: boolean; dontShowAgain: boolean }) {

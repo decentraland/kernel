@@ -81,7 +81,6 @@ export type PeerInformation = UserInformation & {
   lastPositionUpdate: number
   lastProfileUpdate: number
   lastUpdate: number
-  receivedPublicChatMessages: Set<string>
 }
 
 export type UserInformation = {
@@ -111,17 +110,6 @@ export type Package<T> = {
   sender: string
   time: number
   data: T
-}
-
-export type ProfileVersion = {
-  version: string
-  user: string
-  type: ProfileType
-}
-
-export type ChatMessage = {
-  id: string
-  text: string
 }
 
 export type VoiceFragment = {
