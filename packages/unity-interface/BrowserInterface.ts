@@ -33,7 +33,6 @@ import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
 import { updateFriendship, updateUserData } from 'shared/friends/actions'
-import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
 import { updateStatusMessage } from 'shared/loading/actions'
@@ -74,6 +73,7 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
+import { JumpIn } from './services/teleport/teleportService'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -369,15 +369,18 @@ export class BrowserInterface {
     }
   }
 
+  // @deprecated due to renderer protocol
   public GoTo(data: { x: number; y: number }) {
     notifyStatusThroughChat(`Jumped to ${data.x},${data.y}!`)
     TeleportController.goTo(data.x, data.y)
   }
 
+  // @deprecated due to renderer protocol
   public GoToMagic() {
     TeleportController.goToCrowd().catch((e) => defaultLogger.error('error goToCrowd', e))
   }
 
+  // @deprecated due to renderer protocol
   public GoToCrowd() {
     TeleportController.goToCrowd().catch((e) => defaultLogger.error('error goToCrowd', e))
   }
@@ -641,28 +644,9 @@ export class BrowserInterface {
       })
   }
 
+  // @deprecated due to renderer protocol
   public async JumpIn(data: WorldPosition) {
-    const {
-      gridPosition: { x, y },
-      realm: { serverName }
-    } = data
-
-    notifyStatusThroughChat(`Jumping to ${serverName} at ${x},${y}...`)
-
-    changeRealm(serverName).then(
-      () => {
-        const successMessage = `Jumped to ${x},${y} in realm ${serverName}!`
-        notifyStatusThroughChat(successMessage)
-        getUnityInstance().ConnectionToRealmSuccess(data)
-        TeleportController.goTo(x, y, successMessage)
-      },
-      (e) => {
-        const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-        notifyStatusThroughChat('changerealm: Could not join realm.' + cause)
-        getUnityInstance().ConnectionToRealmFailed(data)
-        defaultLogger.error(e)
-      }
-    )
+    await JumpIn(data)
   }
 
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {
