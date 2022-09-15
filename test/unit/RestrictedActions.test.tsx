@@ -9,6 +9,7 @@ import { Vector3 } from '@dcl/legacy-ecs'
 import { EntityType, Scene } from '@dcl/schemas'
 import { expect } from 'chai'
 import Sinon from 'sinon'
+import { rendererProtocol } from 'renderer-protocol/rpcClient'
 
 describe('RestrictedActions tests', () => {
   beforeEach(() => {
@@ -59,18 +60,19 @@ describe('RestrictedActions tests', () => {
     it('should move the player', async () => {
       setLastPlayerPosition()
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
-      const stub = sinon.stub(getUnityInstance(), 'Teleport')
+
+      const stub = sinon.stub((await rendererProtocol).teleportService, 'teleport')
 
       movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)
 
-      Sinon.assert.calledWithExactly(stub, { position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined }, false)
+      Sinon.assert.calledWithExactly(stub, { position: { x: 8, y: 0, z: 1624 }, cameraTarget: undefined, rotateIfTargetIsNotSet: false })
     })
 
     it('should fail when position is outside scene', async () => {
       setLastPlayerPosition()
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
       const errorSpy = sinon.spy(defaultLogger, 'error')
-      const stub = sinon.stub(getUnityInstance(), 'Teleport')
+      const stub = sinon.stub((await rendererProtocol).teleportService, 'teleport')
       movePlayerTo({ newRelativePosition: new Vector3(21, 0, 32) }, ctx)
       Sinon.assert.calledWithExactly(errorSpy, 'Error: Position is out of scene', { x: 21, y: 0, z: 1648 })
       Sinon.assert.callCount(stub, 0)
@@ -79,7 +81,7 @@ describe('RestrictedActions tests', () => {
     it('should fail when scene does not have permissions', async () => {
       setLastPlayerPosition()
       const ctx = getContextWithPermissions()
-      const stub = sinon.stub(getUnityInstance(), 'Teleport')
+      const stub = sinon.stub((await rendererProtocol).teleportService, 'teleport')
 
       expect(() => movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)).to.throw(
         /This scene doesn't have some of the next permissions: ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE/
@@ -92,7 +94,7 @@ describe('RestrictedActions tests', () => {
     it('should fail when player is out of scene and try to move', async () => {
       setLastPlayerPosition(false)
       const ctx = getContextWithPermissions(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE)
-      const stub = sinon.stub(getUnityInstance(), 'Teleport')
+      const stub = sinon.stub((await rendererProtocol).teleportService, 'teleport')
       const errorSpy = sinon.spy(defaultLogger, 'error')
 
       movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)

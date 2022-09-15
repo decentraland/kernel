@@ -8,7 +8,6 @@ import { AirdropInfo } from '../shared/airdrops/interface'
 import {
   RenderProfile,
   ContentMapping,
-  InstancedSpawnPoint,
   LoadableParcelScene,
   WearableV2,
   HUDElementID,

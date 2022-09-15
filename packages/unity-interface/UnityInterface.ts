@@ -5,7 +5,6 @@ import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {
   HUDConfiguration,
-  InstancedSpawnPoint,
   LoadableParcelScene,
   Notification,
   ChatMessage,
