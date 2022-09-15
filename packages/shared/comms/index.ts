@@ -182,8 +182,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       url.search = qs.toString()
       const finalUrl = url.toString()
       commsLogger.log('Using WebSocket comms: ' + finalUrl)
-      const commsBroker = new CliBrokerConnection(finalUrl)
-      connection = new BrokerWorldInstanceConnection(commsBroker)
+      connection = new BrokerWorldInstanceConnection(new CliBrokerConnection(finalUrl))
 
       break
     }

@@ -18,6 +18,7 @@ import { ProfileType } from 'shared/profiles/types'
 import { getParcelSceneSubscriptions } from './sceneSubscriptions'
 import { MORDOR_POSITION } from './const'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
+import { incrementCounter } from 'shared/occurences'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -49,6 +50,7 @@ export class CommsContext {
   private lastNetworkUpdatePosition = new Date().getTime()
   private lastPositionSent: Position | undefined
   private destroyed = false
+  private profileVersion: number = 0
 
   constructor(
     public readonly realm: Realm,
@@ -119,6 +121,8 @@ export class CommsContext {
       this.worldInstanceConnection
         .sendProfileMessage(this.currentPosition, this.userAddress, this.profileType, version)
         .catch((e) => commsLogger.warn(`error in sendCurrentProfile `, e))
+
+      this.profileVersion = version
     }
   }
 
@@ -190,7 +194,10 @@ export class CommsContext {
     if ((immediateReposition || elapsed > 100) && !this.destroyed) {
       this.lastPositionSent = newPosition
       this.lastNetworkUpdatePosition = now
-      worldConnection.sendPositionMessage(newPosition).catch((e) => commsLogger.warn(`error while sending message `, e))
+      worldConnection.sendPositionMessage(newPosition, this.profileVersion).catch((e) => {
+        incrementCounter('failed:sendPositionMessage')
+        commsLogger.warn(`error while sending message `, e)
+      })
     }
   }
 

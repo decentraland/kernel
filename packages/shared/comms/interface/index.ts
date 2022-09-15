@@ -46,7 +46,7 @@ export interface RoomConnection {
   ): Promise<void>
   sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void>
   sendProfileResponse(currentPosition: Position, profile: Avatar): Promise<void>
-  sendPositionMessage(p: Position): Promise<void>
+  sendPositionMessage(p: Position, profileVersion: number): Promise<void>
   sendParcelUpdateMessage(currentPosition: Position, p: Position): Promise<void>
   sendParcelSceneCommsMessage(cid: string, message: string): Promise<void>
   sendChatMessage(currentPosition: Position, messageId: string, text: string): Promise<void>

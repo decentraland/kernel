@@ -9,15 +9,18 @@ endif
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
-BFF_PROTO_FILES := $(wildcard packages/shared/comms/v3/proto/bff/*.proto)
-COMMS_PROTO_FILES := $(wildcard packages/shared/comms/v3/proto/*.proto)
+BFF_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/bff/*.proto)
+COMMS_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/comms/v3/*.proto)
+COMMSRFC4_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/comms/*.proto)
 
 SCENE_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
 RENDERER_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/renderer-protocol/*.proto)
 PBS_TS = $(SCENE_PROTO_FILES:node_modules/@dcl/protocol/kernel/apis/%.proto=packages/shared/apis/proto/%.gen.ts)
 PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/renderer-protocol/proto/%.gen.ts)
-BFF_TS = $(BFF_PROTO_FILES:packages/shared/comms/v3/proto/bff/%.proto=packages/shared/comms/v3/proto/bff/%.gen.ts)
-COMMS_TS = $(COMMS_PROTO_FILES:packages/shared/comms/v3/proto/%.proto=packages/shared/comms/v3/proto/%.gen.ts)
+BFF_TS = $(BFF_PROTO_FILES:node_modules/@dcl/protocol/bff/%.proto=packages/shared/comms/v3/proto/bff/%.gen.ts)
+COMMS_TS = $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/v3/%.proto=packages/shared/comms/v3/proto/%.gen.ts)
+COMMSRFC4_TS = $(COMMSRFC4_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/%.proto=packages/shared/comms/%.gen.ts)
+
 
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protobuf/bin/protoc
@@ -68,7 +71,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: ${BFF_TS} ${COMMS_TS} ${PBRENDERER_TS} ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: ${BFF_TS} ${COMMS_TS} ${COMMSRFC4_TS} ${PBRENDERER_TS} ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
 # Entry points
 static/%.js: build-essentials packages/entryPoints/%.ts
@@ -208,22 +211,35 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
 			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
-packages/shared/comms/v3/proto/bff/%.gen.ts: packages/shared/comms/v3/proto/bff/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto/bff" -I="$(PWD)/packages/shared/comms/v3/proto/bff" \
-			"$(PWD)/packages/shared/comms/v3/proto/bff/$*.proto"
+			--ts_proto_out="$(PWD)/packages/shared/comms" \
+      -I="$(PWD)/node_modules/@dcl/protocol/bff" \
+      -I="$(PWD)/node_modules/protobufjs" \
+			-I="$(PWD)/node_modules/@dcl/protocol/kernel/comms" \
+			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/$*.proto"
 
-packages/shared/comms/v3/proto/%.gen.ts: packages/shared/comms/v3/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/v3/proto/bff/%.gen.ts: node_modules/@dcl/protocol/bff/%.proto node_modules/.bin/protobuf/bin/protoc
+	${PROTOC}  \
+			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
+		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+			--ts_proto_opt=fileSuffix=.gen \
+			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto/bff" \
+      -I="$(PWD)/node_modules/@dcl/protocol/bff" \
+      -I="$(PWD)/node_modules/protobufjs" \
+			"$(PWD)/node_modules/@dcl/protocol/bff/$*.proto"
+
+packages/shared/comms/v3/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/v3/%.proto node_modules/.bin/protobuf/bin/protoc
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,oneof=unions\
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto" -I="$(PWD)/packages/shared/comms/v3/proto" \
-			"$(PWD)/packages/shared/comms/v3/proto/$*.proto" 
+			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto" -I="$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3" \
+			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3/$*.proto"
 
-compile_apis: ${BFF_TS} ${COMMS_TS} ${PBS_TS} 
+compile_apis: ${BFF_TS} ${COMMS_TS} ${PBS_TS}
 
 compile_renderer_protocol: ${PBRENDERER_TS}

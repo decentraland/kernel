@@ -1,5 +1,4 @@
 import { defaultLogger } from 'shared/logger'
-import { PositionData } from '../comms/v1/proto/comms_pb'
 
 export class TrackAvgDuration {
   public durationsMs: number[] = []
@@ -154,7 +153,7 @@ export class Stats {
     defaultLogger.info('-------')
   }
 
-  public onPositionMessage(fromAlias: string, _data: PositionData) {
+  public onPositionMessage(fromAlias: string) {
     let stats = this.peers.get(fromAlias)
 
     if (!stats) {

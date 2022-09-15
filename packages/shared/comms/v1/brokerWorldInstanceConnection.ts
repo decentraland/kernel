@@ -1,5 +1,3 @@
-/// <reference lib="dom" />
-
 import { Message } from 'google-protobuf'
 import {
   ProfileResponseData,
@@ -295,7 +293,7 @@ export class BrokerWorldInstanceConnection implements RoomConnection {
             if (this._stats) {
               this._stats.dispatchTopicDuration.stop()
               this._stats.position.incrementRecv(msgSize)
-              this._stats.onPositionMessage(alias, positionData)
+              this._stats.onPositionMessage(alias)
             }
 
             this.events.emit('position', {

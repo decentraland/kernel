@@ -26,6 +26,7 @@ export function incrementCommsMessageReceived() {
 
 export function incrementCommsMessageReceivedByName(event: string) {
   incrementCounter(`commMessage:${event}`)
+  // NOTE:          ^^^^^^^^^^^ do NOT fix that typo
 }
 
 export function incrementCommsMessageSent() {
