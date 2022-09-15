@@ -5,7 +5,6 @@ import {
 } from 'shared/selectors'
 import { getFetchContentServer } from 'shared/dao/selectors'
 import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 
 import { UserActionModuleServiceDefinition } from '../proto/UserActionModule.gen'
@@ -15,14 +14,15 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { Scene } from '@dcl/schemas'
 import { postProcessSceneName } from 'shared/atlas/selectors'
 import { rendererProtocol } from 'renderer-protocol/rpcClient'
+import defaultLogger from 'shared/logger'
 
 export function registerUserActionModuleServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
     async requestTeleport(req, ctx) {
       const { destination } = req
       if (destination === 'magic' || destination === 'crowd') {
-        void rendererProtocol.then((protocol) => {
-          protocol.teleportService.requestTeleport({
+        void rendererProtocol.then(async (protocol) => {
+          await protocol.teleportService.requestTeleport({
             destination
           })
         })
@@ -66,21 +66,17 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
             start_at: json.data[0].start_at,
             finish_at: json.data[0].finish_at
           }
+          defaultLogger.log(JSON.stringify(sceneEvent)) // TODO: Remove this and change the protocol
         }
       } catch (e: any) {
         ctx.logger.error(e)
       }
 
-      void rendererProtocol.then((protocol) => {
-        protocol.teleportService.requestTeleport({
-          destination
+      void rendererProtocol.then(async (protocol) => {
+        await protocol.teleportService.requestTeleport({
+          destination // TODO: Send sceneEvent
         })
       })
-      /*getUnityInstance().RequestTeleport({
-        destination,
-        sceneEvent,
-        sceneData
-      })*/
       return {}
     }
   }))

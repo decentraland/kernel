@@ -142,20 +142,6 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'CreateGlobalScene', JSON.stringify(data))
   }
 
-  /** Sends the camera position & target to the engine */
-
-  public Teleport(
-    { position: { x, y, z }, cameraTarget }: InstancedSpawnPoint,
-    rotateIfTargetIsNotSet: boolean = true
-  ) {
-    const theY = y <= 0 ? 2 : y
-
-    this.SendMessageToUnity('CharacterController', 'Teleport', JSON.stringify({ x, y: theY, z }))
-    if (cameraTarget || rotateIfTargetIsNotSet) {
-      this.SendMessageToUnity('CameraController', 'SetRotation', JSON.stringify({ x, y: theY, z, cameraTarget }))
-    }
-  }
-
   /** Tells the engine which scenes to load */
 
   public LoadParcelScenes(parcelsToLoad: LoadableParcelScene[]) {

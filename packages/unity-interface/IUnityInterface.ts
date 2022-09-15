@@ -82,16 +82,6 @@ export interface IUnityInterface {
     isPortableExperience: boolean
   }): void
 
-  /** Sends the camera position & target to the engine */
-  /** @deprecated due to renderer protocol */
-  Teleport(
-    {
-      position: { x, y, z },
-      cameraTarget
-    }: InstancedSpawnPoint,
-    rotateIfTargetIsNotSet?: boolean
-  ): void
-
   /** Tells the engine which scenes to load */
 
   LoadParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
@@ -131,8 +121,6 @@ export interface IUnityInterface {
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
-  /** @deprecated due to renderer protocol */
-  RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
   ConnectionToRealmSuccess(successData: WorldPosition): void
   ConnectionToRealmFailed(failedData: WorldPosition): void
