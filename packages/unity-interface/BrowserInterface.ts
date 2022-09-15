@@ -73,7 +73,7 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
-import { JumpIn } from './services/teleport/teleportService'
+import { JumpIn } from './services/teleport/teleportStarter'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}

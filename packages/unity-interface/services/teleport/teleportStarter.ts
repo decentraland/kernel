@@ -1,8 +1,7 @@
-import { Empty } from '../../../renderer-protocol/proto/Teleport.gen'
-import { rendererProtocol } from './../../../renderer-protocol/rpcClient'
+import { rendererProtocol } from '../../../renderer-protocol/rpcClient'
 import { notifyStatusThroughChat } from '../../../shared/chat'
 import { changeRealm } from '../../../shared/dao'
-import { getUnityInstance } from '../../../unity-interface/IUnityInterface'
+import { getUnityInstance } from '../../IUnityInterface'
 import { TeleportController } from '../../../shared/world/TeleportController'
 import defaultLogger from '../../../shared/logger'
 import { WorldPosition } from '../../../shared/types'
@@ -34,7 +33,7 @@ export async function JumpIn(worldPosition: WorldPosition) {
 export function startTeleportService() {
   rendererProtocol
     .then(async (protocol) => {
-      for await (const message of protocol.teleportService.onMessage(Empty)) {
+      for await (const message of protocol.teleportService.onMessage({})) {
         if (message.jumpIn) {
           await JumpIn({
             gridPosition: { x: message.jumpIn.parcelX, y: message.jumpIn.parcelY },

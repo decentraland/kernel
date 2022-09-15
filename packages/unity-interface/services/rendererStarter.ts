@@ -1,4 +1,4 @@
-import { startTeleportService } from './teleport/teleportService'
+import { startTeleportService } from './teleport/teleportStarter'
 
 export function startRendererServices() {
   startTeleportService()
