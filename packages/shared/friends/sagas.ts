@@ -1516,10 +1516,11 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   const filteredProfiles = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
 
   for (const profile of filteredProfiles) {
+    // Todo Juli: Check -- Have the ids we're comparing the same formart?
     const member = channelMemberIds.find((id) => id === profile.data.userId)
-
     if (member) {
-      channelMembers.members.push()
+      // Todo Juli: Check -- What are we gonnna do with `isOnline`?
+      channelMembers.members.push({ userId: member, isOnline: false })
     }
   }
 

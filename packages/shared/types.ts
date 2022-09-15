@@ -798,7 +798,12 @@ export type GetChannelMembersPayload = {
   userName: string // text to match
 }
 
+export type ChannelMember = {
+  userId: string
+  isOnline: boolean
+}
+
 export type UpdateChannelMembersPayload = {
   channelId: string
-  members: string[]
+  members: ChannelMember[]
 }
