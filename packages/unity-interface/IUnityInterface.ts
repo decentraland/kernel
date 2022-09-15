@@ -83,7 +83,7 @@ export interface IUnityInterface {
   }): void
 
   /** Sends the camera position & target to the engine */
-
+  /** @deprecated due to renderer protocol */
   Teleport(
     {
       position: { x, y, z },
@@ -131,6 +131,7 @@ export interface IUnityInterface {
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
+  /** @deprecated due to renderer protocol */
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
   ConnectionToRealmSuccess(successData: WorldPosition): void

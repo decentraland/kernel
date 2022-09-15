@@ -40,6 +40,7 @@ import { workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 import { sleep } from 'atomicHelpers/sleep'
+import { rendererProtocol } from 'renderer-protocol/rpcClient'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -130,7 +131,13 @@ export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
     getUnityInstance().LoadParcelScenes(lands.map(($) => loadableSceneToLoadableParcelScene($)))
   })
   onPositionSettledObservable.add((spawnPoint) => {
-    getUnityInstance().Teleport(spawnPoint)
+    void rendererProtocol.then(async (protocol) => {
+      await protocol.teleportService.teleport({
+        position: spawnPoint.position,
+        cameraTarget: spawnPoint.cameraTarget,
+        rotateIfTargetIsNotSet: true
+      })
+    })
     getUnityInstance().ActivateRendering()
   })
   onPositionUnsettledObservable.add(() => {

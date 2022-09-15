@@ -14,13 +14,18 @@ import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { Scene } from '@dcl/schemas'
 import { postProcessSceneName } from 'shared/atlas/selectors'
+import { rendererProtocol } from 'renderer-protocol/rpcClient'
 
 export function registerUserActionModuleServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
     async requestTeleport(req, ctx) {
       const { destination } = req
       if (destination === 'magic' || destination === 'crowd') {
-        getUnityInstance().RequestTeleport({ destination })
+        void rendererProtocol.then((protocol) => {
+          protocol.teleportService.requestTeleport({
+            destination
+          })
+        })
         return {}
       } else if (!/^\-?\d+\,\-?\d+$/.test(destination)) {
         ctx.logger.error(`teleportTo: invalid destination ${destination}`)
@@ -66,11 +71,16 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
         ctx.logger.error(e)
       }
 
-      getUnityInstance().RequestTeleport({
+      void rendererProtocol.then((protocol) => {
+        protocol.teleportService.requestTeleport({
+          destination
+        })
+      })
+      /*getUnityInstance().RequestTeleport({
         destination,
         sceneEvent,
         sceneData
-      })
+      })*/
       return {}
     }
   }))

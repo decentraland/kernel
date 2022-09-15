@@ -20,6 +20,7 @@ import {
 } from '../proto/RestrictedActions.gen'
 import { assertHasPermission } from './Permissions'
 import { PermissionItem } from '../proto/Permissions.gen'
+import { rendererProtocol } from 'renderer-protocol/rpcClient'
 
 export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePlayerToResponse {
   //   checks permissions
@@ -45,13 +46,13 @@ export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePl
     return {}
   }
 
-  getUnityInstance().Teleport(
-    {
+  void rendererProtocol.then(async (protocol) => {
+    await protocol.teleportService.teleport({
       position: newAbsolutePosition,
-      cameraTarget: req.cameraTarget ? basePosition.add(req.cameraTarget) : undefined
-    },
-    false
-  )
+      cameraTarget: req.cameraTarget ? basePosition.add(req.cameraTarget) : undefined,
+      rotateIfTargetIsNotSet: false
+    })
+  })
 
   // Get ahead of the position report that will be done automatically later and report
   // position right now, also marked as an immediate update (last bool in Position structure)

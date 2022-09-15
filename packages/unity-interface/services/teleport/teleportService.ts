@@ -31,7 +31,7 @@ export async function JumpIn(worldPosition: WorldPosition) {
   )
 }
 
-export function registerTeleportService() {
+export function startTeleportService() {
   rendererProtocol
     .then(async (protocol) => {
       for await (const message of protocol.teleportService.onMessage(Empty)) {
