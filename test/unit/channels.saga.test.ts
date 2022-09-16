@@ -4,7 +4,7 @@ import * as friendsSelectors from 'shared/friends/selectors'
 import * as profilesSelectors from 'shared/profiles/selectors'
 import { getUserIdFromMatrix } from "shared/friends/utils"
 import { buildStore } from "shared/store/store"
-import { AddChatMessagesPayload, ChannelInfoPayload, ChannelsInfoPayload, ChatMessageType, GetChannelMessagesPayload, GetChannelsPayload, GetJoinedChannelsPayload, UpdateTotalUnseenMessagesByChannelPayload } from "shared/types"
+import { AddChatMessagesPayload, ChannelsInfoPayload, ChatMessageType, GetChannelMessagesPayload, GetChannelsPayload, GetJoinedChannelsPayload, UpdateTotalUnseenMessagesByChannelPayload } from "shared/types"
 import sinon from "sinon"
 import { getUnityInstance } from "unity-interface/IUnityInterface"
 import { Avatar } from "@dcl/schemas"
@@ -329,16 +329,13 @@ describe('Friends sagas - Channels Feature', () => {
       sinon.reset()
     })
 
-    describe("When the user wanst the list of channel and there's no filter", () => {
+    describe("When the user wants the list of channels and there's no filter", () => {
       it('Should send the start of the channels list pagination', () => {
         const request: GetChannelsPayload = {
           name: '',
           limit: 3,
           since: undefined
         }
-
-        // parse messages
-        const channelsToReturn: ChannelInfoPayload[] = []
 
         const joinedChannelIds = allCurrentConversations
           .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
@@ -348,27 +345,16 @@ describe('Friends sagas - Channels Feature', () => {
 
         channels.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
 
-        for (const channel of channels) {
-          let joined = false
-          let muted = false
-
-          if (joinedChannelIds.includes(channel.id)) {
-            joined = true
-          }
-          if (mutedIds.includes(channel.id)) {
-            muted = true
-          }
-          channelsToReturn.push({
-            name: channel.name!,
-            channelId: channel.id,
-            unseenMessages: 0,
-            lastMessageTimestamp: undefined,
-            memberCount: channel.memberCount,
-            description: channel.description || '',
-            joined,
-            muted
-          })
-        }
+        const channelsToReturn = channels.map((channel) => ({
+          channelId: channel.id,
+          name: channel.name || '',
+          unseenMessages: 0,
+          lastMessageTimestamp: undefined,
+          memberCount: channel.memberCount,
+          description: channel.description || '',
+          joined: joinedChannelIds.includes(channel.id),
+          muted: mutedIds.includes(channel.id)
+        }))
 
         const searchResult = {
           since: nextBatch,
@@ -381,16 +367,13 @@ describe('Friends sagas - Channels Feature', () => {
       })
     })
 
-    describe("When the user wanst the list of channel and there's filter", () => {
+    describe("When the user wants the list of channels and there's filter", () => {
       it('Should send the start of the filtered channels list pagination', () => {
         const request: GetChannelsPayload = {
           name: '00',
           limit: 3,
           since: undefined
         }
-
-        // parse messages
-        const channelsToReturn: ChannelInfoPayload[] = []
 
         const joinedChannelIds = allCurrentConversations
           .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
@@ -400,27 +383,16 @@ describe('Friends sagas - Channels Feature', () => {
 
         channels.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
 
-        for (const channel of channels) {
-          let joined = false
-          let muted = false
-
-          if (joinedChannelIds.includes(channel.id)) {
-            joined = true
-          }
-          if (mutedIds.includes(channel.id)) {
-            muted = true
-          }
-          channelsToReturn.push({
-            name: channel.name!,
-            channelId: channel.id,
-            unseenMessages: 0,
-            lastMessageTimestamp: undefined,
-            memberCount: channel.memberCount,
-            description: channel.description || '',
-            joined,
-            muted
-          })
-        }
+        const channelsToReturn = channels.map((channel) => ({
+          channelId: channel.id,
+          name: channel.name || '',
+          unseenMessages: 0,
+          lastMessageTimestamp: undefined,
+          memberCount: channel.memberCount,
+          description: channel.description || '',
+          joined: joinedChannelIds.includes(channel.id),
+          muted: mutedIds.includes(channel.id)
+        }))
 
         const searchResult = {
           since: nextBatch,

@@ -1429,30 +1429,16 @@ export async function searchChannels(request: GetChannelsPayload) {
   // search channels
   const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, request.since)
 
-  // parse channel info
-  const channelsToReturn: ChannelInfoPayload[] = []
-
-  for (const channel of channels) {
-    let joined = false
-    let muted = false
-
-    if (joinedChannelIds.includes(channel.id)) {
-      joined = true
-    }
-    if (profile?.muted?.includes(channel.id)) {
-      muted = true
-    }
-    channelsToReturn.push({
-      name: channel.name!,
-      channelId: channel.id,
-      unseenMessages: 0,
-      lastMessageTimestamp: undefined,
-      memberCount: channel.memberCount,
-      description: channel.description || '',
-      joined,
-      muted
-    })
-  }
+  const channelsToReturn = channels.map((channel) => ({
+    channelId: channel.id,
+    name: channel.name || '',
+    unseenMessages: 0,
+    lastMessageTimestamp: undefined,
+    memberCount: channel.memberCount,
+    description: channel.description || '',
+    joined: joinedChannelIds.includes(channel.id),
+    muted: profile?.muted?.includes(channel.id) || false
+  }))
 
   // sort in descending order by memberCount value
   const channelsSorted = channelsToReturn.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
