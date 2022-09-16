@@ -1461,14 +1461,9 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const channelsInfo: ChannelsInfoPayload = {
-    channelsInfoPayload: []
-  }
-
   // although it is not the current scenario, we want to be able to request information for several channels at the same time
   const channelId = request.channelsIds[0]
 
-  // get channel info
   const channelInfo: Conversation | undefined = client.getChannel(channelId)
 
   // get notification settings
@@ -1476,8 +1471,8 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
   const muted = profile?.muted?.includes(channelId) ? true : false
 
   if (channelInfo) {
-    channelsInfo.channelsInfoPayload.push({
-      name: channelInfo.name!,
+    const channel: ChannelInfoPayload = {
+      name: channelInfo.name || '',
       channelId: channelInfo.id,
       unseenMessages: muted ? 0 : channelInfo.unreadMessages?.length || 0,
       lastMessageTimestamp: channelInfo.lastEventTimestamp || undefined,
@@ -1485,11 +1480,10 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
       description: '',
       joined: true,
       muted
-    })
-  }
+    }
 
-  // send channel info to unity
-  getUnityInstance().UpdateChannelInfo(channelsInfo)
+    getUnityInstance().UpdateChannelInfo({ channelsInfoPayload: [channel] })
+  }
 }
 
 // Get channel members
@@ -1518,15 +1512,14 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     // Todo Juli: Check -- Do the ids we're comparing have the same format?
     const member = channelMemberIds.find((id) => id === profile.data.userId)
     if (member) {
+      // Todo Juli: Check -- What we gonna do with isOnline?
       channelMembers.members.push({ userId: member, isOnline: false })
     }
   }
 
-  // update profiles to catalog
   const profilesForRenderer = filteredProfiles.map((profile) => profileToRendererFormat(profile.data, {}))
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(filteredProfiles.map((profile) => profile.data)))
 
-  // send channel members to unity
   getUnityInstance().UpdateChannelMembers(channelMembers)
 }
