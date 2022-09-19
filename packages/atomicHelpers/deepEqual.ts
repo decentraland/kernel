@@ -23,8 +23,8 @@ export function deepEqual<T = any>(objA: T, objB: T) {
 
   // Test for A's keys different from B.
   for (let i = 0; i < keysA.length; i++) {
-    if (!hasOwn.call(objB, keysA[i]) || !deepEqual(objA[keysA[i]], objB[keysA[i]])) {
-      return false
+    if (!hasOwn.call(objB as any, keysA[i]) || !deepEqual((objA as any)[keysA[i]], (objB as any)[keysA[i]])) {
+    return false
     }
   }
 

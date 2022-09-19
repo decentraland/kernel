@@ -140,15 +140,7 @@ export class CommsContext {
       this.lastPositionSent = newPosition
       this.lastNetworkUpdatePosition = now
       worldConnection
-        .sendPositionMessage({
-          positionX: newPosition[0],
-          positionY: newPosition[1],
-          positionZ: newPosition[2],
-          rotationX: newPosition[3],
-          rotationY: newPosition[4],
-          rotationZ: newPosition[5],
-          rotationW: newPosition[6]
-        })
+        .sendPositionMessage(newPosition)
         .catch((e) => {
           incrementCounter('failed:sendPositionMessage')
           commsLogger.warn(`error while sending message `, e)
