@@ -24,6 +24,7 @@ import { EventChannel } from 'redux-saga'
 import { ExplorerIdentity } from 'shared/session/types'
 import { getIdentity } from 'shared/session'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
+import * as rfc4 from 'shared/comms/comms-rfc-4.gen'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
 import { realmToConnectionString } from './v3/resolver'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
@@ -89,7 +90,7 @@ function* respondCommsProfileRequests() {
     const profile: Avatar | null = yield select(getCurrentUserProfile)
     const identity: ExplorerIdentity | null = yield select(getIdentity)
 
-    if (profile && context && context.currentPosition) {
+    if (profile && context?.worldInstanceConnection) {
       profile.hasConnectedWeb3 = identity?.hasConnectedWeb3 || profile.hasConnectedWeb3
 
       // naive throttling
@@ -99,7 +100,10 @@ function* respondCommsProfileRequests() {
       lastMessage = now
 
       const connection = context.worldInstanceConnection
-      yield apply(connection, connection.sendProfileResponse, [context.currentPosition, stripSnapshots(profile)])
+      const response: rfc4.ProfileResponse = {
+        serializedProfile: JSON.stringify(stripSnapshots(profile))
+      }
+      yield apply(connection, connection.sendProfileResponse, [response])
     }
   }
 }

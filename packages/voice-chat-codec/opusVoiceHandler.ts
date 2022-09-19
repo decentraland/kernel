@@ -1,23 +1,19 @@
 import { createLogger } from 'shared/logger'
 import { VoiceHandler } from './VoiceHandler'
-import { EncodedFrame } from './types'
 import { VoiceCommunicator } from './VoiceCommunicator'
 import { commConfigurations } from 'config'
 import Html from 'shared/Html'
 import { RoomConnection } from 'shared/comms/interface'
-import { Position } from 'shared/comms/interface/utils'
 import { getSpatialParamsFor } from './utils'
+import * as rfc4  from 'shared/comms/comms-rfc-4.gen'
 
 export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler => {
   const logger = createLogger('OpusVoiceCommunicator: ')
-  let currentPosition: Position | undefined
 
   const voiceCommunicator = new VoiceCommunicator(
     {
-      send(frame: EncodedFrame) {
-        if (currentPosition) {
-          transport.sendVoiceMessage(currentPosition, frame).catch(logger.error)
-        }
+      send(frame: rfc4.Voice) {
+        transport.sendVoiceMessage(frame).catch(logger.error)
       }
     },
     {
@@ -52,8 +48,7 @@ export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler 
         cb(message)
       })
     },
-    reportPosition(position: Position) {
-      currentPosition = position
+    reportPosition(position: rfc4.Position) {
       voiceCommunicator.setListenerSpatialParams(getSpatialParamsFor(position))
     },
     setVolume: function (volume) {

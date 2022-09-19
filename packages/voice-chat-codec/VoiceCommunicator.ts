@@ -3,14 +3,15 @@ import { SortedLimitedQueue } from 'atomicHelpers/SortedLimitedQueue'
 import defaultLogger from 'shared/logger'
 import { VOICE_CHAT_SAMPLE_RATE, OPUS_FRAME_SIZE_MS } from './constants'
 import { parse, write } from 'sdp-transform'
-import { EncodedFrame, InputWorkletRequestTopic, OutputWorkletRequestTopic } from './types'
+import { InputWorkletRequestTopic, OutputWorkletRequestTopic } from './types'
+import * as rfc4  from 'shared/comms/comms-rfc-4.gen'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const workletWorkerRaw = require('raw-loader!../../static/voice-chat-codec/audioWorkletProcessors.js')
 const workletWorkerUrl = URL.createObjectURL(new Blob([workletWorkerRaw], { type: 'application/javascript' }))
 
 export type AudioCommunicatorChannel = {
-  send(data: EncodedFrame): any
+  send(data: rfc4.Voice): any
 }
 
 export type StreamPlayingListener = (streamId: string, playing: boolean) => any
@@ -18,7 +19,7 @@ export type StreamRecordingListener = (recording: boolean) => any
 export type StreamRecordingErrorListener = (message: string) => any
 
 type VoiceOutput = {
-  encodedFramesQueue: SortedLimitedQueue<EncodedFrame>
+  encodedFramesQueue: SortedLimitedQueue<rfc4.Voice>
   workletNode?: AudioWorkletNode
   panNode?: PannerNode
   spatialParams: VoiceSpatialParams
@@ -143,7 +144,7 @@ export class VoiceCommunicator {
     return this.outputStats[outputId]
   }
 
-  async playEncodedAudio(src: string, relativePosition: VoiceSpatialParams, encoded: EncodedFrame) {
+  async playEncodedAudio(src: string, relativePosition: VoiceSpatialParams, encoded: rfc4.Voice) {
     if (!this.outputs[src]) {
       await this.createOutput(src, relativePosition)
     } else {
@@ -398,7 +399,7 @@ export class VoiceCommunicator {
             })
           }
 
-          frames.forEach((it) => stream.decode(it.encoded))
+          frames.forEach((it) => stream.decode(it.encodedSamples))
           this.outputs[src].lastDecodedFrameOrder = frames[frames.length - 1].index
         }
 
@@ -409,7 +410,7 @@ export class VoiceCommunicator {
     readEncodedBufferLoop().catch((e) => defaultLogger.log('Error while reading encoded buffer of ' + src, e))
   }
 
-  private countLostFrames(src: string, frames: EncodedFrame[]) {
+  private countLostFrames(src: string, frames: rfc4.Voice[]) {
     // We can know a frame is lost if we have a missing frame index
     let lostFrames = 0
     if (this.outputs[src].lastDecodedFrameOrder && this.outputs[src].lastDecodedFrameOrder! < frames[0].index) {
@@ -451,7 +452,7 @@ export class VoiceCommunicator {
 
     encodeStream.addAudioEncodedListener((data) => {
       this.inputFramesIndex += 1
-      this.channel.send({ encoded: data, index: this.inputFramesIndex })
+      this.channel.send({ encodedSamples: data, index: this.inputFramesIndex, codec: rfc4.Voice_VoiceCodec.VoiceCodec_OPUS })
     })
 
     workletNode.port.onmessage = (e) => {

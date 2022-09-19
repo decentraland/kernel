@@ -1,5 +1,4 @@
-import { Position } from 'shared/comms/interface/utils'
-import { EncodedFrame } from './types'
+import * as rfc4  from 'shared/comms/comms-rfc-4.gen'
 
 export type VoiceHandler = {
   // UI Methods
@@ -14,7 +13,7 @@ export type VoiceHandler = {
   onRecording(cb: (recording: boolean) => void): void
 
   // Controls Methods
-  reportPosition(recording: Position): void
+  reportPosition(recording: rfc4.Position): void
 
   setVolume(volume: number): void
 
@@ -25,7 +24,7 @@ export type VoiceHandler = {
   hasInput(): boolean
 
   // Play audio when we recive it from comms (only for opus)
-  playEncodedAudio?(src: string, relativePosition: Position, encoded: EncodedFrame): Promise<void>
+  playEncodedAudio?(src: string, relativePosition: rfc4.Position, encoded: rfc4.Voice): Promise<void>
 
   leave?(): void
 }

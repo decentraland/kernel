@@ -1,9 +1,10 @@
-import { Position, rotateUsingQuaternion } from 'shared/comms/interface/utils'
+import { rotateUsingQuaternion } from 'shared/comms/interface/utils'
 import { VoiceSpatialParams } from './VoiceCommunicator'
+import * as rfc4  from 'shared/comms/comms-rfc-4.gen'
 
-export function getSpatialParamsFor(position: Position): VoiceSpatialParams {
+export function getSpatialParamsFor(position: rfc4.Position): VoiceSpatialParams {
   return {
-    position: position.slice(0, 3) as [number, number, number],
+    position: [position.positionX, position.positionY, position.positionZ],
     orientation: rotateUsingQuaternion(position, 0, 0, -1)
   }
 }

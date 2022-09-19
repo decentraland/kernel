@@ -29,6 +29,7 @@ import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations
 import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
 import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
 import { uuid } from 'atomicHelpers/math'
+import { validateAvatar } from 'shared/profiles/schemaValidation'
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
@@ -53,25 +54,28 @@ const pendingProfileRequests: Map<string, Set<IFuture<Avatar | null>>> = new Map
 
 export async function requestProfileToPeers(
   context: CommsContext,
-  userId: string,
-  version?: number
+  address: string,
+  profileVersion: number
 ): Promise<Avatar | null> {
-  if (context && context.currentPosition) {
-    if (!pendingProfileRequests.has(userId)) {
-      pendingProfileRequests.set(userId, new Set())
+  if (context) {
+    if (!pendingProfileRequests.has(address)) {
+      pendingProfileRequests.set(address, new Set())
     }
 
     const thisFuture = future<Avatar | null>()
 
-    pendingProfileRequests.get(userId)!.add(thisFuture)
+    pendingProfileRequests.get(address)!.add(thisFuture)
 
-    await context.worldInstanceConnection.sendProfileRequest(context.currentPosition, userId, version)
+    await context.worldInstanceConnection.sendProfileRequest({
+      address,
+      profileVersion
+    })
 
     setTimeout(function () {
       if (thisFuture.isPending) {
         // We resolve with a null profile. This will fallback to a random profile
         thisFuture.resolve(null)
-        const pendingRequests = pendingProfileRequests.get(userId)
+        const pendingRequests = pendingProfileRequests.get(address)
         if (pendingRequests && pendingRequests.has(thisFuture)) {
           pendingRequests.delete(thisFuture)
         }
@@ -88,9 +92,8 @@ export async function requestProfileToPeers(
 function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVersion>) {
   const msgTimestamp = message.time
 
-  const peerTrackingInfo = setupPeer(message.sender)
-  peerTrackingInfo.ethereumAddress = message.data.user
-  peerTrackingInfo.profileType = message.data.type
+  const peerTrackingInfo = setupPeer(message.address)
+  peerTrackingInfo.ethereumAddress = message.address
   peerTrackingInfo.lastUpdate = Date.now()
 
   if (msgTimestamp > peerTrackingInfo.lastProfileUpdate) {
@@ -99,8 +102,8 @@ function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVers
     // remove duplicates
     ensureTrackingUniqueAndLatest(peerTrackingInfo)
 
-    const profileVersion = +message.data.version
-    const currentProfile = getProfileFromStore(store.getState(), message.data.user)
+    const profileVersion = +message.data.profileVersion
+    const currentProfile = getProfileFromStore(store.getState(), message.address)
 
     const shouldLoadRemoteProfile =
       !currentProfile ||
@@ -109,13 +112,13 @@ function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVers
 
     if (shouldLoadRemoteProfile) {
       ProfileAsPromise(
-        message.data.user,
+        message.address,
         profileVersion,
         /* we ask for LOCAL to ask information about the profile using comms o not overload the servers*/
         ProfileType.LOCAL
       ).catch((e: Error) => {
         trackEvent('error', {
-          message: `error loading profile ${message.data.user}:${profileVersion}: ` + e.message,
+          message: `error loading profile ${message.address}:${profileVersion}: ` + e.message,
           context: 'kernel#saga',
           stack: e.stack || 'processProfileUpdatedMessage'
         })
@@ -126,7 +129,7 @@ function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVers
 
 // TODO: Change ChatData to the new class once it is added to the .proto
 function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
-  const peer = getPeer(message.sender)
+  const peer = getPeer(message.address)
 
   if (peer) {
     const { sceneId, data } = message.data
@@ -140,7 +143,7 @@ function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
 
 function processChatMessage(message: Package<proto.Chat>) {
   const myProfile = getCurrentUserProfile(store.getState())
-  const fromAlias: string = message.sender
+  const fromAlias: string = message.address
   const senderPeer = setupPeer(fromAlias)
 
   senderPeer.lastUpdate = Date.now()
@@ -181,15 +184,20 @@ function processProfileRequest(message: Package<proto.ProfileRequest>) {
   const myAddress = myIdentity?.address
 
   // We only send profile responses for our own address
-  if (message.data.userId === myAddress) {
+  if (message.data.address.toLowerCase() === myAddress?.toLowerCase()) {
     sendMyProfileOverCommsChannel.notifyObservers({})
   }
 }
 
 function processProfileResponse(message: Package<proto.ProfileResponse>) {
-  const peerTrackingInfo = setupPeer(message.sender)
+  const peerTrackingInfo = setupPeer(message.address)
 
-  const profile = ensureAvatarCompatibilityFormat(message.data.profile)
+  const profile = ensureAvatarCompatibilityFormat(JSON.parse(message.data.serializedProfile))
+
+  if (!validateAvatar(profile)) {
+    console.error('Invalid avatar received', validateAvatar.errors)
+    debugger
+  }
 
   if (peerTrackingInfo.ethereumAddress !== profile.userId) return
 
@@ -223,5 +231,5 @@ export function createReceiveProfileOverCommsChannel() {
 }
 
 function processPositionMessage(message: Package<proto.Position>) {
-  receiveUserPosition(message.sender, message.data, message.time)
+  receiveUserPosition(message.address, message.data, message.time)
 }

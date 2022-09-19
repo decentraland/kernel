@@ -6,9 +6,8 @@ import { AvatarMessageType } from '../../packages/shared/comms/interface/types'
 import * as sceneManager from '../../packages/shared/world/parcelSceneManager'
 import { buildStore } from 'shared/store/store'
 
-function sendAvatarMessage(userId: string, visible: boolean, removeInfo: boolean = false) {
-  peers.setupPeer(userId).ethereumAddress = removeInfo ? undefined : userId
-  peers.receiveUserVisible(userId, visible)
+function sendAvatarMessage(address: string, visible: boolean) {
+  peers.receiveUserVisible(address, visible)
 }
 
 function removeAvatarMessage(userId: string) {
@@ -78,7 +77,7 @@ describe('Avatar observable', () => {
     sinon.restore()
     const userA = 'user-a'
     removeAvatarMessage(userA)
-    sendAvatarMessage(userA, true, true)
+    sendAvatarMessage(userA, true)
     expect(getVisibleAvatarsUserId()).to.eql([])
     sinon.assert.notCalled(sceneEventsMocked)
   })

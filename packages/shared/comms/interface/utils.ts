@@ -1,21 +1,20 @@
 import { Vector2 } from '@dcl/ecs-math'
 import { parcelLimits } from 'config'
 import { PositionReport } from 'shared/world/positionThings'
-
-export type Position = [number, number, number, number, number, number, number, boolean]
+import * as rfc4 from 'shared/comms/comms-rfc-4.gen'
 
 export type ParcelArray = [number, number]
 
-export function positionHash(p: Position) {
-  const parcel = position2parcel(p)
+export function positionHashRfc4(p: rfc4.Position) {
+  const parcel = position2parcelRfc4(p)
   const x = (parcel.x + parcelLimits.maxParcelX) >> 2
   const z = (parcel.y + parcelLimits.maxParcelZ) >> 2
   return `${x}:${z}`
 }
 
-export function position2parcel(p: Readonly<Position>): Vector2 {
+export function position2parcelRfc4(p: Readonly<rfc4.Position>): Vector2 {
   const parcelSize = parcelLimits.parcelSize
-  return new Vector2(Math.trunc(p[0] / parcelSize), Math.trunc(p[2] / parcelSize))
+  return new Vector2(Math.trunc(p.positionX / parcelSize), Math.trunc(p.positionZ / parcelSize))
 }
 
 export function sameParcel(p1: Vector2 | null, p2: Vector2 | null) {
@@ -34,8 +33,8 @@ export class CommunicationArea {
     this.vMax = new Vector2(center.x + radius, center.y + radius)
   }
 
-  public contains(p: Position) {
-    const parcel = position2parcel(p)
+  public contains(p: rfc4.Position) {
+    const parcel = position2parcelRfc4(p)
     const vMin = this.vMin
     const vMax = this.vMax
     const contains = parcel.x >= vMin.x && parcel.x <= vMax.x && parcel.y >= vMin.y && parcel.y <= vMax.y
@@ -43,9 +42,9 @@ export class CommunicationArea {
   }
 }
 
-export function squareDistance(p1: Position, p2: Position): number {
-  const v1 = new Vector2(p1[0], p1[2])
-  const v2 = new Vector2(p2[0], p2[2])
+export function squareDistanceRfc4(p1: rfc4.Position, p2: rfc4.Position): number {
+  const v1 = new Vector2(p1.positionX, p1.positionZ)
+  const v2 = new Vector2(p2.positionZ, p2.positionZ)
 
   return v1.subtract(v2).lengthSquared()
 }
@@ -70,8 +69,11 @@ export function countParcelsCloseTo(origin: ParcelArray, parcels: ParcelArray[],
   return close
 }
 
-export function rotateUsingQuaternion(pos: Position, x: number, y: number, z: number): [number, number, number] {
-  const [, , , qx, qy, qz, qw] = pos
+export function rotateUsingQuaternion(pos: rfc4.Position, x: number, y: number, z: number): [number, number, number] {
+  const qx = pos.rotationX
+  const qy = pos.rotationY
+  const qz = pos.rotationZ
+  const qw = pos.rotationW
 
   // calculate quat * vector
 
@@ -89,17 +91,17 @@ export function rotateUsingQuaternion(pos: Position, x: number, y: number, z: nu
   return [rx, ry, rz]
 }
 
-export function positionReportToCommsPosition(report: Readonly<PositionReport>) {
-  const p = [
-    report.position.x,
-    report.position.y - report.playerHeight,
-    report.position.z,
-    report.quaternion.x,
-    report.quaternion.y,
-    report.quaternion.z,
-    report.quaternion.w,
-    report.immediate
-  ] as Position
+export function positionReportToCommsPositionRfc4(report: Readonly<PositionReport>) {
+  const p = {
+    positionX: report.position.x,
+    positionY: report.position.y - report.playerHeight,
+    positionZ: report.position.z,
+    rotationX: report.quaternion.x,
+    rotationY: report.quaternion.y,
+    rotationZ: report.quaternion.z,
+    rotationW: report.quaternion.w,
+    index: 0
+  } as rfc4.Position
 
   return p
 }

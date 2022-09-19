@@ -1,5 +1,5 @@
 import { commConfigurations, COMMS, PREFERED_ISLAND } from 'config'
-import { CliBrokerConnection } from './v1/CliBrokerConnection'
+import { Rfc5BrokerConnection } from './v1/rfc-5-ws-comms'
 import { Rfc4RoomConnection } from './v1/rfc-4-room-connection'
 import { RoomConnection } from './interface/index'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
@@ -18,7 +18,7 @@ import { Realm } from 'shared/dao/types'
 import { resolveCommsV4Urls, resolveCommsV3Urls } from './v3/resolver'
 import { BFFConfig, BFFConnection } from './v3/BFFConnection'
 import { InstanceConnection as V3InstanceConnection } from './v3/InstanceConnection'
-import { removePeerByUUID, removeMissingPeers } from './peers'
+import { removePeerByAddress, removeMissingPeers } from './peers'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { ProfileType } from 'shared/profiles/types'
 import { OfflineRoomConnection } from './offline-room-connection'
@@ -31,26 +31,22 @@ export type CommsV2Mode = 'p2p' | 'server'
 export function sendPublicChatMessage(message: string) {
   const commsContext = getCommsContext(store.getState())
 
-  if (commsContext && commsContext.currentPosition) {
-    commsContext.worldInstanceConnection
-      .sendChatMessage({
-        message
-      })
-      .catch((e) => commsLogger.warn(`error while sending message `, e))
-  }
+  commsContext?.worldInstanceConnection
+    .sendChatMessage({
+      message
+    })
+    .catch((e) => commsLogger.warn(`error while sending message `, e))
 }
 
 export function sendParcelSceneCommsMessage(sceneId: string, data: Uint8Array) {
   const commsContext = getCommsContext(store.getState())
 
-  if (commsContext && commsContext.currentPosition) {
-    commsContext.worldInstanceConnection
-      .sendParcelSceneMessage({
-        data,
-        sceneId
-      })
-      .catch((e) => commsLogger.warn(`error while sending message `, e))
-  }
+  commsContext?.worldInstanceConnection
+    .sendParcelSceneMessage({
+      data,
+      sceneId
+    })
+    .catch((e) => commsLogger.warn(`error while sending message `, e))
 }
 
 export async function connectComms(realm: Realm): Promise<CommsContext | null> {
@@ -88,7 +84,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       commsLogger.log('Using WebSocket comms: ' + url.href)
 
-      connection = new Rfc4RoomConnection(new CliBrokerConnection(url.href))
+      connection = new Rfc4RoomConnection(new Rfc5BrokerConnection(url.href, identity))
       break
     }
     case 'v2': {
@@ -131,7 +127,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
           },
           onPeerLeftIsland: (peerId: string) => {
             commsLogger.info('Removing peer that left an island', peerId)
-            removePeerByUUID(peerId)
+            removePeerByAddress(peerId)
           }
         },
         preferedIslandId: PREFERED_ISLAND ?? ''
@@ -146,16 +142,21 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       commsLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
 
-      connection = new LighthouseWorldInstanceConnection(lighthouseUrl, peerConfig, (status) => {
-        commsLogger.log('Lighthouse status: ', status)
-        switch (status.status) {
-          case 'realm-full':
-          case 'reconnection-error':
-          case 'id-taken':
-            connection.disconnect().catch(commsLogger.error)
-            break
-        }
-      })
+      connection = new LighthouseWorldInstanceConnection(
+        lighthouseUrl,
+        peerConfig,
+        (status) => {
+          commsLogger.log('Lighthouse status: ', status)
+          switch (status.status) {
+            case 'realm-full':
+            case 'reconnection-error':
+            case 'id-taken':
+              connection.disconnect().catch(commsLogger.error)
+              break
+          }
+        },
+        identity
+      )
 
       break
     }
@@ -172,7 +173,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       connection = new V3InstanceConnection(bff, {
         onPeerLeft: (peerId: string) => {
           commsLogger.info('Removing peer that left an island', peerId)
-          removePeerByUUID(peerId)
+          removePeerByAddress(peerId)
         }
       })
       break
@@ -187,7 +188,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       url.search = qs.toString()
       const finalUrl = url.toString()
       commsLogger.log('Using WebSocket comms: ' + finalUrl)
-      connection = new Rfc4RoomConnection(new CliBrokerConnection(finalUrl))
+      connection = new Rfc4RoomConnection(new Rfc5BrokerConnection(finalUrl, identity))
 
       break
     }

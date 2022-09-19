@@ -20,7 +20,7 @@ export function registerCommunicationsControllerServiceServerImplementation(port
         const message = new TextDecoder().decode(data)
         ctx.sendSceneEvent('comms', {
           message,
-          sender: sender.ethereumAddress || sender.uuid
+          sender: sender.ethereumAddress
         })
       }
     }

@@ -1,6 +1,5 @@
-import type { Avatar } from '@dcl/schemas'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import type { ProfileType } from 'shared/profiles/types'
+import * as rfc4 from '../comms-rfc-4.gen'
 
 export const enum AvatarMessageType {
   // Networking related messages
@@ -67,16 +66,10 @@ export type AvatarMessage =
   | UserMessage
   | ReceiveUserTalkingMessage
 
-export type UUID = string
-
 /**
  * This type contains information about the peers, the AvatarEntity must accept this whole object in setAttributes(obj).
  */
 export type PeerInformation = UserInformation & {
-  /**
-   * Unique peer ID
-   */
-  uuid: UUID
   talking: boolean
   lastPositionUpdate: number
   lastProfileUpdate: number
@@ -84,10 +77,9 @@ export type PeerInformation = UserInformation & {
 }
 
 export type UserInformation = {
-  profileType?: ProfileType
-  ethereumAddress?: string
+  ethereumAddress: string
   expression?: AvatarExpression
-  position?: Pose
+  position?: rfc4.Position
   profile?: NewProfileForRenderer
   visible?: boolean
 }
@@ -97,44 +89,10 @@ export type AvatarExpression = {
   expressionTimestamp: number
 }
 
-// The order is [X,Y,Z,Qx,Qy,Qz,Qw,immediate]
-export type Pose = [number, number, number, number, number, number, number, boolean]
-
-export type PoseInformation = {
-  v: Pose
-}
-
-export type PackageType = 'profile' | 'chat' | 'position' | 'voice' | 'profileRequest' | 'profileResponse'
+export type PackageType = keyof rfc4.Packet
 
 export type Package<T> = {
-  sender: string
+  address: string
   time: number
   data: T
-}
-
-export type VoiceFragment = {
-  index: number
-  encoded: Uint8Array
-}
-
-export type ProfileRequest = {
-  userId: string
-  version?: string
-}
-
-export type ProfileResponse = {
-  profile: Avatar
-}
-
-export type BusMessage = ChatMessage
-
-export class ConnectionEstablishmentError extends Error {
-  constructor(message: string) {
-    super(message)
-  }
-}
-export class UnknownCommsModeError extends Error {
-  constructor(message: string) {
-    super(message)
-  }
 }

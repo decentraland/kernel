@@ -1,24 +1,18 @@
-import { commConfigurations, parcelLimits } from 'config'
+import { commConfigurations } from 'config'
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { Stats } from './debug'
-import {
-  CommunicationArea,
-  Position,
-  position2parcel,
-  positionReportToCommsPosition,
-  sameParcel
-} from './interface/utils'
+import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { RoomConnection } from './interface/index'
 import { createLogger } from '../logger'
 import { Observable, Observer } from 'mz-observable'
-import { arrayEquals } from 'atomicHelpers/arrayEquals'
 import { Realm } from 'shared/dao/types'
 import { Avatar } from '@dcl/schemas'
 import { ProfileType } from 'shared/profiles/types'
-import { getParcelSceneSubscriptions } from './sceneSubscriptions'
-import { MORDOR_POSITION } from './const'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
 import { incrementCounter } from 'shared/occurences'
+import { MORDOR_POSITION_RFC4 } from './const'
+import * as rfc4 from './comms-rfc-4.gen'
+import { deepEqual } from 'atomicHelpers/deepEqual'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -38,19 +32,15 @@ export type ProfilePromiseState = {
 export class CommsContext {
   public readonly stats: Stats = new Stats()
   public commRadius: number
-  public currentPosition: Position | null = null
+  public currentPosition: rfc4.Position | null = null
   public onDisconnectObservable = new Observable<void>()
 
   private reportPositionInterval?: ReturnType<typeof setInterval>
   private positionObserver: Observer<any> | null = null
 
-  private currentParcelTopics = ''
-  private previousTopics = ''
-
   private lastNetworkUpdatePosition = new Date().getTime()
-  private lastPositionSent: Position | undefined
+  private lastPositionSent: rfc4.Position | undefined
   private destroyed = false
-  private profileVersion: number = 0
 
   constructor(
     public readonly realm: Realm,
@@ -77,9 +67,11 @@ export class CommsContext {
 
       this.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
         if (!this.destroyed) {
-          this.onPositionUpdate(positionReportToCommsPosition(obj))
+          this.onPositionUpdate(positionReportToCommsPositionRfc4(obj))
         }
       })
+
+      if (lastPlayerPositionReport) this.onPositionUpdate(positionReportToCommsPositionRfc4(lastPlayerPositionReport))
 
       // this interval is important because if we stand still without sending position reports
       // then archipelago may timeout and peers may magically stop appearing for us. fixable with
@@ -88,7 +80,7 @@ export class CommsContext {
         if (this.currentPosition && !this.destroyed) {
           this.onPositionUpdate(this.currentPosition)
         }
-      }, 5001)
+      }, 1100)
       return true
     } catch (e: any) {
       commsLogger.error(e)
@@ -115,97 +107,56 @@ export class CommsContext {
     }
   }
 
-  public sendCurrentProfile(version: number) {
-    if (this.currentPosition) {
-      this.onPositionUpdate(this.currentPosition, true)
-      this.worldInstanceConnection
-        .sendProfileMessage(this.currentPosition, this.userAddress, this.profileType, version)
-        .catch((e) => commsLogger.warn(`error in sendCurrentProfile `, e))
-
-      this.profileVersion = version
-    }
+  public sendCurrentProfile(profileVersion: number) {
+    // send the profile and immediately after send the position
+    this.worldInstanceConnection
+      .sendProfileMessage({ profileVersion })
+      .then(() => {
+        if (this.currentPosition) {
+          this.onPositionUpdate(this.currentPosition, true)
+        }
+      })
+      .catch((e) => commsLogger.warn(`error in sendCurrentProfile `, e))
   }
 
-  private onPositionUpdate(newPosition: Position, force: boolean = false) {
+  private onPositionUpdate(newPosition: rfc4.Position, immediateReposition: boolean = false) {
     const worldConnection = this.worldInstanceConnection
 
     if (!worldConnection) {
       return
     }
 
-    const oldParcel = this.currentPosition ? position2parcel(this.currentPosition) : null
-    const oldPosition = this.currentPosition
-
     this.currentPosition = newPosition
-
-    const newParcel = position2parcel(newPosition)
-    const immediateReposition = newPosition[7] || force
-
-    if (!sameParcel(oldParcel, newParcel)) {
-      const commArea = new CommunicationArea(newParcel, this.commRadius)
-
-      const xMin = ((commArea.vMin.x + parcelLimits.maxParcelX) >> 2) << 2
-      const xMax = ((commArea.vMax.x + parcelLimits.maxParcelX) >> 2) << 2
-      const zMin = ((commArea.vMin.y + parcelLimits.maxParcelZ) >> 2) << 2
-      const zMax = ((commArea.vMax.y + parcelLimits.maxParcelZ) >> 2) << 2
-
-      const rawTopics: string[] = []
-      for (let x = xMin; x <= xMax; x += 4) {
-        for (let z = zMin; z <= zMax; z += 4) {
-          const hash = `${x >> 2}:${z >> 2}`
-          if (!rawTopics.includes(hash)) {
-            rawTopics.push(hash)
-          }
-        }
-      }
-      this.currentParcelTopics = rawTopics.join(' ')
-      worldConnection
-        .sendParcelUpdateMessage(oldPosition || newPosition, newPosition)
-        .catch((e) => commsLogger.warn(`error while sending message `, e))
-    }
-
-    if (!immediateReposition) {
-      // Otherwise the topics get lost on an immediate reposition...
-      const parcelSceneSubscriptions = getParcelSceneSubscriptions()
-      const parcelSceneCommsTopics = parcelSceneSubscriptions.join(' ')
-
-      const topics =
-        this.userAddress +
-        ' ' +
-        this.currentParcelTopics +
-        (parcelSceneCommsTopics.length ? ' ' + parcelSceneCommsTopics : '')
-
-      if (topics !== this.previousTopics) {
-        worldConnection
-          .setTopics(topics.split(' '))
-          .catch((e) => commsLogger.warn(`error while updating subscriptions`, e))
-        this.previousTopics = topics
-      }
-    }
 
     const now = Date.now()
     const elapsed = now - this.lastNetworkUpdatePosition
 
-    // We only send the same position message as a ping if we have not sent positions in the last 5 seconds
-    if (!immediateReposition && arrayEquals(newPosition, this.lastPositionSent) && elapsed < 5000) {
+    // We only send the same position message as a ping if we have not sent positions in the last 1 second
+    if (!immediateReposition && deepEqual(newPosition, this.lastPositionSent) && elapsed < 1000) {
       return
     }
 
     if ((immediateReposition || elapsed > 100) && !this.destroyed) {
       this.lastPositionSent = newPosition
       this.lastNetworkUpdatePosition = now
-      worldConnection.sendPositionMessage(newPosition, this.profileVersion).catch((e) => {
-        incrementCounter('failed:sendPositionMessage')
-        commsLogger.warn(`error while sending message `, e)
-      })
+      worldConnection
+        .sendPositionMessage({
+          positionX: newPosition[0],
+          positionY: newPosition[1],
+          positionZ: newPosition[2],
+          rotationX: newPosition[3],
+          rotationY: newPosition[4],
+          rotationZ: newPosition[5],
+          rotationW: newPosition[6]
+        })
+        .catch((e) => {
+          incrementCounter('failed:sendPositionMessage')
+          commsLogger.warn(`error while sending message `, e)
+        })
     }
   }
 
   private async sendToMordor() {
-    let pos = this.currentPosition
-    if (lastPlayerPositionReport) pos = positionReportToCommsPosition(lastPlayerPositionReport)
-    if (pos) {
-      await this.worldInstanceConnection.sendParcelUpdateMessage(pos, MORDOR_POSITION)
-    }
+    await this.worldInstanceConnection.sendPositionMessage(MORDOR_POSITION_RFC4)
   }
 }

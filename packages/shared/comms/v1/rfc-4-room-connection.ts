@@ -58,28 +58,28 @@ export class Rfc4RoomConnection implements RoomConnection {
     const packet = proto.Packet.decode(message.data)
 
     if (packet.position)
-      this.events.emit('position', { sender: message.senderAddress, data: packet.position, time: Date.now() })
+      this.events.emit('position', { address: message.senderAddress, data: packet.position, time: Date.now() })
     else if (packet.scene)
-      this.events.emit('sceneMessageBus', { sender: message.senderAddress, data: packet.scene, time: Date.now() })
+      this.events.emit('sceneMessageBus', { address: message.senderAddress, data: packet.scene, time: Date.now() })
     else if (packet.chat)
-      this.events.emit('chatMessage', { sender: message.senderAddress, data: packet.chat, time: Date.now() })
+      this.events.emit('chatMessage', { address: message.senderAddress, data: packet.chat, time: Date.now() })
     else if (packet.voice)
-      this.events.emit('voiceMessage', { sender: message.senderAddress, data: packet.voice, time: Date.now() })
+      this.events.emit('voiceMessage', { address: message.senderAddress, data: packet.voice, time: Date.now() })
     else if (packet.profileRequest)
       this.events.emit('profileRequest', {
-        sender: message.senderAddress,
+        address: message.senderAddress,
         data: packet.profileRequest,
         time: Date.now()
       })
     else if (packet.profileResponse)
       this.events.emit('profileResponse', {
-        sender: message.senderAddress,
+        address: message.senderAddress,
         data: packet.profileResponse,
         time: Date.now()
       })
     else if (packet.profileVersion)
       this.events.emit('profileMessage', {
-        sender: message.senderAddress,
+        address: message.senderAddress,
         data: packet.profileVersion,
         time: Date.now()
       })

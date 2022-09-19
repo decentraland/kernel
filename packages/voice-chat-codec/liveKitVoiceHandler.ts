@@ -8,24 +8,13 @@ import {
   Participant,
   Track
 } from 'livekit-client'
-import { Position } from 'shared/comms/interface/utils'
-
 import Html from 'shared/Html'
 import { createLogger } from 'shared/logger'
 import { VoiceHandler } from './VoiceHandler'
-import { getAllPeers } from 'shared/comms/peers'
+import { getPeer } from 'shared/comms/peers'
 import { getSpatialParamsFor, isChrome } from './utils'
 import { startLoopback } from './loopback'
-
-const getPeerByAddress = (address: string) => {
-  const peers = getAllPeers()
-  for (const [_, peer] of peers) {
-    if (peer.ethereumAddress === address) {
-      return peer
-    }
-  }
-  return undefined
-}
+import * as rfc4  from 'shared/comms/comms-rfc-4.gen'
 
 type ParticipantInfo = {
   streamNode: MediaStreamAudioSourceNode
@@ -180,7 +169,7 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     onError(cb) {
       errorListener = cb
     },
-    reportPosition(position: Position) {
+    reportPosition(position: rfc4.Position) {
       const spatialParams = getSpatialParamsFor(position)
       const listener = audioContext.listener
       listener.setPosition(spatialParams.position[0], spatialParams.position[1], spatialParams.position[2])
@@ -194,9 +183,9 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
       )
 
       for (const [_, participant] of room.participants) {
-        const userId = participant.identity
-        const peer = getPeerByAddress(userId)
-        const participantInfo = participantsInfo.get(userId)
+        const address = participant.identity
+        const peer = getPeer(address)
+        const participantInfo = participantsInfo.get(address)
         if (peer && peer.position && participantInfo) {
           const panNode = participantInfo.panNode
           const spatialParams = getSpatialParamsFor(peer.position)

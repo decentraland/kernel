@@ -41,7 +41,7 @@ import {
   hasJoined
 } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
-import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
+import { positionReportToCommsPositionRfc4 } from 'shared/comms/interface/utils'
 import { trackEvent } from 'shared/analytics'
 import { VoiceChatState } from './types'
 import { Observer } from 'mz-observable'
@@ -154,7 +154,7 @@ function* handleJoinVoiceChat() {
       positionObservable.remove(positionObserver)
     }
     positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-      voiceHandler.reportPosition(positionReportToCommsPosition(obj))
+      voiceHandler.reportPosition(positionReportToCommsPositionRfc4(obj))
     })
 
     voiceHandler.setVolume(voiceChatState.volume)

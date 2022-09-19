@@ -1,25 +1,27 @@
-/// <reference lib="dom" />
 import { store } from 'shared/store/isolatedStore'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { Position3D } from './types'
-import { Data, Profile_ProfileType } from './proto/comms.gen'
-import { Position } from '../../comms/interface/utils'
-import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
+import * as rfc4 from '../comms-rfc-4.gen'
+import { BFFConnection, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
 import { createDummyLogger, createLogger } from 'shared/logger'
 import { lastPlayerPositionReport, positionObservable } from 'shared/world/positionThings'
-
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
-import { ProfileType } from 'shared/profiles/types'
-import { EncodedFrame } from 'voice-chat-codec/types'
 import mitt from 'mitt'
-import { Avatar } from '@dcl/schemas'
-import { Reader } from 'protobufjs/minimal'
+import { Reader, Writer } from 'protobufjs/minimal'
 import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago.gen'
 import { DEBUG, DEBUG_COMMS } from 'config'
 
 export type Config = {
   onPeerLeft: (peerId: string) => void
+}
+
+// we use a shared writer to reduce allocations and leverage its allocation pool
+const writer = new Writer()
+function craftMessage(packet: Partial<rfc4.Packet>): Uint8Array {
+  writer.reset()
+  rfc4.Packet.encode(packet as any, writer)
+  return writer.finish()
 }
 
 export class InstanceConnection implements RoomConnection {
@@ -34,7 +36,7 @@ export class InstanceConnection implements RoomConnection {
 
   constructor(private bff: BFFConnection, { onPeerLeft }: Config) {
     this.onPeerLeft = onPeerLeft
-    this.bff.onTopicMessageObservable.add(this.handleTopicMessage.bind(this))
+    this.bff.onTopicMessageObservable.add((topic) => this.logger.info('topic message', topic))
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
   }
 
@@ -127,118 +129,32 @@ export class InstanceConnection implements RoomConnection {
     )
   }
 
-  async sendPositionMessage(p: Position) {
-    const d = Data.encode({
-      message: {
-        $case: 'position',
-        position: {
-          time: Date.now(),
-          positionX: p[0],
-          positionY: p[1],
-          positionZ: p[2],
-          rotationX: p[3],
-          rotationY: p[4],
-          rotationZ: p[5],
-          rotationW: p[6]
-        }
-      }
-    }).finish()
-
-    return this.transport.send(d, { reliable: false })
+  async sendPositionMessage(position: rfc4.Position) {
+    return this.transport.send(craftMessage({ position }), { reliable: false })
   }
 
-  async sendParcelUpdateMessage(_: Position, _newPosition: Position) {}
-
-  async sendProfileMessage(_: Position, __: string, profileType: ProfileType, version: number) {
-    const d = Data.encode({
-      message: {
-        $case: 'profile',
-        profile: {
-          time: Date.now(),
-          profileType: profileType === ProfileType.LOCAL ? Profile_ProfileType.LOCAL : Profile_ProfileType.DEPLOYED,
-          profileVersion: `${version}`
-        }
-      }
-    }).finish()
-
-    return this.transport.send(d, { reliable: true, identity: true })
+  async sendProfileMessage(profileVersion: rfc4.AnnounceProfileVersion) {
+    return this.transport.send(craftMessage({ profileVersion }), { reliable: true, identity: true })
   }
 
-  async sendProfileRequest(_: Position, userId: string, version: number | undefined) {
-    const d = Data.encode({
-      message: {
-        $case: 'profileRequest',
-        profileRequest: {
-          time: Date.now(),
-          userId: userId,
-          profileVersion: `${version}`
-        }
-      }
-    }).finish()
-
-    return this.transport.send(d, { reliable: true, identity: true })
+  async sendProfileRequest(profileRequest: rfc4.ProfileRequest) {
+    return this.transport.send(craftMessage({ profileRequest }), { reliable: true })
   }
 
-  async sendProfileResponse(_: Position, profile: Avatar) {
-    const d = Data.encode({
-      message: {
-        $case: 'profileResponse',
-        profileResponse: {
-          time: Date.now(),
-          serializedProfile: JSON.stringify(profile)
-        }
-      }
-    }).finish()
-
-    return this.transport.send(d, { reliable: true, identity: true })
+  async sendProfileResponse(profileResponse: rfc4.ProfileResponse) {
+    return this.transport.send(craftMessage({ profileResponse }), { reliable: true, identity: true })
   }
 
-  async sendInitialMessage(_: string, profileType: ProfileType) {
-    const d = Data.encode({
-      message: {
-        $case: 'profile',
-        profile: {
-          time: Date.now(),
-          profileType: profileType === ProfileType.LOCAL ? Profile_ProfileType.LOCAL : Profile_ProfileType.DEPLOYED,
-          profileVersion: ''
-        }
-      }
-    }).finish()
-
-    return this.transport.send(d, { reliable: true, identity: true })
+  async sendParcelSceneMessage(scene: rfc4.Scene) {
+    return this.transport.send(craftMessage({ scene }), { reliable: false })
   }
 
-  async sendParcelSceneCommsMessage(sceneId: string, message: string) {
-    const d = Data.encode({
-      message: {
-        $case: 'scene',
-        scene: {
-          time: Date.now(),
-          sceneId: sceneId,
-          data: message
-        }
-      }
-    }).finish()
-
-    return this.bff.publishToTopic(sceneId, d)
+  async sendChatMessage(chat: rfc4.Chat) {
+    return this.transport.send(craftMessage({ chat }), { reliable: true, identity: true })
   }
 
-  async sendChatMessage(_: Position, messageId: string, text: string) {
-    const d = Data.encode({
-      message: {
-        $case: 'chat',
-        chat: {
-          time: Date.now(),
-          messageId,
-          text
-        }
-      }
-    }).finish()
-    return this.transport.send(d, { reliable: true })
-  }
-
-  async setTopics(topics: string[]) {
-    return this.bff.setTopics(topics)
+  async sendVoiceMessage(voice: rfc4.Voice): Promise<void> {
+    return this.transport.send(craftMessage({ voice }), { reliable: false })
   }
 
   async disconnect(): Promise<void> {
@@ -262,153 +178,62 @@ export class InstanceConnection implements RoomConnection {
     this.events.emit('DISCONNECTION')
   }
 
-  async sendVoiceMessage(_: Position, frame: EncodedFrame): Promise<void> {
-    const d = Data.encode({
-      message: {
-        $case: 'voice',
-        voice: {
-          encodedSamples: frame.encoded,
-          index: frame.index
-        }
-      }
-    }).finish()
-
-    return this.transport.send(d, { reliable: true })
-  }
-
-  protected handleTopicMessage(message: TopicData) {
-    let data: Data
-    try {
-      data = Data.decode(Reader.create(message.data))
-    } catch (e: any) {
-      this.logger.error(`cannot decode topic message data ${e.toString()}`)
-      return
-    }
-
-    switch (data.message?.$case) {
-      case 'scene': {
-        const sceneData = data.message?.scene
-
-        this.events.emit('sceneMessageBus', {
-          sender: message.peerId,
-          time: sceneData.time,
-          data: {
-            id: sceneData.sceneId,
-            text: sceneData.data
-          }
-        })
-        break
-      }
-      default: {
-        this.logger.log(`Ignoring category ${data.message?.$case}`)
-        break
-      }
-    }
-  }
-
   protected handleTransportMessage({ peer, payload }: TransportMessage) {
-    let data: Data
+    let data: rfc4.Packet
     try {
-      data = Data.decode(Reader.create(payload))
+      data = rfc4.Packet.decode(Reader.create(payload))
     } catch (e: any) {
       this.logger.error(`cannot decode topic message data ${e.toString()}`)
       return
     }
 
-    if (!data.message) {
-      this.logger.error(`Transport message has no content`)
-      return
-    }
+    // TODO: fix new Date().getTime()
 
-    const { $case } = data.message
+    if (data.position) {
+      this.events.emit('position', {
+        address: peer,
+        time: new Date().getTime(),
+        data: data.position
+      })
 
-    switch ($case) {
-      case 'position': {
-        const { position } = data.message
-        this.events.emit('position', {
-          sender: peer,
-          time: position.time,
-          data: [
-            position.positionX,
-            position.positionY,
-            position.positionZ,
-            position.rotationX,
-            position.rotationY,
-            position.rotationZ,
-            position.rotationW,
-            false
-          ]
-        })
-
-        this.transport.onPeerPositionChange(peer, [position.positionX, position.positionY, position.positionZ])
-        break
-      }
-      case 'chat': {
-        const { time, messageId, text } = data.message.chat
-
-        this.events.emit('chatMessage', {
-          sender: peer,
-          time: time,
-          data: {
-            id: messageId,
-            text: text
-          }
-        })
-        break
-      }
-      case 'voice': {
-        const { encodedSamples, index } = data.message.voice
-
-        this.events.emit('voiceMessage', {
-          sender: peer,
-          time: new Date().getTime(),
-          data: {
-            encoded: encodedSamples,
-            index
-          }
-        })
-        break
-      }
-      case 'profile': {
-        const { time, profileVersion, profileType } = data.message.profile
-        this.events.emit('profileMessage', {
-          sender: peer,
-          time: time,
-          data: {
-            user: peer,
-            version: profileVersion,
-            type: profileType === Profile_ProfileType.LOCAL ? ProfileType.LOCAL : ProfileType.DEPLOYED
-          } // We use deployed as default because that way we can emulate the old behaviour
-        })
-        break
-      }
-      case 'profileRequest': {
-        const { userId, time, profileVersion } = data.message.profileRequest
-        this.events.emit('profileRequest', {
-          sender: peer,
-          time: time,
-          data: {
-            userId: userId,
-            version: profileVersion
-          }
-        })
-        break
-      }
-      case 'profileResponse': {
-        const { time, serializedProfile } = data.message.profileResponse
-        this.events.emit('profileResponse', {
-          sender: peer,
-          time: time,
-          data: {
-            profile: JSON.parse(serializedProfile) as Avatar
-          }
-        })
-        break
-      }
-      default: {
-        this.logger.log(`Ignoring category ${$case}`)
-        break
-      }
+      // MENDEZ: Why is this necessary and not an internal thing of the transport?
+      this.transport.onPeerPositionChange(peer, [
+        data.position.positionX,
+        data.position.positionY,
+        data.position.positionZ
+      ])
+    } else if (data.voice) {
+      this.events.emit('voiceMessage', {
+        address: peer,
+        time: new Date().getTime(),
+        data: data.voice
+      })
+    } else if (data.profileVersion) {
+      this.events.emit('profileMessage', {
+        address: peer,
+        time: new Date().getTime(),
+        data: data.profileVersion
+      })
+    } else if (data.chat) {
+      this.events.emit('chatMessage', {
+        address: peer,
+        time: new Date().getTime(),
+        data: data.chat
+      })
+    } else if (data.profileRequest) {
+      this.events.emit('profileRequest', {
+        address: peer,
+        time: new Date().getTime(),
+        data: data.profileRequest
+      })
+    } else if (data.profileResponse) {
+      this.events.emit('profileResponse', {
+        address: peer,
+        time: new Date().getTime(),
+        data: data.profileResponse
+      })
+    } else {
+      this.logger.log(`Ignoring unknown comms message ${data}`)
     }
   }
 
