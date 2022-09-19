@@ -144,12 +144,10 @@ export class CommsContext {
     if ((immediateReposition || elapsed > 100) && !this.destroyed) {
       this.lastPositionSent = newPosition
       this.lastNetworkUpdatePosition = now
-      worldConnection
-        .sendPositionMessage(newPosition)
-        .catch((e) => {
-          incrementCounter('failed:sendPositionMessage')
-          commsLogger.warn(`error while sending message `, e)
-        })
+      worldConnection.sendPositionMessage(newPosition).catch((e) => {
+        incrementCounter('failed:sendPositionMessage')
+        commsLogger.warn(`error while sending message `, e)
+      })
     }
   }
 

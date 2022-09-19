@@ -43,7 +43,7 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
     identifyPeer(id: string, address: string) {
       const peer = getPeer(id)
 
-      if (peer.address && peer.address != address) {
+      if (peer.address && peer.address !== address) {
         disconnectPeer(id)
         peer.position = undefined
         peer.profileAnnounce = undefined
@@ -72,13 +72,13 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
         options.events.emit(message, { ...packet, address: peer.address })
       }
 
-      if (message == 'position') {
+      if (message === 'position') {
         const p = packet.data as rfc4.Position
         if (!peer.position || p.index >= peer.position.index) peer.position = p
-      } else if (message == 'profileResponse') {
+      } else if (message === 'profileResponse') {
         const p = packet.data as rfc4.ProfileResponse
         if (!peer.profileResponse) peer.profileResponse = p
-      } else if (message == 'profileMessage') {
+      } else if (message === 'profileMessage') {
         const p = packet.data as rfc4.AnnounceProfileVersion
         if (!peer.profileAnnounce || peer.profileAnnounce.profileVersion < p.profileVersion) peer.profileAnnounce = p
       }
