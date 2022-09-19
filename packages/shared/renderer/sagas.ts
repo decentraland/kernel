@@ -28,7 +28,7 @@ import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGL
 import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getCommsContext } from 'shared/comms/selectors'
-import { getExploreRealmsService, getFetchContentServer } from 'shared/dao/selectors'
+import { getExploreRealmsService, getFetchContentServer, getFetchContentUrlPrefix } from 'shared/dao/selectors'
 import { Realm } from 'shared/dao/types'
 import { CommsContext } from 'shared/comms/context'
 import defaultLogger from 'shared/logger'
@@ -231,6 +231,8 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     throw new Error('Avatar not available for Unity')
   }
 
+  const fetchContentServer = yield select(getFetchContentUrlPrefix)
+
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
     let parcels: ParcelsWithAccess = []
@@ -241,7 +243,8 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
 
     const forRenderer = profileToRendererFormat(profile.data, {
       address: identity.address,
-      parcels
+      parcels,
+      baseUrl: fetchContentServer
     })
     forRenderer.hasConnectedWeb3 = identity.hasConnectedWeb3
     // TODO: this condition shouldn't be necessary. Unity fails with setThrew
@@ -252,7 +255,9 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
       getUnityInstance().LoadProfile(forRenderer)
     }
   } else {
-    const forRenderer = profileToRendererFormat(profile.data, {})
+    const forRenderer = profileToRendererFormat(profile.data, {
+      baseUrl: fetchContentServer
+    })
     getUnityInstance().AddUserProfileToCatalog(forRenderer)
     yield put(addedProfileToCatalog(userId, profile.data))
 

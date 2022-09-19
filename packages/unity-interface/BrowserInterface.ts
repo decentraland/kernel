@@ -60,7 +60,7 @@ import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
 import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
-import { getSelectedNetwork } from 'shared/dao/selectors'
+import { getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
 import { store } from 'shared/store/isolatedStore'
@@ -631,12 +631,14 @@ export class BrowserInterface {
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
     const profilesPromise = fetchENSOwnerProfile(data.name, data.maxResults)
 
+    const baseUrl = getFetchContentUrlPrefix(store.getState())
+
     profilesPromise
       .then((profiles) => {
-        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles)
+        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles, baseUrl)
       })
       .catch((error) => {
-        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined)
+        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined, baseUrl)
         defaultLogger.error(error)
       })
   }
