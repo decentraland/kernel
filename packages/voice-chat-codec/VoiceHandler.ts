@@ -1,4 +1,4 @@
-import * as rfc4  from 'shared/comms/comms-rfc-4.gen'
+import * as rfc4 from 'shared/comms/comms-rfc-4.gen'
 
 export type VoiceHandler = {
   // UI Methods

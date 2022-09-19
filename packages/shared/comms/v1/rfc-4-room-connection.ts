@@ -86,7 +86,7 @@ export class Rfc4RoomConnection implements RoomConnection {
   }
 
   private async sendMessage(reliable: boolean, topicMessage: Partial<proto.Packet>) {
-    if (Object.keys(topicMessage).length == 0) throw new Error('Invalid message')
+    if (Object.keys(topicMessage).length === 0) throw new Error('Invalid message')
     const bytes = proto.Packet.encode(topicMessage as any).finish()
     this.broker.send(bytes, reliable)
   }

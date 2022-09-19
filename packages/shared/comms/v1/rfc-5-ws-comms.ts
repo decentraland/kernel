@@ -55,7 +55,8 @@ export class Rfc5BrokerConnection implements IBrokerTransport {
     }
 
     ws.onclose = () => {
-      this.disconnect()
+      this.disconnect().catch(this.logger.error)
+      connected.reject(new Error('Socket closed'))
     }
 
     const channel = wsAsAsyncChannel(ws)
@@ -97,7 +98,7 @@ export class Rfc5BrokerConnection implements IBrokerTransport {
     } catch (err: any) {
       this.connected.reject(err)
       // close the WebSocket on error
-      if (ws.readyState == ws.OPEN) ws.close()
+      if (ws.readyState === ws.OPEN) ws.close()
       // and bubble up the error
       throw err
     } finally {
@@ -146,7 +147,7 @@ export class Rfc5BrokerConnection implements IBrokerTransport {
       this.peers.set(packet.peerJoinMessage.alias, packet.peerJoinMessage.address)
     } else if (packet.peerKicked) {
       // TODO: bubble up disconnection reason to prevent reconnects
-      this.disconnect()
+      this.disconnect().catch(this.logger.error)
     } else if (packet.peerLeaveMessage) {
       const currentPeer = this.peers.get(packet.peerLeaveMessage.alias)
       if (currentPeer) {

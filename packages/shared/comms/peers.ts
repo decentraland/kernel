@@ -119,9 +119,9 @@ export function receiveUserTalking(address: string, talking: boolean) {
 
 export function receiveUserPosition(address: string, position: rfc4.Position, msgTimestamp: number) {
   if (
-    position.positionX == MORDOR_POSITION_RFC4.positionX &&
-    position.positionY == MORDOR_POSITION_RFC4.positionY &&
-    position.positionZ == MORDOR_POSITION_RFC4.positionZ
+    position.positionX === MORDOR_POSITION_RFC4.positionX &&
+    position.positionY === MORDOR_POSITION_RFC4.positionY &&
+    position.positionZ === MORDOR_POSITION_RFC4.positionZ
   ) {
     removePeerByAddress(address)
     return
