@@ -290,8 +290,18 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
       addNewChatMessage(chatMessage)
 
-      // get total user unread messages
-      if (message.sender !== ownId) {
+      if (conversation.type === ConversationType.CHANNEL) {
+        if (conversation.unreadMessages) {
+          // send update with unseen messages
+          const update = {
+            count: conversation.unreadMessages?.length || 0,
+            channelId: conversation.name!
+          }
+
+          getUnityInstance().UpdateTotalUnseenMessagesByChannel({ unseenChannelMessages: [update] })
+        }
+      } else if (message.sender !== ownId) {
+        // get total user unread messages
         const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
         const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
 
