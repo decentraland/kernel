@@ -497,7 +497,9 @@ export class UnityInterface implements IUnityInterface {
     // TODO: why do we send the whole profile while asking for the ENS???
     const profilesForRenderer: NewProfileForRenderer[] = []
     for (const profile of profiles) {
-      profilesForRenderer.push(profileToRendererFormat(profile, { address: profile.userId, baseUrl: contentServerBaseUrl }))
+      profilesForRenderer.push(
+        profileToRendererFormat(profile, { address: profile.userId, baseUrl: contentServerBaseUrl })
+      )
     }
     this.SendMessageToUnity(
       'Bridges',
