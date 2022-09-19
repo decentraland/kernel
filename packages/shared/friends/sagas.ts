@@ -55,7 +55,7 @@ import {
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
+import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -468,28 +468,28 @@ function getFriendIds(client: SocialAPI): string[] {
 }
 
 function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: string[]): number {
-  const conversationsWithUnreadMessages: Conversation[] = client.getAllConversationsWithUnreadMessages()
+  const profile = getCurrentUserProfile(store.getState())
 
+  const conversationsWithUnreadMessages: Conversation[] = client.getAllConversationsWithUnreadMessages()
   let totalUnseenMessages = 0
 
-  const mutedIds = getProfile(store.getState(), ownId)?.muted
-
   for (const conv of conversationsWithUnreadMessages) {
-    const socialId = conv.userIds?.find((userId) => userId !== ownId)
-    if (!socialId) {
-      continue
+    if (conv.type === ConversationType.CHANNEL) {
+      if (profile?.muted?.includes(conv.id)) {
+        continue
+      }
+    } else if (conv.type === ConversationType.DIRECT) {
+      const socialId = conv.userIds?.find((userId) => userId !== ownId)
+      if (!socialId) {
+        continue
+      }
+
+      const userId = getUserIdFromMatrix(socialId)
+
+      if (!friendIds.some((friendIds) => friendIds === userId)) {
+        continue
+      }
     }
-
-    const userId = getUserIdFromMatrix(socialId)
-
-    if (!friendIds.some((friendIds) => friendIds === userId)) {
-      continue
-    }
-
-    if (mutedIds?.includes(conv.id)) {
-      continue
-    }
-
     totalUnseenMessages += conv.unreadMessages?.length || 0
   }
 

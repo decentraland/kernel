@@ -94,6 +94,7 @@ const stubClient = (start: number, end: number) => ({
 function mockStoreCalls(ops?: { start?: number, end?: number }) {
   sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient(ops?.start || 0, ops?.end || 0))
+  sinon.stub(profilesSelectors, 'getCurrentUserProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
   sinon.stub(profilesSelectors, 'getProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds))
 }
 
