@@ -1,18 +1,15 @@
 import { ILogger, createLogger } from 'shared/logger'
 import { Observable } from 'mz-observable'
-import { AuthIdentity, Authenticator } from '@dcl/crypto'
+import { Authenticator } from '@dcl/crypto'
 import { createRpcClient, RpcClientPort, Transport } from '@dcl/rpc'
 import { WebSocketTransport } from '@dcl/rpc/dist/transports/WebSocket'
 import { loadService, RpcClientModule } from '@dcl/rpc/dist/codegen'
 import { BffAuthenticationServiceDefinition, WelcomePeerInformation } from './proto/bff/authentication-service.gen'
 import { CommsServiceDefinition } from './proto/bff/comms-service.gen'
 import { trackEvent } from 'shared/analytics'
+import { ExplorerIdentity } from 'shared/session/types'
 
 type CommsService = RpcClientModule<CommsServiceDefinition, any>
-
-export declare type BFFConfig = {
-  getIdentity: () => AuthIdentity
-}
 
 export type TopicData = {
   peerId: string
@@ -36,7 +33,7 @@ export class BFFConnection {
   private commsService: CommsService | null = null
   private disposed = false
 
-  constructor(private url: string, private config: BFFConfig) {}
+  constructor(private url: string, private identity: ExplorerIdentity) {}
 
   async connect(): Promise<string> {
     this.wsTransport = WebSocketTransport(new WebSocket(this.url, 'comms'))
@@ -191,8 +188,7 @@ export class BFFConnection {
   }
 
   private async authenticate(port: RpcClientPort): Promise<string> {
-    const identity = this.config.getIdentity()
-    const address = identity.authChain[0].payload
+    const address = this.identity.address
 
     const auth = loadService(port, BffAuthenticationServiceDefinition)
 
@@ -203,7 +199,7 @@ export class BFFConnection {
       })
     }
 
-    const authChainJson = JSON.stringify(Authenticator.signPayload(identity, getChallengeResponse.challengeToSign))
+    const authChainJson = JSON.stringify(Authenticator.signPayload(this.identity, getChallengeResponse.challengeToSign))
     const authResponse: WelcomePeerInformation = await auth.authenticate({ authChainJson })
     return authResponse.peerId
   }

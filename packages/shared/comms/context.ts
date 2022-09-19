@@ -1,4 +1,4 @@
-import { commConfigurations } from 'config'
+import { commConfigurations, DEBUG_COMMS } from 'config'
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { Stats } from './debug'
 import { positionReportToCommsPositionRfc4 } from './interface/utils'
@@ -29,6 +29,8 @@ export type ProfilePromiseState = {
   status: 'ok' | 'loading' | 'error'
 }
 
+const commsEventsLogger = createLogger('CommsEvents:')
+
 export class CommsContext {
   public readonly stats: Stats = new Stats()
   public commRadius: number
@@ -52,6 +54,9 @@ export class CommsContext {
     this.worldInstanceConnection.events.on('*', (type, _) => {
       incrementCommsMessageReceived()
       incrementCommsMessageReceivedByName(type)
+      if (DEBUG_COMMS) {
+        commsEventsLogger.info(type, _)
+      }
     })
     this.worldInstanceConnection.events.on('DISCONNECTION', () => this.disconnect())
   }

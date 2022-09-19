@@ -11,10 +11,7 @@ import mitt from 'mitt'
 import { Reader, Writer } from 'protobufjs/minimal'
 import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago.gen'
 import { DEBUG, DEBUG_COMMS } from 'config'
-
-export type Config = {
-  onPeerLeft: (peerId: string) => void
-}
+import { peerIdHandler } from '../v1/peer-id-handler'
 
 // we use a shared writer to reduce allocations and leverage its allocation pool
 const writer = new Writer()
@@ -32,10 +29,9 @@ export class InstanceConnection implements RoomConnection {
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
   private peerLeftListener: TopicListener | null = null
-  private onPeerLeft: (peerId: string) => void
+  private peerIdAdapter = peerIdHandler({ events: this.events })
 
-  constructor(private bff: BFFConnection, { onPeerLeft }: Config) {
-    this.onPeerLeft = onPeerLeft
+  constructor(private bff: BFFConnection) {
     this.bff.onTopicMessageObservable.add((topic) => this.logger.info('topic message', topic))
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
   }
@@ -112,7 +108,7 @@ export class InstanceConnection implements RoomConnection {
           async (data: Uint8Array) => {
             try {
               const peerLeftMessage = LeftIslandMessage.decode(Reader.create(data))
-              this.onPeerLeft(peerLeftMessage.peerId)
+              this.peerIdAdapter.disconnectPeer(peerLeftMessage.peerId)
             } catch (e) {
               this.logger.error('cannot process peer left message', e)
               return
@@ -175,7 +171,7 @@ export class InstanceConnection implements RoomConnection {
       globalThis.__DEBUG_PEER = undefined
     }
     this.bff.disconnect()
-    this.events.emit('DISCONNECTION')
+    this.events.emit('DISCONNECTION', { address: '', data: { kicked: false }, time: new Date().getTime() })
   }
 
   protected handleTransportMessage({ peer, payload }: TransportMessage) {
@@ -190,7 +186,7 @@ export class InstanceConnection implements RoomConnection {
     // TODO: fix new Date().getTime()
 
     if (data.position) {
-      this.events.emit('position', {
+      this.peerIdAdapter.handleMessage('position', {
         address: peer,
         time: new Date().getTime(),
         data: data.position
@@ -203,31 +199,31 @@ export class InstanceConnection implements RoomConnection {
         data.position.positionZ
       ])
     } else if (data.voice) {
-      this.events.emit('voiceMessage', {
+      this.peerIdAdapter.handleMessage('voiceMessage', {
         address: peer,
         time: new Date().getTime(),
         data: data.voice
       })
     } else if (data.profileVersion) {
-      this.events.emit('profileMessage', {
+      this.peerIdAdapter.handleMessage('profileMessage', {
         address: peer,
         time: new Date().getTime(),
         data: data.profileVersion
       })
     } else if (data.chat) {
-      this.events.emit('chatMessage', {
+      this.peerIdAdapter.handleMessage('chatMessage', {
         address: peer,
         time: new Date().getTime(),
         data: data.chat
       })
     } else if (data.profileRequest) {
-      this.events.emit('profileRequest', {
+      this.peerIdAdapter.handleMessage('profileRequest', {
         address: peer,
         time: new Date().getTime(),
         data: data.profileRequest
       })
     } else if (data.profileResponse) {
-      this.events.emit('profileResponse', {
+      this.peerIdAdapter.handleMessage('profileResponse', {
         address: peer,
         time: new Date().getTime(),
         data: data.profileResponse

@@ -11,7 +11,9 @@ export class Rfc4RoomConnection implements RoomConnection {
 
   constructor(private broker: IBrokerTransport) {
     this.broker.onMessageObservable.add(this.handleMessage.bind(this))
-    this.broker.onDisconnectObservable.add(() => this.events.emit('DISCONNECTION'))
+    this.broker.onDisconnectObservable.add(() =>
+      this.events.emit('DISCONNECTION', { address: '', data: { kicked: false }, time: new Date().getTime() })
+    )
   }
 
   async connect(): Promise<void> {

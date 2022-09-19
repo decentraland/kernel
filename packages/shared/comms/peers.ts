@@ -1,7 +1,6 @@
 import { Observable } from 'mz-observable'
 import { PeerInformation, AvatarMessage, AvatarMessageType } from './interface/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { MinPeerData } from '@dcl/catalyst-peer'
 import {
   CommunicationArea,
   position2parcelRfc4,
@@ -166,14 +165,6 @@ export function receiveUserVisible(address: string, visible: boolean) {
     // we send all the USER_DATA to make sure the scene always have
     // the required information to render the whole avatar
     sendPeerUserData(address)
-  }
-}
-
-export function removeMissingPeers(newPeers: MinPeerData[]) {
-  for (const [key, { ethereumAddress }] of peerMap) {
-    if (!newPeers.some((x) => x.id === key || x.id.toLowerCase() === ethereumAddress?.toLowerCase())) {
-      removePeerByAddress(key)
-    }
   }
 }
 

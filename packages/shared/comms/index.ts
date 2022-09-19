@@ -1,4 +1,4 @@
-import { commConfigurations, COMMS, PREFERED_ISLAND } from 'config'
+import { commConfigurations, COMMS, DEBUG_COMMS, PREFERED_ISLAND } from 'config'
 import { Rfc5BrokerConnection } from './v1/rfc-5-ws-comms'
 import { Rfc4RoomConnection } from './v1/rfc-4-room-connection'
 import { RoomConnection } from './interface/index'
@@ -10,15 +10,13 @@ import { getCommsConfig } from 'shared/meta/selectors'
 import { ensureMetaConfigurationInitialized } from 'shared/meta/index'
 import { getIdentity } from 'shared/session'
 import { setCommsIsland } from './actions'
-import { MinPeerData } from '@dcl/catalyst-peer'
 import { commsLogger, CommsContext } from './context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getCommsContext } from './selectors'
 import { Realm } from 'shared/dao/types'
 import { resolveCommsV4Urls, resolveCommsV3Urls } from './v3/resolver'
-import { BFFConfig, BFFConnection } from './v3/BFFConnection'
+import { BFFConnection } from './v3/BFFConnection'
 import { InstanceConnection as V3InstanceConnection } from './v3/InstanceConnection'
-import { removePeerByAddress, removeMissingPeers } from './peers'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { ProfileType } from 'shared/profiles/types'
 import { OfflineRoomConnection } from './offline-room-connection'
@@ -106,7 +104,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
           // if any error occurs
           return getIdentity()
         },
-        logLevel: 'NONE',
+        logLevel: DEBUG_COMMS ? 'TRACE' : 'NONE',
         targetConnections: commsConfig.targetConnections ?? 4,
         maxConnections: commsConfig.maxConnections ?? 6,
         positionConfig: {
@@ -120,16 +118,6 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
           nearbyPeersDistance: 5,
           disconnectDistance: 5
         },
-        eventsHandler: {
-          onIslandChange: (island: string | undefined, peers: MinPeerData[]) => {
-            store.dispatch(setCommsIsland(island))
-            removeMissingPeers(peers)
-          },
-          onPeerLeftIsland: (peerId: string) => {
-            commsLogger.info('Removing peer that left an island', peerId)
-            removePeerByAddress(peerId)
-          }
-        },
         preferedIslandId: PREFERED_ISLAND ?? ''
       }
 
@@ -142,7 +130,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       commsLogger.log('Using Remote lighthouse service: ', lighthouseUrl)
 
-      connection = new LighthouseWorldInstanceConnection(
+      const lighthouse = (connection = new LighthouseWorldInstanceConnection(
         lighthouseUrl,
         peerConfig,
         (status) => {
@@ -156,7 +144,11 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
           }
         },
         identity
-      )
+      ))
+
+      lighthouse.onIslandChangedObservable.add(({ island }) => {
+        store.dispatch(setCommsIsland(island))
+      })
 
       break
     }
@@ -164,18 +156,10 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       await ensureMetaConfigurationInitialized()
 
       const { wsUrl } = resolveCommsV3Urls(realm)!
-      const bffConfig: BFFConfig = {
-        getIdentity: () => getIdentity() as AuthIdentity
-      }
 
       commsLogger.log('Using BFF service: ', wsUrl)
-      const bff = new BFFConnection(wsUrl, bffConfig)
-      connection = new V3InstanceConnection(bff, {
-        onPeerLeft: (peerId: string) => {
-          commsLogger.info('Removing peer that left an island', peerId)
-          removePeerByAddress(peerId)
-        }
-      })
+      const bff = new BFFConnection(wsUrl, identity)
+      connection = new V3InstanceConnection(bff)
       break
     }
     case 'v4': {

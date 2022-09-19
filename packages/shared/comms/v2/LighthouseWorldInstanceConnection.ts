@@ -1,13 +1,14 @@
 import { CommsEvents, RoomConnection } from '../interface/index'
 import { Package } from '../interface/types'
-import { positionHashRfc4 } from '../interface/utils'
+import { CommunicationArea, position2parcelRfc4, positionHashRfc4 } from '../interface/utils'
 import {
   Peer as IslandBasedPeer,
   PeerConfig,
   PacketCallback,
   PeerStatus,
   PeerMessageType,
-  PeerMessageTypes
+  PeerMessageTypes,
+  MinPeerData
 } from '@dcl/catalyst-peer'
 import {
   ChatData,
@@ -27,6 +28,9 @@ import mitt from 'mitt'
 import { createLogger } from 'shared/logger'
 import { ExplorerIdentity } from 'shared/session/types'
 import { uuid } from 'atomicHelpers/math'
+import { commConfigurations, parcelLimits } from 'config'
+import { peerIdHandler } from '../v1/peer-id-handler'
+import { Observable } from 'mz-observable'
 
 type PeerType = IslandBasedPeer
 
@@ -81,6 +85,9 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
   private disposed = false
   private lastPosition: rfc4.Position | null = null
   private profileType: ProfileType
+  private peerIdAdapter = peerIdHandler({ events: this.events })
+  public onIslandChangedObservable = new Observable<{ island: string; peers: MinPeerData[] }>()
+  currentIsland: string | undefined
 
   constructor(
     private lighthouseUrl: string,
@@ -116,7 +123,11 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
 
     await this.peer.dispose()
 
-    this.events.emit('DISCONNECTION')
+    this.events.emit('DISCONNECTION', {
+      address: this.identity.address,
+      data: { kicked: false },
+      time: new Date().getTime()
+    })
   }
 
   async sendProfileMessage(profile: rfc4.AnnounceProfileVersion) {
@@ -192,11 +203,6 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  async setTopics(rooms: string[]) {
-    this.rooms = rooms
-    await this.syncRoomsWithPeer()
-  }
-
   private async syncRoomsWithPeer() {
     const currentRooms = [...this.peer.currentRooms]
 
@@ -241,6 +247,33 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
   private async sendPositionData(p: rfc4.Position, topic: string, typeName: string) {
     const positionData = createPositionData(p)
     await this.sendData(topic, positionData, PeerMessageTypes.unreliable(typeName))
+
+    await this.refreshTopics()
+  }
+
+  refreshTopics() {
+    this.rooms.length = 0
+    if (this.currentIsland) this.rooms.push(this.currentIsland)
+
+    if (this.lastPosition) {
+      const newParcel = position2parcelRfc4(this.lastPosition)
+      const commArea = new CommunicationArea(newParcel, commConfigurations.commRadius)
+
+      const xMin = ((commArea.vMin.x + parcelLimits.maxParcelX) >> 2) << 2
+      const xMax = ((commArea.vMax.x + parcelLimits.maxParcelX) >> 2) << 2
+      const zMin = ((commArea.vMin.y + parcelLimits.maxParcelZ) >> 2) << 2
+      const zMax = ((commArea.vMax.y + parcelLimits.maxParcelZ) >> 2) << 2
+
+      for (let x = xMin; x <= xMax; x += 4) {
+        for (let z = zMin; z <= zMax; z += 4) {
+          const hash = `${x >> 2}:${z >> 2}`
+          if (!this.rooms.includes(hash)) {
+            this.rooms.push(hash)
+          }
+        }
+      }
+    }
+    return this.syncRoomsWithPeer()
   }
 
   private async sendProfileData(
@@ -274,13 +307,19 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     const statusHandler = (status: PeerStatus): void =>
       this.statusHandler({ status, connectedPeers: this.connectedPeersCount() })
 
+    this.peerConfig.eventsHandler = this.peerConfig.eventsHandler || {}
     // Island based peer based peer
-    if (this.peerConfig.eventsHandler) {
-      this.peerConfig.eventsHandler.statusHandler = statusHandler
-    } else {
-      this.peerConfig.eventsHandler = {
-        statusHandler
-      }
+    this.peerConfig.eventsHandler.statusHandler = statusHandler
+
+    this.peerConfig.eventsHandler.onIslandChange = (island, peers) => {
+      if (island) this.onIslandChangedObservable.notifyObservers({ island, peers })
+      this.currentIsland = island
+      this.peerIdAdapter.removeAllBut(peers.map(($) => $.id))
+      this.refreshTopics().catch(logger.error)
+    }
+
+    this.peerConfig.eventsHandler.onPeerLeftIsland = (peerId) => {
+      this.peerIdAdapter.disconnectPeer(peerId)
     }
 
     // We require a version greater than 0.1 to not send an ID
@@ -293,7 +332,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
       const commsMessage = CommsMessage.deserializeBinary(payload)
       switch (commsMessage.getDataCase()) {
         case CommsMessage.DataCase.CHAT_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'chatMessage',
             createPackage(sender, commsMessage, mapToPackageChat(commsMessage.getChatData()!))
           )
@@ -301,7 +340,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
         case CommsMessage.DataCase.POSITION_DATA:
           const positionMessage = mapToPositionMessage(commsMessage.getPositionData()!)
           this.peer.setPeerPosition(sender, positionMessage.slice(0, 3) as [number, number, number])
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'position',
             createPackage(sender, commsMessage, {
               index: 0,
@@ -316,20 +355,25 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
           )
           break
         case CommsMessage.DataCase.SCENE_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'sceneMessageBus',
             createPackage(sender, commsMessage, mapToPackageScene(commsMessage.getSceneData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_DATA:
           // TODO: update internal peers list using this information
-          this.events.emit(
+          const userId = commsMessage.getProfileData()?.getUserId()
+          if (userId) {
+            if (sender.startsWith('0x')) debugger
+            this.peerIdAdapter.identifyPeer(sender, userId)
+          }
+          this.peerIdAdapter.handleMessage(
             'profileMessage',
             createPackage(sender, commsMessage, mapToPackageProfile(commsMessage.getProfileData()!))
           )
           break
         case CommsMessage.DataCase.VOICE_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'voiceMessage',
             createPackage(
               sender,
@@ -342,13 +386,13 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
           )
           break
         case CommsMessage.DataCase.PROFILE_REQUEST_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'profileRequest',
             createPackage(sender, commsMessage, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_RESPONSE_DATA: {
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'profileResponse',
             createPackage(sender, commsMessage, {
               serializedProfile: commsMessage.getProfileResponseData()!.getSerializedProfile()
