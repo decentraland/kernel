@@ -84,7 +84,7 @@ import {
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
-import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getMaxChannels, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
@@ -1201,10 +1201,17 @@ function updateSocialInfo(socialData: SocialData) {
 // Join or create channel
 async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
+    const channelId = action.payload.channelId
+
+    const reachedLimit = checkChannelsLimit()
+    if (reachedLimit) {
+      notifyJoinChannelError(channelId, '') // Todo Juli: Update branch and send the correct errorCode
+      return
+    }
+
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
 
-    const channelId = action.payload.channelId
     const ownId = client.getUserId()
 
     // get or create channel
@@ -1254,17 +1261,24 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
 // Create channel
 export async function createChannel(request: CreateChannelPayload) {
   try {
+    const channelId = request.channelId
+
+    const reachedLimit = checkChannelsLimit()
+    if (reachedLimit) {
+      notifyJoinChannelError(channelId, '') // Todo Juli: Update branch and send the correct errorCode
+      return
+    }
+
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
 
-    const channelId = request.channelId
     const ownId = client.getUserId()
 
     // create channel
     const { conversation, created } = await client.getOrCreateChannel(channelId, [ownId])
 
     if (!created) {
-      notifyJoinChannelError(request.channelId, `Channel "${channelId}" already exists`)
+      notifyJoinChannelError(channelId, `Channel "${channelId}" already exists`)
       return
     }
 
@@ -1451,4 +1465,23 @@ function getTotalUnseenMessagesByChannel() {
   }
 
   return updateTotalUnseenMessagesByChannelPayload
+}
+
+/**
+ * Get the number of channels the user is joined to and check with a feature flag if the user has reached the maximum amount allowed.
+ * @return True - if the user has reached the maximum amount allowed.
+ * @return False - if the user has not reached the maximum amount allowed.
+ */
+function checkChannelsLimit() {
+  const limit = getMaxChannels(store.getState())
+
+  const joinedChannels = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.CHANNEL
+  ).length
+
+  if (limit > joinedChannels) {
+    return false
+  }
+
+  return true
 }

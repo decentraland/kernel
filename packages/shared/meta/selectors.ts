@@ -52,6 +52,11 @@ export function getMaxVisiblePeers(store: RootMetaState): number {
   )
 }
 
+export function getMaxChannels(store: RootMetaState): number {
+  // Todo Juli!: Should we have a DEFAULT_MAX_CHANNELS_VALUE?
+  return getFeatureFlagVariantValue(store, 'name_for_flag') as number
+}
+
 /**
  * Returns the variant content of a feature flag
  */

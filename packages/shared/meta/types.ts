@@ -36,6 +36,7 @@ export type FeatureFlagsName =
   | 'initial_portable_experiences'
   | 'web_cap_fps' // caps the web client FPS
   | 'disabled-catalyst'
+  | 'name_for_flag' // Todo Juli!: Define a reasonable name
 
 export type BannedUsers = Record<string, Ban[]>
 
