@@ -3,7 +3,7 @@ import { Stats } from '../debug'
 
 export type TransportMessage = {
   data: Uint8Array
-  channel: string
+  senderAddress: string
 }
 
 export enum SocketReadyState {

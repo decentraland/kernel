@@ -1,6 +1,6 @@
 import { commConfigurations, COMMS, PREFERED_ISLAND } from 'config'
 import { CliBrokerConnection } from './v1/CliBrokerConnection'
-import { BrokerWorldInstanceConnection } from '../comms/v1/brokerWorldInstanceConnection'
+import { Rfc4RoomConnection } from './v1/rfc-4-room-connection'
 import { RoomConnection } from './interface/index'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
 import { Authenticator, AuthIdentity } from '@dcl/crypto'
@@ -88,7 +88,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
 
       commsLogger.log('Using WebSocket comms: ' + url.href)
 
-      connection = new BrokerWorldInstanceConnection(new CliBrokerConnection(url.href))
+      connection = new Rfc4RoomConnection(new CliBrokerConnection(url.href))
       break
     }
     case 'v2': {
@@ -187,7 +187,7 @@ export async function connectComms(realm: Realm): Promise<CommsContext | null> {
       url.search = qs.toString()
       const finalUrl = url.toString()
       commsLogger.log('Using WebSocket comms: ' + finalUrl)
-      connection = new BrokerWorldInstanceConnection(new CliBrokerConnection(finalUrl))
+      connection = new Rfc4RoomConnection(new CliBrokerConnection(finalUrl))
 
       break
     }
