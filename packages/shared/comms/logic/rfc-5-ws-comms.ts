@@ -1,14 +1,13 @@
 import { future, IFuture } from 'fp-future'
 
 import * as rfc5 from 'shared/protocol/kernel/comms/ws-comms-rfc-5.gen'
-import { Stats } from '../debug'
 import { Writer } from 'protobufjs/minimal'
-import { TransportMessage, IBrokerTransport } from './IBrokerTransport'
+import { ICommsTransport, CommsTransportEvents, CommsDisconnectionEvent } from '../interface'
 import { ILogger, createLogger } from 'shared/logger'
-import { Observable } from 'mz-observable'
 import { ExplorerIdentity } from 'shared/session/types'
 import { wsAsAsyncChannel } from './ws-async-channel'
 import { Authenticator } from '@dcl/crypto'
+import mitt from 'mitt'
 
 // shared writer to leverage pools
 const writer = new Writer()
@@ -19,18 +18,14 @@ function craftMessage(packet: Partial<rfc5.WsPacket>): Uint8Array {
   return writer.finish()
 }
 
-export class Rfc5BrokerConnection implements IBrokerTransport {
+export class Rfc5BrokerConnection implements ICommsTransport {
   public alias: number | null = null
-
-  public stats: Stats | null = null
+  public events = mitt<CommsTransportEvents>()
 
   public logger: ILogger = createLogger('Broker: ')
 
-  public onDisconnectObservable = new Observable<void>()
-  public onMessageObservable = new Observable<TransportMessage>()
-
   private connected = future<void>()
-  private peers = new Map<number, string>()
+  private peersToAddress = new Map<number, string>()
 
   get connectedPromise(): IFuture<void> {
     return this.connected
@@ -109,7 +104,7 @@ export class Rfc5BrokerConnection implements IBrokerTransport {
   handleWelcomeMessage(welcomeMessage: rfc5.WsWelcome, socket: WebSocket) {
     this.alias = welcomeMessage.alias
     for (const [alias, address] of Object.entries(welcomeMessage.peerIdentities)) {
-      this.peers.set(+alias | 0, address)
+      this.peersToAddress.set(+alias | 0, address)
     }
     this.ws = socket
     this.connected.resolve()
@@ -127,14 +122,16 @@ export class Rfc5BrokerConnection implements IBrokerTransport {
     )
   }
 
-  async disconnect() {
+  async disconnect(data?: CommsDisconnectionEvent) {
     if (this.ws) {
-      this.ws.onmessage = null
-      this.ws.onerror = null
-      this.ws.onclose = null
-      this.ws.close()
+      const ws = this.ws
       this.ws = null
-      this.onDisconnectObservable.notifyObservers()
+      this.events.emit('DISCONNECTION', data ?? { kicked: false })
+
+      ws.onmessage = null
+      ws.onerror = null
+      ws.onclose = null
+      ws.close()
     }
   }
 
@@ -144,25 +141,20 @@ export class Rfc5BrokerConnection implements IBrokerTransport {
     const packet = rfc5.WsPacket.decode(msg)
 
     if (packet.peerJoinMessage) {
-      this.peers.set(packet.peerJoinMessage.alias, packet.peerJoinMessage.address)
+      this.peersToAddress.set(packet.peerJoinMessage.alias, packet.peerJoinMessage.address)
     } else if (packet.peerKicked) {
-      // TODO: bubble up disconnection reason to prevent reconnects
-      this.disconnect().catch(this.logger.error)
+      this.disconnect({ kicked: true }).catch(this.logger.error)
     } else if (packet.peerLeaveMessage) {
-      const currentPeer = this.peers.get(packet.peerLeaveMessage.alias)
-      if (currentPeer) {
-        this.peers.delete(packet.peerLeaveMessage.alias)
-        // TODO: notify missing avatar
-        // this.onMessageObservable.notifyObservers({
-        //   senderAddress: currentPeer,
-        //   data: craftRfc4Message({ peerDisconnected: {} })
-        // })
+      const currentPeerAddress = this.peersToAddress.get(packet.peerLeaveMessage.alias)
+      if (currentPeerAddress) {
+        this.peersToAddress.delete(packet.peerLeaveMessage.alias)
+        this.events.emit('PEER_DISCONNECTED', { address: currentPeerAddress })
       }
     } else if (packet.peerUpdateMessage) {
-      const currentPeer = this.peers.get(packet.peerUpdateMessage.fromAlias)
-      if (currentPeer) {
-        this.onMessageObservable.notifyObservers({
-          senderAddress: currentPeer,
+      const currentPeerAddress = this.peersToAddress.get(packet.peerUpdateMessage.fromAlias)
+      if (currentPeerAddress) {
+        this.events.emit('message', {
+          senderAddress: currentPeerAddress,
           data: packet.peerUpdateMessage.body
         })
       } else {

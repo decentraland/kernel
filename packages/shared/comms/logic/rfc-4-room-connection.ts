@@ -1,23 +1,25 @@
 import * as proto from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
-import { IBrokerTransport, TransportMessage } from './IBrokerTransport'
-
-import { CommsEvents, RoomConnection } from '../interface/index'
+import { ICommsTransport, TransportMessage, CommsEvents, RoomConnection } from '../interface'
 import mitt from 'mitt'
 
+/**
+ * This class implements Rfc4 on top of a ICommsTransport. The idea behind it is
+ * to serve as a reference implementation for comss. ICommsTransport can be an IRC
+ * server, an echo server, a mocked implementation or WebSocket among many others.
+ */
 export class Rfc4RoomConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
   private positionIndex: number = 0
 
-  constructor(private broker: IBrokerTransport) {
-    this.broker.onMessageObservable.add(this.handleMessage.bind(this))
-    this.broker.onDisconnectObservable.add(() =>
-      this.events.emit('DISCONNECTION', { address: '', data: { kicked: false }, time: new Date().getTime() })
-    )
+  constructor(private transport: ICommsTransport) {
+    this.transport.events.on('message', this.handleMessage.bind(this))
+    this.transport.events.on('DISCONNECTION', (event) => this.events.emit('DISCONNECTION', event))
+    this.transport.events.on('PEER_DISCONNECTED', (event) => this.events.emit('PEER_DISCONNECTED', event))
   }
 
   async connect(): Promise<void> {
-    await this.broker.connect()
+    await this.transport.connect()
   }
 
   sendPositionMessage(p: proto.Position): Promise<void> {
@@ -28,32 +30,27 @@ export class Rfc4RoomConnection implements RoomConnection {
       }
     })
   }
-
   sendParcelSceneMessage(scene: proto.Scene): Promise<void> {
     return this.sendMessage(false, { scene })
   }
   sendProfileMessage(profileVersion: proto.AnnounceProfileVersion): Promise<void> {
     return this.sendMessage(true, { profileVersion })
   }
-
   sendProfileRequest(profileRequest: proto.ProfileRequest): Promise<void> {
     return this.sendMessage(true, { profileRequest })
   }
-
   sendProfileResponse(profileResponse: proto.ProfileResponse): Promise<void> {
     return this.sendMessage(true, { profileResponse })
   }
-
   sendChatMessage(chat: proto.Chat): Promise<void> {
     return this.sendMessage(true, { chat })
   }
-
   sendVoiceMessage(voice: proto.Voice): Promise<void> {
     return this.sendMessage(true, { voice })
   }
 
   async disconnect() {
-    await this.broker.disconnect()
+    await this.transport.disconnect()
   }
 
   private handleMessage(message: TransportMessage) {
@@ -90,6 +87,6 @@ export class Rfc4RoomConnection implements RoomConnection {
   private async sendMessage(reliable: boolean, topicMessage: Partial<proto.Packet>) {
     if (Object.keys(topicMessage).length === 0) throw new Error('Invalid message')
     const bytes = proto.Packet.encode(topicMessage as any).finish()
-    this.broker.send(bytes, reliable)
+    this.transport.send(bytes, reliable)
   }
 }

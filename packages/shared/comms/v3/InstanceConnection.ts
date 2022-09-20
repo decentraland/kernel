@@ -15,7 +15,7 @@ import {
   IslandChangedMessage
 } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
 import { DEBUG, DEBUG_COMMS } from 'config'
-import { peerIdHandler } from '../v1/peer-id-handler'
+import { peerIdHandler } from '../logic/peer-id-handler'
 
 // we use a shared writer to reduce allocations and leverage its allocation pool
 const writer = new Writer()
@@ -36,7 +36,6 @@ export class InstanceConnection implements RoomConnection {
   private peerIdAdapter = peerIdHandler({ events: this.events })
 
   constructor(private bff: BFFConnection) {
-    this.bff.onTopicMessageObservable.add((topic) => this.logger.info('topic message', topic))
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
   }
 
@@ -175,7 +174,7 @@ export class InstanceConnection implements RoomConnection {
       globalThis.__DEBUG_PEER = undefined
     }
     this.bff.disconnect()
-    this.events.emit('DISCONNECTION', { address: '', data: { kicked: false }, time: new Date().getTime() })
+    this.events.emit('DISCONNECTION', { kicked: false })
   }
 
   protected handleTransportMessage({ peer, payload }: TransportMessage) {
@@ -245,6 +244,8 @@ export class InstanceConnection implements RoomConnection {
     transport.onMessageObservable.add(this.handleTransportMessage.bind(this))
     transport.onDisconnectObservable.add(this.disconnect.bind(this))
 
+    // TODO: MENDEZ: should transport.onPeerPositionChange be called here?
+    // TODO: MENDEZ: we should bind peerLeft messages to this.events.emit('PEER_DISCONNECTED', { address })
     this.transport = transport
 
     globalThis.__DEBUG_PEER = transport

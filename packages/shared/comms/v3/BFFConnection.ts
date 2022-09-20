@@ -27,11 +27,7 @@ export class BFFConnection {
   private logger: ILogger = createLogger('BFF: ')
 
   public onDisconnectObservable = new Observable<void>()
-  public onTopicMessageObservable = new Observable<TopicData>()
-
   private wsTransport: Transport | null = null
-
-  private sceneTopics = new Map<string, TopicListener>()
 
   private commsService: CommsService | null = null
   private disposed = false
@@ -140,42 +136,6 @@ export class BFFConnection {
     await this.commsService.publishToTopic({ topic, payload })
   }
 
-  // TODO: replace this method with a listener
-  public async setTopics(topics: string[]): Promise<void> {
-    if (this.disposed) {
-      return
-    }
-    const newTopics = new Set<string>(topics)
-    const topicsToRemove = new Set<string>()
-    const topicsToAdd = new Set<string>()
-
-    newTopics.forEach((topic) => {
-      if (!this.sceneTopics.has(topic)) {
-        topicsToAdd.add(topic)
-      }
-    })
-    for (const topic of this.sceneTopics.keys()) {
-      if (!newTopics.has(topic)) {
-        topicsToRemove.add(topic)
-      }
-    }
-
-    topicsToRemove.forEach((topic) => {
-      const listener = this.sceneTopics.get(topic)
-      if (listener) {
-        this.removePeerTopicListener(listener).catch((err) => {
-          this.logger.error(`Error removing peer topic listener for ${topic}: ${err.toString()}`)
-        })
-      }
-      this.sceneTopics.delete(topic)
-    })
-
-    topicsToAdd.forEach(async (topic) => {
-      const listener = await this.addPeerTopicListener(topic, this.onSceneMessage.bind(this))
-      this.sceneTopics.set(topic, listener)
-    })
-  }
-
   disconnect() {
     if (this.disposed) {
       return
@@ -205,12 +165,5 @@ export class BFFConnection {
     const authChainJson = JSON.stringify(Authenticator.signPayload(this.identity, getChallengeResponse.challengeToSign))
     const authResponse: WelcomePeerInformation = await auth.authenticate({ authChainJson })
     return authResponse.peerId
-  }
-
-  private async onSceneMessage(data: Uint8Array, peerId: string) {
-    this.onTopicMessageObservable.notifyObservers({
-      peerId,
-      data
-    })
   }
 }

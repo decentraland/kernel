@@ -11,8 +11,3 @@ export const MORDOR_POSITION_RFC4: rfc4.Position = {
   rotationW: 1,
   index: 0
 }
-
-export type ProcessingPeerInfo = {
-  alias: string
-  squareDistance: number
-}

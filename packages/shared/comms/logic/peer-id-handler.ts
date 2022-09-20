@@ -1,7 +1,6 @@
 import { Emitter } from 'mitt'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
-import { CommsEvents } from '../interface'
-import { MORDOR_POSITION_RFC4 } from '../const'
+import { CommsEvents, CommsPeerDisconnectedEvent } from '../interface'
 
 export type CachedPeer = {
   address?: string
@@ -11,7 +10,9 @@ export type CachedPeer = {
 }
 
 // This component abstracts the opaque peerId from transports into something that
-// works for RFC4
+// works for RFC4, replacing the peerId for the address whenever it is suitable
+// Transports that support stateful address handles for peers may not use
+// this component
 export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
   const peers = new Map<string, CachedPeer>()
 
@@ -24,10 +25,9 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
 
   function disconnectPeer(id: string) {
     const peer = getPeer(id)
-    console.log('Disconnecting peer', id)
+    console.log('Disconnecting peer', id, peer)
     if (peer.address) {
-      // TODO: we need better removal events
-      options.events.emit('position', { address: peer.address, data: MORDOR_POSITION_RFC4, time: new Date().getTime() })
+      options.events.emit('PEER_DISCONNECTED', { address: peer.address })
     }
   }
 
@@ -52,8 +52,8 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
       }
 
       if (!peer.address) {
-        console.log('Recognized peer', id)
         peer.address = address
+        console.log('Recognized peer', id, peer)
         if (peer.position) {
           options.events.emit('position', { address, data: peer.position, time: new Date().getTime() })
         }
@@ -65,22 +65,33 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
         }
       }
     },
-    handleMessage<T extends keyof CommsEvents>(message: T, packet: CommsEvents[T]) {
-      const peer = getPeer(packet.address)
-
-      if (peer.address) {
-        options.events.emit(message, { ...packet, address: peer.address })
+    handleMessage<T extends keyof CommsEvents, X extends CommsEvents[T]>(message: T, packet: X) {
+      if (message === 'PEER_DISCONNECTED') {
+        const p = packet as CommsPeerDisconnectedEvent
+        disconnectPeer(p.address)
+        return
       }
 
-      if (message === 'position') {
-        const p = packet.data as rfc4.Position
-        if (!peer.position || p.index >= peer.position.index) peer.position = p
-      } else if (message === 'profileResponse') {
-        const p = packet.data as rfc4.ProfileResponse
-        if (!peer.profileResponse) peer.profileResponse = p
-      } else if (message === 'profileMessage') {
-        const p = packet.data as rfc4.AnnounceProfileVersion
-        if (!peer.profileAnnounce || peer.profileAnnounce.profileVersion < p.profileVersion) peer.profileAnnounce = p
+      if ('address' in packet) {
+        const peer = getPeer(packet.address)
+
+        if (peer.address) {
+          options.events.emit(message, { ...packet, address: peer.address })
+        }
+
+        if ('data' in packet) {
+          if (message === 'position') {
+            const p = packet.data as rfc4.Position
+            if (!peer.position || p.index >= peer.position.index) peer.position = p
+          } else if (message === 'profileResponse') {
+            const p = packet.data as rfc4.ProfileResponse
+            if (!peer.profileResponse) peer.profileResponse = p
+          } else if (message === 'profileMessage') {
+            const p = packet.data as rfc4.AnnounceProfileVersion
+            if (!peer.profileAnnounce || peer.profileAnnounce.profileVersion < p.profileVersion)
+              peer.profileAnnounce = p
+          }
+        }
       }
     }
   }

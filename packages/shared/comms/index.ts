@@ -1,6 +1,6 @@
 import { commConfigurations, COMMS, DEBUG_COMMS, PREFERED_ISLAND } from 'config'
-import { Rfc5BrokerConnection } from './v1/rfc-5-ws-comms'
-import { Rfc4RoomConnection } from './v1/rfc-4-room-connection'
+import { Rfc5BrokerConnection } from './logic/rfc-5-ws-comms'
+import { Rfc4RoomConnection } from './logic/rfc-4-room-connection'
 import { RoomConnection } from './interface/index'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
 import { Authenticator, AuthIdentity } from '@dcl/crypto'

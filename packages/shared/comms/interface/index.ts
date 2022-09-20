@@ -1,9 +1,16 @@
-import { UserInformation, Package } from './types'
+import { Package } from './types'
 import * as proto from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { Emitter } from 'mitt'
 
+export type CommsDisconnectionEvent = {
+  kicked: boolean
+}
+export type CommsPeerDisconnectedEvent = {
+  address: string
+}
+
 export type CommsEvents = {
-  initialMessage: Package<UserInformation>
+  // RFC4 messages
   sceneMessageBus: Package<proto.Scene>
   chatMessage: Package<proto.Chat>
   profileMessage: Package<proto.AnnounceProfileVersion>
@@ -12,7 +19,9 @@ export type CommsEvents = {
   profileResponse: Package<proto.ProfileResponse>
   profileRequest: Package<proto.ProfileRequest>
 
-  DISCONNECTION: Package<{ kicked: boolean }>
+  // Transport messages
+  PEER_DISCONNECTED: CommsPeerDisconnectedEvent
+  DISCONNECTION: CommsDisconnectionEvent
 }
 
 export interface RoomConnection {
@@ -30,4 +39,20 @@ export interface RoomConnection {
   sendParcelSceneMessage(message: proto.Scene): Promise<void>
   sendChatMessage(message: proto.Chat): Promise<void>
   sendVoiceMessage(message: proto.Voice): Promise<void>
+}
+
+export type CommsTransportEvents = Pick<CommsEvents, 'DISCONNECTION' | 'PEER_DISCONNECTED'> & {
+  message: TransportMessage
+}
+
+export type TransportMessage = {
+  data: Uint8Array
+  senderAddress: string
+}
+
+export interface ICommsTransport {
+  events: Emitter<CommsTransportEvents>
+  send(data: Uint8Array, reliable: boolean): void
+  disconnect(): Promise<void>
+  connect(): Promise<void>
 }

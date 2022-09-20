@@ -6,7 +6,8 @@ import {
   setupPeer,
   ensureTrackingUniqueAndLatest,
   receiveUserPosition,
-  removeAllPeers
+  removeAllPeers,
+  removePeerByAddress
 } from './peers'
 import { AvatarMessageType, Package } from './interface/types'
 import * as proto from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
@@ -30,6 +31,7 @@ import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
 import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
 import { uuid } from 'atomicHelpers/math'
 import { validateAvatar } from 'shared/profiles/schemaValidation'
+import { CommsDisconnectionEvent, CommsPeerDisconnectedEvent } from './interface'
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
@@ -41,6 +43,7 @@ export async function bindHandlersToCommsContext(context: CommsContext) {
 
   context.onDisconnectObservable.add(() => store.dispatch(handleCommsDisconnection(context)))
 
+  // RFC4 messages
   connection.events.on('position', processPositionMessage)
   connection.events.on('profileMessage', processProfileUpdatedMessage)
   connection.events.on('chatMessage', processChatMessage)
@@ -48,6 +51,10 @@ export async function bindHandlersToCommsContext(context: CommsContext) {
   connection.events.on('profileRequest', processProfileRequest)
   connection.events.on('profileResponse', processProfileResponse)
   connection.events.on('voiceMessage', processVoiceFragment)
+
+  // transport messages
+  connection.events.on('PEER_DISCONNECTED', handleDisconnectPeer)
+  connection.events.on('DISCONNECTION', handleDisconnection)
 }
 
 const pendingProfileRequests: Map<string, Set<IFuture<Avatar | null>>> = new Map()
@@ -87,6 +94,20 @@ export async function requestProfileToPeers(
     // We resolve with a null profile. This will fallback to a random profile
     return Promise.resolve(null)
   }
+}
+
+function handleDisconnection(data: CommsDisconnectionEvent) {
+  // when we are kicked, the explorer should re-load, or maybe go to offline~offline realm
+  if (data.kicked) {
+    const url = new URL(document.location.toString())
+    url.search = ''
+    url.searchParams.set('disconnection-reason', 'logged-in-somewhere-else')
+    document.location = url.toString()
+  }
+}
+
+function handleDisconnectPeer(data: CommsPeerDisconnectedEvent) {
+  removePeerByAddress(data.address)
 }
 
 function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVersion>) {

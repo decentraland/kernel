@@ -8,7 +8,7 @@ import {
   squareDistanceRfc4
 } from './interface/utils'
 import { commConfigurations } from 'config'
-import { MORDOR_POSITION_RFC4, ProcessingPeerInfo } from './const'
+import { MORDOR_POSITION_RFC4 } from './const'
 import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { Avatar, EthAddress } from '@dcl/schemas'
@@ -210,6 +210,12 @@ export function processAvatarVisibility(
   if (!lastPlayerPositionReport) return
   const pos = positionReportToCommsPositionRfc4(lastPlayerPositionReport)
   const now = Date.now()
+
+  type ProcessingPeerInfo = {
+    alias: string
+    squareDistance: number
+  }
+
   const visiblePeers: ProcessingPeerInfo[] = []
   const commArea = new CommunicationArea(position2parcelRfc4(pos), commConfigurations.commRadius)
 

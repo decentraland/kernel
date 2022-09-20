@@ -1,4 +1,4 @@
-import { CommsEvents, RoomConnection } from '../interface/index'
+import { CommsDisconnectionEvent, CommsEvents, RoomConnection } from '../interface/index'
 import { Package } from '../interface/types'
 import { CommunicationArea, position2parcelRfc4, positionHashRfc4 } from '../interface/utils'
 import {
@@ -29,7 +29,7 @@ import { createLogger } from 'shared/logger'
 import { ExplorerIdentity } from 'shared/session/types'
 import { uuid } from 'atomicHelpers/math'
 import { commConfigurations, parcelLimits } from 'config'
-import { peerIdHandler } from '../v1/peer-id-handler'
+import { peerIdHandler } from '../logic/peer-id-handler'
 import { Observable } from 'mz-observable'
 
 type PeerType = IslandBasedPeer
@@ -117,17 +117,13 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  async disconnect() {
+  async disconnect(data?: CommsDisconnectionEvent) {
     if (this.disposed) return
     this.disposed = true
 
     await this.peer.dispose()
 
-    this.events.emit('DISCONNECTION', {
-      address: this.identity.address,
-      data: { kicked: false },
-      time: new Date().getTime()
-    })
+    this.events.emit('DISCONNECTION', data ?? { kicked: false })
   }
 
   async sendProfileMessage(profile: rfc4.AnnounceProfileVersion) {
