@@ -1,4 +1,4 @@
-import * as proto from '../comms-rfc-4.gen'
+import * as proto from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { IBrokerTransport, TransportMessage } from './IBrokerTransport'
 
 import { CommsEvents, RoomConnection } from '../interface/index'

@@ -3,7 +3,7 @@ import { componentNameRE, generatePBObject, getIdAsNumber } from '../Utils'
 import type { QueryType } from '@dcl/legacy-ecs'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { RuntimeEventCallback } from './Events'
-import { EAType, EngineAPIServiceDefinition, EntityAction, queryTypeFromJSON } from 'shared/apis/proto/EngineAPI.gen'
+import { EAType, EngineAPIServiceDefinition, EntityAction, queryTypeFromJSON } from 'shared/protocol/kernel/apis/EngineAPI.gen'
 import { SceneRuntimeEventState } from './Events'
 import { RpcClientModule } from '@dcl/rpc/dist/codegen'
 

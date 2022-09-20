@@ -1,7 +1,7 @@
 import { getCurrentUserProfile } from '../profiles/selectors'
 import { Package } from '../comms/interface/types'
 import { getPeer } from '../comms/peers'
-import * as rfc4 from '../comms/comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { store } from '../store/isolatedStore'
 import { getVoiceHandler, shouldPlayVoice } from './selectors'
 import { voiceChatLogger } from './context'

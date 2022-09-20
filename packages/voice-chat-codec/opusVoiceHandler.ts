@@ -5,7 +5,7 @@ import { commConfigurations } from 'config'
 import Html from 'shared/Html'
 import { RoomConnection } from 'shared/comms/interface'
 import { getSpatialParamsFor } from './utils'
-import * as rfc4 from 'shared/comms/comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 
 export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler => {
   const logger = createLogger('OpusVoiceCommunicator: ')

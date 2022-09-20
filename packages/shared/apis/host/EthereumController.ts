@@ -17,10 +17,10 @@ import {
   SendAsyncResponse,
   SignMessageRequest,
   SignMessageResponse
-} from '../proto/EthereumController.gen'
+} from 'shared/protocol/kernel/apis/EthereumController.gen'
 import { PortContext } from './context'
 import { RPCSendableMessage } from 'shared/types'
-import { PermissionItem } from '../proto/Permissions.gen'
+import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
 import { assertHasPermission } from './Permissions'
 
 async function requirePayment(req: RequirePaymentRequest, ctx: PortContext): Promise<RequirePaymentResponse> {

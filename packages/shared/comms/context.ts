@@ -11,7 +11,7 @@ import { ProfileType } from 'shared/profiles/types'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
 import { incrementCounter } from 'shared/occurences'
 import { MORDOR_POSITION_RFC4 } from './const'
-import * as rfc4 from './comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'

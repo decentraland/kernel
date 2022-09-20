@@ -13,7 +13,7 @@ import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
-import { EventDataType } from 'shared/apis/proto/EngineAPI.gen'
+import { EventDataType } from 'shared/protocol/kernel/apis/EngineAPI.gen'
 import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -34,7 +34,7 @@ import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
-import { permissionItemFromJSON } from 'shared/apis/proto/Permissions.gen'
+import { permissionItemFromJSON } from 'shared/protocol/kernel/apis/Permissions.gen'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,

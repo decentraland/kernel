@@ -1,6 +1,6 @@
 import { CommsEvents, RoomConnection } from '../comms/interface/index'
 import mitt from 'mitt'
-import * as rfc4 from './comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 
 export class OfflineRoomConnection implements RoomConnection {
   events = mitt<CommsEvents>()

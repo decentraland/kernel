@@ -1,5 +1,5 @@
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import * as rfc4 from '../comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 
 export const enum AvatarMessageType {
   // Networking related messages

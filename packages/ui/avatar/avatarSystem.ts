@@ -8,7 +8,7 @@ import type {
   UserInformation,
   UserRemovedMessage
 } from 'shared/comms/interface/types'
-import type { Position } from 'shared/comms/comms-rfc-4.gen'
+import type { Position } from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 

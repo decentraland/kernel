@@ -23,7 +23,7 @@ import {
 import { CommsStatus } from '../types'
 
 import { ProfileType } from 'shared/profiles/types'
-import * as rfc4 from '../comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import mitt from 'mitt'
 import { createLogger } from 'shared/logger'
 import { ExplorerIdentity } from 'shared/session/types'

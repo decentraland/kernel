@@ -1,6 +1,6 @@
 import { future, IFuture } from 'fp-future'
 
-import * as rfc5 from '../ws-comms-rfc-5.gen'
+import * as rfc5 from 'shared/protocol/kernel/comms/ws-comms-rfc-5.gen'
 import { Stats } from '../debug'
 import { Writer } from 'protobufjs/minimal'
 import { TransportMessage, IBrokerTransport } from './IBrokerTransport'

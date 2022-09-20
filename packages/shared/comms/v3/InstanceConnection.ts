@@ -1,7 +1,7 @@
 import { store } from 'shared/store/isolatedStore'
 import { getCommsConfig } from 'shared/meta/selectors'
 import { Position3D } from './types'
-import * as rfc4 from '../comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { BFFConnection, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
 import { createDummyLogger, createLogger } from 'shared/logger'
@@ -9,7 +9,7 @@ import { lastPlayerPositionReport, positionObservable } from 'shared/world/posit
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import mitt from 'mitt'
 import { Reader, Writer } from 'protobufjs/minimal'
-import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from './proto/archipelago.gen'
+import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
 import { DEBUG, DEBUG_COMMS } from 'config'
 import { peerIdHandler } from '../v1/peer-id-handler'
 

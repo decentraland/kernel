@@ -1,5 +1,5 @@
 import { parcelLimits } from 'config'
-import * as rfc4 from './comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 
 export const MORDOR_POSITION_RFC4: rfc4.Position = {
   positionX: 1000 * parcelLimits.parcelSize,

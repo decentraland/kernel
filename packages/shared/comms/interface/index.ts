@@ -1,5 +1,5 @@
 import { UserInformation, Package } from './types'
-import * as proto from '../comms-rfc-4.gen'
+import * as proto from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { Emitter } from 'mitt'
 
 export type CommsEvents = {

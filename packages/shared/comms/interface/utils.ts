@@ -1,7 +1,7 @@
 import { Vector2 } from '@dcl/ecs-math'
 import { parcelLimits } from 'config'
 import { PositionReport } from 'shared/world/positionThings'
-import * as rfc4 from 'shared/comms/comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 
 export type ParcelArray = [number, number]
 

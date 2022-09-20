@@ -9,7 +9,7 @@ import {
   removeAllPeers
 } from './peers'
 import { AvatarMessageType, Package } from './interface/types'
-import * as proto from './comms-rfc-4.gen'
+import * as proto from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { store } from 'shared/store/isolatedStore'
 import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/selectors'
 import { messageReceived } from '../chat/actions'

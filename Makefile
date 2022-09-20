@@ -2,18 +2,17 @@
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
-BFF_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/bff/*.proto)
-COMMS_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/comms/v3/*.proto)
+RENDERER_PROTO_FILES  := $(wildcard node_modules/@dcl/protocol/renderer-protocol/*.proto)
+BFF_PROTO_FILES       := $(wildcard node_modules/@dcl/protocol/bff/*.proto)
+SCENE_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
 COMMSRFC4_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/comms/*.proto)
+COMMS_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/kernel/comms/v3/*.proto)
 
-SCENE_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
-RENDERER_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/renderer-protocol/*.proto)
-PBS_TS = $(SCENE_PROTO_FILES:node_modules/@dcl/protocol/kernel/apis/%.proto=packages/shared/apis/proto/%.gen.ts)
 PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/renderer-protocol/proto/%.gen.ts)
-BFF_TS = $(BFF_PROTO_FILES:node_modules/@dcl/protocol/bff/%.proto=packages/shared/comms/v3/proto/bff/%.gen.ts)
-COMMS_TS = $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/v3/%.proto=packages/shared/comms/v3/proto/%.gen.ts)
-COMMSRFC4_TS = $(COMMSRFC4_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/%.proto=packages/shared/comms/%.gen.ts)
-
+BFF_TS =        $(BFF_PROTO_FILES:node_modules/@dcl/protocol/bff/%.proto=packages/shared/protocol/bff/%.gen.ts)
+PBS_TS =        $(SCENE_PROTO_FILES:node_modules/@dcl/protocol/kernel/apis/%.proto=packages/shared/protocol/kernel/apis/%.gen.ts)
+COMMSRFC4_TS =  $(COMMSRFC4_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/%.proto=packages/shared/protocol/kernel/comms/%.gen.ts)
+COMMS_TS =      $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/v3/%.proto=packages/shared/protocol/kernel/comms/v3/%.gen.ts)
 
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protoc
@@ -178,17 +177,19 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
 
-packages/shared/apis/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto
+packages/shared/protocol/kernel/apis/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto
+	mkdir -p "$(PWD)/packages/shared/protocol/kernel/apis"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/apis/proto" \
-			-I="$(PWD)/packages/shared/apis/proto" \
+			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/apis" \
+			-I="$(PWD)/packages/shared/protocol/kernel/apis" \
 			-I="$(PWD)/node_modules/@dcl/protocol/kernel/apis" \
 			"$(PWD)/node_modules/@dcl/protocol/kernel/apis/$*.proto";
 
 packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto
+	mkdir -p "$(PWD)/packages/renderer-protocol/proto"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
@@ -198,23 +199,38 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
 			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
-packages/shared/comms/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/protocol/bff/%.gen.ts: node_modules/@dcl/protocol/bff/%.proto
+	mkdir -p "$(PWD)/packages/shared/protocol/bff"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,oneof=unions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/comms" \
+			--ts_proto_out="$(PWD)/packages/shared/protocol/bff" \
+      -I="$(PWD)/node_modules/@dcl/protocol/bff" \
+      -I="$(PWD)/node_modules/protobufjs" \
+			-I="$(PWD)/node_modules/@dcl/protocol/bff" \
+			"$(PWD)/node_modules/@dcl/protocol/bff/$*.proto"
+
+packages/shared/protocol/kernel/comms/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/%.proto
+	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms"
+	${PROTOC}  \
+			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
+		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,oneof=properties \
+			--ts_proto_opt=fileSuffix=.gen \
+			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/comms" \
       -I="$(PWD)/node_modules/@dcl/protocol/bff" \
       -I="$(PWD)/node_modules/protobufjs" \
 			-I="$(PWD)/node_modules/@dcl/protocol/kernel/comms" \
 			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/$*.proto"
 
-packages/shared/comms/v3/proto/%.gen.ts: packages/shared/comms/v3/proto/%.proto
+packages/shared/protocol/kernel/comms/v3/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/v3/%.proto
+	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms/v3"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-			--ts_proto_opt=esModuleInterop=true,oneof=unions\
+			--ts_proto_opt=esModuleInterop=true,oneof=unions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto" -I="$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3" \
+			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/comms/v3" \
+      -I="$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3" \
 			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3/$*.proto"
 
 compile_apis: ${BFF_TS} ${COMMS_TS} ${PBS_TS}

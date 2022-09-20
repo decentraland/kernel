@@ -1,5 +1,5 @@
 import { Emitter } from 'mitt'
-import * as rfc4 from '../comms-rfc-4.gen'
+import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { CommsEvents } from '../interface'
 import { MORDOR_POSITION_RFC4 } from '../const'
 
