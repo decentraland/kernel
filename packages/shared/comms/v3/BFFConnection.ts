@@ -4,7 +4,10 @@ import { Authenticator } from '@dcl/crypto'
 import { createRpcClient, RpcClientPort, Transport } from '@dcl/rpc'
 import { WebSocketTransport } from '@dcl/rpc/dist/transports/WebSocket'
 import { loadService, RpcClientModule } from '@dcl/rpc/dist/codegen'
-import { BffAuthenticationServiceDefinition, WelcomePeerInformation } from 'shared/protocol/bff/authentication-service.gen'
+import {
+  BffAuthenticationServiceDefinition,
+  WelcomePeerInformation
+} from 'shared/protocol/bff/authentication-service.gen'
 import { CommsServiceDefinition } from 'shared/protocol/bff/comms-service.gen'
 import { trackEvent } from 'shared/analytics'
 import { ExplorerIdentity } from 'shared/session/types'

@@ -9,7 +9,11 @@ import { lastPlayerPositionReport, positionObservable } from 'shared/world/posit
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import mitt from 'mitt'
 import { Reader, Writer } from 'protobufjs/minimal'
-import { HeartbeatMessage, LeftIslandMessage, IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
+import {
+  HeartbeatMessage,
+  LeftIslandMessage,
+  IslandChangedMessage
+} from 'shared/protocol/kernel/comms/v3/archipelago.gen'
 import { DEBUG, DEBUG_COMMS } from 'config'
 import { peerIdHandler } from '../v1/peer-id-handler'
 

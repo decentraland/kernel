@@ -4,7 +4,7 @@ import { VoiceHandler } from 'voice-chat-codec/VoiceHandler'
 
 export const SET_VOICE_CHAT_LIVE_KIT_ROOM = '[VC] SetVoiceChatLiveKitRoom'
 export const setVoiceChatLiveKitRoom = (room: any) => action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room })
-export const clearVoiceChatLiveKitRoom = () => action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room: null })
+export const clearVoiceChatLiveKitRoom = () => setVoiceChatLiveKitRoom(null)
 export type SetVoiceChatLiveKitRoomAction = ReturnType<typeof setVoiceChatLiveKitRoom>
 
 export const JOIN_VOICE_CHAT = '[VC] JoinVoiceChat'

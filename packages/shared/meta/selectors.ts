@@ -44,7 +44,7 @@ export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmCha
 export const getDisabledCatalystConfig = (store: RootMetaState): string[] | undefined =>
   getFeatureFlagVariantValue(store, 'disabled-catalyst') as string[] | undefined
 
-export const getLiveKitVoiceChat = (store: RootMetaState): boolean =>
+export const isLiveKitVoiceChatFeatureFlag = (store: RootMetaState): boolean =>
   getFeatureFlagEnabled(store, 'livekit-voicechat') as boolean
 
 export function getMaxVisiblePeers(store: RootMetaState): number {

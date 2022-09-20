@@ -38,7 +38,7 @@ import {
   isVoiceChatAllowedByCurrentScene,
   isRequestedVoiceChatRecording,
   getVoiceChatState,
-  hasJoined
+  hasJoinedVoiceChat
 } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
 import { positionReportToCommsPositionRfc4 } from 'shared/comms/interface/utils'
@@ -50,7 +50,7 @@ import { Room } from 'livekit-client' // temp
 import { getIdentity } from 'shared/session'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { realmToConnectionString } from 'shared/comms/v3/resolver'
-import { getLiveKitVoiceChat } from 'shared/meta/selectors'
+import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
 
@@ -72,7 +72,7 @@ export function* voiceChatSaga() {
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
-  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], customLiveKitRoom)
+  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], handleNewRoomOrCommsContext)
 }
 
 /*
@@ -80,9 +80,10 @@ export function* voiceChatSaga() {
  * This will get the token from a custom/temporal server which generates token for LiveKit
  * TODO: Move this to Comms v3 with LiveKit, and set the room there
  */
-export function* customLiveKitRoom() {
+export function* handleNewRoomOrCommsContext() {
   yield call(waitForMetaConfigurationInitialization)
-  if (yield select(getLiveKitVoiceChat)) {
+
+  if (yield select(isLiveKitVoiceChatFeatureFlag)) {
     const realm = yield select(getRealm)
     const realmName = realm ? realmToConnectionString(realm) : 'global'
     const island = (yield select(getCommsIsland)) ?? 'global'
@@ -101,6 +102,9 @@ export function* customLiveKitRoom() {
       yield room.connect('wss://test-livekit.decentraland.today', data.token)
       yield put(setVoiceChatLiveKitRoom(room))
     }
+  } else {
+    // reconnect voice chat
+    yield call(handleSetVoiceChatLiveKitRoom)
   }
 }
 
@@ -120,7 +124,7 @@ function* handleRecordingRequest() {
 
 // on change the livekit room or token, we just leave and join the room to use (or not) the LiveKit
 function* handleSetVoiceChatLiveKitRoom() {
-  if (yield select(hasJoined)) {
+  if (yield select(hasJoinedVoiceChat)) {
     yield put(leaveVoiceChat())
     yield put(joinVoiceChat())
   }

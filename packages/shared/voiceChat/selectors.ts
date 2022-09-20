@@ -11,7 +11,7 @@ import { RootVoiceChatState, VoicePolicy } from './types'
 import { VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { lastPlayerScene } from 'shared/world/sceneState'
 
-export const hasJoined = (store: RootVoiceChatState) => store.voiceChat.joined
+export const hasJoinedVoiceChat = (store: RootVoiceChatState) => store.voiceChat.joined
 
 export const getVoiceChatState = (store: RootVoiceChatState) => store.voiceChat
 
