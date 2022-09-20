@@ -4,7 +4,7 @@ import { Position3D } from './types'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { BFFConnection, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
-import { createDummyLogger, createLogger } from 'shared/logger'
+import { createLogger } from 'shared/logger'
 import { lastPlayerPositionReport, positionObservable } from 'shared/world/positionThings'
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import mitt from 'mitt'
@@ -15,11 +15,10 @@ import {
   IslandChangedMessage
 } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
 import { DEBUG, DEBUG_COMMS } from 'config'
-import { peerIdHandler } from '../logic/peer-id-handler'
 
 // we use a shared writer to reduce allocations and leverage its allocation pool
 const writer = new Writer()
-function craftMessage(packet: Partial<rfc4.Packet>): Uint8Array {
+function craftMessage(packet: rfc4.Packet): Uint8Array {
   writer.reset()
   rfc4.Packet.encode(packet as any, writer)
   return writer.finish()
@@ -33,7 +32,7 @@ export class InstanceConnection implements RoomConnection {
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
   private peerLeftListener: TopicListener | null = null
-  private peerIdAdapter = peerIdHandler({ events: this.events })
+  private positionIndex = 0
 
   constructor(private bff: BFFConnection) {
     this.bff.onDisconnectObservable.add(this.disconnect.bind(this))
@@ -42,20 +41,21 @@ export class InstanceConnection implements RoomConnection {
   async connect(): Promise<void> {
     const peerId = await this.bff.connect()
     const commsConfig = getCommsConfig(store.getState())
+    const debug = DEBUG || DEBUG_COMMS
     const config: TransportsConfig = {
-      logger: DEBUG || DEBUG_COMMS ? this.logger : createDummyLogger(),
+      logger: this.logger,
       bff: this.bff,
       selfPosition: this.selfPosition,
       peerId,
       p2p: {
-        verbose: DEBUG_COMMS,
-        debugWebRtcEnabled: DEBUG_COMMS
+        debugUpdateNetwork: debug,
+        debugWebRtcEnabled: debug
       },
       livekit: {
-        verbose: DEBUG_COMMS
+        verbose: debug
       },
       ws: {
-        verbose: DEBUG_COMMS
+        verbose: debug
       }
     }
 
@@ -111,7 +111,7 @@ export class InstanceConnection implements RoomConnection {
           async (data: Uint8Array) => {
             try {
               const peerLeftMessage = LeftIslandMessage.decode(Reader.create(data))
-              this.peerIdAdapter.disconnectPeer(peerLeftMessage.peerId)
+              this.events.emit('PEER_DISCONNECTED', { address: peerLeftMessage.peerId })
             } catch (e) {
               this.logger.error('cannot process peer left message', e)
               return
@@ -129,31 +129,38 @@ export class InstanceConnection implements RoomConnection {
   }
 
   async sendPositionMessage(position: rfc4.Position) {
-    return this.transport.send(craftMessage({ position }), { reliable: false })
+    position.index = this.positionIndex++
+    return this.transport.send(craftMessage({ message: { $case: 'position', position } }), { reliable: false })
   }
 
   async sendProfileMessage(profileVersion: rfc4.AnnounceProfileVersion) {
-    return this.transport.send(craftMessage({ profileVersion }), { reliable: true, identity: true })
+    return this.transport.send(craftMessage({ message: { $case: 'profileVersion', profileVersion } }), {
+      reliable: true
+    })
   }
 
   async sendProfileRequest(profileRequest: rfc4.ProfileRequest) {
-    return this.transport.send(craftMessage({ profileRequest }), { reliable: true })
+    return this.transport.send(craftMessage({ message: { $case: 'profileRequest', profileRequest } }), {
+      reliable: true
+    })
   }
 
   async sendProfileResponse(profileResponse: rfc4.ProfileResponse) {
-    return this.transport.send(craftMessage({ profileResponse }), { reliable: true, identity: true })
+    return this.transport.send(craftMessage({ message: { $case: 'profileResponse', profileResponse } }), {
+      reliable: true
+    })
   }
 
   async sendParcelSceneMessage(scene: rfc4.Scene) {
-    return this.transport.send(craftMessage({ scene }), { reliable: false })
+    return this.transport.send(craftMessage({ message: { $case: 'scene', scene } }), { reliable: false })
   }
 
   async sendChatMessage(chat: rfc4.Chat) {
-    return this.transport.send(craftMessage({ chat }), { reliable: true, identity: true })
+    return this.transport.send(craftMessage({ message: { $case: 'chat', chat } }), { reliable: true })
   }
 
   async sendVoiceMessage(voice: rfc4.Voice): Promise<void> {
-    return this.transport.send(craftMessage({ voice }), { reliable: false })
+    return this.transport.send(craftMessage({ message: { $case: 'voice', voice } }), { reliable: false })
   }
 
   async disconnect(): Promise<void> {
@@ -178,61 +185,77 @@ export class InstanceConnection implements RoomConnection {
   }
 
   protected handleTransportMessage({ peer, payload }: TransportMessage) {
-    let data: rfc4.Packet
+    let packet: rfc4.Packet
     try {
-      data = rfc4.Packet.decode(Reader.create(payload))
+      packet = rfc4.Packet.decode(Reader.create(payload))
     } catch (e: any) {
       this.logger.error(`cannot decode topic message data ${e.toString()}`)
       return
     }
 
-    // TODO: fix new Date().getTime()
+    const { message } = packet
 
-    if (data.position) {
-      this.peerIdAdapter.handleMessage('position', {
-        address: peer,
-        time: new Date().getTime(),
-        data: data.position
-      })
+    if (!message) {
+      return
+    }
 
-      // MENDEZ: Why is this necessary and not an internal thing of the transport?
-      this.transport.onPeerPositionChange(peer, [
-        data.position.positionX,
-        data.position.positionY,
-        data.position.positionZ
-      ])
-    } else if (data.voice) {
-      this.peerIdAdapter.handleMessage('voiceMessage', {
-        address: peer,
-        time: new Date().getTime(),
-        data: data.voice
-      })
-    } else if (data.profileVersion) {
-      this.peerIdAdapter.handleMessage('profileMessage', {
-        address: peer,
-        time: new Date().getTime(),
-        data: data.profileVersion
-      })
-    } else if (data.chat) {
-      this.peerIdAdapter.handleMessage('chatMessage', {
-        address: peer,
-        time: new Date().getTime(),
-        data: data.chat
-      })
-    } else if (data.profileRequest) {
-      this.peerIdAdapter.handleMessage('profileRequest', {
-        address: peer,
-        time: new Date().getTime(),
-        data: data.profileRequest
-      })
-    } else if (data.profileResponse) {
-      this.peerIdAdapter.handleMessage('profileResponse', {
-        address: peer,
-        time: new Date().getTime(),
-        data: data.profileResponse
-      })
-    } else {
-      this.logger.log(`Ignoring unknown comms message ${data}`)
+    switch (message!.$case) {
+      case 'position': {
+        const { position } = message
+        this.events.emit('position', {
+          address: peer,
+          time: Date.now(),
+          data: position
+        })
+
+        // MENDEZ: Why is this necessary and not an internal thing of the transport?
+        this.transport.onPeerPositionChange(peer, [position.positionX, position.positionY, position.positionZ])
+        break
+      }
+      case 'voice': {
+        const { voice } = message
+        this.events.emit('voiceMessage', {
+          address: peer,
+          time: Date.now(),
+          data: voice
+        })
+        break
+      }
+      case 'profileVersion': {
+        this.events.emit('profileMessage', {
+          address: peer,
+          time: Date.now(),
+          data: message.profileVersion
+        })
+        break
+      }
+      case 'chat': {
+        this.events.emit('chatMessage', {
+          address: peer,
+          time: Date.now(),
+          data: message.chat
+        })
+        break
+      }
+      case 'profileRequest': {
+        this.events.emit('profileRequest', {
+          address: peer,
+          time: Date.now(),
+          data: message.profileRequest
+        })
+        break
+      }
+      case 'profileResponse': {
+        this.events.emit('profileResponse', {
+          address: peer,
+          time: Date.now(),
+          data: message.profileResponse
+        })
+        break
+      }
+      default: {
+        this.logger.log(`Ignoring unknown comms message ${packet}`)
+      }
     }
   }
 

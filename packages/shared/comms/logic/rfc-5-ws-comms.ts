@@ -12,7 +12,7 @@ import mitt from 'mitt'
 // shared writer to leverage pools
 const writer = new Writer()
 
-function craftMessage(packet: Partial<rfc5.WsPacket>): Uint8Array {
+function craftMessage(packet: rfc5.WsPacket): Uint8Array {
   writer.reset()
   rfc5.WsPacket.encode(packet as any, writer)
   return writer.finish()
@@ -61,8 +61,11 @@ export class Rfc5BrokerConnection implements ICommsTransport {
       {
         // phase 0, identify ourselves
         const identificationMessage = craftMessage({
-          peerIdentification: {
-            address: this.identity.address
+          message: {
+            $case: 'peerIdentification',
+            peerIdentification: {
+              address: this.identity.address
+            }
           }
         })
         ws.send(identificationMessage)
@@ -70,25 +73,44 @@ export class Rfc5BrokerConnection implements ICommsTransport {
 
       {
         // phase 1, respond to challenge
-        const { challengeMessage, welcomeMessage } = await channel.yield(1000, 'Error waiting for remote challenge')
+        const { message } = await channel.yield(1000, 'Error waiting for remote challenge')
 
-        // only welcomeMessage and challengeMessage are valid options for this phase of the protocol
-        if (welcomeMessage) {
-          return this.handleWelcomeMessage(welcomeMessage, ws)
-        } else if (!challengeMessage) {
-          throw new Error('Protocol error: server did not provide a challenge')
+        if (!message) {
+          throw new Error('Protocol error: empty message')
         }
 
-        const authChainJson = JSON.stringify(Authenticator.signPayload(this.identity, challengeMessage.challengeToSign))
-        ws.send(craftMessage({ signedChallengeForServer: { authChainJson } }))
+        switch (message.$case) {
+          case 'welcomeMessage': {
+            return this.handleWelcomeMessage(message.welcomeMessage, ws)
+          }
+          case 'challengeMessage': {
+            const authChainJson = JSON.stringify(
+              Authenticator.signPayload(this.identity, message.challengeMessage.challengeToSign)
+            )
+            ws.send(
+              craftMessage({
+                message: {
+                  $case: 'signedChallengeForServer',
+                  signedChallengeForServer: { authChainJson }
+                }
+              })
+            )
+            break
+          }
+          default: {
+            // only welcomeMessage and challengeMessage are valid options for this phase of the protocol
+            throw new Error('Protocol error: server did not provide a challenge')
+          }
+        }
       }
 
       {
         // phase 2, we are in
-        const { welcomeMessage } = await channel.yield(1000, 'Error waiting for welcome message')
-        if (!welcomeMessage) throw new Error('Protocol error: server did not send a welcomeMessage')
+        const { message } = await channel.yield(1000, 'Error waiting for welcome message')
+        if (!message || message.$case !== 'welcomeMessage')
+          throw new Error('Protocol error: server did not send a welcomeMessage')
 
-        return this.handleWelcomeMessage(welcomeMessage, ws)
+        return this.handleWelcomeMessage(message.welcomeMessage, ws)
       }
     } catch (err: any) {
       this.connected.reject(err)
@@ -114,9 +136,12 @@ export class Rfc5BrokerConnection implements ICommsTransport {
   send(body: Uint8Array, _reliable: boolean) {
     this.internalSend(
       craftMessage({
-        peerUpdateMessage: {
-          body,
-          fromAlias: this.alias || 0
+        message: {
+          $case: 'peerUpdateMessage',
+          peerUpdateMessage: {
+            body,
+            fromAlias: this.alias || 0
+          }
         }
       })
     )
@@ -138,27 +163,41 @@ export class Rfc5BrokerConnection implements ICommsTransport {
   private async onWsMessage(event: MessageEvent) {
     const data = event.data
     const msg = new Uint8Array(data)
-    const packet = rfc5.WsPacket.decode(msg)
+    const { message } = rfc5.WsPacket.decode(msg)
 
-    if (packet.peerJoinMessage) {
-      this.peersToAddress.set(packet.peerJoinMessage.alias, packet.peerJoinMessage.address)
-    } else if (packet.peerKicked) {
-      this.disconnect({ kicked: true }).catch(this.logger.error)
-    } else if (packet.peerLeaveMessage) {
-      const currentPeerAddress = this.peersToAddress.get(packet.peerLeaveMessage.alias)
-      if (currentPeerAddress) {
-        this.peersToAddress.delete(packet.peerLeaveMessage.alias)
-        this.events.emit('PEER_DISCONNECTED', { address: currentPeerAddress })
+    if (!message) return
+
+    switch (message.$case) {
+      case 'peerJoinMessage': {
+        const { peerJoinMessage } = message
+        this.peersToAddress.set(peerJoinMessage.alias, peerJoinMessage.address)
+        break
       }
-    } else if (packet.peerUpdateMessage) {
-      const currentPeerAddress = this.peersToAddress.get(packet.peerUpdateMessage.fromAlias)
-      if (currentPeerAddress) {
-        this.events.emit('message', {
-          senderAddress: currentPeerAddress,
-          data: packet.peerUpdateMessage.body
-        })
-      } else {
-        debugger
+      case 'peerKicked': {
+        this.disconnect({ kicked: true }).catch(this.logger.error)
+        break
+      }
+      case 'peerLeaveMessage': {
+        const { peerLeaveMessage } = message
+        const currentPeerAddress = this.peersToAddress.get(peerLeaveMessage.alias)
+        if (currentPeerAddress) {
+          this.peersToAddress.delete(peerLeaveMessage.alias)
+          this.events.emit('PEER_DISCONNECTED', { address: currentPeerAddress })
+        }
+        break
+      }
+      case 'peerUpdateMessage': {
+        const { peerUpdateMessage } = message
+        const currentPeerAddress = this.peersToAddress.get(peerUpdateMessage.fromAlias)
+        if (currentPeerAddress) {
+          this.events.emit('message', {
+            senderAddress: currentPeerAddress,
+            data: peerUpdateMessage.body
+          })
+        } else {
+          debugger
+        }
+        break
       }
     }
   }

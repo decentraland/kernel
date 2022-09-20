@@ -215,7 +215,7 @@ packages/shared/protocol/kernel/comms/%.gen.ts: node_modules/@dcl/protocol/kerne
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,oneof=properties \
+		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,oneof=unions \
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/comms" \
       -I="$(PWD)/node_modules/@dcl/protocol/bff" \

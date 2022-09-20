@@ -24,68 +24,93 @@ export class Rfc4RoomConnection implements RoomConnection {
 
   sendPositionMessage(p: proto.Position): Promise<void> {
     return this.sendMessage(false, {
-      position: {
-        ...p,
-        index: this.positionIndex++
+      message: {
+        $case: 'position',
+        position: {
+          ...p,
+          index: this.positionIndex++
+        }
       }
     })
   }
   sendParcelSceneMessage(scene: proto.Scene): Promise<void> {
-    return this.sendMessage(false, { scene })
+    return this.sendMessage(false, { message: { $case: 'scene', scene } })
   }
   sendProfileMessage(profileVersion: proto.AnnounceProfileVersion): Promise<void> {
-    return this.sendMessage(true, { profileVersion })
+    return this.sendMessage(true, { message: { $case: 'profileVersion', profileVersion } })
   }
   sendProfileRequest(profileRequest: proto.ProfileRequest): Promise<void> {
-    return this.sendMessage(true, { profileRequest })
+    return this.sendMessage(true, { message: { $case: 'profileRequest', profileRequest } })
   }
   sendProfileResponse(profileResponse: proto.ProfileResponse): Promise<void> {
-    return this.sendMessage(true, { profileResponse })
+    return this.sendMessage(true, { message: { $case: 'profileResponse', profileResponse } })
   }
   sendChatMessage(chat: proto.Chat): Promise<void> {
-    return this.sendMessage(true, { chat })
+    return this.sendMessage(true, { message: { $case: 'chat', chat } })
   }
   sendVoiceMessage(voice: proto.Voice): Promise<void> {
-    return this.sendMessage(true, { voice })
+    return this.sendMessage(true, { message: { $case: 'voice', voice } })
   }
 
   async disconnect() {
     await this.transport.disconnect()
   }
 
-  private handleMessage(message: TransportMessage) {
-    const packet = proto.Packet.decode(message.data)
+  private handleMessage({ data, senderAddress }: TransportMessage) {
+    const { message } = proto.Packet.decode(data)
 
-    if (packet.position)
-      this.events.emit('position', { address: message.senderAddress, data: packet.position, time: Date.now() })
-    else if (packet.scene)
-      this.events.emit('sceneMessageBus', { address: message.senderAddress, data: packet.scene, time: Date.now() })
-    else if (packet.chat)
-      this.events.emit('chatMessage', { address: message.senderAddress, data: packet.chat, time: Date.now() })
-    else if (packet.voice)
-      this.events.emit('voiceMessage', { address: message.senderAddress, data: packet.voice, time: Date.now() })
-    else if (packet.profileRequest)
-      this.events.emit('profileRequest', {
-        address: message.senderAddress,
-        data: packet.profileRequest,
-        time: Date.now()
-      })
-    else if (packet.profileResponse)
-      this.events.emit('profileResponse', {
-        address: message.senderAddress,
-        data: packet.profileResponse,
-        time: Date.now()
-      })
-    else if (packet.profileVersion)
-      this.events.emit('profileMessage', {
-        address: message.senderAddress,
-        data: packet.profileVersion,
-        time: Date.now()
-      })
+    if (!message) {
+      return
+    }
+
+    switch (message.$case) {
+      case 'position': {
+        this.events.emit('position', { address: senderAddress, data: message.position, time: Date.now() })
+        break
+      }
+      case 'scene': {
+        this.events.emit('sceneMessageBus', { address: senderAddress, data: message.scene, time: Date.now() })
+        break
+      }
+      case 'chat': {
+        this.events.emit('chatMessage', { address: senderAddress, data: message.chat, time: Date.now() })
+        break
+      }
+      case 'voice': {
+        this.events.emit('voiceMessage', { address: senderAddress, data: message.voice, time: Date.now() })
+        break
+      }
+      case 'profileRequest': {
+        this.events.emit('profileRequest', {
+          address: senderAddress,
+          data: message.profileRequest,
+          time: Date.now()
+        })
+        break
+      }
+      case 'profileResponse': {
+        this.events.emit('profileResponse', {
+          address: senderAddress,
+          data: message.profileResponse,
+          time: Date.now()
+        })
+        break
+      }
+      case 'profileVersion': {
+        this.events.emit('profileMessage', {
+          address: senderAddress,
+          data: message.profileVersion,
+          time: Date.now()
+        })
+        break
+      }
+    }
   }
 
-  private async sendMessage(reliable: boolean, topicMessage: Partial<proto.Packet>) {
-    if (Object.keys(topicMessage).length === 0) throw new Error('Invalid message')
+  private async sendMessage(reliable: boolean, topicMessage: proto.Packet) {
+    if (Object.keys(topicMessage).length === 0) {
+      throw new Error('Invalid message')
+    }
     const bytes = proto.Packet.encode(topicMessage as any).finish()
     this.transport.send(bytes, reliable)
   }
