@@ -26,7 +26,7 @@ import { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { WearableV2 } from 'shared/catalogs/types'
+import { Emote, WearableV2 } from 'shared/catalogs/types'
 import { Observable } from 'mz-observable'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { FeatureFlag } from 'shared/meta/types'
@@ -258,6 +258,10 @@ export class UnityInterface implements IUnityInterface {
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
     this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
+  }
+
+  public AddEmotesToCatalog(emotes: Emote[], context?: string) {
+    this.SendMessageToUnity('Bridges', 'AddEmotesToCatalog', JSON.stringify({ emotes, context }))
   }
 
   public WearablesRequestFailed(error: string, context: string | undefined) {

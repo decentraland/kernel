@@ -17,6 +17,7 @@ export type TrackEvents = PositionTrackEvents & {
   }
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
+  ['bff_auth_already_connected']: { address: string }
 
   // Info logs, such as networks or things we want to track
   ['SNAPSHOT_IMAGE_NOT_FOUND']: { userId: string }
@@ -66,7 +67,7 @@ export type TrackEvents = PositionTrackEvents & {
   ['unity_initializing_start']: { renderer_version: string }
   ['unity_initializing_end']: { renderer_version: string; loading_time: number }
   ['scene_start_event']: { scene_id: string; time_since_creation: number; base: string }
-  ['invalid_schema']: { schema: string; payload: any }
+  ['invalid_schema']: { schema: string; payload: any; errors: string }
   // TODO - these are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Control Friend request approved']: Record<string, never> // {}
   ['Control Friend request rejected']: Record<string, never> // {}

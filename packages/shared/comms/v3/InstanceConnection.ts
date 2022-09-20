@@ -7,7 +7,7 @@ import { Position } from '../../comms/interface/utils'
 import { BFFConnection, TopicData, TopicListener } from './BFFConnection'
 import { TransportsConfig, Transport, DummyTransport, TransportMessage, createTransport } from '@dcl/comms3-transports'
 import { createDummyLogger, createLogger } from 'shared/logger'
-import { lastPlayerPositionReport } from 'shared/world/positionThings'
+import { lastPlayerPositionReport, positionObservable } from 'shared/world/positionThings'
 
 import { CommsEvents, RoomConnection } from '../../comms/interface/index'
 import { ProfileType } from 'shared/profiles/types'
@@ -25,7 +25,7 @@ export type Config = {
 export class InstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
-  private logger = DEBUG || DEBUG_COMMS ? createLogger('CommsV3: ') : createDummyLogger()
+  private logger = createLogger('CommsV3: ')
   private transport: Transport = new DummyTransport()
   private heartBeatInterval: any = null
   private islandChangedListener: TopicListener | null = null
@@ -42,7 +42,7 @@ export class InstanceConnection implements RoomConnection {
     const peerId = await this.bff.connect()
     const commsConfig = getCommsConfig(store.getState())
     const config: TransportsConfig = {
-      logger: this.logger,
+      logger: DEBUG || DEBUG_COMMS ? this.logger : createDummyLogger(),
       bff: this.bff,
       selfPosition: this.selfPosition,
       peerId,
@@ -65,7 +65,7 @@ export class InstanceConnection implements RoomConnection {
       }
     }
 
-    this.heartBeatInterval = setInterval(async () => {
+    const heartBeat = async () => {
       const position = this.selfPosition()
       if (position) {
         const d = HeartbeatMessage.encode({
@@ -82,7 +82,11 @@ export class InstanceConnection implements RoomConnection {
           await this.disconnect()
         }
       }
-    }, 2000)
+    }
+
+    this.heartBeatInterval = setInterval(heartBeat, 2000)
+
+    positionObservable.addOnce(() => heartBeat())
 
     this.islandChangedListener = await this.bff.addSystemTopicListener(
       `${peerId}.island_changed`,
@@ -252,8 +256,10 @@ export class InstanceConnection implements RoomConnection {
 
     if (this.transport) {
       await this.transport.disconnect()
+      globalThis.__DEBUG_PEER = undefined
     }
-    return this.bff.disconnect()
+    this.bff.disconnect()
+    this.events.emit('DISCONNECTION')
   }
 
   async sendVoiceMessage(_: Position, frame: EncodedFrame): Promise<void> {

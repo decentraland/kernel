@@ -10,7 +10,7 @@ import {
 import { META_CONFIGURATION_INITIALIZED, metaConfigurationInitialized } from './actions'
 import defaultLogger from '../logger'
 import { FeatureFlagsName, MetaConfiguration, WorldConfig } from './types'
-import { getFeatureFlagVariantValue, isMetaConfigurationInitiazed } from './selectors'
+import { getFeatureFlagVariantValue, isMetaConfigurationInitialized } from './selectors'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { SELECT_NETWORK } from 'shared/dao/actions'
 import { RootState } from 'shared/store/rootTypes'
@@ -21,7 +21,7 @@ import { getPortableExperienceFromUrn } from 'unity-interface/portableExperience
 import { LoadableScene } from 'shared/types'
 
 export function* waitForMetaConfigurationInitialization() {
-  const configInitialized: boolean = yield select(isMetaConfigurationInitiazed)
+  const configInitialized: boolean = yield select(isMetaConfigurationInitialized)
   if (!configInitialized) {
     yield take(META_CONFIGURATION_INITIALIZED)
   }
