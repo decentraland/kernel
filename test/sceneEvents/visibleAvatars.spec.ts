@@ -41,9 +41,9 @@ describe('Avatar observable', () => {
     sinon.reset()
   })
   it('should return user A and B that are visible at the scene', () => {
-    const userA = 'user-a'
-    const userB = 'user-b'
-    const userC = 'user-c'
+    const userA = '0xa00000000000000000000000000000000000000a'
+    const userB = '0xb00000000000000000000000000000000000000b'
+    const userC = '0xc00000000000000000000000000000000000000c'
 
     sendAvatarMessage(userA, true)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerConnected', payload: { userId: userA } })
@@ -58,8 +58,8 @@ describe('Avatar observable', () => {
   })
 
   it('if should remove user when he leaves the scene', () => {
-    const userA = 'user-a'
-    const userB = 'user-b'
+    const userA = '0xa00000000000000000000000000000000000000a'
+    const userB = '0xb00000000000000000000000000000000000000b'
 
     sendAvatarMessage(userA, true)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerConnected', payload: { userId: userA } })
@@ -73,18 +73,9 @@ describe('Avatar observable', () => {
     expect(getVisibleAvatarsUserId()).to.eql([userB])
   })
 
-  it('should not add the users if there is not info about them. Race cond', () => {
-    sinon.restore()
-    const userA = 'user-a'
-    removeAvatarMessage(userA)
-    sendAvatarMessage(userA, true)
-    expect(getVisibleAvatarsUserId()).to.eql([])
-    sinon.assert.notCalled(sceneEventsMocked)
-  })
-
   it('should remove the user from the cache if we receieve an USER_REMOVED action', () => {
-    const userA = 'user-a'
-    const userB = 'user-b'
+    const userA = '0xa00000000000000000000000000000000000000a'
+    const userB = '0xb00000000000000000000000000000000000000b'
     sendAvatarMessage(userA, true)
     sendAvatarMessage(userB, true)
     expect(getVisibleAvatarsUserId()).to.eql([userA, userB])
