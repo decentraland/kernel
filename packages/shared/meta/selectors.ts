@@ -1,6 +1,6 @@
 import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
-import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
+import { DEFAULT_MAX_VISIBLE_PEERS, DEFAULT_MAX__CHANNELS_VALUE } from '.'
 import { QS_MAX_VISIBLE_PEERS } from 'config'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
@@ -53,8 +53,7 @@ export function getMaxVisiblePeers(store: RootMetaState): number {
 }
 
 export function getMaxChannels(store: RootMetaState): number {
-  // Todo Juli!: Should we have a DEFAULT_MAX_CHANNELS_VALUE?
-  return getFeatureFlagVariantValue(store, 'name_for_flag') as number
+  return (getFeatureFlagVariantValue(store, 'max_joined_channels') as number) || DEFAULT_MAX__CHANNELS_VALUE
 }
 
 /**

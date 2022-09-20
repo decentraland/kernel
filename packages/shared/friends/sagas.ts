@@ -1468,7 +1468,7 @@ function getTotalUnseenMessagesByChannel() {
 }
 
 /**
- * Get the number of channels the user is joined to and check with a feature flag if the user has reached the maximum amount allowed.
+ * Get the number of channels the user is joined to and check with a feature flag value if the user has reached the maximum amount allowed.
  * @return True - if the user has reached the maximum amount allowed.
  * @return False - if the user has not reached the maximum amount allowed.
  */

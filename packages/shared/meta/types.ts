@@ -36,7 +36,7 @@ export type FeatureFlagsName =
   | 'initial_portable_experiences'
   | 'web_cap_fps' // caps the web client FPS
   | 'disabled-catalyst'
-  | 'name_for_flag' // Todo Juli!: Define a reasonable name
+  | 'max_joined_channels' // Todo Juli!: Does this name make sense?
 
 export type BannedUsers = Record<string, Ban[]>
 
