@@ -51,6 +51,7 @@ import {
   GetChannelMessagesPayload,
   ChannelErrorPayload,
   ChannelErrorCode,
+  ChannelErrorCode,
   GetChannelInfoPayload,
   GetChannelMembersPayload,
   UpdateChannelMembersPayload
