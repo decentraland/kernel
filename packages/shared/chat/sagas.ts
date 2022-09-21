@@ -477,7 +477,8 @@ function getDebugPanelMessage() {
 //message can be
 //null or empty => enable ABs painting for all scenes
 //scene => enable ABs painting for current scene
-//o
+//off => disable ABs painting for all loaded scenes
+//scene off => disable ABs painting for current scene
 function parseAndSendDetectABMessage(message: string) {
   
   let isOn : boolean
