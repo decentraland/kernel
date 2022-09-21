@@ -417,9 +417,6 @@ function* refreshFriends() {
     defaultLogger.log('____ initMessage ____', initFriendsMessage)
     defaultLogger.log('____ initChatMessage ____', initChatMessage)
 
-    getUnityInstance().InitializeFriends(initFriendsMessage)
-    getUnityInstance().InitializeChat(initChatMessage)
-
     // all profiles to obtain, deduped
     const allProfilesToObtain: string[] = friendIds
       .concat(requestedFromIds.map((x) => x.userId))
@@ -428,6 +425,9 @@ function* refreshFriends() {
 
     const ensureFriendProfilesPromises = allProfilesToObtain.map((userId) => ensureFriendProfile(userId))
     yield Promise.all(ensureFriendProfilesPromises).catch(logger.error)
+
+    getUnityInstance().InitializeFriends(initFriendsMessage)
+    getUnityInstance().InitializeChat(initChatMessage)
 
     yield put(
       updatePrivateMessagingState({
