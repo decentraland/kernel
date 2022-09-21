@@ -759,8 +759,8 @@ export type ChannelInfoPayload = {
   muted: boolean
 }
 
-export type ChannelsInfoPayload = {
-  channelsInfoPayload: ChannelInfoPayload[]
+export type ChannelInfoPayloads = {
+  channelInfoPayload: ChannelInfoPayload[]
 }
 
 export type MarkChannelMessagesAsSeenPayload = {

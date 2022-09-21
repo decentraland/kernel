@@ -34,7 +34,7 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelErrorPayload,
-  ChannelsInfoPayload,
+  ChannelInfoPayloads,
   UpdateChannelMembersPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
@@ -166,12 +166,12 @@ export interface IUnityInterface {
   // ************** Channels **************
   // *********************************************************************************
 
-  JoinChannelConfirmation(channelsInfoPayload: ChannelsInfoPayload): void
+  JoinChannelConfirmation(channelsInfoPayload: ChannelInfoPayloads): void
   JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload): void
   UpdateTotalUnseenMessagesByChannel(
     updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
   ): void
-  UpdateChannelInfo(channelsInfoPayload: ChannelsInfoPayload): void
+  UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
   UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
 
