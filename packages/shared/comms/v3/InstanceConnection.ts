@@ -253,8 +253,16 @@ export class InstanceConnection implements RoomConnection {
         })
         break
       }
+      case 'scene': {
+        this.events.emit('sceneMessageBus', {
+          address: peer,
+          time: Date.now(),
+          data: message.scene
+        })
+        break
+      }
       default: {
-        this.logger.log(`Ignoring unknown comms message ${packet}`)
+        this.logger.log(`Ignoring unknown comms message ${(message as any).$case}`)
       }
     }
   }
