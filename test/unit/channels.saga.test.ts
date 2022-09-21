@@ -2,7 +2,7 @@ import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage }
 import * as friendsSelectors from 'shared/friends/selectors'
 import { getUserIdFromMatrix } from "shared/friends/utils"
 import { buildStore } from "shared/store/store"
-import { AddChatMessagesPayload, ChannelsInfoPayload, ChatMessageType, GetChannelMessagesPayload, GetJoinedChannelsPayload, UpdateTotalUnseenMessagesByChannelPayload } from "shared/types"
+import { AddChatMessagesPayload, ChannelInfoPayloads, ChatMessageType, GetChannelMessagesPayload, GetJoinedChannelsPayload, UpdateTotalUnseenMessagesByChannelPayload } from "shared/types"
 import sinon from "sinon"
 import { getUnityInstance } from "unity-interface/IUnityInterface"
 import * as friendsSagas from '../../packages/shared/friends/sagas'
@@ -94,15 +94,15 @@ describe('Friends sagas - Channels Feature', () => {
         }
 
         // parse channel info
-        const channelsInfo: ChannelsInfoPayload = {
-          channelsInfoPayload: []
+        const channelsInfo: ChannelInfoPayloads = {
+          channelInfoPayload: []
         }
 
         const allCurrentConversationsFiltered = allCurrentConversations.slice(request.skip, request.skip + request.limit).
           filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
 
         for (const conv of allCurrentConversationsFiltered) {
-          channelsInfo.channelsInfoPayload.push({
+          channelsInfo.channelInfoPayload.push({
             name: conv.conversation.name!,
             channelId: conv.conversation.id,
             unseenMessages: conv.conversation.unreadMessages?.length || 0,
@@ -128,15 +128,15 @@ describe('Friends sagas - Channels Feature', () => {
         }
 
         // parse channel info
-        const channelsInfo: ChannelsInfoPayload = {
-          channelsInfoPayload: []
+        const channelsInfo: ChannelInfoPayloads = {
+          channelInfoPayload: []
         }
 
         const allCurrentConversationsFiltered = allCurrentConversations.slice(request.skip, request.skip + request.limit).
           filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
 
         for (const conv of allCurrentConversationsFiltered) {
-          channelsInfo.channelsInfoPayload.push({
+          channelsInfo.channelInfoPayload.push({
             name: conv.conversation.name!,
             channelId: conv.conversation.id,
             unseenMessages: conv.conversation.unreadMessages?.length || 0,
