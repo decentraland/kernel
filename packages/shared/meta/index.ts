@@ -20,4 +20,4 @@ export async function ensureMetaConfigurationInitialized(): Promise<void> {
 
 export const DEFAULT_MAX_VISIBLE_PEERS = 25
 
-export const DEFAULT_MAX__CHANNELS_VALUE = 5 // Todo Juli!: Is it the right place?
+export const DEFAULT_MAX_CHANNELS_VALUE = 5 // Todo Juli!: Is it the right place?
