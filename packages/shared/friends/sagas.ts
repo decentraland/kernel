@@ -50,6 +50,7 @@ import {
   MarkChannelMessagesAsSeenPayload,
   GetChannelMessagesPayload,
   ChannelErrorPayload,
+  ChannelErrorCode,
   MuteChannelPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
@@ -1248,13 +1249,13 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     getUnityInstance().JoinChannelConfirmation(channelsInfo)
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let message = e.message
+      let errorCode = ChannelErrorCode.GENERIC
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
-        message = 'Error joining/creating channel. Channel name does not meet name rules.'
+        errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
-        message = 'Error joining/creating channel. Reserved name.'
+        errorCode = ChannelErrorCode.RESERVED_NAME
       }
-      notifyJoinChannelError(action.payload.channelId, message)
+      notifyJoinChannelError(action.payload.channelId, errorCode)
     }
   }
 }
@@ -1272,7 +1273,7 @@ export async function createChannel(request: CreateChannelPayload) {
     const { conversation, created } = await client.getOrCreateChannel(channelId, [ownId])
 
     if (!created) {
-      notifyJoinChannelError(request.channelId, `Channel "${channelId}" already exists`)
+      notifyJoinChannelError(request.channelId, ChannelErrorCode.ALREADY_EXISTS)
       return
     }
 
@@ -1296,13 +1297,13 @@ export async function createChannel(request: CreateChannelPayload) {
     getUnityInstance().JoinChannelConfirmation(channelsInfo)
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let message = e.message
+      let errorCode = ChannelErrorCode.GENERIC
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
-        message = 'Error joining/creating channel. Channel name does not meet name rules.'
+        errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
-        message = 'Error joining/creating channel. Reserved name.'
+        errorCode = ChannelErrorCode.RESERVED_NAME
       }
-      notifyJoinChannelError(request.channelId, message)
+      notifyJoinChannelError(request.channelId, errorCode)
     }
   }
 }
@@ -1423,10 +1424,10 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
  * @param channelId
  * @param message
  */
-function notifyJoinChannelError(channelId: string, message: string) {
+function notifyJoinChannelError(channelId: string, errorCode: number) {
   const joinChannelError: ChannelErrorPayload = {
     channelId,
-    message
+    errorCode
   }
 
   // send error message to unity
