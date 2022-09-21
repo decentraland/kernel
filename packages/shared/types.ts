@@ -731,13 +731,21 @@ export type AvatarRendererRemovedMessage = {
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
 
+export enum ChannelErrorCode {
+  GENERIC = 0, // Todo Juli!: Not sure about this one
+  LIMIT_EXCEEDED = 1, // Reached the max amount of joined channels allowed per user
+  WRONG_FORMAT = 2, // Does not meet the name rules
+  RESERVED_NAME = 3, // Such as nearby
+  ALREADY_EXISTS = 4 // The name has already been used
+}
+
 export type CreateChannelPayload = {
   channelId: string
 }
 
 export type ChannelErrorPayload = {
   channelId: string
-  message: string
+  errorCode: number
 }
 
 export type ChannelInfoPayload = {
