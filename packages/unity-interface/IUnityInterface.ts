@@ -101,6 +101,7 @@ export interface IUnityInterface {
   SetSceneDebugPanel(): void
   ShowFPSPanel(): void
   HideFPSPanel(): void
+  DetectABs(data: {isOn: boolean, forCurrentScene: boolean }): void
   SetEngineDebugPanel(): void
   SetDisableAssetBundles(): void
   CrashPayloadRequest(): Promise<string>
