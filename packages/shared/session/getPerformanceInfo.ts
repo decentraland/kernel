@@ -1,4 +1,4 @@
-import { getAndClearOccurenceCounters } from 'shared/occurences'
+import { incrementCounter, getAndClearOccurenceCounters } from 'shared/occurences'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
 let kernelToRendererMessageCounter = 0
@@ -22,6 +22,10 @@ export function incrementMessageFromKernelToRendererNative() {
 
 export function incrementCommsMessageReceived() {
   receivedCommsMessagesCounter++
+}
+
+export function incrementCommsMessageReceivedByName(event: string) {
+  incrementCounter(`commMessage:${event}`)
 }
 
 export function incrementCommsMessageSent() {

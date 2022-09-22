@@ -431,9 +431,6 @@ function* refreshFriends() {
     defaultLogger.log('____ initMessage ____', initFriendsMessage)
     defaultLogger.log('____ initChatMessage ____', initChatMessage)
 
-    getUnityInstance().InitializeFriends(initFriendsMessage)
-    getUnityInstance().InitializeChat(initChatMessage)
-
     // all profiles to obtain, deduped
     const allProfilesToObtain: string[] = friendIds
       .concat(requestedFromIds.map((x) => x.userId))
@@ -442,6 +439,9 @@ function* refreshFriends() {
 
     const ensureFriendProfilesPromises = allProfilesToObtain.map((userId) => ensureFriendProfile(userId))
     yield Promise.all(ensureFriendProfilesPromises).catch(logger.error)
+
+    getUnityInstance().InitializeFriends(initFriendsMessage)
+    getUnityInstance().InitializeChat(initChatMessage)
 
     yield put(
       updatePrivateMessagingState({
@@ -631,9 +631,7 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
 }
 
 export function getUnseenMessagesByUser() {
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.DIRECT
-  )
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
 
   if (conversationsWithMessages.length === 0) {
     return
@@ -652,9 +650,7 @@ export function getUnseenMessagesByUser() {
 }
 
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.DIRECT
-  )
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
 
   if (conversationsWithMessages.length === 0) {
     return

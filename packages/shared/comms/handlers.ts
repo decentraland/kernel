@@ -23,7 +23,7 @@ import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
 import { CommsContext } from './context'
-import { processVoiceFragment } from './voice-over-comms'
+import { processVoiceFragment } from 'shared/voiceChat/handlers'
 import future, { IFuture } from 'fp-future'
 import { handleCommsDisconnection } from './actions'
 import { Avatar } from '@dcl/schemas'
@@ -34,7 +34,7 @@ import { trackEvent } from 'shared/analytics'
 import { ProfileType } from 'shared/profiles/types'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
-import { isBlockedOrBanned } from './voice-selectors'
+import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()

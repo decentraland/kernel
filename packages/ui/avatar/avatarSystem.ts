@@ -71,6 +71,8 @@ export class AvatarEntity extends Entity {
 
       shape.bodyShape = avatar.bodyShape
       shape.wearables = avatar.wearables
+      shape.emotes = profile.avatar.emotes
+
       shape.skinColor = avatar.skinColor
       shape.hairColor = avatar.hairColor
       shape.eyeColor = avatar.eyeColor
