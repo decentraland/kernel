@@ -1,4 +1,4 @@
-import { commConfigurations, DEBUG_COMMS } from 'config'
+import { commConfigurations, COMMS_POSITION_FREQ_SEC, DEBUG_COMMS } from 'config'
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { Stats } from './debug'
 import { positionReportToCommsPositionRfc4 } from './interface/utils'
@@ -135,9 +135,9 @@ export class CommsContext {
 
     const now = Date.now()
     const elapsed = now - this.lastNetworkUpdatePosition
-
+    const freq = (COMMS_POSITION_FREQ_SEC ? parseInt(COMMS_POSITION_FREQ_SEC, 10) : 1) * 1000
     // We only send the same position message as a ping if we have not sent positions in the last 1 second
-    if (!immediateReposition && deepEqual(newPosition, this.lastPositionSent) && elapsed < 1000) {
+    if (!immediateReposition && deepEqual(newPosition, this.lastPositionSent) && elapsed < freq) {
       return
     }
 
