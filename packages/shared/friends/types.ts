@@ -5,6 +5,11 @@ export type SocialData = {
   conversationId?: string
 }
 
+export interface FriendRequest {
+  userId: string
+  createdAt: number
+}
+
 export type FriendsState = {
   client: SocialAPI | null
   socialInfo: Record<string, SocialData>
@@ -16,7 +21,7 @@ export type FriendsState = {
    * If said request doesn't exist, it should be created.
    * If a request to the current player exists, the request should be removed and the player added as a friend.
    */
-  toFriendRequests: string[]
+  toFriendRequests: FriendRequest[]
   /**
    * Incoming requests. Friend requets from other players to the current one.
    *
@@ -24,7 +29,7 @@ export type FriendsState = {
    * If said request doesn't exist, it should be created.
    * If a request to the player exists, the request should be removed and the player added as a friend.
    */
-  fromFriendRequests: string[]
+  fromFriendRequests: FriendRequest[]
 }
 
 export type RootFriendsState = {

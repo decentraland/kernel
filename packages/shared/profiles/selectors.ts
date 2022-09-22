@@ -20,6 +20,15 @@ export const getProfileFromStore = (store: RootProfileState, userId: string): Pr
     () => null
   )
 
+export const getProfilesFromStore = (
+  store: RootProfileState,
+  userIds: string[],
+  userNameOrId?: string
+): Array<ProfileUserInfo> => {
+  const profiles = userIds.map((userId) => getProfileFromStore(store, userId))
+  return filterProfilesByUserNameOrId(profiles, userNameOrId)
+}
+
 export const getProfile = (store: RootProfileState, userId: string): Avatar | null =>
   getProfileValueIfOkOrLoading(
     store,
@@ -47,17 +56,19 @@ export const getCurrentUserProfileStatusAndData = (
   return currentUserId ? getProfileStatusAndData(store, currentUserId) : [undefined, undefined]
 }
 
-export const findProfileByName = (store: RootProfileState, userName: string): Avatar | null =>
-  store.profiles && store.profiles.userInfo
+export const findProfileByName = (store: RootProfileState, userName: string): Avatar | null => {
+  const lowerCasedUserName = userName.toLowerCase()
+  return store.profiles && store.profiles.userInfo
     ? Object.values(store.profiles.userInfo)
         .filter((user) => user.status === 'ok')
         .find(
           (user) =>
-            user.data?.name.toLowerCase() === userName.toLowerCase() ||
-            user.data?.userId.toLowerCase() === userName.toLowerCase() ||
-            calculateDisplayName(user.data) === userName
+            user.data?.name.toLowerCase() === lowerCasedUserName ||
+            user.data?.userId.toLowerCase() === lowerCasedUserName ||
+            calculateDisplayName(user.data).toLowerCase() === lowerCasedUserName
         )?.data || null
     : null
+}
 
 export const isAddedToCatalog = (store: RootProfileState, userId: string): boolean =>
   getProfileValueIfOkOrLoading(
@@ -74,6 +85,25 @@ export const getEthereumAddress = (store: RootProfileState, userId: string): str
     (info) => (info.data as Avatar).userId,
     () => undefined
   )
+
+export function filterProfilesByUserNameOrId(
+  profiles: Array<ProfileUserInfo | null>,
+  userNameOrId: string | undefined
+): Array<ProfileUserInfo> {
+  return profiles.filter((friend) => {
+    if (!friend || friend.status !== 'ok') {
+      return false
+    }
+    if (!userNameOrId) {
+      return true
+    }
+    // keep the ones userId or name includes the filter
+    return (
+      friend.data.userId.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase()) ||
+      friend.data.name.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase())
+    )
+  }) as Array<ProfileUserInfo>
+}
 
 function getProfileValueIfOkOrLoading<T>(
   store: RootProfileState,
