@@ -79,7 +79,7 @@
     "@dcl/hashing": "^1.1.0",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
     "@dcl/legacy-ecs": "^6.11.8",
-    "@dcl/protocol": "^1.0.0-3015628754.commit-7713e2e",
+    "@dcl/protocol": "^1.0.0-3091042060.commit-417e01c",
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
     "@dcl/schemas": "^5.8.1",
     "@dcl/urn-resolver": "^1.4.0",
