@@ -32,12 +32,22 @@ import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
 import { uuid } from 'atomicHelpers/math'
 import { validateAvatar } from 'shared/profiles/schemaValidation'
 import { CommsDisconnectionEvent, CommsPeerDisconnectedEvent } from './interface'
+import { sendPublicChatMessage } from '.'
+
+type PingRequest = {
+  alias: number
+  responses: number
+  sentTime: number
+}
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
+const pingRequests = new Map<number, PingRequest>()
+let pingIndex = 0
 
 export async function bindHandlersToCommsContext(context: CommsContext) {
   removeAllPeers()
+  pingRequests.clear()
 
   const connection = context.worldInstanceConnection!
 
@@ -162,6 +172,16 @@ function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
   }
 }
 
+globalThis.__sendPing = () => {
+  const nonce = Math.floor(Math.random() * 0xffffffff)
+  pingRequests.set(nonce, {
+    responses: 0,
+    sentTime: Date.now(),
+    alias: pingIndex++
+  })
+  sendPublicChatMessage(`␐ping ${nonce}`)
+}
+
 function processChatMessage(message: Package<proto.Chat>) {
   const myProfile = getCurrentUserProfile(store.getState())
   const fromAlias: string = message.address
@@ -171,12 +191,25 @@ function processChatMessage(message: Package<proto.Chat>) {
 
   if (senderPeer.ethereumAddress) {
     if (message.data.message.startsWith('␐')) {
-      const [id, timestamp] = message.data.message.split(' ')
+      const [id, secondPart] = message.data.message.split(' ')
+
+      const expressionId = id.slice(1)
+      if (expressionId === 'ping') {
+        const nonce = parseInt(secondPart, 10)
+        const request = pingRequests.get(nonce)
+        if (request) {
+          request.responses++
+          console.log(`ping ${request.alias} has ${request.responses} responses (nonce: ${nonce})`)
+        } else {
+          sendPublicChatMessage(message.data.message)
+        }
+      }
+
       avatarMessageObservable.notifyObservers({
         type: AvatarMessageType.USER_EXPRESSION,
         userId: senderPeer.ethereumAddress,
-        expressionId: id.slice(1),
-        timestamp: parseInt(timestamp, 10)
+        expressionId,
+        timestamp: parseInt(secondPart, 10)
       })
     } else {
       const isBanned =
