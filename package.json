@@ -79,7 +79,7 @@
     "@dcl/hashing": "^1.1.0",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
     "@dcl/legacy-ecs": "^6.11.8",
-    "@dcl/protocol": "^1.0.0-3070738382.commit-8ad38d9",
+    "@dcl/protocol": "^1.0.0-3108096922.commit-054e396",
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
     "@dcl/schemas": "^5.8.1",
     "@dcl/urn-resolver": "^1.4.0",
@@ -121,6 +121,6 @@
     "tabWidth": 2
   },
   "config": {
-    "protocVersion": "3.20.1"
+    "protocVersion": "21.6"
   }
 }

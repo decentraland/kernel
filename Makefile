@@ -181,7 +181,7 @@ packages/shared/protocol/kernel/apis/%.gen.ts: node_modules/@dcl/protocol/kernel
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/apis"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+			--ts_proto_opt=returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/apis" \
 			-I="$(PWD)/packages/shared/protocol/kernel/apis" \
@@ -192,7 +192,7 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 	mkdir -p "$(PWD)/packages/renderer-protocol/proto"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
+			--ts_proto_opt=returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" \
 			-I="$(PWD)/packages/renderer-protocol/proto" \
@@ -203,7 +203,7 @@ packages/shared/protocol/bff/%.gen.ts: node_modules/@dcl/protocol/bff/%.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/bff"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,oneof=unions \
+		  --ts_proto_opt=returnObservable=false,outputServices=generic-definitions,oneof=unions \
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/shared/protocol/bff" \
       -I="$(PWD)/node_modules/@dcl/protocol/bff" \
@@ -215,7 +215,7 @@ packages/shared/protocol/kernel/comms/%.gen.ts: node_modules/@dcl/protocol/kerne
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,oneof=unions \
+		  --ts_proto_opt=returnObservable=false,outputServices=generic-definitions,oneof=unions \
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/comms" \
       -I="$(PWD)/node_modules/@dcl/protocol/bff" \
@@ -227,8 +227,7 @@ packages/shared/protocol/kernel/comms/v3/%.gen.ts: node_modules/@dcl/protocol/ke
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms/v3"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-			--ts_proto_opt=esModuleInterop=true,oneof=unions \
-			--ts_proto_opt=fileSuffix=.gen \
+			--ts_proto_opt=oneof=unions,fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/comms/v3" \
       -I="$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3" \
 			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3/$*.proto"
