@@ -242,14 +242,10 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('debug', 
-      'Show debug panel', 
-      (_message) => getDebugPanelMessage())
+  addChatCommand('debug','Show debug panel',(_message) => getDebugPanelMessage())
 
-  addChatCommand('showfps', 
-      'Show fps panel (deprecated in favor of /debug)', 
-      (_message) => getDebugPanelMessage()
-  )
+  addChatCommand('showfps','Show fps panel (deprecated in favor of /debug)',(_message) => 
+      getDebugPanelMessage())
 
   /* 
     /detectabs => enable for all shapes
@@ -257,11 +253,8 @@ function initChatCommands() {
     /detectabs scene => enable for current scene shapes
     /detectabs scene off => disable for current scene shapes
    */
-  addChatCommand(
-      'detectabs',
-      'Paint AB-loaded world objects green and GLTF red', 
-      (message) => parseAndSendDetectABMessage(message)
-  )
+  addChatCommand('detectabs','Paint AB-loaded world objects green and GLTF red',(message) => 
+      parseAndSendDetectABMessage(message))
   
   addChatCommand('getname', 'Gets your username', (_message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
@@ -492,21 +485,18 @@ function parseAndSendDetectABMessage(message: string) {
   const offString : string = 'off'
   const sceneString : string = 'scene'
   
-  if(message && message.includes(' '))
-  {
+  if(message && message.includes(' ')) {
     const words: string[] = message.split(' ')
     const firstWord: string = words[0].trim()
     const secondWord: string = words[1].trim()
-    forCurrentScene = firstWord == sceneString
-    isOn = secondWord != offString
-  }
-  else
-  {
-    isOn = message != offString
-    forCurrentScene = message == sceneString
+    forCurrentScene = firstWord === sceneString
+    isOn = secondWord !== offString
+  } else {
+    isOn = message !== offString
+    forCurrentScene = message === sceneString
   }
 
-  getUnityInstance().DetectABs({isOn: isOn, forCurrentScene: forCurrentScene})
+  getUnityInstance().DetectABs({isOn: isOn, forCurrentScene: forCurrentScene })
 
   return {
     messageId: uuid(),
