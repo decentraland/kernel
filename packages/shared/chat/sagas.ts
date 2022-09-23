@@ -253,7 +253,7 @@ function initChatCommands() {
     /detectabs scene => enable for current scene shapes
     /detectabs scene off => disable for current scene shapes
    */
-  addChatCommand('detectabs','Paint AB-loaded world objects green and GLTF red',(message) => 
+  addChatCommand('detectabs', 'Paint AB-loaded world objects green and GLTF red', (message) =>
       parseAndSendDetectABMessage(message))
   
   addChatCommand('getname', 'Gets your username', (_message) => {
@@ -479,13 +479,13 @@ function getDebugPanelMessage() {
 //off => disable ABs painting for all loaded scenes
 //scene off => disable ABs painting for current scene
 function parseAndSendDetectABMessage(message: string) {
-  
-  let isOn : boolean
+
+  let isOn: boolean
   let forCurrentScene: boolean
-  const offString : string = 'off'
-  const sceneString : string = 'scene'
-  
-  if(message && message.includes(' ')) {
+  const offString: string = 'off'
+  const sceneString: string = 'scene'
+
+  if (message && message.includes(' ')) {
     const words: string[] = message.split(' ')
     const firstWord: string = words[0].trim()
     const secondWord: string = words[1].trim()
@@ -496,7 +496,7 @@ function parseAndSendDetectABMessage(message: string) {
     forCurrentScene = message === sceneString
   }
 
-  getUnityInstance().DetectABs({isOn: isOn, forCurrentScene: forCurrentScene })
+  getUnityInstance().DetectABs({isOn: isOn, forCurrentScene: forCurrentScene})
 
   return {
     messageId: uuid(),
