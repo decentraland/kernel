@@ -251,6 +251,12 @@ function initChatCommands() {
       (_message) => getDebugPanelMessage()
   )
 
+  /* 
+    /detectabs => enable for all shapes
+    /detectabs off => disable for all shapes
+    /detectabs scene => enable for current scene shapes
+    /detectabs scene off => disable for current scene shapes
+   */
   addChatCommand(
       'detectabs',
       'Paint AB-loaded world objects green and GLTF red', 
