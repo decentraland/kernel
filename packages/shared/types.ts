@@ -517,10 +517,46 @@ export type ChatMessage = {
   body: string
 }
 
+export type AddChatMessagesPayload = {
+  messages: ChatMessage[]
+}
+
+export interface UnseenPrivateMessage {
+  count: number
+}
+
+export interface FriendsInitializeChatPayload {
+  totalUnseenMessages: number
+}
+
 export type FriendsInitializationMessage = {
-  currentFriends: string[]
-  requestedTo: string[]
-  requestedFrom: string[]
+  totalReceivedRequests: number
+}
+
+export interface GetFriendsPayload {
+  userNameOrId?: string // text to match
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+}
+
+export interface GetFriendRequestsPayload {
+  sentLimit: number // max amount of entries of sent friend requests to request
+  sentSkip: number // the amount of entries of sent friend requests to skip
+  receivedLimit: number // max amount of entries of received friend requests to request
+  receivedSkip: number // the amount of entries of received friend requests to skip
+}
+
+export interface GetFriendsPayload {
+  userNameOrId?: string // text to match
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+}
+
+export interface GetFriendRequestsPayload {
+  sentLimit: number // max amount of entries of sent friend requests to request
+  sentSkip: number // the amount of entries of sent friend requests to skip
+  receivedLimit: number // max amount of entries of received friend requests to request
+  receivedSkip: number // the amount of entries of received friend requests to skip
 }
 
 export enum FriendshipAction {
@@ -554,6 +590,64 @@ export type UpdateUserStatusMessage = {
   realm: Realm | undefined
   position: Vector2Component | undefined
   presence: PresenceStatus
+}
+
+export interface AddFriendsPayload {
+  friends: string[] // ids of each friend added
+  totalFriends: number // total amount of friends
+}
+
+export interface AddFriendRequestsPayload {
+  requestedTo: string[] // user ids which you sent a request
+  requestedFrom: string[] // user ids which you received a request
+  totalReceivedFriendRequests: number // total amount of friend requests received
+  totalSentFriendRequests: number // total amount of friend requests sent
+}
+
+export interface MarkMessagesAsSeenPayload {
+  userId: string
+}
+
+export interface GetPrivateMessagesPayload {
+  userId: string
+  limit: number
+  fromMessageId: string
+}
+
+export interface UpdateTotalUnseenMessagesPayload {
+  total: number
+}
+
+export interface UpdateUserUnseenMessagesPayload {
+  userId: string
+  total: number
+}
+
+export interface UpdateTotalUnseenMessagesByUserPayload {
+  unseenPrivateMessages: Array<{ userId: string; count: number }> // the unseen private messages for each user
+}
+
+export interface UpdateTotalFriendRequestsPayload {
+  totalReceivedRequests: number
+  totalSentRequests: number
+}
+
+export interface UpdateTotalFriendsPayload {
+  totalFriends: number
+}
+
+export interface GetFriendsWithDirectMessagesPayload {
+  userNameOrId: string // text to match
+  limit: number // max amount of entries to receive
+  skip: number // amount of messages already received
+}
+
+export interface AddFriendsWithDirectMessagesPayload {
+  currentFriendsWithDirectMessages: {
+    userId: string // id of the friend with direct messages
+    lastMessageTimestamp: number //: timestamp of the last message
+  }[]
+  totalFriendsWithDirectMessages: number // total amount of friends with direct messages
 }
 
 export type BuilderConfiguration = {

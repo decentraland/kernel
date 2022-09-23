@@ -25,7 +25,7 @@ import {
 } from './actions'
 import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
-import { ContentFile, ProfileType, ProfileUserInfo } from './types'
+import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { getUpdateProfileServer, getCatalystServer } from '../dao/selectors'
@@ -185,14 +185,17 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
 function* getRemoteProfile(userId: string, version?: number) {
   try {
-    const profiles: { avatars: Avatar[] } = yield call(profileServerRequest, userId, version)
+    const remoteProfile: RemoteProfile = yield call(profileServerRequest, userId, version)
 
-    let avatar = profiles.avatars[0]
+    let avatar = remoteProfile.avatars[0]
 
     if (avatar) {
       avatar = ensureAvatarCompatibilityFormat(avatar)
       if (!validateAvatar(avatar)) {
         defaultLogger.warn(`Remote avatar for user is invalid.`, userId, avatar, validateAvatar.errors)
+        trackEvent(REMOTE_AVATAR_IS_INVALID, {
+          avatar
+        })
         return null
       }
 
@@ -203,13 +206,13 @@ function* getRemoteProfile(userId: string, version?: number) {
     }
   } catch (error: any) {
     if (error.message !== 'Profile not found') {
-      defaultLogger.log(`Error requesting profile for auth check ${userId}, `, error)
+      defaultLogger.warn(`Error requesting profile for auth check ${userId}, `, error)
     }
   }
   return null
 }
 
-export async function profileServerRequest(userId: string, version?: number) {
+export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
   const state = store.getState()
   const catalystUrl = getCatalystServer(state)
 
@@ -223,12 +226,12 @@ export async function profileServerRequest(userId: string, version?: number) {
       throw new Error(`Invalid response from ${url}`)
     }
 
-    const res = await response.json()
+    const res: RemoteProfile = await response.json()
 
-    return res[0] || { avatars: [] }
+    return res[0] || { avatars: [], timestamp: Date.now() }
   } catch (e: any) {
     defaultLogger.error(e)
-    return { avatars: [] }
+    return { avatars: [], timestamp: Date.now() }
   }
 }
 
@@ -440,7 +443,7 @@ async function generateRandomUserProfile(userId: string): Promise<Avatar> {
 
   let profile: Avatar | undefined = undefined
   try {
-    const profiles: { avatars: Avatar[] } = await profileServerRequest(`default${_number}`)
+    const profiles: RemoteProfile = await profileServerRequest(`default${_number}`)
     if (profiles.avatars.length !== 0) {
       profile = profiles.avatars[0]
     }

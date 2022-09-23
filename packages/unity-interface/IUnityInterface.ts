@@ -21,13 +21,23 @@ import {
   TutorialInitializationMessage,
   Notification,
   UpdateUserStatusMessage,
-  WorldPosition
+  WorldPosition,
+  AddFriendsPayload,
+  AddFriendRequestsPayload,
+  UpdateTotalUnseenMessagesPayload,
+  UpdateUserUnseenMessagesPayload,
+  AddChatMessagesPayload,
+  UpdateTotalUnseenMessagesByUserPayload,
+  AddFriendsWithDirectMessagesPayload,
+  UpdateTotalFriendRequestsPayload,
+  FriendsInitializeChatPayload,
+  UpdateTotalFriendsPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
 import { Avatar } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { Emote } from 'shared/catalogs/types'
 
 export type RealmInfo = {
@@ -113,6 +123,7 @@ export interface IUnityInterface {
   UnlockCursor(): void
   SetCursorState(locked: boolean): void
   SetBuilderReady(): void
+  AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void
   AddUserProfileToCatalog(peerProfile: NewProfileForRenderer): void
   AddWearablesToCatalog(wearables: WearableV2[], context?: string): void
   AddEmotesToCatalog(emotes: Emote[], context?: string): void
@@ -128,10 +139,26 @@ export interface IUnityInterface {
   SetTutorialEnabledForUsersThatAlreadyDidTheTutorial(tutorialConfig: TutorialInitializationMessage): void
   TriggerAirdropDisplay(data: AirdropInfo): void
   AddMessageToChatWindow(message: ChatMessage): void
+  AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void
+
+  // *********************************************************************************
+  // ************** Chat messages **************
+  // *********************************************************************************
+
   InitializeFriends(initializationMessage: FriendsInitializationMessage): void
+  InitializeChat(initializationMessage: FriendsInitializeChatPayload): void
   UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage): void
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
+  AddFriends(addFriendsPayload: AddFriendsPayload): void
+  AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
+  UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
+  UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void
+  UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload): void
+  AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
+  UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
+  UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
+
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
   ConnectionToRealmSuccess(successData: WorldPosition): void
