@@ -2,11 +2,9 @@ import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, appl
 
 import { commsEstablished, establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { CommsContext, commsLogger } from './context'
-import { getBff, getCommsContext, getRealm } from './selectors'
+import { getCommsContext } from './selectors'
 import { BEFORE_UNLOAD } from 'shared/protocol/actions'
 import {
-  ConnectToCommsAction,
-  CONNECT_TO_COMMS,
   HandleCommsDisconnection,
   HANDLE_COMMS_DISCONNECTION,
   setCommsIsland,
@@ -30,7 +28,7 @@ import { getIdentity } from 'shared/session'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
-import { realmToConnectionString, resolveCommsConnectionString } from '../bff/resolver'
+import { realmToConnectionString } from '../bff/resolver'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { getCommsConfig, getMaxVisiblePeers } from 'shared/meta/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
@@ -40,15 +38,15 @@ import { LivekitAdapter } from './adapters/LivekitAdapter'
 import { PeerToPeerAdapter } from './adapters/PeerToPeerAdapter'
 import { MinimumCommunicationsAdapter } from './adapters/types'
 import { Position3D } from './v3/types'
-import { IBff } from './types'
+import { IBff } from 'shared/bff/types'
 import { CommsConfig } from 'shared/meta/types'
 import { Authenticator } from '@dcl/crypto'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { store } from 'shared/store/isolatedStore'
 import { ProfileType } from 'shared/profiles/types'
-import { Candidate, Realm } from 'shared/dao/types'
-import { getAllCatalystCandidates } from 'shared/dao/selectors'
+import { ConnectToCommsAction, CONNECT_TO_COMMS } from 'shared/bff/actions'
+import { getBff, getRealm } from 'shared/bff/selectors'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -84,9 +82,6 @@ export function* commsSaga() {
  */
 function* handleConnectToComms(action: ConnectToCommsAction) {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-
-  const candidates: Candidate[] = yield select(getAllCatalystCandidates)
-  const realm: Realm = yield call(resolveCommsConnectionString, action.payload.event.connStr, candidates)
 
   const [protocol, url] = action.payload.event.connStr.split(':', 2)
 
@@ -127,7 +122,6 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
   if (!adapter) throw new Error(`A communications adapter could not be created for protocol=${protocol}`)
 
   const commsContext = new CommsContext(
-    realm,
     identity.address,
     identity.hasConnectedWeb3 ? ProfileType.DEPLOYED : ProfileType.LOCAL,
     new Rfc4RoomConnection(adapter)
@@ -367,7 +361,7 @@ function* handleNewCommsContext() {
       // bind messages to this comms instance
       yield call(bindHandlersToCommsContext, currentContext)
       yield put(commsEstablished())
-      notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
+      // notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
     }
 
     if (oldContext && oldContext !== currentContext) {

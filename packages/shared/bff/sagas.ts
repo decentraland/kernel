@@ -8,10 +8,10 @@ import {
   HandleBffDisconnection,
   HANDLE_BFF_DISCONNECTION,
   setBff,
-  SET_BFF,
-  SET_COMMS_ISLAND
+  SET_BFF
 } from './actions'
-import { listenSystemMessage } from './logic/subscription-adapter'
+import { SET_COMMS_ISLAND } from '../comms/actions'
+import { listenSystemMessage } from '../comms/logic/subscription-adapter'
 import { IBff } from './types'
 import { Reader } from 'protobufjs/minimal'
 import { call, delay, fork, put, race, select, take, takeEvery } from 'redux-saga/effects'

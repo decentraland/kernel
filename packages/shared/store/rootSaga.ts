@@ -17,7 +17,7 @@ import { questsSaga } from '../quests/sagas'
 import { portableExperienceSaga } from '../portableExperiences/sagas'
 import { wearablesPortableExperienceSaga } from '../wearablesPortableExperience/sagas'
 import { sceneEventsSaga } from '../sceneEvents/sagas'
-import { bffSaga } from 'shared/comms/bff-sagas'
+import { bffSaga } from 'shared/bff/sagas'
 
 export function createRootSaga() {
   return function* rootSaga() {

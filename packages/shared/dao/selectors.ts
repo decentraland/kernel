@@ -10,6 +10,7 @@ import {
 import { RootMetaState } from 'shared/meta/types'
 import { getContentWhitelist } from 'shared/meta/selectors'
 import { urlWithProtocol } from 'shared/bff/resolver'
+import { RootBffState } from 'shared/bff/types'
 
 function getAllowedContentServer(givenServer: string, meta: RootMetaState): string {
   // if a catalyst is pinned => avoid any override
@@ -31,7 +32,7 @@ function getAllowedContentServer(givenServer: string, meta: RootMetaState): stri
   return urlWithProtocol(givenServer)
 }
 
-export const getUpdateProfileServer = (state: RootDaoState & RootMetaState) => {
+export const getUpdateProfileServer = (state: RootBffState & RootMetaState) => {
   if (UPDATE_CONTENT_SERVICE) {
     return urlWithProtocol(UPDATE_CONTENT_SERVICE)
   }
@@ -39,17 +40,17 @@ export const getUpdateProfileServer = (state: RootDaoState & RootMetaState) => {
   if (PIN_CATALYST) {
     return urlWithProtocol(PIN_CATALYST + '/content')
   }
-  return urlWithProtocol(state.dao.updateContentServer)
+  return urlWithProtocol(state.bff.bff!.services.legacy.updateContentServer)
 }
 
-export const getFetchContentServer = (state: RootDaoState & RootMetaState) => {
+export const getFetchContentServer = (state: RootBffState & RootMetaState) => {
   if (FETCH_CONTENT_SERVICE) {
     return urlWithProtocol(FETCH_CONTENT_SERVICE)
   }
-  return getAllowedContentServer(state.dao.fetchContentServer, state)
+  return getAllowedContentServer(state.bff.bff!.services.legacy.fetchContentServer, state)
 }
 
-export const getCatalystServer = (store: RootDaoState) => urlWithProtocol(store.dao.catalystServer)
+export const getCatalystServer = (state: RootBffState) => urlWithProtocol(state.bff.bff!.services.legacy.catalystServer)
 
 export const getCommsServer = (domain: string) => {
   if (COMMS_SERVICE) {
@@ -64,19 +65,19 @@ export const getCatalystCandidatesReceived = (store: RootDaoState) => store.dao.
 
 export const getAllCatalystCandidates = (store: RootDaoState) => getCatalystCandidates(store).filter((it) => !!it)
 
-export const getHotScenesService = (store: RootDaoState) => {
+export const getHotScenesService = (state: RootBffState) => {
   if (HOTSCENES_SERVICE) {
     return HOTSCENES_SERVICE
   }
-  return urlWithProtocol(store.dao.hotScenesService)
+  return urlWithProtocol(state.bff.bff!.services.legacy.hotScenesService)
 }
 
-export const getExploreRealmsService = (store: RootDaoState) => store.dao.exploreRealmsService
-export const getPOIService = (store: RootDaoState) => {
+export const getExploreRealmsService = (state: RootBffState) => state.bff.bff!.services.legacy.exploreRealmsService
+export const getPOIService = (state: RootBffState) => {
   if (POI_SERVICE) {
     return POI_SERVICE
   }
-  return urlWithProtocol(store.dao.poiService)
+  return urlWithProtocol(state.bff.bff!.services.legacy.poiService)
 }
 
 export const getSelectedNetwork = (store: RootDaoState) => {

@@ -9,6 +9,7 @@ import { daoReducer } from '../dao/reducer'
 import { metaReducer } from '../meta/reducer'
 import { chatReducer } from '../chat/reducer'
 import { commsReducer } from '../comms/reducer'
+import { bffReducer } from '../bff/reducer'
 import { voiceChatReducer } from '../voiceChat/reducer'
 import { friendsReducer } from '../friends/reducer'
 import { sessionReducer } from '../session/reducer'
@@ -27,6 +28,7 @@ export const reducers = combineReducers({
   renderer: rendererReducer,
   dao: daoReducer,
   comms: commsReducer,
+  bff: bffReducer,
   voiceChat: voiceChatReducer,
   meta: metaReducer,
   quests: questsReducer,

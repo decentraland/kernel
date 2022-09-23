@@ -10,7 +10,7 @@ import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
 import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
 import { sleep } from 'atomicHelpers/sleep'
-import { getRealm } from 'shared/comms/selectors'
+import { getRealm } from 'shared/bff/selectors'
 import { Avatar } from '@dcl/schemas'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 

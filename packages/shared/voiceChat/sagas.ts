@@ -1,6 +1,6 @@
 import { call, select, takeEvery, takeLatest, put } from 'redux-saga/effects'
 import { receiveUserTalking } from 'shared/comms/peers'
-import { getCommsContext, getCommsIsland, getRealm } from 'shared/comms/selectors'
+import { getCommsContext, getCommsIsland } from 'shared/comms/selectors'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
 import { createLiveKitVoiceHandler } from 'voice-chat-codec/liveKitVoiceHandler'
@@ -53,6 +53,7 @@ import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
 import { realmToConnectionString } from 'shared/bff/resolver'
+import { getRealm } from 'shared/bff/selectors'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 

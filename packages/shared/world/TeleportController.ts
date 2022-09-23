@@ -7,7 +7,7 @@ import defaultLogger from 'shared/logger'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
 import { store } from 'shared/store/isolatedStore'
-import { getCommsContext } from 'shared/comms/selectors'
+import { getBff } from 'shared/bff/selectors'
 import { Parcel } from 'shared/dao/types'
 import { urlWithProtocol } from 'shared/bff/resolver'
 
@@ -79,11 +79,11 @@ export class TeleportController {
 }
 
 async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
-  const context = getCommsContext(store.getState())
+  const bff = getBff(store.getState())
 
   try {
-    if (context) {
-      const parcelsResponse = await fetch(`${urlWithProtocol(context.realm.hostname)}/stats/parcels`)
+    if (bff) {
+      const parcelsResponse = await fetch(`${urlWithProtocol(bff.realm.hostname)}/stats/parcels`)
 
       if (parcelsResponse.ok) {
         const parcelsBody = await parcelsResponse.json()

@@ -4,13 +4,13 @@ import { getSelectedNetwork } from './../../dao/selectors'
 import { store } from './../../store/isolatedStore'
 import { getIsGuestLogin } from './../../session/selectors'
 import { onLoginCompleted } from './../../session/sagas'
-import { getRealm } from './../../comms/selectors'
 
 import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { SignedFetchServiceDefinition } from 'shared/protocol/kernel/apis/SignedFetch.gen'
+import { getRealm } from 'shared/bff/selectors'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({

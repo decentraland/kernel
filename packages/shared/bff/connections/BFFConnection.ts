@@ -10,8 +10,10 @@ import {
 import { CommsServiceDefinition } from 'shared/protocol/bff/comms-service.gen'
 import { trackEvent } from 'shared/analytics'
 import { ExplorerIdentity } from 'shared/session/types'
-import { BffEvents, BffServices, IBff } from '../comms/types'
+import { BffEvents, BffServices, IBff } from '../types'
 import mitt from 'mitt'
+import { Realm } from 'shared/dao/types'
+import { legacyServices } from '../local-services/legacy'
 
 export type TopicData = {
   peerId: string
@@ -39,7 +41,7 @@ async function authenticatePort(port: RpcClientPort, identity: ExplorerIdentity)
   return authResponse.peerId
 }
 
-export async function createBffRpcConnection(url: string, identity: ExplorerIdentity) {
+export async function createBffRpcConnection(realm: Realm, url: string, identity: ExplorerIdentity): Promise<IBff> {
   const bffTransport = WebSocketTransport(new WebSocket(url, 'comms'))
 
   const rpcClient = await createRpcClient(bffTransport)
@@ -50,7 +52,7 @@ export async function createBffRpcConnection(url: string, identity: ExplorerIden
   // close the WS when the port is closed
   port.on('close', () => bffTransport.close())
 
-  return new BffRpcConnection(port, peerId)
+  return new BffRpcConnection(realm, port, peerId)
 }
 
 export class BffRpcConnection implements IBff<{}> {
@@ -60,14 +62,15 @@ export class BffRpcConnection implements IBff<{}> {
   private logger: ILogger = createLogger('BFF: ')
   private disposed = false
 
-  constructor(public port: RpcClientPort, public peerId: string) {
+  constructor(public readonly realm: Realm, public port: RpcClientPort, public peerId: string) {
     port.on('close', async () => {
       this.logger.log('BFF transport closed')
       this.disconnect()
     })
 
     this.services = {
-      comms: loadService(port, CommsServiceDefinition)
+      comms: loadService(port, CommsServiceDefinition),
+      legacy: legacyServices(realm)
     }
   }
 

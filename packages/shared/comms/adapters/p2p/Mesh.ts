@@ -1,4 +1,4 @@
-import { IBff } from 'shared/comms/types'
+import { IBff } from 'shared/bff/types'
 import { listenPeerMessage } from '../../logic/subscription-adapter'
 import { ILogger } from 'shared/logger'
 import { P2PLogConfig } from './types'

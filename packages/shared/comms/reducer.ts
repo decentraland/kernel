@@ -3,12 +3,11 @@ import { AnyAction } from 'redux'
 import { COMMS_ESTABLISHED } from 'shared/loading/types'
 
 import { CommsState } from './types'
-import { SET_BFF, SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from './actions'
+import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from './actions'
 
 const INITIAL_COMMS: CommsState = {
   initialized: false,
-  context: undefined,
-  bff: undefined
+  context: undefined
 }
 
 export function commsReducer(state?: CommsState, action?: AnyAction): CommsState {
@@ -28,11 +27,6 @@ export function commsReducer(state?: CommsState, action?: AnyAction): CommsState
         return state
       }
       return { ...state, context: action.payload, island: undefined }
-    case SET_BFF:
-      if (state.bff === action.payload) {
-        return state
-      }
-      return { ...state, bff: action.payload }
     default:
       return state
   }

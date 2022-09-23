@@ -15,12 +15,14 @@ import { RootQuestsState } from 'shared/quests/types'
 import { RootPortableExperiencesState } from 'shared/portableExperiences/types'
 import { RootWearablesPortableExperienceState } from 'shared/wearablesPortableExperience/types'
 import { RootVoiceChatState } from 'shared/voiceChat/types'
+import { RootBffState } from 'shared/bff/types'
 
 export type RootState = RootAtlasState &
   RootProfileState &
   RootDaoState &
   RootMetaState &
   RootChatState &
+  RootBffState &
   RootCommsState &
   RootSessionState &
   RootFriendsState &

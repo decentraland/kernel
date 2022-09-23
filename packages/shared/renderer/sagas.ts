@@ -27,10 +27,9 @@ import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
-import { getCommsContext } from 'shared/comms/selectors'
+import { getBff } from 'shared/bff/selectors'
 import { getExploreRealmsService, getFetchContentServer } from 'shared/dao/selectors'
 import { Realm } from 'shared/dao/types'
-import { CommsContext } from 'shared/comms/context'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
@@ -46,7 +45,8 @@ import {
   VOICE_PLAYING_UPDATE,
   VOICE_RECORDING_UPDATE
 } from 'shared/voiceChat/actions'
-import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { IBff } from 'shared/bff/types'
+import { SET_BFF } from 'shared/bff/actions'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -69,22 +69,23 @@ function* reportRealmChangeToRenderer() {
   yield call(waitForRendererInstance)
 
   while (true) {
-    const context: CommsContext | null = yield select(getCommsContext)
+    const bff: IBff | null = yield select(getBff)
 
-    if (context) {
+    if (bff) {
       const contentServerUrl: string = yield select(getFetchContentServer)
-      const current = convertCurrentRealmType(context.realm, contentServerUrl)
+      const current = convertCurrentRealmType(bff.realm, contentServerUrl)
       getUnityInstance().UpdateRealmsInfo({ current })
+
+      const realmsService = yield select(getExploreRealmsService)
+
+      if (realmsService) {
+        yield call(fetchAndReportRealmsInfo, realmsService)
+      }
+
+      // wait for the next context
     }
 
-    const realmsService = yield select(getExploreRealmsService)
-
-    if (realmsService) {
-      yield call(fetchAndReportRealmsInfo, realmsService)
-    }
-
-    // wait for the next context
-    yield take(SET_WORLD_CONTEXT)
+    yield take(SET_BFF)
   }
 }
 

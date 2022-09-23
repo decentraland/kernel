@@ -27,7 +27,7 @@ import { ILogger } from 'shared/logger'
 import { incrementCommsMessageSent } from 'shared/session/getPerformanceInfo'
 import { listenPeerMessage } from '../logic/subscription-adapter'
 import { PeerTopicSubscriptionResultElem } from 'shared/protocol/bff/comms-service.gen'
-import { IBff } from '../types'
+import { IBff } from '../../bff/types'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 
 export type RelaySuspensionConfig = {

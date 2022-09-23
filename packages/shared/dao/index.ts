@@ -6,8 +6,8 @@ import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { ping, ask } from './utils/ping'
-import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
-import { setBff } from 'shared/comms/actions'
+import { getBff, getRealm, sameRealm } from 'shared/bff/selectors'
+import { setBff } from 'shared/bff/actions'
 import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
@@ -162,7 +162,7 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
 }
 
 export async function changeRealmObject(realm: Realm, forceChange: boolean = false): Promise<void> {
-  const context = getCommsContext(store.getState())
+  const currentBff = getBff(store.getState())
   const identity = getCurrentIdentity(store.getState())
 
   if (!identity) throw new Error('Cant change realm without a valid identity')
@@ -170,7 +170,7 @@ export async function changeRealmObject(realm: Realm, forceChange: boolean = fal
   commsLogger.info('Connecting to realm', realm)
 
   // if not forceChange, then cancel operation if we are inside the desired realm
-  if (!forceChange && context && sameRealm(context.realm, realm)) {
+  if (!forceChange && currentBff && sameRealm(currentBff.realm, realm)) {
     return
   }
 
@@ -178,10 +178,10 @@ export async function changeRealmObject(realm: Realm, forceChange: boolean = fal
     throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
   }
 
-  const bff = await bffForRealm(realm, identity)
+  const newBff = await bffForRealm(realm, identity)
 
-  if (bff) {
-    store.dispatch(setBff(bff))
+  if (newBff) {
+    store.dispatch(setBff(newBff))
   } else {
     throw new Error(`Can't connect to realm ${realmToConnectionString(realm)} right now.`)
   }

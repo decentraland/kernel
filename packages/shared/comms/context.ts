@@ -4,7 +4,6 @@ import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { RoomConnection } from './interface/index'
 import { createLogger } from '../logger'
 import { Observer } from 'mz-observable'
-import { Realm } from 'shared/dao/types'
 import { Avatar } from '@dcl/schemas'
 import { ProfileType } from 'shared/profiles/types'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
@@ -34,7 +33,6 @@ export class CommsContext {
   private destroyed = false
 
   constructor(
-    public readonly realm: Realm,
     public readonly userAddress: string,
     public readonly profileType: ProfileType,
     public readonly worldInstanceConnection: RoomConnection

@@ -37,11 +37,12 @@ import { AlgorithmChainConfig } from './pick-realm-algorithm/types'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import defaultLogger from 'shared/logger'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { getCommsContext, getRealm } from 'shared/comms/selectors'
+import { getCommsContext } from 'shared/comms/selectors'
 import { CatalystNode } from 'shared/types'
 import { candidateToRealm, resolveCommsConnectionString, resolveRealmUrls } from 'shared/bff/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
+import { getRealm } from 'shared/bff/selectors'
 
 function* waitForExplorerIdentity() {
   while (!(yield select(getCurrentIdentity))) {

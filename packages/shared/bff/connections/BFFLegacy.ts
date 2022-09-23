@@ -1,15 +1,17 @@
 import mitt from 'mitt'
-import { BffEvents, BffServices, IBff } from 'shared/comms/types'
+import { BffEvents, BffServices, IBff } from '../types'
 import { Realm } from 'shared/dao/types'
 import { ExplorerIdentity } from 'shared/session/types'
-import { localCommsService } from './local-services/comms'
-import { realmToConnectionString } from './resolver'
+import { localCommsService } from '../local-services/comms'
+import { legacyServices } from '../local-services/legacy'
+import { realmToConnectionString } from '../resolver'
 
 export function localBff(realm: Realm, identity: ExplorerIdentity): IBff {
   const events = mitt<BffEvents>()
 
   const services: BffServices = {
-    comms: localCommsService()
+    comms: localCommsService(),
+    legacy: legacyServices(realm)
   }
 
   setTimeout(() => {
@@ -22,6 +24,7 @@ export function localBff(realm: Realm, identity: ExplorerIdentity): IBff {
   }, 100)
 
   return {
+    realm,
     events,
     services,
     async disconnect(error?: Error) {

@@ -1,8 +1,8 @@
-import { IBff } from 'shared/comms/types'
 import { Candidate, Realm } from 'shared/dao/types'
 import { ExplorerIdentity } from 'shared/session/types'
-import { createBffRpcConnection } from './BFFConnection'
-import { localBff } from './local-bff'
+import { createBffRpcConnection } from './connections/BFFConnection'
+import { localBff } from './connections/BFFLegacy'
+import { IBff } from './types'
 
 function normalizeUrl(url: string) {
   return url.replace(/^:\/\//, window.location.protocol + '//')
@@ -24,7 +24,7 @@ export async function bffForRealm(realm: Realm, identity: ExplorerIdentity): Pro
   // connect the real BFF
   if (realm.protocol === 'v3') {
     const urls = resolveRealmUrls(realm)
-    if (urls && urls.wsUrl) return createBffRpcConnection(urls.wsUrl, identity)
+    if (urls && urls.wsUrl) return createBffRpcConnection(realm, urls.wsUrl, identity)
   }
 
   // return a mocked BFF
