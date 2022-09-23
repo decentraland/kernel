@@ -30,7 +30,7 @@ export function registerUserIdentityServiceServerImplementation(port: RpcServerP
         return {}
       }
 
-      const profile = await ProfileAsPromise(identity?.address)
+      const profile = await ProfileAsPromise(identity.address)
 
       return {
         data: {
