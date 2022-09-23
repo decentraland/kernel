@@ -265,10 +265,10 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     worldConfig: getWorldConfig(state)
   })
 
-  if (!HAS_INITIAL_POSITION_MARK) {
-    const homePoint: string = await getFromPersistentStorage(homePointKey)
-    if (homePoint) {
-      store.dispatch(sendHomeScene(homePoint))
+  const homePoint: string = await getFromPersistentStorage(homePointKey)
+  if (homePoint) {
+    store.dispatch(sendHomeScene(homePoint))
+    if (!HAS_INITIAL_POSITION_MARK) {
       const [x, y] = homePoint.split(',').map((p) => parseFloat(p))
       gridToWorld(x, y, lastPlayerPosition)
     }
