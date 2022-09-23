@@ -14,7 +14,6 @@ import {
   getAddedServers,
   getCatalystNodesEndpoint,
   getDisabledCatalystConfig,
-  getMinCatalystVersion,
   getPickRealmsAlgorithmConfig
 } from 'shared/meta/selectors'
 import {
@@ -30,7 +29,6 @@ import {
   ReportFatalErrorWithCatalystPayload
 } from 'shared/loading/ReportFatalError'
 import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
-import { gte } from 'semver'
 import { commsLogger } from 'shared/comms/context'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 
@@ -40,15 +38,8 @@ import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import defaultLogger from 'shared/logger'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getCommsContext, getRealm } from 'shared/comms/selectors'
-import { store } from 'shared/store/isolatedStore'
 import { CatalystNode } from 'shared/types'
-import {
-  candidateToRealm,
-  resolveCommsConnectionString,
-  resolveCommsV4Urls,
-  resolveCommsV3Urls
-} from 'shared/comms/v3/resolver'
-import { resolveCommsV2Url } from 'shared/comms/v2/resolver'
+import { candidateToRealm, resolveCommsConnectionString, resolveRealmUrls } from 'shared/bff/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 
@@ -240,35 +231,15 @@ function* initializeCatalystCandidates() {
 }
 
 export async function checkValidRealm(realm: Realm) {
-  if (realm.protocol === 'v1' || realm.protocol === 'offline') {
+  const resolved = resolveRealmUrls(realm)
+
+  if (resolved) {
+    const { pingUrl } = resolved
+    const pingResult = await ping(pingUrl)
+    return pingResult.status === ServerConnectionStatus.OK
+  } else {
     return true
-  } else if (realm.protocol === 'v2') {
-    const realmHasValues = realm && realm.hostname
-    if (!realmHasValues) {
-      return false
-    }
-
-    const minCatalystVersion: string | undefined = getMinCatalystVersion(store.getState())
-    const pingResult = await ping(resolveCommsV2Url(realm))
-
-    if (pingResult.status === ServerConnectionStatus.UNREACHABLE) return false
-
-    return !minCatalystVersion || gte(pingResult.result?.version ?? '0.0.0', minCatalystVersion)
-  } else if (realm.protocol === 'v3') {
-    const { pingUrl } = resolveCommsV3Urls(realm)!
-    const pingResult = await ping(pingUrl)
-
-    if (pingResult.status !== ServerConnectionStatus.OK) {
-      commsLogger.warn(`ping failed for ${pingUrl}`)
-    }
-
-    return pingResult.status === ServerConnectionStatus.OK
-  } else if (realm.protocol === 'v4') {
-    const { pingUrl } = resolveCommsV4Urls(realm)!
-    const pingResult = await ping(pingUrl)
-    return pingResult.status === ServerConnectionStatus.OK
   }
-  return false
 }
 
 function* cacheCatalystRealm() {

@@ -265,8 +265,4 @@ export function processAvatarVisibility(
       }
     }
   }
-
-  if (context && context.stats) {
-    context.stats.visiblePeerIds = visiblePeers.map((it) => it.alias)
-  }
 }

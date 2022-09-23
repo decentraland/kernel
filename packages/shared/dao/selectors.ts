@@ -9,7 +9,7 @@ import {
 } from 'config'
 import { RootMetaState } from 'shared/meta/types'
 import { getContentWhitelist } from 'shared/meta/selectors'
-import { urlWithProtocol } from 'shared/comms/v3/resolver'
+import { urlWithProtocol } from 'shared/bff/resolver'
 
 function getAllowedContentServer(givenServer: string, meta: RootMetaState): string {
   // if a catalyst is pinned => avoid any override

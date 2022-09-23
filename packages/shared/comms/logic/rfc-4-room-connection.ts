@@ -1,6 +1,7 @@
 import * as proto from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
-import { ICommsTransport, TransportMessage, CommsEvents, RoomConnection } from '../interface'
+import { CommsEvents, RoomConnection } from '../interface'
 import mitt from 'mitt'
+import { AdapterMessageEvent, MinimumCommunicationsAdapter } from '../adapters/types'
 
 /**
  * This class implements Rfc4 on top of a ICommsTransport. The idea behind it is
@@ -12,7 +13,7 @@ export class Rfc4RoomConnection implements RoomConnection {
 
   private positionIndex: number = 0
 
-  constructor(private transport: ICommsTransport) {
+  constructor(private transport: MinimumCommunicationsAdapter) {
     this.transport.events.on('message', this.handleMessage.bind(this))
     this.transport.events.on('DISCONNECTION', (event) => this.events.emit('DISCONNECTION', event))
     this.transport.events.on('PEER_DISCONNECTED', (event) => this.events.emit('PEER_DISCONNECTED', event))
@@ -56,7 +57,7 @@ export class Rfc4RoomConnection implements RoomConnection {
     await this.transport.disconnect()
   }
 
-  private handleMessage({ data, senderAddress }: TransportMessage) {
+  private handleMessage({ data, address }: AdapterMessageEvent) {
     const { message } = proto.Packet.decode(data)
 
     if (!message) {
@@ -65,24 +66,24 @@ export class Rfc4RoomConnection implements RoomConnection {
 
     switch (message.$case) {
       case 'position': {
-        this.events.emit('position', { address: senderAddress, data: message.position, time: Date.now() })
+        this.events.emit('position', { address, data: message.position, time: Date.now() })
         break
       }
       case 'scene': {
-        this.events.emit('sceneMessageBus', { address: senderAddress, data: message.scene, time: Date.now() })
+        this.events.emit('sceneMessageBus', { address, data: message.scene, time: Date.now() })
         break
       }
       case 'chat': {
-        this.events.emit('chatMessage', { address: senderAddress, data: message.chat, time: Date.now() })
+        this.events.emit('chatMessage', { address, data: message.chat, time: Date.now() })
         break
       }
       case 'voice': {
-        this.events.emit('voiceMessage', { address: senderAddress, data: message.voice, time: Date.now() })
+        this.events.emit('voiceMessage', { address, data: message.voice, time: Date.now() })
         break
       }
       case 'profileRequest': {
         this.events.emit('profileRequest', {
-          address: senderAddress,
+          address,
           data: message.profileRequest,
           time: Date.now()
         })
@@ -90,7 +91,7 @@ export class Rfc4RoomConnection implements RoomConnection {
       }
       case 'profileResponse': {
         this.events.emit('profileResponse', {
-          address: senderAddress,
+          address,
           data: message.profileResponse,
           time: Date.now()
         })
@@ -98,7 +99,7 @@ export class Rfc4RoomConnection implements RoomConnection {
       }
       case 'profileVersion': {
         this.events.emit('profileMessage', {
-          address: senderAddress,
+          address,
           data: message.profileVersion,
           time: Date.now()
         })
@@ -112,6 +113,6 @@ export class Rfc4RoomConnection implements RoomConnection {
       throw new Error('Invalid message')
     }
     const bytes = proto.Packet.encode(topicMessage as any).finish()
-    this.transport.send(bytes, reliable)
+    this.transport.send(bytes, { reliable })
   }
 }

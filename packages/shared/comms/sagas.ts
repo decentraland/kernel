@@ -1,22 +1,26 @@
 import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, apply } from 'redux-saga/effects'
 
-import { commsEstablished, FATAL_ERROR } from 'shared/loading/types'
+import { commsEstablished, establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { CommsContext, commsLogger } from './context'
-import { getCommsContext, getRealm } from './selectors'
+import { getBff, getCommsContext, getRealm } from './selectors'
 import { BEFORE_UNLOAD } from 'shared/protocol/actions'
 import {
+  ConnectToCommsAction,
+  CONNECT_TO_COMMS,
   HandleCommsDisconnection,
   HANDLE_COMMS_DISCONNECTION,
+  setCommsIsland,
   setWorldContext,
   SET_COMMS_ISLAND,
   SET_WORLD_CONTEXT
 } from './actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel } from './handlers'
+import { Rfc4RoomConnection } from './logic/rfc-4-room-connection'
 import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
-import { genericAvatarSnapshots } from 'config'
+import { commConfigurations, DEBUG_COMMS, genericAvatarSnapshots, PREFERED_ISLAND } from 'config'
 import { isURL } from 'atomicHelpers/isURL'
 import { processAvatarVisibility } from './peers'
 import { getFatalError } from 'shared/loading/selectors'
@@ -26,9 +30,25 @@ import { getIdentity } from 'shared/session'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
-import { realmToConnectionString } from './v3/resolver'
+import { realmToConnectionString, resolveCommsConnectionString } from '../bff/resolver'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
-import { getMaxVisiblePeers } from 'shared/meta/selectors'
+import { getCommsConfig, getMaxVisiblePeers } from 'shared/meta/selectors'
+import { getCurrentIdentity } from 'shared/session/selectors'
+import { OfflineAdapter } from './adapters/OfflineAdapter'
+import { WebSocketAdapter } from './adapters/WebSocketAdapter'
+import { LivekitAdapter } from './adapters/LivekitAdapter'
+import { PeerToPeerAdapter } from './adapters/PeerToPeerAdapter'
+import { MinimumCommunicationsAdapter } from './adapters/types'
+import { Position3D } from './v3/types'
+import { IBff } from './types'
+import { CommsConfig } from 'shared/meta/types'
+import { Authenticator } from '@dcl/crypto'
+import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
+import { lastPlayerPositionReport } from 'shared/world/positionThings'
+import { store } from 'shared/store/isolatedStore'
+import { ProfileType } from 'shared/profiles/types'
+import { Candidate, Realm } from 'shared/dao/types'
+import { getAllCatalystCandidates } from 'shared/dao/selectors'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -46,6 +66,8 @@ export function* commsSaga() {
     yield put(setWorldContext(undefined))
   })
 
+  yield takeEvery(CONNECT_TO_COMMS, handleConnectToComms)
+
   yield fork(handleNewCommsContext)
 
   // respond to profile requests over comms
@@ -54,6 +76,163 @@ export function* commsSaga() {
   yield fork(handleAnnounceProfile)
   yield fork(initAvatarVisibilityProcess)
   yield fork(handleCommsReconnectionInterval)
+}
+
+/**
+ * This saga handles the action to connect a specific comms
+ * adapter.
+ */
+function* handleConnectToComms(action: ConnectToCommsAction) {
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+
+  const candidates: Candidate[] = yield select(getAllCatalystCandidates)
+  const realm: Realm = yield call(resolveCommsConnectionString, action.payload.event.connStr, candidates)
+
+  const [protocol, url] = action.payload.event.connStr.split(':', 2)
+
+  let adapter: MinimumCommunicationsAdapter | undefined = undefined
+
+  switch (protocol) {
+    case 'offline': {
+      adapter = new OfflineAdapter()
+      break
+    }
+    case 'ws-room': {
+      adapter = new WebSocketAdapter(url, identity)
+      break
+    }
+    case 'livekit': {
+      const theUrl = new URL(url)
+      const token = theUrl.searchParams.get('access_token')
+      if (!token) {
+        throw new Error('No access token')
+      }
+      adapter = new LivekitAdapter({
+        logger: commsLogger,
+        url,
+        token
+      })
+      break
+    }
+    case 'p2p': {
+      adapter = yield call(createP2PAdapter, action.payload.event.islandId)
+      break
+    }
+    case 'lighthouse': {
+      adapter = yield call(createLighthouseConnection, url)
+      break
+    }
+  }
+
+  if (!adapter) throw new Error(`A communications adapter could not be created for protocol=${protocol}`)
+
+  const commsContext = new CommsContext(
+    realm,
+    identity.address,
+    identity.hasConnectedWeb3 ? ProfileType.DEPLOYED : ProfileType.LOCAL,
+    new Rfc4RoomConnection(adapter)
+  )
+
+  yield put(establishingComms())
+
+  if (yield commsContext.connect()) {
+    yield put(setWorldContext(commsContext))
+  }
+}
+
+function* createP2PAdapter(islandId: string) {
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+  const bff: IBff = yield select(getBff)
+  if (!bff) throw new Error('p2p transport requires a valid bff')
+  const peers = new Map<string, Position3D>()
+  const commsConfig: CommsConfig = yield select(getCommsConfig)
+  // for (const [id, p] of Object.entries(islandChangedMessage.peers)) {
+  //   if (peerId !== id) {
+  //     peers.set(id, [p.x, p.y, p.z])
+  //   }
+  // }
+  return new PeerToPeerAdapter(
+    {
+      logger: commsLogger,
+      bff,
+      logConfig: {
+        debugWebRtcEnabled: !!DEBUG_COMMS,
+        debugUpdateNetwork: !!DEBUG_COMMS,
+        debugIceCandidates: !!DEBUG_COMMS,
+        debugMesh: !!DEBUG_COMMS
+      },
+      relaySuspensionConfig: {
+        relaySuspensionInterval: commsConfig.relaySuspensionInterval ?? 750,
+        relaySuspensionDuration: commsConfig.relaySuspensionDuration ?? 5000
+      },
+      islandId,
+      // TODO: is this peerId correct?
+      peerId: identity.address
+    },
+    peers
+  )
+}
+function* createLighthouseConnection(url: string) {
+  const commsConfig: CommsConfig = yield select(getCommsConfig)
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+  const peerConfig: LighthouseConnectionConfig = {
+    connectionConfig: {
+      iceServers: commConfigurations.defaultIceServers
+    },
+    authHandler: async (msg: string) => {
+      try {
+        return Authenticator.signPayload(identity, msg)
+      } catch (e) {
+        commsLogger.info(`error while trying to sign message from lighthouse '${msg}'`)
+      }
+      // if any error occurs
+      return getIdentity()
+    },
+    logLevel: DEBUG_COMMS ? 'TRACE' : 'NONE',
+    targetConnections: commsConfig.targetConnections ?? 4,
+    maxConnections: commsConfig.maxConnections ?? 6,
+    positionConfig: {
+      selfPosition: () => {
+        if (lastPlayerPositionReport) {
+          const { x, y, z } = lastPlayerPositionReport.position
+          return [x, y, z]
+        }
+      },
+      maxConnectionDistance: 4,
+      nearbyPeersDistance: 5,
+      disconnectDistance: 5
+    },
+    preferedIslandId: PREFERED_ISLAND ?? ''
+  }
+
+  if (!commsConfig.relaySuspensionDisabled) {
+    peerConfig.relaySuspensionConfig = {
+      relaySuspensionInterval: commsConfig.relaySuspensionInterval ?? 750,
+      relaySuspensionDuration: commsConfig.relaySuspensionDuration ?? 5000
+    }
+  }
+
+  const lighthouse = new LighthouseWorldInstanceConnection(
+    url,
+    peerConfig,
+    (status) => {
+      commsLogger.log('Lighthouse status: ', status)
+      switch (status.status) {
+        case 'realm-full':
+        case 'reconnection-error':
+        case 'id-taken':
+          lighthouse.disconnect().catch(commsLogger.error)
+          break
+      }
+    },
+    identity
+  )
+
+  lighthouse.onIslandChangedObservable.add(({ island }) => {
+    store.dispatch(setCommsIsland(island))
+  })
+
+  return lighthouse
 }
 
 function* initAvatarVisibilityProcess() {

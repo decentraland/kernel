@@ -2,12 +2,12 @@ import { future, IFuture } from 'fp-future'
 
 import * as rfc5 from 'shared/protocol/kernel/comms/ws-comms-rfc-5.gen'
 import { Writer } from 'protobufjs/minimal'
-import { ICommsTransport, CommsTransportEvents, CommsDisconnectionEvent } from '../interface'
 import { ILogger, createLogger } from 'shared/logger'
 import { ExplorerIdentity } from 'shared/session/types'
-import { wsAsAsyncChannel } from './ws-async-channel'
+import { wsAsAsyncChannel } from '../logic/ws-async-channel'
 import { Authenticator } from '@dcl/crypto'
 import mitt from 'mitt'
+import { CommsAdapterEvents, MinimumCommunicationsAdapter } from './types'
 
 // shared writer to leverage pools
 const writer = new Writer()
@@ -18,11 +18,11 @@ function craftMessage(packet: rfc5.WsPacket): Uint8Array {
   return writer.finish()
 }
 
-export class Rfc5BrokerConnection implements ICommsTransport {
+export class WebSocketAdapter implements MinimumCommunicationsAdapter {
   public alias: number | null = null
-  public events = mitt<CommsTransportEvents>()
+  public events = mitt<CommsAdapterEvents>()
 
-  public logger: ILogger = createLogger('Broker: ')
+  public logger: ILogger = createLogger('WSComms: ')
 
   private connected = future<void>()
   private peersToAddress = new Map<number, string>()
@@ -133,7 +133,7 @@ export class Rfc5BrokerConnection implements ICommsTransport {
     socket.addEventListener('message', this.onWsMessage.bind(this))
   }
 
-  send(body: Uint8Array, _reliable: boolean) {
+  send(body: Uint8Array) {
     this.internalSend(
       craftMessage({
         message: {
@@ -147,11 +147,15 @@ export class Rfc5BrokerConnection implements ICommsTransport {
     )
   }
 
-  async disconnect(data?: CommsDisconnectionEvent) {
+  async disconnect(error?: Error) {
+    this.internalDisconnect(false, error)
+  }
+
+  internalDisconnect(kicked: boolean, error?: Error) {
     if (this.ws) {
       const ws = this.ws
       this.ws = null
-      this.events.emit('DISCONNECTION', data ?? { kicked: false })
+      this.events.emit('DISCONNECTION', { kicked })
 
       ws.onmessage = null
       ws.onerror = null
@@ -174,7 +178,7 @@ export class Rfc5BrokerConnection implements ICommsTransport {
         break
       }
       case 'peerKicked': {
-        this.disconnect({ kicked: true }).catch(this.logger.error)
+        this.internalDisconnect(true)
         break
       }
       case 'peerLeaveMessage': {
@@ -191,7 +195,7 @@ export class Rfc5BrokerConnection implements ICommsTransport {
         const currentPeerAddress = this.peersToAddress.get(peerUpdateMessage.fromAlias)
         if (currentPeerAddress) {
           this.events.emit('message', {
-            senderAddress: currentPeerAddress,
+            address: currentPeerAddress,
             data: peerUpdateMessage.body
           })
         } else {

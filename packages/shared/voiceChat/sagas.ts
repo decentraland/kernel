@@ -49,10 +49,10 @@ import { Observer } from 'mz-observable'
 import { Room } from 'livekit-client' // temp
 import { getIdentity } from 'shared/session'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
+import { realmToConnectionString } from 'shared/bff/resolver'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 

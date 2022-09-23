@@ -7,12 +7,11 @@ import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { ping, ask } from './utils/ping'
 import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
-import { connectComms } from 'shared/comms'
-import { setWorldContext } from 'shared/comms/actions'
+import { setBff } from 'shared/comms/actions'
 import { checkValidRealm } from './sagas'
-import { establishingComms } from 'shared/loading/types'
 import { commsLogger } from 'shared/comms/context'
-import { realmToConnectionString, resolveCommsConnectionString } from 'shared/comms/v3/resolver'
+import { getCurrentIdentity } from 'shared/session/selectors'
+import { bffForRealm, realmToConnectionString, resolveCommsConnectionString } from 'shared/bff/resolver'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {
@@ -164,6 +163,9 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
 
 export async function changeRealmObject(realm: Realm, forceChange: boolean = false): Promise<void> {
   const context = getCommsContext(store.getState())
+  const identity = getCurrentIdentity(store.getState())
+
+  if (!identity) throw new Error('Cant change realm without a valid identity')
 
   commsLogger.info('Connecting to realm', realm)
 
@@ -176,14 +178,12 @@ export async function changeRealmObject(realm: Realm, forceChange: boolean = fal
     throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
   }
 
-  store.dispatch(establishingComms())
+  const bff = await bffForRealm(realm, identity)
 
-  const newCommsContext = await connectComms(realm)
-
-  if (newCommsContext) {
-    store.dispatch(setWorldContext(newCommsContext))
+  if (bff) {
+    store.dispatch(setBff(bff))
   } else {
-    throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
+    throw new Error(`Can't connect to realm ${realmToConnectionString(realm)} right now.`)
   }
 
   return

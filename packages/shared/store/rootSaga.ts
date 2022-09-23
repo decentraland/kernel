@@ -17,6 +17,7 @@ import { questsSaga } from '../quests/sagas'
 import { portableExperienceSaga } from '../portableExperiences/sagas'
 import { wearablesPortableExperienceSaga } from '../wearablesPortableExperience/sagas'
 import { sceneEventsSaga } from '../sceneEvents/sagas'
+import { bffSaga } from 'shared/comms/bff-sagas'
 
 export function createRootSaga() {
   return function* rootSaga() {
@@ -24,6 +25,7 @@ export function createRootSaga() {
     yield fork(friendsSaga)
     yield fork(sessionSaga)
     yield fork(commsSaga)
+    yield fork(bffSaga)
     yield fork(voiceChatSaga)
     yield fork(catalogsSaga)
     yield fork(profileSaga)

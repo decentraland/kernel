@@ -31,7 +31,7 @@ import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
 import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
 import { uuid } from 'atomicHelpers/math'
 import { validateAvatar } from 'shared/profiles/schemaValidation'
-import { CommsDisconnectionEvent, CommsPeerDisconnectedEvent } from './interface'
+import { AdapterDisconnectedEvent, PeerDisconnectedEvent } from './adapters/types'
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
@@ -40,8 +40,6 @@ export async function bindHandlersToCommsContext(context: CommsContext) {
   removeAllPeers()
 
   const connection = context.worldInstanceConnection!
-
-  context.onDisconnectObservable.add(() => store.dispatch(handleCommsDisconnection(context)))
 
   // RFC4 messages
   connection.events.on('position', processPositionMessage)
@@ -54,7 +52,7 @@ export async function bindHandlersToCommsContext(context: CommsContext) {
 
   // transport messages
   connection.events.on('PEER_DISCONNECTED', handleDisconnectPeer)
-  connection.events.on('DISCONNECTION', handleDisconnection)
+  connection.events.on('DISCONNECTION', (event) => handleDisconnection(event, context))
 }
 
 const pendingProfileRequests: Map<string, Set<IFuture<Avatar | null>>> = new Map()
@@ -96,7 +94,8 @@ export async function requestProfileToPeers(
   }
 }
 
-function handleDisconnection(data: CommsDisconnectionEvent) {
+function handleDisconnection(data: AdapterDisconnectedEvent, context: CommsContext) {
+  store.dispatch(handleCommsDisconnection(context))
   // when we are kicked, the explorer should re-load, or maybe go to offline~offline realm
   if (data.kicked) {
     const url = new URL(document.location.toString())
@@ -106,7 +105,7 @@ function handleDisconnection(data: CommsDisconnectionEvent) {
   }
 }
 
-function handleDisconnectPeer(data: CommsPeerDisconnectedEvent) {
+function handleDisconnectPeer(data: PeerDisconnectedEvent) {
   removePeerByAddress(data.address)
 }
 

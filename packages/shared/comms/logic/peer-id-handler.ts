@@ -1,6 +1,7 @@
 import { Emitter } from 'mitt'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
-import { CommsEvents, CommsPeerDisconnectedEvent } from '../interface'
+import { PeerDisconnectedEvent } from '../adapters/types'
+import { CommsEvents } from '../interface'
 
 export type CachedPeer = {
   address?: string
@@ -67,7 +68,7 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
     },
     handleMessage<T extends keyof CommsEvents, X extends CommsEvents[T]>(message: T, packet: X) {
       if (message === 'PEER_DISCONNECTED') {
-        const p = packet as CommsPeerDisconnectedEvent
+        const p = packet as PeerDisconnectedEvent
         disconnectPeer(p.address)
         return
       }

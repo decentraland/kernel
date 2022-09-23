@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import * as r from 'shared/comms/v3/resolver'
+import * as r from 'shared/bff/resolver'
 
 function eq<T>(given: T, expected: T) {
   console.log({ given, expected })
@@ -92,17 +92,14 @@ describe('Comms resolver', () => {
     )
   })
 
-  it('resolveCommsV3Urls', async () => {
-    eq(r.resolveCommsV3Urls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
-    eq(r.resolveCommsV3Urls({ hostname: 'http://test.com', protocol: 'v3', serverName: 'http://test.com' }), {
+  it('resolveRealmUrls', async () => {
+    eq(r.resolveRealmUrls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
+    eq(r.resolveRealmUrls({ hostname: 'http://test.com', protocol: 'v3', serverName: 'http://test.com' }), {
       pingUrl: 'http://test.com/about',
       wsUrl: 'ws://test.com/bff/rpc'
     })
-  })
-
-  it('resolveCommsV4Urls', async () => {
-    eq(r.resolveCommsV4Urls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
-    eq(r.resolveCommsV4Urls({ hostname: 'http://test.com', protocol: 'v4', serverName: 'http://test.com' }), {
+    eq(r.resolveRealmUrls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
+    eq(r.resolveRealmUrls({ hostname: 'http://test.com', protocol: 'v4', serverName: 'http://test.com' }), {
       pingUrl: 'http://test.com/status',
       wsUrl: 'ws://test.com/ws'
     })

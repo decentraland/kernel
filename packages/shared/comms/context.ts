@@ -1,10 +1,9 @@
-import { commConfigurations, DEBUG_COMMS } from 'config'
+import { DEBUG_COMMS } from 'config'
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
-import { Stats } from './debug'
 import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { RoomConnection } from './interface/index'
 import { createLogger } from '../logger'
-import { Observable, Observer } from 'mz-observable'
+import { Observer } from 'mz-observable'
 import { Realm } from 'shared/dao/types'
 import { Avatar } from '@dcl/schemas'
 import { ProfileType } from 'shared/profiles/types'
@@ -13,13 +12,6 @@ import { incrementCounter } from 'shared/occurences'
 import { MORDOR_POSITION_RFC4 } from './const'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { deepEqual } from 'atomicHelpers/deepEqual'
-
-export type CommsVersion = 'v1' | 'v2' | 'v3'
-export type CommsMode = CommsV1Mode | CommsV2Mode
-export type CommsV1Mode = 'local' | 'remote'
-export type CommsV2Mode = 'p2p' | 'server'
-
-export type PeerAlias = string
 
 export const commsLogger = createLogger('comms: ')
 
@@ -32,10 +24,7 @@ export type ProfilePromiseState = {
 const commsEventsLogger = createLogger('CommsEvents:')
 
 export class CommsContext {
-  public readonly stats: Stats = new Stats()
-  public commRadius: number
   public currentPosition: rfc4.Position | null = null
-  public onDisconnectObservable = new Observable<void>()
 
   private reportPositionInterval?: ReturnType<typeof setInterval>
   private positionObserver: Observer<any> | null = null
@@ -50,7 +39,6 @@ export class CommsContext {
     public readonly profileType: ProfileType,
     public readonly worldInstanceConnection: RoomConnection
   ) {
-    this.commRadius = commConfigurations.commRadius
     this.worldInstanceConnection.events.on('*', (type, _) => {
       incrementCommsMessageReceived()
       incrementCommsMessageReceivedByName(type)
@@ -58,40 +46,34 @@ export class CommsContext {
         commsEventsLogger.info(type, _)
       }
     })
+
     this.worldInstanceConnection.events.on('DISCONNECTION', () => this.disconnect())
+
+    // this.worldRunningObserver = renderStateObservable.add(() => {
+    // TODO:
+    // this.sendCellphonePose(!isRendererEnabled())
+    // })
+
+    this.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
+      if (!this.destroyed) {
+        this.onPositionUpdate(positionReportToCommsPositionRfc4(obj))
+      }
+    })
+
+    if (lastPlayerPositionReport) this.onPositionUpdate(positionReportToCommsPositionRfc4(lastPlayerPositionReport))
+
+    // this interval is important because if we stand still without sending position reports
+    // then archipelago may timeout and peers may magically stop appearing for us. fixable with
+    // walking one centimeter in any direction. don't know the reason
+    this.reportPositionInterval = setInterval(() => {
+      if (this.currentPosition && !this.destroyed) {
+        this.onPositionUpdate(this.currentPosition)
+      }
+    }, 1100)
   }
 
-  async connect(): Promise<boolean> {
-    try {
-      await this.worldInstanceConnection.connect()
-
-      // this.worldRunningObserver = renderStateObservable.add(() => {
-      // TODO:
-      // this.sendCellphonePose(!isRendererEnabled())
-      // })
-
-      this.positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-        if (!this.destroyed) {
-          this.onPositionUpdate(positionReportToCommsPositionRfc4(obj))
-        }
-      })
-
-      if (lastPlayerPositionReport) this.onPositionUpdate(positionReportToCommsPositionRfc4(lastPlayerPositionReport))
-
-      // this interval is important because if we stand still without sending position reports
-      // then archipelago may timeout and peers may magically stop appearing for us. fixable with
-      // walking one centimeter in any direction. don't know the reason
-      this.reportPositionInterval = setInterval(() => {
-        if (this.currentPosition && !this.destroyed) {
-          this.onPositionUpdate(this.currentPosition)
-        }
-      }, 1100)
-      return true
-    } catch (e: any) {
-      commsLogger.error(e)
-      await this.disconnect()
-      return false
-    }
+  async connect() {
+    await this.worldInstanceConnection.connect()
   }
 
   async disconnect() {
@@ -100,7 +82,6 @@ export class CommsContext {
 
     commsLogger.info('Disconnecting comms context', this)
     this.destroyed = true
-    this.onDisconnectObservable.notifyObservers()
 
     await this.worldInstanceConnection.disconnect()
 

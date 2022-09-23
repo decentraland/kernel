@@ -9,7 +9,7 @@ import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { store } from 'shared/store/isolatedStore'
 import { getCommsContext } from 'shared/comms/selectors'
 import { Parcel } from 'shared/dao/types'
-import { urlWithProtocol } from 'shared/comms/v3/resolver'
+import { urlWithProtocol } from 'shared/bff/resolver'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)

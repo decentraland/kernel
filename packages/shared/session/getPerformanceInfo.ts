@@ -29,7 +29,7 @@ export function incrementCommsMessageReceivedByName(event: string) {
   // NOTE:          ^^^^^^^^^^^ do NOT fix that typo
 }
 
-export function incrementCommsMessageSent() {
+export function incrementCommsMessageSent(bytes: number) {
   sentCommsMessagesCounter++
 }
 

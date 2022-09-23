@@ -1,4 +1,8 @@
+import { IBff } from 'shared/comms/types'
 import { Candidate, Realm } from 'shared/dao/types'
+import { ExplorerIdentity } from 'shared/session/types'
+import { createBffRpcConnection } from './BFFConnection'
+import { localBff } from './local-bff'
 
 function normalizeUrl(url: string) {
   return url.replace(/^:\/\//, window.location.protocol + '//')
@@ -16,58 +20,37 @@ export function urlWithProtocol(urlOrHostname: string) {
   return normalizeUrl(urlOrHostname)
 }
 
-export function resolveCommsV3Urls(realm: Realm): { pingUrl: string; wsUrl: string } | undefined {
-  if (realm.protocol !== 'v3') return
+export async function bffForRealm(realm: Realm, identity: ExplorerIdentity): Promise<IBff> {
+  // connect the real BFF
+  if (realm.protocol === 'v3') {
+    const urls = resolveRealmUrls(realm)
+    if (urls && urls.wsUrl) return createBffRpcConnection(urls.wsUrl, identity)
+  }
 
-  let pingUrl: string
-  let wsUrl: string
-  if (realm.serverName === 'local') {
-    const server = 'http://127.0.0.1:3000'
-    pingUrl = `${server}/status` // use status because we don't care for lambdas/content health
-    wsUrl = httpToWs(`${server}/rpc`)
-  } else if (realm.hostname === 'remote') {
-    const server = 'https://explorer-bff.decentraland.io'
-    pingUrl = `${server}/status` // use status because we don't care for lambdas/content health
-    wsUrl = httpToWs(`${server}/rpc`)
-  } else {
-    const server = realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname
-    const url = new URL(server)
-    if (url.host === 'localhost') {
-      // if the catalyst is in localhost, let's also ignore the content status
-      pingUrl = `${server}/bff/status`
-      wsUrl = httpToWs(`${server}/bff/rpc`)
-    } else {
-      pingUrl = `${server}/about`
-      wsUrl = httpToWs(`${server}/bff/rpc`)
+  // return a mocked BFF
+  return localBff(realm, identity)
+}
+
+export function resolveRealmUrls(realm: Realm): { pingUrl: string; wsUrl?: string } | undefined {
+  if (realm.protocol === 'v2') {
+    return {
+      pingUrl: `${realm.hostname}/comms/status`
     }
   }
 
-  return { pingUrl, wsUrl }
-}
+  if (realm.protocol === 'v3') {
+    const server = realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname
 
-// TODO: Can merge with resolveCommsV3Urls?
-export function resolveCommsV4Urls(realm: Realm): { pingUrl: string; wsUrl: string } | undefined {
-  if (realm.protocol !== 'v4') return
+    const pingUrl = new URL('./about', server).toString()
+    const wsUrl = httpToWs(new URL('./bff/ws', server).toString())
 
-  let server = 'https://explorer-bff.decentraland.io'
-
-  if (realm.hostname === 'local') {
-    server = 'http://127.0.0.1:5000'
-  } else if (realm.hostname === 'remote') {
-    server = 'https://explorer-bff.decentraland.io'
-  } else {
-    server = realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname
+    return { pingUrl, wsUrl }
   }
-
-  const pingUrl = new URL('./status', server).toString()
-  const wsUrl = httpToWs(new URL('./ws', server).toString())
-
-  return { pingUrl, wsUrl }
 }
 
 export function realmToConnectionString(realm: Realm) {
   if (
-    (realm.protocol === 'v2' || realm.protocol === 'v3') &&
+    realm.protocol === 'v2' &&
     realm.serverName &&
     realm.serverName !== realm.hostname &&
     realm.serverName.match(/^[a-z]+$/i)
@@ -112,6 +95,8 @@ export async function resolveCommsConnectionString(
       hostname: urlWithProtocol(secondPart)
     }
   }
+
+  debugger
 
   return undefined
 }
