@@ -104,11 +104,13 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
       if (!token) {
         throw new Error('No access token')
       }
-      adapter = new Rfc4RoomConnection(new LivekitAdapter({
-        logger: commsLogger,
-        url,
-        token
-      }))
+      adapter = new Rfc4RoomConnection(
+        new LivekitAdapter({
+          logger: commsLogger,
+          url,
+          token
+        })
+      )
       break
     }
     case 'p2p': {

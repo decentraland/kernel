@@ -19,7 +19,7 @@ export function urlWithProtocol(urlOrHostname: string) {
 
 export async function bffForRealm(baseUrl: string, about: AboutResponse, identity: ExplorerIdentity): Promise<IBff> {
   // connect the real BFF
-  if (about.comms?.protocol == 'v3') {
+  if (about.comms?.protocol === 'v3') {
     return createBffRpcConnection(baseUrl, about, identity)
   }
 

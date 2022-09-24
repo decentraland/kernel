@@ -21,15 +21,17 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
       const state = store.getState()
       const bff = getBff(state)
 
-      const realm: Realm = bff ? {
-        hostname: new URL(bff?.baseUrl).hostname,
-        protocol: bff.about.comms?.protocol || 'v3',
-        serverName: bff.about.configurations?.realmName || bff.baseUrl
-      } : {
-        hostname: 'offline',
-        protocol: 'offline',
-        serverName: 'offline'
-      }
+      const realm: Realm = bff
+        ? {
+            hostname: new URL(bff?.baseUrl).hostname,
+            protocol: bff.about.comms?.protocol || 'v3',
+            serverName: bff.about.configurations?.realmName || bff.baseUrl
+          }
+        : {
+            hostname: 'offline',
+            protocol: 'offline',
+            serverName: 'offline'
+          }
       const isGuest = !!getIsGuestLogin(state)
       const network = getSelectedNetwork(state)
 

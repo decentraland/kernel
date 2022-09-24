@@ -39,8 +39,7 @@ export class Mesh {
   private encoder = new TextEncoder()
   private decoder = new TextDecoder()
 
-  private listeners: {close(): void}[] = []
-
+  private listeners: { close(): void }[] = []
 
   constructor(
     private bff: IBff,
@@ -53,24 +52,11 @@ export class Mesh {
     this.logConfig = logConfig
 
     this.listeners.push(
-      listenPeerMessage(
-        bff.services.comms,
-        `${this.peerId}.candidate`,
-        this.onCandidateMessage.bind(this)
-      ),
-      listenPeerMessage(
-        bff.services.comms,
-        `${this.peerId}.offer`,
-        this.onOfferMessage.bind(this)
-      ),
-      listenPeerMessage(
-        bff.services.comms,
-        `${this.peerId}.answer`,
-        this.onAnswerListener.bind(this)
-      )
+      listenPeerMessage(bff.services.comms, `${this.peerId}.candidate`, this.onCandidateMessage.bind(this)),
+      listenPeerMessage(bff.services.comms, `${this.peerId}.offer`, this.onOfferMessage.bind(this)),
+      listenPeerMessage(bff.services.comms, `${this.peerId}.answer`, this.onAnswerListener.bind(this))
     )
   }
-
 
   public async connectTo(peerId: string, reason: string): Promise<void> {
     if (this.initiatedConnections.has(peerId) || this.receivedConnections.has(peerId)) {
@@ -286,7 +272,9 @@ export class Mesh {
     const { candidate, initiator } = JSON.parse(this.decoder.decode(message.payload))
 
     try {
-      const conn = (initiator === this.peerId ? this.initiatedConnections : this.receivedConnections).get(message.sender)
+      const conn = (initiator === this.peerId ? this.initiatedConnections : this.receivedConnections).get(
+        message.sender
+      )
       if (!conn) {
         if (this.logConfig.debugWebRtcEnabled) {
           this.logger.info(

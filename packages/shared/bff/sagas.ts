@@ -22,6 +22,8 @@ import { getCurrentIdentity } from 'shared/session/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { FATAL_ERROR } from 'shared/loading/types'
 import { BEFORE_UNLOAD } from 'shared/protocol/actions'
+import { notifyStatusThroughChat } from 'shared/chat'
+import { realmToConnectionString } from './resolver'
 
 const logger = createLogger('BffSagas')
 
@@ -44,8 +46,6 @@ export function* bffSaga() {
  * function in charge of disconnecting it from kernel.
  */
 async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Promise<void>> {
-  logger.info('Binding BFF', bff)
-  debugger
   bff.events.on('DISCONNECTION', () => {
     store.dispatch(handleBffDisconnection(bff))
   })
@@ -54,6 +54,8 @@ async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Prom
     logger.log('Island message', message)
     store.dispatch(connectToComms(message))
   })
+
+  notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(bff)}!`)
 
   const islandListener = listenSystemMessage(bff.services.comms, `${address}.island_changed`, async (message) => {
     try {

@@ -41,7 +41,11 @@ async function authenticatePort(port: RpcClientPort, identity: ExplorerIdentity)
   return authResponse.peerId
 }
 
-export async function createBffRpcConnection(baseUrl: string, about: AboutResponse,  identity: ExplorerIdentity): Promise<IBff> {
+export async function createBffRpcConnection(
+  baseUrl: string,
+  about: AboutResponse,
+  identity: ExplorerIdentity
+): Promise<IBff> {
   const wsUrl = new URL('/bff/rpc', baseUrl).toString().replace(/^http/, 'ws')
   const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'comms'))
 
@@ -56,17 +60,22 @@ export async function createBffRpcConnection(baseUrl: string, about: AboutRespon
   return new BffRpcConnection(baseUrl, about, port, peerId)
 }
 
-export class BffRpcConnection implements IBff<{}> {
+export class BffRpcConnection implements IBff<any> {
   public events = mitt<BffEvents>()
   public services: BffServices
 
   private logger: ILogger = createLogger('BFF: ')
   private disposed = false
 
-  constructor(public baseUrl: string, public readonly about: AboutResponse, public port: RpcClientPort, public peerId: string) {
+  constructor(
+    public baseUrl: string,
+    public readonly about: AboutResponse,
+    public port: RpcClientPort,
+    public peerId: string
+  ) {
     port.on('close', async () => {
       this.logger.log('BFF transport closed')
-      this.disconnect()
+      this.disconnect().catch(this.logger.error)
     })
 
     this.services = {

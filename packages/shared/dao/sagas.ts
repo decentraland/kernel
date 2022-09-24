@@ -39,7 +39,7 @@ import defaultLogger from 'shared/logger'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getCommsContext } from 'shared/comms/selectors'
 import { CatalystNode } from 'shared/types'
-import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/bff/resolver'
+import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/bff/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { getBff } from 'shared/bff/selectors'
@@ -84,7 +84,7 @@ function* pickCatalystRealm() {
     algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y])
   )
 
-  return realm.hostname
+  return urlWithProtocol(realm.hostname)
 }
 
 function qsRealm() {

@@ -140,11 +140,11 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   commsLogger.info('Connecting to realm', realmString)
 
   // if not forceChange, then cancel operation if we are inside the desired realm
-  if (!forceChange && currentBff && currentBff.baseUrl == realmBaseUrl) {
+  if (!forceChange && currentBff && currentBff.baseUrl === realmBaseUrl) {
     return
   }
 
-  const about = await checkValidRealm(realmString)
+  const about = await checkValidRealm(realmBaseUrl)
   if (!about || !about.result) {
     throw new Error(`The realm ${prettyRealmName(realmString, candidates)} isn't available right now.`)
   }

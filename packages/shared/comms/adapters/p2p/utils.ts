@@ -1,4 +1,4 @@
-import { Position3D } from "shared/comms/v3/types"
+import { Position3D } from 'shared/comms/v3/types'
 
 export const DISCRETIZE_POSITION_INTERVALS = [32, 64, 80, 128, 160]
 const MAX_UINT32 = 4294967295

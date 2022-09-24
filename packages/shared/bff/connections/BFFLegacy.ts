@@ -16,7 +16,7 @@ export function localBff(baseUrl: string, about: AboutResponse, identity: Explor
   setTimeout(() => {
     let connStr = 'offline:offline'
 
-    if (about.comms?.protocol == 'v2') {
+    if (about.comms?.protocol === 'v2') {
       connStr = `lighthouse:${baseUrl}/comms`
     }
 

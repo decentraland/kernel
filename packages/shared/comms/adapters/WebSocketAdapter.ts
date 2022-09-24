@@ -207,7 +207,10 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
   }
 
   private internalSend(msg: Uint8Array) {
-    if (!this.ws) throw new Error('This transport is closed')
+    if (!this.ws) {
+      console.error(new Error('This transport is closed'))
+      return
+    }
 
     this.connected
       .then(() => {

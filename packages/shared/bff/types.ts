@@ -26,12 +26,12 @@ export type LegacyServices = {
   poiService: string
 }
 
-export type BffServices<CallContext = {}> = {
+export type BffServices<CallContext = any> = {
   comms: RpcClientModule<CommsServiceDefinition, CallContext>
   legacy: LegacyServices
 }
 
-export interface IBff<CallContext = {}> {
+export interface IBff<CallContext = any> {
   readonly about: AboutResponse
   readonly baseUrl: string
   disconnect(error?: Error): Promise<void>

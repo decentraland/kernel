@@ -11,6 +11,7 @@ import {
 import mitt from 'mitt'
 import { ILogger } from 'shared/logger'
 import { incrementCommsMessageSent } from 'shared/session/getPerformanceInfo'
+import { commsLogger } from '../context'
 import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
 
 export type LivekitConfig = {
@@ -70,7 +71,7 @@ export class LivekitAdapter implements MinimumCommunicationsAdapter {
     }
 
     this.disconnected = true
-    this.room.disconnect()
+    this.room.disconnect().catch(commsLogger.error)
     this.events.emit('DISCONNECTION', { kicked: false })
   }
 
