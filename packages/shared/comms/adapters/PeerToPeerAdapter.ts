@@ -81,7 +81,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   private disposed: boolean = false
   private activePings: Record<string, ActivePing> = {}
 
-  private listeners: { close(): Promise<void> }[] = []
+  private listeners: { close(): void }[] = []
 
   constructor(private config: P2PConfig, peers: Map<string, Position3D>) {
     this.distance = discretizedPositionDistanceXZ()

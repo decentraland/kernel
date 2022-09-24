@@ -52,8 +52,8 @@ import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
-import { realmToConnectionString } from 'shared/bff/resolver'
-import { getRealm } from 'shared/bff/selectors'
+import { getBff } from 'shared/bff/selectors'
+import { IBff } from 'shared/bff/types'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -85,8 +85,8 @@ export function* handleNewRoomOrCommsContext() {
   yield call(waitForMetaConfigurationInitialization)
 
   if (yield select(isLiveKitVoiceChatFeatureFlag)) {
-    const realm = yield select(getRealm)
-    const realmName = realm ? realmToConnectionString(realm) : 'global'
+    const realm: IBff | undefined = yield select(getBff)
+    const realmName = realm ? realm.baseUrl : 'global'
     const island = (yield select(getCommsIsland)) ?? 'global'
     const roomName = `${realmName}-${island}`
 

@@ -7,8 +7,8 @@ import {
 import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization, waitForNetworkSelected } from '../meta/sagas'
-import { Candidate, Realm, ServerConnectionStatus } from './types'
-import { fetchCatalystRealms, fetchCatalystStatuses, changeRealmObject, fetchCatalystStatus } from '.'
+import { Candidate, PingResult, Realm, ServerConnectionStatus } from './types'
+import { fetchCatalystRealms, fetchCatalystStatuses, changeRealm } from '.'
 import { ping } from './utils/ping'
 import {
   getAddedServers,
@@ -39,10 +39,12 @@ import defaultLogger from 'shared/logger'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getCommsContext } from 'shared/comms/selectors'
 import { CatalystNode } from 'shared/types'
-import { candidateToRealm, resolveCommsConnectionString, resolveRealmUrls } from 'shared/bff/resolver'
+import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/bff/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getRealm } from 'shared/bff/selectors'
+import { getBff } from 'shared/bff/selectors'
+import { SET_BFF } from 'shared/bff/actions'
+import { IBff } from 'shared/bff/types'
 
 function* waitForExplorerIdentity() {
   while (!(yield select(getCurrentIdentity))) {
@@ -51,14 +53,14 @@ function* waitForExplorerIdentity() {
 }
 
 function getLastRealmCacheKey(network: ETHEREUM_NETWORK) {
-  return 'last_realm_new_' + network
+  return 'last_realm_string_' + network
 }
 function getLastRealmCandidatesCacheKey(network: ETHEREUM_NETWORK) {
-  return 'last_realm_new_candidates_' + network
+  return 'last_realm_string_candidates_' + network
 }
 
 export function* daoSaga(): any {
-  yield takeEvery(SET_WORLD_CONTEXT, cacheCatalystRealm)
+  yield takeEvery(SET_BFF, cacheCatalystRealm)
   yield takeEvery(SET_CATALYST_CANDIDATES, cacheCatalystCandidates)
 }
 
@@ -77,12 +79,12 @@ function* pickCatalystRealm() {
   const qs = new URLSearchParams(globalThis.location.search)
   const currentUserParcel = parseParcelPosition(qs.get('position') || '0,0')
 
-  const realm = yield call(
+  const realm: Realm = yield call(
     candidateToRealm,
     algorithm.pickCandidate(candidates, [currentUserParcel.x, currentUserParcel.y])
   )
 
-  return realm
+  return realm.hostname
 }
 
 function qsRealm() {
@@ -101,11 +103,11 @@ function qsRealm() {
  */
 export function* selectAndReconnectRealm() {
   try {
-    const realm: Realm | undefined = yield call(selectRealm)
+    const realm: string | undefined = yield call(selectRealm)
 
     if (realm) {
       yield call(waitForExplorerIdentity)
-      yield call(changeRealmObject, realm)
+      yield call(changeRealm, realm)
     } else {
       throw new Error("Couldn't select a suitable realm to join.")
     }
@@ -141,18 +143,13 @@ function* selectRealm() {
   const cachedCandidates: Candidate[] = yield call(getFromPersistentStorage, getLastRealmCandidatesCacheKey(network)) ??
     []
 
-  const PREVIEW_REALM: Realm = yield call(resolveCommsConnectionString, `v1~${rootURLPreviewMode()}`, [
-    ...allCandidates,
-    ...cachedCandidates
-  ])
-
-  const realm: Realm | undefined =
+  const realm: string | undefined =
     // query param (dao candidates & cached)
     (yield call(getConfiguredRealm, [...allCandidates, ...cachedCandidates])) ||
     // preview mode
-    (PREVIEW ? PREVIEW_REALM : null) ||
+    (PREVIEW ? rootURLPreviewMode() : null) ||
     // CATALYST from url parameter
-    (yield call(getPinnedCatalyst)) ||
+    PIN_CATALYST ||
     // fetch catalysts and select one using the load balancing
     (yield call(pickCatalystRealm)) ||
     // cached in local storage
@@ -167,8 +164,8 @@ function* selectRealm() {
 async function getRealmFromLocalStorage(network: ETHEREUM_NETWORK) {
   const key = getLastRealmCacheKey(network)
   try {
-    const realm = await getFromPersistentStorage(key)
-    if (realm && (await checkValidRealm(realm))) {
+    const realm: string = await getFromPersistentStorage(key)
+    if (typeof realm === 'string' && realm && (await checkValidRealm(realm))) {
       return realm
     }
   } catch {
@@ -180,34 +177,13 @@ async function getRealmFromLocalStorage(network: ETHEREUM_NETWORK) {
 function* getConfiguredRealm(candidates: Candidate[]) {
   const realmName = qsRealm()
   if (realmName) {
-    const realm = yield call(resolveCommsConnectionString, realmName, candidates)
+    const realm = yield call(resolveRealmBaseUrlFromRealmQueryParameter, realmName, candidates)
     const isValid: boolean = realm && (yield call(checkValidRealm, realm))
     if (isValid) {
       return realm
     } else {
       commsLogger.warn(`Provided realm is not valid: ${realmName}`)
     }
-  }
-}
-
-function* getPinnedCatalyst() {
-  if (!PIN_CATALYST) {
-    return undefined
-  }
-
-  const candidate = yield call(fetchCatalystStatus, PIN_CATALYST, [])
-  if (!candidate) {
-    return {
-      protocol: 'v2',
-      hostname: PIN_CATALYST,
-      serverName: 'pinned-catalyst'
-    }
-  }
-
-  return {
-    protocol: candidate.protocol,
-    hostname: PIN_CATALYST,
-    serverName: candidate.catalystName
   }
 }
 
@@ -231,24 +207,20 @@ function* initializeCatalystCandidates() {
   yield put(setCatalystCandidates(candidates))
 }
 
-export async function checkValidRealm(realm: Realm) {
-  const resolved = resolveRealmUrls(realm)
-
-  if (resolved) {
-    const { pingUrl } = resolved
-    const pingResult = await ping(pingUrl)
-    return pingResult.status === ServerConnectionStatus.OK
-  } else {
-    return true
+export async function checkValidRealm(baseUrl: string): Promise<PingResult | null> {
+  const pingResult = await ping(baseUrl + '/about')
+  if (pingResult.status === ServerConnectionStatus.OK) {
+    return pingResult
   }
+  return null
 }
 
 function* cacheCatalystRealm() {
   const network: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
-  const realm: Realm | undefined = yield select(getRealm)
+  const realm: IBff | undefined = yield select(getBff)
 
   if (realm) {
-    yield call(saveToPersistentStorage, getLastRealmCacheKey(network), realm)
+    yield call(saveToPersistentStorage, getLastRealmCacheKey(network), realm.baseUrl)
   }
 
   // PRINT DEBUG INFO

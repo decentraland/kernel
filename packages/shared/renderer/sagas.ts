@@ -29,7 +29,6 @@ import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getBff } from 'shared/bff/selectors'
 import { getExploreRealmsService, getFetchContentServer } from 'shared/dao/selectors'
-import { Realm } from 'shared/dao/types'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
@@ -73,7 +72,7 @@ function* reportRealmChangeToRenderer() {
 
     if (bff) {
       const contentServerUrl: string = yield select(getFetchContentServer)
-      const current = convertCurrentRealmType(bff.realm, contentServerUrl)
+      const current = convertCurrentRealmType(bff, contentServerUrl)
       getUnityInstance().UpdateRealmsInfo({ current })
 
       const realmsService = yield select(getExploreRealmsService)
@@ -101,11 +100,11 @@ async function fetchAndReportRealmsInfo(url: string) {
   }
 }
 
-function convertCurrentRealmType(realm: Realm, contentServerUrl: string): CurrentRealmInfoForRenderer {
+function convertCurrentRealmType(bff: IBff, contentServerUrl: string): CurrentRealmInfoForRenderer {
   return {
-    serverName: realm.serverName,
+    serverName: bff.about.configurations?.realmName || bff.baseUrl,
     layer: '',
-    domain: realm.hostname,
+    domain: new URL(bff.baseUrl).hostname,
     contentServerUrl: contentServerUrl
   }
 }

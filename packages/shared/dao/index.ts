@@ -1,17 +1,17 @@
 import defaultLogger from '../logger'
-import { Realm, ServerConnectionStatus, Candidate, Parcel } from './types'
+import { ServerConnectionStatus, Candidate, Parcel } from './types'
 import { getAllCatalystCandidates } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
-import { ping, ask } from './utils/ping'
-import { getBff, getRealm, sameRealm } from 'shared/bff/selectors'
+import { ask } from './utils/ping'
+import { getBff } from 'shared/bff/selectors'
 import { setBff } from 'shared/bff/actions'
 import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
-import { bffForRealm, realmToConnectionString, resolveCommsConnectionString } from 'shared/bff/resolver'
+import { bffForRealm, prettyRealmName, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/bff/resolver'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {
@@ -47,73 +47,47 @@ export async function fetchCatalystStatus(
 ): Promise<Candidate | undefined> {
   if (denylistedCatalysts.includes(domain)) return undefined
 
-  const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
+  const aboutResponse = await ask(`${domain}/about`)
 
-  if (aboutResponse.httpStatus !== 404) {
-    const result = aboutResponse.result
-    if (
-      aboutResponse.status === ServerConnectionStatus.OK &&
-      result &&
-      result.comms &&
-      result.configurations &&
-      result.bff
-    ) {
-      const { comms, configurations, bff } = result
-
-      // TODO(hugo): this is kind of hacky, the original representation is much better,
-      // but I don't want to change the whole pick-realm algorithm now
-      const usersParcels: Parcel[] = []
-
-      if (parcelsResponse.result && parcelsResponse.result.parcels) {
-        for (const {
-          peersCount,
-          parcel: { x, y }
-        } of parcelsResponse.result.parcels) {
-          const parcel: Parcel = [x, y]
-          for (let i = 0; i < peersCount; i++) {
-            usersParcels.push(parcel)
-          }
-        }
-      }
-
-      return {
-        protocol: comms.protocol,
-        catalystName: configurations.realmName,
-        domain: domain,
-        status: aboutResponse.status,
-        elapsed: aboutResponse.elapsed!,
-        usersCount: bff.userCount ?? comms.usersCount ?? 0,
-        maxUsers: 2000,
-        usersParcels
-      }
-    }
-
-    return undefined
-  }
-
-  const [commsResponse, lambdasResponse] = await Promise.all([
-    ping(`${domain}/comms/status?includeUsersParcels=true`),
-    ping(`${domain}/lambdas/health`)
-  ])
-
+  const result = aboutResponse.result
   if (
-    commsResponse.result &&
-    commsResponse.status === ServerConnectionStatus.OK &&
-    lambdasResponse.status === ServerConnectionStatus.OK &&
-    (commsResponse.result.maxUsers ?? 2000) > (commsResponse.result.usersCount ?? -1)
+    aboutResponse.status === ServerConnectionStatus.OK &&
+    result &&
+    result.comms &&
+    result.configurations &&
+    result.bff
   ) {
-    const result = commsResponse.result
+    const { comms, configurations, bff } = result
+
+    // TODO(hugo): this is kind of hacky, the original representation is much better,
+    // but I don't want to change the whole pick-realm algorithm now
+    const usersParcels: Parcel[] = []
+
+    // if (parcelsResponse.result && parcelsResponse.result.parcels) {
+    //   for (const {
+    //     peersCount,
+    //     parcel: { x, y }
+    //   } of parcelsResponse.result.parcels) {
+    //     const parcel: Parcel = [x, y]
+    //     for (let i = 0; i < peersCount; i++) {
+    //       usersParcels.push(parcel)
+    //     }
+    //   }
+    // }
+
     return {
-      protocol: 'v2',
-      catalystName: result.name,
+      protocol: comms.protocol,
+      catalystName: configurations.realmName,
       domain: domain,
-      status: commsResponse.status,
-      elapsed: commsResponse.elapsed!,
-      usersCount: result.usersCount ?? 0,
-      maxUsers: result.maxUsers ?? 2000,
-      usersParcels: result.usersParcels
+      status: aboutResponse.status,
+      elapsed: aboutResponse.elapsed!,
+      usersCount: bff.userCount ?? comms.usersCount ?? 0,
+      maxUsers: 2000,
+      usersParcels
     }
   }
+
+  return undefined
 }
 
 export async function fetchCatalystStatuses(
@@ -135,13 +109,13 @@ export async function fetchCatalystStatuses(
 }
 
 export async function realmInitialized(): Promise<void> {
-  if (getRealm(store.getState())) {
+  if (getBff(store.getState())) {
     return
   }
 
   return new Promise((resolve) => {
     const unsubscribe = store.subscribe(() => {
-      if (getRealm(store.getState())) {
+      if (getBff(store.getState())) {
         unsubscribe()
         return resolve()
       }
@@ -152,38 +126,35 @@ export async function realmInitialized(): Promise<void> {
 export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
   const candidates = getAllCatalystCandidates(store.getState())
 
-  const realm = await resolveCommsConnectionString(realmString, candidates)
+  const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, candidates)
 
-  if (!realm) {
+  if (!realmBaseUrl) {
     throw new Error(`Can't resolve realm ${realmString}`)
   }
 
-  return changeRealmObject(realm, forceChange)
-}
-
-export async function changeRealmObject(realm: Realm, forceChange: boolean = false): Promise<void> {
   const currentBff = getBff(store.getState())
   const identity = getCurrentIdentity(store.getState())
 
   if (!identity) throw new Error('Cant change realm without a valid identity')
 
-  commsLogger.info('Connecting to realm', realm)
+  commsLogger.info('Connecting to realm', realmString)
 
   // if not forceChange, then cancel operation if we are inside the desired realm
-  if (!forceChange && currentBff && sameRealm(currentBff.realm, realm)) {
+  if (!forceChange && currentBff && currentBff.baseUrl == realmBaseUrl) {
     return
   }
 
-  if (!(await checkValidRealm(realm))) {
-    throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
+  const about = await checkValidRealm(realmString)
+  if (!about || !about.result) {
+    throw new Error(`The realm ${prettyRealmName(realmString, candidates)} isn't available right now.`)
   }
 
-  const newBff = await bffForRealm(realm, identity)
+  const newBff = await bffForRealm(realmBaseUrl, about.result, identity)
 
   if (newBff) {
     store.dispatch(setBff(newBff))
   } else {
-    throw new Error(`Can't connect to realm ${realmToConnectionString(realm)} right now.`)
+    throw new Error(`Can't connect to realm ${realmString} right now.`)
   }
 
   return

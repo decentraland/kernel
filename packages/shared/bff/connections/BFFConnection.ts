@@ -12,8 +12,8 @@ import { trackEvent } from 'shared/analytics'
 import { ExplorerIdentity } from 'shared/session/types'
 import { BffEvents, BffServices, IBff } from '../types'
 import mitt from 'mitt'
-import { Realm } from 'shared/dao/types'
 import { legacyServices } from '../local-services/legacy'
+import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
 
 export type TopicData = {
   peerId: string
@@ -41,8 +41,9 @@ async function authenticatePort(port: RpcClientPort, identity: ExplorerIdentity)
   return authResponse.peerId
 }
 
-export async function createBffRpcConnection(realm: Realm, url: string, identity: ExplorerIdentity): Promise<IBff> {
-  const bffTransport = WebSocketTransport(new WebSocket(url, 'comms'))
+export async function createBffRpcConnection(baseUrl: string, about: AboutResponse,  identity: ExplorerIdentity): Promise<IBff> {
+  const wsUrl = new URL('/bff/rpc', baseUrl).toString().replace(/^http/, 'ws')
+  const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'comms'))
 
   const rpcClient = await createRpcClient(bffTransport)
   const port = await rpcClient.createPort('kernel')
@@ -52,7 +53,7 @@ export async function createBffRpcConnection(realm: Realm, url: string, identity
   // close the WS when the port is closed
   port.on('close', () => bffTransport.close())
 
-  return new BffRpcConnection(realm, port, peerId)
+  return new BffRpcConnection(baseUrl, about, port, peerId)
 }
 
 export class BffRpcConnection implements IBff<{}> {
@@ -62,7 +63,7 @@ export class BffRpcConnection implements IBff<{}> {
   private logger: ILogger = createLogger('BFF: ')
   private disposed = false
 
-  constructor(public readonly realm: Realm, public port: RpcClientPort, public peerId: string) {
+  constructor(public baseUrl: string, public readonly about: AboutResponse, public port: RpcClientPort, public peerId: string) {
     port.on('close', async () => {
       this.logger.log('BFF transport closed')
       this.disconnect()
@@ -70,7 +71,7 @@ export class BffRpcConnection implements IBff<{}> {
 
     this.services = {
       comms: loadService(port, CommsServiceDefinition),
-      legacy: legacyServices(realm)
+      legacy: legacyServices(baseUrl)
     }
   }
 

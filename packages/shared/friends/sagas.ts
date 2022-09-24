@@ -40,7 +40,6 @@ import {
   MarkMessagesAsSeenPayload,
   GetPrivateMessagesPayload
 } from 'shared/types'
-import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
@@ -73,7 +72,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { getRealm } from 'shared/bff/selectors'
+import { getBff } from 'shared/bff/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
 import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
@@ -85,6 +84,8 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
+import { IBff } from 'shared/bff/types'
+import { realmToConnectionString } from 'shared/bff/resolver'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -742,9 +743,9 @@ function* initializeStatusUpdateInterval() {
     })
 
     const client: SocialAPI | null = yield select(getSocialClient)
-    const realm: Realm | null = yield select(getRealm)
+    const bff: IBff | undefined = yield select(getBff)
 
-    if (!client || !realm) {
+    if (!client || !bff) {
       continue
     }
 
@@ -763,7 +764,7 @@ function* initializeStatusUpdateInterval() {
     const updateStatus: UpdateUserStatus = {
       realm: {
         layer: '',
-        serverName: realm.serverName
+        serverName: realmToConnectionString(bff)
       },
       position,
       presence: PresenceType.ONLINE

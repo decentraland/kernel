@@ -2,8 +2,7 @@ import { getSelectedNetwork } from './../../dao/selectors'
 import { getServerConfigurations, PREVIEW, RENDERER_WS } from './../../../config'
 import { store } from './../../store/isolatedStore'
 import { getCommsIsland } from './../../comms/selectors'
-import { getRealm } from './../../bff/selectors'
-import { Realm } from './../../dao/types'
+import { getBff } from './../../bff/selectors'
 import { getFeatureFlagEnabled } from './../../meta/selectors'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
@@ -20,6 +19,7 @@ import {
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
+import { IBff } from 'shared/bff/types'
 
 export function registerEnvironmentAPIServiceServerImplementation(
   port: RpcServerPort<PortContextService<'sceneData'>>
@@ -50,14 +50,14 @@ export function registerEnvironmentAPIServiceServerImplementation(
       return { status: getFeatureFlagEnabled(store.getState(), 'unsafe-request') }
     },
     async getCurrentRealm(): Promise<GetCurrentRealmResponse> {
-      const realm = getRealm(store.getState())
+      const bff = getBff(store.getState())
       const island = getCommsIsland(store.getState()) ?? '' // We shouldn't send undefined because it would break contract
 
-      if (!realm) {
+      if (!bff) {
         return {}
       }
 
-      return { currentRealm: toEnvironmentRealmType(realm, island) }
+      return { currentRealm: toEnvironmentRealmType(bff, island) }
     },
     async getExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
       return {
@@ -92,10 +92,11 @@ export function registerEnvironmentAPIServiceServerImplementation(
   }))
 }
 
-export function toEnvironmentRealmType(realm: Realm, island: string | undefined): EnvironmentRealm {
-  const { hostname, serverName, protocol } = realm
+export function toEnvironmentRealmType(realm: IBff, island: string | undefined): EnvironmentRealm {
+  const serverName = realm.about.configurations?.realmName || realm.baseUrl
+  const hostname = new URL(realm.baseUrl).hostname
   return {
-    protocol: protocol,
+    protocol: realm.about.comms?.protocol || 'v3',
     domain: hostname,
     layer: island ?? '',
     room: island ?? '',

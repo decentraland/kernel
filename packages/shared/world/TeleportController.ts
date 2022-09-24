@@ -83,7 +83,7 @@ async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
 
   try {
     if (bff) {
-      const parcelsResponse = await fetch(`${urlWithProtocol(bff.realm.hostname)}/stats/parcels`)
+      const parcelsResponse = await fetch(`${urlWithProtocol(bff.baseUrl)}/stats/parcels`)
 
       if (parcelsResponse.ok) {
         const parcelsBody = await parcelsResponse.json()

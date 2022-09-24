@@ -1,13 +1,14 @@
 import { createLogger } from 'shared/logger'
 import { HeartbeatMessage, IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
 import { store } from 'shared/store/isolatedStore'
-import { lastPlayerPositionReport } from 'shared/world/positionThings'
+import { lastPlayerPosition } from 'shared/world/positionThings'
 import {
   connectToComms,
   handleBffDisconnection,
   HandleBffDisconnection,
   HANDLE_BFF_DISCONNECTION,
   setBff,
+  SetBffAction,
   SET_BFF
 } from './actions'
 import { SET_COMMS_ISLAND } from '../comms/actions'
@@ -43,6 +44,8 @@ export function* bffSaga() {
  * function in charge of disconnecting it from kernel.
  */
 async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Promise<void>> {
+  logger.info('Binding BFF', bff)
+  debugger
   bff.events.on('DISCONNECTION', () => {
     store.dispatch(handleBffDisconnection(bff))
   })
@@ -63,9 +66,11 @@ async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Prom
   })
 
   return async function unbind(): Promise<void> {
+    logger.info('Unbinding BFF', bff)
+
     bff.events.off('DISCONNECTION')
 
-    await islandListener.close()
+    islandListener.close()
 
     try {
       await bff.disconnect()
@@ -79,24 +84,16 @@ async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Prom
 
 // this function is called from the handleHeartbeat saga
 async function sendHeartBeat(bff: IBff) {
-  if (lastPlayerPositionReport) {
-    const { x, y, z } = lastPlayerPositionReport.position
-    const position = [x, y, z]
-    const payload = HeartbeatMessage.encode({
-      position: {
-        x: position[0],
-        y: position[1],
-        z: position[2]
-      }
-    }).finish()
-    try {
-      await bff.services.comms.publishToTopic({
-        topic: 'heartbeat',
-        payload
-      })
-    } catch (err: any) {
-      await bff.disconnect(err)
-    }
+  const payload = HeartbeatMessage.encode({
+    position: lastPlayerPosition
+  }).finish()
+  try {
+    await bff.services.comms.publishToTopic({
+      topic: 'heartbeat',
+      payload
+    })
+  } catch (err: any) {
+    await bff.disconnect(err)
   }
 }
 
@@ -122,22 +119,19 @@ function* handleHeartBeat() {
 
 // this saga reacts to changes in BFF context
 function* handleNewBFF() {
-  let currentBff: IBff | undefined = undefined
   let unbind: () => Promise<void> = async function () {}
 
-  yield takeEvery(SET_BFF, function* () {
-    const oldBff = currentBff
-    currentBff = yield select(getBff)
-
-    if (oldBff && oldBff !== currentBff && unbind) {
+  yield takeEvery(SET_BFF, function* (action: SetBffAction) {
+    if (unbind) {
       // disconnect previous bff
-      yield call(unbind)
+      unbind().catch(logger.error)
+      unbind = async () => {}
     }
 
-    if (currentBff && oldBff !== currentBff) {
+    if (action.payload) {
       const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       // bind messages to this comms instance
-      unbind = yield call(bindHandlersToBFF, currentBff, identity?.address)
+      unbind = yield call(bindHandlersToBFF, action.payload, identity?.address)
     }
   })
 }

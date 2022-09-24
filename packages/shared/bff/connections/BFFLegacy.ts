@@ -1,30 +1,36 @@
 import mitt from 'mitt'
 import { BffEvents, BffServices, IBff } from '../types'
-import { Realm } from 'shared/dao/types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { localCommsService } from '../local-services/comms'
 import { legacyServices } from '../local-services/legacy'
-import { realmToConnectionString } from '../resolver'
+import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
 
-export function localBff(realm: Realm, identity: ExplorerIdentity): IBff {
+export function localBff(baseUrl: string, about: AboutResponse, identity: ExplorerIdentity): IBff {
   const events = mitt<BffEvents>()
 
   const services: BffServices = {
     comms: localCommsService(),
-    legacy: legacyServices(realm)
+    legacy: legacyServices(baseUrl)
   }
 
   setTimeout(() => {
+    let connStr = 'offline:offline'
+
+    if (about.comms?.protocol == 'v2') {
+      connStr = `lighthouse:${baseUrl}/comms`
+    }
+
     // send the island_changed message
     events.emit('setIsland', {
-      connStr: realmToConnectionString(realm),
+      connStr,
       islandId: '',
       peers: {}
     })
   }, 100)
 
   return {
-    realm,
+    about,
+    baseUrl,
     events,
     services,
     async disconnect(error?: Error) {

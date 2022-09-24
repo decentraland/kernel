@@ -113,6 +113,7 @@ export class Rfc4RoomConnection implements RoomConnection {
       throw new Error('Invalid message')
     }
     const bytes = proto.Packet.encode(topicMessage as any).finish()
+    if(!this.transport) debugger
     this.transport.send(bytes, { reliable })
   }
 }

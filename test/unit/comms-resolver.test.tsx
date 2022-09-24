@@ -8,100 +8,63 @@ function eq<T>(given: T, expected: T) {
 
 describe('Comms resolver', () => {
   it('resolveCommsConnectionString', async () => {
-    eq(await r.resolveCommsConnectionString('v1~local', []), {
-      protocol: 'v1',
-      serverName: 'local',
-      hostname: 'http://local'
-    })
+    eq(r.resolveRealmBaseUrlFromRealmQueryParameter('v1~local', []), 'http://local')
 
-    eq(await r.resolveCommsConnectionString('unknown', []), undefined)
+    eq(r.resolveRealmBaseUrlFromRealmQueryParameter('unknown', []), undefined)
 
     eq(
-      await r.resolveCommsConnectionString('unknown', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('unknown', [
         { catalystName: 'unknown', domain: 'unknowndomain', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'http://unknowndomain',
-        protocol: 'v2',
-        serverName: 'unknown'
-      }
+      'http://unknowndomain'
     )
 
     eq(
-      await r.resolveCommsConnectionString('v2~dg', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('v2~dg', [
         { catalystName: 'dg', domain: 'peer.decentral.io', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'http://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'dg'
-      }
+      'http://peer.decentral.io'
     )
 
     eq(
-      await r.resolveCommsConnectionString('v2~peer.decentral.io', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('v2~peer.decentral.io', [
         { catalystName: 'dg', domain: 'peer.decentral.io', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'http://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'dg'
-      }
+      'http://peer.decentral.io'
     )
 
     eq(
-      await r.resolveCommsConnectionString('v2~https://peer.decentral.io', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('v2~https://peer.decentral.io', [
         { catalystName: 'dg', domain: 'peer.decentral.io', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'https://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'https://peer.decentral.io'
-      }
+      'https://peer.decentral.io'
     )
 
     eq(
-      await r.resolveCommsConnectionString('v2~https://peer.decentral.io', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('v2~https://peer.decentral.io', [
         { catalystName: 'dg', domain: 'https://peer.decentral.io', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'https://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'dg'
-      }
+      'https://peer.decentral.io'
     )
   })
 
-  it('realmToConnectionString', async () => {
-    eq(r.realmToConnectionString({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), 'abc')
-    eq(
-      r.realmToConnectionString({ hostname: 'http://test.com', protocol: 'v2', serverName: 'http://test.com' }),
-      'v2~test.com'
-    )
-    eq(
-      r.realmToConnectionString({ hostname: 'https://test.com', protocol: 'v2', serverName: 'https://test.com' }),
-      'v2~test.com'
-    )
-    eq(
-      r.realmToConnectionString({ hostname: 'ws://test.com', protocol: 'v3', serverName: 'ws://test.com' }),
-      'v3~test.com'
-    )
-    eq(
-      r.realmToConnectionString({ hostname: 'wss://test.com', protocol: 'v3', serverName: 'wss://test.com' }),
-      'v3~test.com'
-    )
-  })
-
-  it('resolveRealmUrls', async () => {
-    eq(r.resolveRealmUrls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
-    eq(r.resolveRealmUrls({ hostname: 'http://test.com', protocol: 'v3', serverName: 'http://test.com' }), {
-      pingUrl: 'http://test.com/about',
-      wsUrl: 'ws://test.com/bff/rpc'
-    })
-    eq(r.resolveRealmUrls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
-    eq(r.resolveRealmUrls({ hostname: 'http://test.com', protocol: 'v4', serverName: 'http://test.com' }), {
-      pingUrl: 'http://test.com/status',
-      wsUrl: 'ws://test.com/ws'
-    })
-  })
+  // it('realmToConnectionString', async () => {
+  //   eq(r.realmToConnectionString({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), 'abc')
+  //   eq(
+  //     r.realmToConnectionString({ hostname: 'http://test.com', protocol: 'v2', serverName: 'http://test.com' }),
+  //     'v2~test.com'
+  //   )
+  //   eq(
+  //     r.realmToConnectionString({ hostname: 'https://test.com', protocol: 'v2', serverName: 'https://test.com' }),
+  //     'v2~test.com'
+  //   )
+  //   eq(
+  //     r.realmToConnectionString({ hostname: 'ws://test.com', protocol: 'v3', serverName: 'ws://test.com' }),
+  //     'v3~test.com'
+  //   )
+  //   eq(
+  //     r.realmToConnectionString({ hostname: 'wss://test.com', protocol: 'v3', serverName: 'wss://test.com' }),
+  //     'v3~test.com'
+  //   )
+  // })
 })

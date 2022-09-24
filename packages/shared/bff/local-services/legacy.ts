@@ -1,15 +1,12 @@
-import { Realm } from 'shared/dao/types'
 import { LegacyServices } from '../types'
 
-export function legacyServices(realm: Realm): LegacyServices {
-  const domain = realm.hostname
-
+export function legacyServices(baseUrl: string): LegacyServices {
   return {
-    fetchContentServer: domain + '/content',
-    catalystServer: domain,
-    updateContentServer: domain + '/content',
-    hotScenesService: domain + '/lambdas/explore/hot-scenes',
-    poiService: domain + '/lambdas/contracts/pois',
-    exploreRealmsService: domain + '/lambdas/explore/realms'
+    fetchContentServer: baseUrl + '/content',
+    catalystServer: baseUrl,
+    updateContentServer: baseUrl + '/content',
+    hotScenesService: baseUrl + '/lambdas/explore/hot-scenes',
+    poiService: baseUrl + '/lambdas/contracts/pois',
+    exploreRealmsService: baseUrl + '/lambdas/explore/realms'
   }
 }

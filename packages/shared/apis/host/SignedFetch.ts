@@ -10,7 +10,8 @@ import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { SignedFetchServiceDefinition } from 'shared/protocol/kernel/apis/SignedFetch.gen'
-import { getRealm } from 'shared/bff/selectors'
+import { getBff } from 'shared/bff/selectors'
+import { Realm } from 'shared/dao/types'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({
@@ -18,7 +19,17 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
       const { identity } = await onLoginCompleted()
 
       const state = store.getState()
-      const realm = getRealm(state)
+      const bff = getBff(state)
+
+      const realm: Realm = bff ? {
+        hostname: new URL(bff?.baseUrl).hostname,
+        protocol: bff.about.comms?.protocol || 'v3',
+        serverName: bff.about.configurations?.realmName || bff.baseUrl
+      } : {
+        hostname: 'offline',
+        protocol: 'offline',
+        serverName: 'offline'
+      }
       const isGuest = !!getIsGuestLogin(state)
       const network = getSelectedNetwork(state)
 

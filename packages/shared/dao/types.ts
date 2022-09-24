@@ -1,4 +1,5 @@
 import type { ETHEREUM_NETWORK } from 'config'
+import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
 
 export enum ServerConnectionStatus {
   OK,
@@ -56,7 +57,7 @@ export type RootDaoState = {
 export type PingResult = {
   elapsed?: number
   status?: ServerConnectionStatus
-  result?: CatalystStatus
+  result?: AboutResponse
 }
 
 export type AskResult = {

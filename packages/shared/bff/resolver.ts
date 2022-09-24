@@ -1,4 +1,5 @@
 import { Candidate, Realm } from 'shared/dao/types'
+import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
 import { ExplorerIdentity } from 'shared/session/types'
 import { createBffRpcConnection } from './connections/BFFConnection'
 import { localBff } from './connections/BFFLegacy'
@@ -6,10 +7,6 @@ import { IBff } from './types'
 
 function normalizeUrl(url: string) {
   return url.replace(/^:\/\//, window.location.protocol + '//')
-}
-
-function httpToWs(url: string) {
-  return url.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
 }
 
 // adds the currently used protocol to the given URL
@@ -20,55 +17,43 @@ export function urlWithProtocol(urlOrHostname: string) {
   return normalizeUrl(urlOrHostname)
 }
 
-export async function bffForRealm(realm: Realm, identity: ExplorerIdentity): Promise<IBff> {
+export async function bffForRealm(baseUrl: string, about: AboutResponse, identity: ExplorerIdentity): Promise<IBff> {
   // connect the real BFF
-  if (realm.protocol === 'v3') {
-    const urls = resolveRealmUrls(realm)
-    if (urls && urls.wsUrl) return createBffRpcConnection(realm, urls.wsUrl, identity)
+  if (about.comms?.protocol == 'v3') {
+    return createBffRpcConnection(baseUrl, about, identity)
   }
 
   // return a mocked BFF
-  return localBff(realm, identity)
+  return localBff(baseUrl, about, identity)
 }
 
-export function resolveRealmUrls(realm: Realm): { pingUrl: string; wsUrl?: string } | undefined {
-  if (realm.protocol === 'v2') {
-    return {
-      pingUrl: `${realm.hostname}/comms/status`
+export function prettyRealmName(realm: string, candidates: Candidate[]) {
+  // is it a DAO realm?
+  for (const candidate of candidates) {
+    if (candidate.catalystName === realm) {
+      return candidate.catalystName
     }
   }
 
-  if (realm.protocol === 'v3') {
-    const server = realm.hostname.match(/:\/\//) ? realm.hostname : 'https://' + realm.hostname
-
-    const pingUrl = new URL('./about', server).toString()
-    const wsUrl = httpToWs(new URL('./bff/ws', server).toString())
-
-    return { pingUrl, wsUrl }
-  }
+  return realm
 }
 
-export function realmToConnectionString(realm: Realm) {
-  if (
-    realm.protocol === 'v2' &&
-    realm.serverName &&
-    realm.serverName !== realm.hostname &&
-    realm.serverName.match(/^[a-z]+$/i)
-  ) {
-    return realm.serverName
+export function realmToConnectionString(realm: IBff) {
+  if (realm.about.comms?.protocol === 'v2' && realm.about.configurations?.realmName?.match(/^[a-z]+$/i)) {
+    return realm.about.configurations.realmName
   }
 
-  return realm.protocol + '~' + realm.hostname.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '')
+  return 'v3~' + realm.baseUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '')
 }
 
-export async function resolveCommsConnectionString(
+export function resolveRealmBaseUrlFromRealmQueryParameter(
   realmString: string,
   candidates: Candidate[]
-): Promise<Realm | undefined> {
+): string | undefined {
   // is it a DAO realm?
   for (const candidate of candidates) {
     if (candidate.catalystName === realmString) {
-      return candidateToRealm(candidate)
+      return urlWithProtocol(candidate.domain)
     }
   }
 
@@ -85,23 +70,17 @@ export async function resolveCommsConnectionString(
         protocol === candidate.protocol &&
         (candidate.catalystName === secondPart || candidate.domain === secondPart)
       ) {
-        return candidateToRealm(candidate)
+        return urlWithProtocol(secondPart)
       }
     }
 
-    return {
-      protocol,
-      serverName: secondPart,
-      hostname: urlWithProtocol(secondPart)
-    }
+    return urlWithProtocol(secondPart)
   }
 
-  debugger
-
-  return undefined
+  if (realmString.startsWith('http:') || realmString.startsWith('https:')) return realmString
 }
 
-export async function candidateToRealm(candidate: Candidate): Promise<Realm> {
+export function candidateToRealm(candidate: Candidate): Realm {
   return {
     hostname: urlWithProtocol(candidate.domain),
     protocol: candidate.protocol || 'v2',

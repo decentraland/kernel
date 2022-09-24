@@ -28,7 +28,6 @@ import { getIdentity } from 'shared/session'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
-import { realmToConnectionString } from '../bff/resolver'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { getCommsConfig, getMaxVisiblePeers } from 'shared/meta/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
@@ -36,7 +35,6 @@ import { OfflineAdapter } from './adapters/OfflineAdapter'
 import { WebSocketAdapter } from './adapters/WebSocketAdapter'
 import { LivekitAdapter } from './adapters/LivekitAdapter'
 import { PeerToPeerAdapter } from './adapters/PeerToPeerAdapter'
-import { MinimumCommunicationsAdapter } from './adapters/types'
 import { Position3D } from './v3/types'
 import { IBff } from 'shared/bff/types'
 import { CommsConfig } from 'shared/meta/types'
@@ -45,8 +43,8 @@ import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from '.
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { store } from 'shared/store/isolatedStore'
 import { ProfileType } from 'shared/profiles/types'
-import { ConnectToCommsAction, CONNECT_TO_COMMS } from 'shared/bff/actions'
-import { getBff, getRealm } from 'shared/bff/selectors'
+import { ConnectToCommsAction, CONNECT_TO_COMMS, SET_BFF } from 'shared/bff/actions'
+import { getBff } from 'shared/bff/selectors'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -83,17 +81,21 @@ export function* commsSaga() {
 function* handleConnectToComms(action: ConnectToCommsAction) {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
 
-  const [protocol, url] = action.payload.event.connStr.split(':', 2)
+  const ix = action.payload.event.connStr.indexOf(':')
+  const protocol = action.payload.event.connStr.substring(0, ix)
+  const url = action.payload.event.connStr.substring(ix + 1)
 
-  let adapter: MinimumCommunicationsAdapter | undefined = undefined
+  yield put(setCommsIsland(action.payload.event.islandId))
+
+  let adapter: Rfc4RoomConnection | undefined = undefined
 
   switch (protocol) {
     case 'offline': {
-      adapter = new OfflineAdapter()
+      adapter = new Rfc4RoomConnection(new OfflineAdapter())
       break
     }
     case 'ws-room': {
-      adapter = new WebSocketAdapter(url, identity)
+      adapter = new Rfc4RoomConnection(new WebSocketAdapter(url, identity))
       break
     }
     case 'livekit': {
@@ -102,15 +104,15 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
       if (!token) {
         throw new Error('No access token')
       }
-      adapter = new LivekitAdapter({
+      adapter = new Rfc4RoomConnection(new LivekitAdapter({
         logger: commsLogger,
         url,
         token
-      })
+      }))
       break
     }
     case 'p2p': {
-      adapter = yield call(createP2PAdapter, action.payload.event.islandId)
+      adapter = new Rfc4RoomConnection(yield call(createP2PAdapter, action.payload.event.islandId))
       break
     }
     case 'lighthouse': {
@@ -124,14 +126,12 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
   const commsContext = new CommsContext(
     identity.address,
     identity.hasConnectedWeb3 ? ProfileType.DEPLOYED : ProfileType.LOCAL,
-    new Rfc4RoomConnection(adapter)
+    adapter
   )
 
   yield put(establishingComms())
-
-  if (yield commsContext.connect()) {
-    yield put(setWorldContext(commsContext))
-  }
+  yield commsContext.connect()
+  yield put(setWorldContext(commsContext))
 }
 
 function* createP2PAdapter(islandId: string) {
@@ -215,7 +215,7 @@ function* createLighthouseConnection(url: string) {
         case 'realm-full':
         case 'reconnection-error':
         case 'id-taken':
-          lighthouse.disconnect().catch(commsLogger.error)
+          lighthouse.disconnect({ kicked: true, error: new Error(status.status) }).catch(commsLogger.error)
           break
       }
     },
@@ -309,15 +309,18 @@ function* handleCommsReconnectionInterval() {
   while (true) {
     const reason: any = yield race({
       SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT),
+      SET_BFF: take(SET_BFF),
       USER_AUTHENTIFIED: take(USER_AUTHENTIFIED),
       timeout: delay(1000)
     })
 
     const context: CommsContext | undefined = yield select(getCommsContext)
+    const bff: IBff | undefined = yield select(getBff)
     const hasFatalError: string | undefined = yield select(getFatalError)
     const identity: ExplorerIdentity | undefined = yield select(getIdentity)
 
-    const shouldReconnect = !context && !hasFatalError && identity?.address
+    const shouldReconnect = !context && !hasFatalError && identity?.address && !bff
+
     if (shouldReconnect) {
       // reconnect
       commsLogger.info('Trying to reconnect to a realm. reason:', Object.keys(reason)[0])
@@ -357,16 +360,18 @@ function* handleNewCommsContext() {
     const oldContext = currentContext
     currentContext = yield select(getCommsContext)
 
-    if (currentContext) {
-      // bind messages to this comms instance
-      yield call(bindHandlersToCommsContext, currentContext)
-      yield put(commsEstablished())
-      // notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
-    }
+    if (oldContext !== currentContext) {
+      if (currentContext) {
+        // bind messages to this comms instance
+        yield call(bindHandlersToCommsContext, currentContext)
+        yield put(commsEstablished())
+        // notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
+      }
 
-    if (oldContext && oldContext !== currentContext) {
-      // disconnect previous context
-      yield call(disconnectContext, oldContext)
+      if (oldContext) {
+        // disconnect previous context
+        yield call(disconnectContext, oldContext)
+      }
     }
   })
 }
@@ -383,16 +388,14 @@ async function disconnectContext(context: CommsContext) {
 
 // this saga handles the suddenly disconnection of a CommsContext
 function* handleCommsDisconnection(action: HandleCommsDisconnection) {
-  const realm = yield select(getRealm)
-
   const context: CommsContext = yield select(getCommsContext)
 
   if (context && context === action.payload.context) {
     // this also remove the context
     yield put(setWorldContext(undefined))
 
-    if (realm) {
-      notifyStatusThroughChat(`Lost connection to ${realmToConnectionString(realm)}`)
+    if (action.payload.context) {
+      notifyStatusThroughChat(`Lost connection to realm`)
     }
   }
 }

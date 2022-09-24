@@ -1,7 +1,7 @@
 import { RpcClientModule } from '@dcl/rpc/dist/codegen'
 import { Emitter } from 'mitt'
-import { Realm } from 'shared/dao/types'
 import { CommsServiceDefinition } from 'shared/protocol/bff/comms-service.gen'
+import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
 import { IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
 
 export type BffState = {
@@ -32,7 +32,8 @@ export type BffServices<CallContext = {}> = {
 }
 
 export interface IBff<CallContext = {}> {
-  readonly realm: Realm
+  readonly about: AboutResponse
+  readonly baseUrl: string
   disconnect(error?: Error): Promise<void>
   events: Emitter<BffEvents>
   services: BffServices<CallContext>

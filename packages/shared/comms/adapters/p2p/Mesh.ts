@@ -39,7 +39,7 @@ export class Mesh {
   private encoder = new TextEncoder()
   private decoder = new TextDecoder()
 
-  private listeners: {close(): Promise<void>}[] = []
+  private listeners: {close(): void}[] = []
 
 
   constructor(

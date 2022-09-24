@@ -23,9 +23,9 @@ export function listenSystemMessage(
   }
   run().catch(console.error)
   return {
-    close(): Promise<any> {
+    close(): void {
       closed = true
-      return iter.return?.call(void 0)
+      iter.return?.call(iter).catch()
     }
   }
 }
@@ -45,9 +45,9 @@ export function listenPeerMessage(
   }
   run().catch(console.error)
   return {
-    close(): Promise<any> {
+    close(): void {
       closed = true
-      return iter.return?.call(void 0)
+      iter.return?.call(iter).catch()
     }
   }
 }

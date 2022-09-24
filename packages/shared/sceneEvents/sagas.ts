@@ -1,23 +1,24 @@
 import { Avatar } from '@dcl/schemas'
 import { call, select, takeLatest } from 'redux-saga/effects'
+import { SET_BFF } from 'shared/bff/actions'
 import { realmToConnectionString } from 'shared/bff/resolver'
-import { getRealm } from 'shared/bff/selectors'
+import { getBff } from 'shared/bff/selectors'
+import { IBff } from 'shared/bff/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { toEnvironmentRealmType } from '../apis/host/EnvironmentAPI'
 import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
 import { getCommsIsland } from '../comms/selectors'
-import { Realm } from '../dao/types'
 import { SAVE_PROFILE } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
 import { allScenesEvent } from '../world/parcelSceneManager'
 
 export function* sceneEventsSaga() {
-  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], islandChanged)
+  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT, SET_BFF], islandChanged)
   yield takeLatestByUserId(SAVE_PROFILE, submitProfileToScenes)
 }
 
 function* islandChanged() {
-  const realm: Realm = yield select(getRealm)
+  const realm: IBff | undefined = yield select(getBff)
   const island: string | undefined = yield select(getCommsIsland)
 
   if (!realm) {
