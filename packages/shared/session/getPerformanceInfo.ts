@@ -1,4 +1,5 @@
 import mitt from 'mitt'
+import { TimelineDataSeries, TimelineGraphView } from 'shared/comms/lines'
 import { incrementCounter, getAndClearOccurenceCounters } from 'shared/occurences'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
@@ -31,6 +32,10 @@ export function incrementCommsMessageReceivedByName(event: string, value?: numbe
   commsPerfObservable.emit(event, { value })
   incrementCounter(`commMessage:${event}`)
   // NOTE:          ^^^^^^^^^^^ do NOT fix that typo
+}
+
+export function incrementAvatarSceneMessages() {
+  commsPerfObservable.emit('avatar-renderer', { value: 1 })
 }
 
 export function incrementCommsMessageSent(bytes: number) {
@@ -203,4 +208,81 @@ export function getPerformanceInfo(data: {
   kernelToRendererMessageNativeCounter = 0
 
   return ret
+}
+
+export function debugCommsGraph() {
+  const div = document.createElement('div')
+  const canvas = document.createElement('canvas')
+
+  div.style.position = 'absolute'
+  div.style.bottom = '0'
+  div.style.right = '0'
+  div.style.marginBottom = '45px'
+  div.style.zIndex = '99999'
+  div.style.background = 'white'
+
+  canvas.style.position = 'relative'
+  canvas.style.width = 'auto'
+  canvas.style.height = 'auto'
+
+  document.body.append(div)
+  div.append(canvas)
+
+  const timeseries = new TimelineGraphView(div, canvas)
+
+  const colors: Partial<Record<string, string>> = {
+    position: 'blue',
+    message: 'grey',
+    voiceMessage: 'green',
+    profileMessage: 'purple',
+    profileResponse: 'red',
+    profileRequest: 'magenta',
+    sceneMessageBus: 'cyan',
+    'avatar-renderer': 'black'
+  }
+
+  timeseries.repaint()
+  const series = new Map<string, TimelineDataSeries>()
+  function getTimeSeries(name: string) {
+    if (!series.get(name)) {
+      const serie = new TimelineDataSeries(name)
+      series.set(name, serie)
+      timeseries.addDataSeries(serie)
+      if (name in colors) {
+        serie.setColor(colors[name] as any)
+        const orig = serie.addPoint
+        const legend = document.createElement('div')
+        legend.innerText = name
+        legend.style.color = colors[name] as any
+        serie.addPoint = function (time, value) {
+          legend.innerText = name + ': ' + value
+          return orig.call(this, time, value)
+        }
+        div.append(legend)
+      }
+    }
+    return series.get(name)!
+  }
+
+  commsPerfObservable.on('*', (event, data) => {
+    getTimeSeries(event as any).stash++
+  })
+
+  setInterval(() => {
+    const msgs: string[] = []
+
+    for (const [name, serie] of series) {
+      serie.addPoint(new Date(), serie.stash)
+      if (serie.stash) {
+        msgs.push(`${name}=${serie.stash}`)
+      }
+      serie.stash = 0
+    }
+
+    if (msgs.length) console.log('stats', msgs.join('\t'))
+
+    timeseries.updateEndDate()
+
+    timeseries.repaint()
+  }, 1000)
 }

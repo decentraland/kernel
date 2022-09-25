@@ -40,6 +40,7 @@ import { workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 import { sleep } from 'atomicHelpers/sleep'
+import { incrementAvatarSceneMessages } from 'shared/session/getPerformanceInfo'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -115,6 +116,8 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
       version: 'v3'
     }
   })
+
+  scene.transport.on('message', () => incrementAvatarSceneMessages())
 
   getUnityInstance().CreateGlobalScene({
     id: cid,

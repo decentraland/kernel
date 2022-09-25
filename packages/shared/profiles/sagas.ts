@@ -439,7 +439,7 @@ function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min)
 }
 
-async function generateRandomUserProfile(userId: string): Promise<Avatar> {
+export async function generateRandomUserProfile(userId: string): Promise<Avatar> {
   defaultLogger.info('Generating random profile for ' + userId)
 
   const _number = randomBetween(1, 160)

@@ -35,6 +35,7 @@ import { OfflineAdapter } from './adapters/OfflineAdapter'
 import { WebSocketAdapter } from './adapters/WebSocketAdapter'
 import { LivekitAdapter } from './adapters/LivekitAdapter'
 import { PeerToPeerAdapter } from './adapters/PeerToPeerAdapter'
+import { SimulationRoom } from './adapters/SimulatorAdapter'
 import { Position3D } from './v3/types'
 import { IBff } from 'shared/bff/types'
 import { CommsConfig } from 'shared/meta/types'
@@ -47,9 +48,8 @@ import { getBff } from 'shared/bff/selectors'
 import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
-import { CommsEvents, RoomConnection } from './interface'
-import * as graph from './lines'
-import { commsPerfObservable } from 'shared/session/getPerformanceInfo'
+import { RoomConnection } from './interface'
+import { debugCommsGraph } from 'shared/session/getPerformanceInfo'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -81,88 +81,7 @@ export function* commsSaga() {
   yield fork(reportPositionSaga)
 
   if (COMMS_GRAPH) {
-    yield fork(debugCommsGraph)
-  }
-}
-
-function* debugCommsGraph() {
-  const div = document.createElement('div')
-  const canvas = document.createElement('canvas')
-
-  div.style.position = 'absolute'
-  div.style.bottom = '0'
-  div.style.right = '0'
-  div.style.marginBottom = '45px'
-  div.style.zIndex = '99999'
-  div.style.background = 'white'
-
-  canvas.style.position = 'relative'
-  canvas.style.width = 'auto'
-  canvas.style.height = 'auto'
-
-  document.body.append(div)
-  div.append(canvas)
-
-  const timeseries = new graph.TimelineGraphView(div, canvas)
-
-  const colors: Partial<Record<keyof CommsEvents, string>> = {
-    position: 'blue',
-    message: 'grey',
-    voiceMessage: 'green',
-    profileMessage: 'purple',
-    profileResponse: 'red',
-    profileRequest: 'magenta',
-    sceneMessageBus: 'cyan'
-  }
-
-  timeseries.repaint()
-  const series = new Map<string, graph.TimelineDataSeries>()
-  function getTimeSeries(name: string) {
-    if (!series.get(name)) {
-      const serie = new graph.TimelineDataSeries(name)
-      series.set(name, serie)
-      timeseries.addDataSeries(serie)
-      if (name in colors) {
-        serie.setColor(colors[name])
-        const orig = serie.addPoint
-        const legend = document.createElement('div')
-        legend.innerText = name
-        legend.style.color = colors[name]
-        serie.addPoint = function (time, value) {
-          legend.innerText = name + ': ' + value
-          return orig.call(this, time, value)
-        }
-        div.append(legend)
-      }
-    }
-    return series.get(name)!
-  }
-
-  commsPerfObservable.on('*', (event, data) => {
-    getTimeSeries(event as any).stash++
-  })
-
-  while (true) {
-    yield race({
-      timeout: delay(1000),
-      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT)
-    })
-
-    const msgs: string[] = []
-
-    for (const [name, serie] of series) {
-      serie.addPoint(new Date(), serie.stash)
-      if (serie.stash) {
-        msgs.push(`${name}=${serie.stash}`)
-      }
-      serie.stash = 0
-    }
-
-    if (msgs.length) commsLogger.log('stats', msgs.join('\t'))
-
-    timeseries.updateEndDate()
-
-    timeseries.repaint()
+    yield call(debugCommsGraph)
   }
 }
 
@@ -240,7 +159,7 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
 
     yield put(setCommsIsland(action.payload.event.islandId))
 
-    let adapter: Rfc4RoomConnection | undefined = undefined
+    let adapter: RoomConnection | undefined = undefined
 
     switch (protocol) {
       case 'offline': {
@@ -251,6 +170,10 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
         const finalUrl = !url.startsWith('ws:') && !url.startsWith('wss:') ? 'wss://' + url : url
 
         adapter = new Rfc4RoomConnection(new WebSocketAdapter(finalUrl, identity))
+        break
+      }
+      case 'simulator': {
+        adapter = new SimulationRoom(url)
         break
       }
       case 'livekit': {

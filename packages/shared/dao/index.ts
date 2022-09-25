@@ -149,6 +149,11 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
     throw new Error(`The realm ${prettyRealmName(realmString, candidates)} isn't available right now.`)
   }
 
+  if (realmString.startsWith(`offline~`)) {
+    about.result.comms!.fixedAdapter = realmString
+    about.result.comms!.protocol = `offline`
+  }
+
   const newBff = await bffForRealm(realmBaseUrl, about.result, identity)
 
   if (newBff) {

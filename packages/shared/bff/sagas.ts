@@ -153,3 +153,13 @@ function* handleBffDisconnectionSaga(action: HandleBffDisconnection) {
     yield put(setBff(undefined))
   }
 }
+
+globalThis.setAdapter = function setAdapter(connectionString: string) {
+  store.dispatch(
+    connectToComms({
+      connStr: connectionString,
+      islandId: '',
+      peers: {}
+    })
+  )
+}
