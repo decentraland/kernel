@@ -108,6 +108,7 @@ export const LOS = ensureSingleString(qs.get('LOS'))
 
 export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
 export const DEBUG_COMMS = qs.has('DEBUG_COMMS')
+export const COMMS_GRAPH = qs.has('COMMS_GRAPH')
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
 export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
 export const DEBUG_MESSAGES = location.search.includes('DEBUG_MESSAGES')
@@ -269,10 +270,6 @@ export const genericAvatarSnapshots = {
   body: 'QmSav1o6QK37Jj1yhbmhYk9MJc6c2H5DWbWzPVsg9JLYfF',
   face256: 'QmSqZ2npVD4RLdqe17FzGCFcN29RfvmqmEd2FcQUctxaKk'
 } as const
-
-export function getCatalystNodesDefaultURL() {
-  return `https://peer.decentraland.${getTLD()}/lambdas/contracts/servers`
-}
 
 function addHttpsIfNoProtocolIsSet(domain: string): string
 function addHttpsIfNoProtocolIsSet(domain: undefined): undefined

@@ -42,14 +42,14 @@ import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'sha
 import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
-import { getCommsContext } from 'shared/comms/selectors'
-import { CommsContext } from 'shared/comms/context'
+import { getCommsRoom } from 'shared/comms/selectors'
 import { createReceiveProfileOverCommsChannel, requestProfileToPeers } from 'shared/comms/handlers'
 import { Avatar, Profile, Snapshots } from '@dcl/schemas'
 import { validateAvatar } from './schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
 import { getIdentity } from 'shared/session'
+import { RoomConnection } from 'shared/comms/interface'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -142,13 +142,13 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   const { userId, version } = action.payload
 
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
-  const commsContext: CommsContext | undefined = yield select(getCommsContext)
+  const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
 
   if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
 
   try {
     const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
-    const shouldFetchViaComms = commsContext && !shouldReadProfileFromLocalStorage
+    const shouldFetchViaComms = roomConnection && !shouldReadProfileFromLocalStorage
     const shouldLoadFromCatalyst = true
     const shouldFallbackToRandomProfile = true
 
@@ -156,7 +156,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
     const profile: Avatar =
       // first fetch avatar through comms
-      (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, versionNumber))) ||
+      (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
@@ -313,7 +313,8 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
 }
 
 function* handleDeployProfile(deployProfileAction: DeployProfile) {
-  const url: string = yield select(getUpdateProfileServer)
+  const url: string | undefined = yield select(getUpdateProfileServer)
+  if (!url) return console.log('Skipping deployment because the catalyst is not connected')
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const userId: string = yield select(getCurrentUserId)
   const profile: Avatar = deployProfileAction.payload.profile

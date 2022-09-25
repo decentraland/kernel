@@ -44,7 +44,7 @@ import { store } from 'shared/store/isolatedStore'
 import { globalObservable } from 'shared/observables'
 import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
-import { setWorldContext } from 'shared/comms/actions'
+import { setRoomConnection } from 'shared/comms/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar } from '@dcl/schemas'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
@@ -282,7 +282,7 @@ function* logout() {
     globalObservable.emit('logout', { address: identity.address, network })
   }
 
-  yield put(setWorldContext(undefined))
+  yield put(setRoomConnection(undefined))
 
   if (identity?.address) {
     yield call(removeStoredSession, identity.address)

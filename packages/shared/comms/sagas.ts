@@ -1,14 +1,14 @@
 import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, apply } from 'redux-saga/effects'
 
 import { commsEstablished, establishingComms, FATAL_ERROR } from 'shared/loading/types'
-import { CommsContext, commsLogger } from './context'
-import { getCommsContext } from './selectors'
+import { commsLogger } from './context'
+import { getCommsRoom } from './selectors'
 import { BEFORE_UNLOAD } from 'shared/protocol/actions'
 import {
-  HandleCommsDisconnection,
-  HANDLE_COMMS_DISCONNECTION,
+  HandleRoomDisconnection,
+  HANDLE_ROOM_DISCONNECTION,
   setCommsIsland,
-  setWorldContext,
+  setRoomConnection,
   SET_COMMS_ISLAND,
   SET_WORLD_CONTEXT
 } from './actions'
@@ -18,7 +18,7 @@ import { Rfc4RoomConnection } from './logic/rfc-4-room-connection'
 import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
-import { commConfigurations, DEBUG_COMMS, genericAvatarSnapshots, PREFERED_ISLAND } from 'config'
+import { commConfigurations, COMMS_GRAPH, DEBUG_COMMS, genericAvatarSnapshots, PREFERED_ISLAND } from 'config'
 import { isURL } from 'atomicHelpers/isURL'
 import { processAvatarVisibility } from './peers'
 import { getFatalError } from 'shared/loading/selectors'
@@ -40,26 +40,31 @@ import { IBff } from 'shared/bff/types'
 import { CommsConfig } from 'shared/meta/types'
 import { Authenticator } from '@dcl/crypto'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
-import { lastPlayerPositionReport } from 'shared/world/positionThings'
+import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { store } from 'shared/store/isolatedStore'
-import { ProfileType } from 'shared/profiles/types'
-import { ConnectToCommsAction, CONNECT_TO_COMMS, SET_BFF } from 'shared/bff/actions'
+import { ConnectToCommsAction, CONNECT_TO_COMMS, setBff, SET_BFF } from 'shared/bff/actions'
 import { getBff } from 'shared/bff/selectors'
+import { positionReportToCommsPositionRfc4 } from './interface/utils'
+import { deepEqual } from 'atomicHelpers/deepEqual'
+import { incrementCounter } from 'shared/occurences'
+import { CommsEvents, RoomConnection } from './interface'
+import * as graph from './lines'
+import { commsPerfObservable } from 'shared/session/getPerformanceInfo'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
 
 export function* commsSaga() {
-  yield takeLatest(HANDLE_COMMS_DISCONNECTION, handleCommsDisconnection)
+  yield takeLatest(HANDLE_ROOM_DISCONNECTION, handleRoomDisconnectionSaga)
 
   yield takeEvery(FATAL_ERROR, function* () {
     // set null context on fatal error. this will bring down comms.
-    yield put(setWorldContext(undefined))
+    yield put(setRoomConnection(undefined))
   })
 
   yield takeEvery(BEFORE_UNLOAD, function* () {
     // this would disconnect the comms context
-    yield put(setWorldContext(undefined))
+    yield put(setRoomConnection(undefined))
   })
 
   yield takeEvery(CONNECT_TO_COMMS, handleConnectToComms)
@@ -72,6 +77,153 @@ export function* commsSaga() {
   yield fork(handleAnnounceProfile)
   yield fork(initAvatarVisibilityProcess)
   yield fork(handleCommsReconnectionInterval)
+
+  yield fork(reportPositionSaga)
+
+  if (COMMS_GRAPH) {
+    yield fork(debugCommsGraph)
+  }
+}
+
+function* debugCommsGraph() {
+  const div = document.createElement('div')
+  const canvas = document.createElement('canvas')
+
+  div.style.position = 'absolute'
+  div.style.bottom = '0'
+  div.style.right = '0'
+  div.style.marginBottom = '45px'
+  div.style.zIndex = '99999'
+  div.style.background = 'white'
+
+  canvas.style.position = 'relative'
+  canvas.style.width = 'auto'
+  canvas.style.height = 'auto'
+
+  document.body.append(div)
+  div.append(canvas)
+
+  const timeseries = new graph.TimelineGraphView(div, canvas)
+
+  const colors: Partial<Record<keyof CommsEvents, string>> = {
+    position: 'blue',
+    message: 'grey',
+    voiceMessage: 'green',
+    profileMessage: 'purple',
+    profileResponse: 'red',
+    profileRequest: 'magenta',
+    sceneMessageBus: 'cyan'
+  }
+
+  timeseries.repaint()
+  const series = new Map<string, graph.TimelineDataSeries>()
+  function getTimeSeries(name: string) {
+    if (!series.get(name)) {
+      const serie = new graph.TimelineDataSeries(name)
+      series.set(name, serie)
+      timeseries.addDataSeries(serie)
+      if (name in colors) {
+        serie.setColor(colors[name])
+        const orig = serie.addPoint
+        const legend = document.createElement('div')
+        legend.innerText = name
+        legend.style.color = colors[name]
+        serie.addPoint = function (time, value) {
+          legend.innerText = name + ': ' + value
+          return orig.call(this, time, value)
+        }
+        div.append(legend)
+      }
+    }
+    return series.get(name)!
+  }
+
+  commsPerfObservable.on('*', (event, data) => {
+    getTimeSeries(event as any).stash++
+  })
+
+  while (true) {
+    yield race({
+      timeout: delay(1000),
+      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT)
+    })
+
+    const msgs: string[] = []
+
+    for (const [name, serie] of series) {
+      serie.addPoint(new Date(), serie.stash)
+      if (serie.stash) {
+        msgs.push(`${name}=${serie.stash}`)
+      }
+      serie.stash = 0
+    }
+
+    if (msgs.length) commsLogger.log('stats', msgs.join('\t'))
+
+    timeseries.updateEndDate()
+
+    timeseries.repaint()
+  }
+}
+
+/**
+ * This saga reports the position of our player:
+ * - once every one second
+ * - or when a new comms context is set
+ * - and every time a positionObservable is called with a maximum of 10Hz
+ */
+function* reportPositionSaga() {
+  let latestRoom: RoomConnection | undefined = undefined
+
+  let lastNetworkUpdatePosition = 0
+  let lastPositionSent: rfc4.Position
+
+  const observer = positionObservable.add((obj: Readonly<PositionReport>) => {
+    if (latestRoom) {
+      const newPosition = positionReportToCommsPositionRfc4(obj)
+      const now = Date.now()
+      const elapsed = now - lastNetworkUpdatePosition
+
+      // We only send the same position message as a ping if we have not sent positions in the last 1 second
+      if (elapsed < 1000) {
+        if (deepEqual(newPosition, lastPositionSent)) {
+          return
+        }
+      }
+
+      // Otherwise we simply respect the 10Hz
+      if (elapsed > 100) {
+        lastPositionSent = newPosition
+        lastNetworkUpdatePosition = now
+        latestRoom.sendPositionMessage(newPosition).catch((e) => {
+          incrementCounter('failed:sendPositionMessage')
+          commsLogger.warn(`error while sending message `, e)
+        })
+      }
+    }
+  })
+
+  while (true) {
+    const reason = yield race({
+      UNLOAD: take(BEFORE_UNLOAD),
+      ERROR: take(FATAL_ERROR),
+      timeout: delay(1000),
+      setNewContext: take(SET_WORLD_CONTEXT)
+    })
+
+    if (reason.UNLOAD || reason.ERROR) break
+
+    if (!latestRoom) lastNetworkUpdatePosition = 0
+    latestRoom = yield select(getCommsRoom)
+
+    if (latestRoom && lastPlayerPositionReport) {
+      latestRoom
+        .sendPositionMessage(positionReportToCommsPositionRfc4(lastPlayerPositionReport))
+        .catch(commsLogger.error)
+    }
+  }
+
+  positionObservable.remove(observer)
 }
 
 /**
@@ -79,61 +231,63 @@ export function* commsSaga() {
  * adapter.
  */
 function* handleConnectToComms(action: ConnectToCommsAction) {
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+  try {
+    const identity: ExplorerIdentity = yield select(getCurrentIdentity)
 
-  const ix = action.payload.event.connStr.indexOf(':')
-  const protocol = action.payload.event.connStr.substring(0, ix)
-  const url = action.payload.event.connStr.substring(ix + 1)
+    const ix = action.payload.event.connStr.indexOf(':')
+    const protocol = action.payload.event.connStr.substring(0, ix)
+    const url = action.payload.event.connStr.substring(ix + 1)
 
-  yield put(setCommsIsland(action.payload.event.islandId))
+    yield put(setCommsIsland(action.payload.event.islandId))
 
-  let adapter: Rfc4RoomConnection | undefined = undefined
+    let adapter: Rfc4RoomConnection | undefined = undefined
 
-  switch (protocol) {
-    case 'offline': {
-      adapter = new Rfc4RoomConnection(new OfflineAdapter())
-      break
-    }
-    case 'ws-room': {
-      adapter = new Rfc4RoomConnection(new WebSocketAdapter(url, identity))
-      break
-    }
-    case 'livekit': {
-      const theUrl = new URL(url)
-      const token = theUrl.searchParams.get('access_token')
-      if (!token) {
-        throw new Error('No access token')
+    switch (protocol) {
+      case 'offline': {
+        adapter = new Rfc4RoomConnection(new OfflineAdapter())
+        break
       }
-      adapter = new Rfc4RoomConnection(
-        new LivekitAdapter({
-          logger: commsLogger,
-          url,
-          token
-        })
-      )
-      break
+      case 'ws-room': {
+        const finalUrl = !url.startsWith('ws:') && !url.startsWith('wss:') ? 'wss://' + url : url
+
+        adapter = new Rfc4RoomConnection(new WebSocketAdapter(finalUrl, identity))
+        break
+      }
+      case 'livekit': {
+        const theUrl = new URL(url)
+        const token = theUrl.searchParams.get('access_token')
+        if (!token) {
+          throw new Error('No access token')
+        }
+        adapter = new Rfc4RoomConnection(
+          new LivekitAdapter({
+            logger: commsLogger,
+            url,
+            token
+          })
+        )
+        break
+      }
+      case 'p2p': {
+        adapter = new Rfc4RoomConnection(yield call(createP2PAdapter, action.payload.event.islandId))
+        break
+      }
+      case 'lighthouse': {
+        adapter = yield call(createLighthouseConnection, url)
+        break
+      }
     }
-    case 'p2p': {
-      adapter = new Rfc4RoomConnection(yield call(createP2PAdapter, action.payload.event.islandId))
-      break
-    }
-    case 'lighthouse': {
-      adapter = yield call(createLighthouseConnection, url)
-      break
-    }
+
+    if (!adapter) throw new Error(`A communications adapter could not be created for protocol=${protocol}`)
+
+    yield put(establishingComms())
+    yield apply(adapter, adapter.connect, [])
+    yield put(setRoomConnection(adapter))
+  } catch (error: any) {
+    notifyStatusThroughChat('Error connecting to comms. Will try another realm')
+    yield put(setBff(undefined))
+    yield put(setRoomConnection(undefined))
   }
-
-  if (!adapter) throw new Error(`A communications adapter could not be created for protocol=${protocol}`)
-
-  const commsContext = new CommsContext(
-    identity.address,
-    identity.hasConnectedWeb3 ? ProfileType.DEPLOYED : ProfileType.LOCAL,
-    adapter
-  )
-
-  yield put(establishingComms())
-  yield commsContext.connect()
-  yield put(setWorldContext(commsContext))
 }
 
 function* createP2PAdapter(islandId: string) {
@@ -231,6 +385,10 @@ function* createLighthouseConnection(url: string) {
   return lighthouse
 }
 
+/**
+ * This saga runs every 100ms and checks the visibility of all avatars, hiding
+ * to the avatar scene the ones that are far away
+ */
 function* initAvatarVisibilityProcess() {
   yield call(waitForMetaConfigurationInitialization)
   const maxVisiblePeers = yield select(getMaxVisiblePeers)
@@ -243,10 +401,9 @@ function* initAvatarVisibilityProcess() {
 
     if (reason.unload) break
 
-    const context: CommsContext | null = yield select(getCommsContext)
     const account: ExplorerIdentity | undefined = yield select(getIdentity)
 
-    processAvatarVisibility(maxVisiblePeers, context, account?.address)
+    processAvatarVisibility(maxVisiblePeers, account?.address)
   }
 }
 
@@ -261,11 +418,11 @@ function* respondCommsProfileRequests() {
     // wait for the next event of the channel
     yield take(chan)
 
-    const context = (yield select(getCommsContext)) as CommsContext | undefined
+    const context = (yield select(getCommsRoom)) as RoomConnection | undefined
     const profile: Avatar | null = yield select(getCurrentUserProfile)
     const identity: ExplorerIdentity | null = yield select(getIdentity)
 
-    if (profile && context?.worldInstanceConnection) {
+    if (profile && context) {
       profile.hasConnectedWeb3 = identity?.hasConnectedWeb3 || profile.hasConnectedWeb3
 
       // naive throttling
@@ -274,11 +431,10 @@ function* respondCommsProfileRequests() {
       if (elapsed < TIME_BETWEEN_PROFILE_RESPONSES) continue
       lastMessage = now
 
-      const connection = context.worldInstanceConnection
       const response: rfc4.ProfileResponse = {
         serializedProfile: JSON.stringify(stripSnapshots(profile))
       }
-      yield apply(connection, connection.sendProfileResponse, [response])
+      yield apply(context, context.sendProfileResponse, [response])
     }
   }
 }
@@ -316,12 +472,12 @@ function* handleCommsReconnectionInterval() {
       timeout: delay(1000)
     })
 
-    const context: CommsContext | undefined = yield select(getCommsContext)
+    const coomConnection: RoomConnection | undefined = yield select(getCommsRoom)
     const bff: IBff | undefined = yield select(getBff)
     const hasFatalError: string | undefined = yield select(getFatalError)
     const identity: ExplorerIdentity | undefined = yield select(getIdentity)
 
-    const shouldReconnect = !context && !hasFatalError && identity?.address && !bff
+    const shouldReconnect = !coomConnection && !hasFatalError && identity?.address && !bff
 
     if (shouldReconnect) {
       // reconnect
@@ -345,40 +501,40 @@ function* handleAnnounceProfile() {
       SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT)
     })
 
-    const context: CommsContext | undefined = yield select(getCommsContext)
+    const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
     const profile: Avatar | null = yield select(getCurrentUserProfile)
 
-    if (context && profile) {
-      context.sendCurrentProfile(profile.version)
+    if (roomConnection && profile) {
+      roomConnection.sendProfileMessage({ profileVersion: profile.version }).catch(commsLogger.error)
     }
   }
 }
 
 // this saga reacts to changes in context and disconnects the old context
 function* handleNewCommsContext() {
-  let currentContext: CommsContext | undefined = undefined
+  let roomConnection: RoomConnection | undefined = undefined
 
   yield takeEvery(SET_WORLD_CONTEXT, function* () {
-    const oldContext = currentContext
-    currentContext = yield select(getCommsContext)
+    const oldContext = roomConnection
+    roomConnection = yield select(getCommsRoom)
 
-    if (oldContext !== currentContext) {
-      if (currentContext) {
+    if (oldContext !== roomConnection) {
+      if (roomConnection) {
         // bind messages to this comms instance
-        yield call(bindHandlersToCommsContext, currentContext)
+        yield call(bindHandlersToCommsContext, roomConnection)
         yield put(commsEstablished())
-        // notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(currentContext.realm)}!`)
+        console.log('Comms context connected')
       }
 
       if (oldContext) {
         // disconnect previous context
-        yield call(disconnectContext, oldContext)
+        yield call(disconnectRoom, oldContext)
       }
     }
   })
 }
 
-async function disconnectContext(context: CommsContext) {
+async function disconnectRoom(context: RoomConnection) {
   try {
     await context.disconnect()
   } catch (err: any) {
@@ -389,12 +545,12 @@ async function disconnectContext(context: CommsContext) {
 }
 
 // this saga handles the suddenly disconnection of a CommsContext
-function* handleCommsDisconnection(action: HandleCommsDisconnection) {
-  const context: CommsContext = yield select(getCommsContext)
+function* handleRoomDisconnectionSaga(action: HandleRoomDisconnection) {
+  const room: RoomConnection = yield select(getCommsRoom)
 
-  if (context && context === action.payload.context) {
+  if (room && room === action.payload.context) {
     // this also remove the context
-    yield put(setWorldContext(undefined))
+    yield put(setRoomConnection(undefined))
 
     if (action.payload.context) {
       notifyStatusThroughChat(`Lost connection to realm`)

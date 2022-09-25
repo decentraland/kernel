@@ -1,6 +1,6 @@
 import { call, select, takeEvery, takeLatest, put } from 'redux-saga/effects'
 import { receiveUserTalking } from 'shared/comms/peers'
-import { getCommsContext, getCommsIsland } from 'shared/comms/selectors'
+import { getCommsIsland } from 'shared/comms/selectors'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
 import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
 import { createLiveKitVoiceHandler } from 'voice-chat-codec/liveKitVoiceHandler'
@@ -133,43 +133,41 @@ function* handleSetVoiceChatLiveKitRoom() {
 
 function* handleJoinVoiceChat() {
   voiceChatLogger.log('join voice chat')
-  const commsContext = yield select(getCommsContext)
   const voiceChatState: VoiceChatState = yield select(getVoiceChatState)
-  if (commsContext) {
-    const voiceHandler: VoiceHandler =
-      voiceChatState.liveKitRoom !== null
-        ? yield call(createLiveKitVoiceHandler, voiceChatState.liveKitRoom)
-        : createOpusVoiceHandler(commsContext.worldInstanceConnection)
 
-    yield put(clearVoiceChatError())
+  const voiceHandler: VoiceHandler =
+    voiceChatState.liveKitRoom !== null
+      ? yield call(createLiveKitVoiceHandler, voiceChatState.liveKitRoom)
+      : yield call(createOpusVoiceHandler)
 
-    voiceHandler.onRecording((recording) => {
-      store.dispatch(voiceRecordingUpdate(recording))
-    })
+  yield put(clearVoiceChatError())
 
-    voiceHandler.onUserTalking((userId, talking) => {
-      store.dispatch(voicePlayingUpdate(userId, talking))
-    })
+  voiceHandler.onRecording((recording) => {
+    store.dispatch(voiceRecordingUpdate(recording))
+  })
 
-    voiceHandler.onError((message) => {
-      put(setVoiceChatError(message))
-    })
+  voiceHandler.onUserTalking((userId, talking) => {
+    store.dispatch(voicePlayingUpdate(userId, talking))
+  })
 
-    if (positionObserver) {
-      positionObservable.remove(positionObserver)
-    }
-    positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-      voiceHandler.reportPosition(positionReportToCommsPositionRfc4(obj))
-    })
+  voiceHandler.onError((message) => {
+    put(setVoiceChatError(message))
+  })
 
-    voiceHandler.setVolume(voiceChatState.volume)
-    voiceHandler.setMute(voiceChatState.mute)
-    if (voiceChatState.media) {
-      yield voiceHandler.setInputStream(voiceChatState.media)
-    }
-
-    yield put(setVoiceChatHandler(voiceHandler))
+  if (positionObserver) {
+    positionObservable.remove(positionObserver)
   }
+  positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
+    voiceHandler.reportPosition(positionReportToCommsPositionRfc4(obj))
+  })
+
+  voiceHandler.setVolume(voiceChatState.volume)
+  voiceHandler.setMute(voiceChatState.mute)
+  if (voiceChatState.media) {
+    yield voiceHandler.setInputStream(voiceChatState.media)
+  }
+
+  yield put(setVoiceChatHandler(voiceHandler))
 }
 
 function* handleVoiceChatError({ payload }: SetVoiceChatErrorAction) {

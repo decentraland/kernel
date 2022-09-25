@@ -9,8 +9,8 @@ COMMSRFC4_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/comms/*.pr
 COMMS_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/kernel/comms/v3/*.proto)
 
 PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/renderer-protocol/proto/%.gen.ts)
-BFF_TS =        $(BFF_PROTO_FILES:node_modules/@dcl/protocol/bff/%.proto=packages/shared/protocol/bff/%.gen.ts)
-PBS_TS =        $(SCENE_PROTO_FILES:node_modules/@dcl/protocol/kernel/apis/%.proto=packages/shared/protocol/kernel/apis/%.gen.ts)
+BFF_TS =        packages/shared/protocol/bff-services.gen.ts
+PBS_TS =        packages/shared/protocol/kernel/sdk-apis.gen.ts
 COMMSRFC4_TS =  $(COMMSRFC4_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/%.proto=packages/shared/protocol/kernel/comms/%.gen.ts)
 COMMS_TS =      $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/v3/%.proto=packages/shared/protocol/kernel/comms/v3/%.gen.ts)
 
@@ -177,16 +177,14 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
 
-packages/shared/protocol/kernel/apis/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto
-	mkdir -p "$(PWD)/packages/shared/protocol/kernel/apis"
+packages/shared/protocol/kernel/sdk-apis.gen.ts: node_modules/@dcl/protocol/sdk-apis.proto
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=returnObservable=false,outputServices=generic-definitions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/apis" \
-			-I="$(PWD)/packages/shared/protocol/kernel/apis" \
-			-I="$(PWD)/node_modules/@dcl/protocol/kernel/apis" \
-			"$(PWD)/node_modules/@dcl/protocol/kernel/apis/$*.proto";
+			--ts_proto_out="$(PWD)/packages/shared/protocol" \
+			-I="$(PWD)/node_modules/@dcl/protocol" \
+			"$(PWD)/node_modules/@dcl/protocol/sdk-apis.proto";
 
 packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto
 	mkdir -p "$(PWD)/packages/renderer-protocol/proto"
@@ -196,20 +194,19 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" \
 			-I="$(PWD)/packages/renderer-protocol/proto" \
-			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
+			-I="$(PWD)/node_modules/@dcl/protocol" \
 			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
-packages/shared/protocol/bff/%.gen.ts: node_modules/@dcl/protocol/bff/%.proto
+packages/shared/protocol/bff-services.gen.ts: node_modules/@dcl/protocol/bff-services.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/bff"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		  --ts_proto_opt=returnObservable=false,outputServices=generic-definitions,oneof=unions \
 			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/protocol/bff" \
-      -I="$(PWD)/node_modules/@dcl/protocol/bff" \
+			--ts_proto_out="$(PWD)/packages/shared/protocol" \
+      -I="$(PWD)/node_modules/@dcl/protocol" \
       -I="$(PWD)/node_modules/protobufjs" \
-			-I="$(PWD)/node_modules/@dcl/protocol/bff" \
-			"$(PWD)/node_modules/@dcl/protocol/bff/$*.proto"
+			"$(PWD)/node_modules/@dcl/protocol/bff-services.proto"
 
 packages/shared/protocol/kernel/comms/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/%.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms"

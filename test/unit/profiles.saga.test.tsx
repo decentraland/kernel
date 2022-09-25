@@ -3,7 +3,7 @@ import { call, select } from 'redux-saga/effects'
 import * as matchers from 'redux-saga-test-plan/matchers'
 import { profileRequest, profileSuccess } from 'shared/profiles/actions'
 import { handleFetchProfile, profileServerRequest } from 'shared/profiles/sagas'
-import { getCommsContext } from 'shared/comms/selectors'
+import { getCommsRoom } from 'shared/comms/selectors'
 import { getCurrentUserId, getCurrentIdentity, isCurrentUserId } from 'shared/session/selectors'
 import { profileSaga } from '../../packages/shared/profiles/sagas'
 import { dynamic } from 'redux-saga-test-plan/providers'
@@ -113,7 +113,7 @@ describe('fetchProfile behavior', () => {
       .provide([
         [select(getCurrentIdentity), {}], // the content of the identity is not used
         [select(isCurrentUserId, userId), false],
-        [select(getCommsContext), undefined],
+        [select(getCommsRoom), undefined],
         [call(profileServerRequest, userId, undefined), delayed({ avatars: [profile1] })]
       ])
       .run()

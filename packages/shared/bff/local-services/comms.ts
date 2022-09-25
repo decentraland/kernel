@@ -1,10 +1,10 @@
 import { RpcClientModule } from '@dcl/rpc/dist/codegen'
 import { AsyncQueue } from '@dcl/rpc/dist/push-channel'
+import { CommsServiceDefinition } from 'shared/protocol/bff/comms-service.gen'
 import {
-  CommsServiceDefinition,
   PeerTopicSubscriptionResultElem,
   SystemTopicSubscriptionResultElem
-} from 'shared/protocol/bff/comms-service.gen'
+} from 'shared/protocol/bff/topics-service.gen'
 
 export function localCommsService(): RpcClientModule<CommsServiceDefinition, any> {
   type TestTopicListener = {

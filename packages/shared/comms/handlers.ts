@@ -16,10 +16,9 @@ import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/sele
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { getIdentity } from 'shared/session'
-import { CommsContext } from './context'
 import { processVoiceFragment } from 'shared/voiceChat/handlers'
 import future, { IFuture } from 'fp-future'
-import { handleCommsDisconnection } from './actions'
+import { handleRoomDisconnection } from './actions'
 import { Avatar } from '@dcl/schemas'
 import { Observable } from 'mz-observable'
 import { eventChannel } from 'redux-saga'
@@ -32,37 +31,42 @@ import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
 import { uuid } from 'atomicHelpers/math'
 import { validateAvatar } from 'shared/profiles/schemaValidation'
 import { AdapterDisconnectedEvent, PeerDisconnectedEvent } from './adapters/types'
+import { RoomConnection } from './interface'
+import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
 
-export async function bindHandlersToCommsContext(context: CommsContext) {
+export async function bindHandlersToCommsContext(room: RoomConnection) {
   removeAllPeers()
 
-  const connection = context.worldInstanceConnection!
-
   // RFC4 messages
-  connection.events.on('position', processPositionMessage)
-  connection.events.on('profileMessage', processProfileUpdatedMessage)
-  connection.events.on('chatMessage', processChatMessage)
-  connection.events.on('sceneMessageBus', processParcelSceneCommsMessage)
-  connection.events.on('profileRequest', processProfileRequest)
-  connection.events.on('profileResponse', processProfileResponse)
-  connection.events.on('voiceMessage', processVoiceFragment)
+  room.events.on('position', processPositionMessage)
+  room.events.on('profileMessage', processProfileUpdatedMessage)
+  room.events.on('chatMessage', processChatMessage)
+  room.events.on('sceneMessageBus', processParcelSceneCommsMessage)
+  room.events.on('profileRequest', processProfileRequest)
+  room.events.on('profileResponse', processProfileResponse)
+  room.events.on('voiceMessage', processVoiceFragment)
+
+  room.events.on('*', (type, _) => {
+    incrementCommsMessageReceived()
+    incrementCommsMessageReceivedByName(type)
+  })
 
   // transport messages
-  connection.events.on('PEER_DISCONNECTED', handleDisconnectPeer)
-  connection.events.on('DISCONNECTION', (event) => handleDisconnection(event, context))
+  room.events.on('PEER_DISCONNECTED', handleDisconnectPeer)
+  room.events.on('DISCONNECTION', (event) => handleDisconnectionEvent(event, room))
 }
 
 const pendingProfileRequests: Map<string, Set<IFuture<Avatar | null>>> = new Map()
 
 export async function requestProfileToPeers(
-  context: CommsContext,
+  roomConnection: RoomConnection,
   address: string,
   profileVersion: number
 ): Promise<Avatar | null> {
-  if (context) {
+  if (roomConnection) {
     if (!pendingProfileRequests.has(address)) {
       pendingProfileRequests.set(address, new Set())
     }
@@ -71,7 +75,7 @@ export async function requestProfileToPeers(
 
     pendingProfileRequests.get(address)!.add(thisFuture)
 
-    await context.worldInstanceConnection.sendProfileRequest({
+    await roomConnection.sendProfileRequest({
       address,
       profileVersion
     })
@@ -94,8 +98,8 @@ export async function requestProfileToPeers(
   }
 }
 
-function handleDisconnection(data: AdapterDisconnectedEvent, context: CommsContext) {
-  store.dispatch(handleCommsDisconnection(context))
+function handleDisconnectionEvent(data: AdapterDisconnectedEvent, room: RoomConnection) {
+  store.dispatch(handleRoomDisconnection(room))
   // when we are kicked, the explorer should re-load, or maybe go to offline~offline realm
   if (data.kicked) {
     const url = new URL(document.location.toString())

@@ -21,15 +21,12 @@ function* islandChanged() {
   const realm: IBff | undefined = yield select(getBff)
   const island: string | undefined = yield select(getCommsIsland)
 
-  if (!realm) {
-    return
+  if (realm) {
+    const payload = toEnvironmentRealmType(realm, island)
+    yield call(allScenesEvent, { eventType: 'onRealmChanged', payload })
   }
 
-  const payload = toEnvironmentRealmType(realm, island)
-  yield call(allScenesEvent, { eventType: 'onRealmChanged', payload })
-
-  const realmString = realmToConnectionString(realm)
-  yield call(updateLocation, realmString, island)
+  yield call(updateLocation, realm ? realmToConnectionString(realm) : undefined, island)
 }
 
 // @internal
@@ -42,7 +39,6 @@ export function updateLocation(realm: string | undefined, island: string | undef
   } else {
     q.delete('island')
   }
-
   history.replaceState({ island, realm }, '', `?${q.toString()}`)
 }
 

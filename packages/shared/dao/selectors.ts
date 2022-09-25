@@ -12,7 +12,7 @@ import { getContentWhitelist } from 'shared/meta/selectors'
 import { urlWithProtocol } from 'shared/bff/resolver'
 import { RootBffState } from 'shared/bff/types'
 
-function getAllowedContentServer(givenServer: string, meta: RootMetaState): string {
+function getAllowedContentServer(givenServer: string | undefined, meta: RootMetaState): string {
   // if a catalyst is pinned => avoid any override
   if (PIN_CATALYST) {
     return urlWithProtocol(PIN_CATALYST + '/content')
@@ -21,13 +21,15 @@ function getAllowedContentServer(givenServer: string, meta: RootMetaState): stri
   const contentWhitelist = getContentWhitelist(meta)
 
   // if current realm is in whitelist => return current state
-  if (contentWhitelist.some((allowedCandidate) => allowedCandidate === givenServer)) {
+  if (givenServer && contentWhitelist.some((allowedCandidate) => allowedCandidate === givenServer)) {
     return urlWithProtocol(givenServer)
   }
 
   if (contentWhitelist.length) {
     return urlWithProtocol(contentWhitelist[0] + '/content')
   }
+
+  if (!givenServer) throw new Error('Missing default content server')
 
   return urlWithProtocol(givenServer)
 }
@@ -40,14 +42,16 @@ export const getUpdateProfileServer = (state: RootBffState & RootMetaState) => {
   if (PIN_CATALYST) {
     return urlWithProtocol(PIN_CATALYST + '/content')
   }
-  return urlWithProtocol(state.bff.bff!.services.legacy.updateContentServer)
+  const url = state.bff.bff?.services.legacy.updateContentServer
+  if (!url) return undefined
+  return urlWithProtocol(url)
 }
 
 export const getFetchContentServer = (state: RootBffState & RootMetaState) => {
   if (FETCH_CONTENT_SERVICE) {
     return urlWithProtocol(FETCH_CONTENT_SERVICE)
   }
-  return getAllowedContentServer(state.bff.bff!.services.legacy.fetchContentServer, state)
+  return getAllowedContentServer(state.bff.bff?.services.legacy.fetchContentServer, state)
 }
 
 export const getCatalystServer = (state: RootBffState) => urlWithProtocol(state.bff.bff!.services.legacy.catalystServer)

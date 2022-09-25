@@ -10,23 +10,8 @@ export function localBff(baseUrl: string, about: AboutResponse, identity: Explor
 
   const services: BffServices = {
     comms: localCommsService(),
-    legacy: legacyServices(baseUrl)
+    legacy: legacyServices(baseUrl, about)
   }
-
-  setTimeout(() => {
-    let connStr = 'offline:offline'
-
-    if (about.comms?.protocol === 'v2') {
-      connStr = `lighthouse:${baseUrl}/comms`
-    }
-
-    // send the island_changed message
-    events.emit('setIsland', {
-      connStr,
-      islandId: '',
-      peers: {}
-    })
-  }, 100)
 
   return {
     about,

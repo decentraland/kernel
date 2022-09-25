@@ -13,7 +13,6 @@ import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { getProfileFromStore } from 'shared/profiles/selectors'
-import { CommsContext } from './context'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 
 const peerMap = new Map<string, PeerInformation>()
@@ -202,11 +201,7 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   return currentPeer
 }
 
-export function processAvatarVisibility(
-  maxVisiblePeers: number,
-  context: CommsContext | null,
-  myAddress: string | undefined
-) {
+export function processAvatarVisibility(maxVisiblePeers: number, myAddress: string | undefined) {
   if (!lastPlayerPositionReport) return
   const pos = positionReportToCommsPositionRfc4(lastPlayerPositionReport)
   const now = Date.now()

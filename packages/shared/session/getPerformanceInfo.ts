@@ -1,3 +1,4 @@
+import mitt from 'mitt'
 import { incrementCounter, getAndClearOccurenceCounters } from 'shared/occurences'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
@@ -24,7 +25,10 @@ export function incrementCommsMessageReceived() {
   receivedCommsMessagesCounter++
 }
 
-export function incrementCommsMessageReceivedByName(event: string) {
+export const commsPerfObservable = mitt<any>()
+
+export function incrementCommsMessageReceivedByName(event: string, value?: number) {
+  commsPerfObservable.emit(event, { value })
   incrementCounter(`commMessage:${event}`)
   // NOTE:          ^^^^^^^^^^^ do NOT fix that typo
 }

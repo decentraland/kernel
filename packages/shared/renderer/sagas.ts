@@ -70,18 +70,23 @@ function* reportRealmChangeToRenderer() {
   while (true) {
     const bff: IBff | null = yield select(getBff)
 
-    if (bff) {
-      const contentServerUrl: string = yield select(getFetchContentServer)
-      const current = convertCurrentRealmType(bff, contentServerUrl)
-      getUnityInstance().UpdateRealmsInfo({ current })
+    try {
+      if (bff) {
+        const contentServerUrl: string = yield select(getFetchContentServer)
+        const current = convertCurrentRealmType(bff, contentServerUrl)
+        defaultLogger.info('UpdateRealmsInfo', current)
+        getUnityInstance().UpdateRealmsInfo({ current })
 
-      const realmsService = yield select(getExploreRealmsService)
+        const realmsService = yield select(getExploreRealmsService)
 
-      if (realmsService) {
-        yield call(fetchAndReportRealmsInfo, realmsService)
+        if (realmsService) {
+          yield call(fetchAndReportRealmsInfo, realmsService)
+        }
+
+        // wait for the next context
       }
-
-      // wait for the next context
+    } catch (err: any) {
+      defaultLogger.error(err)
     }
 
     yield take(SET_BFF)

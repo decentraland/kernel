@@ -3,17 +3,19 @@ import { VoiceHandler } from './VoiceHandler'
 import { VoiceCommunicator } from './VoiceCommunicator'
 import { commConfigurations } from 'config'
 import Html from 'shared/Html'
-import { RoomConnection } from 'shared/comms/interface'
+import { getCommsRoom } from 'shared/comms/selectors'
 import { getSpatialParamsFor } from './utils'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+import { store } from 'shared/store/isolatedStore'
 
-export const createOpusVoiceHandler = (transport: RoomConnection): VoiceHandler => {
+export const createOpusVoiceHandler = (): VoiceHandler => {
   const logger = createLogger('OpusVoiceCommunicator: ')
 
   const voiceCommunicator = new VoiceCommunicator(
     {
       send(frame: rfc4.Voice) {
-        transport.sendVoiceMessage(frame).catch(logger.error)
+        const transport = getCommsRoom(store.getState())
+        transport?.sendVoiceMessage(frame).catch(logger.error)
       }
     },
     {

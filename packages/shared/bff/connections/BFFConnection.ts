@@ -46,7 +46,9 @@ export async function createBffRpcConnection(
   about: AboutResponse,
   identity: ExplorerIdentity
 ): Promise<IBff> {
-  const wsUrl = new URL('/bff/rpc', baseUrl).toString().replace(/^http/, 'ws')
+  const relativeUrl = ((about.bff?.publicUrl || '/bff') + '/rpc').replace(/(\/+)/g, '/')
+
+  const wsUrl = new URL(relativeUrl, baseUrl).toString().replace(/^http/, 'ws')
   const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'comms'))
 
   const rpcClient = await createRpcClient(bffTransport)
@@ -80,7 +82,7 @@ export class BffRpcConnection implements IBff<any> {
 
     this.services = {
       comms: loadService(port, CommsServiceDefinition),
-      legacy: legacyServices(baseUrl)
+      legacy: legacyServices(baseUrl, about)
     }
   }
 

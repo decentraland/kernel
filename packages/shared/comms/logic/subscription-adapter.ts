@@ -1,9 +1,9 @@
 import { RpcClientModule } from '@dcl/rpc/dist/codegen'
+import { CommsServiceDefinition } from 'shared/protocol/bff/comms-service.gen'
 import {
-  CommsServiceDefinition,
   PeerTopicSubscriptionResultElem,
   SystemTopicSubscriptionResultElem
-} from 'shared/protocol/bff/comms-service.gen'
+} from 'shared/protocol/bff/topics-service.gen'
 
 // This file exists to adapt the subscription system to its final form once the
 // protocol repo changes are merged

@@ -26,9 +26,9 @@ import { Position3D } from '@dcl/catalyst-peer'
 import { ILogger } from 'shared/logger'
 import { incrementCommsMessageSent } from 'shared/session/getPerformanceInfo'
 import { listenPeerMessage } from '../logic/subscription-adapter'
-import { PeerTopicSubscriptionResultElem } from 'shared/protocol/bff/comms-service.gen'
 import { IBff } from '../../bff/types'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
+import { PeerTopicSubscriptionResultElem } from 'shared/protocol/bff/topics-service.gen'
 
 export type RelaySuspensionConfig = {
   relaySuspensionInterval: number

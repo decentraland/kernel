@@ -37,7 +37,7 @@ import { AlgorithmChainConfig } from './pick-realm-algorithm/types'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import defaultLogger from 'shared/logger'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { getCommsContext } from 'shared/comms/selectors'
+import { getCommsRoom } from 'shared/comms/selectors'
 import { CatalystNode } from 'shared/types'
 import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/bff/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
@@ -107,7 +107,7 @@ export function* selectAndReconnectRealm() {
 
     if (realm) {
       yield call(waitForExplorerIdentity)
-      yield call(changeRealm, realm)
+      yield call(changeRealm, realm, true)
     } else {
       throw new Error("Couldn't select a suitable realm to join.")
     }
@@ -156,6 +156,8 @@ function* selectRealm() {
     (yield call(getRealmFromLocalStorage, network))
 
   if (!realm) debugger
+
+  console.log(`Trying to connect to realm `, realm)
 
   return realm
 }
@@ -244,7 +246,7 @@ function* cacheCatalystCandidates(_action: SetCatalystCandidates) {
 }
 
 export function* waitForRealmInitialized() {
-  while (!(yield select(getCommsContext))) {
+  while (!(yield select(getCommsRoom))) {
     yield take(SET_WORLD_CONTEXT)
   }
 }

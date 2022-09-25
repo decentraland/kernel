@@ -11,7 +11,7 @@ import {
   SetBffAction,
   SET_BFF
 } from './actions'
-import { SET_COMMS_ISLAND } from '../comms/actions'
+import { setRoomConnection, SET_COMMS_ISLAND } from '../comms/actions'
 import { listenSystemMessage } from '../comms/logic/subscription-adapter'
 import { IBff } from './types'
 import { Reader } from 'protobufjs/minimal'
@@ -24,6 +24,7 @@ import { FATAL_ERROR } from 'shared/loading/types'
 import { BEFORE_UNLOAD } from 'shared/protocol/actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { realmToConnectionString } from './resolver'
+import { hookConnectToFixedAdaptersIfNecessary } from './logic'
 
 const logger = createLogger('BffSagas')
 
@@ -56,6 +57,8 @@ async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Prom
   })
 
   notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(bff)}!`)
+
+  hookConnectToFixedAdaptersIfNecessary(bff)
 
   const islandListener = listenSystemMessage(bff.services.comms, `${address}.island_changed`, async (message) => {
     try {
@@ -129,6 +132,9 @@ function* handleNewBFF() {
       unbind().catch(logger.error)
       unbind = async () => {}
     }
+
+    // disconnect the world adapter with every new BFF
+    yield put(setRoomConnection(undefined))
 
     if (action.payload) {
       const identity: ExplorerIdentity = yield select(getCurrentIdentity)
