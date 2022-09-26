@@ -196,6 +196,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'ShowFPSPanel')
   }
 
+  public DetectABs(data: { isOn: boolean; forCurrentScene: boolean }) {
+    this.SendMessageToUnity('Bridges', 'DetectABs', JSON.stringify(data))
+  }
+
   public HideFPSPanel() {
     this.SendMessageToUnity('Main', 'HideFPSPanel')
   }
