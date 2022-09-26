@@ -28,14 +28,14 @@ export function incrementCommsMessageReceived() {
 
 export const commsPerfObservable = mitt<any>()
 
-export function incrementCommsMessageReceivedByName(event: string, value?: number) {
-  commsPerfObservable.emit(event, { value })
+export function incrementCommsMessageReceivedByName(event: string) {
+  commsPerfObservable.emit(event, { value: 1 })
   incrementCounter(`commMessage:${event}`)
   // NOTE:          ^^^^^^^^^^^ do NOT fix that typo
 }
 
-export function incrementAvatarSceneMessages() {
-  commsPerfObservable.emit('avatar-renderer', { value: 1 })
+export function incrementAvatarSceneMessages(value: number) {
+  commsPerfObservable.emit('avatar-renderer', { value })
 }
 
 export function incrementCommsMessageSent(bytes: number) {
@@ -264,8 +264,9 @@ export function debugCommsGraph() {
     return series.get(name)!
   }
 
-  commsPerfObservable.on('*', (event, data) => {
-    getTimeSeries(event as any).stash++
+  commsPerfObservable.on('*', (event, { value }) => {
+    if (!isNaN(value)) getTimeSeries(event as any).stash += value
+    else getTimeSeries(event as any).stash++
   })
 
   setInterval(() => {

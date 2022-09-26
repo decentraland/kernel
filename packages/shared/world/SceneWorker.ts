@@ -35,6 +35,7 @@ import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePosit
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
 import { permissionItemFromJSON } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { incrementAvatarSceneMessages } from 'shared/session/getPerformanceInfo'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -219,6 +220,10 @@ export class SceneWorker {
   }
 
   private sendBatch(actions: EntityAction[]): void {
+    if (this.loadableScene.id === 'dcl-gs-avatars') {
+      incrementAvatarSceneMessages(actions.length)
+    }
+
     let time = Date.now()
     if (WSS_ENABLED || FORCE_SEND_MESSAGE) {
       this.sendBatchWss(actions)
