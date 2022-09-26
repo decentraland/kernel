@@ -8,15 +8,18 @@ SCENE_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.pro
 COMMSRFC4_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/comms/*.proto)
 COMMS_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/kernel/comms/v3/*.proto)
 
-PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/renderer-protocol/proto/%.gen.ts)
 BFF_TS =        packages/shared/protocol/bff-services.gen.ts
 PBS_TS =        packages/shared/protocol/kernel/sdk-apis.gen.ts
+PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/shared/protocol/renderer-protocol/%.gen.ts)
 COMMSRFC4_TS =  $(COMMSRFC4_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/%.proto=packages/shared/protocol/kernel/comms/%.gen.ts)
 COMMS_TS =      $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/v3/%.proto=packages/shared/protocol/kernel/comms/v3/%.gen.ts)
 
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protoc
-
+PROTOC_ARGS = --plugin=./node_modules/.bin/protoc-gen-ts_proto \
+			        --ts_proto_opt=returnObservable=false,outputServices=generic-definitions,fileSuffix=.gen \
+			        --ts_proto_out="$(PWD)/packages/shared/protocol" \
+              -I="$(PWD)/node_modules/@dcl/protocol"
 # Remove default Makefile rules
 
 .SUFFIXES:
@@ -178,35 +181,19 @@ help:
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
 
 packages/shared/protocol/kernel/sdk-apis.gen.ts: node_modules/@dcl/protocol/sdk-apis.proto
-	${PROTOC}  \
-			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-			--ts_proto_opt=returnObservable=false,outputServices=generic-definitions \
-			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/protocol" \
-			-I="$(PWD)/node_modules/@dcl/protocol" \
-			"$(PWD)/node_modules/@dcl/protocol/sdk-apis.proto";
+	${PROTOC} ${PROTOC_ARGS} \
+    "$(PWD)/node_modules/@dcl/protocol/sdk-apis.proto";
 
-packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto
-	mkdir -p "$(PWD)/packages/renderer-protocol/proto"
-	${PROTOC}  \
-			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-			--ts_proto_opt=returnObservable=false,outputServices=generic-definitions \
-			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/renderer-protocol/proto" \
-			-I="$(PWD)/packages/renderer-protocol/proto" \
-			-I="$(PWD)/node_modules/@dcl/protocol" \
-			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
+packages/shared/protocol/renderer-protocol/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto
+	mkdir -p "$(PWD)/packages/shared/protocol/renderer-protocol"
+	${PROTOC} ${PROTOC_ARGS} \
+    "$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
 packages/shared/protocol/bff-services.gen.ts: node_modules/@dcl/protocol/bff-services.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/bff"
-	${PROTOC}  \
-			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
-		  --ts_proto_opt=returnObservable=false,outputServices=generic-definitions,oneof=unions \
-			--ts_proto_opt=fileSuffix=.gen \
-			--ts_proto_out="$(PWD)/packages/shared/protocol" \
-      -I="$(PWD)/node_modules/@dcl/protocol" \
-      -I="$(PWD)/node_modules/protobufjs" \
-			"$(PWD)/node_modules/@dcl/protocol/bff-services.proto"
+	${PROTOC} ${PROTOC_ARGS} \
+    -I="$(PWD)/node_modules/protobufjs" \
+    "$(PWD)/node_modules/@dcl/protocol/bff-services.proto"
 
 packages/shared/protocol/kernel/comms/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/%.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms"
