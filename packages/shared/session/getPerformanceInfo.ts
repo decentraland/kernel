@@ -215,7 +215,7 @@ export function debugCommsGraph() {
   const canvas = document.createElement('canvas')
 
   div.style.position = 'absolute'
-  div.style.bottom = '0'
+  div.style.bottom = '287px'
   div.style.right = '0'
   div.style.marginBottom = '45px'
   div.style.zIndex = '99999'

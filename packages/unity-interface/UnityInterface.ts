@@ -51,27 +51,6 @@ import { incrementCounter } from '../shared/occurences'
 
 const MINIMAP_CHUNK_SIZE = 100
 
-export let originalPixelRatio: number = 1
-
-function resizeCanvas(targetHeight: number) {
-  // When renderer is configured with unlimited resolution,
-  // the targetHeight is set to an arbitrary high value
-  const assumeUnlimitedResolution: boolean = targetHeight > 2000
-
-  if (assumeUnlimitedResolution) {
-    devicePixelRatio = originalPixelRatio
-  } else {
-    // We calculate width using height as reference
-    const screenHeight = screen.height * originalPixelRatio
-
-    const pixelRatioH = targetHeight / screenHeight
-
-    // From 2020 version onwards, Unity hooks to devicePixelRatio to adjust
-    // the FBO size instead of the canvas resize.
-    devicePixelRatio = pixelRatioH * originalPixelRatio
-  }
-}
-
 const unityLogger: ILogger = createUnityLogger()
 
 export class UnityInterface implements IUnityInterface {
@@ -91,7 +70,6 @@ export class UnityInterface implements IUnityInterface {
     }
 
     this.currentHeight = height
-    resizeCanvas(height)
   }
 
   public Init(gameInstance: UnityGame): void {
@@ -101,18 +79,6 @@ export class UnityInterface implements IUnityInterface {
 
     this.gameInstance = gameInstance
     this.Module = this.gameInstance.Module
-
-    if (this.Module) {
-      if (EDITOR) {
-        const canvas = this.Module.canvas
-        canvas.width = canvas.parentElement.clientWidth
-        canvas.height = canvas.parentElement.clientHeight
-      } else {
-        // TODO(Brian): Here we save the original pixel ratio, but we aren't listening to changes
-        //              We may have to listen them for some devices?
-        originalPixelRatio = devicePixelRatio
-      }
-    }
   }
 
   public SendGenericMessage(object: string, method: string, payload: string) {
