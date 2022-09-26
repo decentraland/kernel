@@ -242,10 +242,9 @@ function initChatCommands() {
     }
   })
 
-  addChatCommand('debug','Show debug panel',(_message) => getDebugPanelMessage())
+  addChatCommand('debug', 'Show debug panel', (_message) => getDebugPanelMessage())
 
-  addChatCommand('showfps','Show fps panel (deprecated in favor of /debug)',(_message) => 
-      getDebugPanelMessage())
+  addChatCommand('showfps', 'Show fps panel (deprecated in favor of /debug)', (_message) => getDebugPanelMessage())
 
   /* 
     /detectabs => enable for all shapes
@@ -254,8 +253,9 @@ function initChatCommands() {
     /detectabs scene off => disable for current scene shapes
    */
   addChatCommand('detectabs', 'Paint AB-loaded world objects green and GLTF red', (message) =>
-      parseAndSendDetectABMessage(message))
-  
+    parseAndSendDetectABMessage(message)
+  )
+
   addChatCommand('getname', 'Gets your username', (_message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
     if (!currentUserProfile) throw new Error('profileNotInitialized')
@@ -479,7 +479,6 @@ function getDebugPanelMessage() {
 //off => disable ABs painting for all loaded scenes
 //scene off => disable ABs painting for current scene
 function parseAndSendDetectABMessage(message: string) {
-
   let isOn: boolean
   let forCurrentScene: boolean
   const offString: string = 'off'
@@ -496,7 +495,7 @@ function parseAndSendDetectABMessage(message: string) {
     forCurrentScene = message === sceneString
   }
 
-  getUnityInstance().DetectABs({isOn: isOn, forCurrentScene: forCurrentScene})
+  getUnityInstance().DetectABs({ isOn: isOn, forCurrentScene: forCurrentScene })
 
   return {
     messageId: uuid(),
