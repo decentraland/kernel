@@ -1231,7 +1231,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let errorCode = ChannelErrorCode.GENERIC
+      let errorCode = ChannelErrorCode.UNKNOWN
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
         errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
@@ -1275,7 +1275,7 @@ export async function createChannel(request: CreateChannelPayload) {
     getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let errorCode = ChannelErrorCode.GENERIC
+      let errorCode = ChannelErrorCode.UNKNOWN
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
         errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
