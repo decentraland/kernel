@@ -23,15 +23,8 @@ import { fetchParcelsWithAccess } from 'shared/profiles/fetchLand'
 import { UPDATE_LOADING_SCREEN } from 'shared/loading/actions'
 import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selectors'
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
-import {
-  SET_WORLD_CONTEXT,
-  VoicePlayingUpdate,
-  VoiceRecordingUpdate,
-  VOICE_PLAYING_UPDATE,
-  VOICE_RECORDING_UPDATE
-} from 'shared/comms/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
-import { CurrentRealmInfoForRenderer, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
+import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getCommsContext } from 'shared/comms/selectors'
@@ -43,6 +36,17 @@ import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { waitForRendererInstance } from './sagas-helper'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import {
+  SetVoiceChatErrorAction,
+  SetVoiceChatHandlerAction,
+  SET_VOICE_CHAT_ERROR,
+  SET_VOICE_CHAT_HANDLER,
+  VoicePlayingUpdateAction,
+  VoiceRecordingUpdateAction,
+  VOICE_PLAYING_UPDATE,
+  VOICE_RECORDING_UPDATE
+} from 'shared/voiceChat/actions'
+import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -50,6 +54,8 @@ export function* rendererSaga() {
   yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreen)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
+  yield takeEvery(SET_VOICE_CHAT_HANDLER, updateChangeVoiceChatHandler)
+  yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
@@ -103,14 +109,37 @@ function convertCurrentRealmType(realm: Realm, contentServerUrl: string): Curren
   }
 }
 
-function* updateUserVoicePlayingRenderer(action: VoicePlayingUpdate) {
+function* updateUserVoicePlayingRenderer(action: VoicePlayingUpdateAction) {
   const { playing, userId } = action.payload
+  yield call(waitForRendererInstance)
   getUnityInstance().SetUserTalking(userId, playing)
 }
 
-function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdate) {
+function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdateAction) {
   yield call(waitForRendererInstance)
   getUnityInstance().SetPlayerTalking(action.payload.recording)
+}
+
+function* updateChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
+  yield call(waitForRendererInstance)
+  if (action.payload.voiceHandler) {
+    getUnityInstance().SetVoiceChatStatus({ isConnected: true })
+  } else {
+    getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+  }
+}
+
+function* handleVoiceChatError(action: SetVoiceChatErrorAction) {
+  const message = action.payload.message
+  yield call(waitForRendererInstance)
+  if (message) {
+    getUnityInstance().ShowNotification({
+      type: NotificationType.GENERIC,
+      message,
+      buttonMessage: 'OK',
+      timer: 5
+    })
+  }
 }
 
 function* listenToWhetherSceneSupportsVoiceChat() {

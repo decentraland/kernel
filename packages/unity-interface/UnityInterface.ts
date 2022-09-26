@@ -31,7 +31,7 @@ import {
   UpdateTotalFriendRequestsPayload,
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
-  ChannelsInfoPayload,
+  ChannelInfoPayloads,
   ChannelErrorPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
@@ -194,6 +194,10 @@ export class UnityInterface implements IUnityInterface {
 
   public ShowFPSPanel() {
     this.SendMessageToUnity('Main', 'ShowFPSPanel')
+  }
+
+  public DetectABs(data: { isOn: boolean; forCurrentScene: boolean }) {
+    this.SendMessageToUnity('Bridges', 'DetectABs', JSON.stringify(data))
   }
 
   public HideFPSPanel() {
@@ -419,7 +423,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
   }
 
-  public JoinChannelConfirmation(channelInfoPayload: ChannelsInfoPayload) {
+  public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {
     this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
   }
 
@@ -437,7 +441,7 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
-  public UpdateChannelInfo(channelInfoPayload: ChannelsInfoPayload) {
+  public UpdateChannelInfo(channelInfoPayload: ChannelInfoPayloads) {
     this.SendMessageToUnity('Main', 'UpdateChannelInfo', JSON.stringify(channelInfoPayload))
   }
 

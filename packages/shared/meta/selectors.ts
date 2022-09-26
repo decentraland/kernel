@@ -29,7 +29,7 @@ export const getMinCatalystVersion = (store: RootMetaState): string | undefined 
   return config.minCatalystVersion
 }
 
-export const isMetaConfigurationInitiazed = (store: RootMetaState): boolean => store.meta.initialized
+export const isMetaConfigurationInitialized = (store: RootMetaState): boolean => store.meta.initialized
 
 export const getWorldConfig = (store: RootMetaState): WorldConfig => store.meta.config.world as WorldConfig
 
@@ -43,6 +43,9 @@ export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmCha
 
 export const getDisabledCatalystConfig = (store: RootMetaState): string[] | undefined =>
   getFeatureFlagVariantValue(store, 'disabled-catalyst') as string[] | undefined
+
+export const getLiveKitVoiceChat = (store: RootMetaState): boolean =>
+  getFeatureFlagEnabled(store, 'livekit-voicechat') as boolean
 
 export function getMaxVisiblePeers(store: RootMetaState): number {
   return (

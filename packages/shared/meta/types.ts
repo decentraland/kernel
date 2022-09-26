@@ -36,7 +36,8 @@ export type FeatureFlagsName =
   | 'initial_portable_experiences'
   | 'web_cap_fps' // caps the web client FPS
   | 'disabled-catalyst'
-  | 'max_joined_channels' // Todo Juli!: Does this name make sense?
+  | 'livekit-voicechat'
+  | 'max_joined_channels' // the max amount of joined channels allowed per user
 
 export type BannedUsers = Record<string, Ban[]>
 

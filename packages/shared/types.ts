@@ -732,7 +732,7 @@ export type AvatarRendererRemovedMessage = {
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
 
 export enum ChannelErrorCode {
-  GENERIC = 0, // Todo Juli!: Not sure about this one
+  UNKNOWN = 0, // / Any uncategorized channel related error
   LIMIT_EXCEEDED = 1, // Reached the max amount of joined channels allowed per user
   WRONG_FORMAT = 2, // Does not meet the name rules
   RESERVED_NAME = 3, // Such as nearby
@@ -759,8 +759,8 @@ export type ChannelInfoPayload = {
   muted: boolean
 }
 
-export type ChannelsInfoPayload = {
-  channelsInfoPayload: ChannelInfoPayload[]
+export type ChannelInfoPayloads = {
+  channelInfoPayload: ChannelInfoPayload[]
 }
 
 export type MarkChannelMessagesAsSeenPayload = {
