@@ -14,6 +14,7 @@ import { RootLoadingState } from '../loading/reducer'
 import { RootQuestsState } from 'shared/quests/types'
 import { RootPortableExperiencesState } from 'shared/portableExperiences/types'
 import { RootWearablesPortableExperienceState } from 'shared/wearablesPortableExperience/types'
+import { RootVoiceChatState } from 'shared/voiceChat/types'
 
 export type RootState = RootAtlasState &
   RootProfileState &
@@ -28,6 +29,7 @@ export type RootState = RootAtlasState &
   RootCatalogState &
   RootQuestsState &
   RootPortableExperiencesState &
-  RootWearablesPortableExperienceState
+  RootWearablesPortableExperienceState &
+  RootVoiceChatState
 
 export type RootStore = Store<RootState>

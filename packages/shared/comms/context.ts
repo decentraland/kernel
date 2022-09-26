@@ -17,7 +17,7 @@ import { Avatar } from '@dcl/schemas'
 import { ProfileType } from 'shared/profiles/types'
 import { getParcelSceneSubscriptions } from './sceneSubscriptions'
 import { MORDOR_POSITION } from './const'
-import { incrementCommsMessageReceived } from 'shared/session/getPerformanceInfo'
+import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
 
 export type CommsVersion = 'v1' | 'v2' | 'v3'
 export type CommsMode = CommsV1Mode | CommsV2Mode
@@ -57,7 +57,10 @@ export class CommsContext {
     public readonly worldInstanceConnection: RoomConnection
   ) {
     this.commRadius = commConfigurations.commRadius
-    this.worldInstanceConnection.events.on('*', incrementCommsMessageReceived)
+    this.worldInstanceConnection.events.on('*', (type, _) => {
+      incrementCommsMessageReceived()
+      incrementCommsMessageReceivedByName(type)
+    })
     this.worldInstanceConnection.events.on('DISCONNECTION', () => this.disconnect())
   }
 
