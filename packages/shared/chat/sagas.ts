@@ -33,6 +33,7 @@ import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { SocialAPI } from 'dcl-social-client'
 import { joinOrCreateChannel, leaveChannel } from 'shared/friends/actions'
 
+
 interface IChatCommand {
   name: string
   description: string
