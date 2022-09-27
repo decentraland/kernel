@@ -671,7 +671,7 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
       lastMessageTimestamp: friend.conversation.lastEventTimestamp!,
       userId: friend.userId
     })),
-    totalFriendsWithDirectMessages: friendsConversations.length
+    totalFriendsWithDirectMessages: conversationsWithMessages.length
   }
 
   const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
