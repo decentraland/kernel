@@ -45,7 +45,6 @@ import {
   CreateChannelPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   GetJoinedChannelsPayload,
-  ChannelsInfoPayload,
   ChannelInfoPayload,
   MarkChannelMessagesAsSeenPayload,
   GetChannelMessagesPayload,
@@ -434,9 +433,6 @@ function* refreshFriends() {
     defaultLogger.log('____ initMessage ____', initFriendsMessage)
     defaultLogger.log('____ initChatMessage ____', initChatMessage)
 
-    getUnityInstance().InitializeFriends(initFriendsMessage)
-    getUnityInstance().InitializeChat(initChatMessage)
-
     // all profiles to obtain, deduped
     const allProfilesToObtain: string[] = friendIds
       .concat(requestedFromIds.map((x) => x.userId))
@@ -445,6 +441,9 @@ function* refreshFriends() {
 
     const ensureFriendProfilesPromises = allProfilesToObtain.map((userId) => ensureFriendProfile(userId))
     yield Promise.all(ensureFriendProfilesPromises).catch(logger.error)
+
+    getUnityInstance().InitializeFriends(initFriendsMessage)
+    getUnityInstance().InitializeChat(initChatMessage)
 
     yield put(
       updatePrivateMessagingState({
@@ -1208,7 +1207,7 @@ function updateSocialInfo(socialData: SocialData) {
 }
 
 // Join or create channel
-async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
+function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
@@ -1217,7 +1216,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     const ownId = client.getUserId()
 
     // get or create channel
-    const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
+    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, [ownId]])
 
     const channel: ChannelInfoPayload = {
       name: conversation.name!,
@@ -1231,7 +1230,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     }
 
     if (!created) {
-      await client.joinChannel(conversation.id)
+      yield apply(client, client.joinChannel, [conversation.id])
 
       const joinedChannel = client.getChannel(conversation.id)
 
@@ -1240,16 +1239,11 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       channel.memberCount = joinedChannel?.userIds?.length || 0
     }
 
-    // parse channel info
-    const channelsInfo: ChannelsInfoPayload = {
-      channelsInfoPayload: [channel]
-    }
-
     // send confirmation message to unity
-    getUnityInstance().JoinChannelConfirmation(channelsInfo)
+    getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let errorCode = ChannelErrorCode.GENERIC
+      let errorCode = ChannelErrorCode.UNKNOWN
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
         errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
@@ -1278,26 +1272,22 @@ export async function createChannel(request: CreateChannelPayload) {
     }
 
     // parse channel info
-    const channelsInfo: ChannelsInfoPayload = {
-      channelsInfoPayload: [
-        {
-          name: conversation.name!,
-          channelId: conversation.id,
-          unseenMessages: 0,
-          lastMessageTimestamp: undefined,
-          memberCount: 1,
-          description: '',
-          joined: true,
-          muted: false
-        }
-      ]
+    const channel: ChannelInfoPayload = {
+      name: conversation.name!,
+      channelId: conversation.id,
+      unseenMessages: 0,
+      lastMessageTimestamp: undefined,
+      memberCount: 1,
+      description: '',
+      joined: true,
+      muted: false
     }
 
     // Send confirmation message to unity
-    getUnityInstance().JoinChannelConfirmation(channelsInfo)
+    getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let errorCode = ChannelErrorCode.GENERIC
+      let errorCode = ChannelErrorCode.UNKNOWN
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
         errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
@@ -1325,28 +1315,20 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     (conv) => conv.conversation.type === ConversationType.CHANNEL
   )
 
-  const conversationsToReturn = conversationsWithMessages.slice(request.skip, request.skip + request.limit)
+  const conversationsFiltered = conversationsWithMessages.slice(request.skip, request.skip + request.limit)
 
-  // parse channel info
-  const channelsInfo: ChannelsInfoPayload = {
-    channelsInfoPayload: []
-  }
+  const channelsToReturn: ChannelInfoPayload[] = conversationsFiltered.map((conv) => ({
+    name: conv.conversation.name || '',
+    channelId: conv.conversation.id,
+    unseenMessages: conv.conversation.unreadMessages?.length || 0,
+    lastMessageTimestamp: conv.conversation.lastEventTimestamp || undefined,
+    memberCount: conv.conversation.userIds?.length || 1,
+    description: '',
+    joined: true,
+    muted: false
+  }))
 
-  for (const conv of conversationsToReturn) {
-    channelsInfo.channelsInfoPayload.push({
-      name: conv.conversation.name!,
-      channelId: conv.conversation.id,
-      unseenMessages: conv.conversation.unreadMessages?.length || 0,
-      lastMessageTimestamp: conv.conversation.lastEventTimestamp || undefined,
-      memberCount: conv.conversation.userIds?.length || 1,
-      description: '',
-      joined: true,
-      muted: false
-    })
-  }
-
-  // send total unseen messages by channels to unity
-  getUnityInstance().UpdateChannelInfo(channelsInfo)
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: channelsToReturn })
 }
 
 // Mark channel messages as seen
@@ -1422,7 +1404,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
 /**
  * Send join/create channel related error message to unity
  * @param channelId
- * @param message
+ * @param errorCode
  */
 function notifyJoinChannelError(channelId: string, errorCode: number) {
   const joinChannelError: ChannelErrorPayload = {
@@ -1438,14 +1420,14 @@ function notifyJoinChannelError(channelId: string, errorCode: number) {
  * Get list of total unseen messages by channelId
  */
 function getTotalUnseenMessagesByChannel() {
-  const updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload = {
-    unseenChannelMessages: []
-  }
-
-  // get conversations with messages
+  // get conversations messages
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.CHANNEL
   )
+
+  const updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload = {
+    unseenChannelMessages: []
+  }
 
   // it means the user is not joined to any channel
   if (conversationsWithMessages.length === 0) {
@@ -1501,5 +1483,5 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
   }
 
   // send message to unity
-  getUnityInstance().UpdateChannelInfo({ channelsInfoPayload: [channelInfo] })
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channelInfo] })
 }

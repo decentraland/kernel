@@ -1,13 +1,21 @@
-import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from "dcl-social-client"
+import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import * as friendsSelectors from 'shared/friends/selectors'
 import * as profilesSelectors from 'shared/profiles/selectors'
-import { getUserIdFromMatrix } from "shared/friends/utils"
-import { buildStore } from "shared/store/store"
-import { AddChatMessagesPayload, ChannelsInfoPayload, ChatMessageType, GetChannelMessagesPayload, GetJoinedChannelsPayload, UpdateTotalUnseenMessagesByChannelPayload } from "shared/types"
-import sinon from "sinon"
-import { getUnityInstance } from "unity-interface/IUnityInterface"
-import { Avatar } from "@dcl/schemas"
+import { getUserIdFromMatrix } from 'shared/friends/utils'
+import { buildStore } from 'shared/store/store'
+import {
+  AddChatMessagesPayload,
+  ChannelInfoPayload,
+  ChannelInfoPayloads,
+  ChatMessageType,
+  GetChannelMessagesPayload,
+  GetJoinedChannelsPayload,
+  UpdateTotalUnseenMessagesByChannelPayload
+} from 'shared/types'
+import sinon from 'sinon'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { Avatar } from '@dcl/schemas'
 
 const channelMessages: TextMessage[] = [
   {
@@ -38,9 +46,12 @@ const getMockedConversation = (channelId: string, type: ConversationType): Conve
   id: channelId,
   lastEventTimestamp: Date.now(),
   userIds: ['0xa1', '0xb1', '0xc1', '0xd1'],
-  unreadMessages: [{ id: '1', timestamp: Date.now() }, { id: '2', timestamp: Date.now() }],
+  unreadMessages: [
+    { id: '1', timestamp: Date.now() },
+    { id: '2', timestamp: Date.now() }
+  ],
   hasMessages: true,
-  name: `cantique ${channelId}`,
+  name: `cantique ${channelId}`
 })
 
 const mutedIds = ['111']
@@ -86,15 +97,18 @@ const allCurrentConversations: Array<{ conversation: Conversation; unreadMessage
   }
 ]
 
-const stubClient = (start: number, end: number) => ({
-  getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
-  getUserId: () => '0xa1',
-}) as unknown as SocialAPI
+const stubClient = (start: number, end: number) =>
+  ({
+    getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
+    getUserId: () => '0xa1'
+  } as unknown as SocialAPI)
 
-function mockStoreCalls(ops?: { start?: number, end?: number }) {
+function mockStoreCalls(ops?: { start?: number; end?: number }) {
   sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient(ops?.start || 0, ops?.end || 0))
-  sinon.stub(profilesSelectors, 'getCurrentUserProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
+  sinon
+    .stub(profilesSelectors, 'getCurrentUserProfile')
+    .callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
   sinon.stub(profilesSelectors, 'getProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds))
 }
 
@@ -118,19 +132,20 @@ describe('Friends sagas - Channels Feature', () => {
       it('Should send the start of the channel list pagination', () => {
         const request: GetJoinedChannelsPayload = {
           limit: 2,
-          skip: 0,
+          skip: 0
         }
 
         // parse channel info
-        const channelsInfo: ChannelsInfoPayload = {
-          channelsInfoPayload: []
+        const channelsInfo: ChannelInfoPayloads = {
+          channelInfoPayload: []
         }
 
-        const allCurrentConversationsFiltered = allCurrentConversations.slice(request.skip, request.skip + request.limit).
-          filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+        const allCurrentConversationsFiltered = allCurrentConversations
+          .slice(request.skip, request.skip + request.limit)
+          .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
 
         for (const conv of allCurrentConversationsFiltered) {
-          channelsInfo.channelsInfoPayload.push({
+          channelsInfo.channelInfoPayload.push({
             name: conv.conversation.name!,
             channelId: conv.conversation.id,
             unseenMessages: conv.conversation.unreadMessages?.length || 0,
@@ -152,19 +167,20 @@ describe('Friends sagas - Channels Feature', () => {
       it('Should filter the channel list to skip the requested amount', () => {
         const request: GetJoinedChannelsPayload = {
           limit: 2,
-          skip: 1,
+          skip: 1
         }
 
         // parse channel info
-        const channelsInfo: ChannelsInfoPayload = {
-          channelsInfoPayload: []
+        const channelsInfo: ChannelInfoPayloads = {
+          channelInfoPayload: []
         }
 
-        const allCurrentConversationsFiltered = allCurrentConversations.slice(request.skip, request.skip + request.limit).
-          filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+        const allCurrentConversationsFiltered = allCurrentConversations
+          .slice(request.skip, request.skip + request.limit)
+          .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
 
         for (const conv of allCurrentConversationsFiltered) {
-          channelsInfo.channelsInfoPayload.push({
+          channelsInfo.channelInfoPayload.push({
             name: conv.conversation.name!,
             channelId: conv.conversation.id,
             unseenMessages: conv.conversation.unreadMessages?.length || 0,
@@ -179,8 +195,7 @@ describe('Friends sagas - Channels Feature', () => {
         sinon.mock(getUnityInstance()).expects('UpdateChannelInfo').once().withExactArgs(channelsInfo)
         friendsSagas.getJoinedChannels(request)
         sinon.mock(getUnityInstance()).verify()
-      }
-      )
+      })
     })
   })
 
@@ -197,13 +212,11 @@ describe('Friends sagas - Channels Feature', () => {
       sinon.reset()
     })
 
-    describe("When the user is joined to channels and there are unread messages in some of them", () => {
+    describe('When the user is joined to channels and there are unread messages in some of them', () => {
       it('Should send the total amount of unseen messages by channelId', () => {
-        const allCurrentConversationsWithMessagesFiltered = allCurrentConversations.
-          filter((conv) =>
-            conv.conversation.type === ConversationType.CHANNEL
-            && conv.unreadMessages === true
-          )
+        const allCurrentConversationsWithMessagesFiltered = allCurrentConversations.filter(
+          (conv) => conv.conversation.type === ConversationType.CHANNEL && conv.unreadMessages === true
+        )
 
         const totalUnseenMessagesByChannel: UpdateTotalUnseenMessagesByChannelPayload = {
           unseenChannelMessages: []
@@ -221,7 +234,11 @@ describe('Friends sagas - Channels Feature', () => {
           })
         }
 
-        sinon.mock(getUnityInstance()).expects('UpdateTotalUnseenMessagesByChannel').once().withExactArgs(totalUnseenMessagesByChannel)
+        sinon
+          .mock(getUnityInstance())
+          .expects('UpdateTotalUnseenMessagesByChannel')
+          .once()
+          .withExactArgs(totalUnseenMessagesByChannel)
         friendsSagas.getUnseenMessagesByChannel()
         sinon.mock(getUnityInstance()).verify()
       })
@@ -244,7 +261,7 @@ describe('Friends sagas - Channels Feature', () => {
       sinon.reset()
     })
 
-    describe("When the user opens a chat channel window", () => {
+    describe('When the user opens a chat channel window', () => {
       it('Should send the expected messages', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
@@ -272,7 +289,7 @@ describe('Friends sagas - Channels Feature', () => {
       })
     })
 
-    describe("When the user scrolls backwards in a chat channel window", () => {
+    describe('When the user scrolls backwards in a chat channel window', () => {
       it('Should send the expected messages', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',

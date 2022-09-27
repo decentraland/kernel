@@ -6,6 +6,7 @@ import { WebSocketTransport } from '@dcl/rpc/dist/transports/WebSocket'
 import { loadService, RpcClientModule } from '@dcl/rpc/dist/codegen'
 import { BffAuthenticationServiceDefinition, WelcomePeerInformation } from './proto/bff/authentication-service.gen'
 import { CommsServiceDefinition } from './proto/bff/comms-service.gen'
+import { trackEvent } from 'shared/analytics'
 
 type CommsService = RpcClientModule<CommsServiceDefinition, any>
 
@@ -33,17 +34,18 @@ export class BFFConnection {
   private sceneTopics = new Map<string, TopicListener>()
 
   private commsService: CommsService | null = null
+  private disposed = false
 
   constructor(private url: string, private config: BFFConfig) {}
 
   async connect(): Promise<string> {
     this.wsTransport = WebSocketTransport(new WebSocket(this.url, 'comms'))
     this.wsTransport.on('close', async () => {
-      this.logger.log('transport closed')
+      this.logger.log('BFF transport closed')
       this.disconnect()
     })
     this.wsTransport.on('error', async () => {
-      this.logger.log('transport closed')
+      this.logger.log('BFF transport closed')
       this.disconnect()
     })
     const rpcClient = await createRpcClient(this.wsTransport)
@@ -106,6 +108,9 @@ export class BFFConnection {
 
   public async removePeerTopicListener({ subscriptionId }: TopicListener): Promise<void> {
     if (!this.commsService) {
+      if (this.disposed) {
+        return
+      }
       throw new Error('BFF is not connected')
     }
 
@@ -114,6 +119,9 @@ export class BFFConnection {
 
   public async removeSystemTopicListener({ subscriptionId }: TopicListener): Promise<void> {
     if (!this.commsService) {
+      if (this.disposed) {
+        return
+      }
       throw new Error('BFF is not connected')
     }
 
@@ -121,6 +129,10 @@ export class BFFConnection {
   }
 
   public async publishToTopic(topic: string, payload: Uint8Array): Promise<void> {
+    if (this.disposed) {
+      return
+    }
+
     if (!this.commsService) {
       throw new Error('BFF is not connected')
     }
@@ -130,6 +142,9 @@ export class BFFConnection {
 
   // TODO: replace this method with a listener
   public async setTopics(topics: string[]): Promise<void> {
+    if (this.disposed) {
+      return
+    }
     const newTopics = new Set<string>(topics)
     const topicsToRemove = new Set<string>()
     const topicsToAdd = new Set<string>()
@@ -162,11 +177,17 @@ export class BFFConnection {
   }
 
   disconnect() {
+    if (this.disposed) {
+      return
+    }
+
+    this.disposed = true
+    this.commsService = null
     if (this.wsTransport) {
       this.wsTransport.close()
       this.wsTransport = null
-      this.onDisconnectObservable.notifyObservers()
     }
+    this.onDisconnectObservable.notifyObservers()
   }
 
   private async authenticate(port: RpcClientPort): Promise<string> {
@@ -177,7 +198,9 @@ export class BFFConnection {
 
     const getChallengeResponse = await auth.getChallenge({ address })
     if (getChallengeResponse.alreadyConnected) {
-      return address
+      trackEvent('bff_auth_already_connected', {
+        address
+      })
     }
 
     const authChainJson = JSON.stringify(Authenticator.signPayload(identity, getChallengeResponse.challengeToSign))
