@@ -1,4 +1,12 @@
-import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
+import {
+  Channel,
+  Conversation,
+  ConversationType,
+  MessageStatus,
+  SearchChannelsResponse,
+  SocialAPI,
+  TextMessage
+} from 'dcl-social-client'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import * as friendsSelectors from 'shared/friends/selectors'
 import * as profilesSelectors from 'shared/profiles/selectors'
@@ -6,10 +14,10 @@ import { getUserIdFromMatrix } from 'shared/friends/utils'
 import { buildStore } from 'shared/store/store'
 import {
   AddChatMessagesPayload,
-  ChannelInfoPayload,
   ChannelInfoPayloads,
   ChatMessageType,
   GetChannelMessagesPayload,
+  GetChannelsPayload,
   GetJoinedChannelsPayload,
   UpdateTotalUnseenMessagesByChannelPayload
 } from 'shared/types'
@@ -52,6 +60,14 @@ const getMockedConversation = (channelId: string, type: ConversationType): Conve
   ],
   hasMessages: true,
   name: `cantique ${channelId}`
+})
+
+const getMockedChannels = (channelId: string, memberCount: number): Channel => ({
+  type: ConversationType.CHANNEL,
+  id: channelId,
+  name: `cantique ${channelId}`,
+  description: '',
+  memberCount
 })
 
 const mutedIds = ['111']
@@ -97,15 +113,29 @@ const allCurrentConversations: Array<{ conversation: Conversation; unreadMessage
   }
 ]
 
-const stubClient = (start: number, end: number) =>
+const publicRooms: SearchChannelsResponse[] = [
+  {
+    channels: [getMockedChannels('000', 10), getMockedChannels('111', 2), getMockedChannels('009', 75)],
+    nextBatch: 'next00'
+  },
+  {
+    channels: [getMockedChannels('000', 1), getMockedChannels('009', 12)],
+    nextBatch: undefined
+  }
+]
+
+const stubClient = (start: number, end: number, index: number) =>
   ({
     getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
+    searchChannel: () => Promise.resolve(publicRooms[index]),
     getUserId: () => '0xa1'
   } as unknown as SocialAPI)
 
-function mockStoreCalls(ops?: { start?: number; end?: number }) {
+function mockStoreCalls(ops?: { start?: number; end?: number; index?: number }) {
   sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
-  sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient(ops?.start || 0, ops?.end || 0))
+  sinon
+    .stub(friendsSelectors, 'getSocialClient')
+    .callsFake(() => stubClient(ops?.start || 0, ops?.end || 0, ops?.index || 0))
   sinon
     .stub(profilesSelectors, 'getCurrentUserProfile')
     .callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
@@ -212,7 +242,7 @@ describe('Friends sagas - Channels Feature', () => {
       sinon.reset()
     })
 
-    describe('When the user is joined to channels and there are unread messages in some of them', () => {
+    describe('When the user is joined to channels and some of them have unread messages', () => {
       it('Should send the total amount of unseen messages by channelId', () => {
         const allCurrentConversationsWithMessagesFiltered = allCurrentConversations.filter(
           (conv) => conv.conversation.type === ConversationType.CHANNEL && conv.unreadMessages === true
@@ -313,6 +343,107 @@ describe('Friends sagas - Channels Feature', () => {
 
         sinon.mock(getUnityInstance()).expects('AddChatMessages').once().withExactArgs(addChatMessagesPayload)
         friendsSagas.getChannelMessages(request)
+        sinon.mock(getUnityInstance()).verify()
+      })
+    })
+  })
+
+  describe('Search channels', () => {
+    let opts = { index: 0 }
+
+    beforeEach(() => {
+      const { store } = buildStore()
+      globalThis.globalStore = store
+
+      mockStoreCalls(opts)
+    })
+
+    afterEach(() => {
+      opts.index = opts.index + 1
+      sinon.restore()
+      sinon.reset()
+    })
+
+    describe("When the user wants the list of channels and there's no filter", () => {
+      it('Should send the start of the channels list pagination', () => {
+        const request: GetChannelsPayload = {
+          name: '',
+          limit: 3,
+          since: undefined
+        }
+
+        const joinedChannelIds = allCurrentConversations
+          .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+          .map((conv) => conv.conversation.id)
+
+        const { channels, nextBatch } = publicRooms[opts.index]
+
+        channels.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
+
+        const channelsToReturn = channels.map((channel) => ({
+          channelId: channel.id,
+          name: channel.name || '',
+          unseenMessages: 0,
+          lastMessageTimestamp: undefined,
+          memberCount: channel.memberCount,
+          description: channel.description || '',
+          joined: joinedChannelIds.includes(channel.id),
+          muted: mutedIds.includes(channel.id)
+        }))
+
+        const searchResult = {
+          since: nextBatch,
+          channels: channelsToReturn
+        }
+
+        sinon
+          .mock(getUnityInstance())
+          .expects('UpdateChannelSearchResults')
+          .once()
+          .withExactArgs({ channelSearchResultsPayload: searchResult })
+        friendsSagas.searchChannels(request)
+        sinon.mock(getUnityInstance()).verify()
+      })
+    })
+
+    describe("When the user wants the list of channels and there's filter", () => {
+      it('Should send the start of the filtered channels list pagination', () => {
+        const request: GetChannelsPayload = {
+          name: '00',
+          limit: 3,
+          since: undefined
+        }
+
+        const joinedChannelIds = allCurrentConversations
+          .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+          .map((conv) => conv.conversation.id)
+
+        const { channels, nextBatch } = publicRooms[opts.index]
+
+        channels.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
+
+        const channelsToReturn = channels.map((channel) => ({
+          channelId: channel.id,
+          name: channel.name || '',
+          unseenMessages: 0,
+          lastMessageTimestamp: undefined,
+          memberCount: channel.memberCount,
+          description: channel.description || '',
+          joined: joinedChannelIds.includes(channel.id),
+          muted: mutedIds.includes(channel.id)
+        }))
+
+        const searchResult = {
+          since: nextBatch,
+          channels: channelsToReturn
+        }
+
+        sinon
+          .mock(getUnityInstance())
+          .expects('UpdateChannelSearchResults')
+          .once()
+          .withExactArgs({ channelSearchResultsPayload: searchResult })
+        friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
