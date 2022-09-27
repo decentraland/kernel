@@ -1202,13 +1202,13 @@ function updateSocialInfo(socialData: SocialData) {
   )
 }
 
-async function* handleLeaveChannel(action: LeaveChannel) {
+function* handleLeaveChannel(action: LeaveChannel) {
   try {
     const client = getSocialClient(store.getState())
     if (!client) return
 
     const channelId = action.payload.channelId
-    await client.leaveChannel(channelId)
+    yield apply(client, client.leaveChannel, [channelId])
 
     const profile = getCurrentUserProfile(store.getState())
     // if channel is muted, let's reset that config
