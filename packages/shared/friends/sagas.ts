@@ -220,10 +220,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
       if (userId) {
         // When it's a friend and is not added to catalog
         // unity needs to know this information to show that the user has connected
-        if (!isAddedToCatalog(store.getState(), userId)) {
-          await ensureFriendProfile(userId)
-        }
         if (isFriend(store.getState(), userId)) {
+          if (!isAddedToCatalog(store.getState(), userId)) {
+            await ensureFriendProfile(userId)
+          }
           getUnityInstance().AddFriends({
             friends: [userId],
             totalFriends: getTotalFriends(store.getState())
@@ -766,21 +766,7 @@ function* initializeStatusUpdateInterval() {
 
     const rawFriends: string[] = yield select(getPrivateMessagingFriends)
 
-    const friends = rawFriends.map((x) => {
-      return getMatrixIdFromUser(x)
-    })
-
-    // When it's a friend and is not added to catalog
-    // unity needs to know this information to show that the user has connected
-    friends.forEach(async (friend) => {
-      if (!isAddedToCatalog(store.getState(), friend)) {
-        await ensureFriendProfile(friend)
-      }
-      getUnityInstance().AddFriends({
-        friends: [friend],
-        totalFriends: getTotalFriends(store.getState())
-      })
-    })
+    const friends = rawFriends.map((x) => getMatrixIdFromUser(x))
 
     updateUserStatus(client, ...friends)
 
