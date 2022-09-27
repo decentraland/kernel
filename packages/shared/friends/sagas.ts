@@ -1195,7 +1195,7 @@ function updateSocialInfo(socialData: SocialData) {
 }
 
 // Join or create channel
-async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
+function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
@@ -1204,7 +1204,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     const ownId = client.getUserId()
 
     // get or create channel
-    const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
+    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, [ownId]])
 
     const channel: ChannelInfoPayload = {
       name: conversation.name!,
@@ -1218,7 +1218,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     }
 
     if (!created) {
-      await client.joinChannel(conversation.id)
+      yield apply(client, client.joinChannel, [conversation.id])
 
       const joinedChannel = client.getChannel(conversation.id)
 
