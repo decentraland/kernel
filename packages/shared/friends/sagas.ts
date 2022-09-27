@@ -206,8 +206,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
       if (userId) {
         // When it's a friend and is not added to catalog
         // unity needs to know this information to show that the user has connected
-        if (isFriend(store.getState(), userId) && !isAddedToCatalog(store.getState(), userId)) {
+        if (!isAddedToCatalog(store.getState(), userId)) {
           await ensureFriendProfile(userId)
+        }
+        if (isFriend(store.getState(), userId)) {
           getUnityInstance().AddFriends({
             friends: [userId],
             totalFriends: getTotalFriends(store.getState())
