@@ -1223,7 +1223,7 @@ function* handleLeaveChannel(action: LeaveChannel) {
       muted: false
     }
 
-    getUnityInstance().UpdateChannelInfo({ channelsInfoPayload: [leavingChannelPayload] })
+    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
   } catch (e) {
     if (e instanceof ChannelsError) {
       notifyLeaveChannelError(action.payload.channelId, `Couldn't leave channel: ${action.payload.channelId}`)
