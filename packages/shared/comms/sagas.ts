@@ -203,6 +203,8 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
 
     if (!adapter) throw new Error(`A communications adapter could not be created for protocol=${protocol}`)
 
+    globalThis.__DEBUG_ADAPTER = adapter
+
     yield put(establishingComms())
     yield apply(adapter, adapter.connect, [])
     yield put(setRoomConnection(adapter))
