@@ -33,7 +33,6 @@ import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { SocialAPI } from 'dcl-social-client'
 import { joinOrCreateChannel, leaveChannel } from 'shared/friends/actions'
 
-
 interface IChatCommand {
   name: string
   description: string
@@ -249,7 +248,7 @@ function initChatCommands() {
 
   addChatCommand('showfps', 'Show fps panel (deprecated in favor of /debug)', (_message) => getDebugPanelMessage())
 
-  /* 
+  /*
     /detectabs => enable for all shapes
     /detectabs off => disable for all shapes
     /detectabs scene => enable for current scene shapes
