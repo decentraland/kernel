@@ -434,9 +434,6 @@ function* refreshFriends() {
     defaultLogger.log('____ initMessage ____', initFriendsMessage)
     defaultLogger.log('____ initChatMessage ____', initChatMessage)
 
-    getUnityInstance().InitializeFriends(initFriendsMessage)
-    getUnityInstance().InitializeChat(initChatMessage)
-
     // all profiles to obtain, deduped
     const allProfilesToObtain: string[] = friendIds
       .concat(requestedFromIds.map((x) => x.userId))
@@ -445,6 +442,9 @@ function* refreshFriends() {
 
     const ensureFriendProfilesPromises = allProfilesToObtain.map((userId) => ensureFriendProfile(userId))
     yield Promise.all(ensureFriendProfilesPromises).catch(logger.error)
+
+    getUnityInstance().InitializeFriends(initFriendsMessage)
+    getUnityInstance().InitializeChat(initChatMessage)
 
     yield put(
       updatePrivateMessagingState({
@@ -1202,7 +1202,7 @@ function updateSocialInfo(socialData: SocialData) {
 }
 
 // Join or create channel
-async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
+function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
@@ -1211,7 +1211,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     const ownId = client.getUserId()
 
     // get or create channel
-    const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
+    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, [ownId]])
 
     const channel: ChannelInfoPayload = {
       name: conversation.name!,
@@ -1225,7 +1225,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     }
 
     if (!created) {
-      await client.joinChannel(conversation.id)
+      yield apply(client, client.joinChannel, [conversation.id])
 
       const joinedChannel = client.getChannel(conversation.id)
 
@@ -1238,7 +1238,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let errorCode = ChannelErrorCode.GENERIC
+      let errorCode = ChannelErrorCode.UNKNOWN
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
         errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {
@@ -1282,7 +1282,7 @@ export async function createChannel(request: CreateChannelPayload) {
     getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
-      let errorCode = ChannelErrorCode.GENERIC
+      let errorCode = ChannelErrorCode.UNKNOWN
       if (e.getKind() === ChannelErrorKind.BAD_REGEX) {
         errorCode = ChannelErrorCode.WRONG_FORMAT
       } else if (e.getKind() === ChannelErrorKind.RESERVED_NAME) {

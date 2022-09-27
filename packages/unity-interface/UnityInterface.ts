@@ -197,6 +197,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'ShowFPSPanel')
   }
 
+  public DetectABs(data: { isOn: boolean; forCurrentScene: boolean }) {
+    this.SendMessageToUnity('Bridges', 'DetectABs', JSON.stringify(data))
+  }
+
   public HideFPSPanel() {
     this.SendMessageToUnity('Main', 'HideFPSPanel')
   }
@@ -342,11 +346,6 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddMessageToChatWindow(message: ChatMessage) {
-    try {
-      message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
-    } catch (err: any) {
-      unityLogger.error(err)
-    }
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
       return

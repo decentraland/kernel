@@ -1,11 +1,4 @@
 # General setup
-PROTOBUF_VERSION = 3.20.1
-ifeq ($(shell uname),Darwin)
-PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-osx-x86_64.zip
-else
-PROTOBUF_ZIP = protoc-$(PROTOBUF_VERSION)-linux-x86_64.zip
-endif
-
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
@@ -20,7 +13,7 @@ BFF_TS = $(BFF_PROTO_FILES:packages/shared/comms/v3/proto/bff/%.proto=packages/s
 COMMS_TS = $(COMMS_PROTO_FILES:packages/shared/comms/v3/proto/%.proto=packages/shared/comms/v3/proto/%.gen.ts)
 
 CWD = $(shell pwd)
-PROTOC = node_modules/.bin/protobuf/bin/protoc
+PROTOC = node_modules/.bin/protoc
 
 # Remove default Makefile rules
 
@@ -182,13 +175,7 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
 
-node_modules/.bin/protobuf/bin/protoc:
-	curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOBUF_VERSION)/$(PROTOBUF_ZIP)
-	unzip -o $(PROTOBUF_ZIP) -d node_modules/.bin/protobuf
-	rm $(PROTOBUF_ZIP)
-	chmod +x node_modules/.bin/protobuf/bin/protoc
-
-packages/shared/apis/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/apis/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.proto
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
@@ -198,7 +185,7 @@ packages/shared/apis/proto/%.gen.ts: node_modules/@dcl/protocol/kernel/apis/%.pr
 			-I="$(PWD)/node_modules/@dcl/protocol/kernel/apis" \
 			"$(PWD)/node_modules/@dcl/protocol/kernel/apis/$*.proto";
 
-packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
@@ -208,7 +195,7 @@ packages/renderer-protocol/proto/%.gen.ts: node_modules/@dcl/protocol/renderer-p
 			-I="$(PWD)/node_modules/@dcl/protocol/renderer-protocol/" \
 			"$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
 
-packages/shared/comms/v3/proto/bff/%.gen.ts: packages/shared/comms/v3/proto/bff/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/v3/proto/bff/%.gen.ts: packages/shared/comms/v3/proto/bff/%.proto
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions \
@@ -216,7 +203,7 @@ packages/shared/comms/v3/proto/bff/%.gen.ts: packages/shared/comms/v3/proto/bff/
 			--ts_proto_out="$(PWD)/packages/shared/comms/v3/proto/bff" -I="$(PWD)/packages/shared/comms/v3/proto/bff" \
 			"$(PWD)/packages/shared/comms/v3/proto/bff/$*.proto"
 
-packages/shared/comms/v3/proto/%.gen.ts: packages/shared/comms/v3/proto/%.proto node_modules/.bin/protobuf/bin/protoc
+packages/shared/comms/v3/proto/%.gen.ts: packages/shared/comms/v3/proto/%.proto
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,oneof=unions\
