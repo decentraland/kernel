@@ -248,6 +248,16 @@ function initChatCommands() {
 
   addChatCommand('showfps', 'Show fps panel (deprecated in favor of /debug)', (_message) => getDebugPanelMessage())
 
+  /* 
+    /detectabs => enable for all shapes
+    /detectabs off => disable for all shapes
+    /detectabs scene => enable for current scene shapes
+    /detectabs scene off => disable for current scene shapes
+   */
+  addChatCommand('detectabs', 'Paint AB-loaded world objects green and GLTF red', (message) =>
+    parseAndSendDetectABMessage(message)
+  )
+
   addChatCommand('getname', 'Gets your username', (_message) => {
     const currentUserProfile = getCurrentUserProfile(store.getState())
     if (!currentUserProfile) throw new Error('profileNotInitialized')
@@ -500,6 +510,39 @@ function getDebugPanelMessage() {
     messageType: ChatMessageType.SYSTEM,
     timestamp: Date.now(),
     body: 'Toggling FPS counter'
+  }
+}
+
+//message can be
+//null or empty => enable ABs painting for all scenes
+//scene => enable ABs painting for current scene
+//off => disable ABs painting for all loaded scenes
+//scene off => disable ABs painting for current scene
+function parseAndSendDetectABMessage(message: string) {
+  let isOn: boolean
+  let forCurrentScene: boolean
+  const offString: string = 'off'
+  const sceneString: string = 'scene'
+
+  if (message && message.includes(' ')) {
+    const words: string[] = message.split(' ')
+    const firstWord: string = words[0].trim()
+    const secondWord: string = words[1].trim()
+    forCurrentScene = firstWord === sceneString
+    isOn = secondWord !== offString
+  } else {
+    isOn = message !== offString
+    forCurrentScene = message === sceneString
+  }
+
+  getUnityInstance().DetectABs({ isOn: isOn, forCurrentScene: forCurrentScene })
+
+  return {
+    messageId: uuid(),
+    sender: 'Decentraland',
+    messageType: ChatMessageType.SYSTEM,
+    timestamp: Date.now(),
+    body: 'Sending detect ABs message'
   }
 }
 

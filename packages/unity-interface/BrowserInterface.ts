@@ -60,11 +60,11 @@ import { GIFProcessor } from 'gif-processor/processor'
 import {
   joinVoiceChat,
   leaveVoiceChat,
-  setVoiceChatRecording,
-  setVoicePolicy,
-  setVoiceVolume,
-  toggleVoiceChatRecording
-} from 'shared/comms/actions'
+  requestVoiceChatRecording,
+  setVoiceChatPolicy,
+  setVoiceChatVolume,
+  requestToggleVoiceChatRecording
+} from 'shared/voiceChat/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
@@ -625,7 +625,7 @@ export class BrowserInterface {
   }
 
   public SetVoiceChatRecording(recordingMessage: { recording: boolean }) {
-    store.dispatch(setVoiceChatRecording(recordingMessage.recording))
+    store.dispatch(requestVoiceChatRecording(recordingMessage.recording))
   }
 
   public JoinVoiceChat() {
@@ -637,12 +637,12 @@ export class BrowserInterface {
   }
 
   public ToggleVoiceChatRecording() {
-    store.dispatch(toggleVoiceChatRecording())
+    store.dispatch(requestToggleVoiceChatRecording())
   }
 
   public ApplySettings(settingsMessage: { voiceChatVolume: number; voiceChatAllowCategory: number }) {
-    store.dispatch(setVoiceVolume(settingsMessage.voiceChatVolume))
-    store.dispatch(setVoicePolicy(settingsMessage.voiceChatAllowCategory))
+    store.dispatch(setVoiceChatVolume(settingsMessage.voiceChatVolume))
+    store.dispatch(setVoiceChatPolicy(settingsMessage.voiceChatAllowCategory))
   }
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
@@ -697,7 +697,7 @@ export class BrowserInterface {
     }
   }
 
-  public async CreateChannel(createChannelPayload: CreateChannelPayload) {
+  public CreateChannel(createChannelPayload: CreateChannelPayload) {
     createChannel(createChannelPayload).catch((err) => {
       defaultLogger.error('error createChannel', err),
         trackEvent('error', {
@@ -708,7 +708,7 @@ export class BrowserInterface {
     })
   }
 
-  public async MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+  public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
     if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
     markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
       defaultLogger.error('error markAsSeenChannelMessages', err),
