@@ -748,12 +748,22 @@ function* initializeStatusUpdateInterval() {
       continue
     }
 
-    const domain = client.getDomain()
-
     const rawFriends: string[] = yield select(getPrivateMessagingFriends)
 
     const friends = rawFriends.map((x) => {
-      return `@${x}:${domain}`
+      return getMatrixIdFromUser(x)
+    })
+
+    // When it's a friend and is not added to catalog
+    // unity needs to know this information to show that the user has connected
+    friends.forEach(async (friend) => {
+      if (!isAddedToCatalog(store.getState(), friend)) {
+        await ensureFriendProfile(friend)
+      }
+      getUnityInstance().AddFriends({
+        friends: [friend],
+        totalFriends: getTotalFriends(store.getState())
+      })
     })
 
     updateUserStatus(client, ...friends)
