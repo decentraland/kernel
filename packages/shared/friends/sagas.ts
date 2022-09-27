@@ -1423,11 +1423,11 @@ export async function searchChannels(request: GetChannelsPayload) {
   const channelsSorted = channelsToReturn.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
 
   const searchResult = {
-    since: nextBatch,
+    since: nextBatch === undefined ? null : nextBatch,
     channels: channelsSorted
   }
 
-  getUnityInstance().UpdateChannelSearchResults({ channelSearchResultsPayload: searchResult })
+  getUnityInstance().UpdateChannelSearchResults(searchResult)
 }
 
 /**

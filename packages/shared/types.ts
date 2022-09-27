@@ -764,10 +764,8 @@ export type ChannelInfoPayloads = {
 }
 
 export type ChannelSearchResultsPayload = {
-  channelSearchResultsPayload: {
-    since: string | undefined // nullable pagination token
+    since: string | null // nullable pagination token
     channels: ChannelInfoPayload[]
-  }
 }
 
 export type MarkChannelMessagesAsSeenPayload = {
