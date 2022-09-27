@@ -794,7 +794,6 @@ export type GetJoinedChannelsPayload = {
 export type LeaveChannelPayload = {
   channelId: string
 }
-<<<<<<< HEAD
 
 export type GetChannelInfoPayload = {
   channelsIds: string[]
@@ -816,5 +815,3 @@ export type UpdateChannelMembersPayload = {
   channelId: string
   members: ChannelMember[]
 }
-=======
->>>>>>> origin/main

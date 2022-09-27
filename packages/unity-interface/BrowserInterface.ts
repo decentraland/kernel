@@ -32,12 +32,8 @@ import {
   GetChannelsPayload,
   GetChannelMessagesPayload,
   GetJoinedChannelsPayload,
-<<<<<<< HEAD
   LeaveChannelPayload,
   GetChannelInfoPayload
-=======
-  LeaveChannelPayload
->>>>>>> origin/main
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -101,12 +97,8 @@ import {
   getChannelMessages,
   getJoinedChannels,
   getUnseenMessagesByChannel,
-<<<<<<< HEAD
   markAsSeenChannelMessages,
   getChannelInfo
-=======
-  markAsSeenChannelMessages
->>>>>>> origin/main
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
 
