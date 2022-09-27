@@ -31,7 +31,10 @@ import {
   AddFriendsWithDirectMessagesPayload,
   UpdateTotalFriendRequestsPayload,
   FriendsInitializeChatPayload,
-  UpdateTotalFriendsPayload
+  UpdateTotalFriendsPayload,
+  UpdateTotalUnseenMessagesByChannelPayload,
+  ChannelErrorPayload,
+  ChannelInfoPayloads
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -158,6 +161,18 @@ export interface IUnityInterface {
   AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
   UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
   UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
+
+  // *********************************************************************************
+  // ************** Channels **************
+  // *********************************************************************************
+
+  JoinChannelConfirmation(channelsInfoPayload: ChannelInfoPayloads): void
+  JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload): void
+  UpdateTotalUnseenMessagesByChannel(
+    updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
+  ): void
+  UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
+  LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void

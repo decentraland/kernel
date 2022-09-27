@@ -29,7 +29,10 @@ import {
   AddFriendsWithDirectMessagesPayload,
   FriendsInitializeChatPayload,
   UpdateTotalFriendRequestsPayload,
-  UpdateTotalFriendsPayload
+  UpdateTotalFriendsPayload,
+  UpdateTotalUnseenMessagesByChannelPayload,
+  ChannelInfoPayloads,
+  ChannelErrorPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -413,6 +416,32 @@ export class UnityInterface implements IUnityInterface {
 
   public FriendNotFound(queryString: string) {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
+  }
+
+  public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {
+    this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
+  }
+
+  public JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'JoinChannelError', JSON.stringify(joinChannelErrorPayload))
+  }
+
+  public UpdateTotalUnseenMessagesByChannel(
+    updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
+  ) {
+    this.SendMessageToUnity(
+      'Main',
+      'UpdateTotalUnseenMessagesByChannel',
+      JSON.stringify(updateTotalUnseenMessagesByChannelPayload)
+    )
+  }
+
+  public UpdateChannelInfo(channelInfoPayload: ChannelInfoPayloads) {
+    this.SendMessageToUnity('Main', 'UpdateChannelInfo', JSON.stringify(channelInfoPayload))
+  }
+
+  public LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types

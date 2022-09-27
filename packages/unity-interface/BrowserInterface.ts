@@ -26,7 +26,13 @@ import {
   GetFriendRequestsPayload,
   GetFriendsWithDirectMessagesPayload,
   MarkMessagesAsSeenPayload,
-  GetPrivateMessagesPayload
+  GetPrivateMessagesPayload,
+  MarkChannelMessagesAsSeenPayload,
+  CreateChannelPayload,
+  GetChannelsPayload,
+  GetChannelMessagesPayload,
+  GetJoinedChannelsPayload,
+  LeaveChannelPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -85,7 +91,12 @@ import {
   getFriendsWithDirectMessages,
   getUnseenMessagesByUser,
   getPrivateMessages,
-  markAsSeenPrivateChatMessages
+  markAsSeenPrivateChatMessages,
+  createChannel,
+  getChannelMessages,
+  getJoinedChannels,
+  getUnseenMessagesByChannel,
+  markAsSeenChannelMessages
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
 
@@ -684,6 +695,57 @@ export class BrowserInterface {
         stack: '' + error
       })
     }
+  }
+
+  public CreateChannel(createChannelPayload: CreateChannelPayload) {
+    createChannel(createChannelPayload).catch((err) => {
+      defaultLogger.error('error createChannel', err),
+        trackEvent('error', {
+          message: `error creating channel ${createChannelPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'createChannel'
+        })
+    })
+  }
+
+  public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+    if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
+    markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
+      defaultLogger.error('error markAsSeenChannelMessages', err),
+        trackEvent('error', {
+          message:
+            `error marking channel messages as seen ${markChannelMessagesAsSeenPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'markAsSeenChannelMessages'
+        })
+    })
+  }
+
+  public GetChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
+    getChannelMessages(getChannelMessagesPayload).catch((err) => {
+      defaultLogger.error('error getChannelMessages', err),
+        trackEvent('error', {
+          message: `error getting channel messages ${getChannelMessagesPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getChannelMessages'
+        })
+    })
+  }
+
+  public GetChannels(getChannelsPayload: GetChannelsPayload) {
+    // getChannels(GetChannelsPayload)
+  }
+
+  public GetUnseenMessagesByChannel() {
+    getUnseenMessagesByChannel()
+  }
+
+  public GetJoinedChannels(getJoinedChannelsPayload: GetJoinedChannelsPayload) {
+    getJoinedChannels(getJoinedChannelsPayload)
+  }
+
+  public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
+    // leaveChannel(leaveChannelPayload)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
