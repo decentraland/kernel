@@ -31,7 +31,6 @@ import {
   UpdateTotalFriendRequestsPayload,
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
-  ChannelInfoPayload,
   ChannelErrorPayload,
   ChannelInfoPayloads
 } from 'shared/types'
@@ -419,7 +418,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
   }
 
-  public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayload) {
+  public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {
     this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
   }
 
