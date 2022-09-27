@@ -19,7 +19,17 @@ import {
   ContentMapping,
   TutorialInitializationMessage,
   WorldPosition,
-  HeaderRequest
+  HeaderRequest,
+  AddFriendsPayload,
+  AddFriendRequestsPayload,
+  UpdateTotalUnseenMessagesPayload,
+  UpdateUserUnseenMessagesPayload,
+  AddChatMessagesPayload,
+  UpdateTotalUnseenMessagesByUserPayload,
+  AddFriendsWithDirectMessagesPayload,
+  FriendsInitializeChatPayload,
+  UpdateTotalFriendRequestsPayload,
+  UpdateTotalFriendsPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -36,7 +46,7 @@ import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { incrementCounter } from '../shared/occurences'
 
 const MINIMAP_CHUNK_SIZE = 100
@@ -181,6 +191,10 @@ export class UnityInterface implements IUnityInterface {
 
   public ShowFPSPanel() {
     this.SendMessageToUnity('Main', 'ShowFPSPanel')
+  }
+
+  public DetectABs(data: { isOn: boolean; forCurrentScene: boolean }) {
+    this.SendMessageToUnity('Bridges', 'DetectABs', JSON.stringify(data))
   }
 
   public HideFPSPanel() {
@@ -335,8 +349,58 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
+  public AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddChatMessages', JSON.stringify(addChatMessagesPayload))
+  }
+
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
+  }
+
+  public InitializeChat(initializationMessage: FriendsInitializeChatPayload): void {
+    this.SendMessageToUnity('Main', 'InitializeChat', JSON.stringify(initializationMessage))
+  }
+
+  public AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void {
+    this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(payload))
+  }
+
+  public AddFriends(addFriendsPayload: AddFriendsPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
+  }
+
+  public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
+  }
+
+  public UpdateTotalUnseenMessagesByUser(
+    updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload
+  ): void {
+    this.SendMessageToUnity(
+      'Main',
+      'UpdateTotalUnseenMessagesByUser',
+      JSON.stringify(updateTotalUnseenMessagesByUserPayload)
+    )
+  }
+
+  public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
+  }
+
+  public UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalFriendRequests', JSON.stringify(updateTotalFriendRequestsPayload))
+  }
+
+  public UpdateTotalFriends(updateTotalFriendPayload: UpdateTotalFriendsPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalFriends', JSON.stringify(updateTotalFriendPayload))
+  }
+
+  public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalUnseenMessages', JSON.stringify(updateTotalUnseenMessagesPayload))
+  }
+
+  public UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateUserUnseenMessages', JSON.stringify(updateUserUnseenMessagesPayload))
   }
 
   public UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage) {
