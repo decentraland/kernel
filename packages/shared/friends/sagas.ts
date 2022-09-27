@@ -1225,9 +1225,7 @@ function* handleLeaveChannel(action: LeaveChannel) {
 
     getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
   } catch (e) {
-    if (e instanceof ChannelsError) {
-      notifyLeaveChannelError(action.payload.channelId, `Couldn't leave channel: ${action.payload.channelId}`)
-    }
+    notifyLeaveChannelError(action.payload.channelId, ChannelErrorCode.UNKNOWN)
   }
 }
 
@@ -1444,12 +1442,11 @@ function notifyJoinChannelError(channelId: string, errorCode: number) {
 /**
  * Send leave channel related error message to unity
  * @param channelId
- * @param message
  */
-function notifyLeaveChannelError(channelId: string, message: string) {
+function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode) {
   const leaveChannelError: ChannelErrorPayload = {
     channelId,
-    message
+    errorCode
   }
   getUnityInstance().LeaveChannelError(leaveChannelError)
 }
