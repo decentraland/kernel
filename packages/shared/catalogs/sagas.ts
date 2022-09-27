@@ -347,7 +347,7 @@ function mapUnpublishedItemIntoCatalystItem(action: EmotesRequest | WearablesReq
     id,
     rarity,
     i18n: [{ code: 'en', text: name }],
-    thumbnail: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[thumbnail]}${DEBUG ?? '?cacheblock=true'}`,
+    thumbnail: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[thumbnail]}${DEBUG ? '?cacheblock=true' : ''}`,
     description
   }
 
