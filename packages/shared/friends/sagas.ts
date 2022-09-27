@@ -1396,7 +1396,7 @@ export async function searchChannels(request: GetChannelsPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const searchTerm = request.name
+  const searchTerm = request.name === '' ? undefined : request.name
   const since: string | undefined = request.since === '' ? undefined : request.since
 
   // get user joined channelIds
@@ -1407,7 +1407,7 @@ export async function searchChannels(request: GetChannelsPayload) {
   const profile = getCurrentUserProfile(store.getState())
 
   // search channels
-  const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, since)
+  const { channels, nextBatch } = await client.searchChannel(request.limit, searchTerm, since)
 
   const channelsToReturn: ChannelInfoPayload[] = channels.map((channel) => ({
     channelId: channel.id,
