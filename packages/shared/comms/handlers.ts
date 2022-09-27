@@ -182,7 +182,7 @@ globalThis.__sendPing = () => {
     sentTime: Date.now(),
     alias: pingIndex++
   })
-  sendPublicChatMessage(`␐ping ${nonce}`)
+  sendPublicChatMessage(`␑${nonce}`)
 }
 
 function processChatMessage(message: Package<proto.Chat>) {
@@ -193,26 +193,23 @@ function processChatMessage(message: Package<proto.Chat>) {
   senderPeer.lastUpdate = Date.now()
 
   if (senderPeer.ethereumAddress) {
-    if (message.data.message.startsWith('␐')) {
-      const [id, secondPart] = message.data.message.split(' ')
-
-      const expressionId = id.slice(1)
-      if (expressionId === 'ping') {
-        const nonce = parseInt(secondPart, 10)
-        const request = pingRequests.get(nonce)
-        if (request) {
-          request.responses++
-          console.log(`ping ${request.alias} has ${request.responses} responses (nonce: ${nonce})`)
-        } else {
-          sendPublicChatMessage(message.data.message)
-        }
+    if (message.data.message.startsWith('␑')) {
+      const nonce = parseInt(message.data.message.slice(1), 10)
+      const request = pingRequests.get(nonce)
+      if (request) {
+        request.responses++
+        console.log(`ping ${request.alias} has ${request.responses} responses (nonce: ${nonce})`)
+      } else {
+        sendPublicChatMessage(message.data.message)
       }
+    } else if (message.data.message.startsWith('␐')) {
+      const [id, timestamp] = message.data.message.split(' ')
 
       avatarMessageObservable.notifyObservers({
         type: AvatarMessageType.USER_EXPRESSION,
         userId: senderPeer.ethereumAddress,
-        expressionId,
-        timestamp: parseInt(secondPart, 10)
+        expressionId: id.slice(1),
+        timestamp: parseInt(timestamp, 10)
       })
     } else {
       const isBanned =
