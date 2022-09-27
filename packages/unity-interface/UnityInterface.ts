@@ -32,12 +32,7 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelInfoPayloads,
-<<<<<<< HEAD
-  ChannelErrorPayload,
-  ChannelSearchResultsPayload
-=======
   ChannelErrorPayload
->>>>>>> origin/main
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
