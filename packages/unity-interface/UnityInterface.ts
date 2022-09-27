@@ -32,6 +32,7 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelInfoPayloads,
+  ChannelSearchResultsPayload,
   ChannelErrorPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
