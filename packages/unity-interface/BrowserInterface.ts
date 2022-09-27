@@ -43,7 +43,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -96,7 +96,8 @@ import {
   getChannelMessages,
   getJoinedChannels,
   getUnseenMessagesByChannel,
-  markAsSeenChannelMessages
+  markAsSeenChannelMessages,
+  searchChannels
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
 
@@ -697,7 +698,7 @@ export class BrowserInterface {
     }
   }
 
-  public async CreateChannel(createChannelPayload: CreateChannelPayload) {
+  public CreateChannel(createChannelPayload: CreateChannelPayload) {
     createChannel(createChannelPayload).catch((err) => {
       defaultLogger.error('error createChannel', err),
         trackEvent('error', {
@@ -708,7 +709,7 @@ export class BrowserInterface {
     })
   }
 
-  public async MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+  public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
     if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
     markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
       defaultLogger.error('error markAsSeenChannelMessages', err),
@@ -733,7 +734,14 @@ export class BrowserInterface {
   }
 
   public GetChannels(getChannelsPayload: GetChannelsPayload) {
-    // getChannels(GetChannelsPayload)
+    searchChannels(getChannelsPayload).catch((err) => {
+      defaultLogger.error('error searchChannels', err),
+        trackEvent('error', {
+          message: `error searching channels ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'searchChannels'
+        })
+    })
   }
 
   public GetUnseenMessagesByChannel() {
@@ -745,7 +753,7 @@ export class BrowserInterface {
   }
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
-    // leaveChannel(leaveChannelPayload)
+    leaveChannel(leaveChannelPayload.channelId)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {

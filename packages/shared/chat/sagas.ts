@@ -31,7 +31,7 @@ import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { SocialAPI } from 'dcl-social-client'
-import { joinOrCreateChannel } from 'shared/friends/actions'
+import { joinOrCreateChannel, leaveChannel } from 'shared/friends/actions'
 
 interface IChatCommand {
   name: string
@@ -248,7 +248,7 @@ function initChatCommands() {
 
   addChatCommand('showfps', 'Show fps panel (deprecated in favor of /debug)', (_message) => getDebugPanelMessage())
 
-  /* 
+  /*
     /detectabs => enable for all shapes
     /detectabs off => disable for all shapes
     /detectabs scene => enable for current scene shapes
@@ -484,6 +484,18 @@ function initChatCommands() {
       messageType: ChatMessageType.SYSTEM,
       timestamp: Date.now(),
       body: `Joining channel ${channelId}`
+    }
+  })
+
+  addChatCommand('leave', 'Leave channel', (channelId) => {
+    store.dispatch(leaveChannel(channelId))
+
+    return {
+      messageId: uuid(),
+      sender: 'Decentraland',
+      messageType: ChatMessageType.SYSTEM,
+      timestamp: Date.now(),
+      body: `Leaving channel`
     }
   })
 }
