@@ -96,7 +96,8 @@ import {
   getChannelMessages,
   getJoinedChannels,
   getUnseenMessagesByChannel,
-  markAsSeenChannelMessages
+  markAsSeenChannelMessages,
+  searchChannels
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
 
@@ -733,7 +734,14 @@ export class BrowserInterface {
   }
 
   public GetChannels(getChannelsPayload: GetChannelsPayload) {
-    // getChannels(GetChannelsPayload)
+    searchChannels(getChannelsPayload).catch((err) => {
+      defaultLogger.error('error searchChannels', err),
+        trackEvent('error', {
+          message: `error searching channels ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'searchChannels'
+        })
+    })
   }
 
   public GetUnseenMessagesByChannel() {
