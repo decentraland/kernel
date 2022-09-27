@@ -50,7 +50,8 @@ import {
   GetChannelMessagesPayload,
   ChannelErrorPayload,
   ChannelErrorCode,
-  GetChannelsPayload
+  GetChannelsPayload,
+  ChannelSearchResultsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -1196,7 +1197,7 @@ function updateSocialInfo(socialData: SocialData) {
 }
 
 // Join or create channel
-async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
+function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
@@ -1205,7 +1206,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     const ownId = client.getUserId()
 
     // get or create channel
-    const { created, conversation } = await client.getOrCreateChannel(channelId, [ownId])
+    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, [ownId]])
 
     const channel: ChannelInfoPayload = {
       name: conversation.name!,
@@ -1219,7 +1220,7 @@ async function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     }
 
     if (!created) {
-      await client.joinChannel(conversation.id)
+      yield apply(client, client.joinChannel, [conversation.id])
 
       const joinedChannel = client.getChannel(conversation.id)
 
@@ -1395,7 +1396,7 @@ export async function searchChannels(request: GetChannelsPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const searchTerm: string | undefined = request.name === '' ? undefined : request.name
+  const searchTerm = request.name
   const since: string | undefined = request.since === '' ? undefined : request.since
 
   // get user joined channelIds
@@ -1406,9 +1407,9 @@ export async function searchChannels(request: GetChannelsPayload) {
   const profile = getCurrentUserProfile(store.getState())
 
   // search channels
-  const { channels, nextBatch } = await client.searchChannel(request.limit, searchTerm, since)
+  const { channels, nextBatch } = await client.searchChannel(searchTerm, request.limit, since)
 
-  const channelsToReturn = channels.map((channel) => ({
+  const channelsToReturn: ChannelInfoPayload[] = channels.map((channel) => ({
     channelId: channel.id,
     name: channel.name || '',
     unseenMessages: 0,
@@ -1422,7 +1423,7 @@ export async function searchChannels(request: GetChannelsPayload) {
   // sort in descending order by memberCount value
   const channelsSorted = channelsToReturn.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
 
-  const searchResult = {
+  const searchResult: ChannelSearchResultsPayload = {
     since: nextBatch === undefined ? null : nextBatch,
     channels: channelsSorted
   }

@@ -698,7 +698,7 @@ export class BrowserInterface {
     }
   }
 
-  public async CreateChannel(createChannelPayload: CreateChannelPayload) {
+  public CreateChannel(createChannelPayload: CreateChannelPayload) {
     createChannel(createChannelPayload).catch((err) => {
       defaultLogger.error('error createChannel', err),
         trackEvent('error', {
@@ -709,7 +709,7 @@ export class BrowserInterface {
     })
   }
 
-  public async MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+  public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
     if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
     markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
       defaultLogger.error('error markAsSeenChannelMessages', err),

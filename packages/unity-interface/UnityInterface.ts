@@ -32,8 +32,12 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelInfoPayloads,
+<<<<<<< HEAD
   ChannelErrorPayload,
   ChannelSearchResultsPayload
+=======
+  ChannelErrorPayload
+>>>>>>> origin/main
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -346,11 +350,6 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddMessageToChatWindow(message: ChatMessage) {
-    try {
-      message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
-    } catch (err: any) {
-      unityLogger.error(err)
-    }
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
       return

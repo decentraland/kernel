@@ -173,7 +173,7 @@ export interface IUnityInterface {
     updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
   ): void
   UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
-  UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload)
+  UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
 
   RequestTeleport(teleportData: {}): void
