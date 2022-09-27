@@ -81,7 +81,9 @@ import {
   SET_MATRIX_CLIENT,
   SetMatrixClient,
   JOIN_OR_CREATE_CHANNEL,
-  JoinOrCreateChannel
+  JoinOrCreateChannel,
+  LeaveChannel,
+  LEAVE_CHANNEL
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -100,6 +102,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
+import { unmutePlayers } from 'shared/social/actions'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -121,6 +124,7 @@ export function* friendsSaga() {
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
   yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
   yield takeEvery(JOIN_OR_CREATE_CHANNEL, handleJoinOrCreateChannel)
+  yield takeEvery(LEAVE_CHANNEL, handleLeaveChannel)
 }
 
 function* initializeFriendsSaga() {
@@ -1196,6 +1200,37 @@ function updateSocialInfo(socialData: SocialData) {
   )
 }
 
+function* handleLeaveChannel(action: LeaveChannel) {
+  try {
+    const client = getSocialClient(store.getState())
+    if (!client) return
+
+    const channelId = action.payload.channelId
+    yield apply(client, client.leaveChannel, [channelId])
+
+    const profile = getCurrentUserProfile(store.getState())
+    // if channel is muted, let's reset that config
+    if (profile?.muted?.includes(channelId)) {
+      store.dispatch(unmutePlayers([channelId]))
+    }
+
+    const leavingChannelPayload: ChannelInfoPayload = {
+      name: '',
+      channelId: channelId,
+      unseenMessages: 0,
+      lastMessageTimestamp: undefined,
+      memberCount: 0,
+      description: '',
+      joined: false,
+      muted: false
+    }
+
+    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
+  } catch (e) {
+    notifyLeaveChannelError(action.payload.channelId, ChannelErrorCode.UNKNOWN)
+  }
+}
+
 // Join or create channel
 function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
@@ -1444,6 +1479,18 @@ function notifyJoinChannelError(channelId: string, errorCode: number) {
 
   // send error message to unity
   getUnityInstance().JoinChannelError(joinChannelError)
+}
+
+/**
+ * Send leave channel related error message to unity
+ * @param channelId
+ */
+function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode) {
+  const leaveChannelError: ChannelErrorPayload = {
+    channelId,
+    errorCode
+  }
+  getUnityInstance().LeaveChannelError(leaveChannelError)
 }
 
 /**
