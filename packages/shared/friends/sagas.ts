@@ -642,10 +642,10 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     return
   }
 
-  const friendsIds: string[] = getPrivateMessagingFriends(store.getState()).slice(
-    request.skip,
-    request.skip + request.limit
-  )
+  const friendsIds: string[] = conversationsWithMessages
+    .slice(request.skip, request.skip + request.limit)
+    .map((conv) => conv.conversation.userIds![1])
+
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
     friendsIds,
