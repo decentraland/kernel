@@ -32,6 +32,7 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelInfoPayloads,
+  ChannelSearchResultsPayload,
   ChannelErrorPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
@@ -438,6 +439,10 @@ export class UnityInterface implements IUnityInterface {
 
   public UpdateChannelInfo(channelInfoPayload: ChannelInfoPayloads) {
     this.SendMessageToUnity('Main', 'UpdateChannelInfo', JSON.stringify(channelInfoPayload))
+  }
+
+  public UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload) {
+    this.SendMessageToUnity('Main', 'UpdateChannelSearchResults', JSON.stringify(channelSearchResultsPayload))
   }
 
   public LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload) {
