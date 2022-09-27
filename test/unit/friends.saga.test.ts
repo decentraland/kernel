@@ -320,7 +320,7 @@ describe('Friends sagas', () => {
               userId: profilesFromStore[1].data.userId
             }
           ],
-          totalFriendsWithDirectMessages: 1
+          totalFriendsWithDirectMessages: allCurrentConversations.length
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
