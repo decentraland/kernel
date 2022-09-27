@@ -49,12 +49,14 @@ import {
   MarkChannelMessagesAsSeenPayload,
   GetChannelMessagesPayload,
   ChannelErrorPayload,
-  ChannelErrorCode
+  ChannelErrorCode,
+  GetChannelsPayload,
+  ChannelSearchResultsPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
+import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -1387,6 +1389,46 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   }
 
   getUnityInstance().AddChatMessages(addChatMessages)
+}
+
+// Search channels
+export async function searchChannels(request: GetChannelsPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const searchTerm = request.name === '' ? undefined : request.name
+  const since: string | undefined = request.since === '' ? undefined : request.since
+
+  // get user joined channelIds
+  const joinedChannelIds = getAllConversationsWithMessages(store.getState())
+    .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
+    .map((conv) => conv.conversation.id)
+
+  const profile = getCurrentUserProfile(store.getState())
+
+  // search channels
+  const { channels, nextBatch } = await client.searchChannel(request.limit, searchTerm, since)
+
+  const channelsToReturn: ChannelInfoPayload[] = channels.map((channel) => ({
+    channelId: channel.id,
+    name: channel.name || '',
+    unseenMessages: 0,
+    lastMessageTimestamp: undefined,
+    memberCount: channel.memberCount,
+    description: channel.description || '',
+    joined: joinedChannelIds.includes(channel.id),
+    muted: profile?.muted?.includes(channel.id) || false
+  }))
+
+  // sort in descending order by memberCount value
+  const channelsSorted = channelsToReturn.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
+
+  const searchResult: ChannelSearchResultsPayload = {
+    since: nextBatch === undefined ? null : nextBatch,
+    channels: channelsSorted
+  }
+
+  getUnityInstance().UpdateChannelSearchResults(searchResult)
 }
 
 /**
