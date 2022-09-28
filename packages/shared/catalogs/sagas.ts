@@ -342,7 +342,7 @@ async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesReque
  * We are now mapping wearables that were fetched from the builder server into the same format that is returned by the catalysts
  */
 function mapUnpublishedItemIntoCatalystItem(action: EmotesRequest | WearablesRequest, item: UnpublishedWearable): any {
-  const { id, rarity, name, thumbnail, description, data, contents: contentToHash, type } = item
+  const { id, rarity, name, thumbnail, description, data, contents: contentToHash } = item
   const baseItem = {
     id,
     rarity,
