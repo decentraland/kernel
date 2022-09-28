@@ -450,6 +450,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
   }
 
+  public MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'MuteChannelError', JSON.stringify(muteChannelErrorPayload))
+  }
+
   public UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload) {
     this.SendMessageToUnity('Main', 'UpdateChannelMembers', JSON.stringify(updateChannelMembersPayload))
   }

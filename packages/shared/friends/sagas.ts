@@ -50,6 +50,7 @@ import {
   GetChannelMessagesPayload,
   ChannelErrorPayload,
   ChannelErrorCode,
+  MuteChannelPayload,
   GetChannelInfoPayload,
   GetChannelMembersPayload,
   UpdateChannelMembersPayload,
@@ -105,7 +106,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
-import { unmutePlayers } from 'shared/social/actions'
+import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
@@ -1383,7 +1384,7 @@ export function getUnseenMessagesByChannel() {
 
 // Get user's joined channels
 export function getJoinedChannels(request: GetJoinedChannelsPayload) {
-  // get user joined channels
+  // get conversations messages from the store
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.CHANNEL
   )
@@ -1559,14 +1560,56 @@ function getTotalUnseenMessagesByChannel() {
     return updateTotalUnseenMessagesByChannelPayload
   }
 
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) {
+    return updateTotalUnseenMessagesByChannelPayload
+  }
+
+  // get muted channel ids
+  const ownId = client.getUserId()
+  const mutedIds = getProfile(store.getState(), ownId)?.muted
+
   for (const conv of conversationsWithMessages) {
+    // prevent from counting unread messages of muted channels
     updateTotalUnseenMessagesByChannelPayload.unseenChannelMessages.push({
-      count: conv.conversation.unreadMessages?.length || 0,
+      count: mutedIds?.includes(conv.conversation.id) ? 0 : conv.conversation.unreadMessages?.length || 0,
       channelId: conv.conversation.name!
     })
   }
 
   return updateTotalUnseenMessagesByChannelPayload
+}
+
+// Enable / disable channel notifications
+export function muteChannel(muteChannel: MuteChannelPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channelId = muteChannel.channelId.toLowerCase()
+
+  const channel: Conversation | undefined = client.getChannel(channelId)
+  if (!channel) return
+
+  // mute / unmute channel
+  if (muteChannel.muted) {
+    store.dispatch(mutePlayers([channelId]))
+  } else {
+    store.dispatch(unmutePlayers([channelId]))
+  }
+
+  const channelInfo: ChannelInfoPayload = {
+    name: channel.name!,
+    channelId: channel.id,
+    unseenMessages: channel.unreadMessages?.length || 0,
+    lastMessageTimestamp: channel.lastEventTimestamp || undefined,
+    memberCount: channel.userIds?.length || 1,
+    description: '',
+    joined: true,
+    muted: muteChannel.muted
+  }
+
+  // send message to unity
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channelInfo] })
 }
 
 /**
