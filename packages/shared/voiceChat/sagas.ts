@@ -31,10 +31,8 @@ import {
   joinVoiceChat,
   clearVoiceChatError,
   SendAudioDevices,
-  sendAudioDevices,
   SEND_AUDIO_DEVICES,
   SetOutputAudioDevice,
-  setOutputAudioDevice,
   SET_OUTPUT_AUDIO_DEVICE
 } from './actions'
 import { voiceChatLogger } from './context'
