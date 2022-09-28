@@ -247,8 +247,8 @@ describe('Friends sagas', () => {
         const addedFriendRequests = {
           requestedTo: friendsFromStore.toFriendRequests.map((friend) => friend.userId),
           requestedFrom: friendsFromStore.fromFriendRequests.map((friend) => friend.userId),
-          totalReceivedFriendRequests: 1,
-          totalSentFriendRequests: 1
+          totalReceivedFriendRequests: friendsFromStore.fromFriendRequests.length,
+          totalSentFriendRequests: friendsFromStore.toFriendRequests.length
         }
 
         const expectedFriends: AddUserProfilesToCatalogPayload = {
@@ -277,8 +277,8 @@ describe('Friends sagas', () => {
         const addedFriendRequests = {
           requestedTo: friendsFromStore.toFriendRequests.slice(5).map((friend) => friend.userId),
           requestedFrom: friendsFromStore.fromFriendRequests.slice(5).map((friend) => friend.userId),
-          totalReceivedFriendRequests: 0,
-          totalSentFriendRequests: 0
+          totalReceivedFriendRequests: friendsFromStore.fromFriendRequests.length,
+          totalSentFriendRequests: friendsFromStore.toFriendRequests.length
         }
 
         const expectedFriends: AddUserProfilesToCatalogPayload = {

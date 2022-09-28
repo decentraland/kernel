@@ -573,8 +573,8 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   const addFriendRequestsPayload: AddFriendRequestsPayload = {
     requestedTo: toFriendRequests.map((friend) => friend.userId),
     requestedFrom: fromFriendRequests.map((friend) => friend.userId),
-    totalReceivedFriendRequests: fromFriendRequests.length,
-    totalSentFriendRequests: toFriendRequests.length
+    totalReceivedFriendRequests: friends.fromFriendRequests.length,
+    totalSentFriendRequests: friends.toFriendRequests.length
   }
 
   // get friend requests profiles
