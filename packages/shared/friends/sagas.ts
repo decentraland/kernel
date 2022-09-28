@@ -51,6 +51,9 @@ import {
   ChannelErrorPayload,
   ChannelErrorCode,
   MuteChannelPayload,
+  GetChannelInfoPayload,
+  GetChannelMembersPayload,
+  UpdateChannelMembersPayload,
   GetChannelsPayload,
   ChannelSearchResultsPayload
 } from 'shared/types'
@@ -89,7 +92,7 @@ import {
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
-import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getMaxChannels, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
@@ -1293,10 +1296,17 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
 // Create channel
 export async function createChannel(request: CreateChannelPayload) {
   try {
+    const channelId = request.channelId
+
+    const reachedLimit = checkChannelsLimit()
+    if (reachedLimit) {
+      notifyJoinChannelError(channelId, ChannelErrorCode.LIMIT_EXCEEDED)
+      return
+    }
+
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
 
-    const channelId = request.channelId
     const ownId = client.getUserId()
 
     // create channel
@@ -1572,4 +1582,91 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
 
   // send message to unity
   getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channelInfo] })
+}
+
+/**
+ * Get the number of channels the user is joined to and check with a feature flag value if the user has reached the maximum amount allowed.
+ * @return True - if the user has reached the maximum amount allowed.
+ * @return False - if the user has not reached the maximum amount allowed.
+ */
+function checkChannelsLimit() {
+  const limit = getMaxChannels(store.getState())
+
+  const joinedChannels = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.CHANNEL
+  ).length
+
+  if (limit > joinedChannels) {
+    return false
+  }
+
+  return true
+}
+
+// Get channel info
+export function getChannelInfo(request: GetChannelInfoPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  // although it is not the current scenario, we want to be able to request information for several channels at the same time
+  const channelId = request.channelsIds[0]
+
+  const channelInfo: Conversation | undefined = client.getChannel(channelId)
+
+  // get notification settings
+  const profile = getCurrentUserProfile(store.getState())
+  const muted = profile?.muted?.includes(channelId) ? true : false
+
+  if (channelInfo) {
+    const channel: ChannelInfoPayload = {
+      name: channelInfo.name || '',
+      channelId: channelInfo.id,
+      unseenMessages: muted ? 0 : channelInfo.unreadMessages?.length || 0,
+      lastMessageTimestamp: channelInfo.lastEventTimestamp || undefined,
+      memberCount: channelInfo.userIds?.length || 1,
+      description: '',
+      joined: true,
+      muted
+    }
+
+    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
+  }
+}
+
+// Get channel members
+export function getChannelMembers(request: GetChannelMembersPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channel = client.getChannel(request.channelId)
+  if (!channel) return
+
+  const channelMembers: UpdateChannelMembersPayload = {
+    channelId: request.channelId,
+    members: []
+  }
+
+  const channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
+  if (!channelMemberIds) {
+    // it means the channel has no members
+    getUnityInstance().UpdateChannelMembers(channelMembers)
+    return
+  }
+
+  const filteredProfiles = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
+
+  for (const profile of filteredProfiles) {
+    // Todo Juli: Check -- Do the ids we're comparing have the same format?
+    const member = channelMemberIds.find((id) => id === profile.data.userId)
+    if (member) {
+      // Todo Juli: Check -- What we gonna do with isOnline?
+      channelMembers.members.push({ userId: member, isOnline: false })
+    }
+  }
+
+  const profilesForRenderer = filteredProfiles.map((profile) => profileToRendererFormat(profile.data, {}))
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  store.dispatch(addedProfilesToCatalog(filteredProfiles.map((profile) => profile.data)))
+
+  getUnityInstance().UpdateChannelMembers(channelMembers)
 }

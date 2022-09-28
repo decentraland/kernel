@@ -804,3 +804,24 @@ export type MuteChannelPayload = {
   channelId: string
   muted: boolean
 }
+
+export type GetChannelInfoPayload = {
+  channelsIds: string[]
+}
+
+export type GetChannelMembersPayload = {
+  channelId: string
+  limit: number
+  skip: number
+  userName: string // text to match
+}
+
+export type ChannelMember = {
+  userId: string
+  isOnline: boolean
+}
+
+export type UpdateChannelMembersPayload = {
+  channelId: string
+  members: ChannelMember[]
+}

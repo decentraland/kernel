@@ -33,7 +33,8 @@ import {
   GetChannelMessagesPayload,
   GetJoinedChannelsPayload,
   LeaveChannelPayload,
-  MuteChannelPayload
+  MuteChannelPayload,
+  GetChannelInfoPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -99,6 +100,7 @@ import {
   getUnseenMessagesByChannel,
   markAsSeenChannelMessages,
   muteChannel,
+  getChannelInfo,
   searchChannels
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
@@ -760,6 +762,10 @@ export class BrowserInterface {
 
   public MuteChannel(muteChannelPayload: MuteChannelPayload) {
     muteChannel(muteChannelPayload)
+  }
+
+  public GetChannelInfo(getChannelInfoPayload: GetChannelInfoPayload) {
+    getChannelInfo(getChannelInfoPayload)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {

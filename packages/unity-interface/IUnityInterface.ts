@@ -35,6 +35,7 @@ import {
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelErrorPayload,
   ChannelInfoPayloads,
+  UpdateChannelMembersPayload,
   ChannelSearchResultsPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
@@ -175,6 +176,7 @@ export interface IUnityInterface {
   UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
   UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
