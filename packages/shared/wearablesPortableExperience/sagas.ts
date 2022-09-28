@@ -3,7 +3,7 @@ import { call, select, takeEvery, takeLatest } from '@redux-saga/core/effects'
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
 import { put } from 'redux-saga-test-plan/matchers'
 import { wearablesRequest, WearablesSuccess, WEARABLES_SUCCESS } from 'shared/catalogs/actions'
-import { getFetchContentServer } from 'shared/dao/selectors'
+import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
 import { isCurrentUserId } from 'shared/session/selectors'
@@ -77,7 +77,7 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
   )
 
   if (wearablesToProcess.length > 0) {
-    const defaultBaseUrl: string = yield select(getFetchContentServer) + '/contents/'
+    const defaultBaseUrl: string = yield select(getFetchContentUrlPrefix)
 
     for (const wearable of wearablesToProcess) {
       try {

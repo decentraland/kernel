@@ -32,7 +32,9 @@ import {
   GetChannelsPayload,
   GetChannelMessagesPayload,
   GetJoinedChannelsPayload,
-  LeaveChannelPayload
+  LeaveChannelPayload,
+  MuteChannelPayload,
+  GetChannelInfoPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -43,7 +45,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -71,7 +73,7 @@ import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
 import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
-import { getSelectedNetwork } from 'shared/dao/selectors'
+import { getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
 import { store } from 'shared/store/isolatedStore'
@@ -96,7 +98,10 @@ import {
   getChannelMessages,
   getJoinedChannels,
   getUnseenMessagesByChannel,
-  markAsSeenChannelMessages
+  markAsSeenChannelMessages,
+  muteChannel,
+  getChannelInfo,
+  searchChannels
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
 
@@ -733,7 +738,14 @@ export class BrowserInterface {
   }
 
   public GetChannels(getChannelsPayload: GetChannelsPayload) {
-    // getChannels(GetChannelsPayload)
+    searchChannels(getChannelsPayload).catch((err) => {
+      defaultLogger.error('error searchChannels', err),
+        trackEvent('error', {
+          message: `error searching channels ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'searchChannels'
+        })
+    })
   }
 
   public GetUnseenMessagesByChannel() {
@@ -745,18 +757,28 @@ export class BrowserInterface {
   }
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
-    // leaveChannel(leaveChannelPayload)
+    leaveChannel(leaveChannelPayload.channelId)
+  }
+
+  public MuteChannel(muteChannelPayload: MuteChannelPayload) {
+    muteChannel(muteChannelPayload)
+  }
+
+  public GetChannelInfo(getChannelInfoPayload: GetChannelInfoPayload) {
+    getChannelInfo(getChannelInfoPayload)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
     const profilesPromise = fetchENSOwnerProfile(data.name, data.maxResults)
 
+    const baseUrl = getFetchContentUrlPrefix(store.getState())
+
     profilesPromise
       .then((profiles) => {
-        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles)
+        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles, baseUrl)
       })
       .catch((error) => {
-        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined)
+        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined, baseUrl)
         defaultLogger.error(error)
       })
   }

@@ -763,6 +763,11 @@ export type ChannelInfoPayloads = {
   channelInfoPayload: ChannelInfoPayload[]
 }
 
+export type ChannelSearchResultsPayload = {
+  since: string | null // nullable pagination token
+  channels: ChannelInfoPayload[]
+}
+
 export type MarkChannelMessagesAsSeenPayload = {
   channelId: string
 }
@@ -782,8 +787,8 @@ export type GetChannelMessagesPayload = {
 
 export type GetChannelsPayload = {
   limit: number // max amount of entries to request
-  skip: number // amount of entries to skip
   name: string // text to match
+  since?: string // a pagination token
 }
 
 export type GetJoinedChannelsPayload = {
@@ -793,4 +798,30 @@ export type GetJoinedChannelsPayload = {
 
 export type LeaveChannelPayload = {
   channelId: string
+}
+
+export type MuteChannelPayload = {
+  channelId: string
+  muted: boolean
+}
+
+export type GetChannelInfoPayload = {
+  channelsIds: string[]
+}
+
+export type GetChannelMembersPayload = {
+  channelId: string
+  limit: number
+  skip: number
+  userName: string // text to match
+}
+
+export type ChannelMember = {
+  userId: string
+  isOnline: boolean
+}
+
+export type UpdateChannelMembersPayload = {
+  channelId: string
+  members: ChannelMember[]
 }

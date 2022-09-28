@@ -14,6 +14,10 @@ export function profileToRendererFormat(
 
     // TODO: there is no explaination why the profile has the parcels of Builder. Remove it from here
     parcels?: ParcelsWithAccess
+
+    // TODO: when profiles are federated, we must change this to accept the profile's
+    //       home server
+    baseUrl: string
   }
 ): NewProfileForRenderer {
   const stage = { ...backupProfile(profile.userId || options.address || 'noeth'), ...profile }
@@ -45,6 +49,7 @@ export function profileToRendererFormat(
       hairColor: convertToRGBObject(profile.avatar?.hair.color),
       skinColor: convertToRGBObject(profile.avatar?.skin.color)
     },
+    baseUrl: options.baseUrl,
     parcelsWithAccess: options.parcels || []
   }
 }

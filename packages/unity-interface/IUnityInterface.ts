@@ -34,7 +34,9 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelErrorPayload,
-  ChannelInfoPayloads
+  ChannelInfoPayloads,
+  UpdateChannelMembersPayload,
+  ChannelSearchResultsPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -172,7 +174,9 @@ export interface IUnityInterface {
     updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
   ): void
   UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
+  UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
 
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
@@ -192,7 +196,7 @@ export interface IUnityInterface {
   SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
-  SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined): void
+  SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
 
   // *********************************************************************************
