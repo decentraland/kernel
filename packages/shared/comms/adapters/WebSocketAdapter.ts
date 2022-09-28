@@ -7,7 +7,7 @@ import { ExplorerIdentity } from 'shared/session/types'
 import { wsAsAsyncChannel } from '../logic/ws-async-channel'
 import { Authenticator } from '@dcl/crypto'
 import mitt from 'mitt'
-import { CommsAdapterEvents, MinimumCommunicationsAdapter } from './types'
+import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
 
 // shared writer to leverage pools
 const writer = new Writer()
@@ -133,14 +133,15 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
     socket.addEventListener('message', this.onWsMessage.bind(this))
   }
 
-  send(body: Uint8Array) {
+  send(body: Uint8Array, hints: SendHints) {
     this.internalSend(
       craftMessage({
         message: {
           $case: 'peerUpdateMessage',
           peerUpdateMessage: {
             body,
-            fromAlias: this.alias || 0
+            fromAlias: this.alias || 0,
+            unreliable: !hints.reliable
           }
         }
       })

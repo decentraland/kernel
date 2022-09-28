@@ -476,7 +476,7 @@ class Graph {
   /**
    * Draws tick marks for each of the labels in |labels_|.
    */
-  drawTicks(context) {
+  drawTicks(context: CanvasRenderingContext2D) {
     const x1 = this.width_ - 1
     const x2 = this.width_ - 1 - Y_AXIS_TICK_LENGTH
 
@@ -495,7 +495,7 @@ class Graph {
   /**
    * Draws a graph line for each of the data series.
    */
-  drawLines(context) {
+  drawLines(context: CanvasRenderingContext2D) {
     // Factor by which to scale all values to convert them to a number from
     // 0 to height - 1.
     let scale = 0
@@ -525,7 +525,7 @@ class Graph {
   /**
    * Draw labels in |labels_|.
    */
-  drawLabels(context) {
+  drawLabels(context: CanvasRenderingContext2D) {
     if (this.labels_.length === 0) {
       return
     }
@@ -568,12 +568,12 @@ export class TimelineDataSeries {
   dataPoints_: DataPoint[]
   color_: string
   isVisible_: boolean
-  cacheStartTime_: null
+  cacheStartTime_: number | null
   cacheStepSize_: number
   cacheValues_: number[]
   statsType_: any
   stash: number = 0
-  constructor(statsType) {
+  constructor(statsType: string) {
     // List of DataPoints in chronological order.
     this.dataPoints_ = []
 
@@ -612,9 +612,9 @@ export class TimelineDataSeries {
    * Adds a DataPoint to |this| with the specified time and value.
    * DataPoints are assumed to be received in chronological order.
    */
-  addPoint(timeTicks, value) {
+  addPoint(timeTicks: number | Date, value: number) {
     const time = new Date(timeTicks)
-    this.dataPoints_.push(new DataPoint(time, value))
+    this.dataPoints_.push(new DataPoint(time.getTime(), value))
 
     if (this.dataPoints_.length > MAX_STATS_DATA_POINT_BUFFER_SIZE) {
       this.dataPoints_.shift()
@@ -625,7 +625,7 @@ export class TimelineDataSeries {
     return this.isVisible_
   }
 
-  show(isVisible) {
+  show(isVisible: boolean) {
     this.isVisible_ = isVisible
   }
 
@@ -645,7 +645,7 @@ export class TimelineDataSeries {
    * points, starting at |startTime|, and |stepSize| milliseconds apart.
    * Caches values, so showing/hiding individual data series is fast.
    */
-  getValues(startTime, stepSize, count) {
+  getValues(startTime: number, stepSize: number, count: number) {
     // Use cached values, if we can.
     if (this.cacheStartTime_ === startTime && this.cacheStepSize_ === stepSize && this.cacheValues_.length === count) {
       return this.cacheValues_
@@ -662,7 +662,7 @@ export class TimelineDataSeries {
   /**
    * Returns the cached |values| in the specified time period.
    */
-  getValuesInternal_(startTime, stepSize, count) {
+  getValuesInternal_(startTime: number, stepSize: number, count: number) {
     const values: number[] = []
     let nextPoint = 0
     let currentValue = 0
@@ -684,5 +684,5 @@ export class TimelineDataSeries {
  * milliseconds since the Unix epoch, and a numeric value.
  */
 class DataPoint {
-  constructor(public time: Date, public value: number) {}
+  constructor(public time: number, public value: number) {}
 }

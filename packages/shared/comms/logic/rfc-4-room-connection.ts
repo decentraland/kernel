@@ -50,7 +50,7 @@ export class Rfc4RoomConnection implements RoomConnection {
     return this.sendMessage(true, { message: { $case: 'chat', chat } })
   }
   sendVoiceMessage(voice: proto.Voice): Promise<void> {
-    return this.sendMessage(true, { message: { $case: 'voice', voice } })
+    return this.sendMessage(false, { message: { $case: 'voice', voice } })
   }
 
   async disconnect() {
