@@ -32,6 +32,7 @@ import {
   UpdateTotalFriendsPayload,
   UpdateTotalUnseenMessagesByChannelPayload,
   ChannelInfoPayloads,
+  UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
   ChannelErrorPayload
 } from 'shared/types'
@@ -447,6 +448,10 @@ export class UnityInterface implements IUnityInterface {
 
   public LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload) {
     this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
+  }
+
+  public UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload) {
+    this.SendMessageToUnity('Main', 'UpdateChannelMembers', JSON.stringify(updateChannelMembersPayload))
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
