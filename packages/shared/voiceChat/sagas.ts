@@ -32,7 +32,10 @@ import {
   clearVoiceChatError,
   SendAudioDevices,
   sendAudioDevices,
-  SEND_AUDIO_DEVICES
+  SEND_AUDIO_DEVICES,
+  SetOutputAudioDevice,
+  setOutputAudioDevice,
+  SET_OUTPUT_AUDIO_DEVICE
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
@@ -79,6 +82,7 @@ export function* voiceChatSaga() {
 
   yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], customLiveKitRoom)
   yield takeEvery(SEND_AUDIO_DEVICES, sendAudioDevicesToUnity)
+  yield takeEvery(SET_OUTPUT_AUDIO_DEVICE, setOutputAudioDeviceRequest)
 }
 
 /*
@@ -231,6 +235,10 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
 function* sendAudioDevicesToUnity(action: SendAudioDevices) {
   yield call(waitForRendererInstance)
   getUnityInstance().SendAudioDevices(action.payload.devices);
+}
+
+function* setOutputAudioDeviceRequest (action: SetOutputAudioDevice) {
+  console.log(action.payload.device);
 }
 
 let audioRequestPending = false

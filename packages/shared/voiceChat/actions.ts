@@ -67,6 +67,10 @@ export const SET_VOICE_CHAT_MEDIA = '[VC] setVoiceChatMedia'
 export const setVoiceChatMedia = (media: MediaStream | undefined) => action(SET_VOICE_CHAT_MEDIA, { media })
 export type SetVoiceChatMediaAction = ReturnType<typeof setVoiceChatMedia>
 
+export const SET_OUTPUT_AUDIO_DEVICE = 'Set output audio device'
+export const setOutputAudioDevice = (device: string) => action(SET_OUTPUT_AUDIO_DEVICE, { device })
+export type SetOutputAudioDevice = ReturnType<typeof setOutputAudioDevice>
+
 export const SEND_AUDIO_DEVICES = 'Send audio devices to unity'
 export const sendAudioDevices = (devices: string[]) => action(SEND_AUDIO_DEVICES, { devices })
 export type SendAudioDevices = ReturnType<typeof sendAudioDevices>
