@@ -1,3 +1,5 @@
+import {sendAudioDevices} from "../shared/voiceChat/actions";
+
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
 import { sdk } from '@dcl/schemas'
@@ -196,6 +198,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.QUESTS_PANEL, { active: questEnabled, visible: false })
   i.ConfigureHUDElement(HUDElementID.QUESTS_TRACKER, { active: questEnabled, visible: true })
   i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
+
+  store.dispatch(sendAudioDevices(['Apple', 'Orange', 'Banana']))
 
   // The elements below, require the taskbar to be active before being activated.
   {
