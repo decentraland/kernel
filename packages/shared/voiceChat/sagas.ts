@@ -236,7 +236,7 @@ function* sendAudioDevicesToUnity(action: SendAudioDevices) {
 }
 
 function* setOutputAudioDeviceRequest (action: SetOutputAudioDevice) {
-  console.log(action.payload.device);
+  console.log("AAAAAAAAAAA " + action.payload.device);
 }
 
 let audioRequestPending = false
