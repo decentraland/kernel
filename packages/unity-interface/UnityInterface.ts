@@ -114,6 +114,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
   }
 
+  public SendAudioDevices(devices: string[]) {
+    this.SendMessageToUnity('Main', 'SetAudioDevices', devices)
+  }
+
   public CreateGlobalScene(data: {
     id: string
     name: string

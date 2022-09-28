@@ -29,7 +29,10 @@ import {
   SET_VOICE_CHAT_MEDIA,
   setVoiceChatLiveKitRoom,
   joinVoiceChat,
-  clearVoiceChatError
+  clearVoiceChatError,
+  SendAudioDevices,
+  sendAudioDevices,
+  SEND_AUDIO_DEVICES
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
@@ -53,6 +56,8 @@ import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { getLiveKitVoiceChat } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper';
+import { getUnityInstance } from "../../unity-interface/IUnityInterface";
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -73,6 +78,7 @@ export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
   yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], customLiveKitRoom)
+  yield takeEvery(SEND_AUDIO_DEVICES, sendAudioDevicesToUnity)
 }
 
 /*
@@ -220,6 +226,11 @@ function* handleVoiceChatVolume(action: SetVoiceChatVolumeAction) {
 function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
   const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
   voiceHandler?.setMute(action.payload.mute)
+}
+
+function* sendAudioDevicesToUnity(action: SendAudioDevices) {
+  yield call(waitForRendererInstance)
+  getUnityInstance().SendAudioDevices(action.payload.devices);
 }
 
 let audioRequestPending = false
