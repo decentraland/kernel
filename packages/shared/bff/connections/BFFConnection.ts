@@ -49,7 +49,7 @@ export async function createBffRpcConnection(
   const relativeUrl = ((about.bff?.publicUrl || '/bff') + '/rpc').replace(/(\/+)/g, '/')
 
   const wsUrl = new URL(relativeUrl, baseUrl).toString().replace(/^http/, 'ws')
-  const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'comms'))
+  const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'bff'))
 
   const rpcClient = await createRpcClient(bffTransport)
   const port = await rpcClient.createPort('kernel')

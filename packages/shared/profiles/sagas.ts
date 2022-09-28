@@ -249,7 +249,7 @@ function* handleCommsProfile() {
     const receivedProfile: Avatar = yield take(chan)
     const existingProfile: ProfileUserInfo | null = yield select(getProfileFromStore, receivedProfile.userId)
 
-    if (!existingProfile || existingProfile.data?.version < receivedProfile.version) {
+    if (!existingProfile || existingProfile.data?.version <= receivedProfile.version) {
       // TEMP:
       receivedProfile.hasConnectedWeb3 = receivedProfile.hasConnectedWeb3 || false
 
@@ -464,7 +464,7 @@ export async function generateRandomUserProfile(userId: string): Promise<Avatar>
   profile.name = createFakeName()
   profile.hasClaimedName = false
   profile.tutorialStep = 0
-  profile.version = -1 // We signal random user profiles with -1
+  profile.version = 0
 
   return ensureAvatarCompatibilityFormat(profile)
 }

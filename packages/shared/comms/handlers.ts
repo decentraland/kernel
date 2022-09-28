@@ -66,36 +66,31 @@ export async function requestProfileToPeers(
   address: string,
   profileVersion: number
 ): Promise<Avatar | null> {
-  if (roomConnection) {
-    if (!pendingProfileRequests.has(address)) {
-      pendingProfileRequests.set(address, new Set())
-    }
-
-    const thisFuture = future<Avatar | null>()
-
-    pendingProfileRequests.get(address)!.add(thisFuture)
-
-    await roomConnection.sendProfileRequest({
-      address,
-      profileVersion
-    })
-
-    setTimeout(function () {
-      if (thisFuture.isPending) {
-        // We resolve with a null profile. This will fallback to a random profile
-        thisFuture.resolve(null)
-        const pendingRequests = pendingProfileRequests.get(address)
-        if (pendingRequests && pendingRequests.has(thisFuture)) {
-          pendingRequests.delete(thisFuture)
-        }
-      }
-    }, COMMS_PROFILE_TIMEOUT)
-
-    return thisFuture
-  } else {
-    // We resolve with a null profile. This will fallback to a random profile
-    return Promise.resolve(null)
+  if (!pendingProfileRequests.has(address)) {
+    pendingProfileRequests.set(address, new Set())
   }
+
+  const thisFuture = future<Avatar | null>()
+
+  pendingProfileRequests.get(address)!.add(thisFuture)
+
+  await roomConnection.sendProfileRequest({
+    address,
+    profileVersion
+  })
+
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      // We resolve with a null profile. This will fallback to a random profile
+      thisFuture.resolve(null)
+      const pendingRequests = pendingProfileRequests.get(address)
+      if (pendingRequests) {
+        pendingRequests.delete(thisFuture)
+      }
+    }
+  }, COMMS_PROFILE_TIMEOUT)
+
+  return thisFuture
 }
 
 function handleDisconnectionEvent(data: AdapterDisconnectedEvent, room: RoomConnection) {

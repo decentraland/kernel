@@ -12,6 +12,7 @@ import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { bffForRealm, prettyRealmName, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/bff/resolver'
+import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {
@@ -144,17 +145,34 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
     return
   }
 
-  const about = await checkValidRealm(realmBaseUrl)
-  if (!about || !about.result) {
-    throw new Error(`The realm ${prettyRealmName(realmString, candidates)} isn't available right now.`)
-  }
+  let about: AboutResponse
 
   if (realmString.startsWith(`offline~`)) {
-    about.result.comms!.fixedAdapter = realmString
-    about.result.comms!.protocol = `offline`
+    about = {
+      bff: { healthy: false },
+      comms: { healthy: false, protocol: 'offline', fixedAdapter: realmString },
+      configurations: {
+        realmName: 'offline'
+      },
+      content: {
+        healthy: true,
+        publicUrl: 'https://peer.decentraland.org/content'
+      },
+      healthy: true,
+      lambdas: {
+        healthy: true,
+        publicUrl: 'https://peer.decentraland.org/lambdas'
+      }
+    }
+  } else {
+    const res = await checkValidRealm(realmBaseUrl)
+    if (!res || !res.result) {
+      throw new Error(`The realm ${prettyRealmName(realmString, candidates)} isn't available right now.`)
+    }
+    about = res.result!
   }
 
-  const newBff = await bffForRealm(realmBaseUrl, about.result, identity)
+  const newBff = await bffForRealm(realmBaseUrl, about, identity)
 
   if (newBff) {
     store.dispatch(setBff(newBff))

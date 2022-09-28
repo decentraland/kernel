@@ -87,6 +87,7 @@ import {
   markAsSeenPrivateChatMessages
 } from 'shared/friends/sagas'
 import { getMatrixIdFromUser } from 'shared/friends/utils'
+import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -863,7 +864,7 @@ export class BrowserInterface {
   }
 
   public RequestUserProfile(userIdPayload: { value: string }) {
-    store.dispatch(profileRequest(userIdPayload.value, ProfileType.DEPLOYED))
+    ProfileAsPromise(userIdPayload.value, ProfileType.DEPLOYED).catch(defaultLogger.error)
   }
 
   public ReportAvatarFatalError() {
