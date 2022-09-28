@@ -290,22 +290,34 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
       addNewChatMessage(chatMessage)
 
-      // get total user unread messages
-      if (message.sender !== ownId) {
-        const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
+      if (message.sender === ownId) {
+        // ignore messages sent by the local user
+        return
+      }
+
+      if (conversation.type === ConversationType.CHANNEL) {
+        const muted = profile?.muted ?? []
+        if (conversation.unreadMessages && !muted.includes(conversation.id)) {
+          // send update with unseen messages by channel
+          getUnseenMessagesByChannel()
+        }
+      } else {
         const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
 
         const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
           userId: senderUserId,
           total: unreadMessages
         }
-        const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
-          total: totalUnreadMessages
-        }
 
         getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
-        getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
       }
+
+      // send total unseen messages update
+      const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
+      const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+        total: totalUnreadMessages
+      }
+      getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
     } catch (error) {
       const message = 'Failed while processing message'
       defaultLogger.error(message, error)
@@ -475,22 +487,28 @@ function getFriendIds(client: SocialAPI): string[] {
 }
 
 function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: string[]): number {
-  const conversationsWithUnreadMessages: Conversation[] = client.getAllConversationsWithUnreadMessages()
+  const profile = getCurrentUserProfile(store.getState())
 
+  const conversationsWithUnreadMessages: Conversation[] = client.getAllConversationsWithUnreadMessages()
   let totalUnseenMessages = 0
 
   for (const conv of conversationsWithUnreadMessages) {
-    const socialId = conv.userIds?.find((userId) => userId !== ownId)
-    if (!socialId) {
-      continue
+    if (conv.type === ConversationType.CHANNEL) {
+      if (profile?.muted?.includes(conv.id)) {
+        continue
+      }
+    } else if (conv.type === ConversationType.DIRECT) {
+      const socialId = conv.userIds?.find((userId) => userId !== ownId)
+      if (!socialId) {
+        continue
+      }
+
+      const userId = getUserIdFromMatrix(socialId)
+
+      if (!friendIds.some((friendIds) => friendIds === userId)) {
+        continue
+      }
     }
-
-    const userId = getUserIdFromMatrix(socialId)
-
-    if (!friendIds.some((friendIds) => friendIds === userId)) {
-      continue
-    }
-
     totalUnseenMessages += conv.unreadMessages?.length || 0
   }
 
