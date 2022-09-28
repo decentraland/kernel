@@ -50,6 +50,9 @@ import {
   GetChannelMessagesPayload,
   ChannelErrorPayload,
   ChannelErrorCode,
+  GetChannelInfoPayload,
+  GetChannelMembersPayload,
+  UpdateChannelMembersPayload,
   GetChannelsPayload,
   ChannelSearchResultsPayload
 } from 'shared/types'
@@ -637,7 +640,9 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
 }
 
 export function getUnseenMessagesByUser() {
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.DIRECT
+  )
 
   if (conversationsWithMessages.length === 0) {
     return
@@ -656,7 +661,9 @@ export function getUnseenMessagesByUser() {
 }
 
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState())
+  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
+    (conv) => conv.conversation.type === ConversationType.DIRECT
+  )
 
   if (conversationsWithMessages.length === 0) {
     return
@@ -1545,4 +1552,72 @@ function checkChannelsLimit() {
   }
 
   return true
+}
+
+// Get channel info
+export function getChannelInfo(request: GetChannelInfoPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  // although it is not the current scenario, we want to be able to request information for several channels at the same time
+  const channelId = request.channelsIds[0]
+
+  const channelInfo: Conversation | undefined = client.getChannel(channelId)
+
+  // get notification settings
+  const profile = getCurrentUserProfile(store.getState())
+  const muted = profile?.muted?.includes(channelId) ? true : false
+
+  if (channelInfo) {
+    const channel: ChannelInfoPayload = {
+      name: channelInfo.name || '',
+      channelId: channelInfo.id,
+      unseenMessages: muted ? 0 : channelInfo.unreadMessages?.length || 0,
+      lastMessageTimestamp: channelInfo.lastEventTimestamp || undefined,
+      memberCount: channelInfo.userIds?.length || 1,
+      description: '',
+      joined: true,
+      muted
+    }
+
+    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
+  }
+}
+
+// Get channel members
+export function getChannelMembers(request: GetChannelMembersPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channel = client.getChannel(request.channelId)
+  if (!channel) return
+
+  const channelMembers: UpdateChannelMembersPayload = {
+    channelId: request.channelId,
+    members: []
+  }
+
+  const channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
+  if (!channelMemberIds) {
+    // it means the channel has no members
+    getUnityInstance().UpdateChannelMembers(channelMembers)
+    return
+  }
+
+  const filteredProfiles = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
+
+  for (const profile of filteredProfiles) {
+    // Todo Juli: Check -- Do the ids we're comparing have the same format?
+    const member = channelMemberIds.find((id) => id === profile.data.userId)
+    if (member) {
+      // Todo Juli: Check -- What we gonna do with isOnline?
+      channelMembers.members.push({ userId: member, isOnline: false })
+    }
+  }
+
+  const profilesForRenderer = filteredProfiles.map((profile) => profileToRendererFormat(profile.data, {}))
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  store.dispatch(addedProfilesToCatalog(filteredProfiles.map((profile) => profile.data)))
+
+  getUnityInstance().UpdateChannelMembers(channelMembers)
 }
