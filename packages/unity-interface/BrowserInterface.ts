@@ -21,7 +21,19 @@ import {
   FriendshipUpdateStatusMessage,
   FriendshipAction,
   WorldPosition,
-  AvatarRendererMessage
+  AvatarRendererMessage,
+  GetFriendsPayload,
+  GetFriendRequestsPayload,
+  GetFriendsWithDirectMessagesPayload,
+  MarkMessagesAsSeenPayload,
+  GetPrivateMessagesPayload,
+  MarkChannelMessagesAsSeenPayload,
+  CreateChannelPayload,
+  GetChannelsPayload,
+  GetChannelMessagesPayload,
+  GetJoinedChannelsPayload,
+  LeaveChannelPayload,
+  GetChannelInfoPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -32,7 +44,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -74,15 +86,25 @@ import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
 import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
+import {
+  getFriendRequests,
+  getFriends,
+  getFriendsWithDirectMessages,
+  getUnseenMessagesByUser,
+  getPrivateMessages,
+  markAsSeenPrivateChatMessages,
+  createChannel,
+  getChannelMessages,
+  getJoinedChannels,
+  getUnseenMessagesByChannel,
+  markAsSeenChannelMessages,
+  getChannelInfo,
+  searchChannels
+} from 'shared/friends/sagas'
+import { getMatrixIdFromUser } from 'shared/friends/utils'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
-
-// ** TODO - move to friends related file - moliva - 15/07/2020
-function toSocialId(userId: string) {
-  const domain = store.getState().friends.client?.getDomain()
-  return `@${userId.toLowerCase()}:${domain}`
-}
 
 const positionEvent = {
   position: Vector3.Zero(),
@@ -464,6 +486,37 @@ export class BrowserInterface {
     store.dispatch(saveProfileDelta({ description: changes.description }))
   }
 
+  public GetFriends(getFriendsRequest: GetFriendsPayload) {
+    getFriends(getFriendsRequest)
+  }
+
+  public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
+    getFriendRequests(getFriendRequestsPayload)
+  }
+
+  public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
+    if (userId.userId === 'nearby') return
+    markAsSeenPrivateChatMessages(userId).catch((err) => {
+      defaultLogger.error('error markAsSeenPrivateChatMessages', err),
+        trackEvent('error', {
+          message: `error marking private messages as seen ${userId.userId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'markAsSeenPrivateChatMessages'
+        })
+    })
+  }
+
+  public async GetPrivateMessages(getPrivateMessagesPayload: GetPrivateMessagesPayload) {
+    getPrivateMessages(getPrivateMessagesPayload).catch((err) => {
+      defaultLogger.error('error getPrivateMessages', err),
+        trackEvent('error', {
+          message: `error getting private messages ${getPrivateMessagesPayload.userId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getPrivateMessages'
+        })
+    })
+  }
+
   public CloseUserAvatar(isSignUpFlow = false) {
     if (isSignUpFlow) {
       getUnityInstance().DeactivateRendering()
@@ -530,14 +583,22 @@ export class BrowserInterface {
     })
   }
 
-  public ReportScene(data: { sceneId: string }) {
-    this.OpenWebURL({
-      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
-    })
+  public GetUnseenMessagesByUser() {
+    getUnseenMessagesByUser()
   }
 
   public SetHomeScene(data: { sceneId: string }) {
     store.dispatch(setHomeScene(data.sceneId))
+  }
+
+  public GetFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload: GetFriendsWithDirectMessagesPayload) {
+    getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload)
+  }
+
+  public ReportScene(data: { sceneId: string }) {
+    this.OpenWebURL({
+      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
+    })
   }
 
   public ReportPlayer(data: { userId: string }) {
@@ -588,44 +649,117 @@ export class BrowserInterface {
   }
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
-    let { userId } = message
-    let found = false
-    const state = store.getState()
+    try {
+      let { userId } = message
+      let found = false
+      const state = store.getState()
 
-    // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
-    if (message.action === FriendshipAction.REQUESTED_TO) {
-      const avatar = await ensureFriendProfile(userId)
+      // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
+      if (message.action === FriendshipAction.REQUESTED_TO) {
+        const avatar = await ensureFriendProfile(userId)
 
-      if (isAddress(userId)) {
-        found = avatar.hasConnectedWeb3 || false
-      } else {
-        const profileByName = findProfileByName(state, userId)
-        if (profileByName) {
-          userId = profileByName.userId
+        if (isAddress(userId)) {
+          found = avatar.hasConnectedWeb3 || false
+        } else {
+          const profileByName = findProfileByName(state, userId)
+          if (profileByName) {
+            userId = profileByName.userId
+            found = true
+          }
+        }
+      }
+
+      if (!found) {
+        // if user profile was not found on server -> no connected web3, check if it's a claimed name
+        const net = getSelectedNetwork(state)
+        const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
+        if (address) {
+          // if an address was found for the name -> set as user id & add that instead
+          userId = address
           found = true
         }
       }
-    }
 
-    if (!found) {
-      // if user profile was not found on server -> no connected web3, check if it's a claimed name
-      const net = getSelectedNetwork(state)
-      const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
-      if (address) {
-        // if an address was found for the name -> set as user id & add that instead
-        userId = address
-        found = true
+      if (message.action === FriendshipAction.REQUESTED_TO && !found) {
+        // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
+        getUnityInstance().FriendNotFound(userId)
+        return
       }
-    }
 
-    if (message.action === FriendshipAction.REQUESTED_TO && !found) {
-      // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
-      getUnityInstance().FriendNotFound(userId)
-      return
-    }
+      store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+    } catch (error) {
+      const message = 'Failed while processing updating friendship status'
+      defaultLogger.error(message, error)
 
-    store.dispatch(updateUserData(userId.toLowerCase(), toSocialId(userId)))
-    store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+      trackEvent('error', {
+        context: 'kernel#saga',
+        message: message,
+        stack: '' + error
+      })
+    }
+  }
+
+  public CreateChannel(createChannelPayload: CreateChannelPayload) {
+    createChannel(createChannelPayload).catch((err) => {
+      defaultLogger.error('error createChannel', err),
+        trackEvent('error', {
+          message: `error creating channel ${createChannelPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'createChannel'
+        })
+    })
+  }
+
+  public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+    if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
+    markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
+      defaultLogger.error('error markAsSeenChannelMessages', err),
+        trackEvent('error', {
+          message:
+            `error marking channel messages as seen ${markChannelMessagesAsSeenPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'markAsSeenChannelMessages'
+        })
+    })
+  }
+
+  public GetChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
+    getChannelMessages(getChannelMessagesPayload).catch((err) => {
+      defaultLogger.error('error getChannelMessages', err),
+        trackEvent('error', {
+          message: `error getting channel messages ${getChannelMessagesPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getChannelMessages'
+        })
+    })
+  }
+
+  public GetChannels(getChannelsPayload: GetChannelsPayload) {
+    searchChannels(getChannelsPayload).catch((err) => {
+      defaultLogger.error('error searchChannels', err),
+        trackEvent('error', {
+          message: `error searching channels ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'searchChannels'
+        })
+    })
+  }
+
+  public GetUnseenMessagesByChannel() {
+    getUnseenMessagesByChannel()
+  }
+
+  public GetJoinedChannels(getJoinedChannelsPayload: GetJoinedChannelsPayload) {
+    getJoinedChannels(getJoinedChannelsPayload)
+  }
+
+  public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
+    leaveChannel(leaveChannelPayload.channelId)
+  }
+
+  public GetChannelInfo(getChannelInfoPayload: GetChannelInfoPayload) {
+    getChannelInfo(getChannelInfoPayload)
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {

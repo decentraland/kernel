@@ -1,5 +1,7 @@
 import { Avatar } from '@dcl/schemas'
 
+export const REMOTE_AVATAR_IS_INVALID = `Remote avatar for profile is invalid`
+
 export type ProfileStatus = 'ok' | 'error' | 'loading'
 
 export type ProfileUserInfo = { status: 'ok' | 'loading' | 'error'; data: Avatar; addedToCatalog?: boolean }
@@ -23,4 +25,9 @@ export type ContentFile = {
 export enum ProfileType {
   LOCAL = 0,
   DEPLOYED = 1
+}
+
+export interface RemoteProfile {
+  timestamp: number
+  avatars: Avatar[]
 }

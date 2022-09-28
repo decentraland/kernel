@@ -24,10 +24,11 @@ export function profileToRendererFormat(
 
   return {
     ...stage,
+    userId: stage.userId.toLowerCase(),
     name: calculateDisplayName(stage),
     description: stage.description || '',
     version: stage.version || -1,
-    ethAddress: stage.ethAddress || options.address || '0x0000000000000000000000000000000000000000',
+    ethAddress: (stage.ethAddress || options.address || '0x0000000000000000000000000000000000000000').toLowerCase(),
     blocked: stage.blocked || [],
     muted: stage.muted || [],
     inventory: [],
