@@ -591,7 +591,7 @@ export class UnityInterface implements IUnityInterface {
     this.logger.warn('SendSceneAssets')
   }
 
-  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined) {
+  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string) {
     if (!profiles) {
       this.SendMessageToUnity('Bridges', 'SetENSOwnerQueryResult', JSON.stringify({ searchInput, success: false }))
       return
@@ -599,7 +599,9 @@ export class UnityInterface implements IUnityInterface {
     // TODO: why do we send the whole profile while asking for the ENS???
     const profilesForRenderer: NewProfileForRenderer[] = []
     for (const profile of profiles) {
-      profilesForRenderer.push(profileToRendererFormat(profile, { address: profile.userId }))
+      profilesForRenderer.push(
+        profileToRendererFormat(profile, { address: profile.userId, baseUrl: contentServerBaseUrl })
+      )
     }
     this.SendMessageToUnity(
       'Bridges',

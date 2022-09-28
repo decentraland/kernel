@@ -49,6 +49,10 @@ export const getFetchContentServer = (state: RootDaoState & RootMetaState) => {
   return getAllowedContentServer(state.dao.fetchContentServer, state)
 }
 
+export const getFetchContentUrlPrefix = (state: RootDaoState & RootMetaState) => {
+  return getFetchContentServer(state) + '/contents/'
+}
+
 export const getCatalystServer = (store: RootDaoState) => urlWithProtocol(store.dao.catalystServer)
 
 export const getCommsServer = (domain: string) => {

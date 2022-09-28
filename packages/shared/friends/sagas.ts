@@ -107,6 +107,7 @@ import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
+import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -520,6 +521,7 @@ export function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
 
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
+  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
 
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
@@ -529,7 +531,11 @@ export function getFriends(request: GetFriendsPayload) {
 
   const friendsToReturn = filteredFriends.slice(request.skip, request.skip + request.limit)
 
-  const profilesForRenderer = friendsToReturn.map((profile) => profileToRendererFormat(profile.data, {}))
+  const profilesForRenderer = friendsToReturn.map((profile) =>
+    profileToRendererFormat(profile.data, {
+      baseUrl: fetchContentServer
+    })
+  )
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
 
   const friendIdsToReturn = friendsToReturn.map((friend) => friend.data.userId)
@@ -554,6 +560,7 @@ export function getFriends(request: GetFriendsPayload) {
 
 export function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
+  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
 
   const fromFriendRequests = friends.fromFriendRequests.slice(
     request.receivedSkip,
@@ -571,7 +578,11 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   // get friend requests profiles
   const friendsIds = addFriendRequestsPayload.requestedTo.concat(addFriendRequestsPayload.requestedFrom)
   const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
-  const profilesForRenderer = friendRequestsProfiles.map((friend) => profileToRendererFormat(friend.data, {}))
+  const profilesForRenderer = friendRequestsProfiles.map((friend) =>
+    profileToRendererFormat(friend.data, {
+      baseUrl: fetchContentServer
+    })
+  )
 
   // send friend requests profiles
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
@@ -680,6 +691,7 @@ export function getUnseenMessagesByUser() {
 }
 
 export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
+  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.DIRECT
   )
@@ -720,7 +732,11 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     totalFriendsWithDirectMessages: friendsConversations.length
   }
 
-  const profilesForRenderer = friendsConversations.map((friend) => profileToRendererFormat(friend.avatar, {}))
+  const profilesForRenderer = friendsConversations.map((friend) =>
+    profileToRendererFormat(friend.avatar, {
+      baseUrl: fetchContentServer
+    })
+  )
 
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
@@ -1648,6 +1664,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 // Get channel members
 export function getChannelMembers(request: GetChannelMembersPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
+  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
   if (!client) return
 
   const channel = client.getChannel(request.channelId)
@@ -1676,7 +1693,11 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     }
   }
 
-  const profilesForRenderer = filteredProfiles.map((profile) => profileToRendererFormat(profile.data, {}))
+  const profilesForRenderer = filteredProfiles.map((profile) =>
+    profileToRendererFormat(profile.data, {
+      baseUrl: fetchContentServer
+    })
+  )
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(filteredProfiles.map((profile) => profile.data)))
 

@@ -47,7 +47,7 @@ import {
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { CatalystClient, OwnedItemsWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
-import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
+import { getCatalystServer, getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -81,7 +81,7 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
   const failureAction = isRequestingEmotes ? emotesFailure : wearablesFailure
   if (valid) {
     try {
-      const fetchContentServer: string = yield select(getFetchContentServer)
+      const contentBaseUrl: string = yield select(getFetchContentUrlPrefix)
 
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -89,7 +89,7 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
 
       const v2Items: (WearableV2 | Emote)[] = response.map((item) => ({
         ...item,
-        baseUrl: item.baseUrl ?? fetchContentServer + '/contents/',
+        baseUrl: item.baseUrl ?? contentBaseUrl,
         baseUrlBundles: assetBundlesBaseUrl
       }))
 
