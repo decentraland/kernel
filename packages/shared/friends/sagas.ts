@@ -291,22 +291,34 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
       addNewChatMessage(chatMessage)
 
-      // get total user unread messages
-      if (message.sender !== ownId) {
-        const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
+      if (message.sender === ownId) {
+        // ignore messages sent by the local user
+        return
+      }
+
+      if (conversation.type === ConversationType.CHANNEL) {
+        const muted = profile?.muted ?? []
+        if (conversation.unreadMessages && !muted.includes(conversation.id)) {
+          // send update with unseen messages by channel
+          getUnseenMessagesByChannel()
+        }
+      } else {
         const unreadMessages = client.getConversationUnreadMessages(conversation.id).length
 
         const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
           userId: senderUserId,
           total: unreadMessages
         }
-        const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
-          total: totalUnreadMessages
-        }
 
         getUnityInstance().UpdateUserUnseenMessages(updateUnseenMessages)
-        getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
       }
+
+      // send total unseen messages update
+      const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
+      const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+        total: totalUnreadMessages
+      }
+      getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
     } catch (error) {
       const message = 'Failed while processing message'
       defaultLogger.error(message, error)
