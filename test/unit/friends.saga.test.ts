@@ -18,6 +18,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { FriendRequest, FriendsState } from 'shared/friends/types'
 import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
+import * as daoSelectors from 'shared/dao/selectors'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -118,7 +119,10 @@ const stubClient = {
   getUserStatuses: () => new Map()
 } as unknown as SocialAPI
 
+const FETCH_CONTENT_SERVER = 'base-url'
+
 function mockStoreCalls(opts?: { profiles: number[]; i: number }) {
+  sinon.stub(daoSelectors, 'getFetchContentUrlPrefix').callsFake(() => FETCH_CONTENT_SERVER)
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
   sinon
@@ -154,8 +158,8 @@ describe('Friends sagas', () => {
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
           users: [
-            profileToRendererFormat(profilesFromStore[0].data, {}),
-            profileToRendererFormat(profilesFromStore[1].data, {})
+            profileToRendererFormat(profilesFromStore[0].data, {baseUrl: FETCH_CONTENT_SERVER}),
+            profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})
           ]
         }
         const addedFriends = {
@@ -178,7 +182,7 @@ describe('Friends sagas', () => {
           userNameOrId: 'MiKe'
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: [profileToRendererFormat(profilesFromStore[1].data, {})]
+          users: [profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})]
         }
         const addedFriends = {
           friends: expectedFriends.users.map((friend) => friend.userId),
@@ -198,7 +202,7 @@ describe('Friends sagas', () => {
           skip: 1
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: profilesFromStore.slice(1).map((profile) => profileToRendererFormat(profile.data, {}))
+          users: profilesFromStore.slice(1).map((profile) => profileToRendererFormat(profile.data, {baseUrl: FETCH_CONTENT_SERVER}))
         }
         const addedFriends = {
           friends: expectedFriends.users.map((friend) => friend.userId),
@@ -249,8 +253,8 @@ describe('Friends sagas', () => {
 
         const expectedFriends: AddUserProfilesToCatalogPayload = {
           users: [
-            profileToRendererFormat(profilesFromStore[0].data, {}),
-            profileToRendererFormat(profilesFromStore[1].data, {})
+            profileToRendererFormat(profilesFromStore[0].data, {baseUrl: FETCH_CONTENT_SERVER}),
+            profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})
           ]
         }
 
@@ -278,7 +282,7 @@ describe('Friends sagas', () => {
         }
 
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: profilesFromStore.slice(5).map((profile) => profileToRendererFormat(profile.data, {}))
+          users: profilesFromStore.slice(5).map((profile) => profileToRendererFormat(profile.data, {baseUrl: FETCH_CONTENT_SERVER}))
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
@@ -310,7 +314,7 @@ describe('Friends sagas', () => {
           userNameOrId: '0xa' // this will only bring the friend 0xa2
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: [profileToRendererFormat(profilesFromStore[1].data, {})]
+          users: [profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})]
         }
 
         const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {

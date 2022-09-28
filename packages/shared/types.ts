@@ -730,3 +730,93 @@ export type AvatarRendererRemovedMessage = {
 } & AvatarRendererBasePayload
 
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
+
+export enum ChannelErrorCode {
+  UNKNOWN = 0, // / Any uncategorized channel related error
+  LIMIT_EXCEEDED = 1, // Reached the max amount of joined channels allowed per user
+  WRONG_FORMAT = 2, // Does not meet the name rules
+  RESERVED_NAME = 3, // Such as nearby
+  ALREADY_EXISTS = 4 // The name has already been used
+}
+
+export type CreateChannelPayload = {
+  channelId: string
+}
+
+export type ChannelErrorPayload = {
+  channelId: string
+  errorCode: number
+}
+
+export type ChannelInfoPayload = {
+  name: string // the name of the channel
+  channelId: string // the conversation id
+  unseenMessages: number
+  lastMessageTimestamp: number | undefined
+  memberCount: number
+  description: string
+  joined: boolean
+  muted: boolean
+}
+
+export type ChannelInfoPayloads = {
+  channelInfoPayload: ChannelInfoPayload[]
+}
+
+export type ChannelSearchResultsPayload = {
+  since: string | null // nullable pagination token
+  channels: ChannelInfoPayload[]
+}
+
+export type MarkChannelMessagesAsSeenPayload = {
+  channelId: string
+}
+
+export type UpdateTotalUnseenMessagesByChannelPayload = {
+  unseenChannelMessages: {
+    channelId: string
+    count: number
+  }[] // the unseen messages for each channel
+}
+
+export type GetChannelMessagesPayload = {
+  channelId: string
+  limit: number // max amount of entries to request
+  fromMessageId: string // pivot id to skip entries
+}
+
+export type GetChannelsPayload = {
+  limit: number // max amount of entries to request
+  name: string // text to match
+  since?: string // a pagination token
+}
+
+export type GetJoinedChannelsPayload = {
+  limit: number // max amount of entries to request
+  skip: number // amount of entries to skip
+}
+
+export type LeaveChannelPayload = {
+  channelId: string
+}
+
+export type GetChannelInfoPayload = {
+  channelsIds: string[]
+}
+
+export type GetChannelMembersPayload = {
+  channelId: string
+  limit: number
+  skip: number
+  userName: string // text to match
+}
+
+export type ChannelMember = {
+  userId: string
+  isOnline: boolean
+}
+
+export type UpdateChannelMembersPayload = {
+  channelId: string
+  members: ChannelMember[]
+}

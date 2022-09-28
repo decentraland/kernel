@@ -22,7 +22,7 @@ import { changeRealm } from 'shared/dao'
 import { isValidExpression, validExpressions } from 'shared/apis/expressionExplainer'
 import { SHOW_FPS_COUNTER } from 'config'
 import { findProfileByName, getCurrentUserProfile, getProfile } from 'shared/profiles/selectors'
-import { isFriend } from 'shared/friends/selectors'
+import { getSocialClient, isFriend } from 'shared/friends/selectors'
 import { fetchHotScenes } from 'shared/social/hotScenes'
 import { getCurrentUserId, hasWallet } from 'shared/session/selectors'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
@@ -30,6 +30,8 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
+import { SocialAPI } from 'dcl-social-client'
+import { joinOrCreateChannel, leaveChannel } from 'shared/friends/actions'
 
 interface IChatCommand {
   name: string
@@ -246,7 +248,7 @@ function initChatCommands() {
 
   addChatCommand('showfps', 'Show fps panel (deprecated in favor of /debug)', (_message) => getDebugPanelMessage())
 
-  /* 
+  /*
     /detectabs => enable for all shapes
     /detectabs off => disable for all shapes
     /detectabs scene => enable for current scene shapes
@@ -456,6 +458,44 @@ function initChatCommands() {
       sender: 'Decentraland',
       timestamp: Date.now(),
       body: 'Looking for other players...'
+    }
+  })
+
+  addChatCommand('join', 'Join or create channel', (channelId) => {
+    const client: SocialAPI | null = getSocialClient(store.getState())
+    if (!client) {
+      return {
+        messageId: uuid(),
+        sender: 'Decentraland',
+        messageType: ChatMessageType.SYSTEM,
+        timestamp: Date.now(),
+        body: 'Error joining/creating channel.'
+      }
+    }
+
+    const ownId = client.getUserId()
+
+    // Join or create channel
+    store.dispatch(joinOrCreateChannel(channelId, [ownId]))
+
+    return {
+      messageId: uuid(),
+      sender: 'Decentraland',
+      messageType: ChatMessageType.SYSTEM,
+      timestamp: Date.now(),
+      body: `Joining channel ${channelId}`
+    }
+  })
+
+  addChatCommand('leave', 'Leave channel', (channelId) => {
+    store.dispatch(leaveChannel(channelId))
+
+    return {
+      messageId: uuid(),
+      sender: 'Decentraland',
+      messageType: ChatMessageType.SYSTEM,
+      timestamp: Date.now(),
+      body: `Leaving channel`
     }
   })
 }

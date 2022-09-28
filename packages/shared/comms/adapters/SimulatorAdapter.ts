@@ -94,10 +94,10 @@ export class SimulationRoom implements RoomConnection {
   }
 
   async sendProfileMessage(profile: AnnounceProfileVersion): Promise<void> {
-    this.roomConnection.sendProfileMessage(profile)
+    return this.roomConnection.sendProfileMessage(profile)
   }
   async sendProfileRequest(request: ProfileRequest): Promise<void> {
-    this.roomConnection.sendProfileRequest(request)
+    await this.roomConnection.sendProfileRequest(request)
     const peer = this.peers.get(request.address)
     if (peer) {
       setTimeout(() => {
@@ -110,19 +110,19 @@ export class SimulationRoom implements RoomConnection {
     }
   }
   async sendProfileResponse(response: ProfileResponse): Promise<void> {
-    this.roomConnection.sendProfileResponse(response)
+    await this.roomConnection.sendProfileResponse(response)
   }
   async sendPositionMessage(position: Omit<Position, 'index'>): Promise<void> {
-    this.roomConnection.sendPositionMessage(position)
+    await this.roomConnection.sendPositionMessage(position)
   }
   async sendParcelSceneMessage(message: Scene): Promise<void> {
-    this.roomConnection.sendParcelSceneMessage(message)
+    await this.roomConnection.sendParcelSceneMessage(message)
   }
   async sendChatMessage(message: Chat): Promise<void> {
-    this.roomConnection.sendChatMessage(message)
+    await this.roomConnection.sendChatMessage(message)
   }
   async sendVoiceMessage(message: Voice): Promise<void> {
-    this.roomConnection.sendVoiceMessage(message)
+    await this.roomConnection.sendVoiceMessage(message)
   }
 
   update() {

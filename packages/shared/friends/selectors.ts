@@ -4,6 +4,7 @@ import { RootFriendsState } from './types'
 import { getUserIdFromMatrix } from './utils'
 
 export const getSocialClient = (store: RootFriendsState) => store.friends.client
+
 export const getAllConversationsWithMessages = (
   store: RootFriendsState
 ): Array<{ conversation: Conversation; unreadMessages: boolean }> => {

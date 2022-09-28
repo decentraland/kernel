@@ -55,6 +55,9 @@ export const getFetchContentServer = (state: RootBffState & RootMetaState) => {
 }
 
 export const getCatalystServer = (state: RootBffState) => urlWithProtocol(state.bff.bff!.services.legacy.catalystServer)
+export const getFetchContentUrlPrefix = (state: RootBffState & RootMetaState) => {
+  return getFetchContentServer(state) + '/contents/'
+}
 
 export const getCommsServer = (domain: string) => {
   if (COMMS_SERVICE) {
