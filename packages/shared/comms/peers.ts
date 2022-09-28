@@ -11,6 +11,7 @@ import { Avatar } from '@dcl/schemas'
 import { getProfileFromStore } from 'shared/profiles/selectors'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { CommsContext } from './context'
+import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const peerMap = new Map<UUID, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
@@ -89,7 +90,12 @@ export function receivePeerUserData(avatar: Avatar) {
 function sendPeerUserData(uuid: string) {
   const peer = getPeer(uuid)
   if (peer && peer.ethereumAddress) {
-    const profile = avatarUiProfileForUserId(peer.ethereumAddress)
+    const profile = avatarUiProfileForUserId(
+      peer.ethereumAddress,
+      // TODO: when profiles are federated, we must change this to accept the profile's
+      //       home server
+      getFetchContentUrlPrefix(store.getState())
+    )
     if (profile) {
       avatarMessageObservable.notifyObservers({
         type: AvatarMessageType.USER_DATA,
@@ -131,11 +137,12 @@ export function receiveUserPosition(uuid: string, position: Pose, msgTimestamp: 
   }
 }
 
-function avatarUiProfileForUserId(userId: string) {
+function avatarUiProfileForUserId(userId: string, contentServerBaseUrl: string) {
   const avatar = getProfileFromStore(store.getState(), userId)
   if (avatar && avatar.data) {
     return profileToRendererFormat(avatar.data, {
-      address: userId
+      address: userId,
+      baseUrl: contentServerBaseUrl
     })
   }
   return null
