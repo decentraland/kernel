@@ -23,7 +23,7 @@ export class Rfc4RoomConnection implements RoomConnection {
     await this.transport.connect()
   }
 
-  sendPositionMessage(p: proto.Position): Promise<void> {
+  sendPositionMessage(p: Omit<proto.Position, 'index'>): Promise<void> {
     return this.sendMessage(false, {
       message: {
         $case: 'position',

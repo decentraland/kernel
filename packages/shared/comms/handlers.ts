@@ -33,12 +33,22 @@ import { validateAvatar } from 'shared/profiles/schemaValidation'
 import { AdapterDisconnectedEvent, PeerDisconnectedEvent } from './adapters/types'
 import { RoomConnection } from './interface'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
+import { sendPublicChatMessage } from '.'
+
+type PingRequest = {
+  alias: number
+  responses: number
+  sentTime: number
+}
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
+const pingRequests = new Map<number, PingRequest>()
+let pingIndex = 0
 
 export async function bindHandlersToCommsContext(room: RoomConnection) {
   removeAllPeers()
+  pingRequests.clear()
 
   // RFC4 messages
   room.events.on('position', processPositionMessage)
@@ -160,6 +170,16 @@ function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
   }
 }
 
+globalThis.__sendPing = () => {
+  const nonce = Math.floor(Math.random() * 0xffffffff)
+  pingRequests.set(nonce, {
+    responses: 0,
+    sentTime: Date.now(),
+    alias: pingIndex++
+  })
+  sendPublicChatMessage(`␑${nonce}`)
+}
+
 function processChatMessage(message: Package<proto.Chat>) {
   const myProfile = getCurrentUserProfile(store.getState())
   const fromAlias: string = message.address
@@ -168,8 +188,18 @@ function processChatMessage(message: Package<proto.Chat>) {
   senderPeer.lastUpdate = Date.now()
 
   if (senderPeer.ethereumAddress) {
-    if (message.data.message.startsWith('␐')) {
+    if (message.data.message.startsWith('␑')) {
+      const nonce = parseInt(message.data.message.slice(1), 10)
+      const request = pingRequests.get(nonce)
+      if (request) {
+        request.responses++
+        console.log(`ping ${request.alias} has ${request.responses} responses (nonce: ${nonce})`)
+      } else {
+        sendPublicChatMessage(message.data.message)
+      }
+    } else if (message.data.message.startsWith('␐')) {
       const [id, timestamp] = message.data.message.split(' ')
+
       avatarMessageObservable.notifyObservers({
         type: AvatarMessageType.USER_EXPRESSION,
         userId: senderPeer.ethereumAddress,

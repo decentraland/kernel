@@ -6,6 +6,7 @@ import { generateRandomUserProfile } from 'shared/profiles/sagas'
 import {
   AnnounceProfileVersion,
   Chat,
+  Packet,
   Position,
   ProfileRequest,
   ProfileResponse,
@@ -14,7 +15,8 @@ import {
 } from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { CommsEvents, RoomConnection } from '../interface'
-import { SendHints } from './types'
+import { Rfc4RoomConnection } from '../logic/rfc-4-room-connection'
+import { CommsAdapterEvents, SendHints } from './types'
 
 export class SimulationRoom implements RoomConnection {
   events = mitt<CommsEvents>()
@@ -23,11 +25,27 @@ export class SimulationRoom implements RoomConnection {
 
   peers = new Map<
     string,
-    { position: Vector3; identity: ReturnType<typeof createUnsafeIdentity>; profile: Avatar; epoch: number }
+    {
+      position: Vector3
+      identity: ReturnType<typeof createUnsafeIdentity>
+      profile: Avatar
+      epoch: number
+      positionMessage: Uint8Array
+      profileMessage: Uint8Array
+    }
   >()
+
+  private roomConnection: Rfc4RoomConnection
 
   constructor(param: string) {
     this.tick = setInterval(this.update.bind(this), 60)
+    const transport = {
+      events: mitt<CommsAdapterEvents>(),
+      send(data: Uint8Array, hints: SendHints): void {},
+      async connect(): Promise<void> {},
+      async disconnect(error?: Error): Promise<void> {}
+    }
+    this.roomConnection = new Rfc4RoomConnection(transport)
   }
 
   async spawnPeer(): Promise<string> {
@@ -40,7 +58,30 @@ export class SimulationRoom implements RoomConnection {
       identity,
       position: lastPlayerPosition.clone(),
       profile: avatar,
-      epoch: 0
+      epoch: 0,
+      positionMessage: Packet.encode({
+        message: {
+          $case: 'position',
+          position: {
+            positionX: 0,
+            positionY: 0,
+            positionZ: 1,
+            rotationW: 1,
+            rotationX: 0,
+            rotationY: 0,
+            rotationZ: 0,
+            index: 123213
+          }
+        }
+      }).finish(),
+      profileMessage: Packet.encode({
+        message: {
+          $case: 'profileVersion',
+          profileVersion: {
+            profileVersion: 1
+          }
+        }
+      }).finish()
     })
 
     this.events.emit('profileMessage', {
@@ -52,8 +93,11 @@ export class SimulationRoom implements RoomConnection {
     return address
   }
 
-  async sendProfileMessage(profile: AnnounceProfileVersion): Promise<void> {}
+  async sendProfileMessage(profile: AnnounceProfileVersion): Promise<void> {
+    this.roomConnection.sendProfileMessage(profile)
+  }
   async sendProfileRequest(request: ProfileRequest): Promise<void> {
+    this.roomConnection.sendProfileRequest(request)
     const peer = this.peers.get(request.address)
     if (peer) {
       setTimeout(() => {
@@ -65,14 +109,25 @@ export class SimulationRoom implements RoomConnection {
       }, Math.random() * 100)
     }
   }
-  async sendProfileResponse(response: ProfileResponse): Promise<void> {}
-  async sendPositionMessage(position: Omit<Position, 'index'>): Promise<void> {}
-  async sendParcelSceneMessage(message: Scene): Promise<void> {}
-  async sendChatMessage(message: Chat): Promise<void> {}
-  async sendVoiceMessage(message: Voice): Promise<void> {}
+  async sendProfileResponse(response: ProfileResponse): Promise<void> {
+    this.roomConnection.sendProfileResponse(response)
+  }
+  async sendPositionMessage(position: Omit<Position, 'index'>): Promise<void> {
+    this.roomConnection.sendPositionMessage(position)
+  }
+  async sendParcelSceneMessage(message: Scene): Promise<void> {
+    this.roomConnection.sendParcelSceneMessage(message)
+  }
+  async sendChatMessage(message: Chat): Promise<void> {
+    this.roomConnection.sendChatMessage(message)
+  }
+  async sendVoiceMessage(message: Voice): Promise<void> {
+    this.roomConnection.sendVoiceMessage(message)
+  }
 
   update() {
     let i = 0
+
     for (const [address, peer] of this.peers) {
       i++
       const angle = Math.PI * 2 * (i / this.peers.size) + performance.now() * 0.0001
@@ -88,6 +143,8 @@ export class SimulationRoom implements RoomConnection {
         .normalize()
         .scaleInPlace(Math.min(distance + Math.random(), 5))
       peer.position.addInPlace(segment)
+
+      Packet.decode(peer.positionMessage)
 
       this.events.emit('position', {
         address,
@@ -105,6 +162,7 @@ export class SimulationRoom implements RoomConnection {
       })
 
       if (Math.random() > 0.8) {
+        Packet.decode(peer.profileMessage)
         this.events.emit('profileMessage', {
           address,
           data: { profileVersion: peer.epoch },
