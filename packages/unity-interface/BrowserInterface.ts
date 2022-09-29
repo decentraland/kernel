@@ -32,6 +32,7 @@ import {
   GetChannelMessagesPayload,
   GetJoinedChannelsPayload,
   LeaveChannelPayload,
+  MuteChannelPayload,
   GetChannelInfoPayload
 } from 'shared/types'
 import {
@@ -97,6 +98,7 @@ import {
   getJoinedChannels,
   getUnseenMessagesByChannel,
   markAsSeenChannelMessages,
+  muteChannel,
   getChannelInfo,
   searchChannels
 } from 'shared/friends/sagas'
@@ -755,6 +757,10 @@ export class BrowserInterface {
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
     leaveChannel(leaveChannelPayload.channelId)
+  }
+
+  public MuteChannel(muteChannelPayload: MuteChannelPayload) {
+    muteChannel(muteChannelPayload)
   }
 
   public GetChannelInfo(getChannelInfoPayload: GetChannelInfoPayload) {
