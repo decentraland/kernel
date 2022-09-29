@@ -1280,10 +1280,9 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     if (!client) return
 
     const channelId = action.payload.channelId
-    const ownId = client.getUserId()
 
     // get or create channel
-    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, [ownId]])
+    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, []])
 
     const channel: ChannelInfoPayload = {
       name: conversation.name!,
@@ -1335,10 +1334,8 @@ export async function createChannel(request: CreateChannelPayload) {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
 
-    const ownId = client.getUserId()
-
     // create channel
-    const { conversation, created } = await client.getOrCreateChannel(channelId, [ownId])
+    const { conversation, created } = await client.getOrCreateChannel(channelId, [])
 
     if (!created) {
       notifyJoinChannelError(request.channelId, ChannelErrorCode.ALREADY_EXISTS)
