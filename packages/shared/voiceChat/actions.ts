@@ -1,6 +1,7 @@
 import { action } from 'typesafe-actions'
 import { VoicePolicy } from './types'
 import { VoiceHandler } from 'voice-chat-codec/VoiceHandler'
+import { AddAudioDevicesPayload } from 'shared/types'
 
 export const SET_VOICE_CHAT_LIVE_KIT_ROOM = '[VC] SetVoiceChatLiveKitRoom'
 export const setVoiceChatLiveKitRoom = (room: any) => action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room })
@@ -56,7 +57,7 @@ export const setVoiceChatVolume = (volume: number) => action(SET_VOICE_CHAT_VOLU
 export type SetVoiceChatVolumeAction = ReturnType<typeof setVoiceChatVolume>
 
 export const SET_VOICE_CHAT_MUTE = '[VC] setVoiceChatMute'
-export const setVoiceChatMute = (mute: boolean) => action(SET_VOICE_CHAT_MUTE, { mute })
+export const setVoiceChatMute = (mute: boolean) => action(SET_VOICE_CHAT_MUTE, { mute })                                                                                           
 export type SetVoiceChatMuteAction = ReturnType<typeof setVoiceChatMute>
 
 export const SET_VOICE_CHAT_POLICY = '[VC] setVoiceChatPolicy'
@@ -72,7 +73,7 @@ export const setOutputAudioDevice = (device: string) => action(SET_OUTPUT_AUDIO_
 export type SetOutputAudioDevice = ReturnType<typeof setOutputAudioDevice>
 
 export const SEND_AUDIO_DEVICES = 'Send audio devices to unity'
-export const sendAudioDevices = (devices: string[]) => action(SEND_AUDIO_DEVICES, { devices })
+export const sendAudioDevices = (devices: AddAudioDevicesPayload) => action(SEND_AUDIO_DEVICES, { devices })
 export type SendAudioDevices = ReturnType<typeof sendAudioDevices>
 
 export type VoiceChatActions =

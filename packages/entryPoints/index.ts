@@ -199,7 +199,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.QUESTS_TRACKER, { active: questEnabled, visible: true })
   i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
 
-  store.dispatch(sendAudioDevices(['Apple', 'Orange', 'Banana']))
+  store.dispatch(sendAudioDevices({outputDevices: ['Apple', 'Orange'], inputDevices: ['Wood', 'Steel']}))
 
   // The elements below, require the taskbar to be active before being activated.
   {

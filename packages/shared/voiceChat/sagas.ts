@@ -232,7 +232,7 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
 
 function* sendAudioDevicesToUnity(action: SendAudioDevices) {
   yield call(waitForRendererInstance)
-  getUnityInstance().SendAudioDevices(action.payload.devices);
+  getUnityInstance().AddAudioDevices(action.payload.devices);
 }
 
 function* setOutputAudioDeviceRequest (action: SetOutputAudioDevice) {

@@ -504,6 +504,11 @@ export type WorldPosition = {
   }
 }
 
+export type AddAudioDevicesPayload = {
+  outputDevices: string[],
+  inputDevices: string[]
+}
+
 export enum ChatMessagePlayerType {
   WALLET = 0,
   GUEST = 1
