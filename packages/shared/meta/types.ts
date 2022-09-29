@@ -25,6 +25,7 @@ export type FeatureFlagsName =
   | 'parcel-denylist' // denylist of specific parcels using variants
   | 'matrix_disabled' // disable matrix integration entirely
   | 'matrix_presence_disabled' // disable matrix presence feature
+  | 'matrix_channels_enabled' // enables matrix channels feature
   | 'builder_in_world'
   | 'avatar_lods'
   | 'asset_bundles'

@@ -103,7 +103,7 @@ import {
   getChannelInfo,
   searchChannels
 } from 'shared/friends/sagas'
-import { getMatrixIdFromUser } from 'shared/friends/utils'
+import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -703,6 +703,7 @@ export class BrowserInterface {
   }
 
   public CreateChannel(createChannelPayload: CreateChannelPayload) {
+    if (!areChannelsEnabled()) return
     createChannel(createChannelPayload).catch((err) => {
       defaultLogger.error('error createChannel', err),
         trackEvent('error', {
@@ -714,6 +715,7 @@ export class BrowserInterface {
   }
 
   public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
+    if (!areChannelsEnabled()) return
     if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
     markAsSeenChannelMessages(markChannelMessagesAsSeenPayload).catch((err) => {
       defaultLogger.error('error markAsSeenChannelMessages', err),
@@ -727,6 +729,7 @@ export class BrowserInterface {
   }
 
   public GetChannelMessages(getChannelMessagesPayload: GetChannelMessagesPayload) {
+    if (!areChannelsEnabled()) return
     getChannelMessages(getChannelMessagesPayload).catch((err) => {
       defaultLogger.error('error getChannelMessages', err),
         trackEvent('error', {
@@ -738,6 +741,7 @@ export class BrowserInterface {
   }
 
   public GetChannels(getChannelsPayload: GetChannelsPayload) {
+    if (!areChannelsEnabled()) return
     searchChannels(getChannelsPayload).catch((err) => {
       defaultLogger.error('error searchChannels', err),
         trackEvent('error', {
@@ -749,22 +753,27 @@ export class BrowserInterface {
   }
 
   public GetUnseenMessagesByChannel() {
+    if (!areChannelsEnabled()) return
     getUnseenMessagesByChannel()
   }
 
   public GetJoinedChannels(getJoinedChannelsPayload: GetJoinedChannelsPayload) {
+    if (!areChannelsEnabled()) return
     getJoinedChannels(getJoinedChannelsPayload)
   }
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
+    if (!areChannelsEnabled()) return
     leaveChannel(leaveChannelPayload.channelId)
   }
 
   public MuteChannel(muteChannelPayload: MuteChannelPayload) {
+    if (!areChannelsEnabled()) return
     muteChannel(muteChannelPayload)
   }
 
   public GetChannelInfo(getChannelInfoPayload: GetChannelInfoPayload) {
+    if (!areChannelsEnabled()) return
     getChannelInfo(getChannelInfoPayload)
   }
 
