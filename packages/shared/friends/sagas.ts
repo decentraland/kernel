@@ -231,8 +231,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
       if (userId) {
         // When it's a friend and is not added to catalog
         // unity needs to know this information to show that the user has connected
-        if (isFriend(store.getState(), userId) && !isAddedToCatalog(store.getState(), userId)) {
-          await ensureFriendProfile(userId)
+        if (isFriend(store.getState(), userId)) {
+          if (!isAddedToCatalog(store.getState(), userId)) {
+            await ensureFriendProfile(userId)
+          }
           getUnityInstance().AddFriends({
             friends: [userId],
             totalFriends: getTotalFriends(store.getState())
@@ -571,8 +573,8 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   const addFriendRequestsPayload: AddFriendRequestsPayload = {
     requestedTo: toFriendRequests.map((friend) => friend.userId),
     requestedFrom: fromFriendRequests.map((friend) => friend.userId),
-    totalReceivedFriendRequests: fromFriendRequests.length,
-    totalSentFriendRequests: toFriendRequests.length
+    totalReceivedFriendRequests: friends.fromFriendRequests.length,
+    totalSentFriendRequests: friends.toFriendRequests.length
   }
 
   // get friend requests profiles
@@ -700,10 +702,10 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     return
   }
 
-  const friendsIds: string[] = getPrivateMessagingFriends(store.getState()).slice(
-    request.skip,
-    request.skip + request.limit
-  )
+  const friendsIds: string[] = conversationsWithMessages
+    .slice(request.skip, request.skip + request.limit)
+    .map((conv) => conv.conversation.userIds![1])
+
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
     friendsIds,
@@ -729,7 +731,7 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
       lastMessageTimestamp: friend.conversation.lastEventTimestamp!,
       userId: friend.userId
     })),
-    totalFriendsWithDirectMessages: friendsConversations.length
+    totalFriendsWithDirectMessages: conversationsWithMessages.length
   }
 
   const profilesForRenderer = friendsConversations.map((friend) =>
@@ -810,13 +812,9 @@ function* initializeStatusUpdateInterval() {
       continue
     }
 
-    const domain = client.getDomain()
-
     const rawFriends: string[] = yield select(getPrivateMessagingFriends)
 
-    const friends = rawFriends.map((x) => {
-      return `@${x}:${domain}`
-    })
+    const friends = rawFriends.map((x) => getMatrixIdFromUser(x))
 
     updateUserStatus(client, ...friends)
 
