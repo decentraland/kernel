@@ -1,3 +1,4 @@
+import { getFeatureFlagEnabled } from 'shared/meta/selectors'
 import { store } from 'shared/store/isolatedStore'
 
 /**
@@ -27,4 +28,10 @@ export function getUserIdFromMatrix(userId: string) {
 export function getMatrixIdFromUser(userId: string) {
   const domain = store.getState().friends.client?.getDomain() ?? 'decentraland.org'
   return `@${userId.toLowerCase()}:${domain}`
+}
+/*
+ * Returns true if channels feature is enabled
+ */
+export function areChannelsEnabled(): boolean {
+  return getFeatureFlagEnabled(store.getState(), 'matrix_channels_enabled')
 }

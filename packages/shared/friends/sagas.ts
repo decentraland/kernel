@@ -104,7 +104,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
+import { getUserIdFromMatrix, getMatrixIdFromUser, areChannelsEnabled } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
@@ -224,6 +224,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
     return
   }
 
+  // check channels feature is enabled
+  const channelsDisabled = !areChannelsEnabled()
+
   // initialize conversations
   client.onStatusChange(async (socialId, status) => {
     try {
@@ -257,6 +260,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
   client.onMessage(async (conversation, message) => {
     try {
+      if (conversation.type === ConversationType.CHANNEL && channelsDisabled) {
+        return
+      }
       if (receivedMessages.hasOwnProperty(message.id)) {
         // message already processed, skipping
         return
@@ -491,6 +497,7 @@ function getFriendIds(client: SocialAPI): string[] {
 }
 
 function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: string[]): number {
+  const channelsDisabled = !areChannelsEnabled()
   const profile = getCurrentUserProfile(store.getState())
 
   const conversationsWithUnreadMessages: Conversation[] = client.getAllConversationsWithUnreadMessages()
@@ -498,7 +505,7 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
 
   for (const conv of conversationsWithUnreadMessages) {
     if (conv.type === ConversationType.CHANNEL) {
-      if (profile?.muted?.includes(conv.id)) {
+      if (channelsDisabled || profile?.muted?.includes(conv.id)) {
         continue
       }
     } else if (conv.type === ConversationType.DIRECT) {
