@@ -631,12 +631,7 @@ export class BrowserInterface {
   }
 
   public SendChatMessage(data: { message: ChatMessage }) {
-    // When there is a recipient, it means is a message sent to a channel
-    if (data.message.messageType === ChatMessageType.PUBLIC && data.message.recipient) {
-      store.dispatch(sendChannelMessage(data.message.recipient, data.message.body))
-    } else {
-      store.dispatch(sendMessage(data.message))
-    }
+    store.dispatch(sendMessage(data.message))
   }
 
   public SetVoiceChatRecording(recordingMessage: { recording: boolean }) {
