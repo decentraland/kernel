@@ -130,7 +130,7 @@ function* handleSendMessage(action: SendMessage) {
         body: message,
         timestamp: Date.now()
       }
-      sendChannelMessage(recipient, message)
+      store.dispatch(sendChannelMessage(recipient, message))
     } else {
       entry = {
         messageType: ChatMessageType.PUBLIC,

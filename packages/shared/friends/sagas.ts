@@ -1531,7 +1531,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   const addChatMessages: AddChatMessagesPayload = {
     messages: messages.map((message) => ({
       messageId: message.id,
-      messageType: ChatMessageType.PRIVATE,
+      messageType: ChatMessageType.PUBLIC,
       timestamp: message.timestamp,
       body: message.text,
       sender: getUserIdFromMatrix(message.sender),
