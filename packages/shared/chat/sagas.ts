@@ -473,10 +473,8 @@ function initChatCommands() {
       }
     }
 
-    const ownId = client.getUserId()
-
     // Join or create channel
-    store.dispatch(joinOrCreateChannel(channelId, [ownId]))
+    store.dispatch(joinOrCreateChannel(channelId, []))
 
     return {
       messageId: uuid(),

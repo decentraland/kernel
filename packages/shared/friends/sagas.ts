@@ -1290,7 +1290,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, []])
 
     const channel: ChannelInfoPayload = {
-      name: conversation.name!,
+      name: action.payload.channelId,
       channelId: conversation.id,
       unseenMessages: 0,
       lastMessageTimestamp: undefined,
@@ -1349,7 +1349,7 @@ export async function createChannel(request: CreateChannelPayload) {
 
     // parse channel info
     const channel: ChannelInfoPayload = {
-      name: conversation.name!,
+      name: request.channelId,
       channelId: conversation.id,
       unseenMessages: 0,
       lastMessageTimestamp: undefined,
