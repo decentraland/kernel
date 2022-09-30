@@ -65,7 +65,8 @@ import {
   requestVoiceChatRecording,
   setVoiceChatPolicy,
   setVoiceChatVolume,
-  requestToggleVoiceChatRecording
+  requestToggleVoiceChatRecording,
+  setOutputAudioDevice
 } from 'shared/voiceChat/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
@@ -528,6 +529,10 @@ export class BrowserInterface {
 
   public SaveUserTutorialStep(data: { tutorialStep: number }) {
     store.dispatch(saveProfileDelta({ tutorialStep: data.tutorialStep }))
+  }
+
+  public SetOutputAudioDevice(data: { deviceId: number }) {
+    store.dispatch(setOutputAudioDevice(data.deviceId))
   }
 
   public ControlEvent({ eventType, payload }: { eventType: string; payload: any }) {

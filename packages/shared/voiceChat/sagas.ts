@@ -33,7 +33,6 @@ import {
   SendAudioDevices,
   SEND_AUDIO_DEVICES,
   SetOutputAudioDevice,
-  setOutputAudioDevice,
   SET_OUTPUT_AUDIO_DEVICE
 } from './actions'
 import { voiceChatLogger } from './context'
@@ -238,7 +237,6 @@ function* sendAudioDevicesToUnity(action: SendAudioDevices) {
 
 function* setOutputAudioDeviceRequest (action: SetOutputAudioDevice) {
   console.log("AudioDevice = " + action.payload.device);
-  yield put(setOutputAudioDevice(111))
 }
 
 let audioRequestPending = false
