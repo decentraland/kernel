@@ -784,7 +784,7 @@ export class BrowserInterface {
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
     if (!areChannelsEnabled()) return
-    leaveChannel(leaveChannelPayload.channelId)
+    store.dispatch(leaveChannel(leaveChannelPayload.channelId))
   }
 
   public MuteChannel(muteChannelPayload: MuteChannelPayload) {
