@@ -1,4 +1,5 @@
-import { getFeatureFlagEnabled } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getFeatureFlagVariantValue } from 'shared/meta/selectors'
+import { RootMetaState } from 'shared/meta/types'
 import { store } from 'shared/store/isolatedStore'
 
 /**
@@ -34,4 +35,10 @@ export function getMatrixIdFromUser(userId: string) {
  */
 export function areChannelsEnabled(): boolean {
   return getFeatureFlagEnabled(store.getState(), 'matrix_channels_enabled')
+}
+
+export const DEFAULT_MAX_CHANNELS_VALUE = 5
+
+export function getMaxChannels(store: RootMetaState): number {
+  return (getFeatureFlagVariantValue(store, 'max_joined_channels') as number) ?? DEFAULT_MAX_CHANNELS_VALUE
 }

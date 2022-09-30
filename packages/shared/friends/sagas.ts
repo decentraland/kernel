@@ -72,7 +72,8 @@ import {
   getAllConversationsWithMessages,
   getTotalFriendRequests,
   getTotalFriends,
-  isFriend
+  isFriend,
+  getChannels
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -93,7 +94,7 @@ import {
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
-import { getFeatureFlagEnabled, getMaxChannels, getSynapseUrl } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
@@ -105,7 +106,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix, getMatrixIdFromUser, areChannelsEnabled } from './utils'
+import { getUserIdFromMatrix, getMatrixIdFromUser, areChannelsEnabled, getMaxChannels } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
@@ -1420,11 +1421,9 @@ export function getUnseenMessagesByChannel() {
 // Get user's joined channels
 export function getJoinedChannels(request: GetJoinedChannelsPayload) {
   // get conversations messages from the store
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.CHANNEL
-  )
+  const joinedChannels = getChannels(store.getState())
 
-  const conversationsFiltered = conversationsWithMessages.slice(request.skip, request.skip + request.limit)
+  const conversationsFiltered = joinedChannels.slice(request.skip, request.skip + request.limit)
 
   const channelsToReturn: ChannelInfoPayload[] = conversationsFiltered.map((conv) => ({
     name: conv.conversation.name || '',
@@ -1519,9 +1518,7 @@ export async function searchChannels(request: GetChannelsPayload) {
   const since: string | undefined = request.since === '' ? undefined : request.since
 
   // get user joined channelIds
-  const joinedChannelIds = getAllConversationsWithMessages(store.getState())
-    .filter((conv) => conv.conversation.type === ConversationType.CHANNEL)
-    .map((conv) => conv.conversation.id)
+  const joinedChannelIds = getChannels(store.getState()).map((conv) => conv.conversation.id)
 
   const profile = getCurrentUserProfile(store.getState())
 
@@ -1655,9 +1652,7 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
 function checkChannelsLimit() {
   const limit = getMaxChannels(store.getState())
 
-  const joinedChannels = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.CHANNEL
-  ).length
+  const joinedChannels = getChannels(store.getState()).length
 
   if (limit > joinedChannels) {
     return false
