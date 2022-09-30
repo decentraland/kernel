@@ -1,8 +1,10 @@
+import { Payload } from 'shared/apis/proto/EngineAPI.gen'
 import {
   JOIN_VOICE_CHAT,
   LEAVE_VOICE_CHAT,
   REQUEST_TOGGLE_VOICE_CHAT_RECORDING,
   REQUEST_VOICE_CHAT_RECORDING,
+  SET_AUDIO_DEVICE,
   SET_VOICE_CHAT_ERROR,
   SET_VOICE_CHAT_HANDLER,
   SET_VOICE_CHAT_LIVE_KIT_ROOM,
@@ -81,6 +83,14 @@ export function voiceChatReducer(state?: VoiceChatState, action?: VoiceChatActio
     }
     case LEAVE_VOICE_CHAT: {
       return { ...state, joined: false }
+    }
+    case SET_AUDIO_DEVICE: {
+      const { payload } = action
+      return {
+        ...state,
+        inputDeviceId: payload.devices.inputDeviceId ?? state.inputDeviceId,
+        outputDeviceId: payload.devices.outputDeviceId ?? state.outputDeviceId
+      }
     }
   }
 

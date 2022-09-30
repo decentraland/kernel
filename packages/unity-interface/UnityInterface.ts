@@ -35,10 +35,10 @@ import {
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
   ChannelErrorPayload,
-  AddAudioDevicesPayload
+  SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { createUnityLogger, ILogger } from 'shared/logger'
+import defaultLogger, { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
@@ -115,9 +115,8 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
   }
 
-  public AddAudioDevices(devices: AddAudioDevicesPayload) {
-    console.log(devices)
-    this.SendMessageToUnity('Bridges', 'AddAudioDevices', JSON.stringify(devices))
+  public SetAudioDevices(devices: SetAudioDevicesPayload) {
+    this.SendMessageToUnity('Bridges', 'SetAudioDevices', JSON.stringify(devices))
   }
 
   public CreateGlobalScene(data: {

@@ -30,10 +30,8 @@ import {
   setVoiceChatLiveKitRoom,
   joinVoiceChat,
   clearVoiceChatError,
-  SendAudioDevices,
-  SEND_AUDIO_DEVICES,
-  SetOutputAudioDevice,
-  SET_OUTPUT_AUDIO_DEVICE
+  SET_AUDIO_DEVICE,
+  SetAudioDevice
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
@@ -57,10 +55,10 @@ import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { getLiveKitVoiceChat } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
-import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getUnityInstance } from '../../unity-interface/IUnityInterface'
+import defaultLogger from 'shared/logger'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
+let audioRequestInitialized = false
 
 export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_LIVE_KIT_ROOM, handleSetVoiceChatLiveKitRoom)
@@ -79,8 +77,7 @@ export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
   yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], customLiveKitRoom)
-  yield takeEvery(SEND_AUDIO_DEVICES, sendAudioDevicesToUnity)
-  yield takeEvery(SET_OUTPUT_AUDIO_DEVICE, setOutputAudioDeviceRequest)
+  yield takeEvery(SET_AUDIO_DEVICE, setAudioDevices)
 }
 
 /*
@@ -209,7 +206,7 @@ function* requestUserMedia() {
   const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
   if (voiceHandler) {
     if (!voiceHandler.hasInput()) {
-      const media = yield call(requestMediaDevice)
+      const media = yield call(requestMediaDevice) // TODO(Mateo): use inputDevieId
       yield put(setVoiceChatMedia(media))
     }
   }
@@ -230,20 +227,23 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
   voiceHandler?.setMute(action.payload.mute)
 }
 
-function* sendAudioDevicesToUnity(action: SendAudioDevices) {
-  yield call(waitForRendererInstance)
-  getUnityInstance().AddAudioDevices(action.payload.devices)
-}
+function* setAudioDevices(action: SetAudioDevice) {
+  console.log('AudioDevice = ' + action.payload.devices)
+  if (audioRequestInitialized) {
+    if (action.payload.devices.inputDeviceId) {
+      const media = yield call(requestMediaDevice, action.payload.devices.inputDeviceId)
+      yield put(setVoiceChatMedia(media))
+    }
 
-function* setOutputAudioDeviceRequest(action: SetOutputAudioDevice) {
-  console.log('AudioDevice = ' + action.payload.device)
+    if (action.payload.devices.outputDeviceId) {
+      // TODO(Mateo): Find a function to set the output device!
+    }
+  }
 }
-
-let audioRequestPending = false
 
 async function requestMediaDevice(deviceId?: string) {
-  if (!audioRequestPending) {
-    audioRequestPending = true
+  if (!audioRequestInitialized) {
+    audioRequestInitialized = true
 
     try {
       const media = await navigator.mediaDevices.getUserMedia({
@@ -268,7 +268,7 @@ async function requestMediaDevice(deviceId?: string) {
       })
       incrementCounter('voiceChatRequestMediaDeviceFail')
     } finally {
-      audioRequestPending = false
+      audioRequestInitialized = false
     }
   }
 }
