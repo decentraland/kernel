@@ -89,7 +89,9 @@ import {
   JOIN_OR_CREATE_CHANNEL,
   JoinOrCreateChannel,
   LeaveChannel,
-  LEAVE_CHANNEL
+  LEAVE_CHANNEL,
+  SEND_CHANNEL_MESSAGE,
+  SendChannelMessage
 } from 'shared/friends/actions'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -130,6 +132,7 @@ export function* friendsSaga() {
   yield takeEvery(UPDATE_FRIENDSHIP, trackEvents)
   yield takeEvery(UPDATE_FRIENDSHIP, handleUpdateFriendship)
   yield takeEvery(SEND_PRIVATE_MESSAGE, handleSendPrivateMessage)
+  yield takeEvery(SEND_CHANNEL_MESSAGE, handleSendChannelMessage)
   yield takeEvery(JOIN_OR_CREATE_CHANNEL, handleJoinOrCreateChannel)
   yield takeEvery(LEAVE_CHANNEL, handleLeaveChannel)
 }
@@ -865,6 +868,32 @@ function parseUserId(socialId: string) {
 
 function addNewChatMessage(chatMessage: ChatMessage) {
   getUnityInstance().AddMessageToChatWindow(chatMessage)
+}
+
+function* handleSendChannelMessage(action: SendChannelMessage) {
+  const { message, channelId } = action.payload
+
+  const client: SocialAPI | null = yield select(getSocialClient)
+
+  if (!client) {
+    logger.error(`Social client should be initialized by now`)
+    return
+  }
+
+  try {
+    const conversation: Conversation | undefined = yield apply(client, client.getChannel, [channelId])
+    if (conversation) {
+      yield apply(client, client.sendMessageTo, [conversation.id, message])
+    }
+  } catch (e: any) {
+    logger.error(e)
+    trackEvent('error', {
+      context: 'handleSendPrivateMessage',
+      message: e.message,
+      stack: e.stack,
+      saga_stack: e.toString()
+    })
+  }
 }
 
 function* handleSendPrivateMessage(action: SendPrivateMessage) {

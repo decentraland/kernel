@@ -46,7 +46,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, sendChannelMessage, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -628,7 +628,13 @@ export class BrowserInterface {
   }
 
   public SendChatMessage(data: { message: ChatMessage }) {
-    store.dispatch(sendMessage(data.message))
+    if (data.message.isChannelMessage) {
+      if (data.message.recipient) {
+        store.dispatch(sendChannelMessage(data.message.recipient, data.message.body))
+      }
+    } else {
+      store.dispatch(sendMessage(data.message))
+    }
   }
 
   public SetVoiceChatRecording(recordingMessage: { recording: boolean }) {

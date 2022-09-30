@@ -513,6 +513,7 @@ export type ChatMessage = {
   messageType: ChatMessageType
   sender?: string | undefined
   recipient?: string | undefined
+  isChannelMessage?: boolean
   timestamp: number
   body: string
 }
