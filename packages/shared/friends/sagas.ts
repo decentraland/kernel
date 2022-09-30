@@ -265,7 +265,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
   client.onMessage(async (conversation, message) => {
     try {
-      const isChannelType = conversation.type === ConversationType.CHANNEL ?? true
+      const isChannelType = conversation.type === ConversationType.CHANNEL
 
       if (isChannelType && channelsDisabled) {
         return
@@ -292,9 +292,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
       }
 
       const recipient = isChannelType ? conversation.id : message.sender === ownId ? senderUserId : identity.address
+      const messageType = isChannelType ? ChatMessageType.PUBLIC : ChatMessageType.PRIVATE
       const chatMessage = {
         messageId: message.id,
-        messageType: ChatMessageType.PRIVATE,
+        messageType,
         timestamp: message.timestamp,
         body: message.text,
         sender: message.sender === ownId ? identity.address : senderUserId,
