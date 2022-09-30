@@ -36,7 +36,8 @@ import {
   MuteChannelPayload,
   GetChannelInfoPayload,
   JoinOrCreateChannelPayload,
-  ChatMessageType
+  ChatMessageType,
+  GetChannelMembersPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -104,7 +105,8 @@ import {
   muteChannel,
   getChannelInfo,
   searchChannels,
-  joinChannel
+  joinChannel,
+  getChannelMembers
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 
@@ -770,6 +772,11 @@ export class BrowserInterface {
           stack: 'searchChannels'
         })
     })
+  }
+
+  public GetChannelMembers(getChannelMembersPayload: GetChannelMembersPayload) {
+    if (!areChannelsEnabled()) return
+    getChannelMembers(getChannelMembersPayload)
   }
 
   public GetUnseenMessagesByChannel() {
