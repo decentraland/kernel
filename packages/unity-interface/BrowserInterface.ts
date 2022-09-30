@@ -107,7 +107,6 @@ import {
   joinChannel
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
-import { MessageType } from 'dcl-social-client'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}

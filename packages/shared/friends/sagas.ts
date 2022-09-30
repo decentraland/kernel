@@ -265,7 +265,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
   client.onMessage(async (conversation, message) => {
     try {
-      if (conversation.type === ConversationType.CHANNEL && channelsDisabled) {
+      const isChannelType = conversation.type === ConversationType.CHANNEL ?? true
+
+      if (isChannelType && channelsDisabled) {
         return
       }
       if (receivedMessages.hasOwnProperty(message.id)) {
@@ -289,13 +291,14 @@ function* configureMatrixClient(action: SetMatrixClient) {
         return
       }
 
+      const recipient = isChannelType ? conversation.id : message.sender === ownId ? senderUserId : identity.address
       const chatMessage = {
         messageId: message.id,
         messageType: ChatMessageType.PRIVATE,
         timestamp: message.timestamp,
         body: message.text,
         sender: message.sender === ownId ? identity.address : senderUserId,
-        recipient: message.sender === ownId ? senderUserId : identity.address
+        recipient
       }
 
       const userProfile = getProfile(store.getState(), senderUserId)
@@ -310,7 +313,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
         return
       }
 
-      if (conversation.type === ConversationType.CHANNEL) {
+      if (isChannelType) {
         const muted = profile?.muted ?? []
         if (conversation.unreadMessages && !muted.includes(conversation.id)) {
           // send update with unseen messages by channel
