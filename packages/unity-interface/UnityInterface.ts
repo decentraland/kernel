@@ -30,6 +30,11 @@ import {
   FriendsInitializeChatPayload,
   UpdateTotalFriendRequestsPayload,
   UpdateTotalFriendsPayload,
+  UpdateTotalUnseenMessagesByChannelPayload,
+  ChannelInfoPayloads,
+  UpdateChannelMembersPayload,
+  ChannelSearchResultsPayload,
+  ChannelErrorPayload,
   AddAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
@@ -326,11 +331,6 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddMessageToChatWindow(message: ChatMessage) {
-    try {
-      message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
-    } catch (err: any) {
-      unityLogger.error(err)
-    }
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
       return
@@ -402,6 +402,44 @@ export class UnityInterface implements IUnityInterface {
 
   public FriendNotFound(queryString: string) {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
+  }
+
+  public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {
+    this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
+  }
+
+  public JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'JoinChannelError', JSON.stringify(joinChannelErrorPayload))
+  }
+
+  public UpdateTotalUnseenMessagesByChannel(
+    updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
+  ) {
+    this.SendMessageToUnity(
+      'Main',
+      'UpdateTotalUnseenMessagesByChannel',
+      JSON.stringify(updateTotalUnseenMessagesByChannelPayload)
+    )
+  }
+
+  public UpdateChannelInfo(channelInfoPayload: ChannelInfoPayloads) {
+    this.SendMessageToUnity('Main', 'UpdateChannelInfo', JSON.stringify(channelInfoPayload))
+  }
+
+  public UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload) {
+    this.SendMessageToUnity('Main', 'UpdateChannelSearchResults', JSON.stringify(channelSearchResultsPayload))
+  }
+
+  public LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
+  }
+
+  public MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'MuteChannelError', JSON.stringify(muteChannelErrorPayload))
+  }
+
+  public UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload) {
+    this.SendMessageToUnity('Main', 'UpdateChannelMembers', JSON.stringify(updateChannelMembersPayload))
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -537,7 +575,7 @@ export class UnityInterface implements IUnityInterface {
     this.logger.warn('SendSceneAssets')
   }
 
-  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined) {
+  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string) {
     if (!profiles) {
       this.SendMessageToUnity('Bridges', 'SetENSOwnerQueryResult', JSON.stringify({ searchInput, success: false }))
       return
@@ -545,7 +583,9 @@ export class UnityInterface implements IUnityInterface {
     // TODO: why do we send the whole profile while asking for the ENS???
     const profilesForRenderer: NewProfileForRenderer[] = []
     for (const profile of profiles) {
-      profilesForRenderer.push(profileToRendererFormat(profile, { address: profile.userId }))
+      profilesForRenderer.push(
+        profileToRendererFormat(profile, { address: profile.userId, baseUrl: contentServerBaseUrl })
+      )
     }
     this.SendMessageToUnity(
       'Bridges',

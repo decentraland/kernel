@@ -32,6 +32,11 @@ import {
   UpdateTotalFriendRequestsPayload,
   FriendsInitializeChatPayload,
   UpdateTotalFriendsPayload,
+  UpdateTotalUnseenMessagesByChannelPayload,
+  ChannelErrorPayload,
+  ChannelInfoPayloads,
+  UpdateChannelMembersPayload,
+  ChannelSearchResultsPayload,
   AddAudioDevicesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
@@ -162,6 +167,20 @@ export interface IUnityInterface {
   UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
   UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
 
+  // *********************************************************************************
+  // ************** Channels **************
+  // *********************************************************************************
+
+  JoinChannelConfirmation(channelsInfoPayload: ChannelInfoPayloads): void
+  JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload): void
+  UpdateTotalUnseenMessagesByChannel(
+    updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
+  ): void
+  UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
+  UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
+  LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
+
   RequestTeleport(teleportData: {}): void
   UpdateHotScenesList(info: HotSceneInfo[]): void
   ConnectionToRealmSuccess(successData: WorldPosition): void
@@ -180,7 +199,7 @@ export interface IUnityInterface {
   SetKernelConfiguration(config: any): void
   SetFeatureFlagsConfiguration(config: FeatureFlag): void
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
-  SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined): void
+  SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
 
   // *********************************************************************************
