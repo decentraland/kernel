@@ -888,7 +888,7 @@ function* handleSendChannelMessage(action: SendChannelMessage) {
   } catch (e: any) {
     logger.error(e)
     trackEvent('error', {
-      context: 'handleSendPrivateMessage',
+      context: 'handleSendChannelMessage',
       message: e.message,
       stack: e.stack,
       saga_stack: e.toString()

@@ -35,7 +35,8 @@ import {
   LeaveChannelPayload,
   MuteChannelPayload,
   GetChannelInfoPayload,
-  JoinOrCreateChannelPayload
+  JoinOrCreateChannelPayload,
+  ChatMessageType
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -106,6 +107,7 @@ import {
   joinChannel
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
+import { MessageType } from 'dcl-social-client'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -628,10 +630,9 @@ export class BrowserInterface {
   }
 
   public SendChatMessage(data: { message: ChatMessage }) {
-    if (data.message.isChannelMessage) {
-      if (data.message.recipient) {
-        store.dispatch(sendChannelMessage(data.message.recipient, data.message.body))
-      }
+    // When there is a recipient, it means is a message sent to a channel
+    if (data.message.messageType === ChatMessageType.PUBLIC && data.message.recipient) {
+      store.dispatch(sendChannelMessage(data.message.recipient, data.message.body))
     } else {
       store.dispatch(sendMessage(data.message))
     }
