@@ -505,7 +505,7 @@ export type WorldPosition = {
 }
 
 export type AddAudioDevicesPayload = {
-  outputDevices: string[],
+  outputDevices: string[]
   inputDevices: string[]
 }
 

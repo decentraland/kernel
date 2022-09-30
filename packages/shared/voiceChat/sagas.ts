@@ -57,8 +57,8 @@ import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { getLiveKitVoiceChat } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
-import { waitForRendererInstance } from 'shared/renderer/sagas-helper';
-import { getUnityInstance } from "../../unity-interface/IUnityInterface";
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
+import { getUnityInstance } from '../../unity-interface/IUnityInterface'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -232,11 +232,11 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
 
 function* sendAudioDevicesToUnity(action: SendAudioDevices) {
   yield call(waitForRendererInstance)
-  getUnityInstance().AddAudioDevices(action.payload.devices);
+  getUnityInstance().AddAudioDevices(action.payload.devices)
 }
 
-function* setOutputAudioDeviceRequest (action: SetOutputAudioDevice) {
-  console.log("AudioDevice = " + action.payload.device);
+function* setOutputAudioDeviceRequest(action: SetOutputAudioDevice) {
+  console.log('AudioDevice = ' + action.payload.device)
 }
 
 let audioRequestPending = false

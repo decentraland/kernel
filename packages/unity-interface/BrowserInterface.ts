@@ -449,7 +449,7 @@ export class BrowserInterface {
           hair: { color: changes.avatar.hairColor },
           skin: { color: changes.avatar.skinColor },
           wearables: changes.avatar.wearables,
-          emotes: (changes.avatar.emotes ?? []).map((value, index) => ({ slot: index, urn: value as any as string })),
+          emotes: (changes.avatar.emotes ?? []).map((value, index) => ({ slot: index, urn: (value as any) as string })),
           snapshots: {
             body: changes.body,
             face256: changes.face256
