@@ -34,7 +34,8 @@ import {
   GetJoinedChannelsPayload,
   LeaveChannelPayload,
   MuteChannelPayload,
-  GetChannelInfoPayload
+  GetChannelInfoPayload,
+  JoinOrCreateChannelPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -101,7 +102,8 @@ import {
   markAsSeenChannelMessages,
   muteChannel,
   getChannelInfo,
-  searchChannels
+  searchChannels,
+  joinChannel
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 
@@ -710,6 +712,18 @@ export class BrowserInterface {
           message: `error creating channel ${createChannelPayload.channelId} ` + err.message,
           context: 'kernel#friendsSaga',
           stack: 'createChannel'
+        })
+    })
+  }
+
+  public JoinOrCreateChannel(joinOrCreateChannelPayload: JoinOrCreateChannelPayload) {
+    if (!areChannelsEnabled()) return
+    joinChannel(joinOrCreateChannelPayload).catch((err) => {
+      defaultLogger.error('error joinOrCreateChannel', err),
+        trackEvent('error', {
+          message: `error joining channel ${joinOrCreateChannelPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'joinOrCreateChannel'
         })
     })
   }

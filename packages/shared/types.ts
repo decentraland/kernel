@@ -739,6 +739,8 @@ export enum ChannelErrorCode {
   ALREADY_EXISTS = 4 // The name has already been used
 }
 
+export type JoinOrCreateChannelPayload = CreateChannelPayload
+
 export type CreateChannelPayload = {
   channelId: string
 }

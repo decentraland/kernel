@@ -55,7 +55,8 @@ import {
   GetChannelMembersPayload,
   UpdateChannelMembersPayload,
   GetChannelsPayload,
-  ChannelSearchResultsPayload
+  ChannelSearchResultsPayload,
+  JoinOrCreateChannelPayload
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -1323,6 +1324,38 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       notifyJoinChannelError(action.payload.channelId, errorCode)
     }
   }
+}
+
+export async function joinChannel(request: JoinOrCreateChannelPayload) {
+  try {
+    const client: SocialAPI | null = getSocialClient(store.getState())
+    if (!client) return
+
+    const channelId = request.channelId
+
+    const existsChannel = !!client.getChannel(channelId)
+    if (existsChannel) {
+      notifyJoinChannelError(request.channelId, ChannelErrorCode.UNKNOWN)
+    }
+
+    await client.joinChannel(channelId)
+    const joinedChannel = client.getChannel(channelId)
+    if (joinedChannel) {
+      const channel: ChannelInfoPayload = {
+        name: joinedChannel.name ?? request.channelId,
+        channelId: joinedChannel.id,
+        unseenMessages: joinedChannel.unreadMessages?.length ?? 0,
+        lastMessageTimestamp: joinedChannel.lastEventTimestamp,
+        memberCount: joinedChannel.userIds?.length ?? 0,
+        description: '',
+        joined: true,
+        muted: false
+      }
+      getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+    } else {
+      notifyJoinChannelError(request.channelId, ChannelErrorCode.UNKNOWN)
+    }
+  } catch (e) {}
 }
 
 // Create channel
