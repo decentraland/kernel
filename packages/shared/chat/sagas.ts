@@ -125,7 +125,8 @@ function* handleSendMessage(action: SendMessage) {
       messageId: uuid(),
       timestamp: Date.now(),
       sender: currentUserId,
-      body: message
+      body: message,
+      recipient: action.payload.recipient
     }
 
     sendPublicChatMessage(entry.messageId, entry.body)
