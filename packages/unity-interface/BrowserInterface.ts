@@ -36,7 +36,6 @@ import {
   MuteChannelPayload,
   GetChannelInfoPayload,
   JoinOrCreateChannelPayload,
-  ChatMessageType,
   GetChannelMembersPayload
 } from 'shared/types'
 import {
@@ -48,7 +47,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { leaveChannel, sendChannelMessage, updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
