@@ -10,7 +10,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getCommsContext } from 'shared/comms/selectors'
 import { Parcel } from 'shared/dao/types'
 import { urlWithProtocol } from 'shared/comms/v3/resolver'
-import {getUnityInstance} from "../../unity-interface/IUnityInterface";
+import { getUnityInstance } from "../../unity-interface/IUnityInterface";
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -63,13 +63,13 @@ export class TeleportController {
 
   public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
-
     if (isInsideWorldLimits(x, y)) {
       const data = {
         xCoord: x,
         yCoord: y,
         message : teleportMessage
       }
+      
       getUnityInstance().FadeInLoadingHUD(data)
       return { message: tpMessage, success: true }
     } else {
@@ -78,7 +78,7 @@ export class TeleportController {
     }
   }
 
-  public static CompleteTeleport(data: { x: number; y: number }){
+  public static LoadingHUDReadyForTeleport(data: { x: number; y: number }){
     teleportObservable.notifyObservers({
       x: data.x,
       y: data.y

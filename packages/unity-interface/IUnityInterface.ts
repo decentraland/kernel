@@ -122,7 +122,7 @@ export interface IUnityInterface {
   CrashPayloadRequest(): Promise<string>
   ActivateRendering(): void
   SetLoadingScreen(data: { isVisible: boolean; message: string; showTips: boolean }): void
-  FadeInLoadingHUD(data: { xCoord: number, yCoord: number, message?: string }) : void
+  FadeInLoadingHUD(data: { xCoord: number; yCoord: number; message?: string }) : void
   DeactivateRendering(): void
   ReportFocusOn(): void
   ReportFocusOff(): void

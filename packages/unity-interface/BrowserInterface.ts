@@ -816,8 +816,8 @@ export class BrowserInterface {
     )
   }
 
-  public async CompleteTeleport(data: { x: number; y: number }) {
-    TeleportController.CompleteTeleport(data)
+  public async LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
+    TeleportController.LoadingHUDReadyForTeleport(data)
   }
 
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {
