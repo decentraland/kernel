@@ -10,7 +10,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getCommsContext } from 'shared/comms/selectors'
 import { Parcel } from 'shared/dao/types'
 import { urlWithProtocol } from 'shared/comms/v3/resolver'
-import { getUnityInstance } from "../../unity-interface/IUnityInterface"
+import { getUnityInstance } from '../../unity-interface/IUnityInterface'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
