@@ -816,6 +816,10 @@ export class BrowserInterface {
     )
   }
 
+  public async CompleteTeleport(data: { x: number; y: number }) {
+    TeleportController.CompleteTeleport(data)
+  }
+
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {
     const { message, loadPercentage } = data
     store.dispatch(updateStatusMessage(message, loadPercentage))

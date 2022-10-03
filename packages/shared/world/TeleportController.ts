@@ -10,6 +10,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getCommsContext } from 'shared/comms/selectors'
 import { Parcel } from 'shared/dao/types'
 import { urlWithProtocol } from 'shared/comms/v3/resolver'
+import {getUnityInstance} from "../../unity-interface/IUnityInterface";
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -64,19 +65,28 @@ export class TeleportController {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
 
     if (isInsideWorldLimits(x, y)) {
-      teleportObservable.notifyObservers({
-        x: x,
-        y: y,
-        text: tpMessage
-      })
-
+      const data = {
+        xCoord: x,
+        yCoord: y,
+        message : teleportMessage
+      }
+      getUnityInstance().FadeInLoadingHUD(data)
       return { message: tpMessage, success: true }
     } else {
       const errorMessage = `Coordinates are outside of the boundaries. Valid ranges are: ${descriptiveValidWorldRanges}.`
       return { message: errorMessage, success: false }
     }
   }
+
+  public static CompleteTeleport(data: { x: number; y: number }){
+    teleportObservable.notifyObservers({
+      x: data.x,
+      y: data.y
+    })
+  }
 }
+
+
 
 async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
   const context = getCommsContext(store.getState())

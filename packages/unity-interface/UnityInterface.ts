@@ -247,6 +247,14 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Bridges', 'SetLoadingScreen', JSON.stringify(data))
   }
 
+  public FadeInLoadingHUD(data: { xCoord: number, yCoord: number, message?: string }) {
+    if (!this.gameInstance) {
+      return
+    }
+
+    this.SendMessageToUnity('Bridges', 'FadeInLoadingHUD', JSON.stringify(data))
+  }
+
   public DeactivateRendering() {
     this.SendMessageToUnity('Main', 'DeactivateRendering')
   }
