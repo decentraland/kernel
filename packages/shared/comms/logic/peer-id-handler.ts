@@ -56,13 +56,13 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
         peer.address = address
         console.log('Recognized peer', id, peer)
         if (peer.position) {
-          options.events.emit('position', { address, data: peer.position, time: new Date().getTime() })
+          options.events.emit('position', { address, data: peer.position })
         }
         if (peer.profileResponse) {
-          options.events.emit('profileResponse', { address, data: peer.profileResponse, time: new Date().getTime() })
+          options.events.emit('profileResponse', { address, data: peer.profileResponse })
         }
         if (peer.profileAnnounce) {
-          options.events.emit('profileMessage', { address, data: peer.profileAnnounce, time: new Date().getTime() })
+          options.events.emit('profileMessage', { address, data: peer.profileAnnounce })
         }
       }
     },

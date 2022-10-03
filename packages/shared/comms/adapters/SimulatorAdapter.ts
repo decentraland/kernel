@@ -86,8 +86,7 @@ export class SimulationRoom implements RoomConnection {
 
     this.events.emit('profileMessage', {
       address,
-      data: { profileVersion: 0 },
-      time: Date.now()
+      data: { profileVersion: 0 }
     })
 
     return address
@@ -103,8 +102,7 @@ export class SimulationRoom implements RoomConnection {
       setTimeout(() => {
         this.events.emit('profileResponse', {
           address: request.address,
-          data: { serializedProfile: JSON.stringify(peer.profile) },
-          time: Date.now()
+          data: { serializedProfile: JSON.stringify(peer.profile) }
         })
       }, Math.random() * 100)
     }
@@ -157,16 +155,14 @@ export class SimulationRoom implements RoomConnection {
           rotationY: 0,
           rotationZ: 0,
           index: peer.epoch++
-        },
-        time: Date.now()
+        }
       })
 
       if (Math.random() > 0.8) {
         Packet.decode(peer.profileMessage)
         this.events.emit('profileMessage', {
           address,
-          data: { profileVersion: peer.epoch },
-          time: Date.now()
+          data: { profileVersion: peer.epoch }
         })
       }
     }
