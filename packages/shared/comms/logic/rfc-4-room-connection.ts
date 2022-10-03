@@ -66,42 +66,39 @@ export class Rfc4RoomConnection implements RoomConnection {
 
     switch (message.$case) {
       case 'position': {
-        this.events.emit('position', { address, data: message.position, time: Date.now() })
+        this.events.emit('position', { address, data: message.position })
         break
       }
       case 'scene': {
-        this.events.emit('sceneMessageBus', { address, data: message.scene, time: Date.now() })
+        this.events.emit('sceneMessageBus', { address, data: message.scene })
         break
       }
       case 'chat': {
-        this.events.emit('chatMessage', { address, data: message.chat, time: Date.now() })
+        this.events.emit('chatMessage', { address, data: message.chat })
         break
       }
       case 'voice': {
-        this.events.emit('voiceMessage', { address, data: message.voice, time: Date.now() })
+        this.events.emit('voiceMessage', { address, data: message.voice })
         break
       }
       case 'profileRequest': {
         this.events.emit('profileRequest', {
           address,
-          data: message.profileRequest,
-          time: Date.now()
+          data: message.profileRequest
         })
         break
       }
       case 'profileResponse': {
         this.events.emit('profileResponse', {
           address,
-          data: message.profileResponse,
-          time: Date.now()
+          data: message.profileResponse
         })
         break
       }
       case 'profileVersion': {
         this.events.emit('profileMessage', {
           address,
-          data: message.profileVersion,
-          time: Date.now()
+          data: message.profileVersion
         })
         break
       }

@@ -64,8 +64,8 @@ export function setupPeer(address: string): PeerInformation {
   if (!peerMap.has(ethereumAddress)) {
     const peer: PeerInformation = {
       ethereumAddress,
-      lastPositionUpdate: 0,
-      lastProfileUpdate: 0,
+      lastPositionIndex: 0,
+      lastProfileVersion: -1,
       lastUpdate: Date.now(),
       talking: false,
       visible: true
@@ -121,7 +121,7 @@ export function receiveUserTalking(address: string, talking: boolean) {
   })
 }
 
-export function receiveUserPosition(address: string, position: rfc4.Position, msgTimestamp: number) {
+export function receiveUserPosition(address: string, position: rfc4.Position) {
   if (
     position.positionX === MORDOR_POSITION_RFC4.positionX &&
     position.positionY === MORDOR_POSITION_RFC4.positionY &&
@@ -134,9 +134,9 @@ export function receiveUserPosition(address: string, position: rfc4.Position, ms
   const peer = setupPeer(address)
   peer.lastUpdate = Date.now()
 
-  if (msgTimestamp > peer.lastPositionUpdate) {
+  if (position.index > peer.lastPositionIndex) {
     peer.position = position
-    peer.lastPositionUpdate = msgTimestamp
+    peer.lastPositionIndex = position.index
 
     sendPeerUserData(address)
   }
@@ -191,9 +191,9 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
 
   peerMap.forEach((info, address) => {
     if (info.ethereumAddress === currentPeer.ethereumAddress && address !== peer.ethereumAddress) {
-      if (info.lastProfileUpdate < currentPeer.lastProfileUpdate) {
+      if (info.lastProfileVersion < currentPeer.lastProfileVersion) {
         removePeerByAddress(address)
-      } else if (info.lastProfileUpdate > currentPeer.lastProfileUpdate) {
+      } else if (info.lastProfileVersion > currentPeer.lastProfileVersion) {
         removePeerByAddress(currentPeer.ethereumAddress)
 
         info.position = info.position || currentPeer.position
