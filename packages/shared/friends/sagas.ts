@@ -108,7 +108,7 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix, getMatrixIdFromUser, areChannelsEnabled, getMaxChannels } from './utils'
+import { getUserIdFromMatrix, getMatrixIdFromUser, areChannelsEnabled, checkChannelsLimit } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
@@ -1675,23 +1675,6 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
 
   // send message to unity
   getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channelInfo] })
-}
-
-/**
- * Get the number of channels the user is joined to and check with a feature flag value if the user has reached the maximum amount allowed.
- * @return True - if the user has reached the maximum amount allowed.
- * @return False - if the user has not reached the maximum amount allowed.
- */
-function checkChannelsLimit() {
-  const limit = getMaxChannels(store.getState())
-
-  const joinedChannels = getChannels(store.getState()).length
-
-  if (limit > joinedChannels) {
-    return false
-  }
-
-  return true
 }
 
 // Get channel info
