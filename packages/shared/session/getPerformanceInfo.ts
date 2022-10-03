@@ -210,8 +210,13 @@ export function getPerformanceInfo(data: {
   return ret
 }
 
+let div: any = null
 export function debugCommsGraph() {
-  const div = document.createElement('div')
+  if (div) {
+    div.remove()
+    return
+  }
+  div = document.createElement('div')
   const canvas = document.createElement('canvas')
 
   div.style.position = 'absolute'
@@ -287,3 +292,5 @@ export function debugCommsGraph() {
     timeseries.repaint()
   }, 1000)
 }
+
+globalThis.toogleCommsGraph = debugCommsGraph
