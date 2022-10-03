@@ -1544,19 +1544,26 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     messages.splice(index)
   }
 
-  // parse messages
   const addChatMessages: AddChatMessagesPayload = {
-    messages: messages.map((message) => ({
+    messages: []
+  }
+
+  for (const message of messages) {
+    const sender = getUserIdFromMatrix(message.sender)
+    const userProfile = getProfile(store.getState(), sender)
+    if (!userProfile || !isAddedToCatalog(store.getState(), sender)) {
+      await ensureFriendProfile(sender)
+    }
+
+    addChatMessages.messages.push({
       messageId: message.id,
       messageType: ChatMessageType.PUBLIC,
       timestamp: message.timestamp,
       body: message.text,
-      sender: getUserIdFromMatrix(message.sender),
+      sender,
       recipient: request.channelId
-    }))
+    })
   }
-
-  // Todo Juli!: send users profiles
 
   getUnityInstance().AddChatMessages(addChatMessages)
 }
