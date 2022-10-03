@@ -67,7 +67,7 @@ export class TeleportController {
       const data = {
         xCoord: x,
         yCoord: y,
-        message : teleportMessage
+        message: teleportMessage
       }
       getUnityInstance().FadeInLoadingHUD(data)
 
@@ -78,7 +78,7 @@ export class TeleportController {
     }
   }
 
-  public static LoadingHUDReadyForTeleport(data: { x: number; y: number }){
+  public static LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
     teleportObservable.notifyObservers({
       x: data.x,
       y: data.y
