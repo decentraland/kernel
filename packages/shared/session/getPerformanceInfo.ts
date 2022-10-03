@@ -293,4 +293,4 @@ export function debugCommsGraph() {
   }, 1000)
 }
 
-globalThis.toogleCommsGraph = debugCommsGraph
+;(globalThis as any).toogleCommsGraph = debugCommsGraph
