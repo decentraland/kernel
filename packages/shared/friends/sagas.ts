@@ -1700,7 +1700,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
   if (!client) return
 
   // although it is not the current scenario, we want to be able to request information for several channels at the same time
-  const channelId = request.channelsIds[0]
+  const channelId = request.channelIds[0]
 
   const channelInfo: Conversation | undefined = client.getChannel(channelId)
 

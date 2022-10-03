@@ -808,7 +808,7 @@ export type MuteChannelPayload = {
 }
 
 export type GetChannelInfoPayload = {
-  channelsIds: string[]
+  channelIds: string[]
 }
 
 export type GetChannelMembersPayload = {
