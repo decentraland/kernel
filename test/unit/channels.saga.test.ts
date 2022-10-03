@@ -219,7 +219,7 @@ describe('Friends sagas - Channels Feature', () => {
             memberCount: conv.conversation.userIds?.length || 1,
             description: '',
             joined: true,
-            muted: false
+            muted: mutedIds.includes(conv.conversation.id)
           })
         }
 

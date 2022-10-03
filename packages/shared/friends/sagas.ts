@@ -1321,6 +1321,12 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
 
     const channelId = action.payload.channelId
 
+    const reachedLimit = checkChannelsLimit()
+    if (reachedLimit) {
+      notifyJoinChannelError(channelId, ChannelErrorCode.LIMIT_EXCEEDED)
+      return
+    }
+
     // get or create channel
     const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, []])
 
@@ -1367,6 +1373,12 @@ export async function joinChannel(request: JoinOrCreateChannelPayload) {
 
     const channelId = request.channelId
 
+    const reachedLimit = checkChannelsLimit()
+    if (reachedLimit) {
+      notifyJoinChannelError(channelId, ChannelErrorCode.LIMIT_EXCEEDED)
+      return
+    }
+
     const existsChannel = !!client.getChannel(channelId)
     if (existsChannel) {
       notifyJoinChannelError(request.channelId, ChannelErrorCode.UNKNOWN)
@@ -1389,7 +1401,9 @@ export async function joinChannel(request: JoinOrCreateChannelPayload) {
     } else {
       notifyJoinChannelError(request.channelId, ChannelErrorCode.UNKNOWN)
     }
-  } catch (e) {}
+  } catch (e) {
+    notifyJoinChannelError(request.channelId, ChannelErrorCode.UNKNOWN)
+  }
 }
 
 // Create channel
@@ -1453,10 +1467,12 @@ export function getUnseenMessagesByChannel() {
 
 // Get user's joined channels
 export function getJoinedChannels(request: GetJoinedChannelsPayload) {
-  // get conversations messages from the store
+  // get user joined channels
   const joinedChannels = getChannels(store.getState())
 
   const conversationsFiltered = joinedChannels.slice(request.skip, request.skip + request.limit)
+
+  const profile = getCurrentUserProfile(store.getState())
 
   const channelsToReturn: ChannelInfoPayload[] = conversationsFiltered.map((conv) => ({
     name: conv.conversation.name || '',
@@ -1466,7 +1482,7 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     memberCount: conv.conversation.userIds?.length || 1,
     description: '',
     joined: true,
-    muted: false
+    muted: profile?.muted?.includes(conv.conversation.id) ?? false
   }))
 
   getUnityInstance().UpdateChannelInfo({ channelInfoPayload: channelsToReturn })
@@ -1566,7 +1582,7 @@ export async function searchChannels(request: GetChannelsPayload) {
     memberCount: channel.memberCount,
     description: channel.description || '',
     joined: joinedChannelIds.includes(channel.id),
-    muted: profile?.muted?.includes(channel.id) || false
+    muted: profile?.muted?.includes(channel.id) ?? false
   }))
 
   // sort in descending order by memberCount value
@@ -1605,6 +1621,18 @@ function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode)
     errorCode
   }
   getUnityInstance().LeaveChannelError(leaveChannelError)
+}
+
+/**
+ * Send mute/unmute channel related error message to unity
+ * @param channelId
+ */
+function notifyMuteChannelError(channelId: string, errorCode: ChannelErrorCode) {
+  const muteChannelError: ChannelErrorPayload = {
+    channelId,
+    errorCode
+  }
+  getUnityInstance().MuteChannelError(muteChannelError)
 }
 
 /**
@@ -1650,10 +1678,13 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  const channelId = muteChannel.channelId.toLowerCase()
+  const channelId = muteChannel.channelId
 
   const channel: Conversation | undefined = client.getChannel(channelId)
-  if (!channel) return
+  if (!channel) {
+    notifyMuteChannelError(channelId, ChannelErrorCode.UNKNOWN)
+    return
+  }
 
   // mute / unmute channel
   if (muteChannel.muted) {
@@ -1689,7 +1720,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
   // get notification settings
   const profile = getCurrentUserProfile(store.getState())
-  const muted = profile?.muted?.includes(channelId) ? true : false
+  const muted = profile?.muted?.includes(channelId) ?? false
 
   if (channelInfo) {
     const channel: ChannelInfoPayload = {

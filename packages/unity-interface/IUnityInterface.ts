@@ -176,6 +176,7 @@ export interface IUnityInterface {
   UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
   UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload): void
   UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
 
   RequestTeleport(teleportData: {}): void

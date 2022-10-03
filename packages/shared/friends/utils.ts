@@ -43,7 +43,7 @@ export function areChannelsEnabled(): boolean {
  * @return True - if the user has reached the maximum amount allowed.
  * @return False - if the user has not reached the maximum amount allowed.
  */
- export function checkChannelsLimit() {
+export function checkChannelsLimit() {
   const limit = getMaxChannels(store.getState())
 
   const joinedChannels = getChannels(store.getState()).length
