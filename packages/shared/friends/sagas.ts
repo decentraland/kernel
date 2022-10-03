@@ -1745,11 +1745,13 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     return
   }
 
-  const filteredProfiles = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
+  // get the local part of the userId
+  const membersIds = channelMemberIds.map((id) => getUserIdFromMatrix(id))
+
+  const filteredProfiles = getProfilesFromStore(store.getState(), membersIds, request.userName)
 
   for (const profile of filteredProfiles) {
-    // Todo Juli: Check -- Do the ids we're comparing have the same format?
-    const member = channelMemberIds.find((id) => id === profile.data.userId)
+    const member = membersIds.find((id) => id === profile.data.userId)
     if (member) {
       // Todo Juli: Check -- What we gonna do with isOnline?
       channelMembers.members.push({ userId: member, isOnline: false })
