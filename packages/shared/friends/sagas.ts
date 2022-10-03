@@ -1382,6 +1382,7 @@ export async function joinChannel(request: JoinOrCreateChannelPayload) {
     const existsChannel = !!client.getChannel(channelId)
     if (existsChannel) {
       notifyJoinChannelError(request.channelId, ChannelErrorCode.UNKNOWN)
+      return
     }
 
     await client.joinChannel(channelId)
@@ -1554,6 +1555,8 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
       recipient: request.channelId
     }))
   }
+
+  // Todo Juli!: send users profiles
 
   getUnityInstance().AddChatMessages(addChatMessages)
 }
@@ -1779,6 +1782,7 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   // get the local part of the userId
   const membersIds = channelMemberIds.map((id) => getUserIdFromMatrix(id))
 
+  // Todo Juli: use ensure friend
   const filteredProfiles = getProfilesFromStore(store.getState(), membersIds, request.userName)
 
   for (const profile of filteredProfiles) {
