@@ -162,9 +162,6 @@ export function receiveUserVisible(address: string, visible: boolean) {
   const didChange = peer.visible !== visible
   peer.visible = visible
   if (didChange) {
-    if (!visible) {
-      console.log(address, visible)
-    }
     avatarMessageObservable.notifyObservers({
       type: AvatarMessageType.USER_VISIBLE,
       userId: peer.ethereumAddress,
