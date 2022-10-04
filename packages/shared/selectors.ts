@@ -26,6 +26,7 @@ export function loadableSceneToLoadableParcelScene(loadableScene: LoadableScene)
 
   return {
     id: loadableScene.id,
+    sceneNumber: loadableScene.sceneNumber,
     basePosition: parseParcelPosition(loadableScene.entity.metadata?.scene?.base || '0,0'),
     name: getSceneNameFromJsonData(loadableScene.entity.metadata),
     parcels: loadableScene.entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],

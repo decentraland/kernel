@@ -57,6 +57,7 @@ export async function getPortableExperienceFromUrn(sceneUrn: string): Promise<Lo
 
   return {
     id: sceneUrn,
+    sceneNumber: 999998, // TODO: how to reserve this for several PEX?
     entity,
     baseUrl,
     parentCid: 'main'

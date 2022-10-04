@@ -54,6 +54,7 @@ export class SceneDataDownloadManager {
         for (const entity of entities) {
           const entityWithBaseUrl: LoadableScene = {
             id: entity.id,
+            sceneNumber: -1, // We can't have the sceneNumber here because the scene worker hasn't been started yet.
             baseUrl: (entity as any).baseUrl || this.options.contentServer + '/contents/',
             entity
           }

@@ -163,11 +163,13 @@ export class UnityInterface implements IUnityInterface {
       throw new Error('Only one scene at a time!')
     }
 
+    console.log('pravs - UnityInterface - LoadParcelScenes() - sceneNumber: ' + parcelsToLoad[0].sceneNumber)
+
     this.SendMessageToUnity('Main', 'LoadParcelScenes', JSON.stringify(parcelsToLoad[0]))
   }
 
-  public UnloadScene(entityId: string) {
-    this.SendMessageToUnity('Main', 'UnloadScene', entityId)
+  public UnloadScene(sceneNumber: number) {
+    this.SendMessageToUnity('Main', 'UnloadScene', sceneNumber.toString())
   }
 
   public SendSceneMessage(messages: string) {

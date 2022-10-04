@@ -99,6 +99,8 @@ export class SceneWorker {
     const sceneNumber = ++globalSceneNumberCounter
     const skipErrors = ['Transport closed while waiting the ACK']
 
+    console.log('pravs - SceneWorker - constructor() - sceneNumber: ' + sceneNumber)
+
     this.metadata = loadableScene.entity.metadata
 
     const loggerName = getSceneNameFromJsonData(this.metadata) || loadableScene.id
@@ -182,7 +184,7 @@ export class SceneWorker {
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
 
-    getUnityInstance().UnloadScene(this.loadableScene.id)
+    getUnityInstance().UnloadScene(this.loadableScene.sceneNumber)
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
 
@@ -293,6 +295,9 @@ export class SceneWorker {
   private sendBatchNative(actions: EntityAction[]): void {
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
+
+      console.log('pravs - SceneWorker - sendBatchNative - sceneNumber: ' + this.rpcContext.sceneData.sceneNumber)
+
       nativeMsgBridge.SendNativeMessage(this.loadableScene.id, this.rpcContext.sceneData.sceneNumber, action)
     }
   }

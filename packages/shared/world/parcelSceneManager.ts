@@ -90,6 +90,10 @@ export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: 
 
   if (!parcelSceneWorker) {
     parcelSceneWorker = new SceneWorker(loadableScene, transport)
+
+    // Hack to have the needed scene number in WSS messages to the renderer
+    loadableScene.sceneNumber = parcelSceneWorker.rpcContext.sceneData.sceneNumber
+
     setNewParcelScene(parcelSceneWorker)
     queueMicrotask(() => store.dispatch(scenesChanged()))
   }

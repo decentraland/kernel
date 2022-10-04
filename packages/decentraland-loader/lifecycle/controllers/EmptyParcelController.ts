@@ -46,6 +46,7 @@ export class EmptyParcelController {
 
     return {
       id: entityId,
+      sceneNumber: -1, // scene number is overwritten later as every scene should have a different scene number
       baseUrl: this.baseUrl + 'contents/',
       entity: {
         content: emptyScenes[sceneName]!,

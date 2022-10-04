@@ -140,6 +140,7 @@ export type OpenNFTDialogPayload = { assetContractAddress: string; tokenId: stri
 
 /** THIS INTERFACE CANNOT CHANGE, IT IS USED IN THE UNITY BUILD */
 export type LoadableParcelScene = {
+  sceneNumber: number
   id: string
   name: string
   basePosition: { x: number; y: number }
@@ -244,6 +245,7 @@ export type LoadableScene = {
   readonly entity: Readonly<Omit<Entity, 'id'>>
   readonly baseUrl: string
   readonly id: string
+  sceneNumber: number
   /** Id of the parent scene that spawned this scene experience */
   readonly parentCid?: string
 }

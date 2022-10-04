@@ -126,6 +126,7 @@ export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl
 
   return {
     id: wearable.id,
+    sceneNumber: 999997, // TODO: how to reserve different scene numbers for PEXes???
     baseUrl,
     parentCid: 'avatar',
     entity: {

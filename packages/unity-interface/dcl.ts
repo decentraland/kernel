@@ -105,6 +105,7 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
 
   const scene = loadParcelSceneWorker({
     id: cid,
+    sceneNumber: 999999, // TODO: reserve a global scene number ???
     baseUrl: location.origin,
     entity: {
       content: [{ file: 'game.js', hash: fileContentUrl }],

@@ -23,6 +23,7 @@ describe('Portable experiences sagas test', () => {
   const createLoadablePX = (urn: string): LoadableScene => ({
     parentCid: 'main',
     id: urn,
+    sceneNumber: 222,
     baseUrl: '',
     entity: {
       content: [],
