@@ -71,7 +71,8 @@ import {
   getAllConversationsWithMessages,
   getTotalFriendRequests,
   getTotalFriends,
-  isFriend
+  isFriend,
+  getLastStatusOfFriends
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -480,7 +481,9 @@ function* refreshFriends() {
         socialInfo,
         friends: friendIds,
         fromFriendRequests: requestedFromIds,
-        toFriendRequests: requestedToIds
+        toFriendRequests: requestedToIds,
+        // initialize an empty map becuase there is no way to get the current statuses, the matrix client store is empty at this point
+        lastStatusOfFriends: new Map()
       })
     )
 
@@ -796,9 +799,17 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
 
 function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
   const statuses = client.getUserStatuses(...socialIds)
+  const lastStatuses = getLastStatusOfFriends(store.getState())
 
   statuses.forEach((value: CurrentUserStatus, key: string) => {
-    sendUpdateUserStatus(key, value)
+    const lastStatus = lastStatuses.get(key)
+    if (!lastStatus || !deepEqual(lastStatus, value)) {
+      sendUpdateUserStatus(key, value)
+      lastStatuses.set(key, value)
+    } else {
+      // avoid sending already sent states
+      logger.log(`friend ${key} status was ignored - duplicated state`)
+    }
   })
 }
 
@@ -1238,11 +1249,7 @@ function updateSocialInfo(socialData: SocialData) {
 
   put(
     updatePrivateMessagingState({
-      client: friends.client,
-      socialInfo: friends.socialInfo,
-      friends: friends.friends,
-      fromFriendRequests: friends.fromFriendRequests,
-      toFriendRequests: friends.toFriendRequests
+      ...friends
     })
   )
 }
