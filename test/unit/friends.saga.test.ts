@@ -78,7 +78,8 @@ const friendsFromStore: FriendsState = {
   socialInfo: {},
   friends: [],
   fromFriendRequests: [fromFriendRequest],
-  toFriendRequests: [toFriendRequest]
+  toFriendRequests: [toFriendRequest],
+  lastStatusOfFriends: new Map()
 }
 
 const profilesFromStore = [
