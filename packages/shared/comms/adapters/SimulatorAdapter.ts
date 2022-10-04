@@ -128,18 +128,18 @@ export class SimulationRoom implements RoomConnection {
 
     for (const [address, peer] of this.peers) {
       i++
-      const angle = Math.PI * 2 * (i / this.peers.size) + performance.now() * 0.0001
+      const angle = Math.PI * 4 * (i / this.peers.size) + performance.now() * 0.0001
 
       const target = lastPlayerPosition
         .clone()
         .subtractInPlace(new Vector3(0, 1.6, 0))
-        .addInPlace(new Vector3(Math.sin(angle), 0, Math.cos(angle)).scaleInPlace(i * 0.1 + 3))
+        .addInPlace(new Vector3(Math.sin(angle), 0, Math.cos(angle)).scaleInPlace(i * 0.3 + 3))
 
       const distance = target.subtract(peer.position).length()
       const segment = target
         .subtract(peer.position)
         .normalize()
-        .scaleInPlace(Math.min(distance /*+ Math.random()*/, 5))
+        .scaleInPlace(Math.min(distance, 5 + Math.random()))
       peer.position.addInPlace(segment)
 
       Packet.decode(peer.positionMessage)

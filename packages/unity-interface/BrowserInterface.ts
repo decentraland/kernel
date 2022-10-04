@@ -105,7 +105,6 @@ import {
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 
-
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
 
