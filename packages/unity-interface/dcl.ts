@@ -91,7 +91,13 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 }
 
-async function startGlobalScene(cid: string, title: string, fileContentUrl: string, content: ContentMapping[] = []) {
+async function startGlobalScene(
+  cid: string,
+  title: string,
+  fileContentUrl: string,
+  content: ContentMapping[] = [],
+  baseUrl: string = location.origin
+) {
   const metadata: Scene = {
     display: {
       title: title
@@ -105,7 +111,7 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
 
   const scene = loadParcelSceneWorker({
     id: cid,
-    baseUrl: location.origin,
+    baseUrl,
     entity: {
       content: [...content, { file: 'game.js', hash: fileContentUrl }],
       pointers: [cid],
@@ -211,6 +217,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
 export async function reloadPlaygroundScene() {
   const playgroundCode: string = (globalThis as any).PlaygroundCode
   const playgroundContentMapping: ContentMapping[] = (globalThis as any).PlaygroundContentMapping || []
+  const playgroundBaseUrl: ContentMapping[] = (globalThis as any).PlaygroundBaseUrl || location.origin
 
   if (!playgroundCode) {
     console.log('There is no playground code')
@@ -224,7 +231,7 @@ export async function reloadPlaygroundScene() {
 
   const hudWorkerBLOB = new Blob([playgroundCode])
   const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
-  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, playgroundContentMapping)
+  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, playgroundContentMapping, playgroundBaseUrl)
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {
