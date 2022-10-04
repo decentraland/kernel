@@ -38,3 +38,5 @@ export const findPrivateMessagingFriendsByUserId = (store: RootFriendsState, use
   Object.values(store.friends.socialInfo).find((socialData) => socialData.userId === userId)
 
 export const isFriend = (store: RootFriendsState, userId: string) => store.friends.friends.includes(userId)
+
+export const getLastStatusOfFriends = (store: RootFriendsState) => store.friends.lastStatusOfFriends
