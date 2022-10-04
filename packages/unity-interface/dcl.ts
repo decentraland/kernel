@@ -217,7 +217,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
 export async function reloadPlaygroundScene() {
   const playgroundCode: string = (globalThis as any).PlaygroundCode
   const playgroundContentMapping: ContentMapping[] = (globalThis as any).PlaygroundContentMapping || []
-  const playgroundBaseUrl: ContentMapping[] = (globalThis as any).PlaygroundBaseUrl || location.origin
+  const playgroundBaseUrl: string = (globalThis as any).PlaygroundBaseUrl || location.origin
 
   if (!playgroundCode) {
     console.log('There is no playground code')
