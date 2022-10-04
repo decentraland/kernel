@@ -31,7 +31,7 @@ import type { UnityGame } from '@dcl/unity-renderer/src'
 import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
-import { EntityType, Scene, sdk } from '@dcl/schemas'
+import { ContentMapping, EntityType, Scene, sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
@@ -91,7 +91,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 }
 
-async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
+async function startGlobalScene(cid: string, title: string, fileContentUrl: string, content: ContentMapping[] = []) {
   const metadata: Scene = {
     display: {
       title: title
@@ -107,7 +107,7 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
     id: cid,
     baseUrl: location.origin,
     entity: {
-      content: [{ file: 'game.js', hash: fileContentUrl }],
+      content: [...content, { file: 'game.js', hash: fileContentUrl }],
       pointers: [cid],
       timestamp: 0,
       type: EntityType.SCENE,
@@ -210,6 +210,7 @@ export async function loadPreviewScene(message: sdk.Messages) {
 
 export async function reloadPlaygroundScene() {
   const playgroundCode: string = (globalThis as any).PlaygroundCode
+  const playgroundContentMapping: ContentMapping[] = (globalThis as any).PlaygroundContentMapping || []
 
   if (!playgroundCode) {
     console.log('There is no playground code')
@@ -223,7 +224,7 @@ export async function reloadPlaygroundScene() {
 
   const hudWorkerBLOB = new Blob([playgroundCode])
   const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
-  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl)
+  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, playgroundContentMapping)
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {
