@@ -261,7 +261,7 @@ describe('Friends sagas - Channels Feature', () => {
           }
           totalUnseenMessagesByChannel.unseenChannelMessages.push({
             count,
-            channelId: conv.conversation.name!
+            channelId: conv.conversation.id
           })
         }
 
