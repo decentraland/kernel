@@ -800,6 +800,11 @@ export type LeaveChannelPayload = {
   channelId: string
 }
 
+export type MuteChannelPayload = {
+  channelId: string
+  muted: boolean
+}
+
 export type GetChannelInfoPayload = {
   channelsIds: string[]
 }

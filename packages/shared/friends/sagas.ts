@@ -50,6 +50,7 @@ import {
   GetChannelMessagesPayload,
   ChannelErrorPayload,
   ChannelErrorCode,
+  MuteChannelPayload,
   GetChannelInfoPayload,
   GetChannelMembersPayload,
   UpdateChannelMembersPayload,
@@ -102,11 +103,11 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix, getMatrixIdFromUser } from './utils'
+import { getUserIdFromMatrix, getMatrixIdFromUser, areChannelsEnabled } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { IBff } from 'shared/bff/types'
 import { realmToConnectionString } from 'shared/bff/resolver'
-import { unmutePlayers } from 'shared/social/actions'
+import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
@@ -224,6 +225,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
     return
   }
 
+  // check channels feature is enabled
+  const channelsDisabled = !areChannelsEnabled()
+
   // initialize conversations
   client.onStatusChange(async (socialId, status) => {
     try {
@@ -231,8 +235,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
       if (userId) {
         // When it's a friend and is not added to catalog
         // unity needs to know this information to show that the user has connected
-        if (isFriend(store.getState(), userId) && !isAddedToCatalog(store.getState(), userId)) {
-          await ensureFriendProfile(userId)
+        if (isFriend(store.getState(), userId)) {
+          if (!isAddedToCatalog(store.getState(), userId)) {
+            await ensureFriendProfile(userId)
+          }
           getUnityInstance().AddFriends({
             friends: [userId],
             totalFriends: getTotalFriends(store.getState())
@@ -255,6 +261,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
   client.onMessage(async (conversation, message) => {
     try {
+      if (conversation.type === ConversationType.CHANNEL && channelsDisabled) {
+        return
+      }
       if (receivedMessages.hasOwnProperty(message.id)) {
         // message already processed, skipping
         return
@@ -489,6 +498,7 @@ function getFriendIds(client: SocialAPI): string[] {
 }
 
 function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: string[]): number {
+  const channelsDisabled = !areChannelsEnabled()
   const profile = getCurrentUserProfile(store.getState())
 
   const conversationsWithUnreadMessages: Conversation[] = client.getAllConversationsWithUnreadMessages()
@@ -496,7 +506,7 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
 
   for (const conv of conversationsWithUnreadMessages) {
     if (conv.type === ConversationType.CHANNEL) {
-      if (profile?.muted?.includes(conv.id)) {
+      if (channelsDisabled || profile?.muted?.includes(conv.id)) {
         continue
       }
     } else if (conv.type === ConversationType.DIRECT) {
@@ -571,8 +581,8 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   const addFriendRequestsPayload: AddFriendRequestsPayload = {
     requestedTo: toFriendRequests.map((friend) => friend.userId),
     requestedFrom: fromFriendRequests.map((friend) => friend.userId),
-    totalReceivedFriendRequests: fromFriendRequests.length,
-    totalSentFriendRequests: toFriendRequests.length
+    totalReceivedFriendRequests: friends.fromFriendRequests.length,
+    totalSentFriendRequests: friends.toFriendRequests.length
   }
 
   // get friend requests profiles
@@ -700,10 +710,10 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
     return
   }
 
-  const friendsIds: string[] = getPrivateMessagingFriends(store.getState()).slice(
-    request.skip,
-    request.skip + request.limit
-  )
+  const friendsIds: string[] = conversationsWithMessages
+    .slice(request.skip, request.skip + request.limit)
+    .map((conv) => conv.conversation.userIds![1])
+
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
     friendsIds,
@@ -729,7 +739,7 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
       lastMessageTimestamp: friend.conversation.lastEventTimestamp!,
       userId: friend.userId
     })),
-    totalFriendsWithDirectMessages: friendsConversations.length
+    totalFriendsWithDirectMessages: conversationsWithMessages.length
   }
 
   const profilesForRenderer = friendsConversations.map((friend) =>
@@ -810,13 +820,9 @@ function* initializeStatusUpdateInterval() {
       continue
     }
 
-    const domain = client.getDomain()
-
     const rawFriends: string[] = yield select(getPrivateMessagingFriends)
 
-    const friends = rawFriends.map((x) => {
-      return `@${x}:${domain}`
-    })
+    const friends = rawFriends.map((x) => getMatrixIdFromUser(x))
 
     updateUserStatus(client, ...friends)
 
@@ -1280,10 +1286,9 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     if (!client) return
 
     const channelId = action.payload.channelId
-    const ownId = client.getUserId()
 
     // get or create channel
-    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, [ownId]])
+    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, []])
 
     const channel: ChannelInfoPayload = {
       name: conversation.name!,
@@ -1335,10 +1340,8 @@ export async function createChannel(request: CreateChannelPayload) {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
 
-    const ownId = client.getUserId()
-
     // create channel
-    const { conversation, created } = await client.getOrCreateChannel(channelId, [ownId])
+    const { conversation, created } = await client.getOrCreateChannel(channelId, [])
 
     if (!created) {
       notifyJoinChannelError(request.channelId, ChannelErrorCode.ALREADY_EXISTS)
@@ -1384,7 +1387,7 @@ export function getUnseenMessagesByChannel() {
 
 // Get user's joined channels
 export function getJoinedChannels(request: GetJoinedChannelsPayload) {
-  // get user joined channels
+  // get conversations messages from the store
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.CHANNEL
   )
@@ -1560,14 +1563,56 @@ function getTotalUnseenMessagesByChannel() {
     return updateTotalUnseenMessagesByChannelPayload
   }
 
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) {
+    return updateTotalUnseenMessagesByChannelPayload
+  }
+
+  // get muted channel ids
+  const ownId = client.getUserId()
+  const mutedIds = getProfile(store.getState(), ownId)?.muted
+
   for (const conv of conversationsWithMessages) {
+    // prevent from counting unread messages of muted channels
     updateTotalUnseenMessagesByChannelPayload.unseenChannelMessages.push({
-      count: conv.conversation.unreadMessages?.length || 0,
+      count: mutedIds?.includes(conv.conversation.id) ? 0 : conv.conversation.unreadMessages?.length || 0,
       channelId: conv.conversation.name!
     })
   }
 
   return updateTotalUnseenMessagesByChannelPayload
+}
+
+// Enable / disable channel notifications
+export function muteChannel(muteChannel: MuteChannelPayload) {
+  const client: SocialAPI | null = getSocialClient(store.getState())
+  if (!client) return
+
+  const channelId = muteChannel.channelId.toLowerCase()
+
+  const channel: Conversation | undefined = client.getChannel(channelId)
+  if (!channel) return
+
+  // mute / unmute channel
+  if (muteChannel.muted) {
+    store.dispatch(mutePlayers([channelId]))
+  } else {
+    store.dispatch(unmutePlayers([channelId]))
+  }
+
+  const channelInfo: ChannelInfoPayload = {
+    name: channel.name!,
+    channelId: channel.id,
+    unseenMessages: channel.unreadMessages?.length || 0,
+    lastMessageTimestamp: channel.lastEventTimestamp || undefined,
+    memberCount: channel.userIds?.length || 1,
+    description: '',
+    joined: true,
+    muted: muteChannel.muted
+  }
+
+  // send message to unity
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channelInfo] })
 }
 
 /**

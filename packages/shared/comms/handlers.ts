@@ -119,14 +119,12 @@ function handleDisconnectPeer(data: PeerDisconnectedEvent) {
 }
 
 function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVersion>) {
-  const msgTimestamp = message.time
-
   const peerTrackingInfo = setupPeer(message.address)
   peerTrackingInfo.ethereumAddress = message.address
   peerTrackingInfo.lastUpdate = Date.now()
 
-  if (msgTimestamp > peerTrackingInfo.lastProfileUpdate) {
-    peerTrackingInfo.lastProfileUpdate = msgTimestamp
+  if (message.data.profileVersion > peerTrackingInfo.lastProfileVersion) {
+    peerTrackingInfo.lastProfileVersion = message.data.profileVersion
 
     // remove duplicates
     ensureTrackingUniqueAndLatest(peerTrackingInfo)
@@ -219,7 +217,7 @@ function processChatMessage(message: Package<proto.Chat>) {
           messageId: uuid(),
           sender: senderPeer.ethereumAddress,
           body: message.data.message,
-          timestamp: message.time
+          timestamp: message.data.timestamp
         }
         store.dispatch(messageReceived(messageEntry))
       }
@@ -280,5 +278,5 @@ export function createReceiveProfileOverCommsChannel() {
 }
 
 function processPositionMessage(message: Package<proto.Position>) {
-  receiveUserPosition(message.address, message.data, message.time)
+  receiveUserPosition(message.address, message.data)
 }

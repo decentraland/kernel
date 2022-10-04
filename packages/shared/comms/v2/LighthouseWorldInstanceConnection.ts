@@ -331,7 +331,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
         case CommsMessage.DataCase.CHAT_DATA:
           this.peerIdAdapter.handleMessage(
             'chatMessage',
-            createPackage(sender, commsMessage, mapToPackageChat(commsMessage.getChatData()!))
+            createPackage(sender, mapToPackageChat(commsMessage.getChatData()!, commsMessage.getTime()))
           )
           break
         case CommsMessage.DataCase.POSITION_DATA:
@@ -339,8 +339,8 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
           this.peer.setPeerPosition(sender, positionMessage.slice(0, 3) as [number, number, number])
           this.peerIdAdapter.handleMessage(
             'position',
-            createPackage(sender, commsMessage, {
-              index: 0,
+            createPackage(sender, {
+              index: commsMessage.getTime(),
               positionX: positionMessage[0],
               positionY: positionMessage[1],
               positionZ: positionMessage[2],
@@ -354,7 +354,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
         case CommsMessage.DataCase.SCENE_DATA:
           this.peerIdAdapter.handleMessage(
             'sceneMessageBus',
-            createPackage(sender, commsMessage, mapToPackageScene(commsMessage.getSceneData()!))
+            createPackage(sender, mapToPackageScene(commsMessage.getSceneData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_DATA:
@@ -366,7 +366,7 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
           }
           this.peerIdAdapter.handleMessage(
             'profileMessage',
-            createPackage(sender, commsMessage, mapToPackageProfile(commsMessage.getProfileData()!))
+            createPackage(sender, mapToPackageProfile(commsMessage.getProfileData()!))
           )
           break
         case CommsMessage.DataCase.VOICE_DATA:
@@ -374,7 +374,6 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
             'voiceMessage',
             createPackage(
               sender,
-              commsMessage,
               mapToPackageVoice(
                 commsMessage.getVoiceData()!.getEncodedSamples_asU8(),
                 commsMessage.getVoiceData()!.getIndex()
@@ -385,13 +384,13 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
         case CommsMessage.DataCase.PROFILE_REQUEST_DATA:
           this.peerIdAdapter.handleMessage(
             'profileRequest',
-            createPackage(sender, commsMessage, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
+            createPackage(sender, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_RESPONSE_DATA: {
           this.peerIdAdapter.handleMessage(
             'profileResponse',
-            createPackage(sender, commsMessage, {
+            createPackage(sender, {
               serializedProfile: commsMessage.getProfileResponseData()!.getSerializedProfile()
             })
           )
@@ -408,10 +407,9 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
   }
 }
 
-function createPackage<T>(sender: string, commsMessage: CommsMessage, data: T): Package<T> {
+function createPackage<T>(sender: string, data: T): Package<T> {
   return {
     address: sender,
-    time: commsMessage.getTime(),
     data
   }
 }
@@ -428,9 +426,10 @@ function mapToPositionMessage(positionData: PositionData): number[] {
   ]
 }
 
-function mapToPackageChat(chatData: ChatData): rfc4.Chat {
+function mapToPackageChat(chatData: ChatData, timestamp: number): rfc4.Chat {
   return {
-    message: chatData.getText()
+    message: chatData.getText(),
+    timestamp
   }
 }
 

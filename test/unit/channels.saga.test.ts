@@ -253,8 +253,13 @@ describe('Friends sagas - Channels Feature', () => {
         }
 
         for (const conv of allCurrentConversationsWithMessagesFiltered) {
+          let count = 0
+          // prevent from counting muted channels
+          if (!mutedIds.includes(conv.conversation.id)) {
+            count = conv.conversation.unreadMessages?.length || 0
+          }
           totalUnseenMessagesByChannel.unseenChannelMessages.push({
-            count: conv.conversation.unreadMessages?.length || 0,
+            count,
             channelId: conv.conversation.name!
           })
         }

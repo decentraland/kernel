@@ -7,7 +7,8 @@ export function sendPublicChatMessage(message: string) {
 
   commsContext
     ?.sendChatMessage({
-      message
+      message,
+      timestamp: Date.now()
     })
     .catch((e) => commsLogger.warn(`error while sending message `, e))
 }

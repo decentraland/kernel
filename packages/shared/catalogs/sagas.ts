@@ -342,7 +342,7 @@ async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesReque
  * We are now mapping wearables that were fetched from the builder server into the same format that is returned by the catalysts
  */
 function mapUnpublishedItemIntoCatalystItem(action: EmotesRequest | WearablesRequest, item: UnpublishedWearable): any {
-  const { id, rarity, name, thumbnail, description, data, contents: contentToHash, type } = item
+  const { id, rarity, name, thumbnail, description, data, contents: contentToHash } = item
   const baseItem = {
     id,
     rarity,
@@ -362,7 +362,6 @@ function mapUnpublishedItemIntoCatalystItem(action: EmotesRequest | WearablesReq
   if (action.type === WEARABLES_REQUEST) {
     return {
       ...baseItem,
-      emoteDataV0: type === UnpublishedWearableType.EMOTE ? { loop: data.category === 'loop' } : undefined,
       data: {
         ...data,
         representations
@@ -390,7 +389,7 @@ function mapCatalystRepresentationIntoV2(representation: any): BodyShapeRepresen
 }
 
 function mapCatalystItemIntoV2(v2Item: PartialItem): PartialItem {
-  const { id, rarity, i18n, thumbnail, description, emoteDataV0 } = v2Item
+  const { id, rarity, i18n, thumbnail, description } = v2Item
   let data
   if (isPartialWearable(v2Item)) {
     data = v2Item.data
@@ -413,8 +412,7 @@ function mapCatalystItemIntoV2(v2Item: PartialItem): PartialItem {
       ...data,
       representations: newRepresentations
     },
-    baseUrl,
-    emoteDataV0
+    baseUrl
   }
 }
 

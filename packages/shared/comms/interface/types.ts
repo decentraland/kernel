@@ -71,8 +71,8 @@ export type AvatarMessage =
  */
 export type PeerInformation = UserInformation & {
   talking: boolean
-  lastPositionUpdate: number
-  lastProfileUpdate: number
+  lastPositionIndex: number
+  lastProfileVersion: number
   lastUpdate: number
 }
 
@@ -93,6 +93,5 @@ export type PackageType = keyof rfc4.Packet
 
 export type Package<T> = {
   address: string
-  time: number
   data: T
 }
