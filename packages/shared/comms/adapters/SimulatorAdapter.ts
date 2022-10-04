@@ -1,6 +1,7 @@
 import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
 import { Vector3 } from '@dcl/ecs-math'
 import { Avatar } from '@dcl/schemas'
+import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import mitt from 'mitt'
 import { generateRandomUserProfile } from 'shared/profiles/sagas'
 import {
@@ -36,8 +37,10 @@ export class SimulationRoom implements RoomConnection {
   >()
 
   private roomConnection: Rfc4RoomConnection
+  params: URLSearchParams
 
   constructor(param: string) {
+    this.params = new URLSearchParams(param.startsWith('?') ? param.substring(1) : param)
     this.tick = setInterval(this.update.bind(this), 60)
     const transport = {
       events: mitt<CommsAdapterEvents>(),
@@ -126,20 +129,31 @@ export class SimulationRoom implements RoomConnection {
   update() {
     let i = 0
 
+    const random = +(this.params.get('random') || 1)
+    const speed = +(this.params.get('speed') || 0.0001)
+    const distanceFactor = +(this.params.get('distance') || 0.03)
+    const center = lastPlayerPosition.clone()
+
+    if (this.params.has('position')) {
+      const { x, y } = parseParcelPosition(this.params.get('position')!)
+      gridToWorld(x, y, center)
+      center.y = 1.6
+    }
+
     for (const [address, peer] of this.peers) {
       i++
-      const angle = Math.PI * 4 * (i / this.peers.size) + performance.now() * 0.0001
+      const angle = Math.PI * 4 * (i / this.peers.size) + performance.now() * speed
 
-      const target = lastPlayerPosition
+      const target = center
         .clone()
         .subtractInPlace(new Vector3(0, 1.6, 0))
-        .addInPlace(new Vector3(Math.sin(angle), 0, Math.cos(angle)).scaleInPlace(i * 0.3 + 3))
+        .addInPlace(new Vector3(Math.sin(angle), 0, Math.cos(angle)).scaleInPlace(i * distanceFactor + 3))
 
       const distance = target.subtract(peer.position).length()
       const segment = target
         .subtract(peer.position)
         .normalize()
-        .scaleInPlace(Math.min(distance, 5 + Math.random()))
+        .scaleInPlace(Math.min(distance, 5 + Math.random() * random))
       peer.position.addInPlace(segment)
 
       Packet.decode(peer.positionMessage)
