@@ -109,9 +109,9 @@ export class SceneWorker {
 
     this.rpcContext = {
       sceneData: {
-        ...loadableScene,
         isPortableExperience: false,
-        useFPSThrottling: true
+        useFPSThrottling: false,
+        ...loadableScene
       },
       logger: this.logger,
       permissionGranted: new Set(),

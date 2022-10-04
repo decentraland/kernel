@@ -174,7 +174,7 @@ export function unloadParcelSceneById(sceneId: string) {
 /**
  * @internal
  **/
-export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableScene) {
+async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableScene) {
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
     // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker

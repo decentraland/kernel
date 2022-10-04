@@ -135,13 +135,13 @@ export class SimulationRoom implements RoomConnection {
       const target = lastPlayerPosition
         .clone()
         .subtractInPlace(new Vector3(0, 1.6, 0))
-        .addInPlace(new Vector3(Math.sin(angle), 0, Math.cos(angle)).scaleInPlace(i * 0.5 + 3))
+        .addInPlace(new Vector3(Math.sin(angle), 0, Math.cos(angle)).scaleInPlace(i * 0.1 + 3))
 
       const distance = target.subtract(peer.position).length()
       const segment = target
         .subtract(peer.position)
         .normalize()
-        .scaleInPlace(Math.min(distance + Math.random(), 5))
+        .scaleInPlace(Math.min(distance /*+ Math.random()*/, 5))
       peer.position.addInPlace(segment)
 
       Packet.decode(peer.positionMessage)

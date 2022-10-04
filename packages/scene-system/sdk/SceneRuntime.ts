@@ -167,7 +167,7 @@ export async function startSceneRuntime(client: RpcClient) {
       log: dcl.log,
       previewMode: isPreview.isPreview || unsafeAllowed.status
     })
-
+    console.dir(bootstrapData)
     if (bootstrapData.useFPSThrottling === true) {
       setupFpsThrottling(dcl, fullData.scene.parcels.map(parseParcelPosition), (newValue) => {
         updateIntervalMs = newValue

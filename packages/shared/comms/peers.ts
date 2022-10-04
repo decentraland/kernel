@@ -161,12 +161,12 @@ export function receiveUserVisible(address: string, visible: boolean) {
   const peer = setupPeer(address)
   const didChange = peer.visible !== visible
   peer.visible = visible
-  avatarMessageObservable.notifyObservers({
-    type: AvatarMessageType.USER_VISIBLE,
-    userId: peer.ethereumAddress,
-    visible
-  })
   if (didChange) {
+    avatarMessageObservable.notifyObservers({
+      type: AvatarMessageType.USER_VISIBLE,
+      userId: peer.ethereumAddress,
+      visible
+    })
     // often changes in visibility may delete the avatar remotely.
     // we send all the USER_DATA to make sure the scene always have
     // the required information to render the whole avatar
@@ -216,6 +216,7 @@ export function processAvatarVisibility(maxVisiblePeers: number, myAddress: stri
   type ProcessingPeerInfo = {
     alias: string
     squareDistance: number
+    visible: boolean
   }
 
   const visiblePeers: ProcessingPeerInfo[] = []
@@ -226,7 +227,6 @@ export function processAvatarVisibility(maxVisiblePeers: number, myAddress: stri
 
     if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
       removePeerByAddress(peerAlias)
-
       continue
     }
 
@@ -247,7 +247,8 @@ export function processAvatarVisibility(maxVisiblePeers: number, myAddress: stri
 
     visiblePeers.push({
       squareDistance: squareDistanceRfc4(pos, trackingInfo.position),
-      alias: peerAlias
+      alias: peerAlias,
+      visible: trackingInfo.visible || false
     })
   }
 
