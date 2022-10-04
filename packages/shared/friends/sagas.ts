@@ -1658,7 +1658,7 @@ function getTotalUnseenMessagesByChannel() {
     unseenChannelMessages: []
   }
 
-  // it means the user is not joined to any channel
+  // it means the user is not joined to any channel or they're joined to channels without messages
   if (conversationsWithMessages.length === 0) {
     return updateTotalUnseenMessagesByChannelPayload
   }
@@ -1669,7 +1669,7 @@ function getTotalUnseenMessagesByChannel() {
   }
 
   // get muted channel ids
-  const ownId = client.getUserId()
+  const ownId = getUserIdFromMatrix(client.getUserId())
   const mutedIds = getProfile(store.getState(), ownId)?.muted
 
   for (const conv of conversationsWithMessages) {
