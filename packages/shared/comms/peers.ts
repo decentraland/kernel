@@ -167,10 +167,12 @@ export function receiveUserVisible(address: string, visible: boolean) {
       userId: peer.ethereumAddress,
       visible
     })
-    // often changes in visibility may delete the avatar remotely.
-    // we send all the USER_DATA to make sure the scene always have
-    // the required information to render the whole avatar
-    sendPeerUserData(address)
+    if (visible) {
+      // often changes in visibility may delete the avatar remotely.
+      // we send all the USER_DATA to make sure the scene always have
+      // the required information to render the whole avatar
+      sendPeerUserData(address)
+    }
   }
 }
 
