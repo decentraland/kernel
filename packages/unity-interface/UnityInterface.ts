@@ -38,7 +38,7 @@ import {
   SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import defaultLogger, { createUnityLogger, ILogger } from 'shared/logger'
+import { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'

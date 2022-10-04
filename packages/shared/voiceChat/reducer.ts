@@ -1,4 +1,3 @@
-import { Payload } from 'shared/apis/proto/EngineAPI.gen'
 import {
   JOIN_VOICE_CHAT,
   LEAVE_VOICE_CHAT,
@@ -26,7 +25,9 @@ const INITIAL_STATE: VoiceChatState = {
   volume: 1.0,
   mute: false,
   error: null,
-  liveKitRoom: null
+  liveKitRoom: null,
+  inputDeviceId: null,
+  outputDeviceId: null
 }
 
 export function voiceChatReducer(state?: VoiceChatState, action?: VoiceChatActions): VoiceChatState {

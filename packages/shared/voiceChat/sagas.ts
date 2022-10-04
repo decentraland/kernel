@@ -228,7 +228,7 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
 }
 
 function* setAudioDevices(action: SetAudioDevice) {
-  console.log('AudioDevice = ' + action.payload.devices)
+  defaultLogger.log('AudioDevice = ' + action.payload.devices)
   if (audioRequestInitialized) {
     if (action.payload.devices.inputDeviceId) {
       const media = yield call(requestMediaDevice, action.payload.devices.inputDeviceId)
