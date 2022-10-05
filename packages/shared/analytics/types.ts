@@ -1,3 +1,4 @@
+import { Avatar } from '@dcl/schemas'
 import { getPerformanceInfo } from '../session/getPerformanceInfo'
 import { ChatMessagePlayerType, ChatMessageType } from '../types'
 
@@ -17,6 +18,7 @@ export type TrackEvents = PositionTrackEvents & {
   }
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
+  ['bff_auth_already_connected']: { address: string }
 
   // Info logs, such as networks or things we want to track
   ['SNAPSHOT_IMAGE_NOT_FOUND']: { userId: string }
@@ -75,4 +77,5 @@ export type TrackEvents = PositionTrackEvents & {
   ['Control Friend request sent']: Record<string, never> // {}
   ['Control Friend deleted']: Record<string, never> // {}
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
+  ['Remote avatar for profile is invalid']: { avatar: Avatar }
 }

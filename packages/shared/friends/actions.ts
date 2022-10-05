@@ -3,7 +3,7 @@ import { action } from 'typesafe-actions'
 import { FriendshipAction } from 'shared/types'
 
 import { FriendsState } from './types'
-import { SocialAPI } from 'dcl-social-client'
+import { SocialAPI, SocialId } from 'dcl-social-client'
 
 export const UPDATE_FRIENDSHIP = 'Update friendship'
 export const updateFriendship = (_action: FriendshipAction, userId: string, incoming: boolean) =>
@@ -22,3 +22,12 @@ export const UPDATE_USER_DATA = 'Update user data'
 export const updateUserData = (userId: string, socialId: string, conversationId?: string) =>
   action(UPDATE_USER_DATA, { userId, socialId, conversationId })
 export type UpdateUserData = ReturnType<typeof updateUserData>
+
+export const JOIN_OR_CREATE_CHANNEL = 'Join or create channel'
+export const joinOrCreateChannel = (channelId: string, userIds: SocialId[]) =>
+  action(JOIN_OR_CREATE_CHANNEL, { channelId, userIds })
+export type JoinOrCreateChannel = ReturnType<typeof joinOrCreateChannel>
+
+export const LEAVE_CHANNEL = 'Leave channel'
+export const leaveChannel = (channelId: string) => action(LEAVE_CHANNEL, { channelId })
+export type LeaveChannel = ReturnType<typeof leaveChannel>

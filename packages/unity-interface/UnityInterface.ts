@@ -19,7 +19,22 @@ import {
   ContentMapping,
   TutorialInitializationMessage,
   WorldPosition,
-  HeaderRequest
+  HeaderRequest,
+  AddFriendsPayload,
+  AddFriendRequestsPayload,
+  UpdateTotalUnseenMessagesPayload,
+  UpdateUserUnseenMessagesPayload,
+  AddChatMessagesPayload,
+  UpdateTotalUnseenMessagesByUserPayload,
+  AddFriendsWithDirectMessagesPayload,
+  FriendsInitializeChatPayload,
+  UpdateTotalFriendRequestsPayload,
+  UpdateTotalFriendsPayload,
+  UpdateTotalUnseenMessagesByChannelPayload,
+  ChannelInfoPayloads,
+  UpdateChannelMembersPayload,
+  ChannelSearchResultsPayload,
+  ChannelErrorPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -36,7 +51,7 @@ import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { incrementCounter } from '../shared/occurences'
 
 const MINIMAP_CHUNK_SIZE = 100
@@ -181,6 +196,10 @@ export class UnityInterface implements IUnityInterface {
 
   public ShowFPSPanel() {
     this.SendMessageToUnity('Main', 'ShowFPSPanel')
+  }
+
+  public DetectABs(data: { isOn: boolean; forCurrentScene: boolean }) {
+    this.SendMessageToUnity('Bridges', 'DetectABs', JSON.stringify(data))
   }
 
   public HideFPSPanel() {
@@ -328,11 +347,6 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddMessageToChatWindow(message: ChatMessage) {
-    try {
-      message.body = message.body.replace(/</g, 'ᐸ').replace(/>/g, 'ᐳ')
-    } catch (err: any) {
-      unityLogger.error(err)
-    }
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
       return
@@ -340,8 +354,58 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddMessageToChatWindow', JSON.stringify(message))
   }
 
+  public AddChatMessages(addChatMessagesPayload: AddChatMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddChatMessages', JSON.stringify(addChatMessagesPayload))
+  }
+
   public InitializeFriends(initializationMessage: FriendsInitializationMessage) {
     this.SendMessageToUnity('Main', 'InitializeFriends', JSON.stringify(initializationMessage))
+  }
+
+  public InitializeChat(initializationMessage: FriendsInitializeChatPayload): void {
+    this.SendMessageToUnity('Main', 'InitializeChat', JSON.stringify(initializationMessage))
+  }
+
+  public AddUserProfilesToCatalog(payload: AddUserProfilesToCatalogPayload): void {
+    this.SendMessageToUnity('Main', 'AddUserProfilesToCatalog', JSON.stringify(payload))
+  }
+
+  public AddFriends(addFriendsPayload: AddFriendsPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
+  }
+
+  public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
+  }
+
+  public UpdateTotalUnseenMessagesByUser(
+    updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload
+  ): void {
+    this.SendMessageToUnity(
+      'Main',
+      'UpdateTotalUnseenMessagesByUser',
+      JSON.stringify(updateTotalUnseenMessagesByUserPayload)
+    )
+  }
+
+  public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
+  }
+
+  public UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalFriendRequests', JSON.stringify(updateTotalFriendRequestsPayload))
+  }
+
+  public UpdateTotalFriends(updateTotalFriendPayload: UpdateTotalFriendsPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalFriends', JSON.stringify(updateTotalFriendPayload))
+  }
+
+  public UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateTotalUnseenMessages', JSON.stringify(updateTotalUnseenMessagesPayload))
+  }
+
+  public UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void {
+    this.SendMessageToUnity('Main', 'UpdateUserUnseenMessages', JSON.stringify(updateUserUnseenMessagesPayload))
   }
 
   public UpdateFriendshipStatus(updateMessage: FriendshipUpdateStatusMessage) {
@@ -354,6 +418,44 @@ export class UnityInterface implements IUnityInterface {
 
   public FriendNotFound(queryString: string) {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
+  }
+
+  public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {
+    this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
+  }
+
+  public JoinChannelError(joinChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'JoinChannelError', JSON.stringify(joinChannelErrorPayload))
+  }
+
+  public UpdateTotalUnseenMessagesByChannel(
+    updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload
+  ) {
+    this.SendMessageToUnity(
+      'Main',
+      'UpdateTotalUnseenMessagesByChannel',
+      JSON.stringify(updateTotalUnseenMessagesByChannelPayload)
+    )
+  }
+
+  public UpdateChannelInfo(channelInfoPayload: ChannelInfoPayloads) {
+    this.SendMessageToUnity('Main', 'UpdateChannelInfo', JSON.stringify(channelInfoPayload))
+  }
+
+  public UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload) {
+    this.SendMessageToUnity('Main', 'UpdateChannelSearchResults', JSON.stringify(channelSearchResultsPayload))
+  }
+
+  public LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'LeaveChannelError', JSON.stringify(leaveChannelErrorPayload))
+  }
+
+  public MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload) {
+    this.SendMessageToUnity('Main', 'MuteChannelError', JSON.stringify(muteChannelErrorPayload))
+  }
+
+  public UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload) {
+    this.SendMessageToUnity('Main', 'UpdateChannelMembers', JSON.stringify(updateChannelMembersPayload))
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -489,7 +591,7 @@ export class UnityInterface implements IUnityInterface {
     this.logger.warn('SendSceneAssets')
   }
 
-  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined) {
+  public SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string) {
     if (!profiles) {
       this.SendMessageToUnity('Bridges', 'SetENSOwnerQueryResult', JSON.stringify({ searchInput, success: false }))
       return
@@ -497,7 +599,9 @@ export class UnityInterface implements IUnityInterface {
     // TODO: why do we send the whole profile while asking for the ENS???
     const profilesForRenderer: NewProfileForRenderer[] = []
     for (const profile of profiles) {
-      profilesForRenderer.push(profileToRendererFormat(profile, { address: profile.userId }))
+      profilesForRenderer.push(
+        profileToRendererFormat(profile, { address: profile.userId, baseUrl: contentServerBaseUrl })
+      )
     }
     this.SendMessageToUnity(
       'Bridges',

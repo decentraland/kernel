@@ -47,7 +47,7 @@ import {
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { CatalystClient, OwnedItemsWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
-import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
+import { getCatalystServer, getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -81,7 +81,7 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
   const failureAction = isRequestingEmotes ? emotesFailure : wearablesFailure
   if (valid) {
     try {
-      const fetchContentServer: string = yield select(getFetchContentServer)
+      const contentBaseUrl: string = yield select(getFetchContentUrlPrefix)
 
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -89,7 +89,7 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
 
       const v2Items: (WearableV2 | Emote)[] = response.map((item) => ({
         ...item,
-        baseUrl: item.baseUrl ?? fetchContentServer + '/contents/',
+        baseUrl: item.baseUrl ?? contentBaseUrl,
         baseUrlBundles: assetBundlesBaseUrl
       }))
 
@@ -342,12 +342,12 @@ async function fetchWearablesByCollectionFromPreviewMode(filters: WearablesReque
  * We are now mapping wearables that were fetched from the builder server into the same format that is returned by the catalysts
  */
 function mapUnpublishedItemIntoCatalystItem(action: EmotesRequest | WearablesRequest, item: UnpublishedWearable): any {
-  const { id, rarity, name, thumbnail, description, data, contents: contentToHash, type } = item
+  const { id, rarity, name, thumbnail, description, data, contents: contentToHash } = item
   const baseItem = {
     id,
     rarity,
     i18n: [{ code: 'en', text: name }],
-    thumbnail: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[thumbnail]}`,
+    thumbnail: `${BASE_BUILDER_DOWNLOAD_URL}/${contentToHash[thumbnail]}${DEBUG ? '?ts=' + Date.now() : ''}`,
     description
   }
 
@@ -362,7 +362,6 @@ function mapUnpublishedItemIntoCatalystItem(action: EmotesRequest | WearablesReq
   if (action.type === WEARABLES_REQUEST) {
     return {
       ...baseItem,
-      emoteDataV0: type === UnpublishedWearableType.EMOTE ? { loop: data.category === 'loop' } : undefined,
       data: {
         ...data,
         representations
@@ -390,7 +389,7 @@ function mapCatalystRepresentationIntoV2(representation: any): BodyShapeRepresen
 }
 
 function mapCatalystItemIntoV2(v2Item: PartialItem): PartialItem {
-  const { id, rarity, i18n, thumbnail, description, emoteDataV0 } = v2Item
+  const { id, rarity, i18n, thumbnail, description } = v2Item
   let data
   if (isPartialWearable(v2Item)) {
     data = v2Item.data
@@ -413,8 +412,7 @@ function mapCatalystItemIntoV2(v2Item: PartialItem): PartialItem {
       ...data,
       representations: newRepresentations
     },
-    baseUrl,
-    emoteDataV0
+    baseUrl
   }
 }
 

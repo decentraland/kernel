@@ -27,6 +27,8 @@ import './unit/catalog.saga.test'
 import './unit/portable-experiences.test'
 import './unit/logger.spec'
 import './unit/comms-resolver.test'
+import './unit/friends.saga.test'
+import './unit/channels.saga.test'
 
 /* SCENE EVENTS */
 import './sceneEvents/visibleAvatars.spec'

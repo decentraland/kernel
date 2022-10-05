@@ -25,6 +25,7 @@ export type FeatureFlagsName =
   | 'parcel-denylist' // denylist of specific parcels using variants
   | 'matrix_disabled' // disable matrix integration entirely
   | 'matrix_presence_disabled' // disable matrix presence feature
+  | 'matrix_channels_enabled' // enables matrix channels feature
   | 'builder_in_world'
   | 'avatar_lods'
   | 'asset_bundles'
@@ -37,6 +38,7 @@ export type FeatureFlagsName =
   | 'web_cap_fps' // caps the web client FPS
   | 'disabled-catalyst'
   | 'livekit-voicechat'
+  | 'max_joined_channels' // the max amount of joined channels allowed per user
 
 export type BannedUsers = Record<string, Ban[]>
 

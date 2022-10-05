@@ -14,6 +14,7 @@ export type NewProfileForRenderer = {
   tutorialStep: number
   hasConnectedWeb3: boolean
   hasClaimedName: boolean
+  baseUrl: string
   avatar: ProfileForRenderer['avatar'] & {
     emotes: {
       slot: number
@@ -28,4 +29,8 @@ export type NewProfileForRenderer = {
   updated_at: number
   inventory: string[]
   tutorialFlagsMask: number
+}
+
+export interface AddUserProfilesToCatalogPayload {
+  users: NewProfileForRenderer[]
 }

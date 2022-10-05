@@ -9,12 +9,17 @@ import { Vector3 } from '@dcl/legacy-ecs'
 import { EntityType, Scene } from '@dcl/schemas'
 import { expect } from 'chai'
 import Sinon from 'sinon'
+import { UnityInterface } from 'unity-interface/UnityInterface'
 
 describe('RestrictedActions tests', () => {
   beforeEach(() => {
     sinon.reset()
     sinon.restore()
     setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
+  })
+
+  after(() => {
+    setUnityInstance(new UnityInterface())
   })
 
   describe('TriggerEmote tests', () => {
