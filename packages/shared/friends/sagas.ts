@@ -482,7 +482,7 @@ function* refreshFriends() {
         friends: friendIds,
         fromFriendRequests: requestedFromIds,
         toFriendRequests: requestedToIds,
-        // initialize an empty map becuase there is no way to get the current statuses, the matrix client store is empty at this point
+        // initialize an empty map because there is no way to get the current statuses, the matrix client store is empty at this point
         lastStatusOfFriends: new Map()
       })
     )
@@ -808,7 +808,7 @@ function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
       lastStatuses.set(key, value)
     } else {
       // avoid sending already sent states
-      logger.log(`friend ${key} status was ignored - duplicated state`)
+      logger.trace(`friend ${key} status was ignored - duplicated state`)
     }
   })
 }
