@@ -6,7 +6,8 @@ import {
   GetFriendRequestsPayload,
   GetFriendsPayload,
   GetFriendsWithDirectMessagesPayload,
-  GetPrivateMessagesPayload
+  GetPrivateMessagesPayload,
+  PresenceStatus
 } from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
@@ -16,7 +17,7 @@ import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { FriendRequest, FriendsState } from 'shared/friends/types'
-import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
+import { Conversation, ConversationType, CurrentUserStatus, MessageStatus, PresenceType, SocialAPI, TextMessage } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
 import * as daoSelectors from 'shared/dao/selectors'
 
@@ -73,6 +74,22 @@ const toFriendRequest: FriendRequest = {
   createdAt: 123123132
 }
 
+
+const lastStatusOfFriendsEntries = [[
+  '@0xa1:server', {
+    realm: {
+      layer: '',
+      serverName: 'serverTest'
+    },
+    position: { x: 0, y: 1 },
+    presence: PresenceType.ONLINE,
+    lastActiveAgo: 1
+  }],
+] as const;
+
+
+const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
+
 const friendsFromStore: FriendsState = {
   client: null,
   socialInfo: {},
@@ -117,12 +134,21 @@ const stubClient = {
   getCursorOnMessage: () => Promise.resolve({ getMessages: () => textMessages }),
   getUserId: () => '0xa2',
   createDirectConversation: () => allCurrentConversations[0].conversation,
-  getUserStatuses: () => new Map()
+  getUserStatuses: (...friendIds: string[]) => {
+    const m = new Map();
+    for (const id of friendIds) {
+      let status = lastStatusOfFriends.get(id)
+      if (status) {
+        m.set(id, status)
+      }
+    }
+    return m
+  }
 } as unknown as SocialAPI
 
 const FETCH_CONTENT_SERVER = 'base-url'
 
-function mockStoreCalls(opts?: { profiles: number[]; i: number }) {
+function mockStoreCalls(opts?: { profiles: number[]; i: number }, fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>) {
   sinon.stub(daoSelectors, 'getFetchContentUrlPrefix').callsFake(() => FETCH_CONTENT_SERVER)
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
@@ -132,9 +158,10 @@ function mockStoreCalls(opts?: { profiles: number[]; i: number }) {
       profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore.slice(0, opts?.profiles[opts.i]), userNameOrId)
     )
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
+  sinon.stub(friendsSelectors, 'getLastStatusOfFriends').callsFake(() => fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends)
 }
 
-describe('Friends sagas', () => {
+describe.only('Friends sagas', () => {
   sinon.mock()
 
   describe('get friends', () => {
@@ -379,4 +406,57 @@ describe('Friends sagas', () => {
       })
     })
   })
+
+  describe.only('update friends status', () => {
+    beforeEach(() => {
+      const { store } = buildStore()
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    it('should send status when it\'s not stored in the redux state yet', () => {
+      mockStoreCalls()
+      sinon.mock(getUnityInstance())
+        .expects('UpdateUserPresence')
+        .once()
+        .withExactArgs({ userId: '0xa1', realm: lastStatusOfFriendsEntries[0][1].realm, position: lastStatusOfFriendsEntries[0][1].position, presence: PresenceStatus.ONLINE })
+      friendsSagas.updateUserStatus(stubClient, '@0xa1:server')
+      sinon.mock(getUnityInstance()).verify()
+    })
+
+    it('should send status when it\'s stored but the new one is different', () => {
+      mockStoreCalls(undefined, lastStatusOfFriends)
+      const client: SocialAPI = {
+        ...stubClient,
+        getUserStatuses: (...friendIds: string[]) => {
+          const m = new Map();
+          for (const id of friendIds) {
+            let status = lastStatusOfFriends.get(id)
+            if (status) {
+              m.set(id, { ...status, position: {x: 100, y: 200} }) // new status. different from the mocked ones in "entries" constant
+            }
+          }
+          return m
+        }
+      }
+      sinon.mock(getUnityInstance())
+        .expects('UpdateUserPresence')
+        .once()
+        .withExactArgs({ userId: '0xa1', realm: lastStatusOfFriendsEntries[0][1].realm, position: {x: 100, y: 200}, presence: PresenceStatus.ONLINE })
+      friendsSagas.updateUserStatus(client, '@0xa1:server')
+      sinon.mock(getUnityInstance()).verify()
+    })
+
+    it('should not send status when it\'s equal to the last sent', () => {
+      mockStoreCalls(undefined, lastStatusOfFriends)
+      sinon.mock(getUnityInstance()).expects('UpdateUserPresence').notCalled
+      friendsSagas.updateUserStatus(stubClient, '@0xa1:server')
+      sinon.mock(getUnityInstance()).verify()
+    })
+  })
+
 })
