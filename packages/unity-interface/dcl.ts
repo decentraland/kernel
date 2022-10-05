@@ -21,7 +21,7 @@ import {
   addDesiredParcel,
   unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
-import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
+import { sceneWorkerToLoadableParcelScene } from 'shared/selectors'
 import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
@@ -133,7 +133,7 @@ async function startGlobalScene(
 
 export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
   onLoadParcelScenesObservable.add((lands) => {
-    getUnityInstance().LoadParcelScenes(lands.map(($) => loadableSceneToLoadableParcelScene($)))
+    getUnityInstance().LoadParcelScenes(lands.map(($) => sceneWorkerToLoadableParcelScene($)))
   })
   onPositionSettledObservable.add((spawnPoint) => {
     getUnityInstance().Teleport(spawnPoint)

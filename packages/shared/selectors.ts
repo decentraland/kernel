@@ -1,7 +1,8 @@
 import { Scene } from '@dcl/schemas'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl } from 'config'
-import { ContentMapping, LoadableParcelScene, SceneFeatureToggle, LoadableScene } from './types'
+import { ContentMapping, LoadableParcelScene, SceneFeatureToggle } from './types'
+import { SceneWorker } from './world/SceneWorker'
 
 export function normalizeContentMappings(
   mappings: Record<string, string> | Array<ContentMapping>
@@ -21,18 +22,24 @@ export function normalizeContentMappings(
   return ret
 }
 
-export function loadableSceneToLoadableParcelScene(loadableScene: LoadableScene): LoadableParcelScene {
-  const mappings: ContentMapping[] = normalizeContentMappings(loadableScene.entity.content)
+/**
+ * This is the format of scenes that needs to be sent to Unity to create its counterpart
+ * of a SceneWorker
+ */
+export function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
+  const entity = worker.loadableScene.entity
+  const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
 
   return {
-    id: loadableScene.id,
-    basePosition: parseParcelPosition(loadableScene.entity.metadata?.scene?.base || '0,0'),
-    name: getSceneNameFromJsonData(loadableScene.entity.metadata),
-    parcels: loadableScene.entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
-    baseUrl: loadableScene.baseUrl,
+    id: worker.loadableScene.id,
+    sceneNumber: worker.rpcContext.sceneData.sceneNumber,
+    basePosition: parseParcelPosition(entity.metadata?.scene?.base || '0,0'),
+    name: getSceneNameFromJsonData(entity.metadata),
+    parcels: entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
+    baseUrl: worker.loadableScene.baseUrl,
     baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
     contents: mappings,
-    loadableScene: loadableScene
+    loadableScene: worker.loadableScene
   }
 }
 

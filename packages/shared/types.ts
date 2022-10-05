@@ -140,7 +140,9 @@ export type OpenNFTDialogPayload = { assetContractAddress: string; tokenId: stri
 
 /** THIS INTERFACE CANNOT CHANGE, IT IS USED IN THE UNITY BUILD */
 export type LoadableParcelScene = {
+  /** @deprecated use sceneNumber*/
   id: string
+  sceneNumber: number
   name: string
   basePosition: { x: number; y: number }
   parcels: Array<{ x: number; y: number }>
