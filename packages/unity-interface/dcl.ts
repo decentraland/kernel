@@ -3,6 +3,8 @@ import {
   DECENTRALAND_SPACE,
   EDITOR,
   ENGINE_DEBUG_PANEL,
+  ETHEREUM_NETWORK,
+  getAssetBundlesBaseUrl,
   PARCEL_LOADING_ENABLED,
   rootURLPreviewMode,
   SCENE_DEBUG_PANEL,
@@ -21,7 +23,7 @@ import {
   addDesiredParcel,
   unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
-import { sceneWorkerToLoadableParcelScene } from 'shared/selectors'
+import { getSceneNameFromJsonData, normalizeContentMappings } from 'shared/selectors'
 import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
@@ -36,10 +38,12 @@ import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
-import { workerStatusObservable } from 'shared/world/SceneWorker'
+import { SceneWorker, workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 import { sleep } from 'atomicHelpers/sleep'
+import { LoadableParcelScene } from 'shared/types'
+import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -129,6 +133,27 @@ async function startGlobalScene(
     isPortableExperience: false,
     contents: scene.loadableScene.entity.content
   })
+}
+
+/**
+ * This is the format of scenes that needs to be sent to Unity to create its counterpart
+ * of a SceneWorker
+ */
+function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
+  const entity = worker.loadableScene.entity
+  const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
+
+  return {
+    id: worker.loadableScene.id,
+    sceneNumber: worker.rpcContext.sceneData.sceneNumber,
+    basePosition: parseParcelPosition(entity.metadata?.scene?.base || '0,0'),
+    name: getSceneNameFromJsonData(entity.metadata),
+    parcels: entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
+    baseUrl: worker.loadableScene.baseUrl,
+    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
+    contents: mappings,
+    loadableScene: worker.loadableScene
+  }
 }
 
 export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
