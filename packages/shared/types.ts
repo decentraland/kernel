@@ -505,8 +505,14 @@ export type WorldPosition = {
 }
 
 export type SetAudioDevicesPayload = {
-  outputDevices: string[]
-  inputDevices: string[]
+  outputDevices: {
+    label: string
+    deviceId: string
+  }[]
+  inputDevices: {
+    label: string
+    deviceId: string
+  }[]
 }
 
 export enum ChatMessagePlayerType {

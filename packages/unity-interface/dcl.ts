@@ -90,26 +90,6 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
     getUnityInstance().SetEngineDebugPanel()
   }
 
-  if (!navigator.mediaDevices?.enumerateDevices) {
-    defaultLogger.error('enumerateDevices() not supported.')
-  } else {
-    // List cameras and microphones.
-    navigator.mediaDevices
-      .enumerateDevices()
-      .then((devices) => {
-        const outputDevices = devices.filter((device) => device.kind === 'audiooutput').map((device) => device.deviceId)
-        const inputDevices = devices.filter((device) => device.kind === 'audioinput').map((device) => device.deviceId)
-
-        getUnityInstance().SetAudioDevices({
-          outputDevices,
-          inputDevices
-        })
-      })
-      .catch((err) => {
-        defaultLogger.error(`${err.name}: ${err.message}`)
-      })
-  }
-
   if (!EDITOR) {
     await startGlobalScene('dcl-gs-avatars', 'Avatars', hudWorkerUrl)
   }

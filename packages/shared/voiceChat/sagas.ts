@@ -241,7 +241,7 @@ function* setAudioDevices(action: SetAudioDevice) {
   }
 }
 
-async function requestMediaDevice(deviceId?: string) {
+export async function requestMediaDevice(deviceId?: string) {
   if (!audioRequestInitialized) {
     audioRequestInitialized = true
 

@@ -38,7 +38,7 @@ import {
   SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
-import { createUnityLogger, ILogger } from 'shared/logger'
+import defaultLogger, { createUnityLogger, ILogger } from 'shared/logger'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
@@ -54,6 +54,7 @@ import { trackEvent } from 'shared/analytics'
 import { Avatar } from '@dcl/schemas'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { incrementCounter } from '../shared/occurences'
+import { requestMediaDevice } from 'shared/voiceChat/sagas'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -115,7 +116,39 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
   }
 
+  public async RequestAudioDevices() {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      defaultLogger.error('enumerateDevices() not supported.')
+    } else {
+      try {
+        await requestMediaDevice()
+
+        // List cameras and microphones.
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        console.log(`DEBUG(Mateo) all devices:${JSON.stringify(devices)}`)
+
+        const filterDevices = (kind: string) => {
+          return devices
+            .filter((device) => device.kind === kind)
+            .map((device) => {
+              return { deviceId: device.deviceId, label: device.label }
+            })
+        }
+
+        const payload: SetAudioDevicesPayload = {
+          inputDevices: filterDevices('audiooutput'),
+          outputDevices: filterDevices('audiointput')
+        }
+
+        this.SetAudioDevices(payload)
+      } catch (err: any) {
+        defaultLogger.error(`${err.name}: ${err.message}`)
+      }
+    }
+  }
+
   public SetAudioDevices(devices: SetAudioDevicesPayload) {
+    console.log(`DEBUG(Mateo):${JSON.stringify(devices)}`)
     this.SendMessageToUnity('Bridges', 'SetAudioDevices', JSON.stringify(devices))
   }
 
