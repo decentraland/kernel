@@ -184,6 +184,10 @@ export class SceneWorker {
     }
 
     getUnityInstance().UnloadScene(this.loadableScene.id)
+
+    // This one will trigger a 'MissingMethod' exception if the renderer doesn't have the UnloadSceneV2() implemented...
+    getUnityInstance().UnloadSceneV2(this.rpcContext.sceneData.sceneNumber)
+
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
 

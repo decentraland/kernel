@@ -181,8 +181,12 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LoadParcelScenes', JSON.stringify(parcelsToLoad[0]))
   }
 
-  public UnloadScene(entityId: string) {
-    this.SendMessageToUnity('Main', 'UnloadScene', entityId)
+  public UnloadScene(sceneId: string) {
+    this.SendMessageToUnity('Main', 'UnloadScene', sceneId)
+  }
+
+  public UnloadSceneV2(sceneNumber: number) {
+    this.SendMessageToUnity('Main', 'UnloadSceneV2', JSON.stringify(sceneNumber))
   }
 
   public SendSceneMessage(messages: string) {

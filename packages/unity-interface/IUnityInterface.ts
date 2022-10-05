@@ -111,6 +111,7 @@ export interface IUnityInterface {
 
   LoadParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
   UnloadScene(sceneId: string): void
+  UnloadSceneV2(sceneNumber: number): void
   SendSceneMessage(messages: string): void
   /** @deprecated send it with the kernelConfigForRenderer instead. */
   SetSceneDebugPanel(): void
