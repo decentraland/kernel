@@ -96,7 +96,8 @@ export class SceneWorker {
     public readonly loadableScene: Readonly<LoadableScene>,
     public readonly transport: Transport = buildWebWorkerTransport(loadableScene)
   ) {
-    const sceneNumber = ++globalSceneNumberCounter
+    ++globalSceneNumberCounter
+    const sceneNumber = globalSceneNumberCounter
     const skipErrors = ['Transport closed while waiting the ACK']
 
     this.metadata = loadableScene.entity.metadata
