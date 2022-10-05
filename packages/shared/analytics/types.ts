@@ -37,7 +37,6 @@ export type TrackEvents = PositionTrackEvents & {
   ['scene_loading_failed']: {
     sceneId: string
     contentServer: string
-    catalystServer: string
     contentServerBundles: string
     rootUrl: string
   }

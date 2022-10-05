@@ -28,7 +28,6 @@ import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transfor
 import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
-import { getUpdateProfileServer, getCatalystServer } from '../dao/selectors'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
 import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, isCurrentUserId } from 'shared/session/selectors'
@@ -40,7 +39,6 @@ import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { UNEXPECTED_ERROR } from 'shared/loading/types'
-import { store } from 'shared/store/isolatedStore'
 import { createFakeName } from './utils/fakeName'
 import { getCommsRoom } from 'shared/comms/selectors'
 import { createReceiveProfileOverCommsChannel, requestProfileToPeers } from 'shared/comms/handlers'
@@ -50,6 +48,8 @@ import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
 import { getIdentity } from 'shared/session'
 import { RoomConnection } from 'shared/comms/interface'
+import { ensureBffPromise, getProfilesContentServerFromBff, waitForBff } from 'shared/bff/selectors'
+import { IBff } from 'shared/bff/types'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -215,11 +215,9 @@ function* getRemoteProfile(userId: string, version?: number) {
 }
 
 export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
-  const state = store.getState()
-  const catalystUrl = getCatalystServer(state)
-
+  const bff = await ensureBffPromise()
   try {
-    let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
+    let url = `${bff.services.legacy.lambdasServer}/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
 
     const response = await fetch(url)
@@ -313,14 +311,15 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
 }
 
 function* handleDeployProfile(deployProfileAction: DeployProfile) {
-  const url: string | undefined = yield select(getUpdateProfileServer)
-  if (!url) return console.log('Skipping deployment because the catalyst is not connected')
+  const bff: IBff = yield call(waitForBff)
+  const profileServiceUrl: string = yield call(getProfilesContentServerFromBff, bff)
+
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const userId: string = yield select(getCurrentUserId)
   const profile: Avatar = deployProfileAction.payload.profile
   try {
     yield call(deployAvatar, {
-      url,
+      url: profileServiceUrl,
       userId,
       identity,
       profile

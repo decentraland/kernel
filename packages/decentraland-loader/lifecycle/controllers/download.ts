@@ -11,7 +11,6 @@ export class SceneDataDownloadManager {
   constructor(
     public options: {
       contentServer: string
-      catalystServer: string
       contentServerBundles: string
       worldConfig: WorldConfig
       rootUrl: string

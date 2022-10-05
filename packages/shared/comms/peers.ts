@@ -14,7 +14,6 @@ import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { getProfileFromStore } from 'shared/profiles/selectors'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
-import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const peerMap = new Map<string, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
@@ -82,22 +81,21 @@ export function setupPeer(address: string): PeerInformation {
   }
 }
 
-export function receivePeerUserData(avatar: Avatar) {
+export function receivePeerUserData(avatar: Avatar, baseUrl: string) {
   const ethereumAddress = avatar.userId.toLowerCase()
   const peer = peerMap.get(ethereumAddress)
   if (peer) {
+    peer.baseUrl = baseUrl
     sendPeerUserData(ethereumAddress)
   }
 }
 
 function sendPeerUserData(address: string) {
   const peer = getPeer(address)
-  if (peer) {
+  if (peer && peer.baseUrl) {
     const profile = avatarUiProfileForUserId(
       peer.ethereumAddress,
-      // TODO: when profiles are federated, we must change this to accept the profile's
-      //       home server
-      getFetchContentUrlPrefix(store.getState())
+      peer.baseUrl
     )
     if (profile) {
       avatarMessageObservable.notifyObservers({

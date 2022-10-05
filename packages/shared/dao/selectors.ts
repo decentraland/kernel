@@ -1,71 +1,7 @@
 import { RootDaoState } from './types'
-import {
-  COMMS_SERVICE,
-  FETCH_CONTENT_SERVICE,
-  HOTSCENES_SERVICE,
-  PIN_CATALYST,
-  POI_SERVICE,
-  UPDATE_CONTENT_SERVICE
-} from 'config'
-import { RootMetaState } from 'shared/meta/types'
-import { getContentWhitelist } from 'shared/meta/selectors'
+import { HOTSCENES_SERVICE, POI_SERVICE } from 'config'
 import { urlWithProtocol } from 'shared/bff/resolver'
 import { RootBffState } from 'shared/bff/types'
-
-function getAllowedContentServer(givenServer: string | undefined, meta: RootMetaState): string {
-  // if a catalyst is pinned => avoid any override
-  if (PIN_CATALYST) {
-    return urlWithProtocol(PIN_CATALYST + '/content')
-  }
-
-  const contentWhitelist = getContentWhitelist(meta)
-
-  // if current realm is in whitelist => return current state
-  if (givenServer && contentWhitelist.some((allowedCandidate) => allowedCandidate === givenServer)) {
-    return urlWithProtocol(givenServer)
-  }
-
-  if (contentWhitelist.length) {
-    return urlWithProtocol(contentWhitelist[0] + '/content')
-  }
-
-  if (!givenServer) throw new Error('Missing default content server')
-
-  return urlWithProtocol(givenServer)
-}
-
-export const getUpdateProfileServer = (state: RootBffState & RootMetaState) => {
-  if (UPDATE_CONTENT_SERVICE) {
-    return urlWithProtocol(UPDATE_CONTENT_SERVICE)
-  }
-  // if a catalyst is pinned => avoid any override
-  if (PIN_CATALYST) {
-    return urlWithProtocol(PIN_CATALYST + '/content')
-  }
-  const url = state.bff.bff?.services.legacy.updateContentServer
-  if (!url) return undefined
-  return urlWithProtocol(url)
-}
-
-export const getFetchContentServer = (state: RootBffState & RootMetaState) => {
-  if (FETCH_CONTENT_SERVICE) {
-    return urlWithProtocol(FETCH_CONTENT_SERVICE)
-  }
-  return getAllowedContentServer(state.bff.bff?.services.legacy.fetchContentServer, state)
-}
-
-export const getCatalystServer = (state: RootBffState) => urlWithProtocol(state.bff.bff!.services.legacy.catalystServer)
-export const getFetchContentUrlPrefix = (state: RootBffState & RootMetaState) => {
-  return getFetchContentServer(state) + '/contents/'
-}
-
-export const getCommsServer = (domain: string) => {
-  if (COMMS_SERVICE) {
-    return urlWithProtocol(COMMS_SERVICE)
-  }
-
-  return urlWithProtocol(domain + '/comms')
-}
 
 export const getCatalystCandidates = (store: RootDaoState) => store.dao.candidates
 export const getCatalystCandidatesReceived = (store: RootDaoState) => store.dao.catalystCandidatesReceived
@@ -93,3 +29,5 @@ export const getSelectedNetwork = (store: RootDaoState) => {
   }
   throw new Error('Missing network')
 }
+
+

@@ -27,8 +27,8 @@ import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
-import { getBff } from 'shared/bff/selectors'
-import { getExploreRealmsService, getFetchContentServer, getFetchContentUrlPrefix } from 'shared/dao/selectors'
+import { getFetchContentServerFromBff, getProfilesContentServerFromBff, waitForBff } from 'shared/bff/selectors'
+import { getExploreRealmsService } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
@@ -46,6 +46,7 @@ import {
 } from 'shared/voiceChat/actions'
 import { IBff } from 'shared/bff/types'
 import { SET_BFF } from 'shared/bff/actions'
+import { getAllowedContentServer } from 'shared/meta/selectors'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -64,27 +65,29 @@ export function* rendererSaga() {
   yield fork(reportRealmChangeToRenderer)
 }
 
+/**
+ * This saga sends the BFF configuration changes to the renderer upon every change
+ */
 function* reportRealmChangeToRenderer() {
   yield call(waitForRendererInstance)
 
   while (true) {
-    const bff: IBff | null = yield select(getBff)
+    const bff: IBff = yield call(waitForBff)
 
     try {
-      if (bff) {
-        const contentServerUrl: string = yield select(getFetchContentServer)
-        const current = convertCurrentRealmType(bff, contentServerUrl)
-        defaultLogger.info('UpdateRealmsInfo', current)
-        getUnityInstance().UpdateRealmsInfo({ current })
+      const configuredContentServer: string = yield call(getFetchContentServerFromBff, bff)
+      const contentServerUrl: string = yield select(getAllowedContentServer, configuredContentServer)
+      const current = convertCurrentRealmType(bff, contentServerUrl)
+      defaultLogger.info('UpdateRealmsInfo', current)
+      getUnityInstance().UpdateRealmsInfo({ current })
 
-        const realmsService = yield select(getExploreRealmsService)
+      const realmsService = yield select(getExploreRealmsService)
 
-        if (realmsService) {
-          yield call(fetchAndReportRealmsInfo, realmsService)
-        }
-
-        // wait for the next context
+      if (realmsService) {
+        yield call(fetchAndReportRealmsInfo, realmsService)
       }
+
+      // wait for the next context
     } catch (err: any) {
       defaultLogger.error(err)
     }
@@ -236,7 +239,8 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     throw new Error('Avatar not available for Unity')
   }
 
-  const fetchContentServer = yield select(getFetchContentUrlPrefix)
+  const bff: IBff = yield call(waitForBff)
+  const fetchContentServer = getProfilesContentServerFromBff(bff)
 
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
@@ -267,6 +271,6 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     yield put(addedProfileToCatalog(userId, profile.data))
 
     // send to Avatars scene
-    receivePeerUserData(profile.data)
+    receivePeerUserData(profile.data, fetchContentServer)
   }
 }

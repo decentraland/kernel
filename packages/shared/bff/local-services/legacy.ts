@@ -7,8 +7,8 @@ export function legacyServices(baseUrl: string, about: AboutResponse): LegacySer
 
   return {
     fetchContentServer: contentServer,
-    catalystServer: baseUrl,
     updateContentServer: contentServer,
+    lambdasServer,
     hotScenesService: lambdasServer + '/explore/hot-scenes',
     poiService: lambdasServer + '/contracts/pois',
     exploreRealmsService: lambdasServer + '/explore/realms'

@@ -19,8 +19,6 @@ import {
 import {
   getAllCatalystCandidates,
   getCatalystCandidatesReceived,
-  getFetchContentServer,
-  getUpdateProfileServer
 } from './selectors'
 import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
 import {
@@ -42,7 +40,7 @@ import { CatalystNode } from 'shared/types'
 import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/bff/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getBff } from 'shared/bff/selectors'
+import { getBff, getFetchContentServerFromBff, getProfilesContentServerFromBff, waitForBff } from 'shared/bff/selectors'
 import { SET_BFF } from 'shared/bff/actions'
 import { IBff } from 'shared/bff/types'
 
@@ -227,8 +225,10 @@ function* cacheCatalystRealm() {
 
   // PRINT DEBUG INFO
   const dao: string = yield select((state) => state.dao)
-  const fetchContentServer: string = yield select(getFetchContentServer)
-  const updateContentServer: string = yield select(getUpdateProfileServer)
+  const bff: IBff = yield call(waitForBff)
+
+  const fetchContentServer: string = getFetchContentServerFromBff(bff)
+  const updateContentServer: string = getProfilesContentServerFromBff(bff)
 
   defaultLogger.info(`Using Catalyst configuration: `, {
     original: dao,

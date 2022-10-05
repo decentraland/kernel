@@ -19,7 +19,7 @@ export type BffEvents = {
 
 export type LegacyServices = {
   fetchContentServer: string
-  catalystServer: string
+  lambdasServer: string
   updateContentServer: string
   hotScenesService: string
   exploreRealmsService: string

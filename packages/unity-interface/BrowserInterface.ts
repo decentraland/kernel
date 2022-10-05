@@ -72,7 +72,7 @@ import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
 import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
-import { getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
 import { store } from 'shared/store/isolatedStore'
@@ -104,6 +104,7 @@ import {
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { ensureBffPromise, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -488,11 +489,11 @@ export class BrowserInterface {
   }
 
   public GetFriends(getFriendsRequest: GetFriendsPayload) {
-    getFriends(getFriendsRequest)
+    getFriends(getFriendsRequest).catch(defaultLogger.error)
   }
 
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    getFriendRequests(getFriendRequestsPayload)
+    getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
@@ -593,7 +594,7 @@ export class BrowserInterface {
   }
 
   public GetFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload: GetFriendsWithDirectMessagesPayload) {
-    getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload)
+    getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload).catch(defaultLogger.error)
   }
 
   public ReportScene(data: { sceneId: string }) {
@@ -777,18 +778,20 @@ export class BrowserInterface {
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
-    const profilesPromise = fetchENSOwnerProfile(data.name, data.maxResults)
+    async function work() {
+      const bff = await ensureBffPromise()
+      const baseUrl = getFetchContentUrlPrefixFromBff(bff)
 
-    const baseUrl = getFetchContentUrlPrefix(store.getState())
-
-    profilesPromise
-      .then((profiles) => {
+      try {
+        const profiles = await fetchENSOwnerProfile(data.name, data.maxResults)
         getUnityInstance().SetENSOwnerQueryResult(data.name, profiles, baseUrl)
-      })
-      .catch((error) => {
+      } catch (error: any) {
         getUnityInstance().SetENSOwnerQueryResult(data.name, undefined, baseUrl)
         defaultLogger.error(error)
-      })
+      }
+    }
+
+    work().catch(defaultLogger.error)
   }
 
   public async JumpIn(data: WorldPosition) {

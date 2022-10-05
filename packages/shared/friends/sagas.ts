@@ -93,7 +93,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getMaxChannels, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { getBff } from 'shared/bff/selectors'
+import { ensureBffPromise, getBff, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
 import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
@@ -108,7 +108,6 @@ import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { IBff } from 'shared/bff/types'
 import { realmToConnectionString } from 'shared/bff/resolver'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
-import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -527,11 +526,11 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
   return totalUnseenMessages
 }
 
-export function getFriends(request: GetFriendsPayload) {
+export async function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
-
+  const bff = await ensureBffPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
 
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
@@ -568,9 +567,10 @@ export function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
-export function getFriendRequests(request: GetFriendRequestsPayload) {
+export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
+  const bff = await ensureBffPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
 
   const fromFriendRequests = friends.fromFriendRequests.slice(
     request.receivedSkip,
@@ -700,8 +700,9 @@ export function getUnseenMessagesByUser() {
   getUnityInstance().UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload)
 }
 
-export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
+export async function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
+  const bff = await ensureBffPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.DIRECT
   )
@@ -1665,10 +1666,11 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 }
 
 // Get channel members
-export function getChannelMembers(request: GetChannelMembersPayload) {
+export async function getChannelMembers(request: GetChannelMembersPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
   if (!client) return
+  const bff = await ensureBffPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
 
   const channel = client.getChannel(request.channelId)
   if (!channel) return

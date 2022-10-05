@@ -1,7 +1,8 @@
 import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
 import { DEFAULT_MAX_VISIBLE_PEERS, DEFAULT_MAX_CHANNELS_VALUE } from '.'
-import { QS_MAX_VISIBLE_PEERS } from 'config'
+import { PIN_CATALYST, QS_MAX_VISIBLE_PEERS } from 'config'
+import { urlWithProtocol } from 'shared/bff/resolver'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
   const { config } = store.meta
@@ -97,3 +98,28 @@ export const getSynapseUrl = (store: RootMetaState): string =>
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint
+
+
+/**
+ * Filters out content server hostnames from the allowed list of the MetaState.
+ * This is necessary to protect the IP and domains in which DCL is served.
+ */
+export function getAllowedContentServer(meta: RootMetaState, givenServer: string): string {
+  // if a catalyst is pinned => avoid any override
+  if (PIN_CATALYST) {
+    return givenServer
+  }
+
+  const contentWhitelist = getContentWhitelist(meta)
+
+  // if current realm is in whitelist => return current state
+  if (givenServer && contentWhitelist.some((allowedCandidate) => allowedCandidate === givenServer)) {
+    return urlWithProtocol(givenServer)
+  }
+
+  if (contentWhitelist.length) {
+    return urlWithProtocol(contentWhitelist[0] + '/content')
+  }
+
+  return urlWithProtocol(givenServer)
+}

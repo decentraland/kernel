@@ -34,7 +34,7 @@ import { call } from 'redux-saga-test-plan/matchers'
 import { RootState } from 'shared/store/rootTypes'
 import { onLoginCompleted } from 'shared/session/sagas'
 import { getResourcesURL } from 'shared/location'
-import { getCatalystServer, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { getAssetBundlesBaseUrl } from 'config'
 import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
 import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
@@ -78,7 +78,6 @@ function* reportFailedScene(action: SceneFail) {
   trackEvent('scene_loading_failed', {
     sceneId: id,
     contentServer: baseUrl,
-    catalystServer: yield select(getCatalystServer),
     contentServerBundles: getAssetBundlesBaseUrl(yield select(getSelectedNetwork)) + '/',
     rootUrl: fullRootUrl
   })

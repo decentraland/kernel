@@ -35,7 +35,7 @@ import { SCENE_LOAD } from 'shared/loading/actions'
 import { parseParcelPosition, worldToGrid } from '../../atomicHelpers/parcelScenePositions'
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
 import { META_CONFIGURATION_INITIALIZED } from '../meta/actions'
-import { getFetchContentServer, getPOIService } from 'shared/dao/selectors'
+import { getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
@@ -43,6 +43,8 @@ import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { homePointKey } from './utils'
+import { IBff } from 'shared/bff/types'
+import { getFetchContentUrlPrefixFromBff, waitForBff } from 'shared/bff/selectors'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -126,6 +128,8 @@ function* sendHomeSceneToUnityAction(action: SendHomeScene) {
 
 function* reportScenes(scenes: LoadableScene[]): any {
   yield call(waitForPoiTilesInitialization)
+  const bff: IBff = yield call(waitForBff)
+  const baseContentUrl = getFetchContentUrlPrefixFromBff(bff)
   const pois = yield select(getPoiTiles)
 
   const minimapSceneInfoResult: MinimapSceneInfo[] = []
@@ -149,6 +153,7 @@ function* reportScenes(scenes: LoadableScene[]): any {
         parcels.push(xy)
       })
 
+
       minimapSceneInfoResult.push({
         name: postProcessSceneName(sceneName),
         owner: getOwnerNameFromJsonData(metadata),
@@ -156,7 +161,7 @@ function* reportScenes(scenes: LoadableScene[]): any {
         previewImageUrl: getThumbnailUrlFromJsonDataAndContent(
           metadata,
           scene.entity.content,
-          getFetchContentServer(store.getState())
+          baseContentUrl
         ),
         // type is not used by renderer
         type: undefined as any,

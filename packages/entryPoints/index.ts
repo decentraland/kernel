@@ -19,7 +19,7 @@ import {
   getPreviewSceneId,
   loadPreviewScene,
   reloadPlaygroundScene,
-  startUnitySceneWorkers
+  startUnitySceneWorkers,
 } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
@@ -42,13 +42,13 @@ import { authenticate, initSession } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
 import { getFromPersistentStorage, setPersistentStorage } from 'atomicHelpers/persistentStorage'
-import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { clientDebug } from 'unity-interface/ClientDebug'
-import { signalEngineReady } from 'shared/renderer/actions'
 import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { sendHomeScene } from '../shared/atlas/actions'
 import { homePointKey } from '../shared/atlas/utils'
+import { ensureBffPromise, getFetchContentServerFromBff } from 'shared/bff/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
@@ -257,14 +257,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   foregroundChangeObservable.add(reportForeground)
   reportForeground()
 
-  const state = store.getState()
-  await startUnitySceneWorkers({
-    contentServer: getFetchContentServer(state),
-    catalystServer: getCatalystServer(state),
-    contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
-    worldConfig: getWorldConfig(state)
-  })
-
   const homePoint: string = await getFromPersistentStorage(homePointKey)
   if (homePoint) {
     store.dispatch(sendHomeScene(homePoint))
@@ -281,7 +273,15 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     await startPreview(i)
   }
 
-  setTimeout(() => store.dispatch(signalEngineReady()), 0)
+  // TODO: this worker should be configured to always point to the target server
+  ensureBffPromise().then(bff => {
+    const state = store.getState()
+    return startUnitySceneWorkers({
+      contentServer: getFetchContentServerFromBff(bff),
+      contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
+      worldConfig: getWorldConfig(state)
+    })
+  })
 
   return true
 }

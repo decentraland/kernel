@@ -1,7 +1,7 @@
 import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { reportScenesFromTiles } from 'shared/atlas/actions'
 import { postProcessSceneName, getPoiTiles } from 'shared/atlas/selectors'
-import { getFetchContentServer, getHotScenesService } from 'shared/dao/selectors'
+import { getHotScenesService } from 'shared/dao/selectors'
 import {
   getOwnerNameFromJsonData,
   getThumbnailUrlFromJsonDataAndContent,
@@ -10,6 +10,7 @@ import {
 } from 'shared/selectors'
 import { getUnityInstance, HotSceneInfo, RealmInfo } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
+import { ensureBffPromise, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
 
 export async function fetchHotScenes(): Promise<HotSceneInfo[]> {
   const url = getHotScenesService(store.getState())
@@ -53,6 +54,8 @@ export async function reportHotScenes() {
 async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
   const tiles = getPoiTiles(store.getState())
   const scenesLand = (await fetchScenesByLocation(tiles)).filter((land) => land.entity.metadata)
+  const bff = await ensureBffPromise()
+  const baseContentUrl = getFetchContentUrlPrefixFromBff(bff)
 
   return scenesLand.map((land) => {
     return {
@@ -64,7 +67,7 @@ async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
         getThumbnailUrlFromJsonDataAndContent(
           land.entity.metadata,
           land.entity.content,
-          getFetchContentServer(store.getState())
+          baseContentUrl
         ) ?? '',
       baseCoords: TileStringToVector2(land.entity.metadata.scene.base),
       parcels: land.entity.metadata

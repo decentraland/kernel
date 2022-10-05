@@ -47,12 +47,14 @@ import {
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { CatalystClient, OwnedItemsWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
-import { getCatalystServer, getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
 import { trackEvent } from 'shared/analytics'
 import { authorizeBuilderHeaders } from 'atomicHelpers/authenticateBuilder'
+import { IBff } from 'shared/bff/types'
+import { getFetchContentServerFromBff, getFetchContentUrlPrefixFromBff, waitForBff } from 'shared/bff/selectors'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
@@ -80,8 +82,10 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
   const isRequestingEmotes = action.type === EMOTES_REQUEST
   const failureAction = isRequestingEmotes ? emotesFailure : wearablesFailure
   if (valid) {
+    const bff: IBff = yield call(waitForBff)
+    const contentBaseUrl: string = yield call(getFetchContentUrlPrefixFromBff, bff)
+
     try {
-      const contentBaseUrl: string = yield select(getFetchContentUrlPrefix)
 
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -110,7 +114,10 @@ function* fetchItemsFromCatalyst(
   action: EmotesRequest | WearablesRequest,
   filters: EmotesRequestFilters | WearablesRequestFilters
 ) {
-  const catalystUrl: string = yield select(getCatalystServer)
+  const bff: IBff = yield call(waitForBff)
+  const contentBaseUrl: string = yield call(getFetchContentServerFromBff, bff)
+  // TODO: stop using CatalystClient and move endpoints to BFF
+  const catalystUrl: string = contentBaseUrl.replace(/\/content\/?.*$/, '')
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const client: CatalystClient = new CatalystClient({ catalystUrl })
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)

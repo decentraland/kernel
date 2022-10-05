@@ -18,7 +18,7 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { FriendRequest, FriendsState } from 'shared/friends/types'
 import { Conversation, ConversationType, MessageStatus, SocialAPI, TextMessage } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
-import * as daoSelectors from 'shared/dao/selectors'
+import * as bffSelectors from 'shared/bff/selectors'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -122,7 +122,7 @@ const stubClient = {
 const FETCH_CONTENT_SERVER = 'base-url'
 
 function mockStoreCalls(opts?: { profiles: number[]; i: number }) {
-  sinon.stub(daoSelectors, 'getFetchContentUrlPrefix').callsFake(() => FETCH_CONTENT_SERVER)
+  sinon.stub(bffSelectors, 'getFetchContentServerFromBff').callsFake(() => FETCH_CONTENT_SERVER)
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
   sinon

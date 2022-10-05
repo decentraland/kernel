@@ -78,6 +78,7 @@ export type PeerInformation = UserInformation & {
 
 export type UserInformation = {
   ethereumAddress: string
+  baseUrl?: string
   expression?: AvatarExpression
   position?: rfc4.Position
   profile?: NewProfileForRenderer

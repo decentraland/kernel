@@ -38,7 +38,6 @@ let emptyParcelController: EmptyParcelController
     'Lifecycle.initialize',
     (options: {
       contentServer: string
-      catalystServer: string
       contentServerBundles: string
       rootUrl: string
       lineOfSightRadius: number
