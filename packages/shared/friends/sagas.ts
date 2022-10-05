@@ -803,12 +803,10 @@ export function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
 
   statuses.forEach((value: CurrentUserStatus, key: string) => {
     const lastStatus = lastStatuses.get(key)
+    // we do this in order to avoid sending already sent states.
     if (!lastStatus || !deepEqual(lastStatus, value)) {
       sendUpdateUserStatus(key, value)
       lastStatuses.set(key, value)
-    } else {
-      // avoid sending already sent states
-      logger.trace(`friend ${key} status was ignored - duplicated state`)
     }
   })
 }
