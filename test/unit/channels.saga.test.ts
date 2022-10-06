@@ -15,6 +15,7 @@ import { buildStore } from 'shared/store/store'
 import {
   AddChatMessagesPayload,
   ChannelInfoPayloads,
+  ChannelSearchResultsPayload,
   ChatMessageType,
   GetChannelMessagesPayload,
   GetChannelsPayload,
@@ -135,7 +136,7 @@ function mockStoreCalls(ops?: { start?: number; end?: number; index?: number }) 
   sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
   sinon
     .stub(friendsSelectors, 'getSocialClient')
-    .callsFake(() => stubClient(ops?.start || 0, ops?.end || 0, ops?.index || 0))
+    .callsFake(() => stubClient(ops?.start ?? 0, ops?.end ?? 0, ops?.index ?? 0))
   sinon
     .stub(profilesSelectors, 'getCurrentUserProfile')
     .callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
@@ -276,7 +277,7 @@ describe('Friends sagas - Channels Feature', () => {
   })
 
   describe('Get channel messages', () => {
-    let opts = { start: 0, end: 2 }
+    let opts = { start: 2, end: 4 }
 
     beforeEach(() => {
       const { store } = buildStore()
@@ -286,7 +287,7 @@ describe('Friends sagas - Channels Feature', () => {
     })
 
     afterEach(() => {
-      opts.end = opts.end + 2
+      opts.end = opts.start - 2
       sinon.restore()
       sinon.reset()
     })
@@ -299,7 +300,7 @@ describe('Friends sagas - Channels Feature', () => {
           fromMessageId: ''
         }
 
-        const channelMessagesFiltered = channelMessages.slice(0, 2)
+        const channelMessagesFiltered = channelMessages.slice(opts.start, opts.end)
 
         // parse messages
         const addChatMessagesPayload: AddChatMessagesPayload = {
@@ -317,17 +318,15 @@ describe('Friends sagas - Channels Feature', () => {
         await friendsSagas.getChannelMessages(request)
         sinon.mock(getUnityInstance()).verify()
       })
-    })
 
-    describe('When the user scrolls backwards in a chat channel window', () => {
-      it('Should send the expected messages', async () => {
+      it('And they scrollbackwards, should send the expected messages', async () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
           fromMessageId: '2'
         }
 
-        const channelMessagesFiltered = channelMessages.slice(2, 4)
+        const channelMessagesFiltered = channelMessages.slice(opts.start, opts.end)
 
         // parse messages
         const addChatMessagesPayload: AddChatMessagesPayload = {
@@ -391,8 +390,8 @@ describe('Friends sagas - Channels Feature', () => {
           muted: mutedIds.includes(channel.id)
         }))
 
-        const searchResult = {
-          since: nextBatch,
+        const searchResult: ChannelSearchResultsPayload = {
+          since: nextBatch === undefined ? null : nextBatch,
           channels: channelsToReturn
         }
 
@@ -400,7 +399,7 @@ describe('Friends sagas - Channels Feature', () => {
           .mock(getUnityInstance())
           .expects('UpdateChannelSearchResults')
           .once()
-          .withExactArgs({ channelSearchResultsPayload: searchResult })
+          .withExactArgs(searchResult)
         await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -433,8 +432,8 @@ describe('Friends sagas - Channels Feature', () => {
           muted: mutedIds.includes(channel.id)
         }))
 
-        const searchResult = {
-          since: nextBatch,
+        const searchResult: ChannelSearchResultsPayload = {
+          since: nextBatch === undefined ? null : nextBatch,
           channels: channelsToReturn
         }
 
@@ -442,7 +441,7 @@ describe('Friends sagas - Channels Feature', () => {
           .mock(getUnityInstance())
           .expects('UpdateChannelSearchResults')
           .once()
-          .withExactArgs({ channelSearchResultsPayload: searchResult })
+          .withExactArgs(searchResult)
         await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })
