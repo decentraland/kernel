@@ -48,6 +48,7 @@ export class NativeMessagesBridge {
 
   private callSetTag!: (tag: string) => void
   private callSetSceneId!: (sceneId: string) => void
+  private callSetSceneNumber!: (sceneNumber: number) => void
   private callSetEntityId!: (entityId: string) => void
 
   private callSetEntityParent!: (parentId: string) => void
@@ -78,6 +79,7 @@ export class NativeMessagesBridge {
 
   private queryMemBlockPtr: number = 0
   private binaryMessageMemBlockPtr: number = 0
+  private currentSceneNumber: number = 0
 
   public initNativeMessages(gameInstance: UnityGame) {
     this.unityModule = gameInstance.Module
@@ -95,6 +97,7 @@ export class NativeMessagesBridge {
 
     this.callSetEntityId = this.unityModule.cwrap('call_SetEntityId', null, ['string'])
     this.callSetSceneId = this.unityModule.cwrap('call_SetSceneId', null, ['string'])
+    this.callSetSceneNumber = this.unityModule.cwrap('call_SetSceneNumber', null, ['string'])
     this.callSetTag = this.unityModule.cwrap('call_SetTag', null, ['string'])
 
     this.callSetEntityParent = this.unityModule.cwrap('call_SetEntityParent', null, ['string'])
@@ -134,6 +137,13 @@ export class NativeMessagesBridge {
       this.callSetSceneId(sceneId)
     }
     this.currentSceneId = sceneId
+  }
+
+  setSceneNumber(sceneNumber: number) {
+    if (sceneNumber !== this.currentSceneNumber) {
+      this.callSetSceneNumber(sceneNumber)
+    }
+    this.currentSceneNumber = sceneNumber
   }
 
   setEntityId(entityId: string) {
@@ -236,8 +246,9 @@ export class NativeMessagesBridge {
     this.callUnloadParcelScene(sceneId)
   }
 
-  public SendNativeMessage(parcelSceneId: string, action: EntityAction): void {
+  public SendNativeMessage(parcelSceneId: string, sceneNumber: number, action: EntityAction): void {
     this.setSceneId(parcelSceneId)
+    this.setSceneNumber(sceneNumber)
 
     // increment counter of messages sent
     incrementMessageFromKernelToRendererNative()

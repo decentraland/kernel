@@ -391,7 +391,8 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
           this.peerIdAdapter.handleMessage(
             'profileResponse',
             createPackage(sender, {
-              serializedProfile: commsMessage.getProfileResponseData()!.getSerializedProfile()
+              serializedProfile: commsMessage.getProfileResponseData()!.getSerializedProfile(),
+              baseUrl: 'MOCKED'
             })
           )
           break

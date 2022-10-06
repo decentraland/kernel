@@ -3,7 +3,7 @@ import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, appl
 import { commsEstablished, establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { commsLogger } from './context'
 import { getCommsRoom } from './selectors'
-import { BEFORE_UNLOAD } from 'shared/protocol/actions'
+import { BEFORE_UNLOAD } from 'shared/actions'
 import {
   HandleRoomDisconnection,
   HANDLE_ROOM_DISCONNECTION,
@@ -50,6 +50,7 @@ import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
 import { debugCommsGraph } from 'shared/session/getPerformanceInfo'
+import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -345,6 +346,7 @@ function* respondCommsProfileRequests() {
 
     const context = (yield select(getCommsRoom)) as RoomConnection | undefined
     const profile: Avatar | null = yield select(getCurrentUserProfile)
+    const contentServer: string = yield select(getFetchContentUrlPrefix)
     const identity: ExplorerIdentity | null = yield select(getIdentity)
 
     if (profile && context) {
@@ -357,7 +359,8 @@ function* respondCommsProfileRequests() {
       lastMessage = now
 
       const response: rfc4.ProfileResponse = {
-        serializedProfile: JSON.stringify(stripSnapshots(profile))
+        serializedProfile: JSON.stringify(stripSnapshots(profile)),
+        baseUrl: contentServer
       }
       yield apply(context, context.sendProfileResponse, [response])
     }

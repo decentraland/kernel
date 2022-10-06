@@ -149,10 +149,13 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
 
   if (realmString.startsWith(`offline~`)) {
     about = {
-      bff: { healthy: false },
+      bff: undefined,
       comms: { healthy: false, protocol: 'offline', fixedAdapter: realmString },
       configurations: {
-        realmName: 'offline'
+        realmName: 'offline',
+        networkId: 1,
+        globalScenesUrn: [],
+        scenesUrn: []
       },
       content: {
         healthy: true,

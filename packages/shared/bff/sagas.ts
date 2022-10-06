@@ -1,5 +1,6 @@
 import { createLogger } from 'shared/logger'
-import { HeartbeatMessage, IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
+import { IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
+import { Heartbeat } from 'shared/protocol/bff/comms-director-service.gen'
 import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import {
@@ -21,7 +22,7 @@ import { getBff } from './selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { FATAL_ERROR } from 'shared/loading/types'
-import { BEFORE_UNLOAD } from 'shared/protocol/actions'
+import { BEFORE_UNLOAD } from 'shared/actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { realmToConnectionString } from './resolver'
 import { hookConnectToFixedAdaptersIfNecessary } from './logic'
@@ -89,7 +90,7 @@ async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Prom
 
 // this function is called from the handleHeartbeat saga
 async function sendHeartBeat(bff: IBff) {
-  const payload = HeartbeatMessage.encode({
+  const payload = Heartbeat.encode({
     position: lastPlayerPosition
   }).finish()
   try {

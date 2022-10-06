@@ -346,6 +346,8 @@ export class VoiceCommunicator {
       await src.setRemoteDescription(answer)
     })().catch((e) => {
       defaultLogger.error('Error creating loopback connection', e)
+      src.close()
+      dst.close()
     })
 
     return { src, dst }
