@@ -1,6 +1,6 @@
 import { call, fork, put, race, select, take, takeLatest } from 'redux-saga/effects'
 import { SCENE_CHANGED } from 'shared/loading/actions'
-import { BEFORE_UNLOAD } from 'shared/protocol/actions'
+import { BEFORE_UNLOAD } from 'shared/actions'
 import { SetParcelPosition, SET_PARCEL_POSITION } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 import { setCurrentScene } from './actions'

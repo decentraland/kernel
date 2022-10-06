@@ -44,13 +44,12 @@ import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from '.
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { store } from 'shared/store/isolatedStore'
 import { ConnectToCommsAction, CONNECT_TO_COMMS, setBff, SET_BFF } from 'shared/bff/actions'
-import { getBff } from 'shared/bff/selectors'
+import { getBff, getFetchContentUrlPrefixFromBff, waitForBff } from 'shared/bff/selectors'
 import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
 import { debugCommsGraph } from 'shared/session/getPerformanceInfo'
-import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -349,7 +348,8 @@ function* respondCommsProfileRequests() {
 
     const context = (yield select(getCommsRoom)) as RoomConnection | undefined
     const profile: Avatar | null = yield select(getCurrentUserProfile)
-    const contentServer: string = yield select(getFetchContentUrlPrefix)
+    const bff: IBff = yield call(waitForBff)
+    const contentServer: string = getFetchContentUrlPrefixFromBff(bff)
     const identity: ExplorerIdentity | null = yield select(getIdentity)
 
     if (profile && context) {

@@ -17,7 +17,7 @@ export function worldReducer(state?: WorldState, action?: AnyAction): WorldState
     case SET_CURRENT_SCENE:
       return {
         ...state,
-        currentScene: (action as SetCurrentScene).payload.scene
+        currentScene: (action as SetCurrentScene).payload.currentScene
       }
     default:
       return state

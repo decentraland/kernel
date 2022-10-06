@@ -113,10 +113,9 @@ export function getDesiredParcelScenes(): Map<string, LoadableScene> {
 }
 
 /**
- * @internal
  * Receives a set of Set<SceneId>
  */
-async function setDesiredParcelScenes(desiredParcelScenes: Map<string, LoadableScene>) {
+export async function setDesiredParcelScenes(desiredParcelScenes: Map<string, LoadableScene>) {
   const previousSet = new Set(parcelSceneLoadingState.desiredParcelScenes)
   const newSet = (parcelSceneLoadingState.desiredParcelScenes = desiredParcelScenes)
 
@@ -193,25 +192,6 @@ async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableSce
     contents: mappings,
     loadableScene: worker.loadableScene
   }
-}
-
-
-export async function removeDesiredParcel(sceneId: string) {
-  const desiredScenes = getDesiredParcelScenes()
-  if (!hasDesiredParcelScenes(sceneId)) return
-  desiredScenes.delete(sceneId)
-  await setDesiredParcelScenes(desiredScenes)
-}
-
-export async function addDesiredParcel(entity: LoadableScene) {
-  const desiredScenes = getDesiredParcelScenes()
-  if (hasDesiredParcelScenes(entity.id)) return
-  desiredScenes.set(entity.id, entity)
-  await setDesiredParcelScenes(desiredScenes)
-}
-
-function hasDesiredParcelScenes(sceneId: string): boolean {
-  return parcelSceneLoadingState.desiredParcelScenes.has(sceneId)
 }
 
 export type AllScenesEvents<T extends IEventNames> = {

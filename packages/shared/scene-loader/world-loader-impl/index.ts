@@ -1,17 +1,18 @@
+import { eventChannel } from 'redux-saga'
 import { getPortableExperienceFromUrn } from 'unity-interface/portableExperiencesUtils'
-import { ISceneLoader } from '../types'
+import { ISceneLoader, SetDesiredScenesCommand } from '../types'
 
-export function createWorldLoader(options: { urn: string }): ISceneLoader {
+export async function createWorldLoader(options: { urns: string[] }): Promise<ISceneLoader> {
+  const scenes = await Promise.all(options.urns.map((urn) => getPortableExperienceFromUrn(urn)))
   return {
     async fetchScenesByLocation(parcels) {
-      const result = await getPortableExperienceFromUrn(options.urn)
-      return {
-        scenes: [result]
-      }
+      return { scenes }
     },
-    async *getCommands() {
-      const scene = await getPortableExperienceFromUrn(options.urn)
-      yield { scenes: [scene] }
+    getChannel() {
+      return eventChannel<SetDesiredScenesCommand>((emitter) => {
+        emitter({ scenes })
+        return () => {}
+      })
     },
     async reportPosition(positionReport) {
       // noop

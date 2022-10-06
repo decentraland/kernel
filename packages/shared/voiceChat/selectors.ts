@@ -9,7 +9,7 @@ import { RootProfileState } from 'shared/profiles/types'
 import { getIdentity } from 'shared/session'
 import { RootVoiceChatState, VoicePolicy } from './types'
 import { VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
-import { lastPlayerScene } from 'shared/world/sceneState'
+import { RootWorldState } from 'shared/world/types'
 
 export const hasJoinedVoiceChat = (store: RootVoiceChatState) => store.voiceChat.joined
 
@@ -25,8 +25,8 @@ export const getVoicePolicy = (store: RootVoiceChatState) => store.voiceChat.pol
 
 export const getVoiceHandler = (store: RootVoiceChatState) => store.voiceChat.voiceHandler
 
-export function isVoiceChatAllowedByCurrentScene() {
-  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, lastPlayerScene?.entity.metadata)
+export function isVoiceChatAllowedByCurrentScene(store: RootVoiceChatState & RootWorldState) {
+  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, store.world.currentScene?.loadableScene.entity.metadata)
 }
 
 export function isBlockedOrBanned(profile: Avatar, bannedUsers: BannedUsers, userId: string): boolean {
@@ -53,7 +53,7 @@ function isMuted(profile: Avatar, userId: string): boolean {
 }
 
 export function shouldPlayVoice(
-  state: RootVoiceChatState & RootFriendsState & RootProfileState & RootMetaState,
+  state: RootVoiceChatState & RootFriendsState & RootProfileState & RootMetaState & RootWorldState,
   profile: Avatar,
   voiceUserId: string
 ) {
@@ -63,7 +63,7 @@ export function shouldPlayVoice(
     !isBlockedOrBanned(profile, getBannedUsers(state), voiceUserId) &&
     !isMuted(profile, voiceUserId) &&
     !hasBlockedMe(state, myAddress, voiceUserId) &&
-    isVoiceChatAllowedByCurrentScene()
+    isVoiceChatAllowedByCurrentScene(state)
   )
 }
 

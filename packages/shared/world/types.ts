@@ -10,6 +10,6 @@ export type WorldState = {
   currentScene: SceneWorker | undefined,
 }
 
-export type RootWorldRState = {
+export type RootWorldState = {
   world: WorldState
 }

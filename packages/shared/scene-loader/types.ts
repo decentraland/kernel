@@ -1,4 +1,5 @@
 import { LoadableScene } from "shared/types"
+import { EventChannel } from "redux-saga"
 
 export type SetDesiredScenesCommand = {
   scenes: LoadableScene[]
@@ -12,7 +13,7 @@ export type SceneLoaderPositionReport = {
 
 export interface ISceneLoader {
   reportPosition(positionReport: SceneLoaderPositionReport): Promise<void>
-  getCommands(): AsyncIterable<SetDesiredScenesCommand>
+  getChannel(): EventChannel<SetDesiredScenesCommand>
   fetchScenesByLocation(parcels: string[]): Promise<SetDesiredScenesCommand>
   stop(): Promise<void>
 }

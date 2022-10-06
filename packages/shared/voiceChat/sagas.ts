@@ -114,7 +114,8 @@ function* handleRecordingRequest() {
   const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
 
   if (voiceHandler) {
-    if (!isVoiceChatAllowedByCurrentScene() || !requestedRecording) {
+    const isAlowedByScene: boolean = yield select(isVoiceChatAllowedByCurrentScene)
+    if (!isAlowedByScene || !requestedRecording) {
       voiceHandler.setRecording(false)
     } else {
       yield call(requestUserMedia)

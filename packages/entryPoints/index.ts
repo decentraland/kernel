@@ -6,20 +6,10 @@ import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, Lo
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { gridToWorld, worldToGrid } from '../atomicHelpers/parcelScenePositions'
-import {
-  DEBUG_WS_MESSAGES,
-  ETHEREUM_NETWORK,
-  getAssetBundlesBaseUrl,
-  HAS_INITIAL_POSITION_MARK,
-  OPEN_AVATAR_EDITOR
-} from '../config/index'
+import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
 import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import {
-  getPreviewSceneId,
-  loadPreviewScene,
-  reloadPlaygroundScene,
-} from '../unity-interface/dcl'
+import { getPreviewSceneId, loadPreviewScene, reloadPlaygroundScene } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -46,8 +36,6 @@ import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { sendHomeScene } from '../shared/atlas/actions'
 import { homePointKey } from '../shared/atlas/utils'
-import { ensureBffPromise, getFetchContentServerFromBff } from 'shared/bff/selectors'
-import { getSelectedNetwork } from 'shared/dao/selectors'
 
 const logger = createLogger('kernel: ')
 
@@ -272,20 +260,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     await startPreview(i)
   }
 
-
-  // TODO: this worker should be configured to always point to the target server
-  ensureBffPromise().then(bff => {
-    const state = store.getState()
-    return startUnitySceneWorkers({
-      contentServer: getFetchContentServerFromBff(bff),
-      contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
-      worldConfig: getWorldConfig(state)
-    })
-  })
-
   return true
 }
-
 
 // workerStatusObservable.add((action) => {
 //   let status: SceneLifeCycleStatusType = 'failed'
