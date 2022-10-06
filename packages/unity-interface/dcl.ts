@@ -140,7 +140,7 @@ async function startGlobalScene(
  * This is the format of scenes that needs to be sent to Unity to create its counterpart
  * of a SceneWorker
  */
- function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
+function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
   const entity = worker.loadableScene.entity
   const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
 
