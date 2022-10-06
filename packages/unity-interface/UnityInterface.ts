@@ -151,6 +151,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'UnloadScene', sceneId)
   }
 
+  public UnloadSceneV2(sceneNumber: number) {
+    this.SendMessageToUnity('Main', 'UnloadSceneV2', JSON.stringify(sceneNumber))
+  }
+
   public SendSceneMessage(messages: string) {
     this.SendMessageToUnity(`SceneController`, `SendSceneMessage`, messages)
   }

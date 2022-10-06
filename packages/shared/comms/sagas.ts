@@ -3,7 +3,7 @@ import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, appl
 import { commsEstablished, establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { commsLogger } from './context'
 import { getCommsRoom } from './selectors'
-import { BEFORE_UNLOAD } from 'shared/protocol/actions'
+import { BEFORE_UNLOAD } from 'shared/actions'
 import {
   HandleRoomDisconnection,
   HANDLE_ROOM_DISCONNECTION,
@@ -50,6 +50,7 @@ import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
 import { debugCommsGraph } from 'shared/session/getPerformanceInfo'
+import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -157,6 +158,7 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
     const protocol = action.payload.event.connStr.substring(0, ix)
     const url = action.payload.event.connStr.substring(ix + 1)
 
+    console.log('HANDLE CONNECT TO COMMS', action.payload.event.islandId)
     yield put(setCommsIsland(action.payload.event.islandId))
 
     let adapter: RoomConnection | undefined = undefined
@@ -207,6 +209,7 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
 
     yield put(establishingComms())
     yield apply(adapter, adapter.connect, [])
+    console.log('SET ROOM CONNECTION')
     yield put(setRoomConnection(adapter))
   } catch (error: any) {
     notifyStatusThroughChat('Error connecting to comms. Will try another realm')
@@ -304,6 +307,7 @@ function* createLighthouseConnection(url: string) {
   )
 
   lighthouse.onIslandChangedObservable.add(({ island }) => {
+    console.log('ON CHANGE', island)
     store.dispatch(setCommsIsland(island))
   })
 
@@ -345,6 +349,7 @@ function* respondCommsProfileRequests() {
 
     const context = (yield select(getCommsRoom)) as RoomConnection | undefined
     const profile: Avatar | null = yield select(getCurrentUserProfile)
+    const contentServer: string = yield select(getFetchContentUrlPrefix)
     const identity: ExplorerIdentity | null = yield select(getIdentity)
 
     if (profile && context) {
@@ -357,7 +362,8 @@ function* respondCommsProfileRequests() {
       lastMessage = now
 
       const response: rfc4.ProfileResponse = {
-        serializedProfile: JSON.stringify(stripSnapshots(profile))
+        serializedProfile: JSON.stringify(stripSnapshots(profile)),
+        baseUrl: contentServer
       }
       yield apply(context, context.sendProfileResponse, [response])
     }

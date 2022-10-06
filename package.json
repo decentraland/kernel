@@ -27,7 +27,7 @@
   "devDependencies": {
     "@dcl/eslint-config": "^1.0.5-20220608210046.commit-d51d9ec",
     "@dcl/posix": "^1.0.3",
-    "@dcl/unity-renderer": "^1.0.49884-20220818143841.commit-421e39d",
+    "@dcl/unity-renderer": "^1.0.56455-20221006153048.commit-dedb6d1",
     "@microsoft/api-documenter": "^7.2.2",
     "@microsoft/api-extractor": "^7.1.7",
     "@protobuf-ts/protoc": "^2.8.1",
@@ -78,7 +78,7 @@
     "@dcl/hashing": "^1.1.0",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
     "@dcl/legacy-ecs": "^6.11.8",
-    "@dcl/protocol": "https://sdk-team-cdn.decentraland.org/@dcl/protocol/branch//dcl-protocol-1.0.0-3175216098.commit-f09855e.tgz",
+    "@dcl/protocol": "^1.0.0-3199494715.commit-f3c7422",
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
     "@dcl/schemas": "^5.8.1",
     "@dcl/urn-resolver": "^1.4.0",

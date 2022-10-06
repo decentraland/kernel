@@ -215,7 +215,7 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
 
     this.connected
       .then(() => {
-        if (this.ws) this.ws.send(msg)
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(msg)
       })
       .catch(console.error)
   }

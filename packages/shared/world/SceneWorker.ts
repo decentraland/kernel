@@ -64,6 +64,8 @@ function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
   return WebWorkerTransport(worker)
 }
 
+let globalSceneNumberCounter = 0
+
 export class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
 
@@ -87,6 +89,9 @@ export class SceneWorker {
     public readonly loadableScene: Readonly<LoadableScene>,
     public readonly transport: Transport = buildWebWorkerTransport(loadableScene)
   ) {
+    ++globalSceneNumberCounter
+    const sceneNumber = globalSceneNumberCounter
+
     const skipErrors = ['Transport closed while waiting the ACK']
 
     this.metadata = loadableScene.entity.metadata
@@ -103,7 +108,8 @@ export class SceneWorker {
       sceneData: {
         isPortableExperience: false,
         useFPSThrottling: false,
-        ...loadableScene
+        ...loadableScene,
+        sceneNumber
       },
       logger: this.logger,
       permissionGranted: new Set(),
@@ -170,7 +176,11 @@ export class SceneWorker {
 
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
-
+    try {
+      getUnityInstance().UnloadSceneV2(this.rpcContext.sceneData.sceneNumber)
+    } catch (err: any) {
+      defaultLogger.error(err)
+    }
     getUnityInstance().UnloadScene(this.loadableScene.id)
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
@@ -251,6 +261,7 @@ export class SceneWorker {
 
   private sendBatchWss(actions: EntityAction[]): void {
     const sceneId = this.loadableScene.id
+    const sceneNumber = this.rpcContext.sceneData.sceneNumber
     const messages: string[] = []
     let len = 0
 
@@ -273,7 +284,7 @@ export class SceneWorker {
         continue
       }
 
-      const part = protobufMsgBridge.encodeSceneMessage(sceneId, action.type, action.payload, action.tag)
+      const part = protobufMsgBridge.encodeSceneMessage(sceneId, sceneNumber, action.type, action.payload, action.tag)
       messages.push(part)
       len += part.length
 
@@ -287,9 +298,10 @@ export class SceneWorker {
 
   private sendBatchNative(actions: EntityAction[]): void {
     const sceneId = this.loadableScene.id
+    const sceneNumber = this.rpcContext.sceneData.sceneNumber
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
-      nativeMsgBridge.SendNativeMessage(sceneId, action)
+      nativeMsgBridge.SendNativeMessage(sceneId, sceneNumber, action)
     }
   }
 

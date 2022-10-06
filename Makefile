@@ -17,7 +17,7 @@ COMMS_TS =      $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/v3/%
 CWD = $(shell pwd)
 PROTOC = node_modules/.bin/protoc
 PROTOC_ARGS = --plugin=./node_modules/.bin/protoc-gen-ts_proto \
-			        --ts_proto_opt=returnObservable=false,outputServices=generic-definitions,fileSuffix=.gen \
+			        --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,fileSuffix=.gen \
 			        --ts_proto_out="$(PWD)/packages/shared/protocol" \
               -I="$(PWD)/node_modules/@dcl/protocol"
 # Remove default Makefile rules
@@ -139,7 +139,7 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
 	@NODE_ENV=development $(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,simulator,server" \
+		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,gif-worker,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
 			"$(COMPILER) targets/engine/loader.json --watch" \
@@ -147,7 +147,6 @@ watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files requ
 			"$(COMPILER) targets/entryPoints/index.json --watch" \
 			"$(COMPILER) targets/test.json --watch" \
 			"$(COMPILER) targets/engine/gif-processor.json --watch" \
-			"node ./scripts/runPathSimulator.js" \
 			"node ./scripts/runTestServer.js --keep-open"
 
 fetchSceneContents: scripts/fetchSceneContents.js
@@ -212,6 +211,6 @@ packages/shared/protocol/kernel/comms/v3/%.gen.ts: node_modules/@dcl/protocol/ke
       -I="$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3" \
 			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3/$*.proto"
 
-compile_apis: ${BFF_TS} ${COMMS_TS} ${PBS_TS}
+compile_apis: ${BFF_TS} ${COMMS_TS} ${PBS_TS} packages/shared/protocol/bff-services.gen.ts
 
 compile_renderer_protocol: ${PBRENDERER_TS}

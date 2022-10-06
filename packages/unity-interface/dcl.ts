@@ -26,8 +26,8 @@ import { ContentMapping, EntityType, Scene, sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
-import { sleep } from 'atomicHelpers/sleep'
 import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
+import { sleep } from 'atomicHelpers/sleep'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -115,7 +115,8 @@ async function startGlobalScene(
     name: title,
     baseUrl: scene.loadableScene.baseUrl,
     isPortableExperience: false,
-    contents: scene.loadableScene.entity.content
+    contents: scene.loadableScene.entity.content,
+    sceneNumber: scene.rpcContext.sceneData.sceneNumber
   })
 }
 

@@ -26,7 +26,7 @@ export function commsReducer(state?: CommsState, action?: AnyAction): CommsState
       if (state.context === action.payload) {
         return state
       }
-      return { ...state, context: action.payload, island: undefined }
+      return { ...state, context: action.payload }
     default:
       return state
   }

@@ -7,7 +7,7 @@ import { RootStore } from './store/rootTypes'
 import { initializeSessionObserver } from './session/sagas'
 import { hookAnalyticsObservables } from './analytics/hook-observable'
 import wrapConsoleLogger from './logger/wrap'
-import { beforeUnloadAction } from './protocol/actions'
+import { beforeUnloadAction } from './actions'
 
 declare const globalThis: { globalStore: RootStore }
 
