@@ -17,10 +17,10 @@ import {
   SendAsyncResponse,
   SignMessageRequest,
   SignMessageResponse
-} from '../proto/EthereumController.gen'
+} from 'shared/protocol/kernel/apis/EthereumController.gen'
 import { PortContext } from './context'
 import { RPCSendableMessage } from 'shared/types'
-import { PermissionItem } from '../proto/Permissions.gen'
+import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
 import { assertHasPermission } from './Permissions'
 
 async function requirePayment(req: RequirePaymentRequest, ctx: PortContext): Promise<RequirePaymentResponse> {
@@ -28,7 +28,8 @@ async function requirePayment(req: RequirePaymentRequest, ctx: PortContext): Pro
 
   await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
     ...req,
-    sceneId: ctx.sceneData.id
+    sceneId: ctx.sceneData.id,
+    sceneNumber: ctx.sceneData.sceneNumber
   })
 
   const response = EthService.requirePayment(req.toAddress, req.amount, req.currency)
@@ -42,7 +43,8 @@ async function signMessage(req: SignMessageRequest, ctx: PortContext): Promise<S
 
   await getUnityInstance().RequestWeb3ApiUse('signMessage', {
     message: await EthService.messageToString(req.message),
-    sceneId: ctx.sceneData.id
+    sceneId: ctx.sceneData.id,
+    sceneNumber: ctx.sceneData.sceneNumber
   })
   const response = await EthService.signMessage(req.message)
   return response
@@ -68,7 +70,8 @@ async function sendAsync(req: SendAsyncRequest, ctx: PortContext): Promise<SendA
   if (EthService.rpcRequireSign(message)) {
     await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
       message: `${message.method}(${message.params.join(',')})`,
-      sceneId: ctx.sceneData.id
+      sceneId: ctx.sceneData.id,
+      sceneNumber: ctx.sceneData.sceneNumber
     })
   }
 

@@ -116,7 +116,8 @@ function spawnPortableExperience(spawnData: LoadableScene): PortableExperienceHa
     baseUrl: scene.loadableScene.baseUrl,
     contents: scene.loadableScene.entity.content,
     icon: spawnData.entity.metadata.menuBarIcon || '',
-    isPortableExperience: true
+    isPortableExperience: true,
+    sceneNumber: scene.rpcContext.sceneData.sceneNumber
   })
 
   return { pid: sceneId, parentCid: spawnData.parentCid || '' }

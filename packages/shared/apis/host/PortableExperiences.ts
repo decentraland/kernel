@@ -10,7 +10,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { PortableExperiencesServiceDefinition } from '../proto/PortableExperiences.gen'
+import { PortableExperiencesServiceDefinition } from 'shared/protocol/kernel/apis/PortableExperiences.gen'
 
 export function registerPortableExperiencesServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PortableExperiencesServiceDefinition, async () => ({
