@@ -41,14 +41,29 @@ async function authenticatePort(port: RpcClientPort, identity: ExplorerIdentity)
   return authResponse.peerId
 }
 
+function resolveBffUrl(baseUrl: string, bffPublicUrl?: string): string {
+  let url: string
+  if (bffPublicUrl && bffPublicUrl.startsWith('http')) {
+    url = bffPublicUrl
+    if (!url.endsWith('/')) {
+      url += '/'
+    }
+    url += 'rpc'
+  } else {
+    const relativeUrl = ((bffPublicUrl || '/bff') + '/rpc').replace(/(\/+)/g, '/')
+
+    url = new URL(relativeUrl, baseUrl).toString()
+  }
+
+  return url.replace(/^http/, 'ws')
+}
+
 export async function createBffRpcConnection(
   baseUrl: string,
   about: AboutResponse,
   identity: ExplorerIdentity
 ): Promise<IBff> {
-  const relativeUrl = ((about.bff?.publicUrl || '/bff') + '/rpc').replace(/(\/+)/g, '/')
-
-  const wsUrl = new URL(relativeUrl, baseUrl).toString().replace(/^http/, 'ws')
+  const wsUrl = resolveBffUrl(baseUrl, about.bff?.publicUrl)
   const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'bff'))
 
   const rpcClient = await createRpcClient(bffTransport)
