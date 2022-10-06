@@ -161,7 +161,7 @@ function mockStoreCalls(opts?: { profiles: number[]; i: number }, fakeLastStatus
   sinon.stub(friendsSelectors, 'getLastStatusOfFriends').callsFake(() => fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends)
 }
 
-describe.only('Friends sagas', () => {
+describe('Friends sagas', () => {
   sinon.mock()
 
   describe('get friends', () => {
@@ -407,7 +407,7 @@ describe.only('Friends sagas', () => {
     })
   })
 
-  describe.only('update friends status', () => {
+  describe('update friends status', () => {
     beforeEach(() => {
       const { store } = buildStore()
       globalThis.globalStore = store
