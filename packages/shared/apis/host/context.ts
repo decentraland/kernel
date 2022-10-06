@@ -1,7 +1,7 @@
 import { ILogger } from './../../logger'
 import { EntityAction, LoadableScene } from './../../types'
-import { PermissionItem } from '../proto/Permissions.gen'
-import { EventData } from '../proto/EngineAPI.gen'
+import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { EventData } from 'shared/protocol/kernel/apis/EngineAPI.gen'
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
@@ -12,6 +12,7 @@ export type PortContext = {
   sceneData: LoadableScene & {
     isPortableExperience: boolean
     useFPSThrottling: boolean
+    readonly sceneNumber: number
   }
   subscribedEvents: Set<string>
   events: EventData[]

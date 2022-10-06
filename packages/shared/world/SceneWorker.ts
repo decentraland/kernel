@@ -13,7 +13,7 @@ import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
-import { EventDataType } from 'shared/apis/proto/EngineAPI.gen'
+import { EventDataType } from 'shared/protocol/kernel/apis/EngineAPI.gen'
 import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -34,7 +34,7 @@ import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
-import { permissionItemFromJSON } from 'shared/apis/proto/Permissions.gen'
+import { permissionItemFromJSON } from 'shared/protocol/kernel/apis/Permissions.gen'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -70,6 +70,8 @@ function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
   return WebWorkerTransport(worker)
 }
 
+let globalSceneNumberCounter = 0
+
 export class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
 
@@ -94,6 +96,9 @@ export class SceneWorker {
     public readonly loadableScene: Readonly<LoadableScene>,
     public readonly transport: Transport = buildWebWorkerTransport(loadableScene)
   ) {
+    ++globalSceneNumberCounter
+    const sceneNumber = globalSceneNumberCounter
+
     const skipErrors = ['Transport closed while waiting the ACK']
 
     this.metadata = loadableScene.entity.metadata
@@ -110,7 +115,8 @@ export class SceneWorker {
       sceneData: {
         ...loadableScene,
         isPortableExperience: false,
-        useFPSThrottling: true
+        useFPSThrottling: true,
+        sceneNumber
       },
       logger: this.logger,
       permissionGranted: new Set(),
@@ -177,7 +183,11 @@ export class SceneWorker {
 
       this.ready |= SceneWorkerReadyState.DISPOSED
     }
-
+    try {
+      getUnityInstance().UnloadSceneV2(this.rpcContext.sceneData.sceneNumber)
+    } catch (err: any) {
+      defaultLogger.error(err)
+    }
     getUnityInstance().UnloadScene(this.loadableScene.id)
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
@@ -269,7 +279,7 @@ export class SceneWorker {
         continue
       }
 
-      const part = protobufMsgBridge.encodeSceneMessage(sceneId, action.type, action.payload, action.tag)
+      const part = protobufMsgBridge.encodeSceneMessage(sceneId, 0 /* sceneNumber */, action.type, action.payload, action.tag)
       messages.push(part)
       len += part.length
 
@@ -283,9 +293,10 @@ export class SceneWorker {
 
   private sendBatchNative(actions: EntityAction[]): void {
     const sceneId = this.loadableScene.id
+    const sceneNumber = this.rpcContext.sceneData.sceneNumber
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i]
-      nativeMsgBridge.SendNativeMessage(sceneId, action)
+      nativeMsgBridge.SendNativeMessage(sceneId, sceneNumber, action)
     }
   }
 

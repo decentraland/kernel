@@ -148,6 +148,7 @@ export type LoadableParcelScene = {
   baseUrl: string
   baseUrlBundles: string
   loadableScene: LoadableScene
+  sceneNumber: number
 }
 
 /** THIS INTERFACE CANNOT CHANGE, IT IS USED IN THE UNITY BUILD */

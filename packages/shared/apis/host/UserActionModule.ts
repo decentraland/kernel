@@ -8,7 +8,7 @@ import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetch
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 
-import { UserActionModuleServiceDefinition } from '../proto/UserActionModule.gen'
+import { UserActionModuleServiceDefinition } from 'shared/protocol/kernel/apis/UserActionModule.gen'
 import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
