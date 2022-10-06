@@ -2,7 +2,7 @@ import * as sinon from 'sinon'
 import { getUnityInstance, setUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import defaultLogger from '../../packages/shared/logger'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
-import { PermissionItem, permissionItemToJSON } from 'shared/apis/proto/Permissions.gen'
+import { PermissionItem, permissionItemToJSON } from 'shared/protocol/kernel/apis/Permissions.gen'
 import { movePlayerTo, triggerEmote } from 'shared/apis/host/RestrictedActions'
 import { PortContext } from 'shared/apis/host/context'
 import { Vector3 } from '@dcl/legacy-ecs'
@@ -158,6 +158,7 @@ describe('RestrictedActions tests', () => {
       id: 'test',
       isPortableExperience: false,
       useFPSThrottling: false,
+      sceneNumber: 3,
       baseUrl: '',
       entity: {
         version: 'v3',

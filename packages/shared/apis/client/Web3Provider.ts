@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { EthereumControllerServiceDefinition } from '../proto/EthereumController.gen'
+import { EthereumControllerServiceDefinition } from 'shared/protocol/kernel/apis/EthereumController.gen'
 
 export type RPCSendableMessage = {
   jsonrpc: '2.0'
