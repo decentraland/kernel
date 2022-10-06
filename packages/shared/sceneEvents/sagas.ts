@@ -20,6 +20,7 @@ export function* sceneEventsSaga() {
 function* islandChanged() {
   const realm: IBff | undefined = yield select(getBff)
   const island: string | undefined = yield select(getCommsIsland)
+  console.log('sceneEvents islandChanged', island)
 
   if (realm) {
     const payload = toEnvironmentRealmType(realm, island)
@@ -31,6 +32,7 @@ function* islandChanged() {
 
 // @internal
 export function updateLocation(realm: string | undefined, island: string | undefined) {
+  console.log('sceneEvents updateLocation', island)
   const q = new URLSearchParams(window.location.search)
   if (realm) q.set('realm', realm)
   else q.delete('realm')

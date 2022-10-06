@@ -7,7 +7,7 @@ export function legacyServices(baseUrl: string, about: AboutResponse): LegacySer
 
   return {
     fetchContentServer: contentServer,
-    catalystServer: baseUrl,
+    catalystServer: 'https://peer.decentraland.org',
     updateContentServer: contentServer,
     hotScenesService: lambdasServer + '/explore/hot-scenes',
     poiService: lambdasServer + '/contracts/pois',
