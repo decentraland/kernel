@@ -79,7 +79,7 @@
     "@dcl/hashing": "^1.1.0",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
     "@dcl/legacy-ecs": "^6.11.8",
-    "@dcl/protocol": "https://sdk-team-cdn.decentraland.org/@dcl/protocol/branch//dcl-protocol-1.0.0-3198982848.commit-1d9dd20.tgz",
+    "@dcl/protocol": "^1.0.0-3199325469.commit-c9bc23f",
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
     "@dcl/schemas": "^5.8.1",
     "@dcl/urn-resolver": "^1.4.0",
