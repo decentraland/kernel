@@ -46,9 +46,21 @@ export async function createBffRpcConnection(
   about: AboutResponse,
   identity: ExplorerIdentity
 ): Promise<IBff> {
-  const relativeUrl = ((about.bff?.publicUrl || '/bff') + '/rpc').replace(/(\/+)/g, '/')
+  let url: string
+  if (about.bff?.publicUrl && about.bff.publicUrl.startsWith('http')) {
+    url = about.bff.publicUrl
+    if (!url.endsWith('/')) {
+      url += '/'
+    }
+    url += '/rpc'
+  } else {
+    const relativeUrl = ((about.bff?.publicUrl || '/bff') + '/rpc').replace(/(\/+)/g, '/')
 
-  const wsUrl = new URL(relativeUrl, baseUrl).toString().replace(/^http/, 'ws')
+    url = new URL(relativeUrl, baseUrl).toString()
+  }
+
+  const wsUrl = url.replace(/^http/, 'ws')
+
   const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'bff'))
 
   const rpcClient = await createRpcClient(bffTransport)
