@@ -316,7 +316,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
       if (isChannelType) {
         const muted = profile?.muted ?? []
-        if (conversation.unreadMessages && !muted.includes(conversation.id)) {
+        if (!muted.includes(conversation.id)) {
           // send update with unseen messages by channel
           getUnseenMessagesByChannel()
         }
