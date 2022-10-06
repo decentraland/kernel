@@ -6,7 +6,7 @@ import {
   PermissionItem,
   permissionItemFromJSON,
   permissionItemToJSON
-} from '../proto/Permissions.gen'
+} from 'shared/protocol/kernel/apis/Permissions.gen'
 import { PortContext } from './context'
 
 export const defaultParcelPermissions: PermissionItem[] = [

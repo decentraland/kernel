@@ -2,7 +2,7 @@ import { LoadableAPIs } from '../../shared/apis/client'
 import { componentSerializeOpt, initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
 import { customEval, prepareSandboxContext } from './sandbox'
 import { RpcClient } from '@dcl/rpc/dist/types'
-import { PermissionItem } from 'shared/apis/proto/Permissions.gen'
+import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
 
 import { createDecentralandInterface, DecentralandInterfaceOptions } from './runtime/DecentralandInterface'
 import { setupFpsThrottling } from './runtime/SetupFpsThrottling'

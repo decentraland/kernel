@@ -32,7 +32,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { PlayersServiceDefinition } from '../proto/Players.gen'
+import { PlayersServiceDefinition } from 'shared/protocol/kernel/apis/Players.gen'
 
 export function registerPlayersServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PlayersServiceDefinition, async () => ({

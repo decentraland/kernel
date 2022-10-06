@@ -9,7 +9,7 @@ import {
   GetIsEmptyResponse,
   GetIsEmptyRequest,
   GetSceneIdResponse
-} from '../proto/ParcelIdentity.gen'
+} from 'shared/protocol/kernel/apis/ParcelIdentity.gen'
 import { PortContext } from './context'
 
 async function getParcel(_req: GetParcelRequest, ctx: PortContext): Promise<GetParcelResponse> {
