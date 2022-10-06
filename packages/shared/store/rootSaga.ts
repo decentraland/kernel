@@ -17,6 +17,8 @@ import { questsSaga } from '../quests/sagas'
 import { portableExperienceSaga } from '../portableExperiences/sagas'
 import { wearablesPortableExperienceSaga } from '../wearablesPortableExperience/sagas'
 import { sceneEventsSaga } from '../sceneEvents/sagas'
+import { sceneLoaderSaga } from '../scene-loader/sagas'
+import { worldSagas } from '../world/sagas'
 import { bffSaga } from 'shared/bff/sagas'
 
 export function createRootSaga() {
@@ -40,5 +42,7 @@ export function createRootSaga() {
     yield fork(sceneEventsSaga)
     yield fork(portableExperienceSaga)
     yield fork(wearablesPortableExperienceSaga)
+    yield fork(sceneLoaderSaga)
+    yield fork(worldSagas)
   }
 }

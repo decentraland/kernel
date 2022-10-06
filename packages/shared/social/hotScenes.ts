@@ -1,4 +1,3 @@
-import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { reportScenesFromTiles } from 'shared/atlas/actions'
 import { postProcessSceneName, getPoiTiles } from 'shared/atlas/selectors'
 import { getHotScenesService } from 'shared/dao/selectors'
@@ -11,6 +10,7 @@ import {
 import { getUnityInstance, HotSceneInfo, RealmInfo } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 import { ensureBffPromise, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 
 export async function fetchHotScenes(): Promise<HotSceneInfo[]> {
   const url = getHotScenesService(store.getState())

@@ -2,7 +2,6 @@ import { Vector2Component } from 'atomicHelpers/landHelpers'
 import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { call, put, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 import { parcelLimits } from 'config'
-import { fetchScenesByLocation } from '../../decentraland-loader/lifecycle/utils/fetchSceneIds'
 import {
   getOwnerNameFromJsonData,
   getSceneDescriptionFromJsonData,
@@ -43,8 +42,7 @@ import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { homePointKey } from './utils'
-import { IBff } from 'shared/bff/types'
-import { getFetchContentUrlPrefixFromBff, waitForBff } from 'shared/bff/selectors'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -128,8 +126,7 @@ function* sendHomeSceneToUnityAction(action: SendHomeScene) {
 
 function* reportScenes(scenes: LoadableScene[]): any {
   yield call(waitForPoiTilesInitialization)
-  const bff: IBff = yield call(waitForBff)
-  const baseContentUrl = getFetchContentUrlPrefixFromBff(bff)
+
   const pois = yield select(getPoiTiles)
 
   const minimapSceneInfoResult: MinimapSceneInfo[] = []
@@ -161,7 +158,7 @@ function* reportScenes(scenes: LoadableScene[]): any {
         previewImageUrl: getThumbnailUrlFromJsonDataAndContent(
           metadata,
           scene.entity.content,
-          baseContentUrl
+          scene.baseUrl
         ),
         // type is not used by renderer
         type: undefined as any,

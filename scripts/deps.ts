@@ -11,7 +11,6 @@ type Tree = Record<string, string[]>
 
 async function main() {
   await processEntryPoint('packages/gif-processor/worker.ts')
-  await processEntryPoint('packages/decentraland-loader/lifecycle/worker.ts')
   await processEntryPoint('packages/scene-system/scene.system.ts')
   await processEntryPoint('packages/entryPoints/index.ts')
   await processEntryPoint('packages/ui/decentraland-ui.scene.ts')

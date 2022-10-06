@@ -41,9 +41,6 @@ EMPTY_SCENES := public/empty-scenes/common
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
 	@node_modules/.bin/tsc --build scripts/tsconfig.json
 
-static/loader/worker.js: packages/decentraland-loader/**/*.ts
-	@$(COMPILER) targets/engine/loader.json
-
 static/gif-processor/worker.js: packages/gif-processor/*.ts
 	@$(COMPILER) targets/engine/gif-processor.json
 
@@ -167,7 +164,6 @@ madge: scripts/deps.js
 	dot packages/scene-system/scene.system.ts.dot -T pdf -O
 	dot packages/ui/decentraland-ui.scene.ts.dot -T pdf -O
 	dot packages/entryPoints/index.ts.dot -T pdf -O
-	dot packages/decentraland-loader/lifecycle/worker.ts.dot -T pdf -O
 	dot packages/gif-processor/worker.ts.dot -T pdf -O
 	dot packages/voice-chat-codec/audioWorkletProcessors.ts.dot -T pdf -O
 	dot packages/voice-chat-codec/worker.ts.dot -T pdf -O

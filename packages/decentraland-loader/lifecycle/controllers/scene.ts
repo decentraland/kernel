@@ -3,7 +3,6 @@ import { EventEmitter } from 'events'
 import { SceneDataDownloadManager } from './download'
 import defaultLogger from 'shared/logger'
 
-export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
 export type NewDrawingDistanceReport = { distanceInParcels: number }
 
 type SceneId = string

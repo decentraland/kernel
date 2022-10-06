@@ -8,8 +8,6 @@ import {
 } from 'config'
 import { PositionReport, positionObservable } from './positionThings'
 import { Observable, Observer } from 'mz-observable'
-import { sceneObservable } from 'shared/world/sceneState'
-import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
@@ -20,15 +18,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { trackEvent } from 'shared/analytics'
 import { getSceneNameFromJsonData } from 'shared/selectors'
 import { Scene } from '@dcl/schemas'
-import {
-  signalSceneLoad,
-  signalSceneStart,
-  signalSceneFail,
-  SceneFail,
-  SceneStart,
-  SceneLoad
-} from 'shared/loading/actions'
-import { SceneLifeCycleStatusReport } from 'decentraland-loader/lifecycle/controllers/scene'
+import { signalSceneLoad, signalSceneStart, signalSceneFail } from 'shared/loading/actions'
 import { EntityAction, LoadableScene } from 'shared/types'
 import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
@@ -36,6 +26,7 @@ import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
 import { permissionItemFromJSON } from 'shared/protocol/kernel/apis/Permissions.gen'
 import { incrementAvatarSceneMessages } from 'shared/session/getPerformanceInfo'
+import { getCurrentUserId } from 'shared/session/selectors'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -58,7 +49,9 @@ const sendBatchMsgs: Array<number> = []
 let sendBatchTimeCount: number = 0
 let sendBatchMsgCount: number = 0
 
-export const workerStatusObservable = new Observable<SceneLoad | SceneStart | SceneFail>()
+export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready' | 'failed'
+export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
+
 export const sceneLifeCycleObservable = new Observable<Readonly<SceneLifeCycleStatusReport>>()
 
 function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
@@ -84,7 +77,6 @@ export class SceneWorker {
   private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
   private positionObserver: Observer<any> | null = null
   private sceneLifeCycleObserver: Observer<any> | null = null
-  private sceneChangeObserver: Observer<any> | null = null
   private readonly startLoadingTime = performance.now()
   private sceneReady: boolean = false
 
@@ -183,6 +175,18 @@ export class SceneWorker {
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
 
+  // when the current user enters the scene
+  onEnter() {
+    const userId = getCurrentUserId(store.getState())
+    if (userId) this.rpcContext.sendSceneEvent('onEnterScene', { userId })
+  }
+
+  // when the current user leaves the scene
+  onLeave() {
+    const userId = getCurrentUserId(store.getState())
+    if (userId) this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
+  }
+
   protected childDispose() {
     if (this.positionObserver) {
       positionObservable.remove(this.positionObserver)
@@ -191,10 +195,6 @@ export class SceneWorker {
     if (this.sceneLifeCycleObserver) {
       sceneLifeCycleObservable.remove(this.sceneLifeCycleObserver)
       this.sceneLifeCycleObserver = null
-    }
-    if (this.sceneChangeObserver) {
-      sceneObservable.remove(this.sceneChangeObserver)
-      this.sceneChangeObserver = null
     }
   }
 
@@ -205,16 +205,15 @@ export class SceneWorker {
 
     this.subscribeToSceneLifeCycleEvents()
     this.subscribeToPositionEvents()
-    this.subscribeToSceneChangeEvents()
 
-    workerStatusObservable.notifyObservers(signalSceneLoad(this.loadableScene))
+    store.dispatch(signalSceneLoad(this.loadableScene))
 
     const WORKER_TIMEOUT = 90_000 // three minutes
 
     setTimeout(() => {
       if (!this.sceneStarted) {
         this.ready |= SceneWorkerReadyState.LOADING_FAILED
-        workerStatusObservable.notifyObservers(signalSceneFail(this.loadableScene))
+        store.dispatch(signalSceneFail(this.loadableScene))
       }
     }, WORKER_TIMEOUT)
   }
@@ -333,20 +332,6 @@ export class SceneWorker {
     })
   }
 
-  private subscribeToSceneChangeEvents() {
-    this.sceneChangeObserver = sceneObservable.add((report) => {
-      const userId = getCurrentUserId(store.getState())
-      if (userId) {
-        const sceneId = this.loadableScene.id
-        if (report.newScene?.id === sceneId) {
-          this.rpcContext.sendSceneEvent('onEnterScene', { userId })
-        } else if (report.previousScene?.id === sceneId) {
-          this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
-        }
-      }
-    })
-  }
-
   private subscribeToSceneLifeCycleEvents() {
     this.sceneLifeCycleObserver = sceneLifeCycleObservable.add((obj) => {
       if (this.loadableScene.id === obj.sceneId && obj.status === 'ready') {
@@ -372,7 +357,7 @@ export class SceneWorker {
         base: baseParcel
       })
 
-      workerStatusObservable.notifyObservers(signalSceneStart(this.loadableScene))
+      store.dispatch(signalSceneStart(this.loadableScene))
     }
   }
 }

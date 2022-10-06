@@ -39,7 +39,6 @@ import {
   getSceneWorkerBySceneID,
   allScenesEvent,
   AllScenesEvents,
-  renderDistanceObservable
 } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { positionObservable } from 'shared/world/positionThings'
@@ -105,6 +104,7 @@ import {
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { ensureBffPromise, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
+import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -580,9 +580,7 @@ export class BrowserInterface {
   public SetScenesLoadRadius(data: { newRadius: number }) {
     parcelLimits.visibleRadius = Math.round(data.newRadius)
 
-    renderDistanceObservable.notifyObservers({
-      distanceInParcels: parcelLimits.visibleRadius
-    })
+    store.dispatch(setWorldLoadingRadius(parcelLimits.visibleRadius))
   }
 
   public GetUnseenMessagesByUser() {

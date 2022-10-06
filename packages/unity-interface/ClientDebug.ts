@@ -1,7 +1,7 @@
 import { defaultLogger } from 'shared/logger'
 import { ErrorContextTypes, ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { getUnityInstance, IUnityInterface } from './IUnityInterface'
-import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 
 export class ClientDebug {
   private unityInterface: IUnityInterface

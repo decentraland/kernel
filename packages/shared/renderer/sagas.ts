@@ -25,7 +25,6 @@ import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selector
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
-import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { getFetchContentServerFromBff, getProfilesContentServerFromBff, waitForBff } from 'shared/bff/selectors'
 import { getExploreRealmsService } from 'shared/dao/selectors'
@@ -47,6 +46,7 @@ import {
 import { IBff } from 'shared/bff/types'
 import { SET_BFF } from 'shared/bff/actions'
 import { getAllowedContentServer } from 'shared/meta/selectors'
+import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -60,7 +60,7 @@ export function* rendererSaga() {
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
 
-  yield call(listenToWhetherSceneSupportsVoiceChat)
+  yield takeEvery(SET_CURRENT_SCENE, listenToWhetherSceneSupportsVoiceChat)
 
   yield fork(reportRealmChangeToRenderer)
 }
@@ -150,14 +150,12 @@ function* handleVoiceChatError(action: SetVoiceChatErrorAction) {
   }
 }
 
-function* listenToWhetherSceneSupportsVoiceChat() {
-  sceneObservable.add(({ newScene }) => {
-    const nowEnabled = newScene
-      ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, newScene.entity.metadata)
-      : isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE)
+function* listenToWhetherSceneSupportsVoiceChat(data: SetCurrentScene) {
+  const nowEnabled = data.payload.currentScene
+    ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, data.payload.currentScene.loadableScene.entity.metadata)
+    : isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE)
 
-    getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
-  })
+  getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
 }
 
 /**

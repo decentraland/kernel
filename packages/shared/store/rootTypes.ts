@@ -16,6 +16,7 @@ import { RootPortableExperiencesState } from 'shared/portableExperiences/types'
 import { RootWearablesPortableExperienceState } from 'shared/wearablesPortableExperience/types'
 import { RootVoiceChatState } from 'shared/voiceChat/types'
 import { RootBffState } from 'shared/bff/types'
+import { RootSceneLoaderState } from 'shared/scene-loader/types'
 
 export type RootState = RootAtlasState &
   RootProfileState &
@@ -31,6 +32,7 @@ export type RootState = RootAtlasState &
   RootCatalogState &
   RootQuestsState &
   RootPortableExperiencesState &
+  RootSceneLoaderState &
   RootWearablesPortableExperienceState &
   RootVoiceChatState
 

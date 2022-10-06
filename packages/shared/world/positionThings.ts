@@ -10,9 +10,8 @@ import { InstancedSpawnPoint } from '../types'
 import { worldToGrid, gridToWorld, isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
 import { DEBUG } from '../../config'
 import { isInsideWorldLimits, Scene } from '@dcl/schemas'
-
-declare let location: any
-declare let history: any
+import { store } from 'shared/store/isolatedStore'
+import { setParcelPosition } from 'shared/scene-loader/actions'
 
 export type PositionReport = {
   /** Camera position, world space */
@@ -30,19 +29,8 @@ export type PositionReport = {
   /** Camera rotation, euler from quaternion */
   cameraEuler: EcsMathReadOnlyVector3
 }
-export type ParcelReport = {
-  /** Parcel where the user was before */
-  previousParcel?: EcsMathReadOnlyVector2
-  /** Parcel where the user is now */
-  newParcel: EcsMathReadOnlyVector2
-  /** Should this position be applied immediately */
-  immediate: boolean
-}
 
 export const positionObservable = new Observable<Readonly<PositionReport>>()
-// Called each time the user changes  parcel
-export const parcelObservable = new Observable<ParcelReport>()
-
 export const teleportObservable = new Observable<EcsMathReadOnlyVector2 & { text?: string }>()
 
 export const lastPlayerPosition = new Vector3()
@@ -59,7 +47,7 @@ positionObservable.add(({ position, immediate }) => {
   const parcel = Vector2.Zero()
   worldToGrid(position, parcel)
   if (!lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
-    parcelObservable.notifyObservers({ previousParcel: lastPlayerParcel, newParcel: parcel, immediate })
+    store.dispatch(setParcelPosition(parcel))
     setLastPlayerParcel(parcel)
   }
 })
@@ -72,21 +60,8 @@ function setLastPlayerParcel(parcel: Vector2) {
   }
 }
 
-export function initializeUrlPositionObserver() {
-  let lastTime: number = performance.now()
-
-  function updateUrlPosition(newParcel: EcsMathReadOnlyVector2) {
-    // Update position in URI every second
-    if (performance.now() - lastTime > 1000) {
-      replaceQueryStringPosition(newParcel.x, newParcel.y)
-      lastTime = performance.now()
-    }
-  }
-
-  parcelObservable.add(({ newParcel }) => {
-    updateUrlPosition(newParcel)
-  })
-
+// sets the initial state of the position based on the URL query params
+export function setInitialPositionFromUrl() {
   if (lastPlayerPosition.equalsToFloats(0, 0, 0)) {
     // LOAD INITIAL POSITION IF SET TO ZERO
     const query = new URLSearchParams(location.search)
@@ -99,7 +74,6 @@ export function initializeUrlPositionObserver() {
       if (!isInsideWorldLimits(x, y)) {
         x = 0
         y = 0
-        replaceQueryStringPosition(x, y)
       }
       gridToWorld(x, y, lastPlayerPosition)
     } else {
@@ -107,21 +81,6 @@ export function initializeUrlPositionObserver() {
       lastPlayerPosition.z = 0
     }
   }
-
-  const v = Vector2.Zero()
-
-  worldToGrid(lastPlayerPosition, v)
-
-  setLastPlayerParcel(v)
-}
-
-function replaceQueryStringPosition(x: any, y: any) {
-  const currentPosition = `${x | 0},${y | 0}`
-
-  const q = new URLSearchParams(location.search)
-  q.set('position', currentPosition)
-
-  history.replaceState({ position: currentPosition }, 'position', `?${q.toString()}`)
 }
 
 /**

@@ -1,8 +1,15 @@
-import { LifecycleManager } from 'decentraland-loader/lifecycle/manager'
 import { LoadableScene } from 'shared/types'
+import { SceneWorker } from './SceneWorker'
 
 export type ParcelSceneLoadingState = {
   isWorldLoadingEnabled: boolean
   desiredParcelScenes: Map<string, LoadableScene>
-  lifecycleManager: LifecycleManager
+}
+
+export type WorldState = {
+  currentScene: SceneWorker | undefined,
+}
+
+export type RootWorldRState = {
+  world: WorldState
 }

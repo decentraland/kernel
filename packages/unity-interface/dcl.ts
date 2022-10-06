@@ -1,9 +1,7 @@
 import {
   DEBUG,
-  DECENTRALAND_SPACE,
   EDITOR,
   ENGINE_DEBUG_PANEL,
-  PARCEL_LOADING_ENABLED,
   rootURLPreviewMode,
   SCENE_DEBUG_PANEL,
   SHOW_FPS_COUNTER
@@ -12,34 +10,24 @@ import './UnityInterface'
 import { teleportTriggered } from 'shared/loading/types'
 import {
   allScenesEvent,
-  enableParcelSceneLoading,
   loadParcelSceneWorker,
-  onLoadParcelScenesObservable,
-  onPositionSettledObservable,
-  onPositionUnsettledObservable,
   reloadScene,
-  addDesiredParcel,
   unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
-import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
-import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
+import { teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
-import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { ContentMapping, EntityType, Scene, sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
-import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
-import { workerStatusObservable } from 'shared/world/SceneWorker'
-import { signalParcelLoadingStarted } from 'shared/renderer/actions'
-import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 import { sleep } from 'atomicHelpers/sleep'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -129,32 +117,6 @@ async function startGlobalScene(
     isPortableExperience: false,
     contents: scene.loadableScene.entity.content
   })
-}
-
-export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
-  onLoadParcelScenesObservable.add((lands) => {
-    getUnityInstance().LoadParcelScenes(lands.map(($) => loadableSceneToLoadableParcelScene($)))
-  })
-  onPositionSettledObservable.add((spawnPoint) => {
-    getUnityInstance().Teleport(spawnPoint)
-    getUnityInstance().ActivateRendering()
-  })
-  onPositionUnsettledObservable.add(() => {
-    getUnityInstance().DeactivateRendering()
-  })
-  workerStatusObservable.add((action) => store.dispatch(action))
-
-  if (PARCEL_LOADING_ENABLED) {
-    await enableParcelSceneLoading(params)
-  } else {
-    store.dispatch(signalParcelLoadingStarted())
-  }
-
-  if (DECENTRALAND_SPACE) {
-    const px = await getPortableExperienceFromUrn(DECENTRALAND_SPACE)
-    await addDesiredParcel(px)
-    onPositionSettledObservable.notifyObservers(pickWorldSpawnpoint(px.entity.metadata as Scene))
-  }
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {

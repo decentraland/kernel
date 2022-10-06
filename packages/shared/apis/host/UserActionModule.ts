@@ -3,7 +3,6 @@ import {
   getSceneNameFromJsonData,
   getThumbnailUrlFromJsonDataAndContent
 } from 'shared/selectors'
-import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { UserActionModuleServiceDefinition } from 'shared/protocol/kernel/apis/UserActionModule.gen'
 import { PortContext } from './context'
@@ -11,7 +10,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { Scene } from '@dcl/schemas'
 import { postProcessSceneName } from 'shared/atlas/selectors'
-import { ensureBffPromise, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 
 export function registerUserActionModuleServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
@@ -37,16 +36,13 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
       if (mapSceneData) {
         const metadata: Scene | undefined = mapSceneData?.entity.metadata
 
-        const bff = await ensureBffPromise()
-        const baseContentUrl = getFetchContentUrlPrefixFromBff(bff)
-
         sceneData.name = postProcessSceneName(getSceneNameFromJsonData(metadata))
         sceneData.owner = getOwnerNameFromJsonData(metadata)
         sceneData.previewImageUrl =
           getThumbnailUrlFromJsonDataAndContent(
             mapSceneData.entity.metadata,
             mapSceneData.entity.content,
-            baseContentUrl
+            mapSceneData.baseUrl
           ) || sceneData.previewImageUrl
       } else {
         debugger
