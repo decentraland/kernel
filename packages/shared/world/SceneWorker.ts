@@ -257,6 +257,7 @@ export class SceneWorker {
 
   private sendBatchWss(actions: EntityAction[]): void {
     const sceneId = this.loadableScene.id
+    const sceneNumber = this.rpcContext.sceneData.sceneNumber
     const messages: string[] = []
     let len = 0
 
@@ -279,7 +280,7 @@ export class SceneWorker {
         continue
       }
 
-      const part = protobufMsgBridge.encodeSceneMessage(sceneId, 0 /* sceneNumber */, action.type, action.payload, action.tag)
+      const part = protobufMsgBridge.encodeSceneMessage(sceneId, sceneNumber, action.type, action.payload, action.tag)
       messages.push(part)
       len += part.length
 
