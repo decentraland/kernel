@@ -376,6 +376,28 @@ function* configureMatrixClient(action: SetMatrixClient) {
   client.onFriendshipRequestRejection((socialId) =>
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
+
+  client.onChannelMembership((conversation, membership) => {
+    switch (membership) {
+      case 'join':
+        if (conversation.name === 'Empty room') {
+          break
+        }
+
+        const channel: ChannelInfoPayload = {
+          name: conversation.name ?? '',
+          channelId: conversation.id,
+          unseenMessages: conversation.unreadMessages?.length ?? 0,
+          lastMessageTimestamp: conversation.lastEventTimestamp ?? undefined,
+          memberCount: conversation.userIds?.length ?? 1,
+          description: '',
+          joined: true,
+          muted: false
+        }
+
+        getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+    }
+  })
 }
 
 // this saga needs to throw in case of failure
@@ -1348,18 +1370,11 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       muted: false
     }
 
-    if (!created) {
+    if (created) {
+      getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+    } else {
       yield apply(client, client.joinChannel, [conversation.id])
-
-      const joinedChannel = client.getChannel(conversation.id)
-
-      channel.unseenMessages = joinedChannel?.unreadMessages?.length || 0
-      channel.lastMessageTimestamp = joinedChannel?.lastEventTimestamp
-      channel.memberCount = joinedChannel?.userIds?.length || 0
     }
-
-    // send confirmation message to unity
-    getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
       let errorCode = ChannelErrorCode.UNKNOWN
@@ -1387,19 +1402,6 @@ export async function joinChannel(request: JoinOrCreateChannelPayload) {
     }
 
     await client.joinChannel(channelId)
-    const joinedChannel = client.getChannel(channelId)
-    const channel: ChannelInfoPayload = {
-      name: joinedChannel?.name ?? request.channelId,
-      channelId: channelId,
-      unseenMessages: joinedChannel?.unreadMessages?.length ?? 0,
-      lastMessageTimestamp: joinedChannel?.lastEventTimestamp ?? undefined,
-      memberCount: joinedChannel?.userIds?.length ?? 1,
-      description: '',
-      joined: true,
-      muted: false
-    }
-
-    getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     notifyJoinChannelError(request.channelId, ChannelErrorCode.UNKNOWN)
   }
