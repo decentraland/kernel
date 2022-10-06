@@ -1307,7 +1307,14 @@ function* handleLeaveChannel(action: LeaveChannel) {
       muted: false
     }
 
+    // send total unseen messages update
+    const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), getFriendIds(client))
+    const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+      total: totalUnreadMessages
+    }
+
     getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
+    getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
   } catch (e) {
     notifyLeaveChannelError(action.payload.channelId, ChannelErrorCode.UNKNOWN)
   }
