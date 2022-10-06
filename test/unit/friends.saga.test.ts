@@ -353,7 +353,7 @@ describe('Friends sagas', () => {
         sinon.reset()
       })
 
-      it('Should call unity with the expected private messages', () => {
+      it('Should call unity with the expected private messages', async () => {
         const request: GetPrivateMessagesPayload = {
           userId: '0xa3',
           limit: 10,
@@ -372,8 +372,8 @@ describe('Friends sagas', () => {
           }))
         }
 
-        sinon.mock(getUnityInstance()).expects('AddMessageToChatWindow').once().withExactArgs(addChatMessagesPayload)
-        friendsSagas.getPrivateMessages(request)
+        sinon.mock(getUnityInstance()).expects('AddChatMessages').once().withExactArgs(addChatMessagesPayload)
+        await friendsSagas.getPrivateMessages(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })

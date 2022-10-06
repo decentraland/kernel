@@ -292,7 +292,7 @@ describe('Friends sagas - Channels Feature', () => {
     })
 
     describe('When the user opens a chat channel window', () => {
-      it('Should send the expected messages', () => {
+      it('Should send the expected messages', async () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
@@ -314,13 +314,13 @@ describe('Friends sagas - Channels Feature', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddChatMessages').once().withExactArgs(addChatMessagesPayload)
-        friendsSagas.getChannelMessages(request)
+        await friendsSagas.getChannelMessages(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
 
     describe('When the user scrolls backwards in a chat channel window', () => {
-      it('Should send the expected messages', () => {
+      it('Should send the expected messages', async () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
@@ -342,7 +342,7 @@ describe('Friends sagas - Channels Feature', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddChatMessages').once().withExactArgs(addChatMessagesPayload)
-        friendsSagas.getChannelMessages(request)
+        await friendsSagas.getChannelMessages(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
@@ -365,7 +365,7 @@ describe('Friends sagas - Channels Feature', () => {
     })
 
     describe("When the user wants the list of channels and there's no filter", () => {
-      it('Should send the start of the channels list pagination', () => {
+      it('Should send the start of the channels list pagination', async () => {
         const request: GetChannelsPayload = {
           name: '',
           limit: 3,
@@ -401,13 +401,13 @@ describe('Friends sagas - Channels Feature', () => {
           .expects('UpdateChannelSearchResults')
           .once()
           .withExactArgs({ channelSearchResultsPayload: searchResult })
-        friendsSagas.searchChannels(request)
+        await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
 
     describe("When the user wants the list of channels and there's filter", () => {
-      it('Should send the start of the filtered channels list pagination', () => {
+      it('Should send the start of the filtered channels list pagination', async () => {
         const request: GetChannelsPayload = {
           name: '00',
           limit: 3,
@@ -443,7 +443,7 @@ describe('Friends sagas - Channels Feature', () => {
           .expects('UpdateChannelSearchResults')
           .once()
           .withExactArgs({ channelSearchResultsPayload: searchResult })
-        friendsSagas.searchChannels(request)
+        await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
