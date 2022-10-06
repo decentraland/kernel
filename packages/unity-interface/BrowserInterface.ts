@@ -816,6 +816,10 @@ export class BrowserInterface {
     )
   }
 
+  public async UpdateMemoryUsage() {
+    getUnityInstance().SendMemoryUsage()
+  }
+
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {
     const { message, loadPercentage } = data
     store.dispatch(updateStatusMessage(message, loadPercentage))

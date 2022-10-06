@@ -2,7 +2,7 @@ import { Vector3 } from '@dcl/ecs-math'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
 import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
-import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
+import {getUnityInstance, HotSceneInfo, IUnityInterface, setUnityInstance} from './IUnityInterface'
 import {
   HUDConfiguration,
   InstancedSpawnPoint,
@@ -245,6 +245,16 @@ export class UnityInterface implements IUnityInterface {
     }
 
     this.SendMessageToUnity('Bridges', 'SetLoadingScreen', JSON.stringify(data))
+  }
+
+  public SendMemoryUsage() {
+    let estimatedAllocatedMemory = 0
+    let estimatedTotalMemory = 0
+    if (getUnityInstance()?.Module?.asmLibraryArg?._GetDynamicMemorySize) {
+      estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
+      estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
+    }
+    this.SendMessageToUnity('Bridges', 'SetMemoryUsage', JSON.stringify({estimatedAllocatedMemory, estimatedTotalMemory}))
   }
 
   public DeactivateRendering() {
