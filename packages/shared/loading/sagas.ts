@@ -38,6 +38,7 @@ import { getCatalystServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { getAssetBundlesBaseUrl } from 'config'
 import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
 import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
+import { LoadableScene } from 'shared/types'
 
 // The following actions may change the status of the loginVisible
 const ACTIONS_FOR_LOADING = [
@@ -102,10 +103,12 @@ function* triggerUnityClientLoaded() {
 export function* trackLoadTime(action: SceneLoad): any {
   const start = new Date().getTime()
   const { id } = action.payload
-  const sceneId = id
+  const entityId = id
   const result = yield race({
-    start: take((action: AnyAction) => action.type === SCENE_START && action.payload === sceneId),
-    fail: take((action: AnyAction) => action.type === SCENE_FAIL && action.payload === sceneId)
+    start: take(
+      (action: AnyAction) => action.type === SCENE_START && (action.payload as LoadableScene).id === entityId
+    ),
+    fail: take((action: AnyAction) => action.type === SCENE_FAIL && (action.payload as LoadableScene).id === entityId)
   })
   const userId = yield select(getCurrentUserId)
   const position = lastPlayerPosition
@@ -113,7 +116,7 @@ export function* trackLoadTime(action: SceneLoad): any {
     position: { ...position },
     elapsed: new Date().getTime() - start,
     success: !!result.start,
-    sceneId,
+    sceneId: entityId,
     userId: userId
   })
 }
