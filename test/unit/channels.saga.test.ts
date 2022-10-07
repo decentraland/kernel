@@ -132,7 +132,7 @@ const stubClient = (start: number, end: number, index: number) =>
     getUserId: () => '0xa1'
   } as unknown as SocialAPI)
 
-function mockStoreCalls(ops?: { start?: number; end?: number; index?: number }) {
+function mockStoreCalls(ops?: { start?: number; end?: number; index?: number; catalog?: boolean }) {
   sinon.stub(friendsSelectors, 'getChannels').callsFake(() => allCurrentConversations)
   sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
   sinon
@@ -141,6 +141,7 @@ function mockStoreCalls(ops?: { start?: number; end?: number; index?: number }) 
   sinon
     .stub(profilesSelectors, 'getCurrentUserProfile')
     .callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
+  sinon.stub(profilesSelectors, 'isAddedToCatalog').callsFake(() => ops?.catalog ?? true)
   sinon.stub(profilesSelectors, 'getProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds))
 }
 
@@ -278,7 +279,7 @@ describe('Friends sagas - Channels Feature', () => {
   })
 
   describe('Get channel messages', () => {
-    let opts = { start: 2, end: 4 }
+    let opts = { start: 2, end: 4, catalog: true }
 
     beforeEach(() => {
       const { store } = buildStore()
