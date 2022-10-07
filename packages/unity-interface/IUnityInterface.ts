@@ -198,7 +198,7 @@ export interface IUnityInterface {
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
-  SendMemoryUsage() : void
+  SendMemoryUsageToRenderer(): void
 
   // *********************************************************************************
   // ************** Builder in world messages **************

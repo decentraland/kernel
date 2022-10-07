@@ -2,7 +2,7 @@ import { Vector3 } from '@dcl/ecs-math'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
 import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
-import {getUnityInstance, HotSceneInfo, IUnityInterface, setUnityInstance} from './IUnityInterface'
+import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
 import {
   HUDConfiguration,
   InstancedSpawnPoint,
@@ -247,14 +247,23 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Bridges', 'SetLoadingScreen', JSON.stringify(data))
   }
 
-  public SendMemoryUsage() {
-    let estimatedAllocatedMemory = 0
-    let estimatedTotalMemory = 0
+  public SendMemoryUsageToRenderer() {
+    const memory = (performance as any).memory
+    const jsHeapSizeLimit = memory?.jsHeapSizeLimit
+    const totalJSHeapSize = memory?.totalJSHeapSize
+    const usedJSHeapSize = memory?.usedJSHeapSize
+
+    /*    let estimatedAllocatedMemory = 15
+    let estimatedTotalMemory = 17
     if (getUnityInstance()?.Module?.asmLibraryArg?._GetDynamicMemorySize) {
       estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
       estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
-    }
-    this.SendMessageToUnity('Bridges', 'SetMemoryUsage', JSON.stringify({estimatedAllocatedMemory, estimatedTotalMemory}))
+    }*/
+    this.SendMessageToUnity(
+      'Bridges',
+      'SetMemoryUsage',
+      JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
+    )
   }
 
   public DeactivateRendering() {

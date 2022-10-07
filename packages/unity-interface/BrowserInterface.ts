@@ -817,7 +817,7 @@ export class BrowserInterface {
   }
 
   public async UpdateMemoryUsage() {
-    getUnityInstance().SendMemoryUsage()
+    getUnityInstance().SendMemoryUsageToRenderer()
   }
 
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {
