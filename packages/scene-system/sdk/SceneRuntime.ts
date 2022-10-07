@@ -1,16 +1,27 @@
-import { LoadableAPIs } from '../../shared/apis/client'
+import { LoadableAPIs } from './client'
 import { componentSerializeOpt, initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
 import { customEval, prepareSandboxContext } from './sandbox'
 import { RpcClient } from '@dcl/rpc/dist/types'
-import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { PermissionItem } from '../../shared/protocol/kernel/apis/Permissions.gen'
 
 import { createDecentralandInterface, DecentralandInterfaceOptions } from './runtime/DecentralandInterface'
 import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
 
 import { DevToolsAdapter } from './runtime/DevToolsAdapter'
 import { RuntimeEventCallback, RuntimeEvent, SceneRuntimeEventState, EventDataToRuntimeEvent } from './runtime/Events'
-import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { Scene } from '@dcl/schemas'
+
+/**
+ * Converts a string position "-1,5" => { x: -1, y: 5 }
+ */
+function parseParcelPosition(position: string) {
+  const [x, y] = position
+    .trim()
+    .split(/\s*,\s*/)
+    .map(($) => parseInt($, 10))
+  return { x, y }
+}
+
 
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name

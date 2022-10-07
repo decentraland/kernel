@@ -2,9 +2,9 @@ import { call, select, takeEvery, takeLatest, put } from 'redux-saga/effects'
 import { receiveUserTalking } from 'shared/comms/peers'
 import { getCommsIsland } from 'shared/comms/selectors'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
-import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
-import { createLiveKitVoiceHandler } from 'voice-chat-codec/liveKitVoiceHandler'
-import { VoiceHandler } from 'voice-chat-codec/VoiceHandler'
+import { createOpusVoiceHandler } from './opusVoiceHandler'
+import { createLiveKitVoiceHandler } from './liveKitVoiceHandler'
+import { VoiceHandler } from './VoiceHandler'
 import {
   LEAVE_VOICE_CHAT,
   SET_VOICE_CHAT_MUTE,

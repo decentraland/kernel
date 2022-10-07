@@ -1,7 +1,7 @@
-import { EntityType, Scene } from '@dcl/schemas'
+import { ContentMapping, EntityType, Scene } from '@dcl/schemas'
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
 import { PREVIEW, rootURLPreviewMode } from 'config'
-import { ContentMapping, LoadableScene } from 'shared/types'
+import { LoadableScene } from 'shared/types'
 import { unsignedCRC32 } from 'atomicHelpers/crc32'
 
 const encoder = new TextEncoder()

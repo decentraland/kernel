@@ -24,8 +24,8 @@
     "pretty": true,
     "outDir": "../../static/systems",
     "lib": ["es2017", "webworker"],
-    "baseUrl": "..",
+    "baseUrl": ".",
     "types": ["@dcl/posix"]
   },
-  "exclude": ["../../node_modules", "../voice-chat-codec"]
+  "include": ["."]
 }

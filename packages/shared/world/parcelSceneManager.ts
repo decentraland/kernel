@@ -1,5 +1,5 @@
 import { scenesChanged } from '../loading/actions'
-import { ContentMapping, InstancedSpawnPoint, LoadableParcelScene, LoadableScene } from '../types'
+import { InstancedSpawnPoint, LoadableParcelScene, LoadableScene } from '../types'
 import { SceneWorker } from './SceneWorker'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from 'mz-observable'
@@ -11,6 +11,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { getAssetBundlesBaseUrl, ETHEREUM_NETWORK } from 'config'
 import { normalizeContentMappings, getSceneNameFromJsonData } from 'shared/selectors'
+import { ContentMapping } from '@dcl/schemas'
 
 export type EnableParcelSceneLoadingOptions = {
   parcelSceneClass: {

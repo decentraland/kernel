@@ -7,7 +7,6 @@ import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from '../shared/airdrops/interface'
 import {
   RenderProfile,
-  ContentMapping,
   InstancedSpawnPoint,
   LoadableParcelScene,
   WearableV2,
@@ -40,7 +39,7 @@ import {
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
-import { Avatar } from '@dcl/schemas'
+import { Avatar, ContentMapping } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { Emote } from 'shared/catalogs/types'

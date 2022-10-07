@@ -27,9 +27,7 @@
       "es2017",
       "dom"
     ],
-    "baseUrl": ".."
+    "baseUrl": "."
   },
-  "exclude": [
-    "../../node_modules"
-  ]
+  "include": ["."]
 }

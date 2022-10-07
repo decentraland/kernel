@@ -1,13 +1,13 @@
-import { VoiceChatCodecWorkerMain, EncodeStream } from './VoiceChatCodecWorkerMain'
+import { VoiceChatCodecWorkerMain, EncodeStream } from '../../voice-chat-codec/VoiceChatCodecWorkerMain'
 import { SortedLimitedQueue } from 'atomicHelpers/SortedLimitedQueue'
 import defaultLogger from 'shared/logger'
-import { VOICE_CHAT_SAMPLE_RATE, OPUS_FRAME_SIZE_MS } from './constants'
+import { VOICE_CHAT_SAMPLE_RATE, OPUS_FRAME_SIZE_MS } from '../../voice-chat-codec/constants'
 import { parse, write } from 'sdp-transform'
-import { InputWorkletRequestTopic, OutputWorkletRequestTopic } from './types'
+import { InputWorkletRequestTopic, OutputWorkletRequestTopic } from '../../voice-chat-codec/types'
 import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const workletWorkerRaw = require('raw-loader!../../static/voice-chat-codec/audioWorkletProcessors.js')
+const workletWorkerRaw = require('raw-loader!../../../static/voice-chat-codec/audioWorkletProcessors.js')
 const workletWorkerUrl = URL.createObjectURL(new Blob([workletWorkerRaw], { type: 'application/javascript' }))
 
 export type AudioCommunicatorChannel = {

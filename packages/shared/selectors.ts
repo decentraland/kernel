@@ -1,5 +1,5 @@
-import { Scene } from '@dcl/schemas'
-import { ContentMapping, SceneFeatureToggle } from './types'
+import { ContentMapping, Scene } from '@dcl/schemas'
+import { SceneFeatureToggle } from './types'
 
 export function normalizeContentMappings(
   mappings: Record<string, string> | Array<ContentMapping>

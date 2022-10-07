@@ -27,7 +27,5 @@
     ],
     "baseUrl": ".."
   },
-  "exclude": [
-    "../../node_modules"
-  ]
+  "include": ["."]
 }

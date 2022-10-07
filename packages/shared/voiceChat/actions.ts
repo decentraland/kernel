@@ -1,6 +1,6 @@
 import { action } from 'typesafe-actions'
 import { VoicePolicy } from './types'
-import { VoiceHandler } from 'voice-chat-codec/VoiceHandler'
+import { VoiceHandler } from './VoiceHandler'
 
 export const SET_VOICE_CHAT_LIVE_KIT_ROOM = '[VC] SetVoiceChatLiveKitRoom'
 export const setVoiceChatLiveKitRoom = (room: any) => action(SET_VOICE_CHAT_LIVE_KIT_ROOM, { room })

@@ -56,7 +56,7 @@ import { getUnityInstance } from './IUnityInterface'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import { IFuture } from 'fp-future'
 import { reportHotScenes } from 'shared/social/hotScenes'
-import { GIFProcessor } from 'gif-processor/processor'
+import { GIFProcessor } from './gif-processor'
 import {
   joinVoiceChat,
   leaveVoiceChat,

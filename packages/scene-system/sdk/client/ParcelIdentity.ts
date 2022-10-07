@@ -1,7 +1,25 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { ParcelIdentityServiceDefinition } from 'shared/protocol/kernel/apis/ParcelIdentity.gen'
-import { ILand } from '../../types'
+import { ContentMapping, Scene } from '@dcl/schemas'
+import { ParcelIdentityServiceDefinition } from '../../../shared/protocol/kernel/apis/ParcelIdentity.gen'
+
+export type MappingsResponse = {
+  parcel_id: string
+  root_cid: string
+  contents: Array<ContentMapping>
+}
+
+export interface ILand {
+  /**
+   * sceneId: Now it is either an internal identifier or the rootCID.
+   * In the future will change to the sceneCID
+   */
+  sceneId: string
+  sceneJsonData: Scene
+  baseUrl: string
+  baseUrlBundles: string
+  mappingsResponse: MappingsResponse
+}
 
 export namespace ParcelIdentityServiceClient {
   export function create<Context>(clientPort: RpcClientPort) {

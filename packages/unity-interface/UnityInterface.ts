@@ -16,7 +16,6 @@ import {
   RenderProfile,
   BuilderConfiguration,
   RealmsInfoForRenderer,
-  ContentMapping,
   TutorialInitializationMessage,
   WorldPosition,
   HeaderRequest,
@@ -50,7 +49,7 @@ import { uuid } from 'atomicHelpers/math'
 import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
-import { Avatar } from '@dcl/schemas'
+import { Avatar, ContentMapping } from '@dcl/schemas'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { incrementCounter } from '../shared/occurences'
 
@@ -113,6 +112,7 @@ export class UnityInterface implements IUnityInterface {
     contents: Array<ContentMapping>
     icon?: string
     isPortableExperience: boolean
+    sceneNumber: number
   }) {
     /**
      * UI Scenes are scenes that does not check any limit or boundary. The

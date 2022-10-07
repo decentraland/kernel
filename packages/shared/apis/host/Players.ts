@@ -1,6 +1,5 @@
 import { store } from 'shared/store/isolatedStore'
 
-import { AvatarForUserData } from 'shared/types'
 import { getProfileFromStore } from 'shared/profiles/selectors'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
@@ -9,8 +8,21 @@ import { getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
-import { AvatarInfo } from '@dcl/schemas'
+import { AvatarInfo, Snapshots, WearableId } from '@dcl/schemas'
 import { rgbToHex } from 'shared/profiles/transformations/convertToRGBObject'
+
+export type AvatarForUserData = {
+  bodyShape: WearableId
+  skinColor: string
+  hairColor: string
+  eyeColor: string
+  wearables: WearableId[]
+  emotes?: {
+    slot: number
+    urn: string
+  }[]
+  snapshots: Snapshots
+}
 
 export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
   return {

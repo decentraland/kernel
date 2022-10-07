@@ -1,5 +1,5 @@
 import { Protocol } from 'devtools-protocol'
-import { LoadedModules } from 'shared/apis/client'
+import { LoadedModules } from '../client'
 
 export class DevToolsAdapter {
   exceptions: Error[] = []

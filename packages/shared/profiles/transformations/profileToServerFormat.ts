@@ -1,10 +1,10 @@
 import { analizeColorPart, stripAlpha } from './analizeColorPart'
 import { isValidBodyShape } from './isValidBodyShape'
 import { Avatar, AvatarInfo, Profile } from '@dcl/schemas'
-import { AvatarForUserData } from 'shared/types'
 import { validateAvatar } from '../schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import defaultLogger from 'shared/logger'
+import { AvatarForUserData } from 'shared/apis/host/Players'
 
 type OldAvatar = Omit<Avatar, 'avatar'> & {
   avatar: AvatarForUserData

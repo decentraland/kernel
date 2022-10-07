@@ -226,7 +226,7 @@ export async function profileServerRequest(userId: string, version?: number): Pr
       throw new Error(`Invalid response from ${url}`)
     }
 
-    const res: RemoteProfile = await response.json()
+    const res: RemoteProfile[] = await response.json()
 
     return res[0] || { avatars: [], timestamp: Date.now() }
   } catch (e: any) {
