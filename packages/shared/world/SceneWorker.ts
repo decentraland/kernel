@@ -70,6 +70,7 @@ export class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
 
   public rpcContext!: PortContext
+  public sceneReady: boolean = false
   private rpcServer!: RpcServer<PortContext>
 
   private sceneStarted: boolean = false
@@ -80,7 +81,6 @@ export class SceneWorker {
   private positionObserver: Observer<any> | null = null
   private sceneLifeCycleObserver: Observer<any> | null = null
   private readonly startLoadingTime = performance.now()
-  private sceneReady: boolean = false
 
   metadata: Scene
   logger: ILogger

@@ -4,7 +4,7 @@ import { POSITION_SETTLED, POSITION_UNSETTLED, SetParcelPosition, SetSceneLoader
 
 const INITIAL_STATE: SceneLoaderState = {
   loader: undefined,
-  positionSettled: true,
+  positionSettled: false,
   parcelPosition: { x: 0, y: 0 },
   loadingRadius: 4
 }
