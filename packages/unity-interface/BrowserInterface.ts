@@ -625,7 +625,7 @@ export class BrowserInterface {
         }
 
         const payload: SetAudioDevicesPayload = {
-          inputDevices: filterDevices('audiointput'),
+          inputDevices: filterDevices('audioinput'),
           outputDevices: filterDevices('audiooutput')
         }
 
