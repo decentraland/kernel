@@ -1529,7 +1529,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   if (!client) return
 
   // get cursor of the conversation located on the given message or at the end of the conversation if there is no given message.
-  const messageId: string | undefined = !request.fromMessageId ? undefined : request.fromMessageId
+  const messageId: string | undefined = !request.from ? undefined : request.from
 
   // the message in question is in the middle of a window, so we multiply by two the limit in order to get the required messages.
   let limit = request.limit

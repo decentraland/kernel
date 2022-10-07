@@ -785,7 +785,7 @@ export type UpdateTotalUnseenMessagesByChannelPayload = {
 export type GetChannelMessagesPayload = {
   channelId: string
   limit: number // max amount of entries to request
-  fromMessageId: string // pivot id to skip entries
+  from: string // pivot id to skip entries
 }
 
 export type GetChannelsPayload = {

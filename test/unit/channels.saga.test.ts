@@ -297,7 +297,7 @@ describe('Friends sagas - Channels Feature', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
-          fromMessageId: ''
+          from: ''
         }
 
         const channelMessagesFiltered = channelMessages.slice(0, 2)
@@ -325,7 +325,7 @@ describe('Friends sagas - Channels Feature', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
-          fromMessageId: '2'
+          from: '2'
         }
 
         const channelMessagesFiltered = channelMessages.slice(2, 4)
