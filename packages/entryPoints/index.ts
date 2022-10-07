@@ -5,10 +5,10 @@ import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
-import { gridToWorld, worldToGrid } from '../atomicHelpers/parcelScenePositions'
+import { gridToWorld, parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
-import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
+import { getInitialPositionFromUrl } from 'shared/world/positionThings'
 import { getPreviewSceneId, loadPreviewScene, reloadPlaygroundScene } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
@@ -36,6 +36,7 @@ import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { sendHomeScene } from '../shared/atlas/actions'
 import { homePointKey } from '../shared/atlas/utils'
+import { teleportToAction } from 'shared/scene-loader/actions'
 
 const logger = createLogger('kernel: ')
 
@@ -244,16 +245,27 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   foregroundChangeObservable.add(reportForeground)
   reportForeground()
 
+  // load homepoint
   const homePoint: string = await getFromPersistentStorage(homePointKey)
   if (homePoint) {
     store.dispatch(sendHomeScene(homePoint))
-    if (!HAS_INITIAL_POSITION_MARK) {
-      const [x, y] = homePoint.split(',').map((p) => parseFloat(p))
-      gridToWorld(x, y, lastPlayerPosition)
-    }
   }
 
-  teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
+  const urlPosition = getInitialPositionFromUrl()
+
+  // teleport to initial location
+  if (urlPosition) {
+    // 1. by URL
+    const { x, y } = urlPosition
+    store.dispatch(teleportToAction(gridToWorld(x, y)))
+  } else if (homePoint && !HAS_INITIAL_POSITION_MARK) {
+    // 2. by homepoint
+    const { x, y } = parseParcelPosition(homePoint)
+    store.dispatch(teleportToAction(gridToWorld(x, y)))
+  } else {
+    // 3. fallback to 0,0
+    store.dispatch(teleportToAction({ x: 0, y: 100, z: 0 }))
+  }
 
   if (options.previewMode) {
     i.SetDisableAssetBundles()

@@ -1,10 +1,4 @@
-import {
-  Vector3,
-  EcsMathReadOnlyVector3,
-  EcsMathReadOnlyQuaternion,
-  EcsMathReadOnlyVector2,
-  Vector2
-} from '@dcl/ecs-math'
+import { Vector3, EcsMathReadOnlyVector3, EcsMathReadOnlyQuaternion, Vector2 } from '@dcl/ecs-math'
 import { Observable } from 'mz-observable'
 import { InstancedSpawnPoint } from '../types'
 import { worldToGrid, gridToWorld, isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
@@ -31,7 +25,6 @@ export type PositionReport = {
 }
 
 export const positionObservable = new Observable<Readonly<PositionReport>>()
-export const teleportObservable = new Observable<EcsMathReadOnlyVector2 & { text?: string }>()
 
 export const lastPlayerPosition = new Vector3()
 export let lastPlayerPositionReport: Readonly<PositionReport> | null = null
@@ -61,25 +54,21 @@ function setLastPlayerParcel(parcel: Vector2) {
 }
 
 // sets the initial state of the position based on the URL query params
-export function setInitialPositionFromUrl() {
-  if (lastPlayerPosition.equalsToFloats(0, 0, 0)) {
-    // LOAD INITIAL POSITION IF SET TO ZERO
-    const query = new URLSearchParams(location.search)
-    const position = query.get('position')
-    if (typeof position === 'string') {
-      const [xString, yString] = position.split(',')
-      let x = parseFloat(xString)
-      let y = parseFloat(yString)
+export function getInitialPositionFromUrl(): ReadOnlyVector2 | undefined {
+  // LOAD INITIAL POSITION IF SET TO ZERO
+  const query = new URLSearchParams(location.search)
+  const position = query.get('position')
+  if (typeof position === 'string') {
+    const [xString, yString] = position.split(',')
+    let x = parseFloat(xString)
+    let y = parseFloat(yString)
 
-      if (!isInsideWorldLimits(x, y)) {
-        x = 0
-        y = 0
-      }
-      gridToWorld(x, y, lastPlayerPosition)
-    } else {
-      lastPlayerPosition.x = Math.round(Math.random() * 10) - 5
-      lastPlayerPosition.z = 0
+    if (!isInsideWorldLimits(x, y)) {
+      x = 0
+      y = 0
     }
+
+    return { x, y }
   }
 }
 

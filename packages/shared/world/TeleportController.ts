@@ -1,15 +1,17 @@
 import { getWorld, isInsideWorldLimits } from '@dcl/schemas'
 
-import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
+import { lastPlayerPosition } from 'shared/world/positionThings'
 import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
 import defaultLogger from 'shared/logger'
 
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
+import { gridToWorld, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
 import { store } from 'shared/store/isolatedStore'
 import { getBff } from 'shared/bff/selectors'
 import { Parcel } from 'shared/dao/types'
 import { urlWithProtocol } from 'shared/bff/resolver'
+import { trackTeleportTriggered } from 'shared/loading/types'
+import { teleportToAction } from 'shared/scene-loader/actions'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -64,11 +66,8 @@ export class TeleportController {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
 
     if (isInsideWorldLimits(x, y)) {
-      teleportObservable.notifyObservers({
-        x: x,
-        y: y,
-        text: tpMessage
-      })
+      store.dispatch(trackTeleportTriggered(tpMessage || `Teleporting to ${x}, ${y}`))
+      store.dispatch(teleportToAction(gridToWorld(x, y)))
 
       return { message: tpMessage, success: true }
     } else {

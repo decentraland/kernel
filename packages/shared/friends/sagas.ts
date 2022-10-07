@@ -804,6 +804,9 @@ function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
   })
 }
 
+/**
+ * This saga updates the status of our player for the Presence feature
+ */
 function* initializeStatusUpdateInterval() {
   let lastStatus: UpdateUserStatus | undefined = undefined
 

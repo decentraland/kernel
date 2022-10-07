@@ -8,38 +8,57 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import {
   positionSettled,
   PositionSettled,
+  positionUnsettled,
   POSITION_SETTLED,
   POSITION_UNSETTLED,
   setSceneLoader,
   SET_PARCEL_POSITION,
   SET_SCENE_LOADER,
-  SET_WORLD_LOADING_RADIUS
+  SET_WORLD_LOADING_RADIUS,
+  TeleportToAction,
+  TELEPORT_TO
 } from './actions'
 import { createGenesisCityLoader } from './genesis-city-loader-impl'
 import { createWorldLoader } from './world-loader-impl'
 import { getLoadingRadius, getParcelPosition, getPositionSettled, getSceneLoader } from './selectors'
 import { getFetchContentServerFromBff } from 'shared/bff/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
-import { setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
+import { getLoadedParcelSceneByPointer, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
 import { SCENE_FAIL, SCENE_LOAD, SCENE_START } from 'shared/loading/actions'
 import { getCurrentScene } from 'shared/world/selectors'
 import { SET_CURRENT_SCENE } from 'shared/world/actions'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { lastPlayerPosition, pickWorldSpawnpoint } from 'shared/world/positionThings'
-import { Vector3 } from '@dcl/ecs-math'
+import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
 export function* sceneLoaderSaga() {
   yield takeEvery(SET_BFF, onSetBff)
   yield takeEvery(POSITION_SETTLED, onPositionSettled)
   yield takeEvery(POSITION_UNSETTLED, onPositionUnsettled)
+  yield takeEvery(TELEPORT_TO, teleportHandler)
   yield fork(onWorldPositionChange)
   yield fork(positionSettler)
 }
 
-function* onPositionSettled(action: PositionSettled) {
-  getUnityInstance().Teleport(action.payload)
+function* teleportHandler(action: TeleportToAction) {
+  //
+  const { x, y } = worldToGrid(action.payload.position)
+  const pointer = `${x},${y}`
+  const sceneLoaded: SceneWorker | undefined = yield call(getLoadedParcelSceneByPointer, pointer)
 
+  if (sceneLoaded) {
+    const spawnPoint = pickWorldSpawnpoint(sceneLoaded.metadata)
+    yield put(positionSettled(spawnPoint.position, spawnPoint.cameraTarget))
+  } else {
+    getUnityInstance().Teleport(action.payload)
+    yield put(positionUnsettled())
+  }
+}
+
+function* onPositionSettled(action: PositionSettled) {
+  lastPlayerPosition.copyFrom(action.payload.position)
+  getUnityInstance().Teleport(action.payload)
   // TODO: move this to LOADING saga
   getUnityInstance().ActivateRendering()
 }
@@ -66,6 +85,8 @@ function* onSetBff(action: SetBffAction) {
       })
       yield put(setSceneLoader(loader))
     } else {
+      // const enableEmptyParcels = ENABLE_EMPTY_SCENES && !(globalThis as any)['isRunningTests']
+
       const loader: ISceneLoader = yield call(createGenesisCityLoader, {
         contentServer: getFetchContentServerFromBff(bff)
         // TODO: re-activate empty parcels
@@ -93,10 +114,8 @@ function* positionSettler() {
 
     console.log({ settled, reason, currentScene })
 
-    if ((!settled && currentScene?.sceneReady) || (!settled && !currentScene && reason.SCENE_LOAD)) {
-      const spawn = currentScene
-        ? pickWorldSpawnpoint(currentScene!.metadata)
-        : { position: lastPlayerPosition, cameraTarget: Vector3.Forward() }
+    if (!settled && currentScene?.sceneReady) {
+      const spawn = pickWorldSpawnpoint(currentScene!.metadata)
       yield put(positionSettled(spawn.position, spawn.cameraTarget))
     }
   }
@@ -110,6 +129,7 @@ function* onWorldPositionChange() {
       timeout: delay(5000),
       newSceneLoader: take(SET_SCENE_LOADER),
       newParcel: take(SET_PARCEL_POSITION),
+      SCENE_START: take(SCENE_START),
       newLoadingRadius: take(SET_WORLD_LOADING_RADIUS),
       unload: take(BEFORE_UNLOAD)
     })

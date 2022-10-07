@@ -1,12 +1,8 @@
 import { defaultLogger } from 'shared/logger'
-import { teleportObservable } from 'shared/world/positionThings'
 
 /////////////////////////////////// AUDIO STREAMING ///////////////////////////////////
 
 const audioStreamSource = new Audio()
-teleportObservable.add(() => {
-  audioStreamSource.pause()
-})
 
 export async function setAudioStream(url: string, play: boolean, volume: number) {
   const isSameSrc = audioStreamSource.src.length > 1 && url.includes(audioStreamSource.src)

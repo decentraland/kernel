@@ -4,8 +4,7 @@ import { BEFORE_UNLOAD } from 'shared/actions'
 import { SetParcelPosition, SET_PARCEL_POSITION } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 import { setCurrentScene } from './actions'
-import { loadedSceneWorkers } from './parcelSceneManager'
-import { setInitialPositionFromUrl } from './positionThings'
+import { getLoadedParcelSceneByPointer, loadedSceneWorkers } from './parcelSceneManager'
 import { SceneWorker } from './SceneWorker'
 
 declare let location: any
@@ -15,9 +14,6 @@ export function* worldSagas() {
   // FIRST bind all sagas
   yield fork(sceneObservableProcess)
   yield fork(updateUrlPosition)
-
-  // LASTLY set the initial position state from URL
-  yield call(setInitialPositionFromUrl)
 }
 
 // This saga only updates the URL with the current parcel
@@ -61,15 +57,8 @@ function* sceneObservableProcess() {
     }
 
     if (!lastPlayerScene || !lastPlayerScene.loadableScene.entity.metadata.scene.parcels.includes(parcelString)) {
-      let newScene: SceneWorker | undefined = undefined
-
       // find which scene we are standing in
-      for (let [, w] of loadedSceneWorkers) {
-        if (!w.rpcContext.sceneData.isPortableExperience && w.loadableScene.entity.pointers.includes(parcelString)) {
-          newScene = w
-          break
-        }
-      }
+      const newScene: SceneWorker | undefined = yield call(getLoadedParcelSceneByPointer, parcelString)
 
       if (newScene === lastPlayerScene) continue
 

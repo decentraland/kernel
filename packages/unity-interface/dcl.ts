@@ -7,14 +7,12 @@ import {
   SHOW_FPS_COUNTER
 } from 'config'
 import './UnityInterface'
-import { teleportTriggered } from 'shared/loading/types'
 import {
   allScenesEvent,
   loadParcelSceneWorker,
   reloadScene,
   unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
-import { teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
@@ -196,11 +194,6 @@ export async function reloadPlaygroundScene() {
   const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
   await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, playgroundContentMapping, playgroundBaseUrl)
 }
-
-teleportObservable.add((position: { x: number; y: number; text?: string }) => {
-  // before setting the new position, show loading screen to avoid showing an empty world
-  store.dispatch(teleportTriggered(position.text || `Teleporting to ${position.x}, ${position.y}`))
-})
 
 {
   // TODO: move to unity-renderer

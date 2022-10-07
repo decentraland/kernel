@@ -66,6 +66,14 @@ export function forceStopScene(sceneId: string) {
   }
 }
 
+export function getLoadedParcelSceneByPointer(pointer: string) {
+  for (let [, w] of loadedSceneWorkers) {
+    if (!w.rpcContext.sceneData.isPortableExperience && w.loadableScene.entity.pointers.includes(pointer)) {
+      return w
+    }
+  }
+}
+
 /**
  * Creates a worker for the ParcelSceneAPI
  */
@@ -173,12 +181,11 @@ async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableSce
   }
 }
 
-
 /**
  * This is the format of scenes that needs to be sent to Unity to create its counterpart
  * of a SceneWorker
  */
- function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
+function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
   const entity = worker.loadableScene.entity
   const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
 
