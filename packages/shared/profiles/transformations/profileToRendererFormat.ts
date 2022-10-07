@@ -1,11 +1,12 @@
 import { ParcelsWithAccess } from '@dcl/legacy-ecs/dist/decentraland/Types'
 import { convertToRGBObject } from './convertToRGBObject'
 import { isURL } from 'atomicHelpers/isURL'
-import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
+import { Avatar, AvatarInfo, IPFSv2, Snapshots } from '@dcl/schemas'
 import { backupProfile } from '../generateRandomUserProfile'
 import { genericAvatarSnapshots } from 'config'
 import { calculateDisplayName } from './processServerProfile'
 import { NewProfileForRenderer } from './types'
+import { Color3 } from 'decentraland-ecs'
 
 export function profileToRendererFormat(
   profile: Partial<Avatar>,
@@ -41,21 +42,57 @@ export function profileToRendererFormat(
     tutorialFlagsMask: 0,
     tutorialStep: stage.tutorialStep || 0,
     snapshots: prepareSnapshots(profile.avatar!.snapshots),
-    avatar: {
-      wearables: profile.avatar?.wearables || [],
-      emotes: profile.avatar?.emotes || [],
-      bodyShape: profile.avatar?.bodyShape || '',
-      eyeColor: convertToRGBObject(profile.avatar?.eyes.color),
-      hairColor: convertToRGBObject(profile.avatar?.hair.color),
-      skinColor: convertToRGBObject(profile.avatar?.skin.color)
-    },
+    avatar: prepareAvatar(profile.avatar),
     baseUrl: options.baseUrl,
     parcelsWithAccess: options.parcels || []
   }
 }
 
+export function defaultProfile({
+  userId,
+  name,
+  face256,
+  baseUrl
+}: {
+  userId: string
+  name: string
+  face256: string
+  baseUrl: string
+}): NewProfileForRenderer {
+  const avatar = {
+    userId,
+    name,
+    avatar: {
+      snapshots: prepareSnapshots({ face256, body: '' }),
+      ...defaultAvatar()
+    }
+  }
+  return profileToRendererFormat(avatar, { baseUrl })
+}
+
+function defaultAvatar(): Omit<AvatarInfo, 'snapshots'> {
+  return {
+    bodyShape: '',
+    eyes: { color: Color3.White() },
+    hair: { color: Color3.White() },
+    skin: { color: Color3.White() },
+    wearables: []
+  }
+}
+
+function prepareAvatar(avatar?: Partial<AvatarInfo>) {
+  return {
+    wearables: avatar?.wearables || [],
+    emotes: avatar?.emotes || [],
+    bodyShape: avatar?.bodyShape || '',
+    eyeColor: convertToRGBObject(avatar?.eyes?.color),
+    hairColor: convertToRGBObject(avatar?.hair?.color),
+    skinColor: convertToRGBObject(avatar?.skin?.color)
+  }
+}
+
 // Ensure all snapshots are URLs
-function prepareSnapshots({ face256, body }: Snapshots): NewProfileForRenderer['snapshots'] {
+export function prepareSnapshots({ face256, body }: Snapshots): NewProfileForRenderer['snapshots'] {
   // TODO: move this logic to unity-renderer
   function prepare(value: string) {
     if (value === null || value === undefined) {
