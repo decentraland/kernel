@@ -107,7 +107,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
-import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
+import { defaultProfile, profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
 import {
   getUserIdFromMatrix,
@@ -119,6 +119,9 @@ import {
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
+import { buildSnapshotContent } from 'shared/profiles/sagas'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -455,6 +458,17 @@ function* initializePrivateMessaging() {
       disablePresence
     }
   ])
+
+  const profile: Avatar | null = yield select(getCurrentUserProfile)
+  if (profile) {
+    const displayName = calculateDisplayName(profile)
+    const {
+      hash
+    }: {
+      hash: string
+    } = yield buildSnapshotContent('face256', profile.avatar.snapshots.face256)
+    yield apply(client, client.setProfileInfo, [{ displayName, avatarUrl: hash }])
+  }
 
   yield put(setMatrixClient(client))
 }
@@ -1558,16 +1572,21 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     messages.splice(index)
   }
 
+  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
+  const missingUserIds = messages
+    .map((message) => message.sender)
+    .filter((userId) => !isAddedToCatalog(store.getState(), userId))
+
+  if (missingUserIds.length > 0) {
+    const missingUsers = getMissingProfiles(client, request.channelId, missingUserIds, fetchContentServer)
+    getUnityInstance().AddUserProfilesToCatalog({ users: missingUsers })
+  }
+
   const addChatMessages: AddChatMessagesPayload = {
     messages: []
   }
-
   for (const message of messages) {
     const sender = getUserIdFromMatrix(message.sender)
-    const userProfile = getProfile(store.getState(), sender)
-    if (!userProfile || !isAddedToCatalog(store.getState(), sender)) {
-      await ensureFriendProfile(sender)
-    }
 
     addChatMessages.messages.push({
       messageId: message.id,
@@ -1799,27 +1818,50 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     return
   }
 
-  // get the local part of the userId
-  const membersIds = channelMemberIds.map((id) => getUserIdFromMatrix(id))
+  const profilesFromStore = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
 
-  // Todo Juli: use ensure friend
-  const filteredProfiles = getProfilesFromStore(store.getState(), membersIds, request.userName)
-
-  for (const profile of filteredProfiles) {
-    const member = membersIds.find((id) => id === profile.data.userId)
+  for (const profile of profilesFromStore) {
+    // Todo Juli: Check -- Do the ids we're comparing have the same format?
+    const member = channelMemberIds.find((id) => id === profile.data.userId)
     if (member) {
       // Todo Juli: Check -- What we gonna do with isOnline?
       channelMembers.members.push({ userId: member, isOnline: false })
     }
   }
 
-  const profilesForRenderer = filteredProfiles.map((profile) =>
+  const profilesForRenderer = profilesFromStore.map((profile) =>
     profileToRendererFormat(profile.data, {
       baseUrl: fetchContentServer
     })
   )
-  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
-  store.dispatch(addedProfilesToCatalog(filteredProfiles.map((profile) => profile.data)))
+
+  // those profiles that are not in the store are prepared without any data but avatar url and name
+  const storedIds = profilesFromStore.map((profile) => profile.data.userId)
+  const missingUsersIds = channelMemberIds.filter((id) => !storedIds.includes(id))
+  const missingProfilesForRenderer = getMissingProfiles(client, request.channelId, missingUsersIds, fetchContentServer)
+
+  getUnityInstance().AddUserProfilesToCatalog({ users: [...profilesForRenderer, ...missingProfilesForRenderer] })
+  store.dispatch(addedProfilesToCatalog(profilesFromStore.map((profile) => profile.data)))
 
   getUnityInstance().UpdateChannelMembers(channelMembers)
+}
+
+function getMissingProfiles(
+  client: SocialAPI,
+  roomId: string,
+  missingUsersIds: string[],
+  fetchContentServer: string
+): NewProfileForRenderer[] {
+  return [...new Set(missingUsersIds)].map((userId) => {
+    return buildMissingProfile(client, roomId, userId, fetchContentServer)
+  })
+}
+function buildMissingProfile(client: SocialAPI, roomId: string, userId: string, fetchContentServer: string) {
+  const info = client.getMemberInfo(roomId, userId)
+  return defaultProfile({
+    userId,
+    name: info.displayName ?? '',
+    face256: info.avatarUrl ?? '',
+    baseUrl: fetchContentServer
+  })
 }
