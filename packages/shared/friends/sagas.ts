@@ -1340,8 +1340,8 @@ function* handleLeaveChannel(action: LeaveChannel) {
       total: totalUnreadMessages
     }
 
-    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
     getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
   } catch (e) {
     notifyLeaveChannelError(action.payload.channelId, ChannelErrorCode.UNKNOWN)
   }
@@ -1542,6 +1542,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     limit
   })
 
+  // get list of messages currently in the window with the oldest event at index 0
   const messages = cursorMessage.getMessages()
   if (messageId !== undefined) {
     // we remove the messages they already have.
@@ -1708,11 +1709,11 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
   }
 
   const channelInfo: ChannelInfoPayload = {
-    name: channel.name!,
+    name: channel.name ?? '',
     channelId: channel.id,
-    unseenMessages: channel.unreadMessages?.length || 0,
-    lastMessageTimestamp: channel.lastEventTimestamp || undefined,
-    memberCount: channel.userIds?.length || 1,
+    unseenMessages: channel.unreadMessages?.length ?? 0,
+    lastMessageTimestamp: channel.lastEventTimestamp ?? undefined,
+    memberCount: channel.userIds?.length ?? 1,
     description: '',
     joined: true,
     muted: muteChannel.muted

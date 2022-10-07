@@ -307,7 +307,7 @@ describe('Friends sagas - Channels Feature', () => {
         const addChatMessagesPayload: AddChatMessagesPayload = {
           messages: channelMessagesFiltered.map((message) => ({
             messageId: message.id,
-            messageType: ChatMessageType.PRIVATE,
+            messageType: ChatMessageType.PUBLIC,
             timestamp: message.timestamp,
             body: message.text,
             sender: getUserIdFromMatrix(message.sender),
