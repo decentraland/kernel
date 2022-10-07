@@ -625,8 +625,8 @@ export class BrowserInterface {
         }
 
         const payload: SetAudioDevicesPayload = {
-          inputDevices: filterDevices('audiooutput'),
-          outputDevices: filterDevices('audiointput')
+          inputDevices: filterDevices('audiointput'),
+          outputDevices: filterDevices('audiooutput')
         }
 
         getUnityInstance().SetAudioDevices(payload)
