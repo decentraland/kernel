@@ -57,6 +57,7 @@ import { incrementCounter } from '../shared/occurences'
 const MINIMAP_CHUNK_SIZE = 100
 
 export const originalPixelRatio: number = devicePixelRatio
+devicePixelRatio = 1
 
 const unityLogger: ILogger = createUnityLogger()
 
