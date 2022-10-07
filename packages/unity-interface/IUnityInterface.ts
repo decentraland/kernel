@@ -246,5 +246,5 @@ export interface IUnityInterface {
   SendMessageToUnity(object: string, method: string, payload?: any): void
 
   SetAudioDevices(devices: SetAudioDevicesPayload): void
-  RequestAudioDevices(): Promise<void>
+  RequestAudioDevices(): void
 }

@@ -34,7 +34,7 @@ import {
   GetJoinedChannelsPayload,
   LeaveChannelPayload,
   MuteChannelPayload,
-  GetChannelInfoPayload
+  GetChannelInfoPayload, SetAudioDevicesPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -105,6 +105,7 @@ import {
   searchChannels
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
+import {requestMediaDevice} from "../shared/voiceChat/sagas";
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -600,6 +601,39 @@ export class BrowserInterface {
 
   public SetHomeScene(data: { sceneId: string }) {
     store.dispatch(setHomeScene(data.sceneId))
+  }
+
+  public async RequestAudioDevices()
+  {
+    console.log("[TEST] Devices requested")
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      defaultLogger.error('enumerateDevices() not supported.')
+    } else {
+      try {
+        await requestMediaDevice()
+
+        // List cameras and microphones.
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        console.log(`DEBUG(Mateo) all devices:${JSON.stringify(devices)}`)
+
+        const filterDevices = (kind: string) => {
+          return devices
+            .filter((device) => device.kind === kind)
+            .map((device) => {
+              return { deviceId: device.deviceId, label: device.label }
+            })
+        }
+
+        const payload: SetAudioDevicesPayload = {
+          inputDevices: filterDevices('audiooutput'),
+          outputDevices: filterDevices('audiointput')
+        }
+
+        getUnityInstance().SetAudioDevices(payload)
+      } catch (err: any) {
+        defaultLogger.error(`${err.name}: ${err.message}`)
+      }
+    }
   }
 
   public GetFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload: GetFriendsWithDirectMessagesPayload) {
