@@ -1,3 +1,4 @@
+import { InstancedSpawnPoint } from 'shared/types'
 import { action } from 'typesafe-actions'
 import { ISceneLoader } from './types'
 
@@ -17,7 +18,7 @@ export const setParcelPosition = (position: ReadOnlyVector2) => action(SET_PARCE
 export type SetParcelPosition = ReturnType<typeof setParcelPosition>
 
 export const TELEPORT_TO = 'TELEPORT_TO'
-export const teleportToAction = (position: ReadOnlyVector3) => action(TELEPORT_TO, { position })
+export const teleportToAction = (spawnPoint: InstancedSpawnPoint) => action(TELEPORT_TO, spawnPoint)
 export type TeleportToAction = ReturnType<typeof teleportToAction>
 
 /**
@@ -25,14 +26,16 @@ export type TeleportToAction = ReturnType<typeof teleportToAction>
  * loading. The .position indicates the spawn point of the scene.
  */
 export const POSITION_SETTLED = 'POSITION_SETTLED'
-export const positionSettled = (position: ReadOnlyVector3, cameraTarget?: ReadOnlyVector3) =>
-  action(POSITION_SETTLED, { position, cameraTarget })
+export const positionSettled = (spawnPoint: InstancedSpawnPoint) =>
+  action(POSITION_SETTLED, { spawnPoint })
 export type PositionSettled = ReturnType<typeof positionSettled>
 
 /**
  * Disables the renderer when we teleport to a specific place and the
  * scenes are not yet loaded.
+ *
+ * The sceneId is the ID of the scene that will settle the position once loaded.
  */
 export const POSITION_UNSETTLED = 'POSITION_UNSETTLED'
-export const positionUnsettled = () => action(POSITION_UNSETTLED, {})
+export const positionUnsettled = (sceneId: string, spawnPoint: InstancedSpawnPoint) => action(POSITION_UNSETTLED, { sceneId, spawnPoint })
 export type PositionUnsettled = ReturnType<typeof positionUnsettled>

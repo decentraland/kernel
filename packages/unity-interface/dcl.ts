@@ -1,11 +1,4 @@
-import {
-  DEBUG,
-  EDITOR,
-  ENGINE_DEBUG_PANEL,
-  rootURLPreviewMode,
-  SCENE_DEBUG_PANEL,
-  SHOW_FPS_COUNTER
-} from 'config'
+import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import {
   allScenesEvent,
@@ -26,6 +19,8 @@ import { reloadScenePortableExperience } from 'shared/portableExperiences/action
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
 import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 import { sleep } from 'atomicHelpers/sleep'
+import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { browserInterface } from './BrowserInterface'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -49,7 +44,16 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   getUnityInstance().Init(gameInstance)
 
+  await browserInterface.startedFuture
+
   getUnityInstance().DeactivateRendering()
+  getUnityInstance().SetLoadingScreen({ isVisible: true, message: 'Initializing Decentraland', showTips: true })
+
+  queueMicrotask(() => {
+    // send an "engineStarted" notification, use a queueMicrotask
+    // to escape the current stack leveraging the JS event loop
+    store.dispatch(signalRendererInitializedCorrectly())
+  })
 
   await ensureMetaConfigurationInitialized()
 
@@ -61,7 +65,6 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   if (SCENE_DEBUG_PANEL) {
     getUnityInstance().SetKernelConfiguration({ debugConfig: { sceneDebugPanelEnabled: true } })
-    getUnityInstance().SetSceneDebugPanel()
   }
 
   if (SHOW_FPS_COUNTER) {

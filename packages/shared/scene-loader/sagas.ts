@@ -1,4 +1,4 @@
-import { apply, call, delay, fork, put, race, select, take, takeEvery } from 'redux-saga/effects'
+import { apply, call, delay, fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 import { SetBffAction, SET_BFF } from 'shared/bff/actions'
 import { IBff } from 'shared/bff/types'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
@@ -11,6 +11,7 @@ import {
   positionUnsettled,
   POSITION_SETTLED,
   POSITION_UNSETTLED,
+  setParcelPosition,
   setSceneLoader,
   SET_PARCEL_POSITION,
   SET_SCENE_LOADER,
@@ -20,52 +21,128 @@ import {
 } from './actions'
 import { createGenesisCityLoader } from './genesis-city-loader-impl'
 import { createWorldLoader } from './world-loader-impl'
-import { getLoadingRadius, getParcelPosition, getPositionSettled, getSceneLoader } from './selectors'
+import {
+  getLoadingRadius,
+  getParcelPosition,
+  isPositionSettled,
+  getPositionSpawnPointAndScene,
+  getSceneLoader
+} from './selectors'
 import { getFetchContentServerFromBff } from 'shared/bff/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
-import { getLoadedParcelSceneByPointer, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
+import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
-import { SCENE_FAIL, SCENE_LOAD, SCENE_START } from 'shared/loading/actions'
-import { getCurrentScene } from 'shared/world/selectors'
-import { SET_CURRENT_SCENE } from 'shared/world/actions'
+import {
+  SceneFail,
+  SceneStart,
+  SceneUnload,
+  SCENE_FAIL,
+  SCENE_START,
+  SCENE_UNLOAD,
+  updateLoadingScreen
+} from 'shared/loading/actions'
 import { SceneWorker } from 'shared/world/SceneWorker'
-import { lastPlayerPosition, pickWorldSpawnpoint } from 'shared/world/positionThings'
+import { pickWorldSpawnpoint, receivePositionReport } from 'shared/world/positionThings'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 
 export function* sceneLoaderSaga() {
   yield takeEvery(SET_BFF, onSetBff)
-  yield takeEvery(POSITION_SETTLED, onPositionSettled)
-  yield takeEvery(POSITION_UNSETTLED, onPositionUnsettled)
-  yield takeEvery(TELEPORT_TO, teleportHandler)
+  yield takeEvery([POSITION_SETTLED, POSITION_UNSETTLED], onPositionSettled)
+  yield takeLatest(TELEPORT_TO, teleportHandler)
+  yield fork(rendererPositionSettler)
   yield fork(onWorldPositionChange)
   yield fork(positionSettler)
 }
 
-function* teleportHandler(action: TeleportToAction) {
-  //
-  const { x, y } = worldToGrid(action.payload.position)
-  const pointer = `${x},${y}`
-  const sceneLoaded: SceneWorker | undefined = yield call(getLoadedParcelSceneByPointer, pointer)
-
-  if (sceneLoaded) {
-    const spawnPoint = pickWorldSpawnpoint(sceneLoaded.metadata)
-    yield put(positionSettled(spawnPoint.position, spawnPoint.cameraTarget))
-  } else {
-    getUnityInstance().Teleport(action.payload)
-    yield put(positionUnsettled())
+function* waitForSceneLoader() {
+  while (true) {
+    const loader: ISceneLoader | undefined = yield select(getSceneLoader)
+    if (loader) return loader
+    yield take(SET_SCENE_LOADER)
   }
 }
 
-function* onPositionSettled(action: PositionSettled) {
-  lastPlayerPosition.copyFrom(action.payload.position)
-  getUnityInstance().Teleport(action.payload)
-  // TODO: move this to LOADING saga
-  getUnityInstance().ActivateRendering()
+/*
+Position settling algorithm:
+- If the user teleports to a scene that is not present or not loaded
+  AND the target scene exists, then UnsettlePosition(targetScene)
+- If the user teleports to a scene that is loaded
+  THEN SettlePosition(spawnPoint(scene))
+- If the position is unsettled, and the scene that unsettled the position loads or fails loading
+  THEN SettlePosition(spawnPoint(scene))
+
+A scene can fail loading due to an error or timeout.
+*/
+
+function* teleportHandler(action: TeleportToAction) {
+  const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
+
+  // look for the target scene
+  const { x, y } = worldToGrid(action.payload.position)
+  const pointer = `${x},${y}`
+  const command: SetDesiredScenesCommand = yield apply(sceneLoader, sceneLoader.fetchScenesByLocation, [[pointer]])
+
+  // is a target scene, then it will be used to settle the position
+  if (command && command.scenes && command.scenes.length) {
+    // pick always the first scene to unsettle the position once loaded
+    const settlerScene = command.scenes[0].id
+
+    const scene: SceneWorker | undefined = yield call(getSceneWorkerBySceneID, settlerScene)
+
+    const spawnPoint = pickWorldSpawnpoint(scene?.metadata || command.scenes[0].entity.metadata) || action.payload
+    if (scene) {
+      // if the scene is loaded then there is no unsettlement of the position
+      // we teleport directly to that scene
+      yield put(positionSettled(spawnPoint))
+    } else {
+      // set the unsettler once again using the proper ID
+      yield put(positionUnsettled(settlerScene, spawnPoint))
+    }
+  } else {
+    // if there is no scene to load at the target position, then settle the position
+    // to activate the renderer. otherwise there will be no event to activate the renderer
+    yield put(positionSettled(action.payload))
+  }
 }
 
-function* onPositionUnsettled() {
-  // TODO: move this to LOADING saga
-  getUnityInstance().DeactivateRendering()
+function* rendererPositionSettler() {
+  // wait for renderer
+  yield call(waitForRendererInstance)
+
+  while (true) {
+    const isSettled: boolean = yield select(isPositionSettled)
+    const spawnPointAndScene: ReturnType<typeof getPositionSpawnPointAndScene> = yield select(
+      getPositionSpawnPointAndScene
+    )
+
+    console.log('rendererPositionSettler', { isSettled, spawnPointAndScene })
+
+    // and then settle the position
+    if (isSettled) {
+      // then update the position in the engine
+      getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
+
+      console.log('ActivateRendering')
+      getUnityInstance().ActivateRendering()
+    } else {
+      console.log('DeactivateRendering')
+      getUnityInstance().DeactivateRendering()
+
+      // Then set the parcel position for the scene loader
+      receivePositionReport(spawnPointAndScene.spawnPoint.position)
+
+      // then update the position in the engine
+      getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
+    }
+
+    yield take([POSITION_SETTLED, POSITION_UNSETTLED])
+  }
+}
+
+function* onPositionSettled(action: PositionSettled | PositionSettled) {
+  // set the parcel position for the scene loader
+  yield put(setParcelPosition(worldToGrid(action.payload.spawnPoint.position)))
 }
 
 // This saga reacts to new realms/bff and creates the proper scene loader
@@ -96,27 +173,36 @@ function* onSetBff(action: SetBffAction) {
     }
 
     yield put(signalParcelLoadingStarted())
+
+    yield put(updateLoadingScreen())
   }
 }
 
+/**
+ * This saga listens for scene loading messages (load, start, fail) and if there
+ * is one scene that is going to settle our position, the event is used to dispach
+ * the positionSettled(spawnPoint(scene)) action. Which is used to deactivate the
+ * loading screen.
+ */
 function* positionSettler() {
   while (true) {
-    const reason = yield race({
-      SCENE_LOAD: take(SCENE_LOAD),
-      SCENE_START: take(SCENE_START),
-      SCENE_FAIL: take(SCENE_FAIL),
-      UNSETTLED: take(POSITION_UNSETTLED),
-      SET_CURRENT_SCENE: take(SET_CURRENT_SCENE)
-    })
+    const reason: SceneStart | SceneFail | SceneUnload = yield take([SCENE_START, SCENE_FAIL, SCENE_UNLOAD])
 
-    const settled: boolean = yield select(getPositionSettled)
-    const currentScene: SceneWorker | undefined = yield select(getCurrentScene)
+    console.log('positionSettler', { reason })
 
-    console.log({ settled, reason, currentScene })
+    const sceneId: string = reason.payload?.id
 
-    if (!settled && currentScene?.sceneReady) {
-      const spawn = pickWorldSpawnpoint(currentScene!.metadata)
-      yield put(positionSettled(spawn.position, spawn.cameraTarget))
+    if (!sceneId) throw new Error('Error in logic of positionSettler saga')
+
+    const settled: boolean = yield select(isPositionSettled)
+    const spawnPointAndScene: ReturnType<typeof getPositionSpawnPointAndScene> = yield select(
+      getPositionSpawnPointAndScene
+    )
+
+    console.log('positionSettler', { settled, sceneId, settlerScene: spawnPointAndScene })
+
+    if (!settled && sceneId === spawnPointAndScene?.sceneId) {
+      yield put(positionSettled(spawnPointAndScene.spawnPoint))
     }
   }
 }
@@ -125,7 +211,7 @@ function* positionSettler() {
 // about it
 function* onWorldPositionChange() {
   while (true) {
-    const { unload } = yield race({
+    const reason = yield race({
       timeout: delay(5000),
       newSceneLoader: take(SET_SCENE_LOADER),
       newParcel: take(SET_PARCEL_POSITION),
@@ -134,7 +220,7 @@ function* onWorldPositionChange() {
       unload: take(BEFORE_UNLOAD)
     })
 
-    if (unload) return
+    if (reason.unload) return
 
     const sceneLoader: ISceneLoader | undefined = yield select(getSceneLoader)
 
@@ -155,7 +241,7 @@ function* onWorldPositionChange() {
         map.set(scene.id, scene)
       }
 
-      setDesiredParcelScenes(map)
+      yield call(setDesiredParcelScenes, map)
     }
   }
 }

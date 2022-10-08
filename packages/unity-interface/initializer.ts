@@ -54,9 +54,6 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
   canvas.id = '#canvas'
   container.appendChild(canvas)
 
-  // Set pixel ratio to 1
-  globalThis.devicePixelRatio = 1
-
   const { originalUnity, engineStartedFuture } = await createWebRenderer(canvas)
 
   // TODO: move to unity-renderer js project
@@ -82,6 +79,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
   })
 
   await engineStartedFuture
+  await browserInterface.startedFuture
 
   return originalUnity
 }

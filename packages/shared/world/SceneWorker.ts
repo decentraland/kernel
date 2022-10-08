@@ -6,7 +6,7 @@ import {
   playerConfigurations,
   WSS_ENABLED
 } from 'config'
-import { PositionReport, positionObservable } from './positionThings'
+import { PositionReport } from './positionThings'
 import { Observable, Observer } from 'mz-observable'
 import { store } from 'shared/store/isolatedStore'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
@@ -18,7 +18,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { trackEvent } from 'shared/analytics'
 import { getSceneNameFromJsonData } from 'shared/selectors'
 import { Scene } from '@dcl/schemas'
-import { signalSceneLoad, signalSceneStart, signalSceneFail } from 'shared/loading/actions'
+import { signalSceneLoad, signalSceneStart, signalSceneFail, signalSceneUnload } from 'shared/loading/actions'
 import { EntityAction, LoadableScene } from 'shared/types'
 import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
@@ -78,7 +78,6 @@ export class SceneWorker {
   private position: Vector3 = new Vector3()
   private readonly lastSentPosition = new Vector3(0, 0, 0)
   private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
-  private positionObserver: Observer<any> | null = null
   private sceneLifeCycleObserver: Observer<any> | null = null
   private readonly startLoadingTime = performance.now()
 
@@ -168,6 +167,11 @@ export class SceneWorker {
     const disposingFlags =
       SceneWorkerReadyState.DISPOSING | SceneWorkerReadyState.SYSTEM_DISPOSED | SceneWorkerReadyState.DISPOSED
 
+    queueMicrotask(() => {
+      // this NEEDS to run in a microtask because sagas control this .dispose
+      store.dispatch(signalSceneUnload(this.loadableScene))
+    })
+
     if ((this.ready & disposingFlags) === 0) {
       this.ready |= SceneWorkerReadyState.DISPOSING
 
@@ -198,10 +202,6 @@ export class SceneWorker {
   }
 
   protected childDispose() {
-    if (this.positionObserver) {
-      positionObservable.remove(this.positionObserver)
-      this.positionObserver = null
-    }
     if (this.sceneLifeCycleObserver) {
       sceneLifeCycleObservable.remove(this.sceneLifeCycleObserver)
       this.sceneLifeCycleObserver = null
@@ -214,11 +214,13 @@ export class SceneWorker {
     this.ready |= SceneWorkerReadyState.LOADED
 
     this.subscribeToSceneLifeCycleEvents()
-    this.subscribeToPositionEvents()
 
-    store.dispatch(signalSceneLoad(this.loadableScene))
+    queueMicrotask(() => {
+      // this NEEDS to run in a microtask or timeout
+      store.dispatch(signalSceneLoad(this.loadableScene))
+    })
 
-    const WORKER_TIMEOUT = 90_000 // three minutes
+    const WORKER_TIMEOUT = 30_000 // thirty seconds
 
     setTimeout(() => {
       if (!this.sceneStarted) {
@@ -305,7 +307,7 @@ export class SceneWorker {
     }
   }
 
-  private sendUserViewMatrix(positionReport: Readonly<PositionReport>) {
+  public sendUserViewMatrix(positionReport: Readonly<PositionReport>) {
     if (this.rpcContext.subscribedEvents.has('positionChanged')) {
       if (!this.lastSentPosition.equals(positionReport.position)) {
         this.rpcContext.sendProtoSceneEvent({
@@ -338,12 +340,6 @@ export class SceneWorker {
     }
   }
 
-  private subscribeToPositionEvents() {
-    this.positionObserver = positionObservable.add((obj) => {
-      this.sendUserViewMatrix(obj)
-    })
-  }
-
   private subscribeToSceneLifeCycleEvents() {
     this.sceneLifeCycleObserver = sceneLifeCycleObservable.add((obj) => {
       if (this.loadableScene.id === obj.sceneId && obj.status === 'ready') {
@@ -368,8 +364,10 @@ export class SceneWorker {
         time_since_creation: performance.now() - this.startLoadingTime,
         base: baseParcel
       })
-
-      store.dispatch(signalSceneStart(this.loadableScene))
+      queueMicrotask(() => {
+        // this NEEDS to run in a microtask
+        store.dispatch(signalSceneStart(this.loadableScene))
+      })
     }
   }
 }

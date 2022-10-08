@@ -98,6 +98,28 @@ globalThis.DecentralandKernel = {
 
     // initInternal must be called asynchronously, _after_ returning
     async function initInternal() {
+      // load homepoint
+      const homePoint: string = await getFromPersistentStorage(homePointKey)
+      if (homePoint) {
+        store.dispatch(sendHomeScene(homePoint))
+      }
+
+      const urlPosition = getInitialPositionFromUrl()
+
+      // teleport to initial location
+      if (urlPosition) {
+        // 1. by URL
+        const { x, y } = urlPosition
+        store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
+      } else if (homePoint && !HAS_INITIAL_POSITION_MARK) {
+        // 2. by homepoint
+        const { x, y } = parseParcelPosition(homePoint)
+        store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
+      } else {
+        // 3. fallback to 0,0
+        store.dispatch(teleportToAction({ position: { x: 0, y: 100, z: 0 } }))
+      }
+
       // Initializes the Session Saga
       store.dispatch(initSession())
 
@@ -230,8 +252,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
   i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: friendsActivated, visible: false })
 
-  await realmInitialized()
-
   function reportForeground() {
     if (isForeground()) {
       store.dispatch(renderingInForeground())
@@ -245,32 +265,12 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   foregroundChangeObservable.add(reportForeground)
   reportForeground()
 
-  // load homepoint
-  const homePoint: string = await getFromPersistentStorage(homePointKey)
-  if (homePoint) {
-    store.dispatch(sendHomeScene(homePoint))
-  }
-
-  const urlPosition = getInitialPositionFromUrl()
-
-  // teleport to initial location
-  if (urlPosition) {
-    // 1. by URL
-    const { x, y } = urlPosition
-    store.dispatch(teleportToAction(gridToWorld(x, y)))
-  } else if (homePoint && !HAS_INITIAL_POSITION_MARK) {
-    // 2. by homepoint
-    const { x, y } = parseParcelPosition(homePoint)
-    store.dispatch(teleportToAction(gridToWorld(x, y)))
-  } else {
-    // 3. fallback to 0,0
-    store.dispatch(teleportToAction({ x: 0, y: 100, z: 0 }))
-  }
-
   if (options.previewMode) {
     i.SetDisableAssetBundles()
     await startPreview(i)
   }
+
+  await realmInitialized()
 
   return true
 }

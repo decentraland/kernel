@@ -1,5 +1,5 @@
 import { scenesChanged } from '../loading/actions'
-import { InstancedSpawnPoint, LoadableParcelScene, LoadableScene } from '../types'
+import { LoadableParcelScene, LoadableScene } from '../types'
 import { SceneWorker } from './SceneWorker'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from 'mz-observable'
@@ -12,14 +12,13 @@ import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { getAssetBundlesBaseUrl, ETHEREUM_NETWORK } from 'config'
 import { normalizeContentMappings, getSceneNameFromJsonData } from 'shared/selectors'
 import { ContentMapping } from '@dcl/schemas'
+import { positionObservable } from './positionThings'
 
-export type EnableParcelSceneLoadingOptions = {
-  parcelSceneClass: {
-    new (x: LoadableScene): SceneWorker
+positionObservable.add((obj) => {
+  for (let [, scene] of loadedSceneWorkers) {
+    scene.sendUserViewMatrix(obj)
   }
-  onPositionSettled?: (spawnPoint: InstancedSpawnPoint) => void
-  onPositionUnsettled?(): void
-}
+})
 
 declare const globalThis: any
 

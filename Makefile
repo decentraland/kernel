@@ -31,7 +31,6 @@ COMPILED_SUPPORT_JS_FILES := $(subst .ts,.js,$(SOURCE_SUPPORT_TS_FILES))
 
 SCENE_SYSTEM_SOURCES := $(wildcard static/systems/**/*.ts)
 SCENE_SYSTEM := static/systems/scene.system.js
-DECENTRALAND_LOADER := static/loader/worker.js
 GIF_PROCESSOR := static/gif-processor/worker.js
 INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
 VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
@@ -63,7 +62,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: ${BFF_TS} ${COMMS_TS} ${COMMSRFC4_TS} ${PBRENDERER_TS} ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(DECENTRALAND_LOADER) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: ${BFF_TS} ${COMMS_TS} ${COMMSRFC4_TS} ${PBRENDERER_TS} ${PBS_TS} $(COMPILED_SUPPORT_JS_FILES) $(SCENE_SYSTEM) $(INTERNAL_SCENES) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 
 # Entry points
 static/%.js: build-essentials packages/entryPoints/%.ts
@@ -110,18 +109,16 @@ npm-link: build-essentials ## Run `npm link` to develop local scenes against thi
 
 watch-builder: build-essentials ## Watch the files required for hacking with the builder
 	@$(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,server" \
+		-n "scene-system,internal-scenes,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
-			"$(COMPILER) targets/engine/loader.json --watch" \
 			"node ./scripts/runTestServer.js --keep-open"
 
 watch-cli: build-essentials ## Watch the files required for building the CLI
 	@$(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,kernel,server" \
+		-n "scene-system,internal-scenes,kernel,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
-			"$(COMPILER) targets/engine/loader.json --watch" \
 			"$(COMPILER) targets/entryPoints/index.json --watch" \
 			"node ./scripts/runTestServer.js --keep-open"
 
@@ -139,10 +136,9 @@ lint-fix: ## Fix bad formatting on all .ts and .tsx files
 
 watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files required for hacking the explorer
 	@NODE_ENV=development $(CONCURRENTLY) \
-		-n "scene-system,internal-scenes,loader,basic-scenes,kernel,test,gif-worker,server" \
+		-n "scene-system,internal-scenes,basic-scenes,kernel,test,gif-worker,server" \
 			"$(COMPILER) targets/engine/scene-system.json --watch" \
 			"$(COMPILER) targets/engine/internal-scenes.json --watch" \
-			"$(COMPILER) targets/engine/loader.json --watch" \
 			"$(COMPILER) targets/scenes/basic-scenes.json --watch" \
 			"$(COMPILER) targets/entryPoints/index.json --watch" \
 			"$(COMPILER) targets/test.json --watch" \

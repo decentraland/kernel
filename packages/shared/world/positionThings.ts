@@ -1,8 +1,13 @@
-import { Vector3, EcsMathReadOnlyVector3, EcsMathReadOnlyQuaternion, Vector2 } from '@dcl/ecs-math'
+import { Vector3, EcsMathReadOnlyVector3, EcsMathReadOnlyQuaternion, Vector2, Quaternion } from '@dcl/ecs-math'
 import { Observable } from 'mz-observable'
 import { InstancedSpawnPoint } from '../types'
-import { worldToGrid, gridToWorld, isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
-import { DEBUG } from '../../config'
+import {
+  worldToGrid,
+  gridToWorld,
+  isWorldPositionInsideParcels,
+  parseParcelPosition
+} from 'atomicHelpers/parcelScenePositions'
+import { DEBUG, playerConfigurations } from '../../config'
 import { isInsideWorldLimits, Scene } from '@dcl/schemas'
 import { store } from 'shared/store/isolatedStore'
 import { setParcelPosition } from 'shared/scene-loader/actions'
@@ -29,17 +34,16 @@ export const positionObservable = new Observable<Readonly<PositionReport>>()
 export const lastPlayerPosition = new Vector3()
 export let lastPlayerPositionReport: Readonly<PositionReport> | null = null
 
+// Listen to position changes, and notify if the parcel changed
+let lastPlayerParcel: Vector2
 positionObservable.add((event) => {
   lastPlayerPosition.copyFrom(event.position)
   lastPlayerPositionReport = event
-})
 
-// Listen to position changes, and notify if the parcel changed
-let lastPlayerParcel: Vector2
-positionObservable.add(({ position, immediate }) => {
   const parcel = Vector2.Zero()
-  worldToGrid(position, parcel)
-  if (!lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
+  worldToGrid(event.position, parcel)
+
+  if (!lastPlayerParcel || !parcel.equals(lastPlayerParcel)) {
     store.dispatch(setParcelPosition(parcel))
     setLastPlayerParcel(parcel)
   }
@@ -53,22 +57,45 @@ function setLastPlayerParcel(parcel: Vector2) {
   }
 }
 
+const positionEvent = {
+  position: Vector3.Zero(),
+  quaternion: Quaternion.Identity,
+  rotation: Vector3.Zero(),
+  playerHeight: playerConfigurations.height,
+  mousePosition: Vector3.Zero(),
+  immediate: false, // By default the renderer lerps avatars position
+  cameraQuaternion: Quaternion.Identity,
+  cameraEuler: Vector3.Zero()
+}
+
+export function receivePositionReport(
+  position: ReadOnlyVector3,
+  rotation?: ReadOnlyVector4,
+  cameraRotation?: ReadOnlyVector4,
+  playerHeight?: number
+) {
+  positionEvent.position.set(position.x, position.y, position.z)
+
+  if (rotation) positionEvent.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w)
+  positionEvent.rotation.copyFrom(positionEvent.quaternion.eulerAngles)
+  if (playerHeight) positionEvent.playerHeight = playerHeight
+
+  const cameraQuaternion = cameraRotation ?? rotation
+  if (cameraQuaternion)
+    positionEvent.cameraQuaternion.set(cameraQuaternion.x, cameraQuaternion.y, cameraQuaternion.z, cameraQuaternion.w)
+  positionEvent.cameraEuler.copyFrom(positionEvent.cameraQuaternion.eulerAngles)
+
+  positionObservable.notifyObservers(positionEvent)
+}
+
 // sets the initial state of the position based on the URL query params
 export function getInitialPositionFromUrl(): ReadOnlyVector2 | undefined {
   // LOAD INITIAL POSITION IF SET TO ZERO
   const query = new URLSearchParams(location.search)
   const position = query.get('position')
   if (typeof position === 'string') {
-    const [xString, yString] = position.split(',')
-    let x = parseFloat(xString)
-    let y = parseFloat(yString)
-
-    if (!isInsideWorldLimits(x, y)) {
-      x = 0
-      y = 0
-    }
-
-    return { x, y }
+    const { x, y } = parseParcelPosition(position)
+    if (isInsideWorldLimits(x, y)) return { x, y }
   }
 }
 

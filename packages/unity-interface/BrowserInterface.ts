@@ -1,4 +1,4 @@
-import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
+import { EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3 } from '@dcl/ecs-math'
 
 import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
@@ -35,13 +35,9 @@ import {
   MuteChannelPayload,
   GetChannelInfoPayload
 } from 'shared/types'
-import {
-  getSceneWorkerBySceneID,
-  allScenesEvent,
-  AllScenesEvents,
-} from 'shared/world/parcelSceneManager'
+import { getSceneWorkerBySceneID, allScenesEvent, AllScenesEvents } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
-import { positionObservable } from 'shared/world/positionThings'
+import { receivePositionReport } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
 import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
@@ -54,7 +50,7 @@ import { logout, redirectToSignUp, signUp, signUpCancel } from 'shared/session/a
 import { getIdentity, hasWallet } from 'shared/session'
 import { getUnityInstance } from './IUnityInterface'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
-import { IFuture } from 'fp-future'
+import future, { IFuture } from 'fp-future'
 import { reportHotScenes } from 'shared/social/hotScenes'
 import { GIFProcessor } from './gif-processor'
 import {
@@ -75,7 +71,6 @@ import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { renderStateObservable } from 'shared/world/worldState'
 import { store } from 'shared/store/isolatedStore'
-import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
@@ -108,17 +103,6 @@ import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
-
-const positionEvent = {
-  position: Vector3.Zero(),
-  quaternion: Quaternion.Identity,
-  rotation: Vector3.Zero(),
-  playerHeight: playerConfigurations.height,
-  mousePosition: Vector3.Zero(),
-  immediate: false, // By default the renderer lerps avatars position
-  cameraQuaternion: Quaternion.Identity,
-  cameraEuler: Vector3.Zero()
-}
 
 type UnityEvent = any
 
@@ -241,6 +225,8 @@ const validateRendererSaveProfileV1 = generateLazyValidator<RendererSaveProfile>
 export class BrowserInterface {
   private lastBalanceOfMana: number = -1
 
+  startedFuture = future<void>()
+
   /**
    * This is the only method that should be called publically in this class.
    * It dispatches "renderer messages" to the correct handlers.
@@ -278,28 +264,15 @@ export class BrowserInterface {
     immediate?: boolean
     cameraRotation?: EcsMathReadOnlyQuaternion
   }) {
-    positionEvent.position.set(data.position.x, data.position.y, data.position.z)
-    positionEvent.quaternion.set(data.rotation.x, data.rotation.y, data.rotation.z, data.rotation.w)
-    positionEvent.rotation.copyFrom(positionEvent.quaternion.eulerAngles)
-    positionEvent.playerHeight = data.playerHeight || playerConfigurations.height
-
-    const cameraQuaternion = data.cameraRotation ?? data.rotation
-    positionEvent.cameraQuaternion.set(cameraQuaternion.x, cameraQuaternion.y, cameraQuaternion.z, cameraQuaternion.w)
-    positionEvent.cameraEuler.copyFrom(positionEvent.cameraQuaternion.eulerAngles)
-
-    // By default the renderer lerps avatars position
-    positionEvent.immediate = false
-
-    if (data.immediate !== undefined) {
-      positionEvent.immediate = data.immediate
-    }
-
-    positionObservable.notifyObservers(positionEvent)
+    receivePositionReport(
+      data.position,
+      data.rotation,
+      data.cameraRotation || data.rotation,
+      data.playerHeight || playerConfigurations.height
+    )
   }
 
   public ReportMousePosition(data: { id: string; mousePosition: EcsMathReadOnlyVector3 }) {
-    positionEvent.mousePosition.set(data.mousePosition.x, data.mousePosition.y, data.mousePosition.z)
-    positionObservable.notifyObservers(positionEvent)
     futures[data.id].resolve(data.mousePosition)
   }
 
@@ -344,11 +317,7 @@ export class BrowserInterface {
 
     transformSerializeOpt.useBinaryTransform = !!data.useBinaryTransform
 
-    queueMicrotask(() => {
-      // send an "engineStarted" notification, use a queueMicrotask
-      // to escape the current stack leveraging the JS event loop
-      store.dispatch(signalRendererInitializedCorrectly())
-    })
+    this.startedFuture.resolve()
   }
 
   public CrashPayloadResponse(data: { payload: any }) {

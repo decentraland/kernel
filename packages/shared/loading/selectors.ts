@@ -1,5 +1,6 @@
 import { LoginState } from '@dcl/kernel-interface'
 import { RootRendererState } from 'shared/renderer/types'
+import { RootSceneLoaderState } from 'shared/scene-loader/types'
 import { getIsSignUp } from 'shared/session/selectors'
 import { RootSessionState } from 'shared/session/types'
 import { RootState } from 'shared/store/rootTypes'
@@ -13,8 +14,10 @@ export function hasPendingScenes(state: RootLoadingState) {
   return state.loading.pendingScenes !== 0
 }
 
-export function isLoadingScreenVisible(state: RootLoadingState & RootSessionState & RootRendererState) {
-  const { session, renderer } = state
+export function isLoadingScreenVisible(
+  state: RootLoadingState & RootSessionState & RootSceneLoaderState & RootRendererState
+) {
+  const { session, renderer, sceneLoader } = state
 
   // in the case of signup, we show the avatars editor instead of the loading screen
   // that is so, to enable the user to customize the avatar while loading the world
@@ -24,6 +27,11 @@ export function isLoadingScreenVisible(state: RootLoadingState & RootSessionStat
 
   // if parcel loading is not yet started, the loading screen should be visible
   if (!renderer.parcelLoadingStarted) {
+    return true
+  }
+
+  // if parcel loading is not yet started, the loading screen should be visible
+  if (!sceneLoader.positionSettled) {
     return true
   }
 

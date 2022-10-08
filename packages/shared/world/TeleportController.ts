@@ -67,7 +67,7 @@ export class TeleportController {
 
     if (isInsideWorldLimits(x, y)) {
       store.dispatch(trackTeleportTriggered(tpMessage || `Teleporting to ${x}, ${y}`))
-      store.dispatch(teleportToAction(gridToWorld(x, y)))
+      store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
 
       return { message: tpMessage, success: true }
     } else {
