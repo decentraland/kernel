@@ -116,8 +116,6 @@ function* rendererPositionSettler() {
       getPositionSpawnPointAndScene
     )
 
-    console.log('rendererPositionSettler', { isSettled, spawnPointAndScene })
-
     // and then settle the position
     if (!isSettled) {
       // Then set the parcel position for the scene loader
@@ -178,8 +176,6 @@ function* positionSettler() {
   while (true) {
     const reason: SceneStart | SceneFail | SceneUnload = yield take([SCENE_START, SCENE_FAIL, SCENE_UNLOAD])
 
-    console.log('positionSettler', { reason })
-
     const sceneId: string = reason.payload?.id
 
     if (!sceneId) throw new Error('Error in logic of positionSettler saga')
@@ -188,8 +184,6 @@ function* positionSettler() {
     const spawnPointAndScene: ReturnType<typeof getPositionSpawnPointAndScene> = yield select(
       getPositionSpawnPointAndScene
     )
-
-    console.log('positionSettler', { settled, sceneId, settlerScene: spawnPointAndScene })
 
     if (!settled && sceneId === spawnPointAndScene?.sceneId) {
       if (reason.type === SCENE_START) {
