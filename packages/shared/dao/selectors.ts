@@ -29,5 +29,3 @@ export const getSelectedNetwork = (store: RootDaoState) => {
   }
   throw new Error('Missing network')
 }
-
-

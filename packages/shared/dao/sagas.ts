@@ -16,10 +16,7 @@ import {
   getDisabledCatalystConfig,
   getPickRealmsAlgorithmConfig
 } from 'shared/meta/selectors'
-import {
-  getAllCatalystCandidates,
-  getCatalystCandidatesReceived,
-} from './selectors'
+import { getAllCatalystCandidates, getCatalystCandidatesReceived } from './selectors'
 import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
 import {
   BringDownClientAndShowError,

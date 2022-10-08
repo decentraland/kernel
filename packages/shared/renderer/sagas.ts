@@ -47,6 +47,7 @@ import { IBff } from 'shared/bff/types'
 import { SET_BFF } from 'shared/bff/actions'
 import { getAllowedContentServer } from 'shared/meta/selectors'
 import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
+import { RootState } from 'shared/store/rootTypes'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -165,11 +166,28 @@ function* updateLoadingScreen() {
   yield call(waitForRendererInstance)
 
   const isVisible = yield select(isLoadingScreenVisible)
-  const loadingState = yield select(getLoadingState)
+
   const parcelLoadingStarted = yield select(getParcelLoadingStarted)
+  const loadingState = yield select(getLoadingState)
+  const loadingMessage: string | undefined = yield select((state: RootState): string | undefined => {
+    const msgs: string[] = []
+    if (!state.bff.bff) msgs.push('Picking realm...')
+    else if (!state.sceneLoader) msgs.push('Initializing world loader...')
+    else if (!parcelLoadingStarted) msgs.push('Fetching initial parcels...')
+    if (!state.comms.context) msgs.push('Connecting to comms...')
+
+    if (state.loading.pendingScenes && state.loading.totalScenes > 1) {
+      msgs.push(
+        `Initializing scenes ${state.loading.totalScenes - state.loading.pendingScenes}/${state.loading.totalScenes}...`
+      )
+    }
+    msgs.push(loadingState.message)
+    return msgs.join('\n')
+  })
+
   const loadingScreen = {
     isVisible,
-    message: loadingState.message || loadingState.status || '',
+    message: loadingMessage || loadingState.message || loadingState.status || '',
     showTips: loadingState.initialLoad || !parcelLoadingStarted
   }
   getUnityInstance().SetLoadingScreen(loadingScreen)

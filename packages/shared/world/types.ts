@@ -7,7 +7,7 @@ export type ParcelSceneLoadingState = {
 }
 
 export type WorldState = {
-  currentScene: SceneWorker | undefined,
+  currentScene: SceneWorker | undefined
 }
 
 export type RootWorldState = {

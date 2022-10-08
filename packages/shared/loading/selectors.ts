@@ -1,28 +1,27 @@
 import { LoginState } from '@dcl/kernel-interface'
-import { RootRendererState } from 'shared/renderer/types'
-import { RootSceneLoaderState } from 'shared/scene-loader/types'
 import { getIsSignUp } from 'shared/session/selectors'
-import { RootSessionState } from 'shared/session/types'
 import { RootState } from 'shared/store/rootTypes'
 import { RootLoadingState } from './reducer'
 
 export const getFatalError = (state: RootLoadingState) => state.loading.error
 export const getLoadingState = (state: RootLoadingState) => state.loading
-export const isInitialLoading = (state: RootLoadingState) => state.loading.initialLoad
 
 export function hasPendingScenes(state: RootLoadingState) {
   return state.loading.pendingScenes !== 0
 }
 
-export function isLoadingScreenVisible(
-  state: RootLoadingState & RootSessionState & RootSceneLoaderState & RootRendererState
-) {
+export function isLoadingScreenVisible(state: RootState) {
   const { session, renderer, sceneLoader } = state
 
   // in the case of signup, we show the avatars editor instead of the loading screen
   // that is so, to enable the user to customize the avatar while loading the world
   if (session.isSignUp && session.loginState === LoginState.WAITING_PROFILE) {
     return false
+  }
+
+  // loading while we don't have a BFF
+  if (!state.bff.bff) {
+    return true
   }
 
   // if parcel loading is not yet started, the loading screen should be visible
@@ -33,21 +32,6 @@ export function isLoadingScreenVisible(
   // if parcel loading is not yet started, the loading screen should be visible
   if (!sceneLoader.positionSettled) {
     return true
-  }
-
-  // if it is the initial load
-  if (state.loading.initialLoad) {
-    // if it has pending scenes in the initial load, then the loading
-    // screen should be visible
-    if (hasPendingScenes(state)) {
-      return true
-    }
-
-    if (state.loading.totalScenes === 0) {
-      // this may happen if we are loading for the first time and this saga
-      // gets executed _before_ the initial load of scenes
-      return true
-    }
   }
 
   // if the camera is offline, it definitely means we are loading.

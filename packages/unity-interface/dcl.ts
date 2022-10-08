@@ -46,7 +46,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   await browserInterface.startedFuture
 
-  getUnityInstance().DeactivateRendering()
+  getUnityInstance().ActivateRendering()
   getUnityInstance().SetLoadingScreen({ isVisible: true, message: 'Initializing Decentraland', showTips: true })
 
   queueMicrotask(() => {

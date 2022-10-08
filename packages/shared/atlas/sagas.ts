@@ -150,16 +150,11 @@ function* reportScenes(scenes: LoadableScene[]): any {
         parcels.push(xy)
       })
 
-
       minimapSceneInfoResult.push({
         name: postProcessSceneName(sceneName),
         owner: getOwnerNameFromJsonData(metadata),
         description: getSceneDescriptionFromJsonData(metadata),
-        previewImageUrl: getThumbnailUrlFromJsonDataAndContent(
-          metadata,
-          scene.entity.content,
-          scene.baseUrl
-        ),
+        previewImageUrl: getThumbnailUrlFromJsonDataAndContent(metadata, scene.entity.content, scene.baseUrl),
         // type is not used by renderer
         type: undefined as any,
         parcels,

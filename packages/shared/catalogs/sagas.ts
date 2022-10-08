@@ -87,7 +87,6 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
     const contentBaseUrl: string = yield call(getFetchContentUrlPrefixFromBff, bff)
 
     try {
-
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'

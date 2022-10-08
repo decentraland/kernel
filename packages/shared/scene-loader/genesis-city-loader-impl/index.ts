@@ -16,7 +16,7 @@ export function createGenesisCityLoader(options: {
 
   const listeners = new Set<(elem: SetDesiredScenesCommand) => void>()
 
-  let lastPosition: Vector2 = new Vector2()
+  const lastPosition: Vector2 = new Vector2()
   let lastLoadingRadius: number = 0
 
   async function fetchCurrentPosition() {

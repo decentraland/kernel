@@ -15,6 +15,7 @@ import {
   SCENE_FAIL,
   SCENE_LOAD,
   SCENE_START,
+  SCENE_UNLOAD,
   updateLoadingScreen,
   UPDATE_STATUS_MESSAGE
 } from './actions'
@@ -39,6 +40,8 @@ import { getAssetBundlesBaseUrl } from 'config'
 import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
 import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
 import { LoadableScene } from 'shared/types'
+import { SET_BFF } from 'shared/bff/actions'
+import { POSITION_SETTLED, POSITION_UNSETTLED, SET_SCENE_LOADER } from 'shared/scene-loader/actions'
 
 // The following actions may change the status of the loginVisible
 const ACTIONS_FOR_LOADING = [
@@ -55,7 +58,12 @@ const ACTIONS_FOR_LOADING = [
   SCENE_LOAD,
   SIGNUP_SET_IS_SIGNUP,
   TELEPORT_TRIGGERED,
-  UPDATE_STATUS_MESSAGE
+  UPDATE_STATUS_MESSAGE,
+  SET_BFF,
+  SET_SCENE_LOADER,
+  POSITION_SETTLED,
+  POSITION_UNSETTLED,
+  SCENE_UNLOAD
 ]
 
 export function* loadingSaga() {

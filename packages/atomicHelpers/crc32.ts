@@ -31,8 +31,8 @@ const CRC_TABLE = new Int32Array([
 ])
 
 function _crc32(buf: Uint8Array, previous: number) {
-  var crc = ~~previous ^ -1
-  for (var n = 0; n < buf.length; n++) {
+  let crc = ~~previous ^ -1
+  for (let n = 0; n < buf.length; n++) {
     crc = CRC_TABLE[(crc ^ buf[n]) & 0xff] ^ (crc >>> 8)
   }
   return crc ^ -1

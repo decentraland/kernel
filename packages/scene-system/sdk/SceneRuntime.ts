@@ -22,7 +22,6 @@ function parseParcelPosition(position: string) {
   return { x, y }
 }
 
-
 export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
   const clientPort = await client.createPort(`scene-${workerName}`)

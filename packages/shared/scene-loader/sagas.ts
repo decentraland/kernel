@@ -119,22 +119,12 @@ function* rendererPositionSettler() {
     console.log('rendererPositionSettler', { isSettled, spawnPointAndScene })
 
     // and then settle the position
-    if (isSettled) {
-      // then update the position in the engine
-      getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
-
-      console.log('ActivateRendering')
-      getUnityInstance().ActivateRendering()
-    } else {
-      console.log('DeactivateRendering')
-      getUnityInstance().DeactivateRendering()
-
+    if (!isSettled) {
       // Then set the parcel position for the scene loader
       receivePositionReport(spawnPointAndScene.spawnPoint.position)
-
-      // then update the position in the engine
-      getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
     }
+    // then update the position in the engine
+    getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
 
     yield take([POSITION_SETTLED, POSITION_UNSETTLED])
   }
@@ -202,6 +192,9 @@ function* positionSettler() {
     console.log('positionSettler', { settled, sceneId, settlerScene: spawnPointAndScene })
 
     if (!settled && sceneId === spawnPointAndScene?.sceneId) {
+      if (reason.type === SCENE_START) {
+        yield delay(100)
+      }
       yield put(positionSettled(spawnPointAndScene.spawnPoint))
     }
   }

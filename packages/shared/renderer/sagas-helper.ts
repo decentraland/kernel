@@ -8,4 +8,3 @@ export function* waitForRendererInstance() {
     yield take(RENDERER_INITIALIZED_CORRECTLY)
   }
 }
-

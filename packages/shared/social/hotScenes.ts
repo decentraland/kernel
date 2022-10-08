@@ -63,12 +63,7 @@ async function fetchPOIsAsHotSceneInfo(): Promise<HotSceneInfo[]> {
       name: postProcessSceneName(getSceneNameFromJsonData(land.entity.metadata)),
       creator: getOwnerNameFromJsonData(land.entity.metadata),
       description: getSceneDescriptionFromJsonData(land.entity.metadata),
-      thumbnail:
-        getThumbnailUrlFromJsonDataAndContent(
-          land.entity.metadata,
-          land.entity.content,
-          baseContentUrl
-        ) ?? '',
+      thumbnail: getThumbnailUrlFromJsonDataAndContent(land.entity.metadata, land.entity.content, baseContentUrl) ?? '',
       baseCoords: TileStringToVector2(land.entity.metadata.scene.base),
       parcels: land.entity.metadata
         ? land.entity.metadata.scene.parcels.map((parcel) => {

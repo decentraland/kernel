@@ -3,7 +3,7 @@ import { PARCEL_LOADING_STARTED, RendererState, RENDERER_INITIALIZED_CORRECTLY }
 
 const INITIAL_STATE: RendererState = {
   initialized: false,
-  parcelLoadingStarted: false,
+  parcelLoadingStarted: false
 }
 
 export function rendererReducer(state?: RendererState, action?: AnyAction): RendererState {

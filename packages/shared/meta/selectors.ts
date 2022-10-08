@@ -99,7 +99,6 @@ export const getSynapseUrl = (store: RootMetaState): string =>
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint
 
-
 /**
  * Filters out content server hostnames from the allowed list of the MetaState.
  * This is necessary to protect the IP and domains in which DCL is served.

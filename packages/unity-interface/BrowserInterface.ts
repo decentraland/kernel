@@ -490,7 +490,6 @@ export class BrowserInterface {
 
   public CloseUserAvatar(isSignUpFlow = false) {
     if (isSignUpFlow) {
-      getUnityInstance().DeactivateRendering()
       store.dispatch(signUpCancel())
     }
   }

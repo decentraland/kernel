@@ -32,8 +32,6 @@ export async function ensureBffPromise(): Promise<IBff> {
   })
 }
 
-
-
 export const getProfilesContentServerFromBff = (bff: IBff) => {
   if (UPDATE_CONTENT_SERVICE) {
     return urlWithProtocol(UPDATE_CONTENT_SERVICE)

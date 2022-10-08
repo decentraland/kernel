@@ -19,7 +19,7 @@ export function urlWithProtocol(urlOrHostname: string) {
 
 export async function bffForRealm(baseUrl: string, about: AboutResponse, identity: ExplorerIdentity): Promise<IBff> {
   // TODO: We are checking !v2 until all migration is finished
-  const isValidBff = about.comms?.protocol !== 'v2' // about.bff?.healthy
+  const isValidBff = about.comms?.protocol !== 'v2' && about.bff?.healthy // about.bff?.healthy
 
   // connect the real BFF
   if (isValidBff) {

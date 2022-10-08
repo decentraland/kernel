@@ -93,10 +93,7 @@ export function receivePeerUserData(avatar: Avatar, baseUrl: string) {
 function sendPeerUserData(address: string) {
   const peer = getPeer(address)
   if (peer && peer.baseUrl) {
-    const profile = avatarUiProfileForUserId(
-      peer.ethereumAddress,
-      peer.baseUrl
-    )
+    const profile = avatarUiProfileForUserId(peer.ethereumAddress, peer.baseUrl)
     if (profile) {
       avatarMessageObservable.notifyObservers({
         type: AvatarMessageType.USER_DATA,

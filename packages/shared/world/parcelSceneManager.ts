@@ -15,7 +15,7 @@ import { ContentMapping } from '@dcl/schemas'
 import { positionObservable } from './positionThings'
 
 positionObservable.add((obj) => {
-  for (let [, scene] of loadedSceneWorkers) {
+  for (const [, scene] of loadedSceneWorkers) {
     scene.sendUserViewMatrix(obj)
   }
 })
@@ -66,7 +66,7 @@ export function forceStopScene(sceneId: string) {
 }
 
 export function getLoadedParcelSceneByPointer(pointer: string) {
-  for (let [, w] of loadedSceneWorkers) {
+  for (const [, w] of loadedSceneWorkers) {
     if (!w.rpcContext.sceneData.isPortableExperience && w.loadableScene.entity.pointers.includes(pointer)) {
       return w
     }

@@ -26,8 +26,7 @@ export type TeleportToAction = ReturnType<typeof teleportToAction>
  * loading. The .position indicates the spawn point of the scene.
  */
 export const POSITION_SETTLED = 'POSITION_SETTLED'
-export const positionSettled = (spawnPoint: InstancedSpawnPoint) =>
-  action(POSITION_SETTLED, { spawnPoint })
+export const positionSettled = (spawnPoint: InstancedSpawnPoint) => action(POSITION_SETTLED, { spawnPoint })
 export type PositionSettled = ReturnType<typeof positionSettled>
 
 /**
@@ -37,5 +36,6 @@ export type PositionSettled = ReturnType<typeof positionSettled>
  * The sceneId is the ID of the scene that will settle the position once loaded.
  */
 export const POSITION_UNSETTLED = 'POSITION_UNSETTLED'
-export const positionUnsettled = (sceneId: string, spawnPoint: InstancedSpawnPoint) => action(POSITION_UNSETTLED, { sceneId, spawnPoint })
+export const positionUnsettled = (sceneId: string, spawnPoint: InstancedSpawnPoint) =>
+  action(POSITION_UNSETTLED, { sceneId, spawnPoint })
 export type PositionUnsettled = ReturnType<typeof positionUnsettled>
