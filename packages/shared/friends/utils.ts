@@ -30,6 +30,7 @@ export function getMatrixIdFromUser(userId: string) {
   const domain = store.getState().friends.client?.getDomain() ?? 'decentraland.org'
   return `@${userId.toLowerCase()}:${domain}`
 }
+
 /*
  * Returns true if channels feature is enabled
  */

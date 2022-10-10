@@ -397,6 +397,27 @@ function* configureMatrixClient(action: SetMatrixClient) {
         }
 
         getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+        break
+      case 'leave':
+        const leavingChannelPayload: ChannelInfoPayload = {
+          name: conversation.name ?? '',
+          channelId: conversation.id,
+          unseenMessages: 0,
+          lastMessageTimestamp: undefined,
+          memberCount: 0,
+          description: '',
+          joined: false,
+          muted: false
+        }
+
+        // send total unseen messages update
+        const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), getFriendIds(client))
+        const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
+          total: totalUnreadMessages
+        }
+
+        getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
+        getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
     }
   })
 }
@@ -1322,26 +1343,6 @@ function* handleLeaveChannel(action: LeaveChannel) {
     if (profile?.muted?.includes(channelId)) {
       store.dispatch(unmutePlayers([channelId]))
     }
-
-    const leavingChannelPayload: ChannelInfoPayload = {
-      name: '',
-      channelId: channelId,
-      unseenMessages: 0,
-      lastMessageTimestamp: undefined,
-      memberCount: 0,
-      description: '',
-      joined: false,
-      muted: false
-    }
-
-    // send total unseen messages update
-    const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), getFriendIds(client))
-    const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
-      total: totalUnreadMessages
-    }
-
-    getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
-    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
   } catch (e) {
     notifyLeaveChannelError(action.payload.channelId, ChannelErrorCode.UNKNOWN)
   }
