@@ -61,6 +61,7 @@ export function defaultProfile({
 }): NewProfileForRenderer {
   const avatar = {
     userId,
+    ethAddress: userId,
     name,
     avatar: {
       snapshots: prepareSnapshots({ face256, body: '' }),

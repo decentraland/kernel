@@ -1575,7 +1575,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   const fetchContentServer = getFetchContentUrlPrefix(store.getState())
   const missingUserIds = messages
     .map((message) => message.sender)
-    .filter((userId) => !isAddedToCatalog(store.getState(), userId))
+    .filter((userId) => !isAddedToCatalog(store.getState(), getUserIdFromMatrix(userId)))
 
   if (missingUserIds.length > 0) {
     const missingUsers = getMissingProfiles(client, request.channelId, missingUserIds, fetchContentServer)
@@ -1811,21 +1811,26 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     members: []
   }
 
+  // list of users with matrix IDs
   const channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
   if (!channelMemberIds) {
     // it means the channel has no members
     getUnityInstance().UpdateChannelMembers(channelMembers)
     return
   }
+  const userStatuses = client.getUserStatuses(...(channelMemberIds ?? []))
 
-  const profilesFromStore = getProfilesFromStore(store.getState(), channelMemberIds, request.userName)
+  // get the local part of the userId
+  const membersIds = channelMemberIds.map((id) => getUserIdFromMatrix(id))
+  const profilesFromStore = getProfilesFromStore(store.getState(), membersIds, request.userName)
 
   for (const profile of profilesFromStore) {
-    // Todo Juli: Check -- Do the ids we're comparing have the same format?
-    const member = channelMemberIds.find((id) => id === profile.data.userId)
+    const member = channelMemberIds.find((id) => getUserIdFromMatrix(id) === profile.data.userId)
     if (member) {
-      // Todo Juli: Check -- What we gonna do with isOnline?
-      channelMembers.members.push({ userId: member, isOnline: false })
+      channelMembers.members.push({
+        userId: getUserIdFromMatrix(member),
+        isOnline: userStatuses.get(member)?.presence === PresenceType.ONLINE
+      })
     }
   }
 
@@ -1856,10 +1861,12 @@ function getMissingProfiles(
     return buildMissingProfile(client, roomId, userId, fetchContentServer)
   })
 }
+
 function buildMissingProfile(client: SocialAPI, roomId: string, userId: string, fetchContentServer: string) {
   const info = client.getMemberInfo(roomId, userId)
+  const localpart = getUserIdFromMatrix(userId)
   return defaultProfile({
-    userId,
+    userId: localpart,
     name: info.displayName ?? '',
     face256: info.avatarUrl ?? '',
     baseUrl: fetchContentServer
