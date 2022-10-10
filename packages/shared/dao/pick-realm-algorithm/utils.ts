@@ -2,7 +2,7 @@ import { Candidate } from '../types'
 import { AlgorithmContext, LatencyDeductionsParameters } from './types'
 
 export function usersCount(candidate: Candidate) {
-  return candidate.usersCount || candidate.usersParcels?.length || 0
+  return candidate.usersCount || 0
 }
 
 export function maxUsers(candidate: Candidate) {

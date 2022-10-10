@@ -110,7 +110,7 @@ export async function fetchCatalystStatus(
       domain: domain,
       status: commsResponse.status,
       elapsed: commsResponse.elapsed!,
-      usersCount: result.usersCount ?? 0,
+      usersCount: result.usersCount ?? result.usersParcels?.length ?? 0,
       maxUsers: result.maxUsers ?? 2000,
       usersParcels: result.usersParcels
     }

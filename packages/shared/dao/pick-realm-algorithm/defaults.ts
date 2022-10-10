@@ -35,8 +35,7 @@ export const defaultAllPeersScoreConfig: AllPeersScoreParameters = {
 }
 
 export const defaultChainConfig: AlgorithmChainConfig = [
-  { type: AlgorithmLinkTypes.LARGE_LATENCY },
-  { type: AlgorithmLinkTypes.CLOSE_PEERS_SCORE },
   { type: AlgorithmLinkTypes.ALL_PEERS_SCORE },
+  { type: AlgorithmLinkTypes.CLOSE_PEERS_SCORE },
   { type: AlgorithmLinkTypes.LOAD_BALANCING }
 ]
