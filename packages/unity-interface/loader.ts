@@ -103,6 +103,11 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
         },
         onBinaryMessage: (...args) => {
           console.log('onBinaryMessage', ...args)
+        },
+        extraConfig: {
+          antialias: false,
+          powerPreference: "high-performance",
+          failIfMajorPerformanceCaveat: true
         }
       })
     },
