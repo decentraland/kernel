@@ -74,7 +74,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
       event.preventDefault()
       BringDownClientAndShowError(
         'The rendering engine failed. This is an unrecoverable error that is subject to the available memory and resources of your browser.\n' +
-          'For a better experience, we recommend using the Native Desktop Client. You can find it in https://decentraland.com/download'
+          'For a better experience, we recommend using the Native Desktop Client. You can find it in https://decentraland.org/download'
       )
     },
     false
