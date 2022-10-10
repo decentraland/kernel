@@ -4,7 +4,7 @@ import { createLogger } from 'redux-logger'
 import { reducers } from './rootReducer'
 import { createRootSaga } from './rootSaga'
 import { DEBUG_REDUX } from '../../config'
-import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from '../loading/ReportFatalError'
+import { ErrorContext, BringDownClientAndReportFatalError } from '../loading/ReportFatalError'
 import defaultLogger from '../logger'
 import { setStore } from './isolatedStore'
 import { composeWithDevTools } from 'redux-devtools-extension'
@@ -17,8 +17,7 @@ export const buildStore = () => {
     sagaMonitor,
     onError: (error: Error, { sagaStack }: { sagaStack: string }) => {
       defaultLogger.log('SAGA-ERROR: ', error)
-      ReportFatalError(error, ErrorContext.KERNEL_SAGA, { sagaStack })
-      BringDownClientAndShowError(error.message as any)
+      BringDownClientAndReportFatalError(error, ErrorContext.KERNEL_SAGA, { sagaStack })
     }
   })
 
