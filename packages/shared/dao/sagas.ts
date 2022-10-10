@@ -24,12 +24,7 @@ import {
   getUpdateProfileServer
 } from './selectors'
 import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
-import {
-  BringDownClientAndShowError,
-  ErrorContext,
-  ReportFatalErrorWithCatalystPayload
-} from 'shared/loading/ReportFatalError'
-import { CATALYST_COULD_NOT_LOAD } from 'shared/loading/types'
+import { BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { gte } from 'semver'
 import { commsLogger } from 'shared/comms/context'
 import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
@@ -120,8 +115,7 @@ export function* selectAndReconnectRealm() {
     // if no realm was selected, then do the whole initialization dance
   } catch (e: any) {
     debugger
-    ReportFatalErrorWithCatalystPayload(e, ErrorContext.KERNEL_INIT)
-    BringDownClientAndShowError(CATALYST_COULD_NOT_LOAD)
+    BringDownClientAndReportFatalError(e, 'comms#init')
     throw e
   }
 }

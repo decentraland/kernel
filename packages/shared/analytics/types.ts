@@ -79,5 +79,5 @@ export type TrackEvents = PositionTrackEvents & {
   // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Remote avatar for profile is invalid']: { avatar: Avatar }
 
-  ['pickedRealm']: { algorithm: string, domain: string }
+  ['pickedRealm']: { algorithm: string; domain: string }
 }
