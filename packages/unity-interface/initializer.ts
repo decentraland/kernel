@@ -63,7 +63,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     const renderer = ctx.getParameter(debug_ext.UNMASKED_RENDERER_WEBGL)
     if (renderer.indexOf('SwiftShader') >= 0) {
       throw new Error(
-        'Your browser is using an emulated software renderer (SwiftShader). This prevents Decentraland from working. This is usually fixed by restarting the computer. In any case, we recommend you to use the Desktop Client instead for a better overall experience. You can find it in https://decentraland.com/download'
+        'Your browser is using an emulated software renderer (SwiftShader). This prevents Decentraland from working. This is usually fixed by restarting the computer. In any case, we recommend you to use the Desktop Client instead for a better overall experience. You can find it in https://decentraland.org/download'
       )
     }
   }
