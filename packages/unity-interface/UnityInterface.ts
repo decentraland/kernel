@@ -121,6 +121,7 @@ export class UnityInterface implements IUnityInterface {
     contents: Array<ContentMapping>
     icon?: string
     isPortableExperience: boolean
+    sceneNumber: number
   }) {
     /**
      * UI Scenes are scenes that does not check any limit or boundary. The
