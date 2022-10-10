@@ -31,6 +31,22 @@ export function getMatrixIdFromUser(userId: string) {
   return `@${userId.toLowerCase()}:${domain}`
 }
 
+/**
+ * Get the normalized name of a room
+ * @param name a string with the name
+ *
+ * @example
+ * from: '#rapanui:decentraland.zone'
+ * to: 'rapanui'
+ * */
+export function getNormalizedRoomName(name: string) {
+  // it means we got the name with a inadequate format
+  if (name.indexOf('#') === 0) {
+    return name.split(':')[0].substring(1)
+  }
+  return name
+}
+
 /*
  * Returns true if channels feature is enabled
  */

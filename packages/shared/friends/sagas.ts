@@ -109,7 +109,13 @@ import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { ProfileUserInfo } from 'shared/profiles/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { addedProfilesToCatalog } from 'shared/profiles/actions'
-import { getUserIdFromMatrix, getMatrixIdFromUser, areChannelsEnabled, getMaxChannels } from './utils'
+import {
+  getUserIdFromMatrix,
+  getMatrixIdFromUser,
+  areChannelsEnabled,
+  getMaxChannels,
+  getNormalizedRoomName
+} from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
@@ -381,12 +387,12 @@ function* configureMatrixClient(action: SetMatrixClient) {
   client.onChannelMembership((conversation, membership) => {
     switch (membership) {
       case 'join':
-        if (conversation.name === 'Empty room') {
+        if (conversation.name === 'Empty room' || !conversation.name) {
           break
         }
 
         const channel: ChannelInfoPayload = {
-          name: conversation.name ?? '',
+          name: getNormalizedRoomName(conversation.name),
           channelId: conversation.id,
           unseenMessages: conversation.unreadMessages?.length ?? 0,
           lastMessageTimestamp: conversation.lastEventTimestamp ?? undefined,
@@ -418,6 +424,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 
         getUnityInstance().UpdateTotalUnseenMessages(updateTotalUnseenMessages)
         getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [leavingChannelPayload] })
+        break
     }
   })
 }
