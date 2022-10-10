@@ -70,7 +70,7 @@ export class UnityInterface implements IUnityInterface {
   public SetTargetHeight(height: number): void {
     // above 2000 is assumed "Match display", below that it is "Normal"
     // as defined in https://rfc.decentraland.org/adr/ADR-83
-    if (height > 2000) {
+    if (height >= 2000) {
       devicePixelRatio = originalPixelRatio
     } else {
       devicePixelRatio = 1
