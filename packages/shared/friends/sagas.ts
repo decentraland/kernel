@@ -1824,14 +1824,12 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   const membersIds = channelMemberIds.map((id) => getUserIdFromMatrix(id))
   const profilesFromStore = getProfilesFromStore(store.getState(), membersIds, request.userName)
 
-  for (const profile of profilesFromStore) {
-    const member = channelMemberIds.find((id) => getUserIdFromMatrix(id) === profile.data.userId)
-    if (member) {
-      channelMembers.members.push({
-        userId: getUserIdFromMatrix(member),
-        isOnline: userStatuses.get(member)?.presence === PresenceType.ONLINE
-      })
-    }
+  for (const member of channelMemberIds) {
+    const userId = getUserIdFromMatrix(member)
+    channelMembers.members.push({
+      userId,
+      isOnline: userStatuses.get(member)?.presence === PresenceType.ONLINE
+    })
   }
 
   const profilesForRenderer = profilesFromStore.map((profile) =>
@@ -1842,7 +1840,7 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
 
   // those profiles that are not in the store are prepared without any data but avatar url and name
   const storedIds = profilesFromStore.map((profile) => profile.data.userId)
-  const missingUsersIds = channelMemberIds.filter((id) => !storedIds.includes(id))
+  const missingUsersIds = channelMemberIds.filter((id) => !storedIds.includes(getUserIdFromMatrix(id)))
   const missingProfilesForRenderer = getMissingProfiles(client, request.channelId, missingUsersIds, fetchContentServer)
 
   getUnityInstance().AddUserProfilesToCatalog({ users: [...profilesForRenderer, ...missingProfilesForRenderer] })
