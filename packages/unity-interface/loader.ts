@@ -1,12 +1,7 @@
 import future from 'fp-future'
 import type * as _TheRenderer from '@dcl/unity-renderer/src/index'
 import { trackEvent } from 'shared/analytics'
-import {
-  ReportFatalErrorWithUnityPayload,
-  ErrorContext,
-  BringDownClientAndShowError
-} from 'shared/loading/ReportFatalError'
-import { UNEXPECTED_ERROR } from 'shared/loading/types'
+import { BringDownClientAndShowError } from 'shared/loading/ReportFatalError'
 
 declare const globalThis: { DclRenderer?: DclRenderer }
 
@@ -98,11 +93,15 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
         onProgress,
         onMessageLegacy: options.onMessage,
         onError: (error) => {
-          ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_NEWERRORHANDLER)
-          BringDownClientAndShowError(UNEXPECTED_ERROR)
+          BringDownClientAndShowError(error)
         },
         onBinaryMessage: (...args) => {
           console.log('onBinaryMessage', ...args)
+        },
+        extraConfig: {
+          antialias: false,
+          powerPreference: 'high-performance',
+          failIfMajorPerformanceCaveat: true
         }
       })
     },

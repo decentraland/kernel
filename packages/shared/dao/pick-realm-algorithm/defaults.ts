@@ -26,7 +26,8 @@ export const defaultAllPeersScoreConfig: AllPeersScoreParameters = {
   baseScore: 40,
   fillTargetPercentage: 0.5,
   discourageFillTargetPercentage: 0.8,
-  definitiveDecisionThreshold: 20,
+  // If we have less than 20 users of difference by default, we cannot make a definitive decision. It delegates to the next link
+  definitiveDecisionThreshold: 10,
   latencyDeductionsParameters: {
     exponentialDivisor: 900,
     multiplier: 60,
