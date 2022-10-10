@@ -253,7 +253,10 @@ export class UnityInterface implements IUnityInterface {
     const totalJSHeapSize = memory?.totalJSHeapSize
     const usedJSHeapSize = memory?.usedJSHeapSize
 
-    this.SendMessageToUnity('Main', 'SetMemoryUsage', JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
+    this.SendMessageToUnity(
+      'Main',
+      'SetMemoryUsage',
+      JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
     )
   }
 
