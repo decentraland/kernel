@@ -126,6 +126,8 @@ async function startGlobalScene(
     }
   })
 
+  scene.rpcContext.sceneData.useFPSThrottling = false
+
   getUnityInstance().CreateGlobalScene({
     id: cid,
     name: title,
