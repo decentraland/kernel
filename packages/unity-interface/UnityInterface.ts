@@ -253,16 +253,7 @@ export class UnityInterface implements IUnityInterface {
     const totalJSHeapSize = memory?.totalJSHeapSize
     const usedJSHeapSize = memory?.usedJSHeapSize
 
-    /*    let estimatedAllocatedMemory = 15
-    let estimatedTotalMemory = 17
-    if (getUnityInstance()?.Module?.asmLibraryArg?._GetDynamicMemorySize) {
-      estimatedAllocatedMemory = getUnityInstance().Module.asmLibraryArg._GetDynamicMemorySize()
-      estimatedTotalMemory = getUnityInstance().Module.asmLibraryArg._GetTotalMemorySize()
-    }*/
-    this.SendMessageToUnity(
-      'Bridges',
-      'SetMemoryUsage',
-      JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
+    this.SendMessageToUnity('Main', 'SetMemoryUsage', JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
     )
   }
 
