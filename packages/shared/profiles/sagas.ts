@@ -255,6 +255,10 @@ function* handleCommsProfile() {
 
       // store profile locally and forward to renderer
       yield put(profileSuccess(receivedProfile))
+
+      const messageId = uuid()
+      const body = `␐Spawn_Pose_v01 10000`
+      sendPublicChatMessage(messageId, body)
     }
   }
 }
@@ -325,10 +329,6 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
       profile
     })
     yield put(deployProfileSuccess(userId, profile.version, profile))
-
-    const messageId = uuid()
-    const body = `␐Spawn_Pose_v01 10000`
-    sendPublicChatMessage(messageId, body)
   } catch (e: any) {
     trackEvent('error', {
       context: 'kernel#saga',
