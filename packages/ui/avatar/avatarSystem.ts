@@ -10,6 +10,7 @@ import {
   // Material,
   // Color4
 } from '@dcl/legacy-ecs'
+import { WearableId } from '@dcl/schemas'
 import type {
   AvatarMessage,
   Pose,
@@ -23,6 +24,20 @@ import type {
 } from 'shared/comms/interface/types'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 export const avatarMessageObservable = new Observable<AvatarMessage>()
+
+function hasWearablesChanged(prevWearables: WearableId[], nextWearables: WearableId[]) {
+  if (prevWearables.length !== nextWearables.length) {
+    return true
+  }
+
+  for (const wearable of prevWearables) {
+    if (!nextWearables.includes(wearable)) {
+      return true
+    }
+  }
+
+  return false
+}
 
 const avatarMap = new Map<string, AvatarEntity>()
 // const box = new BoxShape()
@@ -108,9 +123,11 @@ export class AvatarEntity extends Entity {
   }
 
   setExpression(id: string, timestamp: number): void {
-    const shape = this.avatarShape
-    shape.expressionTriggerId = id
-    shape.expressionTriggerTimestamp = timestamp
+    setTimeout(() => {
+      const shape = this.avatarShape
+      shape.expressionTriggerId = id
+      shape.expressionTriggerTimestamp = timestamp
+    }, 1000)
   }
 
   setPose(pose: Pose): void {
@@ -168,9 +185,19 @@ function ensureAvatar(userId: UUID): AvatarEntity {
 
 function handleUserData({ userId, data, profile }: ReceiveUserDataMessage): void {
   const avatar = ensureAvatar(userId)
+  const wearablesChanged = hasWearablesChanged(avatar?.avatarShape?.wearables || [], profile?.avatar?.wearables || [])
+
   avatar.setUserData(data)
   avatar.loadProfile(profile)
   avatar.setVisible(data.visible ?? true)
+
+  // If the wearable changed, trigger an emote after loading the profile
+  if (wearablesChanged) {
+    setTimeout(() => {
+      // TODO: random here ?
+      avatar?.setExpression('wave', Date.now())
+    }, 1000)
+  }
 }
 
 function handleUserExpression({ userId, expressionId, timestamp }: ReceiveUserExpressionMessage): void {
