@@ -1384,10 +1384,14 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     }
 
     // get or create channel
-    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, []])
+    const { created, conversation }: { created: boolean; conversation: Conversation } = yield apply(
+      client,
+      client.getOrCreateChannel,
+      [channelId, []]
+    )
 
     const channel: ChannelInfoPayload = {
-      name: action.payload.channelId,
+      name: conversation.name ?? action.payload.channelId,
       channelId: conversation.id,
       unseenMessages: 0,
       lastMessageTimestamp: undefined,
@@ -1775,28 +1779,26 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // although it is not the current scenario, we want to be able to request information for several channels at the same time
-  const channelId = request.channelIds[0]
-
-  const channelInfo: Conversation | undefined = client.getChannel(channelId)
-
   // get notification settings
   const profile = getCurrentUserProfile(store.getState())
-  const muted = profile?.muted?.includes(channelId) ?? false
+  const channels: ChannelInfoPayload[] = []
 
-  if (channelInfo) {
-    const channel: ChannelInfoPayload = {
-      name: channelInfo.name || '',
-      channelId: channelInfo.id,
-      unseenMessages: muted ? 0 : channelInfo.unreadMessages?.length || 0,
-      lastMessageTimestamp: channelInfo.lastEventTimestamp || undefined,
-      memberCount: channelInfo.userIds?.length || 1,
+  for (const channelId of request.channelIds) {
+    const channel = client.getChannel(channelId)
+    if (!channel) continue
+
+    const muted = profile?.muted?.includes(channelId) ?? false
+    channels.push({
+      name: channel.name || '',
+      channelId: channel.id,
+      unseenMessages: muted ? -1 : channel.unreadMessages?.length || 0,
+      lastMessageTimestamp: channel.lastEventTimestamp || undefined,
+      memberCount: channel.userIds?.length || 0,
       description: '',
       joined: true,
       muted
-    }
-
-    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
+    })
+    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: channels })
   }
 }
 
