@@ -50,7 +50,6 @@ import { validateAvatar } from './schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
 import { getIdentity } from 'shared/session'
-import {allScenesEvent} from "../world/parcelSceneManager";
 import {uuid} from "../../atomicHelpers/math";
 import {sendPublicChatMessage} from "../comms";
 
@@ -303,18 +302,6 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
     if (profile.hasConnectedWeb3) {
       yield put(deployProfile(profile))
     }
-
-    allScenesEvent({
-      eventType: 'playerExpression',
-      payload: {
-        expressionId: "Spawn_Pose_v01"
-      }
-    })
-
-    const messageId = uuid()
-    const body = `␐Spawn_Pose_v01 10000`
-
-    sendPublicChatMessage(messageId, body)
   } catch (error: any) {
     trackEvent('error', {
       message: `cant_persist_avatar ${error}`,
@@ -338,6 +325,10 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
       profile
     })
     yield put(deployProfileSuccess(userId, profile.version, profile))
+
+    const messageId = uuid()
+    const body = `␐Spawn_Pose_v01 10000`
+    sendPublicChatMessage(messageId, body)
   } catch (e: any) {
     trackEvent('error', {
       context: 'kernel#saga',
