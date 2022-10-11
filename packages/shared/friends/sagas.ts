@@ -1571,11 +1571,14 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     const index = messages.map((messages) => messages.id).indexOf(messageId)
     messages.splice(index)
   }
-
+  const ownId = client.getUserId()
   const fetchContentServer = getFetchContentUrlPrefix(store.getState())
   const missingUserIds = messages
     .map((message) => message.sender)
-    .filter((userId) => !isAddedToCatalog(store.getState(), getUserIdFromMatrix(userId)))
+    .filter((userId) => {
+      const localUserId = getUserIdFromMatrix(userId)
+      return userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
+    })
 
   if (missingUserIds.length > 0) {
     const missingUsers = getMissingProfiles(client, request.channelId, missingUserIds, fetchContentServer)
