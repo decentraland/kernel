@@ -72,6 +72,18 @@ export function getSceneWorkerBySceneID(sceneId: string) {
   return loadedSceneWorkers.get(sceneId)
 }
 
+/**
+ * Retrieve the Scene based on it's Scene Number
+ */
+export function getSceneWorkerBySceneNumber(sceneNumber: number) {
+  // TODO: Optimize this fetch
+  for (const sceneWorker of loadedSceneWorkers.values()) {
+    if(sceneWorker.rpcContext.sceneData.sceneNumber == sceneNumber) {
+      return sceneWorker
+    }
+  }
+}
+
 export function forceStopScene(sceneId: string) {
   const worker = loadedSceneWorkers.get(sceneId)
   if (worker) {
@@ -259,9 +271,15 @@ export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams)
       }
     }
 
+    // maybe actions (packages/shared/loading/actions.ts) should map to a scene number instead of scene id ???
     const sceneStatus: SceneLifeCycleStatusReport = {
-      sceneId: action.payload.id,
+      sceneNumber: -1,
       status
+    }
+
+    const sceneWorker = getSceneWorkerBySceneID(action.payload.id)
+    if(sceneWorker) {
+      sceneStatus.sceneNumber = sceneWorker.rpcContext.sceneData.sceneNumber
     }
 
     lifecycleManager.notify('Scene.status', sceneStatus)

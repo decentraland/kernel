@@ -356,7 +356,7 @@ export class SceneWorker {
 
   private subscribeToSceneLifeCycleEvents() {
     this.sceneLifeCycleObserver = sceneLifeCycleObservable.add((obj) => {
-      if (this.loadableScene.id === obj.sceneId && obj.status === 'ready') {
+      if (this.rpcContext.sceneData.sceneNumber === obj.sceneNumber && obj.status === 'ready') {
         this.ready |= SceneWorkerReadyState.STARTED
 
         this.sceneReady = true

@@ -2,8 +2,9 @@ import { SceneLifeCycleStatus, SceneLifeCycleStatusType } from '../lib/scene.sta
 import { EventEmitter } from 'events'
 import { SceneDataDownloadManager } from './download'
 import defaultLogger from 'shared/logger'
+import {getSceneWorkerBySceneNumber} from "../../../shared/world/parcelSceneManager";
 
-export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
+export type SceneLifeCycleStatusReport = { sceneNumber: number; status: SceneLifeCycleStatusType }
 export type NewDrawingDistanceReport = { distanceInParcels: number }
 
 type SceneId = string
@@ -49,15 +50,20 @@ export class SceneLifeCycleController extends EventEmitter {
     return !!status && (status.isReady() || status.isFailed())
   }
 
-  reportStatus(sceneId: string, status: SceneLifeCycleStatusType) {
+  reportStatus(sceneNumber: number, status: SceneLifeCycleStatusType) {
+    const sceneWorker = getSceneWorkerBySceneNumber(sceneNumber)
+
+    if(!sceneWorker) return
+
+    const sceneId = sceneWorker.rpcContext.sceneData.id
     const lifeCycleStatus = this.sceneStatus.get(sceneId)
     if (!lifeCycleStatus) {
-      defaultLogger.info(`no lifecycle status for scene ${sceneId}`)
+      defaultLogger.info(`no lifecycle status for scene number ${sceneNumber}`)
       return
     }
     lifeCycleStatus.status = status
 
-    this.emit('Scene status', { sceneId, status })
+    this.emit('Scene status', { sceneNumber, status })
   }
 
   isSceneRunning(sceneId: string): boolean {

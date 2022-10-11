@@ -27,7 +27,7 @@ export type TrackEvents = PositionTrackEvents & {
   ['referral_save']: { code: string; address?: string; referral_of?: unknown }
   ['Move to Parcel']: { newParcel: string; oldParcel: string | null; exactPosition: ReadOnlyVector3 }
   ['motd_failed']: Record<string, unknown> // {}
-  ['TermsOfServiceResponse']: { sceneId: string; accepted: boolean; dontShowAgain: boolean }
+  ['TermsOfServiceResponse']: { sceneNumber: number; accepted: boolean; dontShowAgain: boolean }
   ['error']: { context: string; message: string; stack: string; saga_stack?: string }
   ['error_fatal']: { context: string; message: string; stack: string; saga_stack?: string }
   ['long_chat_message_ignored']: { message: string; sender?: string }

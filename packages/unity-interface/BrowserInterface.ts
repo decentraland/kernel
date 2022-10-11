@@ -37,7 +37,7 @@ import {
   GetChannelInfoPayload
 } from 'shared/types'
 import {
-  getSceneWorkerBySceneID,
+  getSceneWorkerBySceneNumber,
   allScenesEvent,
   AllScenesEvents,
   renderDistanceObservable
@@ -302,8 +302,9 @@ export class BrowserInterface {
     futures[data.id].resolve(data.mousePosition)
   }
 
-  public SceneEvent(data: { sceneId: string; eventType: string; payload: any }) {
-    const scene = getSceneWorkerBySceneID(data.sceneId)
+  public SceneEvent(data: { sceneNumber: number; eventType: string; payload: any }) {
+    const scene = getSceneWorkerBySceneNumber(data.sceneNumber)
+
     if (scene) {
       scene.rpcContext.sendSceneEvent(data.eventType as IEventNames, data.payload)
 
@@ -317,7 +318,7 @@ export class BrowserInterface {
       }
     } else {
       if (data.eventType !== 'metricsUpdate') {
-        defaultLogger.error(`SceneEvent: Scene ${data.sceneId} not found`, data)
+        defaultLogger.error(`SceneEvent: Scene number ${data.sceneNumber} not found`, data)
       }
     }
   }
@@ -354,7 +355,7 @@ export class BrowserInterface {
     getUnityInstance().crashPayloadResponseObservable.notifyObservers(JSON.stringify(data))
   }
 
-  public PreloadFinished(_data: { sceneId: string }) {
+  public PreloadFinished(_data: { sceneNumber: number }) {
     // stub. there is no code about this in unity side yet
   }
 
@@ -383,7 +384,7 @@ export class BrowserInterface {
     sendPublicChatMessage(messageId, body)
   }
 
-  public TermsOfServiceResponse(data: { sceneId: string; accepted: boolean; dontShowAgain: boolean }) {
+  public TermsOfServiceResponse(data: { sceneNumber: number; accepted: boolean; dontShowAgain: boolean }) {
     trackEvent('TermsOfServiceResponse', data)
   }
 
@@ -533,8 +534,8 @@ export class BrowserInterface {
   public ControlEvent({ eventType, payload }: { eventType: string; payload: any }) {
     switch (eventType) {
       case 'SceneReady': {
-        const { sceneId } = payload
-        sceneLifeCycleObservable.notifyObservers({ sceneId, status: 'ready' })
+        const { sceneNumber } = payload
+        sceneLifeCycleObservable.notifyObservers({ sceneNumber, status: 'ready' })
         break
       }
       case 'DeactivateRenderingACK': {
@@ -589,17 +590,17 @@ export class BrowserInterface {
     getUnseenMessagesByUser()
   }
 
-  public SetHomeScene(data: { sceneId: string }) {
-    store.dispatch(setHomeScene(data.sceneId))
+  public SetHomeScene(data: { sceneCoords: string }) {
+    store.dispatch(setHomeScene(data.sceneCoords))
   }
 
   public GetFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload: GetFriendsWithDirectMessagesPayload) {
     getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload)
   }
 
-  public ReportScene(data: { sceneId: string }) {
+  public ReportScene(data: { sceneNumber: number }) {
     this.OpenWebURL({
-      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
+      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${getSceneWorkerBySceneNumber(data.sceneNumber)?.rpcContext.sceneData.id}`
     })
   }
 
@@ -977,13 +978,13 @@ export class BrowserInterface {
 
   public VideoProgressEvent(videoEvent: {
     componentId: string
-    sceneId: string
+    sceneNumber: number
     videoTextureId: string
     status: number
     currentOffset: number
     videoLength: number
   }) {
-    const scene = getSceneWorkerBySceneID(videoEvent.sceneId)
+    const scene = getSceneWorkerBySceneNumber(videoEvent.sceneNumber)
     if (scene) {
       scene.rpcContext.sendSceneEvent('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,
@@ -993,7 +994,7 @@ export class BrowserInterface {
         totalVideoLength: videoEvent.videoLength
       })
     } else {
-      defaultLogger.error(`SceneEvent: Scene ${videoEvent.sceneId} not found`, videoEvent)
+      defaultLogger.error(`SceneEvent: Scene number ${videoEvent.sceneNumber} not found`, videoEvent)
     }
   }
 

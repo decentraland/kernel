@@ -100,7 +100,7 @@ let emptyParcelController: EmptyParcelController
       })
 
       connector.on('Scene.status', (data: SceneLifeCycleStatusReport) => {
-        sceneController.reportStatus(data.sceneId, data.status)
+        sceneController.reportStatus(data.sceneNumber, data.status)
       })
 
       connector.on('SetScenesLoadRadius', (data: NewDrawingDistanceReport) => {
