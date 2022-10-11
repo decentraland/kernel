@@ -390,7 +390,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
   client.onChannelMembership((conversation, membership) => {
     switch (membership) {
       case 'join':
-        if (conversation.name === 'Empty room' || !conversation.name) {
+        if (!conversation.name || conversation.name?.startsWith('Empty room')) {
           break
         }
 
@@ -1462,7 +1462,7 @@ export async function createChannel(request: CreateChannelPayload) {
 
     // parse channel info
     const channel: ChannelInfoPayload = {
-      name: request.channelId,
+      name: conversation.name ?? request.channelId,
       channelId: conversation.id,
       unseenMessages: 0,
       lastMessageTimestamp: undefined,
@@ -1791,15 +1791,15 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
     channels.push({
       name: channel.name || '',
       channelId: channel.id,
-      unseenMessages: muted ? -1 : channel.unreadMessages?.length || 0,
+      unseenMessages: muted ? 0 : channel.unreadMessages?.length || 0,
       lastMessageTimestamp: channel.lastEventTimestamp || undefined,
       memberCount: channel.userIds?.length || 0,
       description: '',
       joined: true,
       muted
     })
-    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: channels })
   }
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: channels })
 }
 
 // Get channel members
