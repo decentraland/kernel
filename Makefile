@@ -2,18 +2,18 @@
 NODE = node
 COMPILER = $(NODE) --max-old-space-size=4096 node_modules/.bin/decentraland-compiler
 CONCURRENTLY = node_modules/.bin/concurrently
-RENDERER_PROTO_FILES  := $(wildcard node_modules/@dcl/protocol/renderer-protocol/*.proto)
-BFF_PROTO_FILES       := $(wildcard node_modules/@dcl/protocol/bff/*.proto)
-SCENE_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/kernel/apis/*.proto)
-COMMSRFC4_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/kernel/comms/*.proto)
-COMMS_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/kernel/comms/v3/*.proto)
+RENDERER_PROTO_FILES  := $(wildcard node_modules/@dcl/protocol/proto/decentraland/renderer/*.proto)
+BFF_PROTO_FILES       := $(wildcard node_modules/@dcl/protocol/proto/decentraland/bff/*.proto)
+SCENE_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/proto/decentraland/kernel/apis/*.proto)
+COMMSRFC4_PROTO_FILES := $(wildcard node_modules/@dcl/protocol/proto/decentraland/kernel/comms/*.proto)
+COMMS_PROTO_FILES     := $(wildcard node_modules/@dcl/protocol/proto/decentraland/kernel/comms/v3/*.proto)
 COMMS_PROTO_FILES2    := $(wildcard packages/shared/comms/v3/proto/*.proto)
 
 BFF_TS =        packages/shared/protocol/bff-services.gen.ts
 PBS_TS =        packages/shared/protocol/kernel/sdk-apis.gen.ts
-PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/renderer-protocol/%.proto=packages/shared/protocol/renderer-protocol/%.gen.ts)
-COMMSRFC4_TS =  $(COMMSRFC4_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/%.proto=packages/shared/protocol/kernel/comms/%.gen.ts)
-COMMS_TS =      $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/kernel/comms/v3/%.proto=packages/shared/protocol/kernel/comms/v3/%.gen.ts)
+PBRENDERER_TS = $(RENDERER_PROTO_FILES:node_modules/@dcl/protocol/proto/decentraland/renderer/%.proto=packages/shared/protocol/renderer-protocol/%.gen.ts)
+COMMSRFC4_TS =  $(COMMSRFC4_PROTO_FILES:node_modules/@dcl/protocol/proto/decentraland/kernel/comms/%.proto=packages/shared/protocol/kernel/comms/%.gen.ts)
+COMMS_TS =      $(COMMS_PROTO_FILES:node_modules/@dcl/protocol/proto/decentraland/kernel/comms/v3/%.proto=packages/shared/protocol/kernel/comms/v3/%.gen.ts)
 COMMS_TS2 =     $(COMMS_PROTO_FILES2:packages/shared/comms/v3/proto/%.proto=packages/shared/comms/v3/proto/%.gen.ts)
 
 CWD = $(shell pwd)
@@ -21,7 +21,8 @@ PROTOC = node_modules/.bin/protoc
 PROTOC_ARGS = --plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			        --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,fileSuffix=.gen \
 			        --ts_proto_out="$(PWD)/packages/shared/protocol" \
-              -I="$(PWD)/node_modules/@dcl/protocol"
+              -I="$(PWD)/node_modules/@dcl/protocol/proto" \
+              -I="$(PWD)/node_modules/@dcl/protocol/public"
 # Remove default Makefile rules
 
 .SUFFIXES:
@@ -182,41 +183,41 @@ help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "\nYou probably want to run 'make watch' to build all the test scenes and run the local comms server."
 
-packages/shared/protocol/kernel/sdk-apis.gen.ts: node_modules/@dcl/protocol/sdk-apis.proto
+packages/shared/protocol/kernel/sdk-apis.gen.ts: node_modules/@dcl/protocol/public/sdk-apis.proto
 	${PROTOC} ${PROTOC_ARGS} \
-    "$(PWD)/node_modules/@dcl/protocol/sdk-apis.proto";
+    "$(PWD)/node_modules/@dcl/protocol/public/sdk-apis.proto";
 
-packages/shared/protocol/renderer-protocol/%.gen.ts: node_modules/@dcl/protocol/renderer-protocol/%.proto
+packages/shared/protocol/renderer-protocol/%.gen.ts: node_modules/@dcl/protocol/proto/decentraland/renderer/%.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/renderer-protocol"
 	${PROTOC} ${PROTOC_ARGS} \
-    "$(PWD)/node_modules/@dcl/protocol/renderer-protocol/$*.proto";
+    "$(PWD)/node_modules/@dcl/protocol/proto/decentraland/renderer/$*.proto";
 
-packages/shared/protocol/bff-services.gen.ts: node_modules/@dcl/protocol/bff-services.proto
+packages/shared/protocol/bff-services.gen.ts: node_modules/@dcl/protocol/public/bff-services.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/bff"
 	${PROTOC} ${PROTOC_ARGS} \
     -I="$(PWD)/node_modules/protobufjs" \
-    "$(PWD)/node_modules/@dcl/protocol/bff-services.proto"
+    "$(PWD)/node_modules/@dcl/protocol/public/bff-services.proto"
 
-packages/shared/protocol/kernel/comms/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/%.proto
+packages/shared/protocol/kernel/comms/%.gen.ts: node_modules/@dcl/protocol/proto/decentraland/kernel/comms/%.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		  --ts_proto_opt=esModuleInterop=true,returnObservable=false,outputServices=generic-definitions,oneof=unions \
 			--ts_proto_opt=fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/comms" \
-      -I="$(PWD)/node_modules/@dcl/protocol/bff" \
+      -I="$(PWD)/node_modules/@dcl/protocol/proto/decentraland/bff" \
       -I="$(PWD)/node_modules/protobufjs" \
-			-I="$(PWD)/node_modules/@dcl/protocol/kernel/comms" \
-			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/$*.proto"
+			-I="$(PWD)/node_modules/@dcl/protocol/proto/decentraland/kernel/comms" \
+			"$(PWD)/node_modules/@dcl/protocol/proto/decentraland/kernel/comms/$*.proto"
 
-packages/shared/protocol/kernel/comms/v3/%.gen.ts: node_modules/@dcl/protocol/kernel/comms/v3/%.proto
+packages/shared/protocol/kernel/comms/v3/%.gen.ts: node_modules/@dcl/protocol/proto/decentraland/kernel/comms/v3/%.proto
 	mkdir -p "$(PWD)/packages/shared/protocol/kernel/comms/v3"
 	${PROTOC}  \
 			--plugin=./node_modules/.bin/protoc-gen-ts_proto \
 			--ts_proto_opt=esModuleInterop=true,oneof=unions,fileSuffix=.gen \
 			--ts_proto_out="$(PWD)/packages/shared/protocol/kernel/comms/v3" \
-      -I="$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3" \
-			"$(PWD)/node_modules/@dcl/protocol/kernel/comms/v3/$*.proto"
+      -I="$(PWD)/node_modules/@dcl/protocol/proto/decentraland/kernel/comms/v3" \
+			"$(PWD)/node_modules/@dcl/protocol/proto/decentraland/kernel/comms/v3/$*.proto"
 
 packages/shared/comms/v3/proto/%.gen.ts: packages/shared/comms/v3/proto/%.proto
 	${PROTOC}  \

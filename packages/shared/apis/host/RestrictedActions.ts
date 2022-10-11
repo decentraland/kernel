@@ -17,13 +17,13 @@ import {
   RestrictedActionsServiceDefinition,
   TriggerEmoteRequest,
   TriggerEmoteResponse
-} from 'shared/protocol/kernel/apis/RestrictedActions.gen'
+} from 'shared/protocol/decentraland/kernel/apis/restricted_actions.gen'
 import { assertHasPermission } from './Permissions'
-import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { PermissionItem } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
 
 export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePlayerToResponse {
   //   checks permissions
-  assertHasPermission(PermissionItem.ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, ctx)
+  assertHasPermission(PermissionItem.PERMISSION_ITEM_ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE, ctx)
 
   if (!ctx.sceneData) return {}
 
@@ -65,7 +65,7 @@ export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePl
 
 export function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): TriggerEmoteResponse {
   // checks permissions
-  assertHasPermission(PermissionItem.ALLOW_TO_TRIGGER_AVATAR_EMOTE, ctx)
+  assertHasPermission(PermissionItem.PERMISSION_ITEM_ALLOW_TO_TRIGGER_AVATAR_EMOTE, ctx)
 
   if (!isPositionValid(lastPlayerPosition, ctx)) {
     ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)

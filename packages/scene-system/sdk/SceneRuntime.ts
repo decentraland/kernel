@@ -2,7 +2,7 @@ import { LoadableAPIs } from '../../shared/apis/client'
 import { componentSerializeOpt, initMessagesFinished, numberToIdStore, resolveMapping } from './Utils'
 import { customEval, prepareSandboxContext } from './sandbox'
 import { RpcClient } from '@dcl/rpc/dist/types'
-import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { PermissionItem } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
 
 import { createDecentralandInterface, DecentralandInterfaceOptions } from './runtime/DecentralandInterface'
 import { setupFpsThrottling } from './runtime/SetupFpsThrottling'
@@ -25,7 +25,7 @@ export async function startSceneRuntime(client: RpcClient) {
 
   const [canUseWebsocket, canUseFetch] = (
     await Permissions.hasManyPermissions({
-      permissions: [PermissionItem.USE_WEBSOCKET, PermissionItem.USE_FETCH]
+      permissions: [PermissionItem.PERMISSION_ITEM_USE_WEBSOCKET, PermissionItem.PERMISSION_ITEM_USE_FETCH]
     })
   ).hasManyPermission
 

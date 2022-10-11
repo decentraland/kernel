@@ -2,7 +2,7 @@ import { rendererProtocol } from './../../../renderer-protocol/rpcClient'
 
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { ExperimentalAPIServiceDefinition } from 'shared/protocol/kernel/apis/ExperimentalAPI.gen'
+import { ExperimentalAPIServiceDefinition } from 'shared/protocol/decentraland/kernel/apis/experimental_api.gen'
 import { PortContext } from './context'
 
 /** @deprecated this is only for experimental purposes */

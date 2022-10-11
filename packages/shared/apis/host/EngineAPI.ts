@@ -8,50 +8,50 @@ import {
   ManyEntityAction,
   Payload,
   queryTypeToJSON
-} from 'shared/protocol/kernel/apis/EngineAPI.gen'
+} from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
 
 import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
 
 function getPayload(payloadType: EAType, payload: Payload): any {
   switch (payloadType) {
-    case EAType.OpenExternalUrl: {
+    case EAType.EA_TYPE_OPEN_EXTERNAL_URL: {
       return payload.openExternalUrl?.url
     }
-    case EAType.OpenNFTDialog: {
+    case EAType.EA_TYPE_OPEN_NFT_DIALOG: {
       return payload.openNftDialog
     }
-    case EAType.CreateEntity: {
+    case EAType.EA_TYPE_CREATE_ENTITY: {
       return payload.createEntity
     }
-    case EAType.RemoveEntity: {
+    case EAType.EA_TYPE_REMOVE_ENTITY: {
       return payload.removeEntity
     }
-    case EAType.UpdateEntityComponent: {
+    case EAType.EA_TYPE_UPDATE_ENTITY_COMPONENT: {
       return payload.updateEntityComponent
     }
-    case EAType.AttachEntityComponent: {
+    case EAType.EA_TYPE_ATTACH_ENTITY_COMPONENT: {
       return payload.attachEntityComponent
     }
-    case EAType.ComponentRemoved: {
+    case EAType.EA_TYPE_COMPONENT_REMOVED: {
       return payload.componentRemoved
     }
-    case EAType.SetEntityParent: {
+    case EAType.EA_TYPE_SET_ENTITY_PARENT: {
       return payload.setEntityParent
     }
-    case EAType.Query: {
+    case EAType.EA_TYPE_QUERY: {
       return { queryId: queryTypeToJSON(payload.query!.queryId), payload: JSON.parse(payload.query!.payload) }
     }
-    case EAType.ComponentCreated: {
+    case EAType.EA_TYPE_COMPONENT_CREATED: {
       return payload.componentCreated
     }
-    case EAType.ComponentDisposed: {
+    case EAType.EA_TYPE_COMPONENT_DISPOSED: {
       return payload.componentDisposed
     }
-    case EAType.ComponentUpdated: {
+    case EAType.EA_TYPE_COMPONENT_UPDATED: {
       return payload.componentUpdated
     }
-    case EAType.InitMessagesFinished: {
+    case EAType.EA_TYPE_INIT_MESSAGES_FINISHED: {
       return payload.initMessagesFinished
     }
   }

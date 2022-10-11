@@ -17,14 +17,14 @@ import {
   SendAsyncResponse,
   SignMessageRequest,
   SignMessageResponse
-} from 'shared/protocol/kernel/apis/EthereumController.gen'
+} from 'shared/protocol/decentraland/kernel/apis/ethereum_controller.gen'
 import { PortContext } from './context'
 import { RPCSendableMessage } from 'shared/types'
-import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { PermissionItem } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
 import { assertHasPermission } from './Permissions'
 
 async function requirePayment(req: RequirePaymentRequest, ctx: PortContext): Promise<RequirePaymentResponse> {
-  assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
+  assertHasPermission(PermissionItem.PERMISSION_ITEM_USE_WEB3_API, ctx)
 
   await getUnityInstance().RequestWeb3ApiUse('requirePayment', {
     ...req,
@@ -39,7 +39,7 @@ async function requirePayment(req: RequirePaymentRequest, ctx: PortContext): Pro
 }
 
 async function signMessage(req: SignMessageRequest, ctx: PortContext): Promise<SignMessageResponse> {
-  assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
+  assertHasPermission(PermissionItem.PERMISSION_ITEM_USE_WEB3_API, ctx)
 
   await getUnityInstance().RequestWeb3ApiUse('signMessage', {
     message: await EthService.messageToString(req.message),
@@ -54,7 +54,7 @@ async function convertMessageToObject(
   req: ConvertMessageToObjectRequest,
   ctx: PortContext
 ): Promise<ConvertMessageToObjectResponse> {
-  assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
+  assertHasPermission(PermissionItem.PERMISSION_ITEM_USE_WEB3_API, ctx)
   return { dict: await EthService.convertMessageToObject(req.message) }
 }
 
@@ -66,7 +66,7 @@ async function sendAsync(req: SendAsyncRequest, ctx: PortContext): Promise<SendA
     params: JSON.parse(req.jsonParams) as any[]
   }
 
-  assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
+  assertHasPermission(PermissionItem.PERMISSION_ITEM_USE_WEB3_API, ctx)
   if (EthService.rpcRequireSign(message)) {
     await getUnityInstance().RequestWeb3ApiUse('sendAsync', {
       message: `${message.method}(${message.params.join(',')})`,
@@ -82,7 +82,7 @@ async function sendAsync(req: SendAsyncRequest, ctx: PortContext): Promise<SendA
 }
 
 async function getUserAccount(_req: GetUserAccountRequest, ctx: PortContext): Promise<GetUserAccountResponse> {
-  assertHasPermission(PermissionItem.USE_WEB3_API, ctx)
+  assertHasPermission(PermissionItem.PERMISSION_ITEM_USE_WEB3_API, ctx)
   return { address: await EthProvider.getUserAccount(EthProvider.requestManager) }
 }
 
