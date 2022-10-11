@@ -1,5 +1,4 @@
 import { ResponseTopic, RequestTopic, VoiceChatWorkerRequest } from './types'
-import defaultLogger from 'shared/logger'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const audioWorkerRaw = require('raw-loader!../../static/voice-chat-codec/worker.js')
@@ -33,7 +32,7 @@ export class VoiceChatCodecWorkerMain {
     this.worker.onerror = (e) => {
       // Errors on voice worker should not be considered fatal for now
       e.preventDefault()
-      defaultLogger.error('Error on voice chat worker: ', e)
+      console.error('Error on voice chat worker: ', e)
     }
     this.worker.onmessage = (ev) => {
       if (ev.data.topic === ResponseTopic.ENCODE) {
@@ -41,7 +40,7 @@ export class VoiceChatCodecWorkerMain {
       } else if (ev.data.topic === ResponseTopic.DECODE) {
         this.decodeListeners[ev.data.streamId]?.forEach((listener) => listener(ev.data.samples))
       } else {
-        defaultLogger.warn('Unknown message topic received from worker', ev)
+        console.warn('Unknown message topic received from worker', ev)
       }
     }
   }

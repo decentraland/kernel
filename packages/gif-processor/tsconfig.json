@@ -11,7 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true,
     "alwaysStrict": true,
-    "allowSyntheticDefaultImports": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "newLine": "LF",
@@ -26,9 +27,7 @@
       "es2017",
       "dom"
     ],
-    "baseUrl": ".."
+    "baseUrl": "."
   },
-  "exclude": [
-    "../../node_modules"
-  ]
+  "include": ["."]
 }

@@ -1,49 +1,26 @@
-import {
-  DEBUG,
-  DECENTRALAND_SPACE,
-  EDITOR,
-  ENGINE_DEBUG_PANEL,
-  ETHEREUM_NETWORK,
-  getAssetBundlesBaseUrl,
-  PARCEL_LOADING_ENABLED,
-  rootURLPreviewMode,
-  SCENE_DEBUG_PANEL,
-  SHOW_FPS_COUNTER
-} from 'config'
+import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
-import { teleportTriggered } from 'shared/loading/types'
 import {
   allScenesEvent,
-  enableParcelSceneLoading,
   loadParcelSceneWorker,
-  onLoadParcelScenesObservable,
-  onPositionSettledObservable,
-  onPositionUnsettledObservable,
   reloadScene,
-  addDesiredParcel,
   unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
-import { getSceneNameFromJsonData, normalizeContentMappings } from 'shared/selectors'
-import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
 import { kernelConfigForRenderer } from './kernelConfigForRenderer'
 import { store } from 'shared/store/isolatedStore'
 import type { UnityGame } from '@dcl/unity-renderer/src'
-import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
 import { ContentMapping, EntityType, Scene, sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
-import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
-import { SceneWorker, workerStatusObservable } from 'shared/world/SceneWorker'
-import { signalParcelLoadingStarted } from 'shared/renderer/actions'
-import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 import { sleep } from 'atomicHelpers/sleep'
-import { LoadableParcelScene } from 'shared/types'
-import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
+import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
+import { browserInterface } from './BrowserInterface'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -67,7 +44,16 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   getUnityInstance().Init(gameInstance)
 
-  getUnityInstance().DeactivateRendering()
+  await browserInterface.startedFuture
+
+  getUnityInstance().ActivateRendering()
+  getUnityInstance().SetLoadingScreen({ isVisible: true, message: 'Initializing Decentraland', showTips: true })
+
+  queueMicrotask(() => {
+    // send an "engineStarted" notification, use a queueMicrotask
+    // to escape the current stack leveraging the JS event loop
+    store.dispatch(signalRendererInitializedCorrectly())
+  })
 
   await ensureMetaConfigurationInitialized()
 
@@ -79,7 +65,6 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   if (SCENE_DEBUG_PANEL) {
     getUnityInstance().SetKernelConfiguration({ debugConfig: { sceneDebugPanelEnabled: true } })
-    getUnityInstance().SetSceneDebugPanel()
   }
 
   if (SHOW_FPS_COUNTER) {
@@ -126,63 +111,9 @@ async function startGlobalScene(
     }
   })
 
+  scene.rpcContext.sceneData.isPortableExperience = true
+  // portable experiences have no FPS limit
   scene.rpcContext.sceneData.useFPSThrottling = false
-
-  getUnityInstance().CreateGlobalScene({
-    id: cid,
-    name: title,
-    baseUrl: scene.loadableScene.baseUrl,
-    isPortableExperience: false,
-    contents: scene.loadableScene.entity.content,
-    sceneNumber: scene.rpcContext.sceneData.sceneNumber
-  })
-}
-
-/**
- * This is the format of scenes that needs to be sent to Unity to create its counterpart
- * of a SceneWorker
- */
-function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
-  const entity = worker.loadableScene.entity
-  const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
-
-  return {
-    id: worker.loadableScene.id,
-    sceneNumber: worker.rpcContext.sceneData.sceneNumber,
-    basePosition: parseParcelPosition(entity.metadata?.scene?.base || '0,0'),
-    name: getSceneNameFromJsonData(entity.metadata),
-    parcels: entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
-    baseUrl: worker.loadableScene.baseUrl,
-    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
-    contents: mappings,
-    loadableScene: worker.loadableScene
-  }
-}
-
-export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
-  onLoadParcelScenesObservable.add((worker) => {
-    getUnityInstance().LoadParcelScenes([sceneWorkerToLoadableParcelScene(worker)])
-  })
-  onPositionSettledObservable.add((spawnPoint) => {
-    getUnityInstance().Teleport(spawnPoint)
-    getUnityInstance().ActivateRendering()
-  })
-  onPositionUnsettledObservable.add(() => {
-    getUnityInstance().DeactivateRendering()
-  })
-  workerStatusObservable.add((action) => store.dispatch(action))
-
-  if (PARCEL_LOADING_ENABLED) {
-    await enableParcelSceneLoading(params)
-  } else {
-    store.dispatch(signalParcelLoadingStarted())
-  }
-
-  if (DECENTRALAND_SPACE) {
-    const px = await getPortableExperienceFromUrn(DECENTRALAND_SPACE)
-    await addDesiredParcel(px)
-    onPositionSettledObservable.notifyObservers(pickWorldSpawnpoint(px.entity.metadata as Scene))
-  }
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {
@@ -261,11 +192,6 @@ export async function reloadPlaygroundScene() {
   const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
   await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, playgroundContentMapping, playgroundBaseUrl)
 }
-
-teleportObservable.add((position: { x: number; y: number; text?: string }) => {
-  // before setting the new position, show loading screen to avoid showing an empty world
-  store.dispatch(teleportTriggered(position.text || `Teleporting to ${position.x}, ${position.y}`))
-})
 
 {
   // TODO: move to unity-renderer

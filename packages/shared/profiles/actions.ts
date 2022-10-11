@@ -1,4 +1,5 @@
 import { Avatar } from '@dcl/schemas'
+import { IFuture } from 'fp-future'
 import { action } from 'typesafe-actions'
 import { ProfileType } from './types'
 
@@ -17,8 +18,8 @@ export const DEPLOY_PROFILE_FAILURE = 'DEPLOY_PROFILE_FAILURE'
 
 export const SEND_PROFILE_TO_RENDERER = 'SEND_PROFILE_TO_RENDERER'
 
-export const profileRequest = (userId: string, profileType?: ProfileType, version?: number) =>
-  action(PROFILE_REQUEST, { userId, profileType, version })
+export const profileRequest = (userId: string, future: IFuture<Avatar>, profileType?: ProfileType, version?: number) =>
+  action(PROFILE_REQUEST, { userId, future, profileType, version })
 
 /**
  * profileSuccess stores locally a profile and sends it to the renderer.

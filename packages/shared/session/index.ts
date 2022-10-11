@@ -1,4 +1,4 @@
-import { getCurrentIdentity, getProvider as getProviderSelector, hasWallet as hasWalletSelector } from './selectors'
+import { getProvider as getProviderSelector } from './selectors'
 import {
   getFromPersistentStorage,
   getKeysFromPersistentStorage,
@@ -75,9 +75,5 @@ export const getLastGuestSession: () => Promise<StoredSession | null> = async ()
 
   return filteredSessions.length > 0 ? filteredSessions[0] : null
 }
-
-export const getIdentity = () => getCurrentIdentity(store.getState())
-
-export const hasWallet = () => hasWalletSelector(store.getState())
 
 export const getProvider = () => getProviderSelector(store.getState())

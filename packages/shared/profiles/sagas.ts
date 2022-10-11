@@ -23,33 +23,49 @@ import {
   ProfileSuccessAction,
   profileFailure
 } from './actions'
-import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
+import { getCurrentUserProfileDirty, getProfileFromStore, getProfileStatusAndData } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
-import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
+import {
+  ContentFile,
+  ProfileStatus,
+  ProfileType,
+  ProfileUserInfo,
+  RemoteProfile,
+  REMOTE_AVATAR_IS_INVALID
+} from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
-import { getUpdateProfileServer, getCatalystServer } from '../dao/selectors'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
-import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, isCurrentUserId } from 'shared/session/selectors'
+import {
+  getCurrentUserId,
+  getCurrentIdentity,
+  getCurrentNetwork,
+  getIsGuestLogin,
+  isCurrentUserId
+} from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
-import { waitForRealmInitialized } from 'shared/dao/sagas'
+import { waitForRoomConnection } from 'shared/dao/sagas'
 import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
-import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
-import { UNEXPECTED_ERROR } from 'shared/loading/types'
-import { store } from 'shared/store/isolatedStore'
+import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { createFakeName } from './utils/fakeName'
-import { getCommsContext } from 'shared/comms/selectors'
-import { CommsContext } from 'shared/comms/context'
+import { getCommsRoom } from 'shared/comms/selectors'
 import { createReceiveProfileOverCommsChannel, requestProfileToPeers } from 'shared/comms/handlers'
 import { Avatar, Profile, Snapshots } from '@dcl/schemas'
 import { validateAvatar } from './schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
-import { getIdentity } from 'shared/session'
+import { RoomConnection } from 'shared/comms/interface'
+import {
+  ensureRealmAdapterPromise,
+  getProfilesContentServerFromRealmAdapter,
+  waitForRealmAdapter
+} from 'shared/realm/selectors'
+import { IRealmAdapter } from 'shared/realm/types'
+import { unsignedCRC32 } from 'atomicHelpers/crc32'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -88,7 +104,7 @@ function* forwardProfileToRenderer(action: ProfileSuccessAction) {
 }
 
 function* initialRemoteProfileLoad() {
-  yield call(waitForRealmInitialized)
+  yield call(waitForRoomConnection)
 
   // initialize profile
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
@@ -100,8 +116,7 @@ function* initialRemoteProfileLoad() {
   try {
     profile = yield call(ProfileAsPromise, userId, undefined, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
   } catch (e: any) {
-    ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
-    BringDownClientAndShowError(UNEXPECTED_ERROR)
+    BringDownClientAndReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
     throw e
   }
 
@@ -139,41 +154,66 @@ function* initialRemoteProfileLoad() {
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
-  const { userId, version } = action.payload
+  const { userId, future, version, profileType } = action.payload
 
-  const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
-  const commsContext: CommsContext | undefined = yield select(getCommsContext)
+  const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
 
-  if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
+  const loadingMyOwnProfile: boolean = yield select(isCurrentUserId, userId)
+
+  {
+    // first check if we have a cached copy of the requested Profile
+    const [_, existingProfile]: [ProfileStatus | undefined, Avatar | undefined] = yield select(
+      getProfileStatusAndData,
+      userId
+    )
+    const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+    if (existingProfileWithCorrectVersion) {
+      // resolve the future
+      yield call(future.resolve, existingProfile)
+    }
+  }
 
   try {
-    const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
-    const shouldFetchViaComms = commsContext && !shouldReadProfileFromLocalStorage
-    const shouldLoadFromCatalyst = true
+    const iAmAGuest: boolean = loadingMyOwnProfile && (yield select(getIsGuestLogin))
+    const shouldReadProfileFromLocalStorage = iAmAGuest
+    const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
+    const shouldFetchViaComms = roomConnection && profileType === ProfileType.LOCAL && !loadingMyOwnProfile
+    const shouldLoadFromCatalyst =
+      shouldFetchViaComms || (loadingMyOwnProfile && !iAmAGuest) || profileType === ProfileType.DEPLOYED
     const shouldFallbackToRandomProfile = true
+
+    const versionNumber = +(version || '1')
+
+    const reasons = [shouldFetchViaComms ? 'comms' : '', shouldLoadFromCatalyst ? 'catalyst' : ''].join('-')
 
     const profile: Avatar =
       // first fetch avatar through comms
-      (shouldFetchViaComms && (yield call(requestProfileToPeers, commsContext, userId, version))) ||
+      (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, loadingMyOwnProfile ? 0 : versionNumber))) ||
+      // last resort, localStorage
+      (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
-      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
+      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId, reasons)))
 
     const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
     avatar.userId = userId
 
-    if (shouldReadProfileFromLocalStorage) {
+    if (loadingMyOwnProfile && shouldReadProfileFromLocalStorage) {
       // for local user, hasConnectedWeb3 == identity.hasConnectedWeb3
-      const identity: ExplorerIdentity | undefined = yield call(getIdentity)
+      const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
       avatar.hasConnectedWeb3 = identity?.hasConnectedWeb3 || avatar.hasConnectedWeb3
     }
+
+    // resolve the future of the request
+    yield call(future.resolve, avatar)
 
     yield put(profileSuccess(avatar))
   } catch (error: any) {
     debugger
+    yield call(future.reject, error)
     trackEvent('error', {
       context: 'kernel#saga',
       message: `Error requesting profile for ${userId}: ${error}`,
@@ -212,27 +252,53 @@ function* getRemoteProfile(userId: string, version?: number) {
   return null
 }
 
-export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
-  const state = store.getState()
-  const catalystUrl = getCatalystServer(state)
+const cachedRequests = new Map<string, Promise<RemoteProfile>>()
 
-  try {
-    let url = `${catalystUrl}/lambdas/profiles?id=${userId}`
-    if (version) url = url + `&version=${version}`
+function requestCacheKey(userId: string, version?: number) {
+  if (userId.startsWith('default')) return userId
+  if (version) return `${userId}:${version}`
+  return null
+}
 
-    const response = await fetch(url)
+export function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
+  const key = requestCacheKey(userId, version)
 
-    if (!response.ok) {
-      throw new Error(`Invalid response from ${url}`)
-    }
-
-    const res: RemoteProfile = await response.json()
-
-    return res[0] || { avatars: [], timestamp: Date.now() }
-  } catch (e: any) {
-    defaultLogger.error(e)
-    return { avatars: [], timestamp: Date.now() }
+  if (key !== null && cachedRequests.has(key)) {
+    return cachedRequests.get(key)!
   }
+
+  async function doTheRequest() {
+    const bff = await ensureRealmAdapterPromise()
+    try {
+      let url = `${bff.services.legacy.lambdasServer}/profiles/${userId}`
+      if (version) url = url + `&version=${version}`
+      else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
+
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error(`Invalid response from ${url}`)
+      }
+
+      const res: RemoteProfile = await response.json()
+
+      return res || { avatars: [], timestamp: Date.now() }
+    } catch (e: any) {
+      defaultLogger.error(e)
+      if (key) {
+        cachedRequests.delete(key)
+      }
+      return { avatars: [], timestamp: Date.now() }
+    }
+  }
+
+  const req = doTheRequest()
+
+  if (key) {
+    cachedRequests.set(key, req)
+  }
+
+  return req
 }
 
 /**
@@ -247,7 +313,7 @@ function* handleCommsProfile() {
     const receivedProfile: Avatar = yield take(chan)
     const existingProfile: ProfileUserInfo | null = yield select(getProfileFromStore, receivedProfile.userId)
 
-    if (!existingProfile || existingProfile.data?.version < receivedProfile.version) {
+    if (!existingProfile || existingProfile.data?.version <= receivedProfile.version) {
       // TEMP:
       receivedProfile.hasConnectedWeb3 = receivedProfile.hasConnectedWeb3 || false
 
@@ -270,7 +336,7 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
 
     const profile: Avatar = {
       hasClaimedName: false,
-      name: createFakeName(),
+      name: createFakeName(userId),
       description: '',
       tutorialStep: 0,
       ...savedProfile,
@@ -311,13 +377,15 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
 }
 
 function* handleDeployProfile(deployProfileAction: DeployProfile) {
-  const url: string = yield select(getUpdateProfileServer)
+  const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
+  const profileServiceUrl: string = yield call(getProfilesContentServerFromRealmAdapter, realmAdapter)
+
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const userId: string = yield select(getCurrentUserId)
   const profile: Avatar = deployProfileAction.payload.profile
   try {
     yield call(deployAvatar, {
-      url,
+      url: profileServiceUrl,
       userId,
       identity,
       profile
@@ -336,10 +404,13 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
 
 function* readProfileFromLocalStorage() {
   const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-  const identity: ExplorerIdentity = yield select(getIdentity)
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const profile = (yield apply(localProfilesRepo, localProfilesRepo.get, [identity.address, network])) as Avatar | null
   if (profile && profile.userId === identity.address) {
-    return ensureAvatarCompatibilityFormat(profile)
+    try {
+      return ensureAvatarCompatibilityFormat(profile)
+    } catch {}
+    return null
   } else {
     return null
   }
@@ -432,14 +503,13 @@ async function makeContentFile(path: string, content: string | Blob | Buffer): P
   }
 }
 
-function randomBetween(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
+export async function generateRandomUserProfile(userId: string, reason: string): Promise<Avatar> {
+  defaultLogger.info('Generating random profile for ' + userId + ' ' + reason)
 
-async function generateRandomUserProfile(userId: string): Promise<Avatar> {
-  defaultLogger.info('Generating random profile for ' + userId)
+  const bytes = new TextEncoder().encode(userId)
 
-  const _number = randomBetween(1, 160)
+  // deterministically find the same random profile for each user
+  const _number = 1 + (unsignedCRC32(bytes) % 160)
 
   let profile: Avatar | undefined = undefined
   try {
@@ -458,10 +528,14 @@ async function generateRandomUserProfile(userId: string): Promise<Avatar> {
   profile.ethAddress = userId
   profile.userId = userId
   profile.avatar.snapshots.face256 = profile.avatar.snapshots.face256 ?? (profile.avatar.snapshots as any).face
-  profile.name = createFakeName()
+  profile.name = createFakeName(userId)
   profile.hasClaimedName = false
   profile.tutorialStep = 0
-  profile.version = -1 // We signal random user profiles with -1
+  profile.version = 0
 
   return ensureAvatarCompatibilityFormat(profile)
+}
+
+function isExpectedVersion(aProfile: Avatar, version?: number) {
+  return !version || aProfile.version >= version
 }

@@ -1,6 +1,6 @@
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { DevToolsServiceDefinition } from 'shared/protocol/kernel/apis/DevTools.gen'
+import { DevToolsServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/dev_tools.gen'
 import { ProtocolMapping } from 'devtools-protocol/types/protocol-mapping'
 import { PortContext } from './context'
 

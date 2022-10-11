@@ -1,19 +1,21 @@
 import { Observable } from 'mz-observable'
-import { UUID, PeerInformation, AvatarMessage, AvatarMessageType, Pose } from './interface/types'
+import { PeerInformation, AvatarMessage, AvatarMessageType } from './interface/types'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
-import { MinPeerData } from '@dcl/catalyst-peer'
-import { CommunicationArea, position2parcel, positionReportToCommsPosition, squareDistance } from './interface/utils'
+import {
+  CommunicationArea,
+  position2parcelRfc4,
+  positionReportToCommsPositionRfc4,
+  squareDistanceRfc4
+} from './interface/utils'
 import { commConfigurations } from 'config'
-import { MORDOR_POSITION, ProcessingPeerInfo } from './const'
+import { MORDOR_POSITION_RFC4 } from './const'
 import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
-import { Avatar } from '@dcl/schemas'
+import { Avatar, EthAddress } from '@dcl/schemas'
 import { getProfileFromStore } from 'shared/profiles/selectors'
-import { deepEqual } from 'atomicHelpers/deepEqual'
-import { CommsContext } from './context'
-import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
-const peerMap = new Map<UUID, PeerInformation>()
+const peerMap = new Map<string, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
 export function getAllPeers() {
@@ -24,18 +26,16 @@ export function getAllPeers() {
 
 /**
  * Removes both the peer information and the Avatar from the world.
- * @param uuid
+ * @param address
  */
-export function removePeerByUUID(uuid: UUID): boolean {
-  const peer = peerMap.get(uuid)
+export function removePeerByAddress(address: string): boolean {
+  const peer = peerMap.get(address.toLowerCase())
   if (peer) {
-    peerMap.delete(uuid)
-    if (peer.ethereumAddress) {
-      avatarMessageObservable.notifyObservers({
-        type: AvatarMessageType.USER_REMOVED,
-        userId: peer.ethereumAddress
-      })
-    }
+    peerMap.delete(address.toLowerCase())
+    avatarMessageObservable.notifyObservers({
+      type: AvatarMessageType.USER_REMOVED,
+      userId: peer.ethereumAddress
+    })
     return true
   }
   return false
@@ -44,58 +44,56 @@ export function removePeerByUUID(uuid: UUID): boolean {
 /**
  * This function is used to get the current user's information. The result is read-only.
  */
-export function getPeer(uuid: UUID): Readonly<PeerInformation> | null {
-  if (!uuid) return null
-  return peerMap.get(uuid) || null
+export function getPeer(address: string): Readonly<PeerInformation> | null {
+  if (!address) return null
+  return peerMap.get(address.toLowerCase()) || null
 }
 
 /**
  * If not exist, sets up a new avatar and profile object
- * @param uuid
+ * @param address
  */
-export function setupPeer(uuid: UUID): PeerInformation {
-  if (!uuid) throw new Error('Did not receive a valid UUID')
-  if (typeof (uuid as any) !== 'string') throw new Error('Did not receive a valid UUID')
+export function setupPeer(address: string): PeerInformation {
+  if (!address) throw new Error('Did not receive a valid Address')
+  if (typeof (address as any) !== 'string') throw new Error('Did not receive a valid Address')
+  if (!EthAddress.validate(address)) throw new Error('Did not receive a valid Address')
 
-  if (!peerMap.has(uuid)) {
+  const ethereumAddress = address.toLowerCase()
+
+  if (!peerMap.has(ethereumAddress)) {
     const peer: PeerInformation = {
-      uuid,
-      lastPositionUpdate: 0,
-      lastProfileUpdate: 0,
+      ethereumAddress,
+      lastPositionIndex: 0,
+      lastProfileVersion: -1,
       lastUpdate: Date.now(),
-      receivedPublicChatMessages: new Set(),
       talking: false,
       visible: true
     }
 
-    peerMap.set(uuid, peer)
+    peerMap.set(ethereumAddress, peer)
 
     // if we have user data, then send it to the avatar-scene
-    sendPeerUserData(uuid)
+    sendPeerUserData(address)
 
     return peer
   } else {
-    return peerMap.get(uuid)!
+    return peerMap.get(ethereumAddress)!
   }
 }
 
-export function receivePeerUserData(avatar: Avatar) {
-  for (const [uuid, peer] of peerMap) {
-    if (peer.ethereumAddress === avatar.userId) {
-      sendPeerUserData(uuid)
-    }
+export function receivePeerUserData(avatar: Avatar, baseUrl: string) {
+  const ethereumAddress = avatar.userId.toLowerCase()
+  const peer = peerMap.get(ethereumAddress)
+  if (peer) {
+    peer.baseUrl = baseUrl
+    sendPeerUserData(ethereumAddress)
   }
 }
 
-function sendPeerUserData(uuid: string) {
-  const peer = getPeer(uuid)
-  if (peer && peer.ethereumAddress) {
-    const profile = avatarUiProfileForUserId(
-      peer.ethereumAddress,
-      // TODO: when profiles are federated, we must change this to accept the profile's
-      //       home server
-      getFetchContentUrlPrefix(store.getState())
-    )
+function sendPeerUserData(address: string) {
+  const peer = getPeer(address)
+  if (peer && peer.baseUrl) {
+    const profile = avatarUiProfileForUserId(peer.ethereumAddress, peer.baseUrl)
     if (profile) {
       avatarMessageObservable.notifyObservers({
         type: AvatarMessageType.USER_DATA,
@@ -107,41 +105,43 @@ function sendPeerUserData(uuid: string) {
   }
 }
 
-export function receiveUserTalking(uuid: string, talking: boolean) {
-  const peer = setupPeer(uuid)
+export function receiveUserTalking(address: string, talking: boolean) {
+  const peer = setupPeer(address)
   peer.talking = talking
   peer.lastUpdate = Date.now()
-  if (peer.ethereumAddress) {
-    avatarMessageObservable.notifyObservers({
-      type: AvatarMessageType.USER_TALKING,
-      userId: peer.ethereumAddress,
-      talking
-    })
-  }
+  avatarMessageObservable.notifyObservers({
+    type: AvatarMessageType.USER_TALKING,
+    userId: peer.ethereumAddress,
+    talking
+  })
 }
 
-export function receiveUserPosition(uuid: string, position: Pose, msgTimestamp: number) {
-  if (deepEqual(position, MORDOR_POSITION)) {
-    removePeerByUUID(uuid)
+export function receiveUserPosition(address: string, position: rfc4.Position) {
+  if (
+    position.positionX === MORDOR_POSITION_RFC4.positionX &&
+    position.positionY === MORDOR_POSITION_RFC4.positionY &&
+    position.positionZ === MORDOR_POSITION_RFC4.positionZ
+  ) {
+    removePeerByAddress(address)
     return
   }
 
-  const peer = setupPeer(uuid)
+  const peer = setupPeer(address)
   peer.lastUpdate = Date.now()
 
-  if (msgTimestamp > peer.lastPositionUpdate) {
+  if (position.index > peer.lastPositionIndex) {
     peer.position = position
-    peer.lastPositionUpdate = msgTimestamp
+    peer.lastPositionIndex = position.index
 
-    sendPeerUserData(uuid)
+    sendPeerUserData(address)
   }
 }
 
-function avatarUiProfileForUserId(userId: string, contentServerBaseUrl: string) {
-  const avatar = getProfileFromStore(store.getState(), userId)
+function avatarUiProfileForUserId(address: string, contentServerBaseUrl: string) {
+  const avatar = getProfileFromStore(store.getState(), address)
   if (avatar && avatar.data) {
     return profileToRendererFormat(avatar.data, {
-      address: userId,
+      address: address,
       baseUrl: contentServerBaseUrl
     })
   }
@@ -152,36 +152,28 @@ function avatarUiProfileForUserId(userId: string, contentServerBaseUrl: string) 
  * In some cases, like minimizing the window, the user will be invisible to the rest of the world.
  * This function handles those visible changes.
  */
-export function receiveUserVisible(uuid: string, visible: boolean) {
-  const peer = setupPeer(uuid)
+export function receiveUserVisible(address: string, visible: boolean) {
+  const peer = setupPeer(address)
   const didChange = peer.visible !== visible
   peer.visible = visible
-  if (peer.ethereumAddress) {
+  if (didChange) {
     avatarMessageObservable.notifyObservers({
       type: AvatarMessageType.USER_VISIBLE,
       userId: peer.ethereumAddress,
       visible
     })
-    if (didChange) {
+    if (visible) {
       // often changes in visibility may delete the avatar remotely.
       // we send all the USER_DATA to make sure the scene always have
       // the required information to render the whole avatar
-      sendPeerUserData(uuid)
-    }
-  }
-}
-
-export function removeMissingPeers(newPeers: MinPeerData[]) {
-  for (const [key, { ethereumAddress }] of peerMap) {
-    if (!newPeers.some((x) => x.id === key || x.id.toLowerCase() === ethereumAddress?.toLowerCase())) {
-      removePeerByUUID(key)
+      sendPeerUserData(address)
     }
   }
 }
 
 export function removeAllPeers() {
   for (const alias of peerMap.keys()) {
-    removePeerByUUID(alias)
+    removePeerByAddress(alias)
   }
 }
 
@@ -194,16 +186,15 @@ export function removeAllPeers() {
 export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   let currentPeer = peer
 
-  peerMap.forEach((info, uuid) => {
-    if (info.ethereumAddress === currentPeer.ethereumAddress && uuid !== peer.uuid) {
-      if (info.lastProfileUpdate < currentPeer.lastProfileUpdate) {
-        removePeerByUUID(uuid)
-      } else if (info.lastProfileUpdate > currentPeer.lastProfileUpdate) {
-        removePeerByUUID(currentPeer.uuid)
+  peerMap.forEach((info, address) => {
+    if (info.ethereumAddress === currentPeer.ethereumAddress && address !== peer.ethereumAddress) {
+      if (info.lastProfileVersion < currentPeer.lastProfileVersion) {
+        removePeerByAddress(address)
+      } else if (info.lastProfileVersion > currentPeer.lastProfileVersion) {
+        removePeerByAddress(currentPeer.ethereumAddress)
 
         info.position = info.position || currentPeer.position
         info.visible = info.visible || currentPeer.visible
-        info.profile = info.profile || currentPeer.profile
 
         currentPeer = info
       }
@@ -213,29 +204,31 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   return currentPeer
 }
 
-export function processAvatarVisibility(
-  maxVisiblePeers: number,
-  context: CommsContext | null,
-  myAddress: string | undefined
-) {
+export function processAvatarVisibility(maxVisiblePeers: number, myAddress: string | undefined) {
   if (!lastPlayerPositionReport) return
-  const pos = positionReportToCommsPosition(lastPlayerPositionReport)
+  const pos = positionReportToCommsPositionRfc4(lastPlayerPositionReport)
   const now = Date.now()
+
+  type ProcessingPeerInfo = {
+    alias: string
+    squareDistance: number
+    visible: boolean
+  }
+
   const visiblePeers: ProcessingPeerInfo[] = []
-  const commArea = new CommunicationArea(position2parcel(pos), commConfigurations.commRadius)
+  const commArea = new CommunicationArea(position2parcelRfc4(pos), commConfigurations.commRadius)
 
   for (const [peerAlias, trackingInfo] of getAllPeers()) {
     const msSinceLastUpdate = now - trackingInfo.lastUpdate
 
     if (msSinceLastUpdate > commConfigurations.peerTtlMs) {
-      removePeerByUUID(peerAlias)
-
+      removePeerByAddress(peerAlias)
       continue
     }
 
     if (myAddress && trackingInfo.ethereumAddress === myAddress) {
       // If we are tracking a peer that is ourselves, we remove it
-      removePeerByUUID(peerAlias)
+      removePeerByAddress(peerAlias)
       continue
     }
 
@@ -249,8 +242,9 @@ export function processAvatarVisibility(
     }
 
     visiblePeers.push({
-      squareDistance: squareDistance(pos, trackingInfo.position),
-      alias: peerAlias
+      squareDistance: squareDistanceRfc4(pos, trackingInfo.position),
+      alias: peerAlias,
+      visible: trackingInfo.visible || false
     })
   }
 
@@ -269,9 +263,5 @@ export function processAvatarVisibility(
         receiveUserVisible(peer.alias, false)
       }
     }
-  }
-
-  if (context && context.stats) {
-    context.stats.visiblePeerIds = visiblePeers.map((it) => it.alias)
   }
 }

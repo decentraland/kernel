@@ -1,29 +1,31 @@
 import { getSelectedNetwork } from './../../dao/selectors'
 import { getServerConfigurations, PREVIEW, RENDERER_WS } from './../../../config'
 import { store } from './../../store/isolatedStore'
-import { getCommsIsland, getRealm } from './../../comms/selectors'
-import { Realm } from './../../dao/types'
+import { getCommsIsland } from './../../comms/selectors'
+import { getRealmAdapter } from '../../realm/selectors'
 import { getFeatureFlagEnabled } from './../../meta/selectors'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   AreUnsafeRequestAllowedResponse,
   BootstrapDataResponse,
-  EnvironmentAPIServiceDefinition,
+  EnvironmentApiServiceDefinition,
   GetCurrentRealmResponse,
   GetDecentralandTimeResponse,
   GetExplorerConfigurationResponse,
   GetPlatformResponse,
   PreviewModeResponse
-} from 'shared/protocol/kernel/apis/EnvironmentAPI.gen'
+} from '@dcl/protocol/out-ts/decentraland/kernel/apis/environment_api.gen'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
+import { IRealmAdapter } from 'shared/realm/types'
+import { realmToConnectionString, urlWithProtocol } from 'shared/realm/resolver'
 
-export function registerEnvironmentAPIServiceServerImplementation(
+export function registerEnvironmentApiServiceServerImplementation(
   port: RpcServerPort<PortContextService<'sceneData'>>
 ) {
-  codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
+  codegen.registerService(port, EnvironmentApiServiceDefinition, async () => ({
     async getBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
       return {
         id: ctx.sceneData.id,
@@ -49,14 +51,14 @@ export function registerEnvironmentAPIServiceServerImplementation(
       return { status: getFeatureFlagEnabled(store.getState(), 'unsafe-request') }
     },
     async getCurrentRealm(): Promise<GetCurrentRealmResponse> {
-      const realm = getRealm(store.getState())
+      const realmAdapter = getRealmAdapter(store.getState())
       const island = getCommsIsland(store.getState()) ?? '' // We shouldn't send undefined because it would break contract
 
-      if (!realm) {
+      if (!realmAdapter) {
         return {}
       }
 
-      return { currentRealm: toEnvironmentRealmType(realm, island) }
+      return { currentRealm: toEnvironmentRealmType(realmAdapter, island) }
     },
     async getExplorerConfiguration(): Promise<GetExplorerConfigurationResponse> {
       return {
@@ -91,11 +93,13 @@ export function registerEnvironmentAPIServiceServerImplementation(
   }))
 }
 
-export function toEnvironmentRealmType(realm: Realm, island: string | undefined): EnvironmentRealm {
-  const { hostname, serverName, protocol } = realm
+export function toEnvironmentRealmType(realm: IRealmAdapter, island: string | undefined): EnvironmentRealm {
+  const serverName = realmToConnectionString(realm)
+  const hostname = new URL(realm.baseUrl).hostname
   return {
-    protocol: protocol,
-    domain: hostname,
+    protocol: realm.about.comms?.protocol || 'v3',
+    // domain explicitly expects the URL with the protocol
+    domain: urlWithProtocol(hostname),
     layer: island ?? '',
     room: island ?? '',
     serverName,

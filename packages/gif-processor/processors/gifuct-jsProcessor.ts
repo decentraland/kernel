@@ -1,4 +1,4 @@
-import { GifData } from 'gif-processor/types'
+import { GifData } from '../types'
 import { parseGIF, decompressFrames, ParsedFrame } from 'gifuct-js'
 
 const composedFrameCanvas = new OffscreenCanvas(1, 1)

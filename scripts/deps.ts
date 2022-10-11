@@ -11,8 +11,6 @@ type Tree = Record<string, string[]>
 
 async function main() {
   await processEntryPoint('packages/gif-processor/worker.ts')
-  await processEntryPoint('packages/decentraland-loader/lifecycle/worker.ts')
-  await processEntryPoint('packages/scene-system/scene.system.ts')
   await processEntryPoint('packages/entryPoints/index.ts')
   await processEntryPoint('packages/ui/decentraland-ui.scene.ts')
   await processEntryPoint('packages/voice-chat-codec/audioWorkletProcessors.ts')
@@ -22,7 +20,7 @@ async function main() {
 async function processEntryPoint(entryPoint: string) {
   const tsConfig = resolve(dirname(entryPoint), './tsconfig.json')
   console.log({ entryPoint, tsConfig })
-  const result: Result = await madge(entryPoint, { baseDir, tsConfig })
+  const result: Result = await madge(entryPoint, { baseDir, tsConfig, includeNpm: true })
 
   function nodeKey(path: string) {
     return 'N' + sha3(path).substring(0, 6)
@@ -53,6 +51,8 @@ async function processEntryPoint(entryPoint: string) {
     const clusters: Map<string, Set<string>> = new Map()
 
     function selectClusterName(path: string) {
+      if (path.match(/node_modules/))
+        return 'node_modules'
       if (path.match(/packages\/shared\/([^/]+)\//))
         return 'packages/shared/' + path.match(/packages\/shared\/([^/]+)\//)[1]
       if (path.match(/packages\/([^/]+)\//)) return 'packages/' + path.match(/packages\/([^/]+)\//)[1]

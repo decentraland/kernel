@@ -1,86 +1,27 @@
 import { RootDaoState } from './types'
-import {
-  COMMS_SERVICE,
-  FETCH_CONTENT_SERVICE,
-  HOTSCENES_SERVICE,
-  PIN_CATALYST,
-  POI_SERVICE,
-  UPDATE_CONTENT_SERVICE
-} from 'config'
-import { RootMetaState } from 'shared/meta/types'
-import { getContentWhitelist } from 'shared/meta/selectors'
-import { urlWithProtocol } from 'shared/comms/v3/resolver'
-
-function getAllowedContentServer(givenServer: string, meta: RootMetaState): string {
-  // if a catalyst is pinned => avoid any override
-  if (PIN_CATALYST) {
-    return urlWithProtocol(PIN_CATALYST + '/content')
-  }
-
-  const contentWhitelist = getContentWhitelist(meta)
-
-  // if current realm is in whitelist => return current state
-  if (contentWhitelist.some((allowedCandidate) => allowedCandidate === givenServer)) {
-    return urlWithProtocol(givenServer)
-  }
-
-  if (contentWhitelist.length) {
-    return urlWithProtocol(contentWhitelist[0] + '/content')
-  }
-
-  return urlWithProtocol(givenServer)
-}
-
-export const getUpdateProfileServer = (state: RootDaoState & RootMetaState) => {
-  if (UPDATE_CONTENT_SERVICE) {
-    return urlWithProtocol(UPDATE_CONTENT_SERVICE)
-  }
-  // if a catalyst is pinned => avoid any override
-  if (PIN_CATALYST) {
-    return urlWithProtocol(PIN_CATALYST + '/content')
-  }
-  return urlWithProtocol(state.dao.updateContentServer)
-}
-
-export const getFetchContentServer = (state: RootDaoState & RootMetaState) => {
-  if (FETCH_CONTENT_SERVICE) {
-    return urlWithProtocol(FETCH_CONTENT_SERVICE)
-  }
-  return getAllowedContentServer(state.dao.fetchContentServer, state)
-}
-
-export const getFetchContentUrlPrefix = (state: RootDaoState & RootMetaState) => {
-  return getFetchContentServer(state) + '/contents/'
-}
-
-export const getCatalystServer = (store: RootDaoState) => urlWithProtocol(store.dao.catalystServer)
-
-export const getCommsServer = (domain: string) => {
-  if (COMMS_SERVICE) {
-    return urlWithProtocol(COMMS_SERVICE)
-  }
-
-  return urlWithProtocol(domain + '/comms')
-}
+import { HOTSCENES_SERVICE, POI_SERVICE } from 'config'
+import { urlWithProtocol } from 'shared/realm/resolver'
+import { RootRealmState } from 'shared/realm/types'
 
 export const getCatalystCandidates = (store: RootDaoState) => store.dao.candidates
 export const getCatalystCandidatesReceived = (store: RootDaoState) => store.dao.catalystCandidatesReceived
 
 export const getAllCatalystCandidates = (store: RootDaoState) => getCatalystCandidates(store).filter((it) => !!it)
 
-export const getHotScenesService = (store: RootDaoState) => {
+export const getHotScenesService = (state: RootRealmState) => {
   if (HOTSCENES_SERVICE) {
     return HOTSCENES_SERVICE
   }
-  return urlWithProtocol(store.dao.hotScenesService)
+  return urlWithProtocol(state.realm.realmAdapter!.services.legacy.hotScenesService)
 }
 
-export const getExploreRealmsService = (store: RootDaoState) => store.dao.exploreRealmsService
-export const getPOIService = (store: RootDaoState) => {
+export const getExploreRealmsService = (state: RootRealmState) =>
+  state.realm.realmAdapter!.services.legacy.exploreRealmsService
+export const getPOIService = (state: RootRealmState) => {
   if (POI_SERVICE) {
     return POI_SERVICE
   }
-  return urlWithProtocol(store.dao.poiService)
+  return urlWithProtocol(state.realm.realmAdapter!.services.legacy.poiService)
 }
 
 export const getSelectedNetwork = (store: RootDaoState) => {

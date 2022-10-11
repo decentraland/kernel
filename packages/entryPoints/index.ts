@@ -3,24 +3,13 @@ declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 import { sdk } from '@dcl/schemas'
 import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
-import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
+import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
-import { gridToWorld, worldToGrid } from '../atomicHelpers/parcelScenePositions'
-import {
-  DEBUG_WS_MESSAGES,
-  ETHEREUM_NETWORK,
-  getAssetBundlesBaseUrl,
-  HAS_INITIAL_POSITION_MARK,
-  OPEN_AVATAR_EDITOR
-} from '../config/index'
+import { gridToWorld, parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
+import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
-import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
-import {
-  getPreviewSceneId,
-  loadPreviewScene,
-  reloadPlaygroundScene,
-  startUnitySceneWorkers
-} from '../unity-interface/dcl'
+import { getInitialPositionFromUrl } from 'shared/world/positionThings'
+import { getPreviewSceneId, loadPreviewScene, reloadPlaygroundScene } from '../unity-interface/dcl'
 import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
@@ -42,13 +31,12 @@ import { authenticate, initSession } from 'shared/session/actions'
 import { localProfilesRepo } from 'shared/profiles/sagas'
 import { getStoredSession } from 'shared/session'
 import { getFromPersistentStorage, setPersistentStorage } from 'atomicHelpers/persistentStorage'
-import { getCatalystServer, getFetchContentServer, getSelectedNetwork } from 'shared/dao/selectors'
 import { clientDebug } from 'unity-interface/ClientDebug'
-import { signalEngineReady } from 'shared/renderer/actions'
 import { IUnityInterface } from 'unity-interface/IUnityInterface'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { sendHomeScene } from '../shared/atlas/actions'
 import { homePointKey } from '../shared/atlas/utils'
+import { teleportToAction } from 'shared/scene-loader/actions'
 
 const logger = createLogger('kernel: ')
 
@@ -110,6 +98,28 @@ globalThis.DecentralandKernel = {
 
     // initInternal must be called asynchronously, _after_ returning
     async function initInternal() {
+      // load homepoint
+      const homePoint: string = await getFromPersistentStorage(homePointKey)
+      if (homePoint) {
+        store.dispatch(sendHomeScene(homePoint))
+      }
+
+      const urlPosition = getInitialPositionFromUrl()
+
+      // teleport to initial location
+      if (urlPosition) {
+        // 1. by URL
+        const { x, y } = urlPosition
+        store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
+      } else if (homePoint && !HAS_INITIAL_POSITION_MARK) {
+        // 2. by homepoint
+        const { x, y } = parseParcelPosition(homePoint)
+        store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
+      } else {
+        // 3. fallback to 0,0
+        store.dispatch(teleportToAction({ position: { x: 0, y: 100, z: 0 } }))
+      }
+
       // Initializes the Session Saga
       store.dispatch(initSession())
 
@@ -120,8 +130,7 @@ globalThis.DecentralandKernel = {
     setTimeout(
       () =>
         initInternal().catch((err) => {
-          ReportFatalError(err, ErrorContext.WEBSITE_INIT)
-          BringDownClientAndShowError(err.toString())
+          BringDownClientAndReportFatalError(err, ErrorContext.WEBSITE_INIT)
         }),
       0
     )
@@ -223,7 +232,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   const profile = getCurrentUserProfile(store.getState())!
 
   if (!profile) {
-    ReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
+    BringDownClientAndReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
     return
   }
 
@@ -242,8 +251,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
   i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: friendsActivated, visible: false })
 
-  await realmInitialized()
-
   function reportForeground() {
     if (isForeground()) {
       store.dispatch(renderingInForeground())
@@ -257,31 +264,12 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   foregroundChangeObservable.add(reportForeground)
   reportForeground()
 
-  const state = store.getState()
-  await startUnitySceneWorkers({
-    contentServer: getFetchContentServer(state),
-    catalystServer: getCatalystServer(state),
-    contentServerBundles: getAssetBundlesBaseUrl(getSelectedNetwork(state)) + '/',
-    worldConfig: getWorldConfig(state)
-  })
-
-  const homePoint: string = await getFromPersistentStorage(homePointKey)
-  if (homePoint) {
-    store.dispatch(sendHomeScene(homePoint))
-    if (!HAS_INITIAL_POSITION_MARK) {
-      const [x, y] = homePoint.split(',').map((p) => parseFloat(p))
-      gridToWorld(x, y, lastPlayerPosition)
-    }
-  }
-
-  teleportObservable.notifyObservers(worldToGrid(lastPlayerPosition))
-
   if (options.previewMode) {
     i.SetDisableAssetBundles()
     await startPreview(i)
   }
 
-  setTimeout(() => store.dispatch(signalEngineReady()), 0)
+  await realmInitialized()
 
   return true
 }

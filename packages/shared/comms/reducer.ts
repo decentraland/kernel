@@ -3,7 +3,7 @@ import { AnyAction } from 'redux'
 import { COMMS_ESTABLISHED } from 'shared/loading/types'
 
 import { CommsState } from './types'
-import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from './actions'
+import { SET_COMMS_ISLAND, SET_ROOM_CONNECTION } from './actions'
 
 const INITIAL_COMMS: CommsState = {
   initialized: false,
@@ -22,11 +22,11 @@ export function commsReducer(state?: CommsState, action?: AnyAction): CommsState
       return { ...state, initialized: true }
     case SET_COMMS_ISLAND:
       return { ...state, island: action.payload.island }
-    case SET_WORLD_CONTEXT:
+    case SET_ROOM_CONNECTION:
       if (state.context === action.payload) {
         return state
       }
-      return { ...state, context: action.payload, island: undefined }
+      return { ...state, context: action.payload }
     default:
       return state
   }

@@ -1,6 +1,6 @@
 const hasOwn = Object.prototype.hasOwnProperty
 
-export function deepEqual(objA: any, objB: any) {
+export function deepEqual<T = any>(objA: T, objB: T) {
   if (objA === objB) {
     return true
   }
@@ -14,8 +14,8 @@ export function deepEqual(objA: any, objB: any) {
 
   if ((objA === null) !== (objB === null)) return false
 
-  const keysA = Object.keys(objA)
-  const keysB = Object.keys(objB)
+  const keysA = Object.keys(objA as any)
+  const keysB = Object.keys(objB as any)
 
   if (keysA.length !== keysB.length) {
     return false
@@ -23,7 +23,7 @@ export function deepEqual(objA: any, objB: any) {
 
   // Test for A's keys different from B.
   for (let i = 0; i < keysA.length; i++) {
-    if (!hasOwn.call(objB, keysA[i]) || !deepEqual(objA[keysA[i]], objB[keysA[i]])) {
+    if (!hasOwn.call(objB as any, keysA[i]) || !deepEqual((objA as any)[keysA[i]], (objB as any)[keysA[i]])) {
       return false
     }
   }

@@ -15,6 +15,7 @@ import {
   SCENE_FAIL,
   SCENE_LOAD,
   SCENE_START,
+  SCENE_UNLOAD,
   updateLoadingScreen,
   UPDATE_STATUS_MESSAGE
 } from './actions'
@@ -34,11 +35,13 @@ import { call } from 'redux-saga-test-plan/matchers'
 import { RootState } from 'shared/store/rootTypes'
 import { onLoginCompleted } from 'shared/session/sagas'
 import { getResourcesURL } from 'shared/location'
-import { getCatalystServer, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { getAssetBundlesBaseUrl } from 'config'
 import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
 import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
 import { LoadableScene } from 'shared/types'
+import { SET_REALM_ADAPTER } from 'shared/realm/actions'
+import { POSITION_SETTLED, POSITION_UNSETTLED, SET_SCENE_LOADER } from 'shared/scene-loader/actions'
 
 // The following actions may change the status of the loginVisible
 const ACTIONS_FOR_LOADING = [
@@ -55,7 +58,12 @@ const ACTIONS_FOR_LOADING = [
   SCENE_LOAD,
   SIGNUP_SET_IS_SIGNUP,
   TELEPORT_TRIGGERED,
-  UPDATE_STATUS_MESSAGE
+  UPDATE_STATUS_MESSAGE,
+  SET_REALM_ADAPTER,
+  SET_SCENE_LOADER,
+  POSITION_SETTLED,
+  POSITION_UNSETTLED,
+  SCENE_UNLOAD
 ]
 
 export function* loadingSaga() {
@@ -79,7 +87,6 @@ function* reportFailedScene(action: SceneFail) {
   trackEvent('scene_loading_failed', {
     sceneId: id,
     contentServer: baseUrl,
-    catalystServer: yield select(getCatalystServer),
     contentServerBundles: getAssetBundlesBaseUrl(yield select(getSelectedNetwork)) + '/',
     rootUrl: fullRootUrl
   })

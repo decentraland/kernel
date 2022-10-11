@@ -1,13 +1,14 @@
 import { CommsEvents, RoomConnection } from '../interface/index'
 import { Package } from '../interface/types'
-import { Position, positionHash } from '../interface/utils'
+import { CommunicationArea, position2parcelRfc4, positionHashRfc4 } from '../interface/utils'
 import {
   Peer as IslandBasedPeer,
   PeerConfig,
   PacketCallback,
   PeerStatus,
   PeerMessageType,
-  PeerMessageTypes
+  PeerMessageTypes,
+  MinPeerData
 } from '@dcl/catalyst-peer'
 import {
   ChatData,
@@ -22,12 +23,15 @@ import {
 import { CommsStatus } from '../types'
 
 import { ProfileType } from 'shared/profiles/types'
-import { EncodedFrame } from 'voice-chat-codec/types'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import mitt from 'mitt'
-import { Avatar } from '@dcl/schemas'
-import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
-import { validateAvatar } from 'shared/profiles/schemaValidation'
 import { createLogger } from 'shared/logger'
+import { ExplorerIdentity } from 'shared/session/types'
+import { uuid } from 'atomicHelpers/math'
+import { commConfigurations, parcelLimits } from 'config'
+import { peerIdHandler } from '../logic/peer-id-handler'
+import { Observable } from 'mz-observable'
+import { AdapterDisconnectedEvent } from '../adapters/types'
 
 type PeerType = IslandBasedPeer
 
@@ -80,12 +84,19 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
 
   private rooms: string[] = []
   private disposed = false
+  private lastPosition: rfc4.Position | null = null
+  private profileType: ProfileType
+  private peerIdAdapter = peerIdHandler({ events: this.events })
+  public onIslandChangedObservable = new Observable<{ island: string; peers: MinPeerData[] }>()
+  currentIsland: string | undefined
 
   constructor(
     private lighthouseUrl: string,
     private peerConfig: LighthouseConnectionConfig,
-    private statusHandler: (status: CommsStatus) => void
+    private statusHandler: (status: CommsStatus) => void,
+    private identity: ExplorerIdentity
   ) {
+    this.profileType = identity.hasConnectedWeb3 ? ProfileType.DEPLOYED : ProfileType.LOCAL
     // This assignment is to "definetly initialize" peer
     this.peer = this.initializePeer()
   }
@@ -107,89 +118,86 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  async disconnect() {
+  async disconnect(data?: AdapterDisconnectedEvent) {
     if (this.disposed) return
     this.disposed = true
 
     await this.peer.dispose()
 
-    this.events.emit('DISCONNECTION')
+    this.events.emit('DISCONNECTION', data ?? { kicked: false })
   }
 
-  async sendInitialMessage(address: string, profileType: ProfileType) {
-    await this.sendProfileData(address, profileType, 0, address, 'initialProfile')
+  async sendProfileMessage(profile: rfc4.AnnounceProfileVersion) {
+    if (this.lastPosition) {
+      const topic = positionHashRfc4(this.lastPosition)
+
+      await this.sendProfileData(this.identity.address, this.profileType, profile.profileVersion, topic, 'profile')
+    }
   }
 
-  async sendProfileMessage(currentPosition: Position, address: string, profileType: ProfileType, version: number) {
-    const topic = positionHash(currentPosition)
+  async sendProfileRequest(profileRequest: rfc4.ProfileRequest): Promise<void> {
+    if (this.lastPosition) {
+      const topic = positionHashRfc4(this.lastPosition)
 
-    await this.sendProfileData(address, profileType, version, topic, 'profile')
+      const profileRequestData = new ProfileRequestData()
+      profileRequestData.setUserId(profileRequest.address)
+      profileRequestData.setProfileVersion(profileRequest.profileVersion.toString() ?? '')
+
+      await this.sendData(topic, profileRequestData, ProfileRequestResponseType('request'))
+    }
   }
 
-  async sendProfileRequest(currentPosition: Position, userId: string, version: number | undefined): Promise<void> {
-    const topic = positionHash(currentPosition)
+  async sendProfileResponse(profileResponse: rfc4.ProfileResponse): Promise<void> {
+    if (this.lastPosition) {
+      const topic = positionHashRfc4(this.lastPosition)
 
-    const profileRequestData = new ProfileRequestData()
-    profileRequestData.setUserId(userId)
-    profileRequestData.setProfileVersion(version?.toString() ?? '')
+      const profileResponseData = new ProfileResponseData()
+      profileResponseData.setSerializedProfile(profileResponse.serializedProfile)
 
-    await this.sendData(topic, profileRequestData, ProfileRequestResponseType('request'))
+      await this.sendData(topic, profileResponseData, ProfileRequestResponseType('response'))
+    }
   }
 
-  async sendProfileResponse(currentPosition: Position, profile: Avatar): Promise<void> {
-    const topic = positionHash(currentPosition)
-
-    const profileResponseData = new ProfileResponseData()
-    profileResponseData.setSerializedProfile(JSON.stringify(profile))
-
-    await this.sendData(topic, profileResponseData, ProfileRequestResponseType('response'))
-  }
-
-  async sendPositionMessage(p: Position) {
-    const topic = positionHash(p)
+  async sendPositionMessage(p: rfc4.Position) {
+    const topic = positionHashRfc4(p)
+    this.lastPosition = p
 
     await this.sendPositionData(p, topic, 'position')
   }
 
-  async sendParcelUpdateMessage(currentPosition: Position, p: Position) {
-    const topic = positionHash(currentPosition)
-
-    await this.sendPositionData(p, topic, 'parcelUpdate')
-  }
-
-  async sendParcelSceneCommsMessage(sceneId: string, message: string) {
-    const topic = sceneId
+  async sendParcelSceneMessage(message: rfc4.Scene): Promise<void> {
+    const topic = message.sceneId
 
     const sceneData = new SceneData()
-    sceneData.setSceneId(sceneId)
-    sceneData.setText(message)
+    sceneData.setSceneId(message.sceneId)
+    const text = new TextDecoder().decode(message.data)
+    sceneData.setText(text)
 
     await this.sendData(topic, sceneData, commsMessageType)
   }
 
-  async sendVoiceMessage(currentPosition: Position, frame: EncodedFrame): Promise<void> {
-    const topic = positionHash(currentPosition)
+  async sendVoiceMessage(voice: rfc4.Voice): Promise<void> {
+    if (this.lastPosition) {
+      const topic = positionHashRfc4(this.lastPosition)
 
-    const voiceData = new VoiceData()
-    voiceData.setEncodedSamples(frame.encoded)
-    voiceData.setIndex(frame.index)
+      const voiceData = new VoiceData()
+      voiceData.setEncodedSamples(voice.encodedSamples)
+      voiceData.setIndex(voice.index)
 
-    await this.sendData(topic, voiceData, VoiceType)
+      await this.sendData(topic, voiceData, VoiceType)
+    }
   }
 
-  async sendChatMessage(currentPosition: Position, messageId: string, text: string) {
-    const topic = positionHash(currentPosition)
+  async sendChatMessage(chat: rfc4.Chat) {
+    if (this.lastPosition) {
+      const topic = positionHashRfc4(this.lastPosition)
 
-    const chatMessage = new ChatData()
-    chatMessage.setMessageId(messageId)
-    chatMessage.setText(text)
+      const chatMessage = new ChatData()
+      chatMessage.setMessageId(uuid())
+      chatMessage.setText(chat.message)
 
-    await this.sendData(topic, chatMessage, PeerMessageTypes.reliable('chat'))
-  }
-
-  async setTopics(rooms: string[]) {
-    this.rooms = rooms
-    await this.syncRoomsWithPeer()
+      await this.sendData(topic, chatMessage, PeerMessageTypes.reliable('chat'))
+    }
   }
 
   private async syncRoomsWithPeer() {
@@ -233,9 +241,36 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     }
   }
 
-  private async sendPositionData(p: Position, topic: string, typeName: string) {
+  private async sendPositionData(p: rfc4.Position, topic: string, typeName: string) {
     const positionData = createPositionData(p)
     await this.sendData(topic, positionData, PeerMessageTypes.unreliable(typeName))
+
+    await this.refreshTopics()
+  }
+
+  refreshTopics() {
+    this.rooms.length = 0
+    if (this.currentIsland) this.rooms.push(this.currentIsland)
+
+    if (this.lastPosition) {
+      const newParcel = position2parcelRfc4(this.lastPosition)
+      const commArea = new CommunicationArea(newParcel, commConfigurations.commRadius)
+
+      const xMin = ((commArea.vMin.x + parcelLimits.maxParcelX) >> 2) << 2
+      const xMax = ((commArea.vMax.x + parcelLimits.maxParcelX) >> 2) << 2
+      const zMin = ((commArea.vMin.y + parcelLimits.maxParcelZ) >> 2) << 2
+      const zMax = ((commArea.vMax.y + parcelLimits.maxParcelZ) >> 2) << 2
+
+      for (let x = xMin; x <= xMax; x += 4) {
+        for (let z = zMin; z <= zMax; z += 4) {
+          const hash = `${x >> 2}:${z >> 2}`
+          if (!this.rooms.includes(hash)) {
+            this.rooms.push(hash)
+          }
+        }
+      }
+    }
+    return this.syncRoomsWithPeer()
   }
 
   private async sendProfileData(
@@ -269,13 +304,19 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     const statusHandler = (status: PeerStatus): void =>
       this.statusHandler({ status, connectedPeers: this.connectedPeersCount() })
 
+    this.peerConfig.eventsHandler = this.peerConfig.eventsHandler || {}
     // Island based peer based peer
-    if (this.peerConfig.eventsHandler) {
-      this.peerConfig.eventsHandler.statusHandler = statusHandler
-    } else {
-      this.peerConfig.eventsHandler = {
-        statusHandler
-      }
+    this.peerConfig.eventsHandler.statusHandler = statusHandler
+
+    this.peerConfig.eventsHandler.onIslandChange = (island, peers) => {
+      if (island) this.onIslandChangedObservable.notifyObservers({ island, peers })
+      this.currentIsland = island
+      this.peerIdAdapter.removeAllBut(peers.map(($) => $.id))
+      this.refreshTopics().catch(logger.error)
+    }
+
+    this.peerConfig.eventsHandler.onPeerLeftIsland = (peerId) => {
+      this.peerIdAdapter.disconnectPeer(peerId)
     }
 
     // We require a version greater than 0.1 to not send an ID
@@ -288,34 +329,51 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
       const commsMessage = CommsMessage.deserializeBinary(payload)
       switch (commsMessage.getDataCase()) {
         case CommsMessage.DataCase.CHAT_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'chatMessage',
-            createPackage(sender, commsMessage, mapToPackageChat(commsMessage.getChatData()!))
+            createPackage(sender, mapToPackageChat(commsMessage.getChatData()!, commsMessage.getTime()))
           )
           break
         case CommsMessage.DataCase.POSITION_DATA:
           const positionMessage = mapToPositionMessage(commsMessage.getPositionData()!)
           this.peer.setPeerPosition(sender, positionMessage.slice(0, 3) as [number, number, number])
-          this.events.emit('position', createPackage(sender, commsMessage, positionMessage))
+          this.peerIdAdapter.handleMessage(
+            'position',
+            createPackage(sender, {
+              index: commsMessage.getTime(),
+              positionX: positionMessage[0],
+              positionY: positionMessage[1],
+              positionZ: positionMessage[2],
+              rotationX: positionMessage[3],
+              rotationY: positionMessage[4],
+              rotationZ: positionMessage[5],
+              rotationW: positionMessage[6]
+            })
+          )
           break
         case CommsMessage.DataCase.SCENE_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'sceneMessageBus',
-            createPackage(sender, commsMessage, mapToPackageScene(commsMessage.getSceneData()!))
+            createPackage(sender, mapToPackageScene(commsMessage.getSceneData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_DATA:
-          this.events.emit(
+          // TODO: update internal peers list using this information
+          const userId = commsMessage.getProfileData()?.getUserId()
+          if (userId) {
+            if (sender.startsWith('0x')) debugger
+            this.peerIdAdapter.identifyPeer(sender, userId)
+          }
+          this.peerIdAdapter.handleMessage(
             'profileMessage',
-            createPackage(sender, commsMessage, mapToPackageProfile(commsMessage.getProfileData()!))
+            createPackage(sender, mapToPackageProfile(commsMessage.getProfileData()!))
           )
           break
         case CommsMessage.DataCase.VOICE_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'voiceMessage',
             createPackage(
               sender,
-              commsMessage,
               mapToPackageVoice(
                 commsMessage.getVoiceData()!.getEncodedSamples_asU8(),
                 commsMessage.getVoiceData()!.getIndex()
@@ -324,20 +382,19 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
           )
           break
         case CommsMessage.DataCase.PROFILE_REQUEST_DATA:
-          this.events.emit(
+          this.peerIdAdapter.handleMessage(
             'profileRequest',
-            createPackage(sender, commsMessage, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
+            createPackage(sender, mapToPackageProfileRequest(commsMessage.getProfileRequestData()!))
           )
           break
         case CommsMessage.DataCase.PROFILE_RESPONSE_DATA: {
-          const profile = ensureAvatarCompatibilityFormat(
-            JSON.parse(commsMessage.getProfileResponseData()!.getSerializedProfile()) as Avatar
+          this.peerIdAdapter.handleMessage(
+            'profileResponse',
+            createPackage(sender, {
+              serializedProfile: commsMessage.getProfileResponseData()!.getSerializedProfile(),
+              baseUrl: 'MOCKED'
+            })
           )
-          if (validateAvatar(profile)) {
-            this.events.emit('profileResponse', createPackage(sender, commsMessage, { profile }))
-          } else {
-            logger.error('Received invalid Avatar schema over comms', profile, validateAvatar.errors)
-          }
           break
         }
         default: {
@@ -351,15 +408,14 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
   }
 }
 
-function createPackage<T>(sender: string, commsMessage: CommsMessage, data: T): Package<T> {
+function createPackage<T>(sender: string, data: T): Package<T> {
   return {
-    sender,
-    time: commsMessage.getTime(),
+    address: sender,
     data
   }
 }
 
-function mapToPositionMessage(positionData: PositionData): Position {
+function mapToPositionMessage(positionData: PositionData): number[] {
   return [
     positionData.getPositionX(),
     positionData.getPositionY(),
@@ -367,47 +423,45 @@ function mapToPositionMessage(positionData: PositionData): Position {
     positionData.getRotationX(),
     positionData.getRotationY(),
     positionData.getRotationZ(),
-    positionData.getRotationW(),
-    positionData.getImmediate()
+    positionData.getRotationW()
   ]
 }
 
-function mapToPackageChat(chatData: ChatData) {
+function mapToPackageChat(chatData: ChatData, timestamp: number): rfc4.Chat {
   return {
-    id: chatData.getMessageId(),
-    text: chatData.getText()
+    message: chatData.getText(),
+    timestamp
   }
 }
 
-function mapToPackageScene(sceneData: SceneData) {
+const encoder = new TextEncoder()
+function mapToPackageScene(sceneData: SceneData): rfc4.Scene {
   return {
-    id: sceneData.getSceneId(),
-    text: sceneData.getText()
+    sceneId: sceneData.getSceneId(),
+    data: encoder.encode(sceneData.getText() || '')
   }
 }
 
-function mapToPackageProfile(profileData: ProfileData) {
+function mapToPackageProfile(profileData: ProfileData): rfc4.AnnounceProfileVersion {
   return {
-    user: profileData.getUserId(),
-    version: profileData.getProfileVersion(),
-    type: mapToPackageProfileType(profileData.getProfileType())
+    profileVersion: +(profileData.getProfileVersion() || '0')
   }
 }
 
-function mapToPackageProfileType(profileType: ProfileType) {
-  return profileType === ProfileData.ProfileType.LOCAL ? ProfileType.LOCAL : ProfileType.DEPLOYED
-}
-
-function mapToPackageProfileRequest(profileRequestData: ProfileRequestData) {
+function mapToPackageProfileRequest(profileRequestData: ProfileRequestData): rfc4.ProfileRequest {
   const versionData = profileRequestData.getProfileVersion()
   return {
-    userId: profileRequestData.getUserId(),
-    version: versionData !== '' ? versionData : undefined
+    address: profileRequestData.getUserId(),
+    profileVersion: +(versionData || '0')
   }
 }
 
-function mapToPackageVoice(encoded: Uint8Array, index: number) {
-  return { encoded, index }
+function mapToPackageVoice(encodedSamples: Uint8Array, index: number): rfc4.Voice {
+  return {
+    encodedSamples,
+    index,
+    codec: rfc4.Voice_VoiceCodec.VC_OPUS
+  }
 }
 
 function createProfileData(address: string, profileType: ProfileType, version: number) {
@@ -422,16 +476,16 @@ function getProtobufProfileType(profileType: ProfileType) {
   return profileType === ProfileType.LOCAL ? ProfileData.ProfileType.LOCAL : ProfileData.ProfileType.DEPLOYED
 }
 
-function createPositionData(p: Position) {
+function createPositionData(p: rfc4.Position) {
   const positionData = new PositionData()
-  positionData.setPositionX(p[0])
-  positionData.setPositionY(p[1])
-  positionData.setPositionZ(p[2])
-  positionData.setRotationX(p[3])
-  positionData.setRotationY(p[4])
-  positionData.setRotationZ(p[5])
-  positionData.setRotationW(p[6])
-  positionData.setImmediate(p[7])
+  positionData.setPositionX(p.positionX)
+  positionData.setPositionY(p.positionY)
+  positionData.setPositionZ(p.positionZ)
+  positionData.setRotationX(p.rotationX)
+  positionData.setRotationY(p.rotationY)
+  positionData.setRotationZ(p.rotationZ)
+  positionData.setRotationW(p.rotationW)
+  positionData.setImmediate(false)
   return positionData
 }
 

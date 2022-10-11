@@ -6,26 +6,19 @@ import {
   setupPeer,
   ensureTrackingUniqueAndLatest,
   receiveUserPosition,
-  removeAllPeers
+  removeAllPeers,
+  removePeerByAddress,
+  receivePeerUserData
 } from './peers'
-import {
-  Package,
-  ChatMessage,
-  ProfileVersion,
-  AvatarMessageType,
-  ProfileRequest,
-  ProfileResponse
-} from './interface/types'
-import { Position } from './interface/utils'
+import { AvatarMessageType, Package } from './interface/types'
+import * as proto from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { store } from 'shared/store/isolatedStore'
-import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/selectors'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
-import { getIdentity } from 'shared/session'
-import { CommsContext } from './context'
 import { processVoiceFragment } from 'shared/voiceChat/handlers'
 import future, { IFuture } from 'fp-future'
-import { handleCommsDisconnection } from './actions'
+import { handleRoomDisconnection } from './actions'
 import { Avatar } from '@dcl/schemas'
 import { Observable } from 'mz-observable'
 import { eventChannel } from 'redux-saga'
@@ -35,174 +28,288 @@ import { ProfileType } from 'shared/profiles/types'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 import { scenesSubscribedToCommsEvents } from './sceneSubscriptions'
 import { isBlockedOrBanned } from 'shared/voiceChat/selectors'
+import { uuid } from 'atomicHelpers/math'
+import { validateAvatar } from 'shared/profiles/schemaValidation'
+import { AdapterDisconnectedEvent, PeerDisconnectedEvent } from './adapters/types'
+import { RoomConnection } from './interface'
+import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
+import { sendPublicChatMessage } from '.'
+import { getCurrentIdentity } from 'shared/session/selectors'
+import { commsLogger } from './context'
+import { incrementCounter } from 'shared/occurences'
+import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
+
+type PingRequest = {
+  alias: number
+  sentTime: number
+  onPong: (dt: number, address: string) => void
+}
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
 const sendMyProfileOverCommsChannel = new Observable<Record<string, never>>()
+const pingRequests = new Map<number, PingRequest>()
+let pingIndex = 0
 
-export async function bindHandlersToCommsContext(context: CommsContext) {
+export async function bindHandlersToCommsContext(room: RoomConnection) {
   removeAllPeers()
+  pingRequests.clear()
 
-  const connection = context.worldInstanceConnection!
+  // RFC4 messages
+  room.events.on('position', processPositionMessage)
+  room.events.on('profileMessage', processProfileUpdatedMessage)
+  room.events.on('chatMessage', processChatMessage)
+  room.events.on('sceneMessageBus', processParcelSceneCommsMessage)
+  room.events.on('profileRequest', processProfileRequest)
+  room.events.on('profileResponse', processProfileResponse)
+  room.events.on('voiceMessage', processVoiceFragment)
 
-  context.onDisconnectObservable.add(() => store.dispatch(handleCommsDisconnection(context)))
+  room.events.on('*', (type, _) => {
+    incrementCommsMessageReceived()
+    incrementCommsMessageReceivedByName(type)
+  })
 
-  connection.events.on('position', processPositionMessage)
-  connection.events.on('profileMessage', processProfileUpdatedMessage)
-  connection.events.on('chatMessage', processChatMessage)
-  connection.events.on('sceneMessageBus', processParcelSceneCommsMessage)
-  connection.events.on('profileRequest', processProfileRequest)
-  connection.events.on('profileResponse', processProfileResponse)
-  connection.events.on('voiceMessage', processVoiceFragment)
+  // transport messages
+  room.events.on('PEER_DISCONNECTED', handleDisconnectPeer)
+  room.events.on('DISCONNECTION', (event) => handleDisconnectionEvent(event, room))
 }
 
 const pendingProfileRequests: Map<string, Set<IFuture<Avatar | null>>> = new Map()
 
 export async function requestProfileToPeers(
-  context: CommsContext,
-  userId: string,
-  version?: number
+  roomConnection: RoomConnection,
+  address: string,
+  profileVersion: number
 ): Promise<Avatar | null> {
-  if (context && context.currentPosition) {
-    if (!pendingProfileRequests.has(userId)) {
-      pendingProfileRequests.set(userId, new Set())
+  if (!pendingProfileRequests.has(address)) {
+    pendingProfileRequests.set(address, new Set())
+  }
+
+  const thisFuture = future<Avatar | null>()
+
+  pendingProfileRequests.get(address)!.add(thisFuture)
+
+  void thisFuture.then((value) => {
+    incrementCounter(value ? 'profile-over-comms-succesful' : 'profile-over-comms-failed')
+  })
+
+  // send the request
+  await roomConnection.sendProfileRequest({
+    address,
+    profileVersion
+  })
+
+  // send another retry in a couple seconds
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      roomConnection
+        .sendProfileRequest({
+          address,
+          profileVersion
+        })
+        .catch(commsLogger.error)
     }
+  }, COMMS_PROFILE_TIMEOUT / 3)
 
-    const thisFuture = future<Avatar | null>()
+  // send another retry in a couple seconds
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      roomConnection
+        .sendProfileRequest({
+          address,
+          profileVersion
+        })
+        .catch(commsLogger.error)
+    }
+  }, COMMS_PROFILE_TIMEOUT / 2)
 
-    pendingProfileRequests.get(userId)!.add(thisFuture)
-
-    await context.worldInstanceConnection.sendProfileRequest(context.currentPosition, userId, version)
-
-    setTimeout(function () {
-      if (thisFuture.isPending) {
-        // We resolve with a null profile. This will fallback to a random profile
-        thisFuture.resolve(null)
-        const pendingRequests = pendingProfileRequests.get(userId)
-        if (pendingRequests && pendingRequests.has(thisFuture)) {
-          pendingRequests.delete(thisFuture)
-        }
+  // and lastly fail
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      // We resolve with a null profile. This will fallback to a random profile
+      thisFuture.resolve(null)
+      const pendingRequests = pendingProfileRequests.get(address)
+      if (pendingRequests) {
+        pendingRequests.delete(thisFuture)
       }
-    }, COMMS_PROFILE_TIMEOUT)
+    }
+  }, COMMS_PROFILE_TIMEOUT)
 
-    return thisFuture
-  } else {
-    // We resolve with a null profile. This will fallback to a random profile
-    return Promise.resolve(null)
+  return thisFuture
+}
+
+function handleDisconnectionEvent(data: AdapterDisconnectedEvent, room: RoomConnection) {
+  store.dispatch(handleRoomDisconnection(room))
+  // when we are kicked, the explorer should re-load, or maybe go to offline~offline realm
+  if (data.kicked) {
+    const url = new URL(document.location.toString())
+    url.search = ''
+    url.searchParams.set('disconnection-reason', 'logged-in-somewhere-else')
+    document.location = url.toString()
   }
 }
 
-function processProfileUpdatedMessage(message: Package<ProfileVersion>) {
-  const msgTimestamp = message.time
+function handleDisconnectPeer(data: PeerDisconnectedEvent) {
+  removePeerByAddress(data.address)
+}
 
-  const peerTrackingInfo = setupPeer(message.sender)
-  peerTrackingInfo.ethereumAddress = message.data.user
-  peerTrackingInfo.profileType = message.data.type
+function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVersion>) {
+  const peerTrackingInfo = setupPeer(message.address)
+  peerTrackingInfo.ethereumAddress = message.address
   peerTrackingInfo.lastUpdate = Date.now()
 
-  if (msgTimestamp > peerTrackingInfo.lastProfileUpdate) {
-    peerTrackingInfo.lastProfileUpdate = msgTimestamp
+  if (message.data.profileVersion > peerTrackingInfo.lastProfileVersion) {
+    peerTrackingInfo.lastProfileVersion = message.data.profileVersion
 
     // remove duplicates
     ensureTrackingUniqueAndLatest(peerTrackingInfo)
 
-    const profileVersion = +message.data.version
-    const currentProfile = getProfileFromStore(store.getState(), message.data.user)
+    const profileVersion = +message.data.profileVersion
 
-    const shouldLoadRemoteProfile =
-      !currentProfile ||
-      currentProfile.status === 'error' ||
-      (currentProfile.status === 'ok' && currentProfile.data.version < profileVersion)
-
-    if (shouldLoadRemoteProfile) {
-      ProfileAsPromise(
-        message.data.user,
-        profileVersion,
-        /* we ask for LOCAL to ask information about the profile using comms o not overload the servers*/
-        ProfileType.LOCAL
-      ).catch((e: Error) => {
+    ProfileAsPromise(
+      message.address,
+      profileVersion,
+      /* we ask for LOCAL to ask information about the profile using comms to not overload the servers*/
+      ProfileType.LOCAL
+    )
+      .then(async (avatar) => {
+        // send to Avatars scene
+        const realmAdapter = await ensureRealmAdapterPromise()
+        const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+        receivePeerUserData(avatar, peerTrackingInfo.baseUrl || fetchContentServerWithPrefix)
+      })
+      .catch((e: Error) => {
         trackEvent('error', {
-          message: `error loading profile ${message.data.user}:${profileVersion}: ` + e.message,
+          message: `error loading profile ${message.address}:${profileVersion}: ` + e.message,
           context: 'kernel#saga',
           stack: e.stack || 'processProfileUpdatedMessage'
         })
       })
-    }
   }
 }
 
 // TODO: Change ChatData to the new class once it is added to the .proto
-function processParcelSceneCommsMessage(message: Package<ChatMessage>) {
-  const peer = getPeer(message.sender)
+function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
+  const peer = getPeer(message.address)
 
   if (peer) {
-    const { id: cid, text } = message.data
+    const { sceneId, data } = message.data
     scenesSubscribedToCommsEvents.forEach(($) => {
-      if ($.cid === cid) {
-        $.receiveCommsMessage(text, peer)
+      if ($.cid === sceneId) {
+        $.receiveCommsMessage(data, peer)
       }
     })
   }
 }
 
-function processChatMessage(message: Package<ChatMessage>) {
-  const msgId = message.data.id
+function pingMessage(nonce: number) {
+  return `␑${nonce}`
+}
+function pongMessage(nonce: number, address: string) {
+  return `␆${nonce} ${address}`
+}
+
+export function sendPing(onPong?: (dt: number, address: string) => void) {
+  const nonce = Math.floor(Math.random() * 0xffffffff)
+  let responses = 0
+  pingRequests.set(nonce, {
+    sentTime: Date.now(),
+    alias: pingIndex++,
+    onPong:
+      onPong ||
+      ((dt, address) => {
+        console.log(
+          `ping got ${++responses} responses (ping: ${dt.toFixed(2)}ms, nonce: ${nonce}, address: ${address})`
+        )
+      })
+  })
+  sendPublicChatMessage(pingMessage(nonce))
+  incrementCounter('ping_sent_counter')
+}
+
+globalThis.__sendPing = sendPing
+
+const answeredPings = new Set<number>()
+
+function processChatMessage(message: Package<proto.Chat>) {
   const myProfile = getCurrentUserProfile(store.getState())
-  const fromAlias: string = message.sender
+  const fromAlias: string = message.address
   const senderPeer = setupPeer(fromAlias)
 
-  if (!senderPeer.receivedPublicChatMessages.has(msgId)) {
-    const text = message.data.text
-    senderPeer.receivedPublicChatMessages.add(msgId)
-    senderPeer.lastUpdate = Date.now()
+  senderPeer.lastUpdate = Date.now()
 
-    if (senderPeer.ethereumAddress) {
-      if (text.startsWith('␐')) {
-        const [id, timestamp] = text.split(' ')
-        avatarMessageObservable.notifyObservers({
-          type: AvatarMessageType.USER_EXPRESSION,
-          userId: senderPeer.ethereumAddress,
-          expressionId: id.slice(1),
-          timestamp: parseInt(timestamp, 10)
-        })
-      } else {
-        const isBanned =
-          !myProfile ||
-          (senderPeer.ethereumAddress &&
-            isBlockedOrBanned(myProfile, getBannedUsers(store.getState()), senderPeer.ethereumAddress)) ||
-          false
+  if (senderPeer.ethereumAddress) {
+    if (message.data.message.startsWith('␆') /* pong */) {
+      const [nonceStr, address] = message.data.message.slice(1).split(' ')
+      const nonce = parseInt(nonceStr, 10)
+      const request = pingRequests.get(nonce)
+      if (request) {
+        incrementCounter('pong_received_counter')
+        request.onPong(Date.now() - request.sentTime, address || 'none')
+      }
+    } else if (message.data.message.startsWith('␑') /* ping */) {
+      const nonce = parseInt(message.data.message.slice(1), 10)
+      if (answeredPings.has(nonce)) {
+        incrementCounter('ping_received_twice_counter')
+        return
+      }
+      answeredPings.add(nonce)
+      if (myProfile) sendPublicChatMessage(pongMessage(nonce, myProfile.ethAddress))
+      incrementCounter('pong_sent_counter')
+    } else if (message.data.message.startsWith('␐')) {
+      const [id, timestamp] = message.data.message.split(' ')
 
-        if (!isBanned) {
-          const messageEntry: InternalChatMessage = {
-            messageType: ChatMessageType.PUBLIC,
-            messageId: msgId,
-            sender: senderPeer.ethereumAddress,
-            body: text,
-            timestamp: Date.now()
-          }
-          store.dispatch(messageReceived(messageEntry))
+      avatarMessageObservable.notifyObservers({
+        type: AvatarMessageType.USER_EXPRESSION,
+        userId: senderPeer.ethereumAddress,
+        expressionId: id.slice(1),
+        timestamp: parseInt(timestamp, 10)
+      })
+    } else {
+      const isBanned =
+        !myProfile ||
+        (senderPeer.ethereumAddress &&
+          isBlockedOrBanned(myProfile, getBannedUsers(store.getState()), senderPeer.ethereumAddress)) ||
+        false
+
+      if (!isBanned) {
+        const messageEntry: InternalChatMessage = {
+          messageType: ChatMessageType.PUBLIC,
+          messageId: uuid(),
+          sender: senderPeer.ethereumAddress,
+          body: message.data.message,
+          timestamp: message.data.timestamp
         }
+        store.dispatch(messageReceived(messageEntry))
       }
     }
   }
 }
 
 // Receive a "rpc" signal over comms to send our profile
-function processProfileRequest(message: Package<ProfileRequest>) {
-  const myIdentity = getIdentity()
+function processProfileRequest(message: Package<proto.ProfileRequest>) {
+  const myIdentity = getCurrentIdentity(store.getState())
   const myAddress = myIdentity?.address
 
   // We only send profile responses for our own address
-  if (message.data.userId === myAddress) {
+  if (message.data.address.toLowerCase() === myAddress?.toLowerCase()) {
     sendMyProfileOverCommsChannel.notifyObservers({})
   }
 }
 
-function processProfileResponse(message: Package<ProfileResponse>) {
-  const peerTrackingInfo = setupPeer(message.sender)
+function processProfileResponse(message: Package<proto.ProfileResponse>) {
+  const peerTrackingInfo = setupPeer(message.address)
 
-  const profile = ensureAvatarCompatibilityFormat(message.data.profile)
+  const profile = ensureAvatarCompatibilityFormat(JSON.parse(message.data.serializedProfile))
 
-  if (peerTrackingInfo.ethereumAddress !== profile.userId) return
+  if (!validateAvatar(profile)) {
+    console.error('Invalid avatar received', validateAvatar.errors)
+    debugger
+  }
+
+  if (peerTrackingInfo.ethereumAddress !== profile.userId) {
+    debugger
+    return
+  }
 
   const promises = pendingProfileRequests.get(profile.userId)
 
@@ -233,6 +340,6 @@ export function createReceiveProfileOverCommsChannel() {
   })
 }
 
-function processPositionMessage(message: Package<Position>) {
-  receiveUserPosition(message.sender, message.data, message.time)
+function processPositionMessage(message: Package<proto.Position>) {
+  receiveUserPosition(message.address, message.data)
 }

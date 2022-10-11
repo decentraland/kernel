@@ -89,7 +89,7 @@ function ensureSingleString(value: string | string[] | null): string | null {
 const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
 export const COMMS =
   !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2' // by default
-export const COMMS_PROFILE_TIMEOUT = 10000
+export const COMMS_PROFILE_TIMEOUT = 15000
 
 export const DECENTRALAND_SPACE = qs.get('SPACE')
 
@@ -97,7 +97,6 @@ export const PARCEL_LOADING_ENABLED = !DECENTRALAND_SPACE || qs.has('DISABLE_PAR
 
 export const UPDATE_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('UPDATE_CONTENT_SERVICE'))
 export const FETCH_CONTENT_SERVICE = ensureQueryStringUrl(qs.get('FETCH_CONTENT_SERVICE'))
-export const COMMS_SERVICE = ensureSingleString(qs.get('COMMS_SERVICE'))
 export const HOTSCENES_SERVICE = ensureSingleString(qs.get('HOTSCENES_SERVICE'))
 export const POI_SERVICE = ensureSingleString(qs.get('POI_SERVICE'))
 export const PREFERED_ISLAND = ensureSingleString(qs.get('island'))
@@ -108,17 +107,16 @@ export const LOS = ensureSingleString(qs.get('LOS'))
 
 export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
 export const DEBUG_COMMS = qs.has('DEBUG_COMMS')
+export const COMMS_GRAPH = qs.has('COMMS_GRAPH')
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
 export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
-export const DEBUG_MESSAGES = location.search.includes('DEBUG_MESSAGES')
-export const DEBUG_MESSAGES_QUEUE_PERF = location.search.includes('DEBUG_MESSAGES_QUEUE_PERF')
 export const DEBUG_WS_MESSAGES = location.search.includes('DEBUG_WS_MESSAGES')
 export const DEBUG_REDUX = location.search.includes('DEBUG_REDUX')
 export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
-export const DEBUG_PM = location.search.includes('DEBUG_PM')
 export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
 export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
 export const DEBUG_PREFIX = ensureSingleString(qs.get('DEBUG_PREFIX'))
+export const DEBUG_DISABLE_LOADING = qs.has('DEBUG_DISABLE_LOADING')
 
 export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
@@ -154,6 +152,10 @@ export const PIN_CATALYST = PREVIEW
   ? addHttpsIfNoProtocolIsSet(qs.get('CATALYST')!)
   : undefined
 
+export const BYPASS_CONTENT_ALLOWLIST = qs.has('BYPASS_CONTENT_ALLOWLIST')
+  ? qs.get('BYPASS_CONTENT_ALLOWLIST') === 'true'
+  : PIN_CATALYST || globalThis.location.hostname !== 'play.decentraland.org'
+
 export const FORCE_RENDERING_STYLE = ensureSingleString(qs.get('FORCE_RENDERING_STYLE')) as any
 
 const META_CONFIG_URL = ensureSingleString(qs.get('META_CONFIG_URL'))
@@ -165,9 +167,6 @@ export namespace commConfigurations {
   export const sendAnalytics = true
 
   export const peerTtlMs = 60000
-
-  export const autoChangeRealmInterval =
-    typeof qs.get('AUTO_CHANGE_INTERVAL') === 'string' ? parseInt(qs.get('AUTO_CHANGE_INTERVAL')!, 10) * 1000 : 40000
 
   export const defaultIceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -215,6 +214,11 @@ export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
 function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
   return `https://content-assets-as-bundle.decentraland.${tld}`
+}
+
+export function getAvatarTextureAPIBaseUrl(network: ETHEREUM_NETWORK): string {
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  return `https://synapse.decentraland.${tld}/profile-pictures/`
 }
 
 export function getServerConfigurations(network: ETHEREUM_NETWORK) {
@@ -269,10 +273,6 @@ export const genericAvatarSnapshots = {
   body: 'QmSav1o6QK37Jj1yhbmhYk9MJc6c2H5DWbWzPVsg9JLYfF',
   face256: 'QmSqZ2npVD4RLdqe17FzGCFcN29RfvmqmEd2FcQUctxaKk'
 } as const
-
-export function getCatalystNodesDefaultURL() {
-  return `https://peer.decentraland.${getTLD()}/lambdas/contracts/servers`
-}
 
 function addHttpsIfNoProtocolIsSet(domain: string): string
 function addHttpsIfNoProtocolIsSet(domain: undefined): undefined

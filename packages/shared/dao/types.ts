@@ -1,4 +1,5 @@
 import type { ETHEREUM_NETWORK } from 'config'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 export enum ServerConnectionStatus {
   OK,
@@ -45,13 +46,6 @@ export type Realm = {
 
 export type DaoState = {
   network: ETHEREUM_NETWORK | null
-  fetchContentServer: string
-  catalystServer: string
-  updateContentServer: string
-  resizeService: string
-  hotScenesService: string
-  exploreRealmsService: string
-  poiService: string
   candidates: Candidate[]
   catalystCandidatesReceived: boolean
 }
@@ -63,7 +57,7 @@ export type RootDaoState = {
 export type PingResult = {
   elapsed?: number
   status?: ServerConnectionStatus
-  result?: CatalystStatus
+  result?: AboutResponse
 }
 
 export type AskResult = {

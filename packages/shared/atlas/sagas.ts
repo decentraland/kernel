@@ -1,8 +1,6 @@
 import { Vector2Component } from 'atomicHelpers/landHelpers'
-import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { call, put, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 import { parcelLimits } from 'config'
-import { fetchScenesByLocation } from '../../decentraland-loader/lifecycle/utils/fetchSceneIds'
 import {
   getOwnerNameFromJsonData,
   getSceneDescriptionFromJsonData,
@@ -35,14 +33,16 @@ import { SCENE_LOAD } from 'shared/loading/actions'
 import { parseParcelPosition, worldToGrid } from '../../atomicHelpers/parcelScenePositions'
 import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
 import { META_CONFIGURATION_INITIALIZED } from '../meta/actions'
-import { getFetchContentServer, getPOIService } from 'shared/dao/selectors'
+import { getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { getUnityInstance, MinimapSceneInfo } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { homePointKey } from './utils'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
+import { trackEvent } from 'shared/analytics'
+import { waitForRealmAdapter } from 'shared/realm/selectors'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -95,7 +95,7 @@ function* reportScenesAroundParcelAction(action: ReportScenesAroundParcel) {
 }
 
 function* initializePois() {
-  yield call(waitForRealmInitialized)
+  yield call(waitForRealmAdapter)
 
   const daoPOIs: string[] | undefined = yield call(fetchPOIsFromDAO)
 
@@ -108,9 +108,17 @@ function* initializePois() {
 
 function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   const tiles = action.payload.tiles
-  const result: Array<LoadableScene> = yield call(fetchScenesByLocation, tiles)
+  try {
+    const result: Array<LoadableScene> = yield call(fetchScenesByLocation, tiles)
 
-  yield call(reportScenes, result)
+    yield call(reportScenes, result)
+  } catch (err: any) {
+    trackEvent('error', {
+      context: 'reportScenesFromTilesAction',
+      message: err.message,
+      stack: err.stack
+    })
+  }
   yield put(reportedScenes(tiles))
 }
 
@@ -153,11 +161,7 @@ function* reportScenes(scenes: LoadableScene[]): any {
         name: postProcessSceneName(sceneName),
         owner: getOwnerNameFromJsonData(metadata),
         description: getSceneDescriptionFromJsonData(metadata),
-        previewImageUrl: getThumbnailUrlFromJsonDataAndContent(
-          metadata,
-          scene.entity.content,
-          getFetchContentServer(store.getState())
-        ),
+        previewImageUrl: getThumbnailUrlFromJsonDataAndContent(metadata, scene.entity.content, scene.baseUrl),
         // type is not used by renderer
         type: undefined as any,
         parcels,

@@ -3,6 +3,7 @@ import {
   Conversation,
   ConversationType,
   MessageStatus,
+  PresenceType,
   SearchChannelsResponse,
   SocialAPI,
   TextMessage
@@ -125,21 +126,44 @@ const publicRooms: SearchChannelsResponse[] = [
   }
 ]
 
+const userStatuses = new Map()
+userStatuses.set('0xa1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+userStatuses.set('0xb1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+userStatuses.set('0xc1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+userStatuses.set('0xd1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+
 const stubClient = (start: number, end: number, index: number) =>
   ({
     getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
+    getUserStatuses: () => userStatuses,
     searchChannel: () => Promise.resolve(publicRooms[index]),
+    getMemberInfo: () => ({ displayName: undefined, avatarUrl: undefined }),
     getUserId: () => '0xa1'
   } as unknown as SocialAPI)
 
-function mockStoreCalls(ops?: { start?: number; end?: number; index?: number }) {
-  sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
+function mockStoreCalls(ops?: { start?: number; end?: number; index?: number; catalog?: boolean }) {
+  sinon
+    .stub(friendsSelectors, 'getChannels')
+    .callsFake(() => allCurrentConversations.filter((conv) => conv.conversation.type === ConversationType.CHANNEL))
   sinon
     .stub(friendsSelectors, 'getSocialClient')
     .callsFake(() => stubClient(ops?.start ?? 0, ops?.end ?? 0, ops?.index ?? 0))
   sinon
     .stub(profilesSelectors, 'getCurrentUserProfile')
     .callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
+  sinon.stub(profilesSelectors, 'isAddedToCatalog').callsFake(() => ops?.catalog ?? true)
   sinon.stub(profilesSelectors, 'getProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds))
 }
 
@@ -219,7 +243,7 @@ describe('Friends sagas - Channels Feature', () => {
             memberCount: conv.conversation.userIds?.length || 1,
             description: '',
             joined: true,
-            muted: false
+            muted: mutedIds.includes(conv.conversation.id)
           })
         }
 
@@ -261,7 +285,7 @@ describe('Friends sagas - Channels Feature', () => {
           }
           totalUnseenMessagesByChannel.unseenChannelMessages.push({
             count,
-            channelId: conv.conversation.name!
+            channelId: conv.conversation.id
           })
         }
 
@@ -277,7 +301,7 @@ describe('Friends sagas - Channels Feature', () => {
   })
 
   describe('Get channel messages', () => {
-    let opts = { start: 2, end: 4 }
+    const opts = { start: 2, end: 4, catalog: true }
 
     beforeEach(() => {
       const { store } = buildStore()
@@ -287,7 +311,7 @@ describe('Friends sagas - Channels Feature', () => {
     })
 
     afterEach(() => {
-      opts.end = opts.start - 2
+      opts.start = opts.start - 2
       sinon.restore()
       sinon.reset()
     })
@@ -297,7 +321,7 @@ describe('Friends sagas - Channels Feature', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
-          fromMessageId: ''
+          from: ''
         }
 
         const channelMessagesFiltered = channelMessages.slice(opts.start, opts.end)
@@ -306,10 +330,11 @@ describe('Friends sagas - Channels Feature', () => {
         const addChatMessagesPayload: AddChatMessagesPayload = {
           messages: channelMessagesFiltered.map((message) => ({
             messageId: message.id,
-            messageType: ChatMessageType.PRIVATE,
+            messageType: ChatMessageType.PUBLIC,
             timestamp: message.timestamp,
             body: message.text,
             sender: getUserIdFromMatrix(message.sender),
+            senderName: undefined,
             recipient: request.channelId
           }))
         }
@@ -323,19 +348,20 @@ describe('Friends sagas - Channels Feature', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
-          fromMessageId: '2'
+          from: '3'
         }
 
-        const channelMessagesFiltered = channelMessages.slice(opts.start, opts.end)
+        const channelMessagesFiltered = channelMessages.slice(opts.start, 2)
 
         // parse messages
         const addChatMessagesPayload: AddChatMessagesPayload = {
           messages: channelMessagesFiltered.map((message) => ({
             messageId: message.id,
-            messageType: ChatMessageType.PRIVATE,
+            messageType: ChatMessageType.PUBLIC,
             timestamp: message.timestamp,
             body: message.text,
             sender: getUserIdFromMatrix(message.sender),
+            senderName: undefined,
             recipient: request.channelId
           }))
         }
@@ -348,7 +374,7 @@ describe('Friends sagas - Channels Feature', () => {
   })
 
   describe('Search channels', () => {
-    let opts = { index: 0 }
+    const opts = { index: 0 }
 
     beforeEach(() => {
       const { store } = buildStore()
@@ -395,11 +421,7 @@ describe('Friends sagas - Channels Feature', () => {
           channels: channelsToReturn
         }
 
-        sinon
-          .mock(getUnityInstance())
-          .expects('UpdateChannelSearchResults')
-          .once()
-          .withExactArgs(searchResult)
+        sinon.mock(getUnityInstance()).expects('UpdateChannelSearchResults').once().withExactArgs(searchResult)
         await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -437,11 +459,7 @@ describe('Friends sagas - Channels Feature', () => {
           channels: channelsToReturn
         }
 
-        sinon
-          .mock(getUnityInstance())
-          .expects('UpdateChannelSearchResults')
-          .once()
-          .withExactArgs(searchResult)
+        sinon.mock(getUnityInstance()).expects('UpdateChannelSearchResults').once().withExactArgs(searchResult)
         await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })

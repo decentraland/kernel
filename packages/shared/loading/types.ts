@@ -22,7 +22,7 @@ export const EXPERIENCE_STARTED = 'EXPERIENCE_STARTED'
 export const experienceStarted = () => action(EXPERIENCE_STARTED)
 
 export const TELEPORT_TRIGGERED = 'TELEPORT_TRIGGERED'
-export const teleportTriggered = (payload: string) => action(TELEPORT_TRIGGERED, payload)
+export const trackTeleportTriggered = (payload: string) => action(TELEPORT_TRIGGERED, payload)
 
 export const RENDERING_ACTIVATED = '[RENDERER] Camera activated'
 export const renderingActivated = () => action(RENDERING_ACTIVATED)

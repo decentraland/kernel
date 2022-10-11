@@ -22,7 +22,7 @@ export function closePeersScoreLink({
     name: AlgorithmLinkTypes.CLOSE_PEERS_SCORE,
     pick: (context: AlgorithmContext) => {
       const score = defaultScoreAddons(latencyDeductionsParameters, baseScore, closeUsersScore(context.userParcel))
-      return selectFirstByScore(context, score, definitiveDecisionThreshold, true) // If we have less than 10 users of difference by default, we cannot make a definitive decision. It delegates to the next link
+      return selectFirstByScore(context, score, definitiveDecisionThreshold, true)
     }
   }
 }

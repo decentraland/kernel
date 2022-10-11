@@ -2,7 +2,7 @@ import { PeerInformation } from './interface/types'
 
 export interface ICommunicationsController {
   cid: string
-  receiveCommsMessage(message: string, sender: PeerInformation): void
+  receiveCommsMessage(message: Uint8Array, sender: PeerInformation): void
 }
 
 export const scenesSubscribedToCommsEvents = new Set<ICommunicationsController>()

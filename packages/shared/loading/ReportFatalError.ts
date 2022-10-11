@@ -11,8 +11,8 @@ import { globalObservable } from '../observables'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
 
-export function BringDownClientAndShowError(event: ExecutionLifecycleEvent) {
-  if (ExecutionLifecycleEventsList.includes(event)) {
+export function BringDownClientAndShowError(event: ExecutionLifecycleEvent | string) {
+  if (ExecutionLifecycleEventsList.includes(event as any)) {
     store.dispatch(action(event))
   }
 
@@ -51,12 +51,12 @@ export type ErrorContextTypes =
 
 export function ReportFatalErrorWithCatalystPayload(error: Error, context: ErrorContextTypes) {
   // TODO(Brian): Get some useful catalyst payload to append here
-  ReportFatalError(error, context)
+  BringDownClientAndReportFatalError(error, context)
 }
 
 export function ReportFatalErrorWithCommsPayload(error: Error, context: ErrorContextTypes) {
   // TODO(Brian): Get some useful comms payload to append here
-  ReportFatalError(error, context)
+  BringDownClientAndReportFatalError(error, context)
 }
 
 export function ReportFatalErrorWithUnityPayload(error: Error, context: ErrorContextTypes) {
@@ -69,18 +69,27 @@ export function ReportFatalErrorWithUnityPayload(error: Error, context: ErrorCon
     })
 }
 
-Object.assign(globalThis, { BringDownClientAndShowError, ReportFatalErrorWithUnityPayloadAsync, ReportFatalError })
+Object.assign(globalThis, {
+  BringDownClientAndShowError,
+  ReportFatalErrorWithUnityPayloadAsync,
+  ReportFatalError: BringDownClientAndReportFatalError,
+  BringDownClientAndReportFatalError
+})
 
 export async function ReportFatalErrorWithUnityPayloadAsync(error: Error, context: ErrorContextTypes) {
   try {
     const payload = await getUnityInstance().CrashPayloadRequest()
-    ReportFatalError(error, context, { rendererPayload: payload })
+    BringDownClientAndReportFatalError(error, context, { rendererPayload: payload })
   } catch (e) {
-    ReportFatalError(error, context)
+    BringDownClientAndReportFatalError(error, context)
   }
 }
 
-export function ReportFatalError(error: Error, context: ErrorContextTypes, payload: Record<string, any> = {}) {
+export function BringDownClientAndReportFatalError(
+  error: Error,
+  context: ErrorContextTypes,
+  payload: Record<string, any> = {}
+) {
   let sagaStack: string | undefined = payload['sagaStack']
 
   debugger

@@ -5,10 +5,34 @@ import { getVisibleAvatarsUserId } from '../../packages/shared/sceneEvents/visib
 import { AvatarMessageType } from '../../packages/shared/comms/interface/types'
 import * as sceneManager from '../../packages/shared/world/parcelSceneManager'
 import { buildStore } from 'shared/store/store'
+import { Color3 } from '@dcl/ecs-math'
 
-function sendAvatarMessage(userId: string, visible: boolean, removeInfo: boolean = false) {
-  peers.setupPeer(userId).ethereumAddress = removeInfo ? undefined : userId
-  peers.receiveUserVisible(userId, visible)
+function prepareAvatar(address: string) {
+  peers.receivePeerUserData(
+    {
+      ethAddress: address,
+      hasClaimedName: false,
+      name: address,
+      version: 1,
+      description: address,
+      tutorialStep: 0,
+      userId: address,
+      avatar: {
+        bodyShape: 'body',
+        wearables: [],
+        emotes: [],
+        eyes: { color: Color3.Green() },
+        hair: { color: Color3.Green() },
+        skin: { color: Color3.Green() },
+        snapshots: {
+          body: 'body',
+          face256: 'face256'
+        }
+      }
+    },
+    location.origin
+  )
+  peers.receiveUserVisible(address, false)
 }
 
 function removeAvatarMessage(userId: string) {
@@ -25,9 +49,17 @@ function mockGetUser() {
 let sceneEventsMocked
 
 describe('Avatar observable', () => {
+  const userA = '0xa00000000000000000000000000000000000000a'
+  const userB = '0xb00000000000000000000000000000000000000b'
+  const userC = '0xc00000000000000000000000000000000000000c'
+
   beforeEach('start store', () => {
     const { store } = buildStore()
     globalThis.globalStore = store
+
+    prepareAvatar(userA)
+    prepareAvatar(userB)
+    prepareAvatar(userC)
 
     mockGetUser()
     sceneEventsMocked = sinon.stub(sceneManager, 'allScenesEvent')
@@ -36,58 +68,41 @@ describe('Avatar observable', () => {
   afterEach(() => {
     // clear visible avatars cache
     const users = getVisibleAvatarsUserId()
-    users.forEach((u) => sendAvatarMessage(u, false))
+    users.forEach((u) => peers.receiveUserVisible(u, false))
 
     sinon.restore()
     sinon.reset()
   })
-  it('should return user A and B that are visible at the scene', () => {
-    const userA = 'user-a'
-    const userB = 'user-b'
-    const userC = 'user-c'
 
-    sendAvatarMessage(userA, true)
+  it('should return user A and B that are visible at the scene', () => {
+    peers.receiveUserVisible(userA, true)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerConnected', payload: { userId: userA } })
 
-    sendAvatarMessage(userB, true)
+    peers.receiveUserVisible(userB, true)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerConnected', payload: { userId: userB } })
     sceneEventsMocked.reset()
 
-    sendAvatarMessage(userC, false)
+    peers.receiveUserVisible(userC, false)
     sinon.assert.notCalled(sceneEventsMocked)
     expect(getVisibleAvatarsUserId()).to.eql([userA, userB])
   })
 
   it('if should remove user when he leaves the scene', () => {
-    const userA = 'user-a'
-    const userB = 'user-b'
-
-    sendAvatarMessage(userA, true)
+    peers.receiveUserVisible(userA, true)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerConnected', payload: { userId: userA } })
 
-    sendAvatarMessage(userB, true)
+    peers.receiveUserVisible(userB, true)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerConnected', payload: { userId: userB } })
     expect(getVisibleAvatarsUserId()).to.eql([userA, userB])
 
-    sendAvatarMessage(userA, false)
+    peers.receiveUserVisible(userA, false)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerDisconnected', payload: { userId: userA } })
     expect(getVisibleAvatarsUserId()).to.eql([userB])
   })
 
-  it('should not add the users if there is not info about them. Race cond', () => {
-    sinon.restore()
-    const userA = 'user-a'
-    removeAvatarMessage(userA)
-    sendAvatarMessage(userA, true, true)
-    expect(getVisibleAvatarsUserId()).to.eql([])
-    sinon.assert.notCalled(sceneEventsMocked)
-  })
-
   it('should remove the user from the cache if we receieve an USER_REMOVED action', () => {
-    const userA = 'user-a'
-    const userB = 'user-b'
-    sendAvatarMessage(userA, true)
-    sendAvatarMessage(userB, true)
+    peers.receiveUserVisible(userA, true)
+    peers.receiveUserVisible(userB, true)
     expect(getVisibleAvatarsUserId()).to.eql([userA, userB])
     removeAvatarMessage(userA)
     sinon.assert.calledWith(sceneEventsMocked, { eventType: 'playerDisconnected', payload: { userId: userA } })

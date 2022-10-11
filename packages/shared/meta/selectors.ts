@@ -1,6 +1,8 @@
 import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
-import { DEFAULT_MAX_VISIBLE_PEERS, DEFAULT_MAX_CHANNELS_VALUE } from '.'
+import { BYPASS_CONTENT_ALLOWLIST } from 'config'
+import { urlWithProtocol } from 'shared/realm/resolver'
+import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 import { QS_MAX_VISIBLE_PEERS } from 'config'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
@@ -44,7 +46,7 @@ export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmCha
 export const getDisabledCatalystConfig = (store: RootMetaState): string[] | undefined =>
   getFeatureFlagVariantValue(store, 'disabled-catalyst') as string[] | undefined
 
-export const getLiveKitVoiceChat = (store: RootMetaState): boolean =>
+export const isLiveKitVoiceChatFeatureFlag = (store: RootMetaState): boolean =>
   getFeatureFlagEnabled(store, 'livekit-voicechat') as boolean
 
 export function getMaxVisiblePeers(store: RootMetaState): number {
@@ -53,10 +55,6 @@ export function getMaxVisiblePeers(store: RootMetaState): number {
     +(getFeatureFlagVariantValue(store, 'max_visible_peers') as string) ||
     DEFAULT_MAX_VISIBLE_PEERS
   )
-}
-
-export function getMaxChannels(store: RootMetaState): number {
-  return (getFeatureFlagVariantValue(store, 'max_joined_channels') as number) ?? DEFAULT_MAX_CHANNELS_VALUE
 }
 
 /**
@@ -97,3 +95,27 @@ export const getSynapseUrl = (store: RootMetaState): string =>
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint
+
+/**
+ * Filters out content server hostnames from the allowed list of the MetaState.
+ * This is necessary to protect the IP and domains in which DCL is served.
+ */
+export function getAllowedContentServer(meta: RootMetaState, givenServer: string): string {
+  // if a catalyst is pinned => avoid any override
+  if (BYPASS_CONTENT_ALLOWLIST) {
+    return givenServer
+  }
+
+  const contentWhitelist = getContentWhitelist(meta)
+
+  // if current realm is in whitelist => return current state
+  if (givenServer && contentWhitelist.some((allowedCandidate) => allowedCandidate === givenServer)) {
+    return urlWithProtocol(givenServer)
+  }
+
+  if (contentWhitelist.length) {
+    return urlWithProtocol(contentWhitelist[0] + '/content')
+  }
+
+  return urlWithProtocol(givenServer)
+}

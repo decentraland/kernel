@@ -3,9 +3,8 @@ import { PortContext } from './context'
 
 import { registerEthereumControllerServiceServerImplementation } from './EthereumController'
 import { registerDevToolsServiceServerImplementation } from './DevTools'
-import { registerEngineAPIServiceServerImplementation } from './EngineAPI'
-import { registerEnvironmentAPIServiceServerImplementation } from './EnvironmentAPI'
-import { registerExperimentalAPIServiceServerImplementation } from './ExperimentalAPI'
+import { registerEngineApiServiceServerImplementation } from './EngineAPI'
+import { registerEnvironmentApiServiceServerImplementation } from './EnvironmentAPI'
 import { registerPermissionServiceServerImplementation } from './Permissions'
 import { registerUserIdentityServiceServerImplementation } from './UserIdentity'
 import { registerParcelIdentityServiceServerImplementation } from './ParcelIdentity'
@@ -19,8 +18,8 @@ import { registerSignedFetchServiceServerImplementation } from './SignedFetch'
 
 export async function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerDevToolsServiceServerImplementation(serverPort)
-  registerEngineAPIServiceServerImplementation(serverPort)
-  registerEnvironmentAPIServiceServerImplementation(serverPort)
+  registerEngineApiServiceServerImplementation(serverPort)
+  registerEnvironmentApiServiceServerImplementation(serverPort)
   registerPermissionServiceServerImplementation(serverPort)
   registerUserIdentityServiceServerImplementation(serverPort)
   registerUserActionModuleServiceServerImplementation(serverPort)
@@ -32,7 +31,4 @@ export async function registerServices(serverPort: RpcServerPort<PortContext>) {
   registerPlayersServiceServerImplementation(serverPort)
   registerPortableExperiencesServiceServerImplementation(serverPort)
   registerSignedFetchServiceServerImplementation(serverPort)
-
-  // TODO: remove when renderer-rpc is ready
-  registerExperimentalAPIServiceServerImplementation(serverPort)
 }

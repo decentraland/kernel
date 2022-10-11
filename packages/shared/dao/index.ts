@@ -1,18 +1,24 @@
 import defaultLogger from '../logger'
-import { Realm, ServerConnectionStatus, Candidate, Parcel } from './types'
+import { ServerConnectionStatus, Candidate, Parcel } from './types'
 import { getAllCatalystCandidates } from './selectors'
 import { fetchCatalystNodesFromDAO } from 'shared/web3'
 import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
-import { ping, ask } from './utils/ping'
-import { getCommsContext, getRealm, sameRealm } from 'shared/comms/selectors'
-import { connectComms } from 'shared/comms'
-import { setWorldContext } from 'shared/comms/actions'
+import { ask } from './utils/ping'
+import { getRealmAdapter } from 'shared/realm/selectors'
+import { setRealmAdapter } from 'shared/realm/actions'
 import { checkValidRealm } from './sagas'
-import { establishingComms } from 'shared/loading/types'
 import { commsLogger } from 'shared/comms/context'
-import { realmToConnectionString, resolveCommsConnectionString } from 'shared/comms/v3/resolver'
+import { getCurrentIdentity } from 'shared/session/selectors'
+import {
+  adapterForRealmConfig,
+  resolveRealmBaseUrlFromRealmQueryParameter,
+  urlWithProtocol
+} from 'shared/realm/resolver'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
+import { OFFLINE_REALM } from 'shared/realm/types'
+import { getDisabledCatalystConfig } from 'shared/meta/selectors'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {
@@ -50,71 +56,45 @@ export async function fetchCatalystStatus(
 
   const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
 
-  if (aboutResponse.httpStatus !== 404) {
-    const result = aboutResponse.result
-    if (
-      aboutResponse.status === ServerConnectionStatus.OK &&
-      result &&
-      result.comms &&
-      result.configurations &&
-      result.bff
-    ) {
-      const { comms, configurations, bff } = result
+  const result = aboutResponse.result
+  if (
+    aboutResponse.status === ServerConnectionStatus.OK &&
+    result &&
+    result.comms &&
+    result.configurations &&
+    result.bff
+  ) {
+    const { comms, configurations, bff } = result
 
-      // TODO(hugo): this is kind of hacky, the original representation is much better,
-      // but I don't want to change the whole pick-realm algorithm now
-      const usersParcels: Parcel[] = []
+    // TODO(hugo): this is kind of hacky, the original representation is much better,
+    // but I don't want to change the whole pick-realm algorithm now
+    const usersParcels: Parcel[] = []
 
-      if (parcelsResponse.result && parcelsResponse.result.parcels) {
-        for (const {
-          peersCount,
-          parcel: { x, y }
-        } of parcelsResponse.result.parcels) {
-          const parcel: Parcel = [x, y]
-          for (let i = 0; i < peersCount; i++) {
-            usersParcels.push(parcel)
-          }
+    if (parcelsResponse.result && parcelsResponse.result.parcels) {
+      for (const {
+        peersCount,
+        parcel: { x, y }
+      } of parcelsResponse.result.parcels) {
+        const parcel: Parcel = [x, y]
+        for (let i = 0; i < peersCount; i++) {
+          usersParcels.push(parcel)
         }
       }
-
-      return {
-        protocol: comms.protocol,
-        catalystName: configurations.realmName,
-        domain: domain,
-        status: aboutResponse.status,
-        elapsed: aboutResponse.elapsed!,
-        usersCount: bff.userCount || comms.usersCount || 0,
-        maxUsers: 2000,
-        usersParcels
-      }
     }
 
-    return undefined
-  }
-
-  const [commsResponse, lambdasResponse] = await Promise.all([
-    ping(`${domain}/comms/status?includeUsersParcels=true`),
-    ping(`${domain}/lambdas/health`)
-  ])
-
-  if (
-    commsResponse.result &&
-    commsResponse.status === ServerConnectionStatus.OK &&
-    lambdasResponse.status === ServerConnectionStatus.OK &&
-    (commsResponse.result.maxUsers ?? 2000) > (commsResponse.result.usersCount ?? -1)
-  ) {
-    const result = commsResponse.result
     return {
-      protocol: 'v2',
-      catalystName: result.name,
+      protocol: comms.protocol,
+      catalystName: configurations.realmName,
       domain: domain,
-      status: commsResponse.status,
-      elapsed: commsResponse.elapsed!,
-      usersCount: result.usersCount ?? result.usersParcels?.length ?? 0,
-      maxUsers: result.maxUsers ?? 2000,
-      usersParcels: result.usersParcels
+      status: aboutResponse.status,
+      elapsed: aboutResponse.elapsed!,
+      usersCount: bff.userCount || comms.usersCount || 0,
+      maxUsers: 2000,
+      usersParcels
     }
   }
+
+  return undefined
 }
 
 export async function fetchCatalystStatuses(
@@ -136,13 +116,13 @@ export async function fetchCatalystStatuses(
 }
 
 export async function realmInitialized(): Promise<void> {
-  if (getRealm(store.getState())) {
+  if (getRealmAdapter(store.getState())) {
     return
   }
 
   return new Promise((resolve) => {
     const unsubscribe = store.subscribe(() => {
-      if (getRealm(store.getState())) {
+      if (getRealmAdapter(store.getState())) {
         unsubscribe()
         return resolve()
       }
@@ -150,40 +130,105 @@ export async function realmInitialized(): Promise<void> {
   })
 }
 
-export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
-  const candidates = getAllCatalystCandidates(store.getState())
+export async function resolveRealmAboutFromBaseUrl(
+  realmString: string
+): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
+  // load candidates if necessary
+  const allCandidates: Candidate[] = getAllCatalystCandidates(store.getState())
+  const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, allCandidates).replace(/\/+$/, '')
 
-  const realm = await resolveCommsConnectionString(realmString, candidates)
-
-  if (!realm) {
+  if (!realmBaseUrl) {
     throw new Error(`Can't resolve realm ${realmString}`)
   }
 
-  return changeRealmObject(realm, forceChange)
+  const res = await checkValidRealm(realmBaseUrl)
+  if (!res || !res.result) {
+    return undefined
+  }
+
+  return { about: res.result!, baseUrl: realmBaseUrl }
 }
 
-export async function changeRealmObject(realm: Realm, forceChange: boolean = false): Promise<void> {
-  const context = getCommsContext(store.getState())
+async function resolveOfflineRealmAboutFromConnectionString(
+  realmString: string
+): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
+  if (realmString === OFFLINE_REALM || realmString.startsWith(OFFLINE_REALM + '?')) {
+    const params = new URL('decentraland:' + realmString).searchParams
+    let baseUrl = urlWithProtocol(params.get('baseUrl') || 'https://peer.decentraland.org')
 
-  commsLogger.info('Connecting to realm', realm)
+    if (!baseUrl.endsWith('/')) baseUrl = baseUrl + '/'
+
+    return {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: params.get('protocol') || 'offline',
+          fixedAdapter: params.get('fixedAdapter') || 'offline:offline'
+        },
+        configurations: {
+          realmName: realmString,
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: [],
+          cityLoaderContentServer: params.get('cityLoaderContentServer') ?? undefined
+        },
+        content: {
+          healthy: true,
+          publicUrl: `${baseUrl}content`
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: `${baseUrl}lambdas`
+        }
+      },
+      baseUrl: baseUrl.replace(/\/+$/, '')
+    }
+  }
+}
+
+export async function resolveRealmConfigFromString(realmString: string) {
+  return (
+    (await resolveOfflineRealmAboutFromConnectionString(realmString)) ||
+    (await resolveRealmAboutFromBaseUrl(realmString))
+  )
+}
+
+export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
+  const realmConfig = await resolveRealmConfigFromString(realmString)
+
+  if (!realmConfig) {
+    throw new Error(`The realm ${realmString} isn't available right now.`)
+  }
+
+  const catalystURL = new URL(realmConfig.baseUrl)
+
+  if (!forceChange) {
+    const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
+    if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
+      throw new Error(`The realm is denylisted.`)
+    }
+  }
+
+  const currentRealmAdapter = getRealmAdapter(store.getState())
+  const identity = getCurrentIdentity(store.getState())
 
   // if not forceChange, then cancel operation if we are inside the desired realm
-  if (!forceChange && context && sameRealm(context.realm, realm)) {
+  if (!forceChange && currentRealmAdapter && currentRealmAdapter.baseUrl === realmConfig.baseUrl) {
     return
   }
 
-  if (!(await checkValidRealm(realm))) {
-    throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
-  }
+  if (!identity) throw new Error('Cant change realm without a valid identity')
 
-  store.dispatch(establishingComms())
+  commsLogger.info('Connecting to realm', realmString)
 
-  const newCommsContext = await connectComms(realm)
+  const newAdapter = await adapterForRealmConfig(realmConfig.baseUrl, realmConfig.about, identity)
 
-  if (newCommsContext) {
-    store.dispatch(setWorldContext(newCommsContext))
+  if (newAdapter) {
+    store.dispatch(setRealmAdapter(newAdapter))
   } else {
-    throw new Error(`The realm ${realmToConnectionString(realm)} isn't available right now.`)
+    throw new Error(`Can't connect to realm ${realmString} right now.`)
   }
 
   return

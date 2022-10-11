@@ -1,8 +1,7 @@
 import { Vector3 } from '@dcl/ecs-math'
-import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
-import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
+import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL } from 'config'
 import { AirdropInfo } from 'shared/airdrops/interface'
-import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
+import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } from './IUnityInterface'
 import {
   HUDConfiguration,
   InstancedSpawnPoint,
@@ -16,7 +15,6 @@ import {
   RenderProfile,
   BuilderConfiguration,
   RealmsInfoForRenderer,
-  ContentMapping,
   TutorialInitializationMessage,
   WorldPosition,
   HeaderRequest,
@@ -34,7 +32,8 @@ import {
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
-  ChannelErrorPayload
+  ChannelErrorPayload,
+  SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -50,7 +49,7 @@ import { uuid } from 'atomicHelpers/math'
 import future, { IFuture } from 'fp-future'
 import { futures } from './BrowserInterface'
 import { trackEvent } from 'shared/analytics'
-import { Avatar } from '@dcl/schemas'
+import { Avatar, ContentMapping } from '@dcl/schemas'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { incrementCounter } from '../shared/occurences'
 
@@ -84,14 +83,6 @@ export class UnityInterface implements IUnityInterface {
 
     this.gameInstance = gameInstance
     this.Module = this.gameInstance.Module
-
-    if (this.Module) {
-      if (EDITOR) {
-        const canvas = this.Module.canvas
-        canvas.width = canvas.parentElement.clientWidth
-        canvas.height = canvas.parentElement.clientHeight
-      }
-    }
   }
 
   public SendGenericMessage(object: string, method: string, payload: string) {
@@ -114,6 +105,10 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
   }
 
+  public SetAudioDevices(devices: SetAudioDevicesPayload) {
+    this.SendMessageToUnity('Bridges', 'SetAudioDevices', JSON.stringify(devices))
+  }
+
   public CreateGlobalScene(data: {
     id: string
     name: string
@@ -121,6 +116,7 @@ export class UnityInterface implements IUnityInterface {
     contents: Array<ContentMapping>
     icon?: string
     isPortableExperience: boolean
+    sceneNumber: number
   }) {
     /**
      * UI Scenes are scenes that does not check any limit or boundary. The
@@ -223,6 +219,27 @@ export class UnityInterface implements IUnityInterface {
     }
 
     this.SendMessageToUnity('Bridges', 'SetLoadingScreen', JSON.stringify(data))
+  }
+
+  public FadeInLoadingHUD(data: { xCoord: number; yCoord: number; message?: string }) {
+    if (!this.gameInstance) {
+      return
+    }
+
+    this.SendMessageToUnity('Bridges', 'FadeInLoadingHUD', JSON.stringify(data))
+  }
+
+  public SendMemoryUsageToRenderer() {
+    const memory = (performance as any).memory
+    const jsHeapSizeLimit = memory?.jsHeapSizeLimit
+    const totalJSHeapSize = memory?.totalJSHeapSize
+    const usedJSHeapSize = memory?.usedJSHeapSize
+
+    this.SendMessageToUnity(
+      'Main',
+      'SetMemoryUsage',
+      JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
+    )
   }
 
   public DeactivateRendering() {
@@ -690,7 +707,7 @@ export class UnityInterface implements IUnityInterface {
       return
     }
 
-    incrementCounter(method)
+    incrementCounter(method as any)
 
     const originalSetThrew = this.Module['setThrew']
     const unityModule = this.Module
