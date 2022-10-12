@@ -80,7 +80,6 @@ export async function fetchCatalystStatus(
     return undefined
   }
 
-
   return undefined
 }
 

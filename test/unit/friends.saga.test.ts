@@ -17,7 +17,15 @@ import { ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { FriendRequest, FriendsState } from 'shared/friends/types'
-import { Conversation, ConversationType, CurrentUserStatus, MessageStatus, PresenceType, SocialAPI, TextMessage } from 'dcl-social-client'
+import {
+  Conversation,
+  ConversationType,
+  CurrentUserStatus,
+  MessageStatus,
+  PresenceType,
+  SocialAPI,
+  TextMessage
+} from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
 import * as bffSelectors from 'shared/bff/selectors'
 
@@ -74,19 +82,20 @@ const toFriendRequest: FriendRequest = {
   createdAt: 123123132
 }
 
-
-const lastStatusOfFriendsEntries = [[
-  '@0xa1:server', {
-    realm: {
-      layer: '',
-      serverName: 'serverTest'
-    },
-    position: { x: 0, y: 1 },
-    presence: PresenceType.ONLINE,
-    lastActiveAgo: 1
-  }],
-] as const;
-
+const lastStatusOfFriendsEntries = [
+  [
+    '@0xa1:server',
+    {
+      realm: {
+        layer: '',
+        serverName: 'serverTest'
+      },
+      position: { x: 0, y: 1 },
+      presence: PresenceType.ONLINE,
+      lastActiveAgo: 1
+    }
+  ]
+] as const
 
 const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
 
@@ -135,7 +144,7 @@ const stubClient = {
   getUserId: () => '0xa2',
   createDirectConversation: () => allCurrentConversations[0].conversation,
   getUserStatuses: (...friendIds: string[]) => {
-    const m = new Map();
+    const m = new Map()
     for (const id of friendIds) {
       let status = lastStatusOfFriends.get(id)
       if (status) {
@@ -148,8 +157,10 @@ const stubClient = {
 
 const FETCH_CONTENT_SERVER = 'base-url'
 
-function mockStoreCalls(opts?: { profiles: number[]; i: number }) {
-  function mockStoreCalls(opts?: { profiles: number[]; i: number }, fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>) {
+function mockStoreCalls(
+  opts?: { profiles: number[]; i: number },
+  fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>
+) {
   sinon.stub(bffSelectors, 'getFetchContentServerFromBff').callsFake(() => FETCH_CONTENT_SERVER)
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
@@ -159,7 +170,9 @@ function mockStoreCalls(opts?: { profiles: number[]; i: number }) {
       profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore.slice(0, opts?.profiles[opts.i]), userNameOrId)
     )
   sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
-  sinon.stub(friendsSelectors, 'getLastStatusOfFriends').callsFake(() => fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends)
+  sinon
+    .stub(friendsSelectors, 'getLastStatusOfFriends')
+    .callsFake(() => fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends)
 }
 
 describe('Friends sagas', () => {
@@ -187,8 +200,8 @@ describe('Friends sagas', () => {
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
           users: [
-            profileToRendererFormat(profilesFromStore[0].data, {baseUrl: FETCH_CONTENT_SERVER}),
-            profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})
+            profileToRendererFormat(profilesFromStore[0].data, { baseUrl: FETCH_CONTENT_SERVER }),
+            profileToRendererFormat(profilesFromStore[1].data, { baseUrl: FETCH_CONTENT_SERVER })
           ]
         }
         const addedFriends = {
@@ -211,7 +224,7 @@ describe('Friends sagas', () => {
           userNameOrId: 'MiKe'
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: [profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})]
+          users: [profileToRendererFormat(profilesFromStore[1].data, { baseUrl: FETCH_CONTENT_SERVER })]
         }
         const addedFriends = {
           friends: expectedFriends.users.map((friend) => friend.userId),
@@ -231,7 +244,9 @@ describe('Friends sagas', () => {
           skip: 1
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: profilesFromStore.slice(1).map((profile) => profileToRendererFormat(profile.data, {baseUrl: FETCH_CONTENT_SERVER}))
+          users: profilesFromStore
+            .slice(1)
+            .map((profile) => profileToRendererFormat(profile.data, { baseUrl: FETCH_CONTENT_SERVER }))
         }
         const addedFriends = {
           friends: expectedFriends.users.map((friend) => friend.userId),
@@ -282,8 +297,8 @@ describe('Friends sagas', () => {
 
         const expectedFriends: AddUserProfilesToCatalogPayload = {
           users: [
-            profileToRendererFormat(profilesFromStore[0].data, {baseUrl: FETCH_CONTENT_SERVER}),
-            profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})
+            profileToRendererFormat(profilesFromStore[0].data, { baseUrl: FETCH_CONTENT_SERVER }),
+            profileToRendererFormat(profilesFromStore[1].data, { baseUrl: FETCH_CONTENT_SERVER })
           ]
         }
 
@@ -311,7 +326,9 @@ describe('Friends sagas', () => {
         }
 
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: profilesFromStore.slice(5).map((profile) => profileToRendererFormat(profile.data, {baseUrl: FETCH_CONTENT_SERVER}))
+          users: profilesFromStore
+            .slice(5)
+            .map((profile) => profileToRendererFormat(profile.data, { baseUrl: FETCH_CONTENT_SERVER }))
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
@@ -343,7 +360,7 @@ describe('Friends sagas', () => {
           userNameOrId: '0xa' // this will only bring the friend 0xa2
         }
         const expectedFriends: AddUserProfilesToCatalogPayload = {
-          users: [profileToRendererFormat(profilesFromStore[1].data, {baseUrl: FETCH_CONTENT_SERVER})]
+          users: [profileToRendererFormat(profilesFromStore[1].data, { baseUrl: FETCH_CONTENT_SERVER })]
         }
 
         const expectedAddFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload = {
@@ -419,45 +436,56 @@ describe('Friends sagas', () => {
       sinon.reset()
     })
 
-    it('should send status when it\'s not stored in the redux state yet', () => {
+    it("should send status when it's not stored in the redux state yet", () => {
       mockStoreCalls()
-      sinon.mock(getUnityInstance())
+      sinon
+        .mock(getUnityInstance())
         .expects('UpdateUserPresence')
         .once()
-        .withExactArgs({ userId: '0xa1', realm: lastStatusOfFriendsEntries[0][1].realm, position: lastStatusOfFriendsEntries[0][1].position, presence: PresenceStatus.ONLINE })
+        .withExactArgs({
+          userId: '0xa1',
+          realm: lastStatusOfFriendsEntries[0][1].realm,
+          position: lastStatusOfFriendsEntries[0][1].position,
+          presence: PresenceStatus.ONLINE
+        })
       friendsSagas.updateUserStatus(stubClient, '@0xa1:server')
       sinon.mock(getUnityInstance()).verify()
     })
 
-    it('should send status when it\'s stored but the new one is different', () => {
+    it("should send status when it's stored but the new one is different", () => {
       mockStoreCalls(undefined, lastStatusOfFriends)
       const client: SocialAPI = {
         ...stubClient,
         getUserStatuses: (...friendIds: string[]) => {
-          const m = new Map();
+          const m = new Map()
           for (const id of friendIds) {
             let status = lastStatusOfFriends.get(id)
             if (status) {
-              m.set(id, { ...status, position: {x: 100, y: 200} }) // new status. different from the mocked ones in "entries" constant
+              m.set(id, { ...status, position: { x: 100, y: 200 } }) // new status. different from the mocked ones in "entries" constant
             }
           }
           return m
         }
       }
-      sinon.mock(getUnityInstance())
+      sinon
+        .mock(getUnityInstance())
         .expects('UpdateUserPresence')
         .once()
-        .withExactArgs({ userId: '0xa1', realm: lastStatusOfFriendsEntries[0][1].realm, position: {x: 100, y: 200}, presence: PresenceStatus.ONLINE })
+        .withExactArgs({
+          userId: '0xa1',
+          realm: lastStatusOfFriendsEntries[0][1].realm,
+          position: { x: 100, y: 200 },
+          presence: PresenceStatus.ONLINE
+        })
       friendsSagas.updateUserStatus(client, '@0xa1:server')
       sinon.mock(getUnityInstance()).verify()
     })
 
-    it('should not send status when it\'s equal to the last sent', () => {
+    it("should not send status when it's equal to the last sent", () => {
       mockStoreCalls(undefined, lastStatusOfFriends)
       sinon.mock(getUnityInstance()).expects('UpdateUserPresence').notCalled
       friendsSagas.updateUserStatus(stubClient, '@0xa1:server')
       sinon.mock(getUnityInstance()).verify()
     })
   })
-
 })

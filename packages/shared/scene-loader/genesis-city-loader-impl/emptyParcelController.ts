@@ -1,6 +1,5 @@
 import { ContentMapping, EntityType, Scene } from '@dcl/schemas'
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
-import { PREVIEW, rootURLPreviewMode } from 'config'
 import { LoadableScene } from 'shared/types'
 import { unsignedCRC32 } from 'atomicHelpers/crc32'
 
@@ -11,14 +10,7 @@ export class EmptyParcelController {
   baseUrl: string = ''
 
   constructor(public options: { rootUrl: string }) {
-    let rootUrl = options.rootUrl
-
-    if (PREVIEW) {
-      // rootURLPreviewMode returns rootUrl without ending slash
-      rootUrl = rootURLPreviewMode() + '/'
-    }
-
-    this.baseUrl = `${rootUrl}loader/empty-scenes/`
+    this.baseUrl = `${options.rootUrl}loader/empty-scenes/`
 
     this.emptyScenesPromise = jsonFetch(this.baseUrl + 'mappings.json')
   }

@@ -45,6 +45,8 @@ import { SceneWorker } from 'shared/world/SceneWorker'
 import { pickWorldSpawnpoint, receivePositionReport } from 'shared/world/positionThings'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
+import { ENABLE_EMPTY_SCENES, PREVIEW, rootURLPreviewMode } from 'config'
+import { getResourcesURL } from 'shared/location'
 
 export function* sceneLoaderSaga() {
   yield takeEvery(SET_BFF, onSetBff)
@@ -150,12 +152,17 @@ function* onSetBff(action: SetBffAction) {
       })
       yield put(setSceneLoader(loader))
     } else {
-      // const enableEmptyParcels = ENABLE_EMPTY_SCENES && !(globalThis as any)['isRunningTests']
+      const enableEmptyParcels = ENABLE_EMPTY_SCENES && !(globalThis as any)['isRunningTests']
+
+      const emptyParcelsBaseUrl = enableEmptyParcels
+        ? PREVIEW
+          ? rootURLPreviewMode() + '/'
+          : getResourcesURL('.')
+        : undefined
 
       const loader: ISceneLoader = yield call(createGenesisCityLoader, {
-        contentServer: getFetchContentServerFromBff(bff)
-        // TODO: re-activate empty parcels
-        // emptyParcelsBaseUrl
+        contentServer: getFetchContentServerFromBff(bff),
+        emptyParcelsBaseUrl
       })
       yield put(setSceneLoader(loader))
     }
