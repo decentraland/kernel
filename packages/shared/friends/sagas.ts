@@ -1817,9 +1817,16 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   }
 
   // list of users with matrix IDs
-  const channelMemberIds = channel.userIds
-    ?.filter((userId) => userId.search(request.userName) >= 0)
-    .slice(request.skip, request.skip + request.limit)
+  let channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
+  if (request.userName && request.userName !== '') {
+    channelMemberIds = channelMemberIds?.filter((userId) => {
+      const member = client.getMemberInfo(request.channelId, userId)
+      const memberName = member.displayName?.toLocaleLowerCase() ?? ''
+      const searchTerm = request.userName.toLocaleLowerCase()
+      const index = memberName.search(searchTerm)
+      return index >= 0
+    })
+  }
   if (!channelMemberIds) {
     // it means the channel has no members
     getUnityInstance().UpdateChannelMembers(channelMembers)
@@ -1835,11 +1842,20 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     })
   }
 
+  const ownId = client.getUserId()
   // those profiles that are not in the store are prepared without any data but avatar url and name
-  const missingUsersIds = channelMemberIds.filter((id) => !isAddedToCatalog(store.getState(), getUserIdFromMatrix(id)))
-  const missingProfilesForRenderer = getMissingProfiles(client, request.channelId, missingUsersIds, fetchContentServer)
-
-  getUnityInstance().AddUserProfilesToCatalog({ users: missingProfilesForRenderer })
+  const missingUsersIds = channelMemberIds.filter(
+    (id) => id !== ownId && !isAddedToCatalog(store.getState(), getUserIdFromMatrix(id))
+  )
+  if (missingUsersIds.length > 0) {
+    const missingProfilesForRenderer = getMissingProfiles(
+      client,
+      request.channelId,
+      missingUsersIds,
+      fetchContentServer
+    )
+    getUnityInstance().AddUserProfilesToCatalog({ users: missingProfilesForRenderer })
+  }
   getUnityInstance().UpdateChannelMembers(channelMembers)
 }
 
