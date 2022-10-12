@@ -31,3 +31,8 @@ export type JoinOrCreateChannel = ReturnType<typeof joinOrCreateChannel>
 export const LEAVE_CHANNEL = 'Leave channel'
 export const leaveChannel = (channelId: string) => action(LEAVE_CHANNEL, { channelId })
 export type LeaveChannel = ReturnType<typeof leaveChannel>
+
+export const SEND_CHANNEL_MESSAGE = '[Request] Send channel message'
+export const sendChannelMessage = (channelId: string, message: string) =>
+  action(SEND_CHANNEL_MESSAGE, { channelId, message })
+export type SendChannelMessage = ReturnType<typeof sendChannelMessage>
