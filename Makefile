@@ -188,12 +188,10 @@ packages/shared/protocol/kernel/sdk-apis.gen.ts: node_modules/@dcl/protocol/publ
     "$(PWD)/node_modules/@dcl/protocol/public/sdk-apis.proto";
 
 packages/shared/protocol/renderer-protocol/%.gen.ts: node_modules/@dcl/protocol/proto/decentraland/renderer/%.proto
-	mkdir -p "$(PWD)/packages/shared/protocol/renderer-protocol"
 	${PROTOC} ${PROTOC_ARGS} \
     "$(PWD)/node_modules/@dcl/protocol/proto/decentraland/renderer/$*.proto";
 
 packages/shared/protocol/bff-services.gen.ts: node_modules/@dcl/protocol/public/bff-services.proto
-	mkdir -p "$(PWD)/packages/shared/protocol/bff"
 	${PROTOC} ${PROTOC_ARGS} \
     -I="$(PWD)/node_modules/protobufjs" \
     "$(PWD)/node_modules/@dcl/protocol/public/bff-services.proto"
