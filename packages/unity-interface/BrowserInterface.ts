@@ -532,10 +532,6 @@ export class BrowserInterface {
     store.dispatch(saveProfileDelta({ tutorialStep: data.tutorialStep }))
   }
 
-  public SetOutputAudioDevice(data: { deviceId: string }) {
-    store.dispatch(setAudioDevice({ outputDeviceId: data.deviceId }))
-  }
-
   public SetInputAudioDevice(data: { deviceId: string }) {
     store.dispatch(setAudioDevice({ inputDeviceId: data.deviceId }))
   }
