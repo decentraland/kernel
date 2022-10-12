@@ -55,7 +55,7 @@ import { trackEvent } from 'shared/analytics'
 import { authorizeBuilderHeaders } from 'atomicHelpers/authenticateBuilder'
 import { IBff } from 'shared/bff/types'
 import { getFetchContentServerFromBff, getFetchContentUrlPrefixFromBff, waitForBff } from 'shared/bff/selectors'
-import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
+import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
@@ -287,8 +287,7 @@ async function fetchItemsByIdFromBuilder(
 
       if (!itemResponse.ok) {
         const err = new Error('Cannot load items from Builder')
-        ReportFatalError(err, ErrorContext.KERNEL_SAGA)
-        BringDownClientAndShowError(err.toString() as any)
+        BringDownClientAndReportFatalError(err, ErrorContext.KERNEL_SAGA)
         throw err
       }
 

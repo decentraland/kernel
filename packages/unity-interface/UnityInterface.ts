@@ -1,5 +1,5 @@
 import { Vector3 } from '@dcl/ecs-math'
-import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, EDITOR } from 'config'
+import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL } from 'config'
 import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance } from './IUnityInterface'
