@@ -93,7 +93,7 @@ function prepareAvatar(avatar?: Partial<AvatarInfo>) {
 }
 
 // Ensure all snapshots are URLs
-export function prepareSnapshots({ face256, body }: Snapshots): NewProfileForRenderer['snapshots'] {
+function prepareSnapshots({ face256, body }: Snapshots): NewProfileForRenderer['snapshots'] {
   // TODO: move this logic to unity-renderer
   function prepare(value: string) {
     if (value === null || value === undefined) {
