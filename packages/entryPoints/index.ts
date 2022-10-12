@@ -274,32 +274,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   return true
 }
 
-// workerStatusObservable.add((action) => {
-//   let status: SceneLifeCycleStatusType = 'failed'
-
-//   switch (action.type) {
-//     case SCENE_FAIL: {
-//       status = 'failed'
-//       break
-//     }
-//     case SCENE_LOAD: {
-//       status = 'loaded'
-//       break
-//     }
-//     case SCENE_START: {
-//       status = 'ready'
-//       break
-//     }
-//   }
-
-//   const sceneStatus: SceneLifeCycleStatusReport = {
-//     sceneId: action.payload.id,
-//     status
-//   }
-
-//   lifecycleManager.notify('Scene.status', sceneStatus)
-// })
-
 export async function startPreview(unityInterface: IUnityInterface) {
   getPreviewSceneId()
     .then((sceneData) => {
