@@ -228,8 +228,8 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
 
 function* setAudioDevices(action: SetAudioDevice) {
   if (!audioRequestInitialized && action.payload.devices.inputDeviceId) {
-      const media = yield call(requestMediaDevice, action.payload.devices.inputDeviceId)
-      yield put(setVoiceChatMedia(media))
+    const media = yield call(requestMediaDevice, action.payload.devices.inputDeviceId)
+    yield put(setVoiceChatMedia(media))
   }
 }
 

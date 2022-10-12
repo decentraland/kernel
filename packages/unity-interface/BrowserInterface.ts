@@ -34,7 +34,8 @@ import {
   GetJoinedChannelsPayload,
   LeaveChannelPayload,
   MuteChannelPayload,
-  GetChannelInfoPayload, SetAudioDevicesPayload
+  GetChannelInfoPayload,
+  SetAudioDevicesPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -105,7 +106,7 @@ import {
   searchChannels
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
-import {requestMediaDevice} from "../shared/voiceChat/sagas";
+import { requestMediaDevice } from '../shared/voiceChat/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -599,8 +600,7 @@ export class BrowserInterface {
     store.dispatch(setHomeScene(data.sceneId))
   }
 
-  public async RequestAudioDevices()
-  {
+  public async RequestAudioDevices() {
     if (!navigator.mediaDevices?.enumerateDevices) {
       defaultLogger.error('enumerateDevices() not supported.')
     } else {
