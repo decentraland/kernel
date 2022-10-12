@@ -1817,17 +1817,15 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   }
 
   // list of users with matrix IDs
-  const channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
+  const channelMemberIds = channel.userIds
+    ?.filter((userId) => userId.search(request.userName) >= 0)
+    .slice(request.skip, request.skip + request.limit)
   if (!channelMemberIds) {
     // it means the channel has no members
     getUnityInstance().UpdateChannelMembers(channelMembers)
     return
   }
   const userStatuses = client.getUserStatuses(...(channelMemberIds ?? []))
-
-  // get the local part of the userId
-  const membersIds = channelMemberIds.map((id) => getUserIdFromMatrix(id))
-  const profilesFromStore = getProfilesFromStore(store.getState(), membersIds, request.userName)
 
   for (const member of channelMemberIds) {
     const userId = getUserIdFromMatrix(member)
@@ -1837,20 +1835,11 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     })
   }
 
-  const profilesForRenderer = profilesFromStore.map((profile) =>
-    profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServer
-    })
-  )
-
   // those profiles that are not in the store are prepared without any data but avatar url and name
-  const storedIds = profilesFromStore.map((profile) => profile.data.userId)
-  const missingUsersIds = channelMemberIds.filter((id) => !storedIds.includes(getUserIdFromMatrix(id)))
+  const missingUsersIds = channelMemberIds.filter((id) => !isAddedToCatalog(store.getState(), getUserIdFromMatrix(id)))
   const missingProfilesForRenderer = getMissingProfiles(client, request.channelId, missingUsersIds, fetchContentServer)
 
-  getUnityInstance().AddUserProfilesToCatalog({ users: [...profilesForRenderer, ...missingProfilesForRenderer] })
-  store.dispatch(addedProfilesToCatalog(profilesFromStore.map((profile) => profile.data)))
-
+  getUnityInstance().AddUserProfilesToCatalog({ users: missingProfilesForRenderer })
   getUnityInstance().UpdateChannelMembers(channelMembers)
 }
 
