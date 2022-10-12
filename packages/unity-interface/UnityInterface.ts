@@ -116,7 +116,6 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public SetAudioDevices(devices: SetAudioDevicesPayload) {
-    console.log(`DEBUG(Mateo):${JSON.stringify(devices)}`)
     this.SendMessageToUnity('Bridges', 'SetAudioDevices', JSON.stringify(devices))
   }
 

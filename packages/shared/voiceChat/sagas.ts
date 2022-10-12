@@ -228,16 +228,9 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
 }
 
 function* setAudioDevices(action: SetAudioDevice) {
-  defaultLogger.log('AudioDevice = ' + action.payload.devices)
-  if (audioRequestInitialized) {
-    if (action.payload.devices.inputDeviceId) {
+  if (!audioRequestInitialized && action.payload.devices.inputDeviceId) {
       const media = yield call(requestMediaDevice, action.payload.devices.inputDeviceId)
       yield put(setVoiceChatMedia(media))
-    }
-
-    if (action.payload.devices.outputDeviceId) {
-      // TODO(Mateo): Find a function to set the output device!
-    }
   }
 }
 

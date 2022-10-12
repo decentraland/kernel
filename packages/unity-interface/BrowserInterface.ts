@@ -601,7 +601,6 @@ export class BrowserInterface {
 
   public async RequestAudioDevices()
   {
-    console.log("[TEST] Devices requested")
     if (!navigator.mediaDevices?.enumerateDevices) {
       defaultLogger.error('enumerateDevices() not supported.')
     } else {
@@ -610,7 +609,6 @@ export class BrowserInterface {
 
         // List cameras and microphones.
         const devices = await navigator.mediaDevices.enumerateDevices()
-        console.log(`DEBUG(Mateo) all devices:${JSON.stringify(devices)}`)
 
         const filterDevices = (kind: string) => {
           return devices
