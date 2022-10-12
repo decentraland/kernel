@@ -120,7 +120,15 @@ function* handleSendMessage(action: SendMessage) {
   } else {
     // If the message was not a command ("/cmdname"), then send message through wire
     const currentUserId = yield select(getCurrentUserId)
-    if (!currentUserId) throw new Error('cannotGetCurrentUser')
+    if (!currentUserId) {
+      defaultLogger.error('Could not get the current user id.')
+      trackEvent('error', {
+        message: 'error trying to get the current user id.',
+        context: 'kernel#chatSaga',
+        stack: 'handleSendMessage'
+      })
+      return
+    }
     if (isChannel) {
       entry = {
         messageType: ChatMessageType.PUBLIC,
@@ -130,7 +138,7 @@ function* handleSendMessage(action: SendMessage) {
         body: message,
         timestamp: Date.now()
       }
-      store.dispatch(sendChannelMessage(recipient, message))
+      yield put(sendChannelMessage(recipient, message))
     } else {
       entry = {
         messageType: ChatMessageType.PUBLIC,
@@ -139,7 +147,6 @@ function* handleSendMessage(action: SendMessage) {
         sender: currentUserId,
         body: message
       }
-
       sendPublicChatMessage(entry.messageId, entry.body)
     }
   }
