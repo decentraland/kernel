@@ -2,7 +2,6 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   EAType,
-  eATypeToJSON,
   EngineAPIServiceDefinition,
   EventData,
   ManyEntityAction,
@@ -66,7 +65,7 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       for (const action of req.actions) {
         if (action.payload) {
           actions.push({
-            type: eATypeToJSON(action.type) as EntityActionType,
+            type: eaTypeToStr(action.type),
             tag: action.tag,
             payload: getPayload(action.type, action.payload)
           })
@@ -95,4 +94,35 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       return {}
     }
   }))
+}
+function eaTypeToStr(type: EAType): EntityActionType {
+  switch (type) {
+    case EAType.EA_TYPE_OPEN_EXTERNAL_URL:
+      return 'OpenExternalUrl'
+    case EAType.EA_TYPE_OPEN_NFT_DIALOG:
+      return 'OpenNFTDialog'
+    case EAType.EA_TYPE_CREATE_ENTITY:
+      return 'CreateEntity'
+    case EAType.EA_TYPE_REMOVE_ENTITY:
+      return 'RemoveEntity'
+    case EAType.EA_TYPE_UPDATE_ENTITY_COMPONENT:
+      return 'UpdateEntityComponent'
+    case EAType.EA_TYPE_ATTACH_ENTITY_COMPONENT:
+      return 'AttachEntityComponent'
+    case EAType.EA_TYPE_COMPONENT_REMOVED:
+      return 'ComponentRemoved'
+    case EAType.EA_TYPE_SET_ENTITY_PARENT:
+      return 'SetEntityParent'
+    case EAType.EA_TYPE_QUERY:
+      return 'Query'
+    case EAType.EA_TYPE_COMPONENT_CREATED:
+      return 'ComponentCreated'
+    case EAType.EA_TYPE_COMPONENT_DISPOSED:
+      return 'ComponentDisposed'
+    case EAType.EA_TYPE_COMPONENT_UPDATED:
+      return 'ComponentUpdated'
+    case EAType.EA_TYPE_INIT_MESSAGES_FINISHED:
+      return 'InitMessagesFinished'
+  }
+  return 'unknown' as EntityActionType
 }

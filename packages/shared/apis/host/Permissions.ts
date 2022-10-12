@@ -39,7 +39,7 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
 
     if (sceneJsonData && sceneJsonData.requiredPermissions) {
       for (const permissionItemString of sceneJsonData.requiredPermissions) {
-        const permissionItem = permissionItemFromJSON(permissionItemString)
+        const permissionItem = permissionItemFromJSON(`PERMISSION_ITEM_${permissionItemString}`)
         if (permissionItem !== PermissionItem.UNRECOGNIZED) {
           list.push(permissionItem)
         }
