@@ -55,25 +55,25 @@ import { incrementCounter } from '../shared/occurences'
 
 const MINIMAP_CHUNK_SIZE = 100
 
+export const originalPixelRatio: number = devicePixelRatio
+devicePixelRatio = 1
+
 const unityLogger: ILogger = createUnityLogger()
 
 export class UnityInterface implements IUnityInterface {
   public logger = unityLogger
   public gameInstance!: UnityGame
   public Module: any
-  public currentHeight: number = -1
   public crashPayloadResponseObservable: Observable<string> = new Observable<string>()
 
   public SetTargetHeight(height: number): void {
-    if (EDITOR) {
-      return
+    // above 2000 is assumed "Match display", below that it is "Normal"
+    // as defined in https://rfc.decentraland.org/adr/ADR-83
+    if (height >= 2000) {
+      devicePixelRatio = originalPixelRatio
+    } else {
+      devicePixelRatio = 1
     }
-
-    if (this.currentHeight === height) {
-      return
-    }
-
-    this.currentHeight = height
   }
 
   public Init(gameInstance: UnityGame): void {

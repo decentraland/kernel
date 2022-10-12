@@ -56,6 +56,30 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
 
   const { originalUnity, engineStartedFuture } = await createWebRenderer(canvas)
 
+  const ctx: WebGL2RenderingContext = (originalUnity.Module as any).ctx
+
+  const debug_ext = ctx.getExtension('WEBGL_debug_renderer_info')
+  if (debug_ext) {
+    const renderer = ctx.getParameter(debug_ext.UNMASKED_RENDERER_WEBGL)
+    if (renderer.indexOf('SwiftShader') >= 0) {
+      throw new Error(
+        'Your browser is using an emulated software renderer (SwiftShader). This prevents Decentraland from working. This is usually fixed by restarting the computer. In any case, we recommend you to use the Desktop Client instead for a better overall experience. You can find it in https://decentraland.org/download'
+      )
+    }
+  }
+
+  canvas.addEventListener(
+    'webglcontextlost',
+    function (event) {
+      event.preventDefault()
+      BringDownClientAndShowError(
+        'The rendering engine failed. This is an unrecoverable error that is subject to the available memory and resources of your browser.\n' +
+          'For a better experience, we recommend using the Native Desktop Client. You can find it in https://decentraland.org/download'
+      )
+    },
+    false
+  )
+
   // TODO: move to unity-renderer js project
   originalUnity.Module.errorHandler = (message: string, filename: string, lineno: number) => {
     console['error'](message, filename, lineno)

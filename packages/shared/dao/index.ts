@@ -50,43 +50,36 @@ export async function fetchCatalystStatus(
 
   const aboutResponse = await ask(`${domain}/about`)
 
-  const result = aboutResponse.result
-  if (
-    aboutResponse.status === ServerConnectionStatus.OK &&
-    result &&
-    result.comms &&
-    result.configurations &&
-    result.bff
-  ) {
-    const { comms, configurations, bff } = result
+  if (aboutResponse.httpStatus !== 404) {
+    const result = aboutResponse.result
+    if (
+      aboutResponse.status === ServerConnectionStatus.OK &&
+      result &&
+      result.comms &&
+      result.configurations &&
+      result.bff
+    ) {
+      const { comms, configurations, bff } = result
 
-    // TODO(hugo): this is kind of hacky, the original representation is much better,
-    // but I don't want to change the whole pick-realm algorithm now
-    const usersParcels: Parcel[] = []
+      // TODO(hugo): this is kind of hacky, the original representation is much better,
+      // but I don't want to change the whole pick-realm algorithm now
+      const usersParcels: Parcel[] = []
 
-    // if (parcelsResponse.result && parcelsResponse.result.parcels) {
-    //   for (const {
-    //     peersCount,
-    //     parcel: { x, y }
-    //   } of parcelsResponse.result.parcels) {
-    //     const parcel: Parcel = [x, y]
-    //     for (let i = 0; i < peersCount; i++) {
-    //       usersParcels.push(parcel)
-    //     }
-    //   }
-    // }
-
-    return {
-      protocol: comms.protocol,
-      catalystName: configurations.realmName,
-      domain: domain,
-      status: aboutResponse.status,
-      elapsed: aboutResponse.elapsed!,
-      usersCount: bff.userCount ?? comms.usersCount ?? 0,
-      maxUsers: 2000,
-      usersParcels
+      return {
+        protocol: comms.protocol,
+        catalystName: configurations.realmName,
+        domain: domain,
+        status: aboutResponse.status,
+        elapsed: aboutResponse.elapsed!,
+        usersCount: bff.userCount || comms.usersCount || 0,
+        maxUsers: 2000,
+        usersParcels
+      }
     }
+
+    return undefined
   }
+
 
   return undefined
 }

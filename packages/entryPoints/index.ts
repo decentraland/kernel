@@ -3,7 +3,7 @@ declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 import { sdk } from '@dcl/schemas'
 import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
-import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
+import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { gridToWorld, parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
@@ -130,8 +130,7 @@ globalThis.DecentralandKernel = {
     setTimeout(
       () =>
         initInternal().catch((err) => {
-          ReportFatalError(err, ErrorContext.WEBSITE_INIT)
-          BringDownClientAndShowError(err.toString())
+          BringDownClientAndReportFatalError(err, ErrorContext.WEBSITE_INIT)
         }),
       0
     )
@@ -233,7 +232,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   const profile = getCurrentUserProfile(store.getState())!
 
   if (!profile) {
-    ReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
+    BringDownClientAndReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
     return
   }
 

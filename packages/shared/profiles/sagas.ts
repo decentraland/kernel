@@ -37,8 +37,7 @@ import { fetchOwnedENS } from 'shared/web3'
 import { waitForRealmInitialized } from 'shared/dao/sagas'
 import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
-import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
-import { UNEXPECTED_ERROR } from 'shared/loading/types'
+import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { createFakeName } from './utils/fakeName'
 import { getCommsRoom } from 'shared/comms/selectors'
 import { createReceiveProfileOverCommsChannel, requestProfileToPeers } from 'shared/comms/handlers'
@@ -100,8 +99,7 @@ function* initialRemoteProfileLoad() {
   try {
     profile = yield call(ProfileAsPromise, userId, undefined, isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED)
   } catch (e: any) {
-    ReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
-    BringDownClientAndShowError(UNEXPECTED_ERROR)
+    BringDownClientAndReportFatalError(e, ErrorContext.KERNEL_INIT, { userId })
     throw e
   }
 
