@@ -390,7 +390,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
   client.onChannelMembership((conversation, membership) => {
     switch (membership) {
       case 'join':
-        if (conversation.name === 'Empty room' || !conversation.name) {
+        if (!conversation.name || conversation.name?.startsWith('Empty room')) {
           break
         }
 
@@ -1384,10 +1384,14 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     }
 
     // get or create channel
-    const { created, conversation } = yield apply(client, client.getOrCreateChannel, [channelId, []])
+    const { created, conversation }: { created: boolean; conversation: Conversation } = yield apply(
+      client,
+      client.getOrCreateChannel,
+      [channelId, []]
+    )
 
     const channel: ChannelInfoPayload = {
-      name: action.payload.channelId,
+      name: conversation.name ?? action.payload.channelId,
       channelId: conversation.id,
       unseenMessages: 0,
       lastMessageTimestamp: undefined,
@@ -1458,7 +1462,7 @@ export async function createChannel(request: CreateChannelPayload) {
 
     // parse channel info
     const channel: ChannelInfoPayload = {
-      name: request.channelId,
+      name: conversation.name ?? request.channelId,
       channelId: conversation.id,
       unseenMessages: 0,
       lastMessageTimestamp: undefined,
@@ -1775,29 +1779,27 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 
-  // although it is not the current scenario, we want to be able to request information for several channels at the same time
-  const channelId = request.channelIds[0]
-
-  const channelInfo: Conversation | undefined = client.getChannel(channelId)
-
   // get notification settings
   const profile = getCurrentUserProfile(store.getState())
-  const muted = profile?.muted?.includes(channelId) ?? false
+  const channels: ChannelInfoPayload[] = []
 
-  if (channelInfo) {
-    const channel: ChannelInfoPayload = {
-      name: channelInfo.name || '',
-      channelId: channelInfo.id,
-      unseenMessages: muted ? 0 : channelInfo.unreadMessages?.length || 0,
-      lastMessageTimestamp: channelInfo.lastEventTimestamp || undefined,
-      memberCount: channelInfo.userIds?.length || 1,
+  for (const channelId of request.channelIds) {
+    const channel = client.getChannel(channelId)
+    if (!channel) continue
+
+    const muted = profile?.muted?.includes(channelId) ?? false
+    channels.push({
+      name: channel.name || '',
+      channelId: channel.id,
+      unseenMessages: muted ? 0 : channel.unreadMessages?.length || 0,
+      lastMessageTimestamp: channel.lastEventTimestamp || undefined,
+      memberCount: channel.userIds?.length || 0,
       description: '',
       joined: true,
       muted
-    }
-
-    getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
+    })
   }
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: channels })
 }
 
 // Get channel members
@@ -1815,17 +1817,22 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   }
 
   // list of users with matrix IDs
-  const channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
+  let channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
+  if (request.userName && request.userName !== '') {
+    channelMemberIds = channelMemberIds?.filter((userId) => {
+      const member = client.getMemberInfo(request.channelId, userId)
+      const memberName = member.displayName?.toLocaleLowerCase() ?? ''
+      const searchTerm = request.userName.toLocaleLowerCase()
+      const index = memberName.search(searchTerm)
+      return index >= 0
+    })
+  }
   if (!channelMemberIds) {
     // it means the channel has no members
     getUnityInstance().UpdateChannelMembers(channelMembers)
     return
   }
   const userStatuses = client.getUserStatuses(...(channelMemberIds ?? []))
-
-  // get the local part of the userId
-  const membersIds = channelMemberIds.map((id) => getUserIdFromMatrix(id))
-  const profilesFromStore = getProfilesFromStore(store.getState(), membersIds, request.userName)
 
   for (const member of channelMemberIds) {
     const userId = getUserIdFromMatrix(member)
@@ -1835,20 +1842,20 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     })
   }
 
-  const profilesForRenderer = profilesFromStore.map((profile) =>
-    profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServer
-    })
-  )
-
+  const ownId = client.getUserId()
   // those profiles that are not in the store are prepared without any data but avatar url and name
-  const storedIds = profilesFromStore.map((profile) => profile.data.userId)
-  const missingUsersIds = channelMemberIds.filter((id) => !storedIds.includes(getUserIdFromMatrix(id)))
-  const missingProfilesForRenderer = getMissingProfiles(client, request.channelId, missingUsersIds, fetchContentServer)
-
-  getUnityInstance().AddUserProfilesToCatalog({ users: [...profilesForRenderer, ...missingProfilesForRenderer] })
-  store.dispatch(addedProfilesToCatalog(profilesFromStore.map((profile) => profile.data)))
-
+  const missingUsersIds = channelMemberIds.filter(
+    (id) => id !== ownId && !isAddedToCatalog(store.getState(), getUserIdFromMatrix(id))
+  )
+  if (missingUsersIds.length > 0) {
+    const missingProfilesForRenderer = getMissingProfiles(
+      client,
+      request.channelId,
+      missingUsersIds,
+      fetchContentServer
+    )
+    getUnityInstance().AddUserProfilesToCatalog({ users: missingProfilesForRenderer })
+  }
   getUnityInstance().UpdateChannelMembers(channelMembers)
 }
 
