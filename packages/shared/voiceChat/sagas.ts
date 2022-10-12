@@ -55,7 +55,6 @@ import { realmToConnectionString } from 'shared/comms/v3/resolver'
 import { getLiveKitVoiceChat } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
-import defaultLogger from 'shared/logger'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 let audioRequestInitialized = false
