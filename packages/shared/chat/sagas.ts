@@ -31,7 +31,7 @@ import { store } from 'shared/store/isolatedStore'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { SocialAPI } from 'dcl-social-client'
-import { joinOrCreateChannel, leaveChannel } from 'shared/friends/actions'
+import { joinOrCreateChannel, leaveChannel, sendChannelMessage } from 'shared/friends/actions'
 
 interface IChatCommand {
   name: string
@@ -92,10 +92,12 @@ function* handleReceivedMessage(action: MessageReceived) {
 }
 
 function* handleSendMessage(action: SendMessage) {
-  const { body: message } = action.payload
+  const { body: message, messageType, recipient } = action.payload
 
   let entry: ChatMessage | null = null
 
+  // When there is a recipient, it means is a message sent to a channel
+  const isChannel = messageType === ChatMessageType.PUBLIC && recipient
   // Check if message is a command
   if (message[0] === '/') {
     entry = handleChatCommand(message)
@@ -118,14 +120,33 @@ function* handleSendMessage(action: SendMessage) {
   } else {
     // If the message was not a command ("/cmdname"), then send message through wire
     const currentUserId = yield select(getCurrentUserId)
-    if (!currentUserId) throw new Error('cannotGetCurrentUser')
-
-    entry = {
-      messageType: ChatMessageType.PUBLIC,
-      messageId: uuid(),
-      timestamp: Date.now(),
-      sender: currentUserId,
-      body: message
+    if (!currentUserId) {
+      defaultLogger.error('Could not get the current user id.')
+      trackEvent('error', {
+        message: 'error trying to get the current user id.',
+        context: 'kernel#chatSaga',
+        stack: 'handleSendMessage'
+      })
+      return
+    }
+    if (isChannel) {
+      entry = {
+        messageType: ChatMessageType.PUBLIC,
+        messageId: uuid(),
+        sender: currentUserId,
+        recipient,
+        body: message,
+        timestamp: Date.now()
+      }
+      yield put(sendChannelMessage(recipient, message))
+    } else {
+      entry = {
+        messageType: ChatMessageType.PUBLIC,
+        messageId: uuid(),
+        timestamp: Date.now(),
+        sender: currentUserId,
+        body: message
+      }
     }
 
     sendPublicChatMessage(message)
@@ -473,10 +494,8 @@ function initChatCommands() {
       }
     }
 
-    const ownId = client.getUserId()
-
     // Join or create channel
-    store.dispatch(joinOrCreateChannel(channelId, [ownId]))
+    store.dispatch(joinOrCreateChannel(channelId, []))
 
     return {
       messageId: uuid(),

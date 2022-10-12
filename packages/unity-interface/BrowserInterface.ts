@@ -33,7 +33,9 @@ import {
   GetJoinedChannelsPayload,
   LeaveChannelPayload,
   MuteChannelPayload,
-  GetChannelInfoPayload
+  GetChannelInfoPayload,
+  JoinOrCreateChannelPayload,
+  GetChannelMembersPayload
 } from 'shared/types'
 import { getSceneWorkerBySceneID, allScenesEvent, AllScenesEvents } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
@@ -94,7 +96,9 @@ import {
   markAsSeenChannelMessages,
   muteChannel,
   getChannelInfo,
-  searchChannels
+  searchChannels,
+  joinChannel,
+  getChannelMembers
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
@@ -680,6 +684,18 @@ export class BrowserInterface {
     })
   }
 
+  public JoinOrCreateChannel(joinOrCreateChannelPayload: JoinOrCreateChannelPayload) {
+    if (!areChannelsEnabled()) return
+    joinChannel(joinOrCreateChannelPayload).catch((err) => {
+      defaultLogger.error('error joinOrCreateChannel', err),
+        trackEvent('error', {
+          message: `error joining channel ${joinOrCreateChannelPayload.channelId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'joinOrCreateChannel'
+        })
+    })
+  }
+
   public MarkChannelMessagesAsSeen(markChannelMessagesAsSeenPayload: MarkChannelMessagesAsSeenPayload) {
     if (!areChannelsEnabled()) return
     if (markChannelMessagesAsSeenPayload.channelId === 'nearby') return
@@ -718,6 +734,11 @@ export class BrowserInterface {
     })
   }
 
+  public GetChannelMembers(getChannelMembersPayload: GetChannelMembersPayload) {
+    if (!areChannelsEnabled()) return
+    getChannelMembers(getChannelMembersPayload)
+  }
+
   public GetUnseenMessagesByChannel() {
     if (!areChannelsEnabled()) return
     getUnseenMessagesByChannel()
@@ -730,7 +751,7 @@ export class BrowserInterface {
 
   public LeaveChannel(leaveChannelPayload: LeaveChannelPayload) {
     if (!areChannelsEnabled()) return
-    leaveChannel(leaveChannelPayload.channelId)
+    store.dispatch(leaveChannel(leaveChannelPayload.channelId))
   }
 
   public MuteChannel(muteChannelPayload: MuteChannelPayload) {

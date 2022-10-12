@@ -1,8 +1,9 @@
 import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
-import { DEFAULT_MAX_VISIBLE_PEERS, DEFAULT_MAX_CHANNELS_VALUE } from '.'
-import { PIN_CATALYST, QS_MAX_VISIBLE_PEERS } from 'config'
+import { PIN_CATALYST } from 'config'
 import { urlWithProtocol } from 'shared/bff/resolver'
+import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
+import { QS_MAX_VISIBLE_PEERS } from 'config'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
   const { config } = store.meta
@@ -54,10 +55,6 @@ export function getMaxVisiblePeers(store: RootMetaState): number {
     +(getFeatureFlagVariantValue(store, 'max_visible_peers') as string) ||
     DEFAULT_MAX_VISIBLE_PEERS
   )
-}
-
-export function getMaxChannels(store: RootMetaState): number {
-  return (getFeatureFlagVariantValue(store, 'max_joined_channels') as number) ?? DEFAULT_MAX_CHANNELS_VALUE
 }
 
 /**
