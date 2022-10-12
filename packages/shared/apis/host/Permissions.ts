@@ -10,9 +10,9 @@ import {
 import { PortContext } from './context'
 
 export const defaultParcelPermissions: PermissionItem[] = [
-  PermissionItem.PERMISSION_ITEM_USE_WEB3_API,
-  PermissionItem.PERMISSION_ITEM_USE_FETCH,
-  PermissionItem.PERMISSION_ITEM_USE_WEBSOCKET
+  PermissionItem.PI_USE_WEB3_API,
+  PermissionItem.PI_USE_FETCH,
+  PermissionItem.PI_USE_WEBSOCKET
 ]
 export const defaultPortableExperiencePermissions: PermissionItem[] = []
 
@@ -30,8 +30,8 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
   //  interaction
 
   const isOneOfFirstPermissions =
-    test === PermissionItem.PERMISSION_ITEM_ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
-    test === PermissionItem.PERMISSION_ITEM_ALLOW_TO_TRIGGER_AVATAR_EMOTE
+    test === PermissionItem.PI_ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE ||
+    test === PermissionItem.PI_ALLOW_TO_TRIGGER_AVATAR_EMOTE
 
   if (ctx.sceneData.entity?.metadata) {
     const sceneJsonData: Scene = ctx.sceneData.entity.metadata
@@ -39,7 +39,7 @@ export function hasPermission(test: PermissionItem, ctx: PortContext) {
 
     if (sceneJsonData && sceneJsonData.requiredPermissions) {
       for (const permissionItemString of sceneJsonData.requiredPermissions) {
-        const permissionItem = permissionItemFromJSON(`PERMISSION_ITEM_${permissionItemString}`)
+        const permissionItem = permissionItemFromJSON(`PI_${permissionItemString}`)
         if (permissionItem !== PermissionItem.UNRECOGNIZED) {
           list.push(permissionItem)
         }

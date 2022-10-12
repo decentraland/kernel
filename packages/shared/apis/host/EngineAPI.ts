@@ -14,43 +14,43 @@ import { EntityAction, EntityActionType } from 'shared/types'
 
 function getPayload(payloadType: EAType, payload: Payload): any {
   switch (payloadType) {
-    case EAType.EA_TYPE_OPEN_EXTERNAL_URL: {
+    case EAType.EAT_OPEN_EXTERNAL_URL: {
       return payload.openExternalUrl?.url
     }
-    case EAType.EA_TYPE_OPEN_NFT_DIALOG: {
+    case EAType.EAT_OPEN_NFT_DIALOG: {
       return payload.openNftDialog
     }
-    case EAType.EA_TYPE_CREATE_ENTITY: {
+    case EAType.EAT_CREATE_ENTITY: {
       return payload.createEntity
     }
-    case EAType.EA_TYPE_REMOVE_ENTITY: {
+    case EAType.EAT_REMOVE_ENTITY: {
       return payload.removeEntity
     }
-    case EAType.EA_TYPE_UPDATE_ENTITY_COMPONENT: {
+    case EAType.EAT_UPDATE_ENTITY_COMPONENT: {
       return payload.updateEntityComponent
     }
-    case EAType.EA_TYPE_ATTACH_ENTITY_COMPONENT: {
+    case EAType.EAT_ATTACH_ENTITY_COMPONENT: {
       return payload.attachEntityComponent
     }
-    case EAType.EA_TYPE_COMPONENT_REMOVED: {
+    case EAType.EAT_COMPONENT_REMOVED: {
       return payload.componentRemoved
     }
-    case EAType.EA_TYPE_SET_ENTITY_PARENT: {
+    case EAType.EAT_SET_ENTITY_PARENT: {
       return payload.setEntityParent
     }
-    case EAType.EA_TYPE_QUERY: {
+    case EAType.EAT_QUERY: {
       return { queryId: queryTypeToJSON(payload.query!.queryId), payload: JSON.parse(payload.query!.payload) }
     }
-    case EAType.EA_TYPE_COMPONENT_CREATED: {
+    case EAType.EAT_COMPONENT_CREATED: {
       return payload.componentCreated
     }
-    case EAType.EA_TYPE_COMPONENT_DISPOSED: {
+    case EAType.EAT_COMPONENT_DISPOSED: {
       return payload.componentDisposed
     }
-    case EAType.EA_TYPE_COMPONENT_UPDATED: {
+    case EAType.EAT_COMPONENT_UPDATED: {
       return payload.componentUpdated
     }
-    case EAType.EA_TYPE_INIT_MESSAGES_FINISHED: {
+    case EAType.EAT_INIT_MESSAGES_FINISHED: {
       return payload.initMessagesFinished
     }
   }
@@ -97,31 +97,31 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
 }
 function eaTypeToStr(type: EAType): EntityActionType {
   switch (type) {
-    case EAType.EA_TYPE_OPEN_EXTERNAL_URL:
+    case EAType.EAT_OPEN_EXTERNAL_URL:
       return 'OpenExternalUrl'
-    case EAType.EA_TYPE_OPEN_NFT_DIALOG:
+    case EAType.EAT_OPEN_NFT_DIALOG:
       return 'OpenNFTDialog'
-    case EAType.EA_TYPE_CREATE_ENTITY:
+    case EAType.EAT_CREATE_ENTITY:
       return 'CreateEntity'
-    case EAType.EA_TYPE_REMOVE_ENTITY:
+    case EAType.EAT_REMOVE_ENTITY:
       return 'RemoveEntity'
-    case EAType.EA_TYPE_UPDATE_ENTITY_COMPONENT:
+    case EAType.EAT_UPDATE_ENTITY_COMPONENT:
       return 'UpdateEntityComponent'
-    case EAType.EA_TYPE_ATTACH_ENTITY_COMPONENT:
+    case EAType.EAT_ATTACH_ENTITY_COMPONENT:
       return 'AttachEntityComponent'
-    case EAType.EA_TYPE_COMPONENT_REMOVED:
+    case EAType.EAT_COMPONENT_REMOVED:
       return 'ComponentRemoved'
-    case EAType.EA_TYPE_SET_ENTITY_PARENT:
+    case EAType.EAT_SET_ENTITY_PARENT:
       return 'SetEntityParent'
-    case EAType.EA_TYPE_QUERY:
+    case EAType.EAT_QUERY:
       return 'Query'
-    case EAType.EA_TYPE_COMPONENT_CREATED:
+    case EAType.EAT_COMPONENT_CREATED:
       return 'ComponentCreated'
-    case EAType.EA_TYPE_COMPONENT_DISPOSED:
+    case EAType.EAT_COMPONENT_DISPOSED:
       return 'ComponentDisposed'
-    case EAType.EA_TYPE_COMPONENT_UPDATED:
+    case EAType.EAT_COMPONENT_UPDATED:
       return 'ComponentUpdated'
-    case EAType.EA_TYPE_INIT_MESSAGES_FINISHED:
+    case EAType.EAT_INIT_MESSAGES_FINISHED:
       return 'InitMessagesFinished'
   }
   return 'unknown' as EntityActionType

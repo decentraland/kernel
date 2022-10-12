@@ -25,7 +25,7 @@ export async function startSceneRuntime(client: RpcClient) {
 
   const [canUseWebsocket, canUseFetch] = (
     await Permissions.hasManyPermissions({
-      permissions: [PermissionItem.PERMISSION_ITEM_USE_WEBSOCKET, PermissionItem.PERMISSION_ITEM_USE_FETCH]
+      permissions: [PermissionItem.PI_USE_WEBSOCKET, PermissionItem.PI_USE_FETCH]
     })
   ).hasManyPermission
 

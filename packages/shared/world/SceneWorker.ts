@@ -125,7 +125,7 @@ export class SceneWorker {
       sendSceneEvent: (type, data) => {
         if (this.rpcContext.subscribedEvents.has(type)) {
           this.rpcContext.events.push({
-            type: EventDataType.EVENT_DATA_TYPE_GENERIC,
+            type: EventDataType.EDT_GENERIC,
             generic: {
               eventId: type,
               eventData: JSON.stringify(data)
@@ -305,7 +305,7 @@ export class SceneWorker {
     if (this.rpcContext.subscribedEvents.has('positionChanged')) {
       if (!this.lastSentPosition.equals(positionReport.position)) {
         this.rpcContext.sendProtoSceneEvent({
-          type: EventDataType.EVENT_DATA_TYPE_POSITION_CHANGED,
+          type: EventDataType.EDT_POSITION_CHANGED,
           positionChanged: {
             position: {
               x: positionReport.position.x - this.position.x,
@@ -323,7 +323,7 @@ export class SceneWorker {
     if (this.rpcContext.subscribedEvents.has('rotationChanged')) {
       if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
         this.rpcContext.sendProtoSceneEvent({
-          type: EventDataType.EVENT_DATA_TYPE_ROTATION_CHANGED,
+          type: EventDataType.EDT_ROTATION_CHANGED,
           rotationChanged: {
             rotation: positionReport.cameraEuler,
             quaternion: positionReport.cameraQuaternion

@@ -144,7 +144,7 @@ export function getIdAsNumber(id: string): number {
 
 export function initMessagesFinished() {
   return {
-    type: EAType.EA_TYPE_INIT_MESSAGES_FINISHED,
+    type: EAType.EAT_INIT_MESSAGES_FINISHED,
     tag: 'scene',
     payload: { initMessagesFinished: {} }
   }

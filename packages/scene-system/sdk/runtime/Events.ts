@@ -7,11 +7,11 @@ export type SceneRuntimeEventState = { allowOpenExternalUrl: boolean }
 
 export function EventDataToRuntimeEvent(e: EventData): RuntimeEvent {
   switch (e.type) {
-    case EventDataType.EVENT_DATA_TYPE_GENERIC:
+    case EventDataType.EDT_GENERIC:
       return { type: e.generic?.eventId || '', data: JSON.parse(e.generic!.eventData || '{}') }
-    case EventDataType.EVENT_DATA_TYPE_POSITION_CHANGED:
+    case EventDataType.EDT_POSITION_CHANGED:
       return { type: 'positionChanged', data: e.positionChanged }
-    case EventDataType.EVENT_DATA_TYPE_ROTATION_CHANGED:
+    case EventDataType.EDT_ROTATION_CHANGED:
       return { type: 'rotationChanged', data: e.rotationChanged }
   }
 
