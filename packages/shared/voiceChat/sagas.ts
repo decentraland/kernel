@@ -205,7 +205,7 @@ function* requestUserMedia() {
   const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
   if (voiceHandler) {
     if (!voiceHandler.hasInput()) {
-      const media = yield call(requestMediaDevice) // TODO(Mateo): use inputDevieId
+      const media = yield call(requestMediaDevice)
       yield put(setVoiceChatMedia(media))
     }
   }
