@@ -1,9 +1,40 @@
-import { Conversation } from 'dcl-social-client'
+import { Conversation, ConversationType } from 'dcl-social-client'
 import { UpdateTotalFriendRequestsPayload } from 'shared/types'
 import { RootFriendsState } from './types'
 import { getUserIdFromMatrix } from './utils'
 
 export const getSocialClient = (store: RootFriendsState) => store.friends.client
+
+export const getChannels = (
+  store: RootFriendsState
+): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
+  return getConversations(store, ConversationType.CHANNEL)
+}
+
+export const getDirectMessages = (
+  store: RootFriendsState
+): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
+  return getConversations(store, ConversationType.DIRECT)
+}
+
+export const getConversations = (
+  store: RootFriendsState,
+  conversationType: ConversationType
+): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
+  const client = getSocialClient(store)
+  if (!client) return []
+
+  const conversations = client.getAllCurrentConversations()
+  return conversations
+    .filter((conv) => conv.conversation.type === conversationType)
+    .map((conv) => ({
+      ...conv,
+      conversation: {
+        ...conv.conversation,
+        userIds: conv.conversation.userIds?.map((userId) => getUserIdFromMatrix(userId))
+      }
+    }))
+}
 
 export const getAllConversationsWithMessages = (
   store: RootFriendsState
