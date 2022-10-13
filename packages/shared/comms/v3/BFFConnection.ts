@@ -7,8 +7,8 @@ import { loadService, RpcClientModule } from '@dcl/rpc/dist/codegen'
 import {
   BffAuthenticationServiceDefinition,
   WelcomePeerInformation
-} from 'shared/protocol/bff/authentication-service.gen'
-import { CommsServiceDefinition } from 'shared/protocol/bff/comms-service.gen'
+} from 'shared/protocol/decentraland/bff/authentication_service.gen'
+import { CommsServiceDefinition } from 'shared/protocol/decentraland/bff/comms_service.gen'
 import { trackEvent } from 'shared/analytics'
 
 type CommsService = RpcClientModule<CommsServiceDefinition, any>

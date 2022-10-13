@@ -6,7 +6,7 @@ import {
   GetAvatarEventsResponse,
   SocialControllerServiceDefinition,
   SocialEvent
-} from 'shared/protocol/kernel/apis/SocialController.gen'
+} from 'shared/protocol/decentraland/kernel/apis/social_controller.gen'
 import { avatarMessageObservable } from 'shared/comms/peers'
 
 export function registerSocialControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {

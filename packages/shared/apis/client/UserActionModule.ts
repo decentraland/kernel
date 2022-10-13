@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { UserActionModuleServiceDefinition } from 'shared/protocol/kernel/apis/UserActionModule.gen'
+import { UserActionModuleServiceDefinition } from 'shared/protocol/decentraland/kernel/apis/user_action_module.gen'
 
 export namespace UserActionModuleServiceClient {
   export function create<Context>(clientPort: RpcClientPort) {

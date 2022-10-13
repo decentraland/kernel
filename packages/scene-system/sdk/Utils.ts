@@ -1,7 +1,7 @@
 import { Quaternion, Vector3 } from '@dcl/ecs-math'
 import type { CLASS_ID, Transform } from '@dcl/legacy-ecs/dist/decentraland/Components'
-import { EAType } from 'shared/protocol/kernel/apis/EngineAPI.gen'
-import { PBTransform } from 'shared/protocol/renderer-protocol/EngineInterface.gen'
+import { EAType } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
+import { PBTransform } from 'shared/protocol/decentraland/renderer/engine_interface.gen'
 
 const VECTOR3_MEMBER_CAP = 1000000 // Value measured when genesis plaza glitch triggered a physics engine breakdown
 const pbTransform = {
@@ -144,7 +144,7 @@ export function getIdAsNumber(id: string): number {
 
 export function initMessagesFinished() {
   return {
-    type: EAType.InitMessagesFinished,
+    type: EAType.EAT_INIT_MESSAGES_FINISHED,
     tag: 'scene',
     payload: { initMessagesFinished: {} }
   }
