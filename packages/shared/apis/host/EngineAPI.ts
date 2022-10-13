@@ -2,7 +2,7 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   EAType,
-  EngineAPIServiceDefinition,
+  EngineApiServiceDefinition,
   EventData,
   ManyEntityAction,
   Payload,
@@ -57,8 +57,8 @@ function getPayload(payloadType: EAType, payload: Payload): any {
   return {}
 }
 
-export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  codegen.registerService(port, EngineAPIServiceDefinition, async () => ({
+export function registerEngineApiServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, EngineApiServiceDefinition, async () => ({
     async sendBatch(req: ManyEntityAction, ctx) {
       const actions: EntityAction[] = []
 

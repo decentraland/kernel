@@ -16,9 +16,9 @@ export async function startSceneRuntime(client: RpcClient) {
   const workerName = self.name
   const clientPort = await client.createPort(`scene-${workerName}`)
 
-  const [EngineAPI, EnvironmentAPI, Permissions, DevTools] = await Promise.all([
-    LoadableAPIs.EngineAPI(clientPort),
-    LoadableAPIs.EnvironmentAPI(clientPort),
+  const [EngineApi, EnvironmentApi, Permissions, DevTools] = await Promise.all([
+    LoadableAPIs.EngineApi(clientPort),
+    LoadableAPIs.EnvironmentApi(clientPort),
     LoadableAPIs.Permissions(clientPort),
     LoadableAPIs.DevTools(clientPort)
   ])
@@ -38,12 +38,12 @@ export async function startSceneRuntime(client: RpcClient) {
     events: []
   }
 
-  const bootstrapData = await EnvironmentAPI.getBootstrapData({})
+  const bootstrapData = await EnvironmentApi.getBootstrapData({})
   const fullData: Scene = JSON.parse(bootstrapData.entity?.metadataJson || '{}')
-  const isPreview = await EnvironmentAPI.isPreviewMode({})
-  const unsafeAllowed = await EnvironmentAPI.areUnsafeRequestAllowed({})
+  const isPreview = await EnvironmentApi.isPreviewMode({})
+  const unsafeAllowed = await EnvironmentApi.areUnsafeRequestAllowed({})
 
-  const explorerConfiguration = await EnvironmentAPI.getExplorerConfiguration({})
+  const explorerConfiguration = await EnvironmentApi.getExplorerConfiguration({})
 
   if (!fullData || !fullData.main) {
     throw new Error(`No boostrap data`)
@@ -53,7 +53,7 @@ export async function startSceneRuntime(client: RpcClient) {
   const mapping = bootstrapData.entity?.content.find(($) => $.file === mappingName)
 
   if (!mapping) {
-    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+    await EngineApi.sendBatch({ actions: [initMessagesFinished()] })
     throw new Error(`SDK: Error while loading scene. Main file missing.`)
   }
 
@@ -61,7 +61,7 @@ export async function startSceneRuntime(client: RpcClient) {
   const codeRequest = await fetch(url)
 
   if (!codeRequest.ok) {
-    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+    await EngineApi.sendBatch({ actions: [initMessagesFinished()] })
     throw new Error(
       `SDK: Error while loading ${url} (${mappingName} -> ${mapping?.file}:${mapping?.hash}) the mapping was not found`
     )
@@ -79,7 +79,7 @@ export async function startSceneRuntime(client: RpcClient) {
       batchEvents.events = []
     }
 
-    const res = await EngineAPI.sendBatch({ actions })
+    const res = await EngineApi.sendBatch({ actions })
     for (const e of res.events) {
       eventReceiver(EventDataToRuntimeEvent(e))
     }
@@ -153,7 +153,7 @@ export async function startSceneRuntime(client: RpcClient) {
       sceneId: bootstrapData.id,
       eventState,
       batchEvents,
-      EngineAPI,
+      EngineApi,
       onEventFunctions,
       onStartFunctions,
       onUpdateFunctions
@@ -177,7 +177,7 @@ export async function startSceneRuntime(client: RpcClient) {
     // run the code of the scene
     await customEval(sourceCode, runtimeExecutionContext)
   } catch (err) {
-    await EngineAPI.sendBatch({ actions: [initMessagesFinished()] })
+    await EngineApi.sendBatch({ actions: [initMessagesFinished()] })
 
     devToolsAdapter.error(new Error(`SceneRuntime: Error while evaluating the scene ${workerName}`))
 

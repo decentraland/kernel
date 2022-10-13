@@ -5,7 +5,7 @@ import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { RuntimeEventCallback } from './Events'
 import {
   EAType,
-  EngineAPIServiceDefinition,
+  EngineApiServiceDefinition,
   EntityAction,
   queryTypeFromJSON
 } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
@@ -22,7 +22,7 @@ export interface DecentralandInterfaceOptions {
   batchEvents: { events: EntityAction[] }
   onStartFunctions: (() => void)[]
   onUpdateFunctions: ((dt: number) => void)[]
-  EngineAPI: RpcClientModule<EngineAPIServiceDefinition>
+  EngineApi: RpcClientModule<EngineApiServiceDefinition>
 }
 
 type GenericRpcModule = Record<string, (...args: any) => Promise<unknown>>
@@ -206,12 +206,12 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     /** subscribe to specific events, events will be handled by the onEvent function */
     subscribe(eventName: string): void {
-      options.EngineAPI.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      options.EngineApi.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     /** unsubscribe to specific event */
     unsubscribe(eventName: string): void {
-      options.EngineAPI.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      options.EngineApi.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     componentCreated(id: string, componentName: string, classId: number) {

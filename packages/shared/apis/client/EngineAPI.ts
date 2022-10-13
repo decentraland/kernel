@@ -1,11 +1,11 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { EngineAPIServiceDefinition } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
+import { EngineApiServiceDefinition } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
 
-export function createEngineAPIServiceClient<Context>(clientPort: RpcClientPort) {
-  const originalService = codegen.loadService<Context, EngineAPIServiceDefinition>(
+export function createEngineApiServiceClient<Context>(clientPort: RpcClientPort) {
+  const originalService = codegen.loadService<Context, EngineApiServiceDefinition>(
     clientPort,
-    EngineAPIServiceDefinition
+    EngineApiServiceDefinition
   )
   return originalService
 }
