@@ -102,7 +102,7 @@ import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
-import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
+import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
@@ -114,7 +114,8 @@ import {
   getMatrixIdFromUser,
   areChannelsEnabled,
   getMaxChannels,
-  getNormalizedRoomName
+  getNormalizedRoomName,
+  getUsersAllowedToCreate
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -1383,6 +1384,9 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       return
     }
 
+    const isAllowed = isAllowedToCreate()
+    console.log(isAllowed)
+
     // get or create channel
     const { created, conversation }: { created: boolean; conversation: Conversation } = yield apply(
       client,
@@ -1879,4 +1883,23 @@ function buildMissingProfile(client: SocialAPI, roomId: string, userId: string, 
     face256: info.avatarUrl ?? '',
     baseUrl: fetchContentServer
   })
+}
+
+/**
+ * Check with a feature flag value if the user is allowed to create channels.
+ * @return `true` if the user is allowed | `false` if it is not.
+ */
+function isAllowedToCreate() {
+  const allowedUsers = getUsersAllowedToCreate(store.getState())
+  const ownId = getCurrentUserId(store.getState())
+
+  if (!allowedUsers || !ownId) {
+    return false
+  }
+
+  if (allowedUsers.mode === 0 && allowedUsers.allowList.includes(ownId)) {
+    return true
+  }
+
+  return false
 }
