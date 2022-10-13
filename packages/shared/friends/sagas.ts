@@ -1795,7 +1795,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
       onlineMembers += Object.values(userStatuses).filter((status) => status.presence === PresenceType.ONLINE).length
     }
     channels.push({
-      name: channel.name || '',
+      name: getNormalizedRoomName(channel.name || ''),
       channelId: channel.id,
       unseenMessages: muted ? 0 : channel.unreadMessages?.length || 0,
       lastMessageTimestamp: channel.lastEventTimestamp || undefined,
