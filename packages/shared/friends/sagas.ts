@@ -1788,12 +1788,18 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
     if (!channel) continue
 
     const muted = profile?.muted?.includes(channelId) ?? false
+
+    let onlineMembers = 1
+    if (channel.userIds) {
+      const userStatuses = client.getUserStatuses(...channel.userIds)
+      onlineMembers += Object.values(userStatuses).filter((status) => status.presence === PresenceType.ONLINE).length
+    }
     channels.push({
       name: channel.name || '',
       channelId: channel.id,
       unseenMessages: muted ? 0 : channel.unreadMessages?.length || 0,
       lastMessageTimestamp: channel.lastEventTimestamp || undefined,
-      memberCount: channel.userIds?.length || 0,
+      memberCount: onlineMembers,
       description: '',
       joined: true,
       muted
@@ -1834,15 +1840,17 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   }
   const userStatuses = client.getUserStatuses(...(channelMemberIds ?? []))
 
+  const ownId = client.getUserId()
   for (const member of channelMemberIds) {
     const userId = getUserIdFromMatrix(member)
-    channelMembers.members.push({
-      userId,
-      isOnline: userStatuses.get(member)?.presence === PresenceType.ONLINE
-    })
+    if (ownId === member || userStatuses.get(userId)?.presence === PresenceType.ONLINE) {
+      channelMembers.members.push({
+        userId,
+        isOnline: true
+      })
+    }
   }
 
-  const ownId = client.getUserId()
   // those profiles that are not in the store are prepared without any data but avatar url and name
   const missingUsersIds = channelMemberIds.filter(
     (id) => id !== ownId && !isAddedToCatalog(store.getState(), getUserIdFromMatrix(id))
