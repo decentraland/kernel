@@ -178,6 +178,7 @@ export interface IUnityInterface {
   UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
   UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload): void
   UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
 
   RequestTeleport(teleportData: {}): void
@@ -200,6 +201,7 @@ export interface IUnityInterface {
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
+  SendMemoryUsageToRenderer(): void
 
   // *********************************************************************************
   // ************** Builder in world messages **************
