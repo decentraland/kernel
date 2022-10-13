@@ -1,4 +1,4 @@
-import { EventData, EventDataType } from 'shared/apis/proto/EngineAPI.gen'
+import { EventData, EventDataType } from 'shared/protocol/kernel/apis/EngineAPI.gen'
 
 export type RuntimeEvent = { type: string; data: any }
 export type RuntimeEventCallback = (event: RuntimeEvent) => void

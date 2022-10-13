@@ -1,4 +1,4 @@
-import { SocialAPI } from 'dcl-social-client'
+import { CurrentUserStatus, SocialAPI } from 'dcl-social-client'
 export type SocialData = {
   userId: string
   socialId: string
@@ -30,6 +30,10 @@ export type FriendsState = {
    * If a request to the player exists, the request should be removed and the player added as a friend.
    */
   fromFriendRequests: FriendRequest[]
+  /**
+   * Last status sent of friends so that we don't send duplicated states to renderer
+   */
+  lastStatusOfFriends: Map<string, CurrentUserStatus>
 }
 
 export type RootFriendsState = {

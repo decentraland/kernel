@@ -6,6 +6,7 @@ import { largeLatencyLink } from './largeLatency'
 import { closePeersScoreLink } from './closePeers'
 import { allPeersScoreLink } from './allPeers'
 import { loadBalancingLink } from './loadBalancing'
+import { trackEvent } from 'shared/analytics'
 
 function buildLink(linkConfig: AlgorithmLinkConfig) {
   switch (linkConfig.type) {
@@ -65,6 +66,12 @@ export function createAlgorithm(config: AlgorithmChainConfig) {
         // If a link picks a particular candidate, we return that
         if (context.selected) {
           defaultLogger.log(`Picked candidate using algorithm link: ${link.name}`, context.selected)
+
+          trackEvent('pickedRealm', {
+            algorithm: link.name,
+            domain: context.selected.domain
+          })
+
           return context.selected
         }
 

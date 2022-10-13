@@ -3,7 +3,7 @@ declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 import { sdk } from '@dcl/schemas'
 import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
-import { BringDownClientAndShowError, ErrorContext, ReportFatalError } from 'shared/loading/ReportFatalError'
+import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { gridToWorld, worldToGrid } from '../atomicHelpers/parcelScenePositions'
 import {
@@ -120,8 +120,7 @@ globalThis.DecentralandKernel = {
     setTimeout(
       () =>
         initInternal().catch((err) => {
-          ReportFatalError(err, ErrorContext.WEBSITE_INIT)
-          BringDownClientAndShowError(err.toString())
+          BringDownClientAndReportFatalError(err, ErrorContext.WEBSITE_INIT)
         }),
       0
     )
@@ -223,7 +222,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   const profile = getCurrentUserProfile(store.getState())!
 
   if (!profile) {
-    ReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
+    BringDownClientAndReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
     return
   }
 

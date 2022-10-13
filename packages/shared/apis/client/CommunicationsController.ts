@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { CommunicationsControllerServiceDefinition } from '../proto/CommunicationsController.gen'
+import { CommunicationsControllerServiceDefinition } from 'shared/protocol/kernel/apis/CommunicationsController.gen'
 
 export namespace CommunicationsControllerServiceClient {
   export function create<Context>(clientPort: RpcClientPort) {

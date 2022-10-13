@@ -68,15 +68,10 @@ export type WearableV2 = {
   baseUrl: string
   baseUrlBundles: string
   menuBarIcon?: string
-  emoteDataV0?: EmoteDataV0
 }
 
 export type Emote = Omit<WearableV2, 'data'> & {
   emoteDataADR74: Omit<EmoteDataADR74, 'contents'> & { contents: KeyAndHash[] }
-}
-
-export type EmoteDataV0 = {
-  loop: boolean
 }
 
 export type BodyShapeRepresentationV2 = {

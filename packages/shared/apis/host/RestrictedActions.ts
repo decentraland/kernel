@@ -17,9 +17,9 @@ import {
   RestrictedActionsServiceDefinition,
   TriggerEmoteRequest,
   TriggerEmoteResponse
-} from '../proto/RestrictedActions.gen'
+} from 'shared/protocol/kernel/apis/RestrictedActions.gen'
 import { assertHasPermission } from './Permissions'
-import { PermissionItem } from '../proto/Permissions.gen'
+import { PermissionItem } from 'shared/protocol/kernel/apis/Permissions.gen'
 
 export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePlayerToResponse {
   //   checks permissions

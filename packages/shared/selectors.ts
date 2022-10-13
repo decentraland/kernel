@@ -1,7 +1,5 @@
 import { Scene } from '@dcl/schemas'
-import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
-import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl } from 'config'
-import { ContentMapping, LoadableParcelScene, SceneFeatureToggle, LoadableScene } from './types'
+import { ContentMapping, SceneFeatureToggle } from './types'
 
 export function normalizeContentMappings(
   mappings: Record<string, string> | Array<ContentMapping>
@@ -19,21 +17,6 @@ export function normalizeContentMappings(
   }
 
   return ret
-}
-
-export function loadableSceneToLoadableParcelScene(loadableScene: LoadableScene): LoadableParcelScene {
-  const mappings: ContentMapping[] = normalizeContentMappings(loadableScene.entity.content)
-
-  return {
-    id: loadableScene.id,
-    basePosition: parseParcelPosition(loadableScene.entity.metadata?.scene?.base || '0,0'),
-    name: getSceneNameFromJsonData(loadableScene.entity.metadata),
-    parcels: loadableScene.entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
-    baseUrl: loadableScene.baseUrl,
-    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
-    contents: mappings,
-    loadableScene: loadableScene
-  }
 }
 
 export function getOwnerNameFromJsonData(jsonData?: Scene) {

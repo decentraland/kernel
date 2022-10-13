@@ -15,7 +15,8 @@ const FRIENDS_INITIAL_STATE: FriendsState = {
   socialInfo: {},
   friends: [],
   toFriendRequests: [],
-  fromFriendRequests: []
+  fromFriendRequests: [],
+  lastStatusOfFriends: new Map()
 }
 
 type State = FriendsState

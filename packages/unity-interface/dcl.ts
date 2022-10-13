@@ -3,6 +3,8 @@ import {
   DECENTRALAND_SPACE,
   EDITOR,
   ENGINE_DEBUG_PANEL,
+  ETHEREUM_NETWORK,
+  getAssetBundlesBaseUrl,
   PARCEL_LOADING_ENABLED,
   rootURLPreviewMode,
   SCENE_DEBUG_PANEL,
@@ -21,7 +23,7 @@ import {
   addDesiredParcel,
   unloadParcelSceneById
 } from 'shared/world/parcelSceneManager'
-import { loadableSceneToLoadableParcelScene } from 'shared/selectors'
+import { getSceneNameFromJsonData, normalizeContentMappings } from 'shared/selectors'
 import { pickWorldSpawnpoint, teleportObservable } from 'shared/world/positionThings'
 import { getUnityInstance } from './IUnityInterface'
 import { clientDebug, ClientDebug } from './ClientDebug'
@@ -31,15 +33,17 @@ import type { UnityGame } from '@dcl/unity-renderer/src'
 import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { traceDecoratorUnityGame } from './trace'
 import defaultLogger from 'shared/logger'
-import { EntityType, Scene, sdk } from '@dcl/schemas'
+import { ContentMapping, EntityType, Scene, sdk } from '@dcl/schemas'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { reloadScenePortableExperience } from 'shared/portableExperiences/actions'
 import { ParcelSceneLoadingParams } from 'decentraland-loader/lifecycle/manager'
 import { wearableToSceneEntity } from 'shared/wearablesPortableExperience/sagas'
-import { workerStatusObservable } from 'shared/world/SceneWorker'
+import { SceneWorker, workerStatusObservable } from 'shared/world/SceneWorker'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { getPortableExperienceFromUrn } from './portableExperiencesUtils'
 import { sleep } from 'atomicHelpers/sleep'
+import { LoadableParcelScene } from 'shared/types'
+import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
@@ -91,7 +95,13 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 }
 
-async function startGlobalScene(cid: string, title: string, fileContentUrl: string) {
+async function startGlobalScene(
+  cid: string,
+  title: string,
+  fileContentUrl: string,
+  content: ContentMapping[] = [],
+  baseUrl: string = location.origin
+) {
   const metadata: Scene = {
     display: {
       title: title
@@ -105,9 +115,9 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
 
   const scene = loadParcelSceneWorker({
     id: cid,
-    baseUrl: location.origin,
+    baseUrl,
     entity: {
-      content: [{ file: 'game.js', hash: fileContentUrl }],
+      content: [...content, { file: 'game.js', hash: fileContentUrl }],
       pointers: [cid],
       timestamp: 0,
       type: EntityType.SCENE,
@@ -116,18 +126,42 @@ async function startGlobalScene(cid: string, title: string, fileContentUrl: stri
     }
   })
 
+  scene.rpcContext.sceneData.useFPSThrottling = false
+
   getUnityInstance().CreateGlobalScene({
     id: cid,
     name: title,
     baseUrl: scene.loadableScene.baseUrl,
     isPortableExperience: false,
-    contents: scene.loadableScene.entity.content
+    contents: scene.loadableScene.entity.content,
+    sceneNumber: scene.rpcContext.sceneData.sceneNumber
   })
 }
 
+/**
+ * This is the format of scenes that needs to be sent to Unity to create its counterpart
+ * of a SceneWorker
+ */
+function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
+  const entity = worker.loadableScene.entity
+  const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
+
+  return {
+    id: worker.loadableScene.id,
+    sceneNumber: worker.rpcContext.sceneData.sceneNumber,
+    basePosition: parseParcelPosition(entity.metadata?.scene?.base || '0,0'),
+    name: getSceneNameFromJsonData(entity.metadata),
+    parcels: entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
+    baseUrl: worker.loadableScene.baseUrl,
+    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
+    contents: mappings,
+    loadableScene: worker.loadableScene
+  }
+}
+
 export async function startUnitySceneWorkers(params: ParcelSceneLoadingParams) {
-  onLoadParcelScenesObservable.add((lands) => {
-    getUnityInstance().LoadParcelScenes(lands.map(($) => loadableSceneToLoadableParcelScene($)))
+  onLoadParcelScenesObservable.add((worker) => {
+    getUnityInstance().LoadParcelScenes([sceneWorkerToLoadableParcelScene(worker)])
   })
   onPositionSettledObservable.add((spawnPoint) => {
     getUnityInstance().Teleport(spawnPoint)
@@ -210,6 +244,8 @@ export async function loadPreviewScene(message: sdk.Messages) {
 
 export async function reloadPlaygroundScene() {
   const playgroundCode: string = (globalThis as any).PlaygroundCode
+  const playgroundContentMapping: ContentMapping[] = (globalThis as any).PlaygroundContentMapping || []
+  const playgroundBaseUrl: string = (globalThis as any).PlaygroundBaseUrl || location.origin
 
   if (!playgroundCode) {
     console.log('There is no playground code')
@@ -223,7 +259,7 @@ export async function reloadPlaygroundScene() {
 
   const hudWorkerBLOB = new Blob([playgroundCode])
   const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
-  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl)
+  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, playgroundContentMapping, playgroundBaseUrl)
 }
 
 teleportObservable.add((position: { x: number; y: number; text?: string }) => {

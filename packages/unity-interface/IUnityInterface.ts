@@ -95,6 +95,7 @@ export interface IUnityInterface {
     contents: Array<ContentMapping>
     icon?: string
     isPortableExperience: boolean
+    sceneNumber: number
   }): void
 
   /** Sends the camera position & target to the engine */
@@ -111,6 +112,7 @@ export interface IUnityInterface {
 
   LoadParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
   UnloadScene(sceneId: string): void
+  UnloadSceneV2(sceneNumber: number): void
   SendSceneMessage(messages: string): void
   /** @deprecated send it with the kernelConfigForRenderer instead. */
   SetSceneDebugPanel(): void
@@ -177,6 +179,7 @@ export interface IUnityInterface {
   UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
   UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload): void
   UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
 
   RequestTeleport(teleportData: {}): void

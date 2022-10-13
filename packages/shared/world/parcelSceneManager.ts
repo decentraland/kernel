@@ -55,7 +55,7 @@ export function generateBannedLoadableScene(entity: LoadableScene): LoadableScen
 }
 
 export const renderDistanceObservable = new Observable<Readonly<NewDrawingDistanceReport>>()
-export const onLoadParcelScenesObservable = new Observable<LoadableScene[]>()
+export const onLoadParcelScenesObservable = new Observable<SceneWorker>()
 /**
  * Array of sceneId's
  */
@@ -190,7 +190,7 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: Load
 
     setNewParcelScene(worker)
 
-    onLoadParcelScenesObservable.notifyObservers([entity])
+    onLoadParcelScenesObservable.notifyObservers(worker)
   }
 }
 
