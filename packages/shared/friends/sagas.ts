@@ -1789,7 +1789,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
     const muted = profile?.muted?.includes(channelId) ?? false
     channels.push({
-      name: channel.name || '',
+      name: getNormalizedRoomName(channel.name || ''),
       channelId: channel.id,
       unseenMessages: muted ? 0 : channel.unreadMessages?.length || 0,
       lastMessageTimestamp: channel.lastEventTimestamp || undefined,
