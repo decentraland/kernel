@@ -1847,7 +1847,7 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   const ownId = client.getUserId()
   for (const member of channelMemberIds) {
     const userId = getUserIdFromMatrix(member)
-    if (ownId === userId || userStatuses.get(userId)?.presence === PresenceType.ONLINE) {
+    if (ownId === member || userStatuses.get(userId)?.presence === PresenceType.ONLINE) {
       channelMembers.members.push({
         userId,
         isOnline: true
