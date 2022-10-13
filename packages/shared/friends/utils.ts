@@ -1,4 +1,5 @@
-import { getFeatureFlagEnabled } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getFeatureFlagVariantValue } from 'shared/meta/selectors'
+import { RootMetaState } from 'shared/meta/types'
 import { store } from 'shared/store/isolatedStore'
 
 /**
@@ -29,9 +30,32 @@ export function getMatrixIdFromUser(userId: string) {
   const domain = store.getState().friends.client?.getDomain() ?? 'decentraland.org'
   return `@${userId.toLowerCase()}:${domain}`
 }
+
+/**
+ * Get the normalized name of a room
+ * @param name a string with the name
+ *
+ * @example
+ * from: '#rapanui:decentraland.zone'
+ * to: 'rapanui'
+ * */
+export function getNormalizedRoomName(name: string) {
+  // it means we got the name with a inadequate format
+  if (name.indexOf('#') === 0) {
+    return name.split(':')[0].substring(1)
+  }
+  return name
+}
+
 /*
  * Returns true if channels feature is enabled
  */
 export function areChannelsEnabled(): boolean {
   return getFeatureFlagEnabled(store.getState(), 'matrix_channels_enabled')
+}
+
+export const DEFAULT_MAX_CHANNELS_VALUE = 5
+
+export function getMaxChannels(store: RootMetaState): number {
+  return (getFeatureFlagVariantValue(store, 'max_joined_channels') as number) ?? DEFAULT_MAX_CHANNELS_VALUE
 }

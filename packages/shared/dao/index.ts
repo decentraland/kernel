@@ -83,7 +83,7 @@ export async function fetchCatalystStatus(
         domain: domain,
         status: aboutResponse.status,
         elapsed: aboutResponse.elapsed!,
-        usersCount: bff.userCount ?? comms.usersCount ?? 0,
+        usersCount: bff.userCount || comms.usersCount || 0,
         maxUsers: 2000,
         usersParcels
       }
@@ -110,7 +110,7 @@ export async function fetchCatalystStatus(
       domain: domain,
       status: commsResponse.status,
       elapsed: commsResponse.elapsed!,
-      usersCount: result.usersCount ?? 0,
+      usersCount: result.usersCount ?? result.usersParcels?.length ?? 0,
       maxUsers: result.maxUsers ?? 2000,
       usersParcels: result.usersParcels
     }

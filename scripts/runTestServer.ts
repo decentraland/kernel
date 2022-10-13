@@ -2,13 +2,8 @@ import { resolve } from 'path'
 import express = require('express')
 import path = require('path')
 import fs = require('fs')
-import { Role } from '../packages/shared/comms/v1/proto/broker'
 import titere = require('titere')
-import WebSocket = require('ws')
 import http = require('http')
-import proto = require('../packages/shared/comms/v1/proto/broker')
-
-const url = require('url')
 
 // defines if we should run headless tests and exit (true) or keep the server on (false)
 const singleRun = !(process.env.SINGLE_RUN === 'true')
@@ -16,103 +11,6 @@ const port = process.env.PORT || 8080
 const app = express()
 
 const server = http.createServer(app)
-const wss = new WebSocket.Server({ server })
-
-const connections = new Set<WebSocket>()
-const topicsPerConnection = new WeakMap<WebSocket, Set<string>>()
-const aliasToUserId = new Map<number, string>()
-let connectionCounter = 0
-
-function getTopicList(socket: WebSocket): Set<string> {
-  let set = topicsPerConnection.get(socket)
-  if (!set) {
-    set = new Set()
-    topicsPerConnection.set(socket, set)
-  }
-  return set
-}
-
-wss.on('connection', function connection(ws, req) {
-  connections.add(ws)
-  const alias = ++connectionCounter
-
-  const query = url.parse(req.url, true).query
-  const userId = query['identity']
-  aliasToUserId.set(alias, userId)
-
-  ws.on('message', (message) => {
-    const data = message as Buffer
-    const msgType = proto.CoordinatorMessage.deserializeBinary(data).getType()
-
-    if (msgType === proto.MessageType.PING) {
-      ws.send(data)
-    } else if (msgType === proto.MessageType.TOPIC) {
-      const topicMessage = proto.TopicMessage.deserializeBinary(data)
-
-      const topic = topicMessage.getTopic()
-
-      const topicFwMessage = new proto.TopicFWMessage()
-      topicFwMessage.setType(proto.MessageType.TOPIC_FW)
-      topicFwMessage.setFromAlias(alias)
-      topicFwMessage.setBody(topicMessage.getBody_asU8())
-
-      const topicData = topicFwMessage.serializeBinary()
-
-      // Reliable/unreliable data
-      connections.forEach(($) => {
-        if (ws !== $) {
-          if (getTopicList($).has(topic)) {
-            $.send(topicData)
-          }
-        }
-      })
-    } else if (msgType === proto.MessageType.TOPIC_IDENTITY) {
-      const topicMessage = proto.TopicIdentityMessage.deserializeBinary(data)
-
-      const topic = topicMessage.getTopic()
-
-      const topicFwMessage = new proto.TopicIdentityFWMessage()
-      topicFwMessage.setType(proto.MessageType.TOPIC_IDENTITY_FW)
-      topicFwMessage.setFromAlias(alias)
-      topicFwMessage.setIdentity(aliasToUserId.get(alias))
-      topicFwMessage.setRole(Role.CLIENT)
-      topicFwMessage.setBody(topicMessage.getBody_asU8())
-
-      const topicData = topicFwMessage.serializeBinary()
-
-      // Reliable/unreliable data
-      connections.forEach(($) => {
-        if (ws !== $) {
-          if (getTopicList($).has(topic)) {
-            $.send(topicData)
-          }
-        }
-      })
-    } else if (msgType === proto.MessageType.SUBSCRIPTION) {
-      const topicMessage = proto.SubscriptionMessage.deserializeBinary(data)
-      const rawTopics = topicMessage.getTopics()
-      const topics = Buffer.from(rawTopics).toString('utf8')
-      const set = getTopicList(ws)
-
-      set.clear()
-      topics.split(/\s+/g).forEach(($) => set.add($))
-    }
-  })
-
-  ws.on('close', () => {
-    connections.delete(ws)
-    aliasToUserId.delete(alias)
-  })
-
-  setTimeout(() => {
-    const welcome = new proto.WelcomeMessage()
-    welcome.setType(proto.MessageType.WELCOME)
-    welcome.setAlias(alias)
-    const data = welcome.serializeBinary()
-
-    ws.send(data)
-  }, 100)
-})
 
 /// --- SIDE EFFECTS ---
 {

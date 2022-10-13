@@ -8,7 +8,7 @@ import {
   ManyEntityAction,
   Payload,
   queryTypeToJSON
-} from '../proto/EngineAPI.gen'
+} from 'shared/protocol/kernel/apis/EngineAPI.gen'
 
 import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
