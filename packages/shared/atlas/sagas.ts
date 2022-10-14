@@ -126,7 +126,6 @@ function* sendHomeSceneToUnityAction(action: SendHomeScene) {
 
 function* reportScenes(scenes: LoadableScene[]): any {
   yield call(waitForPoiTilesInitialization)
-
   const pois = yield select(getPoiTiles)
 
   const minimapSceneInfoResult: MinimapSceneInfo[] = []
