@@ -16,7 +16,7 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
   // These mappings from legacy id are here just in case they still have the legacy id in local storage
   avatarInfo.bodyShape =
     mapLegacyIdToUrn(profile.avatar.bodyShape) || 'urn:decentraland:off-chain:base-avatars:BaseFemale'
-  avatarInfo.wearables = profile.avatar.wearables.map(mapLegacyIdToUrn).filter(Boolean) as string[]
+  avatarInfo.wearables = (profile.avatar.wearables || []).map(mapLegacyIdToUrn).filter(Boolean) as string[]
   avatarInfo.emotes = profile.avatar.emotes
   avatarInfo.snapshots = profile.avatar.snapshots
 

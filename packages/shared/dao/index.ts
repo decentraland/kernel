@@ -6,12 +6,12 @@ import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { ask } from './utils/ping'
-import { getBff } from 'shared/bff/selectors'
-import { setBff } from 'shared/bff/actions'
+import { getRealmAdapter } from 'shared/realm/selectors'
+import { setRealmAdapter } from 'shared/realm/actions'
 import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
-import { bffForRealm, prettyRealmName, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/bff/resolver'
+import { adapterForRealmString, prettyRealmName, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/realm/resolver'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
@@ -48,7 +48,7 @@ export async function fetchCatalystStatus(
 ): Promise<Candidate | undefined> {
   if (denylistedCatalysts.includes(domain)) return undefined
 
-  const aboutResponse = await ask(`${domain}/about`)
+  const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
 
   if (aboutResponse.httpStatus !== 404) {
     const result = aboutResponse.result
@@ -64,6 +64,18 @@ export async function fetchCatalystStatus(
       // TODO(hugo): this is kind of hacky, the original representation is much better,
       // but I don't want to change the whole pick-realm algorithm now
       const usersParcels: Parcel[] = []
+
+      if (parcelsResponse.result && parcelsResponse.result.parcels) {
+        for (const {
+          peersCount,
+          parcel: { x, y }
+        } of parcelsResponse.result.parcels) {
+          const parcel: Parcel = [x, y]
+          for (let i = 0; i < peersCount; i++) {
+            usersParcels.push(parcel)
+          }
+        }
+      }
 
       return {
         protocol: comms.protocol,
@@ -102,13 +114,13 @@ export async function fetchCatalystStatuses(
 }
 
 export async function realmInitialized(): Promise<void> {
-  if (getBff(store.getState())) {
+  if (getRealmAdapter(store.getState())) {
     return
   }
 
   return new Promise((resolve) => {
     const unsubscribe = store.subscribe(() => {
-      if (getBff(store.getState())) {
+      if (getRealmAdapter(store.getState())) {
         unsubscribe()
         return resolve()
       }
@@ -118,14 +130,13 @@ export async function realmInitialized(): Promise<void> {
 
 export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
   const candidates = getAllCatalystCandidates(store.getState())
-
   const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, candidates)
 
   if (!realmBaseUrl) {
     throw new Error(`Can't resolve realm ${realmString}`)
   }
 
-  const currentBff = getBff(store.getState())
+  const currentRealmAdapter = getRealmAdapter(store.getState())
   const identity = getCurrentIdentity(store.getState())
 
   if (!identity) throw new Error('Cant change realm without a valid identity')
@@ -133,7 +144,7 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   commsLogger.info('Connecting to realm', realmString)
 
   // if not forceChange, then cancel operation if we are inside the desired realm
-  if (!forceChange && currentBff && currentBff.baseUrl === realmBaseUrl) {
+  if (!forceChange && currentRealmAdapter && currentRealmAdapter.baseUrl === realmBaseUrl) {
     return
   }
 
@@ -167,10 +178,10 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
     about = res.result!
   }
 
-  const newBff = await bffForRealm(realmBaseUrl, about, identity)
+  const newAdapter = await adapterForRealmString(realmBaseUrl, about, identity)
 
-  if (newBff) {
-    store.dispatch(setBff(newBff))
+  if (newAdapter) {
+    store.dispatch(setRealmAdapter(newAdapter))
   } else {
     throw new Error(`Can't connect to realm ${realmString} right now.`)
   }

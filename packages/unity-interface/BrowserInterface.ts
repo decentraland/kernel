@@ -101,8 +101,9 @@ import {
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
-import { ensureBffPromise, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
+import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
+import { signalSceneReady } from 'shared/world/actions'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -504,11 +505,9 @@ export class BrowserInterface {
   public ControlEvent({ eventType, payload }: { eventType: string; payload: any }) {
     switch (eventType) {
       case 'SceneReady': {
-        const { sceneId } = payload
-        const scene = getSceneWorkerBySceneID(sceneId)
-        console.log('scene ready', scene, sceneId, payload)
-        scene?.onReady()
-        if (!scene) debugger
+        const { sceneId, sceneNumber } = payload
+        store.dispatch(signalSceneReady(sceneId, sceneNumber))
+
         break
       }
       case 'DeactivateRenderingACK': {
@@ -775,8 +774,8 @@ export class BrowserInterface {
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
     async function work() {
-      const bff = await ensureBffPromise()
-      const baseUrl = getFetchContentUrlPrefixFromBff(bff)
+      const adapter = await ensureRealmAdapterPromise()
+      const baseUrl = getFetchContentUrlPrefixFromRealmAdapter(adapter)
 
       try {
         const profiles = await fetchENSOwnerProfile(data.name, data.maxResults)

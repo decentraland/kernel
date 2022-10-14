@@ -20,21 +20,20 @@ import { getAllCatalystCandidates, getCatalystCandidatesReceived } from './selec
 import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
 import { BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { commsLogger } from 'shared/comms/context'
-import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
-
 import { createAlgorithm } from './pick-realm-algorithm/index'
 import { AlgorithmChainConfig } from './pick-realm-algorithm/types'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
 import defaultLogger from 'shared/logger'
-import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { SET_ROOM_CONNECTION } from 'shared/comms/actions'
 import { getCommsRoom } from 'shared/comms/selectors'
 import { CatalystNode } from 'shared/types'
-import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/bff/resolver'
+import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/realm/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getBff, getFetchContentServerFromBff, getProfilesContentServerFromBff, waitForBff } from 'shared/bff/selectors'
-import { SET_BFF } from 'shared/bff/actions'
-import { IBff } from 'shared/bff/types'
+import { getFetchContentServerFromRealmAdapter, getProfilesContentServerFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
+import { SET_REALM_ADAPTER } from 'shared/realm/actions'
+import { IRealmAdapter } from 'shared/realm/types'
+import { getParcelPosition } from 'shared/scene-loader/selectors'
 
 function* waitForExplorerIdentity() {
   while (!(yield select(getCurrentIdentity))) {
@@ -50,13 +49,14 @@ function getLastRealmCandidatesCacheKey(network: ETHEREUM_NETWORK) {
 }
 
 export function* daoSaga(): any {
-  yield takeEvery(SET_BFF, cacheCatalystRealm)
+  yield takeEvery(SET_REALM_ADAPTER, cacheCatalystRealm)
   yield takeEvery(SET_CATALYST_CANDIDATES, cacheCatalystCandidates)
 }
 
 function* pickCatalystRealm() {
   const candidates: Candidate[] = yield select(getAllCatalystCandidates)
   if (candidates.length === 0) return undefined
+  const currentUserParcel: ReadOnlyVector2 = yield select(getParcelPosition)
 
   let config: AlgorithmChainConfig | undefined = yield select(getPickRealmsAlgorithmConfig)
 
@@ -65,9 +65,6 @@ function* pickCatalystRealm() {
   }
 
   const algorithm = createAlgorithm(config)
-
-  const qs = new URLSearchParams(globalThis.location.search)
-  const currentUserParcel = parseParcelPosition(qs.get('position') || '0,0')
 
   const realm: Realm = yield call(
     candidateToRealm,
@@ -208,18 +205,16 @@ export async function checkValidRealm(baseUrl: string): Promise<PingResult | nul
 
 function* cacheCatalystRealm() {
   const network: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
-  const realm: IBff | undefined = yield select(getBff)
-
-  if (realm) {
-    yield call(saveToPersistentStorage, getLastRealmCacheKey(network), realm.baseUrl)
-  }
-
   // PRINT DEBUG INFO
   const dao: string = yield select((state) => state.dao)
-  const bff: IBff = yield call(waitForBff)
+  const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
 
-  const fetchContentServer: string = getFetchContentServerFromBff(bff)
-  const updateContentServer: string = getProfilesContentServerFromBff(bff)
+  if (realmAdapter) {
+    yield call(saveToPersistentStorage, getLastRealmCacheKey(network), realmAdapter.baseUrl)
+  }
+
+  const fetchContentServer: string = getFetchContentServerFromRealmAdapter(realmAdapter)
+  const updateContentServer: string = getProfilesContentServerFromRealmAdapter(realmAdapter)
 
   defaultLogger.info(`Using Catalyst configuration: `, {
     original: dao,
@@ -236,8 +231,8 @@ function* cacheCatalystCandidates(_action: SetCatalystCandidates) {
   yield call(saveToPersistentStorage, getLastRealmCandidatesCacheKey(network), allCandidates)
 }
 
-export function* waitForRealmInitialized() {
+export function* waitForRoomConnection() {
   while (!(yield select(getCommsRoom))) {
-    yield take(SET_WORLD_CONTEXT)
+    yield take(SET_ROOM_CONNECTION)
   }
 }

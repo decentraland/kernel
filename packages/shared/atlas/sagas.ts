@@ -38,7 +38,7 @@ import { getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { waitForRealmInitialized } from 'shared/dao/sagas'
+import { waitForRoomConnection } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { homePointKey } from './utils'
@@ -95,7 +95,7 @@ function* reportScenesAroundParcelAction(action: ReportScenesAroundParcel) {
 }
 
 function* initializePois() {
-  yield call(waitForRealmInitialized)
+  yield call(waitForRoomConnection)
 
   const daoPOIs: string[] | undefined = yield call(fetchPOIsFromDAO)
 

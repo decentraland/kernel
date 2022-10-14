@@ -1,4 +1,4 @@
-import { IBff } from 'shared/bff/types'
+import { IRealmAdapter } from 'shared/realm/types'
 import { listenPeerMessage } from '../../logic/subscription-adapter'
 import { ILogger } from 'shared/logger'
 import { P2PLogConfig } from './types'
@@ -42,7 +42,7 @@ export class Mesh {
   private listeners: { close(): void }[] = []
 
   constructor(
-    private bff: IBff,
+    private realmAdapter: IRealmAdapter,
     private peerId: string,
     { logger, packetHandler, shouldAcceptOffer, logConfig }: Config
   ) {
@@ -52,9 +52,9 @@ export class Mesh {
     this.logConfig = logConfig
 
     this.listeners.push(
-      listenPeerMessage(bff.services.comms, `${this.peerId}.candidate`, this.onCandidateMessage.bind(this)),
-      listenPeerMessage(bff.services.comms, `${this.peerId}.offer`, this.onOfferMessage.bind(this)),
-      listenPeerMessage(bff.services.comms, `${this.peerId}.answer`, this.onAnswerListener.bind(this))
+      listenPeerMessage(realmAdapter.services.comms, `${this.peerId}.candidate`, this.onCandidateMessage.bind(this)),
+      listenPeerMessage(realmAdapter.services.comms, `${this.peerId}.offer`, this.onOfferMessage.bind(this)),
+      listenPeerMessage(realmAdapter.services.comms, `${this.peerId}.answer`, this.onAnswerListener.bind(this))
     )
   }
 
@@ -102,7 +102,7 @@ export class Mesh {
     await instance.setLocalDescription(offer)
     this.debugWebRtc(`Set local description for ${peerId}`)
     this.debugWebRtc(`Sending offer to ${peerId}`)
-    await this.bff.services.comms.publishToTopic({
+    await this.realmAdapter.services.comms.publishToTopic({
       topic: `${peerId}.offer`,
       payload: this.encoder.encode(JSON.stringify(offer))
     })
@@ -246,7 +246,7 @@ export class Mesh {
       if (event.candidate) {
         try {
           const msg = { candidate: event.candidate, initiator }
-          await this.bff.services.comms.publishToTopic({
+          await this.realmAdapter.services.comms.publishToTopic({
             topic: `${peerId}.candidate`,
             payload: this.encoder.encode(JSON.stringify(msg))
           })
@@ -365,7 +365,7 @@ export class Mesh {
       await instance.setLocalDescription(answer)
 
       this.debugWebRtc(`Sending answer to ${peerId}`)
-      await this.bff.services.comms.publishToTopic({
+      await this.realmAdapter.services.comms.publishToTopic({
         topic: `${peerId}.answer`,
         payload: this.encoder.encode(JSON.stringify(answer))
       })

@@ -10,7 +10,7 @@ import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
 import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
 import { sleep } from 'atomicHelpers/sleep'
-import { getBff } from 'shared/bff/selectors'
+import { getRealmAdapter } from 'shared/realm/selectors'
 import { Avatar } from '@dcl/schemas'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 
@@ -73,7 +73,7 @@ describe('fetchProfile behavior', () => {
         .dispatch(profileRequest('user|1'))
         .dispatch(profileRequest('user|1'))
         .provide([
-          [select(getBff), {}],
+          [select(getRealmAdapter), {}],
           [call(profileServerRequest, 'user|1'), delayedProfile],
           [select(getCurrentUserId), 'myid'],
           [call(ensureAvatarCompatibilityFormat, profile), 'passport']
@@ -92,7 +92,7 @@ describe('fetchProfile behavior', () => {
       .dispatch(profileRequest('user|2'))
       .dispatch(profileRequest('user|2'))
       .provide([
-        [select(getBff), {}],
+        [select(getRealmAdapter), {}],
         [call(profileServerRequest, 'user|1'), delayedProfile],
         [select(getCurrentUserId), 'myid'],
         [call(ensureAvatarCompatibilityFormat, profile), 'passport1'],

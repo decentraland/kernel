@@ -1,10 +1,10 @@
-import { call, fork, put, race, select, take, takeLatest } from 'redux-saga/effects'
+import { call, fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 import { SCENE_CHANGED } from 'shared/loading/actions'
 import { BEFORE_UNLOAD } from 'shared/actions'
 import { SetParcelPosition, SET_PARCEL_POSITION } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
-import { setCurrentScene } from './actions'
-import { getLoadedParcelSceneByPointer, loadedSceneWorkers } from './parcelSceneManager'
+import { setCurrentScene, SignalSceneReady, SIGNAL_SCENE_READY } from './actions'
+import { getLoadedParcelSceneByPointer, getSceneWorkerBySceneID, loadedSceneWorkers } from './parcelSceneManager'
 import { SceneWorker } from './SceneWorker'
 
 declare let location: any
@@ -14,6 +14,9 @@ export function* worldSagas() {
   // FIRST bind all sagas
   yield fork(sceneObservableProcess)
   yield fork(updateUrlPosition)
+  yield takeEvery(SIGNAL_SCENE_READY, function* (action: SignalSceneReady) {
+    getSceneWorkerBySceneID(action.payload.sceneId)?.onReady()
+  })
 }
 
 // This saga only updates the URL with the current parcel

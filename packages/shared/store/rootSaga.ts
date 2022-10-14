@@ -19,7 +19,7 @@ import { wearablesPortableExperienceSaga } from '../wearablesPortableExperience/
 import { sceneEventsSaga } from '../sceneEvents/sagas'
 import { sceneLoaderSaga } from '../scene-loader/sagas'
 import { worldSagas } from '../world/sagas'
-import { bffSaga } from 'shared/bff/sagas'
+import { bffSaga } from 'shared/realm/sagas'
 
 export function createRootSaga() {
   return function* rootSaga() {

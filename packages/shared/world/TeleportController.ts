@@ -7,9 +7,9 @@ import defaultLogger from 'shared/logger'
 import { gridToWorld, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 
 import { store } from 'shared/store/isolatedStore'
-import { getBff } from 'shared/bff/selectors'
+import { getRealmAdapter } from 'shared/realm/selectors'
 import { Parcel } from 'shared/dao/types'
-import { urlWithProtocol } from 'shared/bff/resolver'
+import { urlWithProtocol } from 'shared/realm/resolver'
 import { trackTeleportTriggered } from 'shared/loading/types'
 import { teleportToAction } from 'shared/scene-loader/actions'
 
@@ -78,11 +78,11 @@ export class TeleportController {
 }
 
 async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
-  const bff = getBff(store.getState())
+  const realmAdapter = getRealmAdapter(store.getState())
 
   try {
-    if (bff) {
-      const parcelsResponse = await fetch(`${urlWithProtocol(bff.baseUrl)}/stats/parcels`)
+    if (realmAdapter) {
+      const parcelsResponse = await fetch(`${urlWithProtocol(realmAdapter.baseUrl)}/stats/parcels`)
 
       if (parcelsResponse.ok) {
         const parcelsBody = await parcelsResponse.json()

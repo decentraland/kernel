@@ -93,12 +93,12 @@ import {
   SEND_CHANNEL_MESSAGE,
   SendChannelMessage
 } from 'shared/friends/actions'
-import { waitForRealmInitialized } from 'shared/dao/sagas'
+import { waitForRoomConnection } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
-import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { ensureBffPromise, getBff, getFetchContentUrlPrefixFromBff } from 'shared/bff/selectors'
+import { SET_ROOM_CONNECTION } from 'shared/comms/actions'
+import { ensureRealmAdapterPromise, getRealmAdapter, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
 import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
@@ -116,8 +116,8 @@ import {
   getNormalizedRoomName
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
-import { IBff } from 'shared/bff/types'
-import { realmToConnectionString } from 'shared/bff/resolver'
+import { IRealmAdapter } from 'shared/realm/types'
+import { realmToConnectionString } from 'shared/realm/resolver'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
@@ -161,7 +161,7 @@ function* initializeFriendsSaga() {
       delay: delay(secondsToRetry)
     })
 
-    yield call(waitForRealmInitialized)
+    yield call(waitForRoomConnection)
     yield call(waitForRendererInstance)
 
     const currentIdentity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
@@ -590,8 +590,8 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
 
 export async function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
-  const bff = await ensureBffPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
 
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
@@ -631,8 +631,8 @@ export async function getFriends(request: GetFriendsPayload) {
 
 export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
-  const bff = await ensureBffPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
   const fromFriendRequests = friends.fromFriendRequests.slice(
     request.receivedSkip,
@@ -763,8 +763,8 @@ export function getUnseenMessagesByUser() {
 }
 
 export async function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
-  const bff = await ensureBffPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.DIRECT
   )
@@ -881,14 +881,14 @@ function* initializeStatusUpdateInterval() {
   while (true) {
     yield race({
       SET_MATRIX_CLIENT: take(SET_MATRIX_CLIENT),
-      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT),
+      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION),
       timeout: delay(SEND_STATUS_INTERVAL_MILLIS)
     })
 
     const client: SocialAPI | null = yield select(getSocialClient)
-    const bff: IBff | undefined = yield select(getBff)
+    const realmAdapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
 
-    if (!client || !bff) {
+    if (!client || !realmAdapter) {
       continue
     }
 
@@ -903,7 +903,7 @@ function* initializeStatusUpdateInterval() {
     const updateStatus: UpdateUserStatus = {
       realm: {
         layer: '',
-        serverName: realmToConnectionString(bff)
+        serverName: realmToConnectionString(realmAdapter)
       },
       position,
       presence: PresenceType.ONLINE
@@ -1787,8 +1787,8 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 export async function getChannelMembers(request: GetChannelMembersPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
-  const bff = await ensureBffPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromBff(bff)
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
   const channel = client.getChannel(request.channelId)
   if (!channel) return

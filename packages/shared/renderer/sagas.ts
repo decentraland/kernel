@@ -26,7 +26,7 @@ import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { ProfileUserInfo } from 'shared/profiles/types'
-import { getFetchContentServerFromBff, getProfilesContentServerFromBff, waitForBff } from 'shared/bff/selectors'
+import { getFetchContentServerFromRealmAdapter, getProfilesContentServerFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
 import { getExploreRealmsService } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
@@ -43,8 +43,8 @@ import {
   VOICE_PLAYING_UPDATE,
   VOICE_RECORDING_UPDATE
 } from 'shared/voiceChat/actions'
-import { IBff } from 'shared/bff/types'
-import { SET_BFF } from 'shared/bff/actions'
+import { IRealmAdapter } from 'shared/realm/types'
+import { SET_REALM_ADAPTER } from 'shared/realm/actions'
 import { getAllowedContentServer } from 'shared/meta/selectors'
 import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
 import { RootState } from 'shared/store/rootTypes'
@@ -73,12 +73,12 @@ function* reportRealmChangeToRenderer() {
   yield call(waitForRendererInstance)
 
   while (true) {
-    const bff: IBff = yield call(waitForBff)
+    const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
 
     try {
-      const configuredContentServer: string = yield call(getFetchContentServerFromBff, bff)
+      const configuredContentServer: string = yield call(getFetchContentServerFromRealmAdapter, realmAdapter)
       const contentServerUrl: string = yield select(getAllowedContentServer, configuredContentServer)
-      const current = convertCurrentRealmType(bff, contentServerUrl)
+      const current = convertCurrentRealmType(realmAdapter, contentServerUrl)
       defaultLogger.info('UpdateRealmsInfo', current)
       getUnityInstance().UpdateRealmsInfo({ current })
 
@@ -93,7 +93,7 @@ function* reportRealmChangeToRenderer() {
       defaultLogger.error(err)
     }
 
-    yield take(SET_BFF)
+    yield take(SET_REALM_ADAPTER)
   }
 }
 
@@ -109,11 +109,11 @@ async function fetchAndReportRealmsInfo(url: string) {
   }
 }
 
-function convertCurrentRealmType(bff: IBff, contentServerUrl: string): CurrentRealmInfoForRenderer {
+function convertCurrentRealmType(realmAdapter: IRealmAdapter, contentServerUrl: string): CurrentRealmInfoForRenderer {
   return {
-    serverName: bff.about.configurations?.realmName || bff.baseUrl,
+    serverName: realmAdapter.about.configurations?.realmName || realmAdapter.baseUrl,
     layer: '',
-    domain: new URL(bff.baseUrl).hostname,
+    domain: new URL(realmAdapter.baseUrl).hostname,
     contentServerUrl: contentServerUrl
   }
 }
@@ -171,7 +171,7 @@ function* updateLoadingScreen() {
   const loadingState = yield select(getLoadingState)
   const loadingMessage: string | undefined = yield select((state: RootState): string | undefined => {
     const msgs: string[] = []
-    if (!state.bff.bff) msgs.push('Picking realm...')
+    if (!state.realm.realmAdapter) msgs.push('Picking realm...')
     else if (!state.sceneLoader) msgs.push('Initializing world loader...')
     else if (!parcelLoadingStarted) msgs.push('Fetching initial parcels...')
     if (!state.comms.context) msgs.push('Connecting to comms...')
@@ -255,8 +255,8 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     throw new Error('Avatar not available for Unity')
   }
 
-  const bff: IBff = yield call(waitForBff)
-  const fetchContentServer = getProfilesContentServerFromBff(bff)
+  const bff: IRealmAdapter = yield call(waitForRealmAdapter)
+  const fetchContentServer = getProfilesContentServerFromRealmAdapter(bff)
 
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)

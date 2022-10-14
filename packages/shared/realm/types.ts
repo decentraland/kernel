@@ -4,15 +4,15 @@ import { CommsServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/co
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 import { IslandChangedMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
 
-export type BffState = {
-  bff: IBff | undefined
+export type RealmState = {
+  realmAdapter: IRealmAdapter | undefined
 }
 
-export type RootBffState = {
-  bff: BffState
+export type RootRealmState = {
+  realm: RealmState
 }
 
-export type BffEvents = {
+export type RealmConnectionEvents = {
   DISCONNECTION: { error?: Error }
   setIsland: IslandChangedMessage
 }
@@ -31,10 +31,10 @@ export type BffServices<CallContext = any> = {
   legacy: LegacyServices
 }
 
-export interface IBff<CallContext = any> {
+export interface IRealmAdapter<CallContext = any> {
   readonly about: AboutResponse
   readonly baseUrl: string
   disconnect(error?: Error): Promise<void>
-  events: Emitter<BffEvents>
+  events: Emitter<RealmConnectionEvents>
   services: BffServices<CallContext>
 }

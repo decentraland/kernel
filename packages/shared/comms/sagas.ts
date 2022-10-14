@@ -10,7 +10,7 @@ import {
   setCommsIsland,
   setRoomConnection,
   SET_COMMS_ISLAND,
-  SET_WORLD_CONTEXT
+  SET_ROOM_CONNECTION
 } from './actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel } from './handlers'
@@ -37,14 +37,14 @@ import { LivekitAdapter } from './adapters/LivekitAdapter'
 import { PeerToPeerAdapter } from './adapters/PeerToPeerAdapter'
 import { SimulationRoom } from './adapters/SimulatorAdapter'
 import { Position3D } from './v3/types'
-import { IBff } from 'shared/bff/types'
+import { IRealmAdapter } from 'shared/realm/types'
 import { CommsConfig } from 'shared/meta/types'
 import { Authenticator } from '@dcl/crypto'
 import { LighthouseConnectionConfig, LighthouseWorldInstanceConnection } from './v2/LighthouseWorldInstanceConnection'
 import { lastPlayerPositionReport, positionObservable, PositionReport } from 'shared/world/positionThings'
 import { store } from 'shared/store/isolatedStore'
-import { ConnectToCommsAction, CONNECT_TO_COMMS, setBff, SET_BFF } from 'shared/bff/actions'
-import { getBff, getFetchContentUrlPrefixFromBff, waitForBff } from 'shared/bff/selectors'
+import { ConnectToCommsAction, CONNECT_TO_COMMS, setRealmAdapter, SET_REALM_ADAPTER } from 'shared/realm/actions'
+import { getRealmAdapter, getFetchContentUrlPrefixFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
 import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
@@ -127,7 +127,7 @@ function* reportPositionSaga() {
       UNLOAD: take(BEFORE_UNLOAD),
       ERROR: take(FATAL_ERROR),
       timeout: delay(1000),
-      setNewContext: take(SET_WORLD_CONTEXT)
+      setNewContext: take(SET_ROOM_CONNECTION)
     })
 
     if (reason.UNLOAD || reason.ERROR) break
@@ -212,15 +212,15 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
     yield put(setRoomConnection(adapter))
   } catch (error: any) {
     notifyStatusThroughChat('Error connecting to comms. Will try another realm')
-    yield put(setBff(undefined))
+    yield put(setRealmAdapter(undefined))
     yield put(setRoomConnection(undefined))
   }
 }
 
 function* createP2PAdapter(islandId: string) {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-  const bff: IBff = yield select(getBff)
-  if (!bff) throw new Error('p2p transport requires a valid bff')
+  const realmAdapter: IRealmAdapter = yield select(getRealmAdapter)
+  if (!realmAdapter) throw new Error('p2p transport requires a valid realm adapter')
   const peers = new Map<string, Position3D>()
   const commsConfig: CommsConfig = yield select(getCommsConfig)
   // for (const [id, p] of Object.entries(islandChangedMessage.peers)) {
@@ -231,7 +231,7 @@ function* createP2PAdapter(islandId: string) {
   return new PeerToPeerAdapter(
     {
       logger: commsLogger,
-      bff,
+      bff: realmAdapter,
       logConfig: {
         debugWebRtcEnabled: !!DEBUG_COMMS,
         debugUpdateNetwork: !!DEBUG_COMMS,
@@ -348,8 +348,8 @@ function* respondCommsProfileRequests() {
 
     const context = (yield select(getCommsRoom)) as RoomConnection | undefined
     const profile: Avatar | null = yield select(getCurrentUserProfile)
-    const bff: IBff = yield call(waitForBff)
-    const contentServer: string = getFetchContentUrlPrefixFromBff(bff)
+    const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
+    const contentServer: string = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
     const identity: ExplorerIdentity | null = yield select(getIdentity)
 
     if (profile && context) {
@@ -397,18 +397,18 @@ function stripSnapshots(profile: Avatar): Avatar {
 function* handleCommsReconnectionInterval() {
   while (true) {
     const reason: any = yield race({
-      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT),
-      SET_BFF: take(SET_BFF),
+      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION),
+      SET_REALM_ADAPTER: take(SET_REALM_ADAPTER),
       USER_AUTHENTIFIED: take(USER_AUTHENTIFIED),
       timeout: delay(1000)
     })
 
     const coomConnection: RoomConnection | undefined = yield select(getCommsRoom)
-    const bff: IBff | undefined = yield select(getBff)
+    const realmAdapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
     const hasFatalError: string | undefined = yield select(getFatalError)
     const identity: ExplorerIdentity | undefined = yield select(getIdentity)
 
-    const shouldReconnect = !coomConnection && !hasFatalError && identity?.address && !bff
+    const shouldReconnect = !coomConnection && !hasFatalError && identity?.address && !realmAdapter
 
     if (shouldReconnect) {
       // reconnect
@@ -429,7 +429,7 @@ function* handleAnnounceProfile() {
       DEPLOY_PROFILE_SUCCESS: take(DEPLOY_PROFILE_SUCCESS),
       SET_COMMS_ISLAND: take(SET_COMMS_ISLAND),
       timeout: delay(INTERVAL_ANNOUNCE_PROFILE),
-      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT)
+      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION)
     })
 
     const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
@@ -445,7 +445,7 @@ function* handleAnnounceProfile() {
 function* handleNewCommsContext() {
   let roomConnection: RoomConnection | undefined = undefined
 
-  yield takeEvery(SET_WORLD_CONTEXT, function* () {
+  yield takeEvery(SET_ROOM_CONNECTION, function* () {
     const oldContext = roomConnection
     roomConnection = yield select(getCommsRoom)
 

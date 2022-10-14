@@ -34,7 +34,7 @@ import {
 } from './actions'
 import { localProfilesRepo } from '../profiles/sagas'
 import { getCurrentIdentity, getIsGuestLogin, isLoginCompleted } from './selectors'
-import { waitForRealmInitialized } from '../dao/sagas'
+import { waitForRoomConnection } from '../dao/sagas'
 import { profileRequest, PROFILE_SUCCESS, saveProfileDelta, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
 import { DecentralandIdentity, LoginState } from '@dcl/kernel-interface'
 import { RequestManager } from 'eth-connect'
@@ -123,7 +123,7 @@ function* authenticate(action: AuthenticateAction) {
   // 1. authenticate our user
   yield put(userAuthentified(identity, net, isGuest))
   // 2. wait for comms to connect, it only requires the Identity authentication
-  yield call(waitForRealmInitialized)
+  yield call(waitForRoomConnection)
   // 3. then ask for our profile
   yield put(profileRequest(identity.address))
   // 4. wait for the response of the profile

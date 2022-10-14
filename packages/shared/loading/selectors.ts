@@ -20,7 +20,7 @@ export function isLoadingScreenVisible(state: RootState) {
   }
 
   // loading while we don't have a BFF
-  if (!state.bff.bff) {
+  if (!state.realm.realmAdapter) {
     return true
   }
 

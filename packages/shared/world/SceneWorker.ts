@@ -244,7 +244,6 @@ export class SceneWorker {
   }
 
   private sendBatch(actions: EntityAction[]): void {
-    console.log('batch', this.loadableScene.id, actions)
     if (this.loadableScene.id === 'dcl-gs-avatars') {
       incrementAvatarSceneMessages(actions.length)
     }

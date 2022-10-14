@@ -1,33 +1,32 @@
 import { Avatar } from '@dcl/schemas'
 import { call, select, takeLatest } from 'redux-saga/effects'
-import { SET_BFF } from 'shared/bff/actions'
-import { realmToConnectionString } from 'shared/bff/resolver'
-import { getBff } from 'shared/bff/selectors'
-import { IBff } from 'shared/bff/types'
+import { SET_REALM_ADAPTER } from 'shared/realm/actions'
+import { realmToConnectionString } from 'shared/realm/resolver'
+import { getRealmAdapter } from 'shared/realm/selectors'
+import { IRealmAdapter } from 'shared/realm/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { toEnvironmentRealmType } from '../apis/host/EnvironmentAPI'
-import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
+import { SET_COMMS_ISLAND, SET_ROOM_CONNECTION } from '../comms/actions'
 import { getCommsIsland } from '../comms/selectors'
 import { SAVE_PROFILE } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
 import { allScenesEvent } from '../world/parcelSceneManager'
 
 export function* sceneEventsSaga() {
-  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT, SET_BFF], islandChanged)
+  yield takeLatest([SET_COMMS_ISLAND, SET_ROOM_CONNECTION, SET_REALM_ADAPTER], islandChanged)
   yield takeLatestByUserId(SAVE_PROFILE, submitProfileToScenes)
 }
 
 function* islandChanged() {
-  const realm: IBff | undefined = yield select(getBff)
+  const adapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
   const island: string | undefined = yield select(getCommsIsland)
-  console.log('sceneEvents islandChanged', island)
 
-  if (realm) {
-    const payload = toEnvironmentRealmType(realm, island)
+  if (adapter) {
+    const payload = toEnvironmentRealmType(adapter, island)
     yield call(allScenesEvent, { eventType: 'onRealmChanged', payload })
   }
 
-  yield call(updateLocation, realm ? realmToConnectionString(realm) : undefined, island)
+  yield call(updateLocation, adapter ? realmToConnectionString(adapter) : undefined, island)
 }
 
 // @internal

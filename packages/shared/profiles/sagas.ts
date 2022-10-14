@@ -34,7 +34,7 @@ import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, isCurrentUserI
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
-import { waitForRealmInitialized } from 'shared/dao/sagas'
+import { waitForRoomConnection } from 'shared/dao/sagas'
 import { base64ToBuffer } from 'atomicHelpers/base64ToBlob'
 import { LocalProfilesRepository } from './LocalProfilesRepository'
 import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
@@ -47,8 +47,8 @@ import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
 import { getIdentity } from 'shared/session'
 import { RoomConnection } from 'shared/comms/interface'
-import { ensureBffPromise, getProfilesContentServerFromBff, waitForBff } from 'shared/bff/selectors'
-import { IBff } from 'shared/bff/types'
+import { ensureRealmAdapterPromise, getProfilesContentServerFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
+import { IRealmAdapter } from 'shared/realm/types'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -87,7 +87,7 @@ function* forwardProfileToRenderer(action: ProfileSuccessAction) {
 }
 
 function* initialRemoteProfileLoad() {
-  yield call(waitForRealmInitialized)
+  yield call(waitForRoomConnection)
 
   // initialize profile
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
@@ -213,7 +213,7 @@ function* getRemoteProfile(userId: string, version?: number) {
 }
 
 export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
-  const bff = await ensureBffPromise()
+  const bff = await ensureRealmAdapterPromise()
   try {
     let url = `${bff.services.legacy.lambdasServer}/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
@@ -309,8 +309,8 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
 }
 
 function* handleDeployProfile(deployProfileAction: DeployProfile) {
-  const bff: IBff = yield call(waitForBff)
-  const profileServiceUrl: string = yield call(getProfilesContentServerFromBff, bff)
+  const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
+  const profileServiceUrl: string = yield call(getProfilesContentServerFromRealmAdapter, realmAdapter)
 
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const userId: string = yield select(getCurrentUserId)

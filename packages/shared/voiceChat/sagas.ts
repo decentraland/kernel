@@ -48,12 +48,13 @@ import { Observer } from 'mz-observable'
 
 import { Room } from 'livekit-client' // temp
 import { getIdentity } from 'shared/session'
-import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { SET_COMMS_ISLAND, SET_ROOM_CONNECTION } from 'shared/comms/actions'
 import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
-import { getBff } from 'shared/bff/selectors'
-import { IBff } from 'shared/bff/types'
+import { getRealmAdapter } from 'shared/realm/selectors'
+import { IRealmAdapter } from 'shared/realm/types'
+import { realmToConnectionString } from 'shared/realm/resolver'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 
@@ -73,7 +74,7 @@ export function* voiceChatSaga() {
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
-  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], handleNewRoomOrCommsContext)
+  yield takeLatest([SET_COMMS_ISLAND, SET_ROOM_CONNECTION], handleNewRoomOrCommsContext)
 }
 
 /*
@@ -85,8 +86,8 @@ export function* handleNewRoomOrCommsContext() {
   yield call(waitForMetaConfigurationInitialization)
 
   if (yield select(isLiveKitVoiceChatFeatureFlag)) {
-    const realm: IBff | undefined = yield select(getBff)
-    const realmName = realm ? realm.baseUrl : 'global'
+    const adapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
+    const realmName = adapter ? realmToConnectionString(adapter) : 'global'
     const island = (yield select(getCommsIsland)) ?? 'global'
     const roomName = `${realmName}-${island}`
 

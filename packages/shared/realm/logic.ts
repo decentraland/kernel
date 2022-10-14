@@ -1,7 +1,7 @@
-import { IBff } from './types'
+import { IRealmAdapter } from './types'
 
 // This logic runs for all IBff. It emits a synthetic setIsland events in cases where archipelago doesn't exist
-export function hookConnectToFixedAdaptersIfNecessary(bff: IBff) {
+export function hookConnectToFixedAdaptersIfNecessary(bff: IRealmAdapter) {
   let connStr: string | undefined = undefined
 
   if (bff.about.comms?.fixedAdapter) {

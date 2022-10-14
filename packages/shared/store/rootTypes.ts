@@ -15,7 +15,7 @@ import { RootQuestsState } from 'shared/quests/types'
 import { RootPortableExperiencesState } from 'shared/portableExperiences/types'
 import { RootWearablesPortableExperienceState } from 'shared/wearablesPortableExperience/types'
 import { RootVoiceChatState } from 'shared/voiceChat/types'
-import { RootBffState } from 'shared/bff/types'
+import { RootRealmState } from 'shared/realm/types'
 import { RootSceneLoaderState } from 'shared/scene-loader/types'
 import { RootWorldState } from 'shared/world/types'
 
@@ -24,7 +24,7 @@ export type RootState = RootAtlasState &
   RootDaoState &
   RootMetaState &
   RootChatState &
-  RootBffState &
+  RootRealmState &
   RootCommsState &
   RootSessionState &
   RootFriendsState &

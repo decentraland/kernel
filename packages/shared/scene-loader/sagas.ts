@@ -1,6 +1,6 @@
 import { apply, call, delay, fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
-import { SetBffAction, SET_BFF } from 'shared/bff/actions'
-import { IBff } from 'shared/bff/types'
+import { SetRealmAdapterAction, SET_REALM_ADAPTER } from 'shared/realm/actions'
+import { IRealmAdapter } from 'shared/realm/types'
 import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { store } from 'shared/store/isolatedStore'
 import { LoadableScene } from 'shared/types'
@@ -28,7 +28,7 @@ import {
   getPositionSpawnPointAndScene,
   getSceneLoader
 } from './selectors'
-import { getFetchContentServerFromBff } from 'shared/bff/selectors'
+import { getFetchContentServerFromRealmAdapter } from 'shared/realm/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
 import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
@@ -49,7 +49,7 @@ import { ENABLE_EMPTY_SCENES, PREVIEW, rootURLPreviewMode } from 'config'
 import { getResourcesURL } from 'shared/location'
 
 export function* sceneLoaderSaga() {
-  yield takeEvery(SET_BFF, onSetBff)
+  yield takeEvery(SET_REALM_ADAPTER, onSetBff)
   yield takeEvery([POSITION_SETTLED, POSITION_UNSETTLED], onPositionSettled)
   yield takeLatest(TELEPORT_TO, teleportHandler)
   yield fork(rendererPositionSettler)
@@ -136,19 +136,21 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 }
 
 // This saga reacts to new realms/bff and creates the proper scene loader
-function* onSetBff(action: SetBffAction) {
-  const bff: IBff | undefined = action.payload
+function* onSetBff(action: SetRealmAdapterAction) {
+  const adapter: IRealmAdapter | undefined = action.payload
 
-  if (!bff) {
+  if (!adapter) {
     yield put(setSceneLoader(undefined))
   } else {
     // if the /about endpoint returns scenesUrn(s) then those need to be loaded
     // and the genesis city should not start
-    const loadFixedWorld = !!bff.about.configurations?.scenesUrn?.length
+    const loadFixedWorld = !!adapter.about.configurations?.scenesUrn?.length
 
     if (loadFixedWorld) {
+      // TODO: disable green blockers here
+
       const loader: ISceneLoader = yield call(createWorldLoader, {
-        urns: bff!.about.configurations!.scenesUrn
+        urns: adapter!.about.configurations!.scenesUrn
       })
       yield put(setSceneLoader(loader))
     } else {
@@ -161,7 +163,7 @@ function* onSetBff(action: SetBffAction) {
         : undefined
 
       const loader: ISceneLoader = yield call(createGenesisCityLoader, {
-        contentServer: getFetchContentServerFromBff(bff),
+        contentServer: getFetchContentServerFromRealmAdapter(adapter),
         emptyParcelsBaseUrl
       })
       yield put(setSceneLoader(loader))

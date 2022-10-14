@@ -3,7 +3,7 @@ import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoi
 import { ExplorerIdentity } from 'shared/session/types'
 import { createBffRpcConnection } from './connections/BFFConnection'
 import { localBff } from './connections/BFFLegacy'
-import { IBff } from './types'
+import { IRealmAdapter } from './types'
 
 function normalizeUrl(url: string) {
   return url.replace(/^:\/\//, window.location.protocol + '//')
@@ -17,7 +17,11 @@ export function urlWithProtocol(urlOrHostname: string) {
   return normalizeUrl(urlOrHostname)
 }
 
-export async function bffForRealm(baseUrl: string, about: AboutResponse, identity: ExplorerIdentity): Promise<IBff> {
+export async function adapterForRealmString(
+  baseUrl: string,
+  about: AboutResponse,
+  identity: ExplorerIdentity
+): Promise<IRealmAdapter> {
   // TODO: We are checking !v2 until all migration is finished
   const isValidBff = about.comms?.protocol !== 'v2' && about.bff?.healthy // about.bff?.healthy
 
@@ -41,18 +45,33 @@ export function prettyRealmName(realm: string, candidates: Candidate[]) {
   return realm
 }
 
-export function realmToConnectionString(realm: IBff) {
+function isDclEns(str: string | undefined): str is `${string}.dcl.eth` {
+  return !!str?.match(/^[a-zA-Z0-9]+\.dcl\.eth$/)?.length
+}
+
+function dclWorldUrl(dclName: string) {
+  return `https://worlds-content-server.decentraland.org/world/${encodeURIComponent(dclName.toLowerCase())}`
+}
+
+export function realmToConnectionString(realm: IRealmAdapter) {
   if (realm.about.comms?.protocol === 'v2' && realm.about.configurations?.realmName?.match(/^[a-z]+$/i)) {
     return realm.about.configurations.realmName
   }
 
-  return 'v3~' + realm.baseUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '')
+  if (
+    isDclEns(realm.about.configurations?.realmName) &&
+    realm.baseUrl == dclWorldUrl(realm.about.configurations?.realmName!)
+  ) {
+    return realm.about.configurations?.realmName!
+  }
+
+  return realm.baseUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '')
 }
 
 export function resolveRealmBaseUrlFromRealmQueryParameter(
   realmString: string,
   candidates: Candidate[]
-): string | undefined {
+): string {
   // is it a DAO realm?
   for (const candidate of candidates) {
     if (candidate.catalystName === realmString) {
@@ -60,27 +79,11 @@ export function resolveRealmBaseUrlFromRealmQueryParameter(
     }
   }
 
-  // does it has the protocol?
-  if (realmString.includes('~')) {
-    const i = realmString.indexOf('~')
-    const protocol = realmString.substring(0, i)
-    const secondPart = realmString.substring(i + 1)
-
-    if (!secondPart) return undefined
-
-    for (const candidate of candidates) {
-      if (
-        protocol === candidate.protocol &&
-        (candidate.catalystName === secondPart || candidate.domain === secondPart)
-      ) {
-        return urlWithProtocol(secondPart)
-      }
-    }
-
-    return urlWithProtocol(secondPart)
+  if (isDclEns(realmString)) {
+    return dclWorldUrl(realmString)
   }
 
-  if (realmString.startsWith('http:') || realmString.startsWith('https:')) return realmString
+  return urlWithProtocol(realmString)
 }
 
 export function candidateToRealm(candidate: Candidate): Realm {

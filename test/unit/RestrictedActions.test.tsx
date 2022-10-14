@@ -10,12 +10,14 @@ import { EntityType, Scene } from '@dcl/schemas'
 import { expect } from 'chai'
 import Sinon from 'sinon'
 import { UnityInterface } from 'unity-interface/UnityInterface'
+import { buildStore } from 'shared/store/store'
 
 describe('RestrictedActions tests', () => {
   beforeEach(() => {
     sinon.reset()
     sinon.restore()
     setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
+    buildStore()
   })
 
   after(() => {

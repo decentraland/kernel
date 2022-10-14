@@ -5,20 +5,20 @@ import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import {
   connectToComms,
-  handleBffDisconnection,
-  HandleBffDisconnection,
-  HANDLE_BFF_DISCONNECTION,
-  setBff,
-  SetBffAction,
-  SET_BFF
+  handleRealmDisconnection,
+  HandleRealmDisconnection,
+  HANDLE_REALM_DISCONNECTION,
+  setRealmAdapter,
+  SetRealmAdapterAction,
+  SET_REALM_ADAPTER
 } from './actions'
 import { setRoomConnection, SET_COMMS_ISLAND } from '../comms/actions'
 import { listenSystemMessage } from '../comms/logic/subscription-adapter'
-import { IBff } from './types'
+import { IRealmAdapter } from './types'
 import { Reader } from 'protobufjs/minimal'
 import { call, delay, fork, put, race, select, take, takeEvery } from 'redux-saga/effects'
 import { DEPLOY_PROFILE_SUCCESS } from 'shared/profiles/actions'
-import { getBff } from './selectors'
+import { getRealmAdapter } from './selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { FATAL_ERROR } from 'shared/loading/types'
@@ -26,20 +26,23 @@ import { BEFORE_UNLOAD } from 'shared/actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { realmToConnectionString } from './resolver'
 import { hookConnectToFixedAdaptersIfNecessary } from './logic'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { HUDElementID } from 'shared/types'
+import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 
 const logger = createLogger('BffSagas')
 
 export function* bffSaga() {
   yield fork(handleNewBFF)
   yield fork(handleHeartBeat)
-  yield takeEvery(HANDLE_BFF_DISCONNECTION, handleBffDisconnectionSaga)
+  yield takeEvery(HANDLE_REALM_DISCONNECTION, handleBffDisconnectionSaga)
 
   yield takeEvery(FATAL_ERROR, function* () {
-    yield put(setBff(undefined))
+    yield put(setRealmAdapter(undefined))
   })
 
   yield takeEvery(BEFORE_UNLOAD, function* () {
-    yield put(setBff(undefined))
+    yield put(setRealmAdapter(undefined))
   })
 }
 
@@ -47,9 +50,9 @@ export function* bffSaga() {
  * This function binds the given IBff to the kernel and returns the "unbind"
  * function in charge of disconnecting it from kernel.
  */
-async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Promise<void>> {
+async function bindHandlersToBFF(bff: IRealmAdapter, address: string): Promise<() => Promise<void>> {
   bff.events.on('DISCONNECTION', () => {
-    store.dispatch(handleBffDisconnection(bff))
+    store.dispatch(handleRealmDisconnection(bff))
   })
 
   bff.events.on('setIsland', (message) => {
@@ -57,7 +60,8 @@ async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Prom
     store.dispatch(connectToComms(message))
   })
 
-  notifyStatusThroughChat(`Welcome to realm ${realmToConnectionString(bff)}!`)
+  const realmName = bff.about.configurations?.realmName || realmToConnectionString(bff)
+  notifyStatusThroughChat(`Welcome to realm ${realmName}!`)
 
   hookConnectToFixedAdaptersIfNecessary(bff)
 
@@ -89,7 +93,7 @@ async function bindHandlersToBFF(bff: IBff, address: string): Promise<() => Prom
 }
 
 // this function is called from the handleHeartbeat saga
-async function sendHeartBeat(bff: IBff) {
+async function sendHeartBeat(bff: IRealmAdapter) {
   const payload = Heartbeat.encode({
     position: lastPlayerPosition
   }).finish()
@@ -109,16 +113,16 @@ async function sendHeartBeat(bff: IBff) {
 function* handleHeartBeat() {
   while (true) {
     yield race({
-      SET_BFF: take(SET_BFF),
+      SET_REALM_ADAPTER: take(SET_REALM_ADAPTER),
       SET_COMMS_ISLAND: take(SET_COMMS_ISLAND),
       DEPLOY_PROFILE_SUCCESS: take(DEPLOY_PROFILE_SUCCESS),
       delay: delay(2500)
     })
 
-    const bff: IBff | undefined = yield select(getBff)
+    const adapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
 
-    if (bff) {
-      yield call(sendHeartBeat, bff)
+    if (adapter) {
+      yield call(sendHeartBeat, adapter)
     }
   }
 }
@@ -127,7 +131,7 @@ function* handleHeartBeat() {
 function* handleNewBFF() {
   let unbind: () => Promise<void> = async function () {}
 
-  yield takeEvery(SET_BFF, function* (action: SetBffAction) {
+  yield takeEvery(SET_REALM_ADAPTER, function* (action: SetRealmAdapterAction) {
     if (unbind) {
       // disconnect previous bff
       unbind().catch(logger.error)
@@ -141,17 +145,24 @@ function* handleNewBFF() {
       const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       // bind messages to this comms instance
       unbind = yield call(bindHandlersToBFF, action.payload, identity?.address)
+
+      // enable/disable minimap
+      const miniMapVisible = !action.payload.about.configurations?.minimap || !action.payload.about.configurations?.minimap.enabled
+      yield waitForRendererInstance()
+      getUnityInstance().ConfigureHUDElement(HUDElementID.MINIMAP, { active: miniMapVisible, visible: miniMapVisible })
+
+      // TODO: configure skybox
     }
   })
 }
 
 // this saga handles the suddenly disconnection of a IBff
-function* handleBffDisconnectionSaga(action: HandleBffDisconnection) {
-  const context: IBff = yield select(getBff)
+function* handleBffDisconnectionSaga(action: HandleRealmDisconnection) {
+  const adapter: IRealmAdapter = yield select(getRealmAdapter)
 
-  if (context && context === action.payload.context) {
+  if (adapter && adapter === action.payload.context) {
     // this also remove the context
-    yield put(setBff(undefined))
+    yield put(setRealmAdapter(undefined))
   }
 }
 

@@ -163,9 +163,6 @@ export namespace commConfigurations {
 
   export const peerTtlMs = 60000
 
-  export const autoChangeRealmInterval =
-    typeof qs.get('AUTO_CHANGE_INTERVAL') === 'string' ? parseInt(qs.get('AUTO_CHANGE_INTERVAL')!, 10) * 1000 : 40000
-
   export const defaultIceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
     {

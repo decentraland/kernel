@@ -53,8 +53,8 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
 import { trackEvent } from 'shared/analytics'
 import { authorizeBuilderHeaders } from 'atomicHelpers/authenticateBuilder'
-import { IBff } from 'shared/bff/types'
-import { getFetchContentServerFromBff, getFetchContentUrlPrefixFromBff, waitForBff } from 'shared/bff/selectors'
+import { IRealmAdapter } from 'shared/realm/types'
+import { getFetchContentServerFromRealmAdapter, getFetchContentUrlPrefixFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
 import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
@@ -83,8 +83,8 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
   const isRequestingEmotes = action.type === EMOTES_REQUEST
   const failureAction = isRequestingEmotes ? emotesFailure : wearablesFailure
   if (valid) {
-    const bff: IBff = yield call(waitForBff)
-    const contentBaseUrl: string = yield call(getFetchContentUrlPrefixFromBff, bff)
+    const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
+    const contentBaseUrl: string = yield call(getFetchContentUrlPrefixFromRealmAdapter, realmAdapter)
 
     try {
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
@@ -114,8 +114,8 @@ function* fetchItemsFromCatalyst(
   action: EmotesRequest | WearablesRequest,
   filters: EmotesRequestFilters | WearablesRequestFilters
 ) {
-  const bff: IBff = yield call(waitForBff)
-  const contentBaseUrl: string = yield call(getFetchContentServerFromBff, bff)
+  const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
+  const contentBaseUrl: string = yield call(getFetchContentServerFromRealmAdapter, realmAdapter)
   // TODO: stop using CatalystClient and move endpoints to BFF
   const catalystUrl: string = contentBaseUrl.replace(/\/content\/?.*$/, '')
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)

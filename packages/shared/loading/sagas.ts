@@ -40,7 +40,7 @@ import { getAssetBundlesBaseUrl } from 'config'
 import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
 import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
 import { LoadableScene } from 'shared/types'
-import { SET_BFF } from 'shared/bff/actions'
+import { SET_REALM_ADAPTER } from 'shared/realm/actions'
 import { POSITION_SETTLED, POSITION_UNSETTLED, SET_SCENE_LOADER } from 'shared/scene-loader/actions'
 
 // The following actions may change the status of the loginVisible
@@ -59,7 +59,7 @@ const ACTIONS_FOR_LOADING = [
   SIGNUP_SET_IS_SIGNUP,
   TELEPORT_TRIGGERED,
   UPDATE_STATUS_MESSAGE,
-  SET_BFF,
+  SET_REALM_ADAPTER,
   SET_SCENE_LOADER,
   POSITION_SETTLED,
   POSITION_UNSETTLED,

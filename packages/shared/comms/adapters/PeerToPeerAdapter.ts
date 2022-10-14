@@ -26,7 +26,7 @@ import { Position3D } from '@dcl/catalyst-peer'
 import { ILogger } from 'shared/logger'
 import { incrementCommsMessageSent } from 'shared/session/getPerformanceInfo'
 import { listenPeerMessage } from '../logic/subscription-adapter'
-import { IBff } from '../../bff/types'
+import { IRealmAdapter } from '../../realm/types'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
 
@@ -40,7 +40,7 @@ export type P2PConfig = {
   islandId: string
   peerId: string
   logger: ILogger
-  bff: IBff
+  bff: IRealmAdapter
   logConfig: P2PLogConfig
 }
 

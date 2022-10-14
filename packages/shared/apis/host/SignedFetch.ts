@@ -10,7 +10,7 @@ import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { SignedFetchServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/signed_fetch.gen'
-import { getBff } from 'shared/bff/selectors'
+import { getRealmAdapter } from 'shared/realm/selectors'
 import { Realm } from 'shared/dao/types'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
@@ -19,13 +19,13 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
       const { identity } = await onLoginCompleted()
 
       const state = store.getState()
-      const bff = getBff(state)
+      const realmAdapter = getRealmAdapter(state)
 
-      const realm: Realm = bff
+      const realm: Realm = realmAdapter
         ? {
-            hostname: new URL(bff?.baseUrl).hostname,
-            protocol: bff.about.comms?.protocol || 'v3',
-            serverName: bff.about.configurations?.realmName || bff.baseUrl
+            hostname: new URL(realmAdapter?.baseUrl).hostname,
+            protocol: realmAdapter.about.comms?.protocol || 'v3',
+            serverName: realmAdapter.about.configurations?.realmName || realmAdapter.baseUrl
           }
         : {
             hostname: 'offline',

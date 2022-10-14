@@ -27,7 +27,7 @@ import {
   TextMessage
 } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
-import * as bffSelectors from 'shared/bff/selectors'
+import * as bffSelectors from 'shared/realm/selectors'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -161,7 +161,7 @@ function mockStoreCalls(
   opts?: { profiles: number[]; i: number },
   fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>
 ) {
-  sinon.stub(bffSelectors, 'getFetchContentServerFromBff').callsFake(() => FETCH_CONTENT_SERVER)
+  sinon.stub(bffSelectors, 'getFetchContentServerFromRealmAdapter').callsFake(() => FETCH_CONTENT_SERVER)
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
   sinon

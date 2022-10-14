@@ -10,7 +10,7 @@ import {
 import { CommsServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/comms_service.gen'
 import { trackEvent } from 'shared/analytics'
 import { ExplorerIdentity } from 'shared/session/types'
-import { BffEvents, BffServices, IBff } from '../types'
+import { RealmConnectionEvents, BffServices, IRealmAdapter } from '../types'
 import mitt from 'mitt'
 import { legacyServices } from '../local-services/legacy'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
@@ -62,7 +62,7 @@ export async function createBffRpcConnection(
   baseUrl: string,
   about: AboutResponse,
   identity: ExplorerIdentity
-): Promise<IBff> {
+): Promise<IRealmAdapter> {
   const wsUrl = resolveBffUrl(baseUrl, about.bff?.publicUrl)
   const bffTransport = WebSocketTransport(new WebSocket(wsUrl, 'bff'))
 
@@ -77,8 +77,8 @@ export async function createBffRpcConnection(
   return new BffRpcConnection(baseUrl, about, port, peerId)
 }
 
-export class BffRpcConnection implements IBff<any> {
-  public events = mitt<BffEvents>()
+export class BffRpcConnection implements IRealmAdapter<any> {
+  public events = mitt<RealmConnectionEvents>()
   public services: BffServices
 
   private logger: ILogger = createLogger('BFF: ')
