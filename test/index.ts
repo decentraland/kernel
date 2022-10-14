@@ -36,9 +36,6 @@ import './sceneEvents/comms.spec'
 
 import './dao'
 
-import './scene-system/websocketWrapper.spec'
-import './scene-system/fetchWrapper.spec'
-
 declare var mocha: Mocha
 declare var globalThis: any
 

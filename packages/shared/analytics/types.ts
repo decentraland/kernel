@@ -79,4 +79,5 @@ export type TrackEvents = PositionTrackEvents & {
   ['Remote avatar for profile is invalid']: { avatar: Avatar }
 
   ['pickedRealm']: { algorithm: string; domain: string }
+  ['errorInSceneWorker']: { message: string; scene: string; pointers: string[] }
 }

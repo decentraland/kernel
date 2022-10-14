@@ -2,12 +2,12 @@ import { rendererProtocol } from './../../../renderer-protocol/rpcClient'
 
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
-import { ExperimentalAPIServiceDefinition } from 'shared/protocol/kernel/apis/ExperimentalAPI.gen'
+import { ExperimentalApiServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/experimental_api.gen'
 import { PortContext } from './context'
 
 /** @deprecated this is only for experimental purposes */
 export function registerExperimentalAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  codegen.registerService(port, ExperimentalAPIServiceDefinition, async () => ({
+  codegen.registerService(port, ExperimentalApiServiceDefinition, async () => ({
     async sendToRenderer(req, ctx) {
       const protocol = await rendererProtocol
       return protocol.crdtService.sendCrdt({

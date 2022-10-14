@@ -12,7 +12,7 @@ import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { bffForRealm, prettyRealmName, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/bff/resolver'
-import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {

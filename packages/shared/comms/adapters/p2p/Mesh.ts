@@ -2,7 +2,7 @@ import { IBff } from 'shared/bff/types'
 import { listenPeerMessage } from '../../logic/subscription-adapter'
 import { ILogger } from 'shared/logger'
 import { P2PLogConfig } from './types'
-import { PeerTopicSubscriptionResultElem } from 'shared/protocol/bff/topics-service.gen'
+import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
 
 export const defaultIceServers = [
   { urls: 'stun:stun.l.google.com:19302' },

@@ -1,5 +1,5 @@
 import { AsyncQueue } from '@dcl/rpc/dist/push-channel'
-import { WsPacket } from 'shared/protocol/kernel/comms/ws-comms-rfc-5.gen'
+import { WsPacket } from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc5/ws_comms.gen'
 
 export function wsAsAsyncChannel(socket: WebSocket) {
   // Wire the socket to a pushable channel

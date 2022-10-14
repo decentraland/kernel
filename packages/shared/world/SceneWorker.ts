@@ -1,17 +1,10 @@
 import { Quaternion, Vector3 } from '@dcl/ecs-math'
-import {
-  DEBUG_MESSAGES_QUEUE_PERF,
-  DEBUG_SCENE_LOG,
-  FORCE_SEND_MESSAGE,
-  playerConfigurations,
-  WSS_ENABLED
-} from 'config'
+import { DEBUG_SCENE_LOG, FORCE_SEND_MESSAGE, playerConfigurations, WSS_ENABLED } from 'config'
 import { PositionReport } from './positionThings'
-import { Observable, Observer } from 'mz-observable'
 import { store } from 'shared/store/isolatedStore'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
-import { EventDataType } from 'shared/protocol/kernel/apis/EngineAPI.gen'
+import { EventDataType } from '@dcl/protocol/out-ts/decentraland/kernel/apis/engine_api.gen'
 import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -24,7 +17,7 @@ import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
-import { permissionItemFromJSON } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { permissionItemFromJSON } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
 import { incrementAvatarSceneMessages } from 'shared/session/getPerformanceInfo'
 import { getCurrentUserId } from 'shared/session/selectors'
 
@@ -40,25 +33,30 @@ export enum SceneWorkerReadyState {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const sceneRuntimeRaw = require('raw-loader!../../../static/systems/scene.system.js')
+const sceneRuntimeRaw =
+  process.env.NODE_ENV === 'production'
+    ? require('raw-loader!@dcl/scene-runtime/dist/webworker.js')
+    : require('raw-loader!@dcl/scene-runtime/dist/webworker.dev.js')
+
 const sceneRuntimeBLOB = new Blob([sceneRuntimeRaw])
 const sceneRuntimeUrl = URL.createObjectURL(sceneRuntimeBLOB)
 
-const sendBatchTime: Array<number> = []
-const sendBatchMsgs: Array<number> = []
-let sendBatchTimeCount: number = 0
-let sendBatchMsgCount: number = 0
-
 export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready' | 'failed'
 export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
-
-export const sceneLifeCycleObservable = new Observable<Readonly<SceneLifeCycleStatusReport>>()
 
 function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
   const loggerName = getSceneNameFromJsonData(loadableScene.entity.metadata) || loadableScene.id
 
   const worker = new Worker(sceneRuntimeUrl, {
     name: `Scene(${loggerName},${(loadableScene.entity.metadata as Scene).scene?.base})`
+  })
+
+  worker.addEventListener('error', (err) => {
+    trackEvent('errorInSceneWorker', {
+      message: err.message,
+      scene: loadableScene.id,
+      pointers: loadableScene.entity.pointers
+    })
   })
 
   return WebWorkerTransport(worker)
@@ -70,7 +68,6 @@ export class SceneWorker {
   public ready: SceneWorkerReadyState = SceneWorkerReadyState.LOADING
 
   public rpcContext!: PortContext
-  public sceneReady: boolean = false
   private rpcServer!: RpcServer<PortContext>
 
   private sceneStarted: boolean = false
@@ -78,7 +75,6 @@ export class SceneWorker {
   private position: Vector3 = new Vector3()
   private readonly lastSentPosition = new Vector3(0, 0, 0)
   private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
-  private sceneLifeCycleObserver: Observer<any> | null = null
   private readonly startLoadingTime = performance.now()
 
   metadata: Scene
@@ -117,7 +113,7 @@ export class SceneWorker {
       sendSceneEvent: (type, data) => {
         if (this.rpcContext.subscribedEvents.has(type)) {
           this.rpcContext.events.push({
-            type: EventDataType.Generic,
+            type: EventDataType.EDT_GENERIC,
             generic: {
               eventId: type,
               eventData: JSON.stringify(data)
@@ -175,7 +171,6 @@ export class SceneWorker {
     if ((this.ready & disposingFlags) === 0) {
       this.ready |= SceneWorkerReadyState.DISPOSING
 
-      this.childDispose()
       this.transport.close()
 
       this.ready |= SceneWorkerReadyState.DISPOSED
@@ -187,6 +182,29 @@ export class SceneWorker {
     }
     getUnityInstance().UnloadScene(this.loadableScene.id)
     this.ready |= SceneWorkerReadyState.DISPOSED
+  }
+
+  // when the engine says "the scene is ready" or it did fail to load
+  onReady() {
+    this.ready |= SceneWorkerReadyState.STARTED
+
+    if (!this.sceneStarted) {
+      this.sceneStarted = true
+      this.rpcContext.sendSceneEvent('sceneStart', {})
+
+      const baseParcel = this.metadata.scene.base
+
+      trackEvent('scene_start_event', {
+        scene_id: this.loadableScene.id,
+        time_since_creation: performance.now() - this.startLoadingTime,
+        base: baseParcel
+      })
+
+      queueMicrotask(() => {
+        // this NEEDS to run in a microtask
+        store.dispatch(signalSceneStart(this.loadableScene))
+      })
+    }
   }
 
   // when the current user enters the scene
@@ -201,19 +219,10 @@ export class SceneWorker {
     if (userId) this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
   }
 
-  protected childDispose() {
-    if (this.sceneLifeCycleObserver) {
-      sceneLifeCycleObservable.remove(this.sceneLifeCycleObserver)
-      this.sceneLifeCycleObserver = null
-    }
-  }
-
   private attachTransport() {
     this.rpcServer.setHandler(registerServices)
-    this.rpcServer.attachTransport(this.transport as Transport, this.rpcContext)
+    this.rpcServer.attachTransport(this.transport, this.rpcContext)
     this.ready |= SceneWorkerReadyState.LOADED
-
-    this.subscribeToSceneLifeCycleEvents()
 
     queueMicrotask(() => {
       // this NEEDS to run in a microtask or timeout
@@ -225,39 +234,25 @@ export class SceneWorker {
     setTimeout(() => {
       if (!this.sceneStarted) {
         this.ready |= SceneWorkerReadyState.LOADING_FAILED
+
+        this.sceneStarted = true
+        this.rpcContext.sendSceneEvent('sceneStart', {})
+
         store.dispatch(signalSceneFail(this.loadableScene))
       }
     }, WORKER_TIMEOUT)
   }
 
   private sendBatch(actions: EntityAction[]): void {
+    console.log('batch', this.loadableScene.id, actions)
     if (this.loadableScene.id === 'dcl-gs-avatars') {
       incrementAvatarSceneMessages(actions.length)
     }
 
-    let time = Date.now()
     if (WSS_ENABLED || FORCE_SEND_MESSAGE) {
       this.sendBatchWss(actions)
     } else {
       this.sendBatchNative(actions)
-    }
-
-    if (DEBUG_MESSAGES_QUEUE_PERF) {
-      time = Date.now() - time
-
-      sendBatchTime.push(time)
-      sendBatchMsgs.push(actions.length)
-
-      sendBatchTimeCount += time
-
-      sendBatchMsgCount += actions.length
-
-      while (sendBatchMsgCount >= 10000) {
-        sendBatchTimeCount -= sendBatchTime.splice(0, 1)[0]
-        sendBatchMsgCount -= sendBatchMsgs.splice(0, 1)[0]
-      }
-
-      defaultLogger.log(`sendBatch time total for msgs ${sendBatchMsgCount} calls: ${sendBatchTimeCount}ms ... `)
     }
   }
 
@@ -311,7 +306,7 @@ export class SceneWorker {
     if (this.rpcContext.subscribedEvents.has('positionChanged')) {
       if (!this.lastSentPosition.equals(positionReport.position)) {
         this.rpcContext.sendProtoSceneEvent({
-          type: EventDataType.PositionChanged,
+          type: EventDataType.EDT_POSITION_CHANGED,
           positionChanged: {
             position: {
               x: positionReport.position.x - this.position.x,
@@ -329,7 +324,7 @@ export class SceneWorker {
     if (this.rpcContext.subscribedEvents.has('rotationChanged')) {
       if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
         this.rpcContext.sendProtoSceneEvent({
-          type: EventDataType.RotationChanged,
+          type: EventDataType.EDT_ROTATION_CHANGED,
           rotationChanged: {
             rotation: positionReport.cameraEuler,
             quaternion: positionReport.cameraQuaternion
@@ -337,37 +332,6 @@ export class SceneWorker {
         })
         this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
       }
-    }
-  }
-
-  private subscribeToSceneLifeCycleEvents() {
-    this.sceneLifeCycleObserver = sceneLifeCycleObservable.add((obj) => {
-      if (this.loadableScene.id === obj.sceneId && obj.status === 'ready') {
-        this.ready |= SceneWorkerReadyState.STARTED
-
-        this.sceneReady = true
-        sceneLifeCycleObservable.remove(this.sceneLifeCycleObserver)
-        this.sendSceneReadyIfNecessary()
-      }
-    })
-  }
-
-  private sendSceneReadyIfNecessary() {
-    if (!this.sceneStarted && this.sceneReady) {
-      this.sceneStarted = true
-      this.rpcContext.sendSceneEvent('sceneStart', {})
-
-      const baseParcel = this.metadata.scene.base
-
-      trackEvent('scene_start_event', {
-        scene_id: this.loadableScene.id,
-        time_since_creation: performance.now() - this.startLoadingTime,
-        base: baseParcel
-      })
-      queueMicrotask(() => {
-        // this NEEDS to run in a microtask
-        store.dispatch(signalSceneStart(this.loadableScene))
-      })
     }
   }
 }

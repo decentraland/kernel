@@ -5,7 +5,7 @@ import { commConfigurations } from 'config'
 import Html from 'shared/Html'
 import { getCommsRoom } from 'shared/comms/selectors'
 import { getSpatialParamsFor } from './utils'
-import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { store } from 'shared/store/isolatedStore'
 
 export const createOpusVoiceHandler = (): VoiceHandler => {

@@ -4,7 +4,7 @@ import {
   getThumbnailUrlFromJsonDataAndContent
 } from 'shared/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { UserActionModuleServiceDefinition } from 'shared/protocol/kernel/apis/UserActionModule.gen'
+import { UserActionModuleServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/user_action_module.gen'
 import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'

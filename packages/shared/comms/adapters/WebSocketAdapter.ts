@@ -1,6 +1,6 @@
 import { future, IFuture } from 'fp-future'
 
-import * as rfc5 from 'shared/protocol/kernel/comms/ws-comms-rfc-5.gen'
+import * as rfc5 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc5/ws_comms.gen'
 import { Writer } from 'protobufjs/minimal'
 import { ILogger, createLogger } from 'shared/logger'
 import { ExplorerIdentity } from 'shared/session/types'

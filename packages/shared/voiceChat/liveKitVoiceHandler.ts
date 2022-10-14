@@ -14,7 +14,7 @@ import { VoiceHandler } from './VoiceHandler'
 import { getPeer } from 'shared/comms/peers'
 import { getSpatialParamsFor, isChrome } from './utils'
 import { startLoopback } from '../../voice-chat-codec/loopback'
-import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
 type ParticipantInfo = {
   streamNode: MediaStreamAudioSourceNode

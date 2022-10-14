@@ -13,7 +13,7 @@ import {
   ProfileResponse,
   Scene,
   Voice
-} from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+} from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { CommsEvents, RoomConnection } from '../interface'
 import { Rfc4RoomConnection } from '../logic/rfc-4-room-connection'

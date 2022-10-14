@@ -80,7 +80,6 @@ import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
-import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import {
   getFriendRequests,
@@ -506,7 +505,10 @@ export class BrowserInterface {
     switch (eventType) {
       case 'SceneReady': {
         const { sceneId } = payload
-        sceneLifeCycleObservable.notifyObservers({ sceneId, status: 'ready' })
+        const scene = getSceneWorkerBySceneID(sceneId)
+        console.log('scene ready', scene, sceneId, payload)
+        scene?.onReady()
+        if (!scene) debugger
         break
       }
       case 'DeactivateRenderingACK': {
@@ -736,7 +738,14 @@ export class BrowserInterface {
 
   public GetChannelMembers(getChannelMembersPayload: GetChannelMembersPayload) {
     if (!areChannelsEnabled()) return
-    getChannelMembers(getChannelMembersPayload)
+    getChannelMembers(getChannelMembersPayload).catch((err) => {
+      defaultLogger.error('error getChannelMembers', err),
+        trackEvent('error', {
+          message: `error getChannelMembers ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'GetChannelMembers'
+        })
+    })
   }
 
   public GetUnseenMessagesByChannel() {

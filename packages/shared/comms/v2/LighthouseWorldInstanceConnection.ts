@@ -23,7 +23,7 @@ import {
 import { CommsStatus } from '../types'
 
 import { ProfileType } from 'shared/profiles/types'
-import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import mitt from 'mitt'
 import { createLogger } from 'shared/logger'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -460,7 +460,7 @@ function mapToPackageVoice(encodedSamples: Uint8Array, index: number): rfc4.Voic
   return {
     encodedSamples,
     index,
-    codec: rfc4.Voice_VoiceCodec.VoiceCodec_OPUS
+    codec: rfc4.Voice_VoiceCodec.VC_OPUS
   }
 }
 

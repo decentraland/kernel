@@ -13,7 +13,7 @@ import { store } from 'shared/store/isolatedStore'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { getProfileFromStore } from 'shared/profiles/selectors'
-import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
 const peerMap = new Map<string, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()

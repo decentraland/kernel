@@ -1,8 +1,8 @@
 import { RpcClientModule } from '@dcl/rpc/dist/codegen'
 import { Emitter } from 'mitt'
-import { CommsServiceDefinition } from 'shared/protocol/bff/comms-service.gen'
-import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
-import { IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
+import { CommsServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/comms_service.gen'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
+import { IslandChangedMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
 
 export type BffState = {
   bff: IBff | undefined

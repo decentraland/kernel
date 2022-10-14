@@ -3,7 +3,7 @@ import { BffEvents, BffServices, IBff } from '../types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { localCommsService } from '../local-services/comms'
 import { legacyServices } from '../local-services/legacy'
-import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 export function localBff(baseUrl: string, about: AboutResponse, identity: ExplorerIdentity): IBff {
   const events = mitt<BffEvents>()

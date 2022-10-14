@@ -4,7 +4,7 @@ import defaultLogger from 'shared/logger'
 import { VOICE_CHAT_SAMPLE_RATE, OPUS_FRAME_SIZE_MS } from '../../voice-chat-codec/constants'
 import { parse, write } from 'sdp-transform'
 import { InputWorkletRequestTopic, OutputWorkletRequestTopic } from '../../voice-chat-codec/types'
-import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const workletWorkerRaw = require('raw-loader!../../../static/voice-chat-codec/audioWorkletProcessors.js')
@@ -457,7 +457,7 @@ export class VoiceCommunicator {
       this.channel.send({
         encodedSamples: data,
         index: this.inputFramesIndex,
-        codec: rfc4.Voice_VoiceCodec.VoiceCodec_OPUS
+        codec: rfc4.Voice_VoiceCodec.VC_OPUS
       })
     })
 

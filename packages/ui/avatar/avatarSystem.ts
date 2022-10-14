@@ -8,10 +8,19 @@ import type {
   UserInformation,
   UserRemovedMessage
 } from 'shared/comms/interface/types'
-import type { Position } from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import mitt from 'mitt'
 export const avatarMessageObservable = mitt<{ message: AvatarMessage }>()
+
+type Position = {
+  positionX: number
+  positionY: number
+  positionZ: number
+  rotationX: number
+  rotationY: number
+  rotationZ: number
+  rotationW: number
+}
 
 const avatarMap = new Map<string, AvatarEntity>()
 // const box = new BoxShape()

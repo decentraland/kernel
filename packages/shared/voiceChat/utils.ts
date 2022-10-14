@@ -1,6 +1,6 @@
 import { rotateUsingQuaternion } from 'shared/comms/interface/utils'
 import { VoiceSpatialParams } from './VoiceCommunicator'
-import * as rfc4 from 'shared/protocol/kernel/comms/comms-rfc-4.gen'
+import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
 export function getSpatialParamsFor(position: rfc4.Position): VoiceSpatialParams {
   return {

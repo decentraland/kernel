@@ -1,4 +1,4 @@
-import { AboutResponse } from 'shared/protocol/bff/http-endpoints.gen'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 import { LegacyServices } from '../types'
 
 export function legacyServices(baseUrl: string, about: AboutResponse): LegacyServices {

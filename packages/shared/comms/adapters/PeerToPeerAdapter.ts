@@ -1,6 +1,6 @@
 import { Reader } from 'protobufjs/minimal'
 import { future } from 'fp-future'
-import { JoinIslandMessage, LeftIslandMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
+import { JoinIslandMessage, LeftIslandMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
 import { SuspendRelayData, PingData, PongData, Packet, MessageData } from './p2p/p2p'
 import { Mesh } from './p2p/Mesh'
 import mitt from 'mitt'
@@ -28,7 +28,7 @@ import { incrementCommsMessageSent } from 'shared/session/getPerformanceInfo'
 import { listenPeerMessage } from '../logic/subscription-adapter'
 import { IBff } from '../../bff/types'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
-import { PeerTopicSubscriptionResultElem } from 'shared/protocol/bff/topics-service.gen'
+import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
 
 export type RelaySuspensionConfig = {
   relaySuspensionInterval: number

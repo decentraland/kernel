@@ -1,4 +1,4 @@
-import { IslandChangedMessage } from 'shared/protocol/kernel/comms/v3/archipelago.gen'
+import { IslandChangedMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
 import { action } from 'typesafe-actions'
 import { IBff } from './types'
 
