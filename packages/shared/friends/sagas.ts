@@ -1384,31 +1384,40 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       return
     }
 
+    // check if the user has perms to create channels.
     const isAllowed = isAllowedToCreate()
-    console.log(isAllowed)
+    if (isAllowed) {
+      const { created, conversation }: { created: boolean; conversation: Conversation } = yield apply(
+        client,
+        client.getOrCreateChannel,
+        [channelId, []]
+      )
 
-    // get or create channel
-    const { created, conversation }: { created: boolean; conversation: Conversation } = yield apply(
-      client,
-      client.getOrCreateChannel,
-      [channelId, []]
-    )
+      const channel: ChannelInfoPayload = {
+        name: conversation.name ?? action.payload.channelId,
+        channelId: conversation.id,
+        unseenMessages: 0,
+        lastMessageTimestamp: undefined,
+        memberCount: 1,
+        description: '',
+        joined: true,
+        muted: false
+      }
 
-    const channel: ChannelInfoPayload = {
-      name: conversation.name ?? action.payload.channelId,
-      channelId: conversation.id,
-      unseenMessages: 0,
-      lastMessageTimestamp: undefined,
-      memberCount: 1,
-      description: '',
-      joined: true,
-      muted: false
-    }
-
-    if (created) {
-      getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+      if (created) {
+        getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+      } else {
+        yield apply(client, client.joinChannel, [conversation.id])
+      }
+      // if the user does not have perms to create, we check if the channel exists and join if so.
     } else {
-      yield apply(client, client.joinChannel, [conversation.id])
+      const channelByName = yield apply(client, client.getChannelByName, [channelId])
+
+      if (channelByName) {
+        yield apply(client, client.joinChannel, [channelByName.id])
+      } else {
+        return
+      }
     }
   } catch (e) {
     if (e instanceof ChannelsError) {
@@ -1423,6 +1432,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   }
 }
 
+// Join channel
 export async function joinChannel(request: JoinOrCreateChannelPayload) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
@@ -1459,12 +1469,12 @@ export async function createChannel(request: CreateChannelPayload) {
     // create channel
     const { conversation, created } = await client.getOrCreateChannel(channelId, [])
 
+    // if it already exists, we notify an error
     if (!created) {
       notifyJoinChannelError(request.channelId, ChannelErrorCode.ALREADY_EXISTS)
       return
     }
 
-    // parse channel info
     const channel: ChannelInfoPayload = {
       name: conversation.name ?? request.channelId,
       channelId: conversation.id,
@@ -1476,7 +1486,6 @@ export async function createChannel(request: CreateChannelPayload) {
       muted: false
     }
 
-    // Send confirmation message to unity
     getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
@@ -1763,8 +1772,7 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
 
 /**
  * Get the number of channels the user is joined to and check with a feature flag value if the user has reached the maximum amount allowed.
- * @return True - if the user has reached the maximum amount allowed.
- * @return False - if the user has not reached the maximum amount allowed.
+ * @return `true` if the user has reached the maximum amount allowed | `false` if it has not.
  */
 function checkChannelsLimit() {
   const limit = getMaxChannels(store.getState())
@@ -1905,7 +1913,7 @@ function isAllowedToCreate() {
     return false
   }
 
-  if (allowedUsers.mode === 0 && allowedUsers.allowList.includes(ownId)) {
+  if (allowedUsers.allowList.includes(ownId)) {
     return true
   }
 
