@@ -5,10 +5,10 @@ import { RpcClientPort } from '@dcl/rpc/dist/types'
 import { RuntimeEventCallback } from './Events'
 import {
   EAType,
-  EngineAPIServiceDefinition,
+  EngineApiServiceDefinition,
   EntityAction,
   queryTypeFromJSON
-} from 'shared/protocol/kernel/apis/EngineAPI.gen'
+} from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
 import { SceneRuntimeEventState } from './Events'
 import { RpcClientModule } from '@dcl/rpc/dist/codegen'
 
@@ -22,7 +22,7 @@ export interface DecentralandInterfaceOptions {
   batchEvents: { events: EntityAction[] }
   onStartFunctions: (() => void)[]
   onUpdateFunctions: ((dt: number) => void)[]
-  EngineAPI: RpcClientModule<EngineAPIServiceDefinition>
+  EngineApi: RpcClientModule<EngineApiServiceDefinition>
 }
 
 type GenericRpcModule = Record<string, (...args: any) => Promise<unknown>>
@@ -55,7 +55,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
       if (eventState.allowOpenExternalUrl) {
         batchEvents.events.push({
-          type: EAType.OpenExternalUrl,
+          type: EAType.EAT_OPEN_EXTERNAL_URL,
           tag: '',
           payload: { openExternalUrl: { url } }
         })
@@ -74,7 +74,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         }
 
         batchEvents.events.push({
-          type: EAType.OpenNFTDialog,
+          type: EAType.EAT_OPEN_NFT_DIALOG,
           tag: '',
           payload: { openNftDialog: { assetContractAddress, tokenId, comment: comment || '' } }
         })
@@ -89,14 +89,14 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
         return
       }
       batchEvents.events.push({
-        type: EAType.CreateEntity,
+        type: EAType.EAT_CREATE_ENTITY,
         payload: { createEntity: { id: entityId } }
       })
     },
 
     removeEntity(entityId: string) {
       batchEvents.events.push({
-        type: EAType.RemoveEntity,
+        type: EAType.EAT_REMOVE_ENTITY,
         payload: { removeEntity: { id: entityId } }
       })
     },
@@ -128,7 +128,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: EAType.UpdateEntityComponent,
+          type: EAType.EAT_UPDATE_ENTITY_COMPONENT,
           tag: sceneId + '_' + entityId + '_' + classId,
           payload: {
             updateEntityComponent: {
@@ -146,7 +146,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     attachEntityComponent(entityId: string, componentName: string, id: string): void {
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: EAType.AttachEntityComponent,
+          type: EAType.EAT_ATTACH_ENTITY_COMPONENT,
           tag: entityId,
           payload: {
             attachEntityComponent: {
@@ -163,7 +163,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     removeEntityComponent(entityId: string, componentName: string): void {
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: EAType.ComponentRemoved,
+          type: EAType.EAT_COMPONENT_REMOVED,
           tag: entityId,
           payload: {
             componentRemoved: {
@@ -178,7 +178,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     /** set a new parent for the entity */
     setParent(entityId: string, parentId: string): void {
       batchEvents.events.push({
-        type: EAType.SetEntityParent,
+        type: EAType.EAT_SET_ENTITY_PARENT,
         tag: entityId,
         payload: {
           setEntityParent: {
@@ -193,7 +193,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
     query(queryType: QueryType, payload: any) {
       payload.queryId = getIdAsNumber(payload.queryId).toString()
       batchEvents.events.push({
-        type: EAType.Query,
+        type: EAType.EAT_QUERY,
         tag: sceneId + '_' + payload.queryId,
         payload: {
           query: {
@@ -206,18 +206,18 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     /** subscribe to specific events, events will be handled by the onEvent function */
     subscribe(eventName: string): void {
-      options.EngineAPI.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      options.EngineApi.subscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     /** unsubscribe to specific event */
     unsubscribe(eventName: string): void {
-      options.EngineAPI.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
+      options.EngineApi.unsubscribe({ eventId: eventName }).catch((err: Error) => onError(err))
     },
 
     componentCreated(id: string, componentName: string, classId: number) {
       if (componentNameRE.test(componentName)) {
         batchEvents.events.push({
-          type: EAType.ComponentCreated,
+          type: EAType.EAT_COMPONENT_CREATED,
           tag: id,
           payload: {
             componentCreated: {
@@ -232,7 +232,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     componentDisposed(id: string) {
       batchEvents.events.push({
-        type: EAType.ComponentDisposed,
+        type: EAType.EAT_COMPONENT_DISPOSED,
         tag: id,
         payload: {
           componentDisposed: { id }
@@ -242,7 +242,7 @@ export function createDecentralandInterface(options: DecentralandInterfaceOption
 
     componentUpdated(id: string, json: string) {
       batchEvents.events.push({
-        type: EAType.ComponentUpdated,
+        type: EAType.EAT_COMPONENT_UPDATED,
         tag: id,
         payload: {
           componentUpdated: {

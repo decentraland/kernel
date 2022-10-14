@@ -1,9 +1,9 @@
 import { CommunicationsControllerServiceClient } from './CommunicationsController'
 import { createDevToolsServiceClient } from './DevTools'
-import { createEngineAPIServiceClient } from './EngineAPI'
-import { EnvironmentAPIServiceClient } from './EnvironmentAPI'
+import { createEngineApiServiceClient } from './EngineAPI'
+import { EnvironmentApiServiceClient } from './EnvironmentAPI'
 import { EthereumControllerServiceClient } from './EthereumController'
-import { createExperimentalAPIServiceClient } from './ExperimentalAPI'
+import { createExperimentalApiServiceClient } from './ExperimentalAPI'
 import { ParcelIdentityServiceClient } from './ParcelIdentity'
 import { createPermissionsServiceClient } from './Permissions'
 import { PlayersServiceClient } from './Players'
@@ -17,13 +17,13 @@ import { createLegacyWeb3Provider } from './Web3Provider'
 
 export const LoadableAPIs = {
   DevTools: createDevToolsServiceClient,
-  EngineAPI: createEngineAPIServiceClient,
-  ExperimentalAPI: createExperimentalAPIServiceClient,
+  EngineApi: createEngineApiServiceClient,
+  ExperimentalApi: createExperimentalApiServiceClient,
   Permissions: createPermissionsServiceClient,
 
   SignedFetch: SignedFetchServiceClient.create,
   CommunicationsController: CommunicationsControllerServiceClient.create,
-  EnvironmentAPI: EnvironmentAPIServiceClient.create,
+  EnvironmentApi: EnvironmentApiServiceClient.create,
   EthereumController: EthereumControllerServiceClient.create,
   ParcelIdentity: ParcelIdentityServiceClient.create,
   Players: PlayersServiceClient.create,
@@ -35,7 +35,7 @@ export const LoadableAPIs = {
   // Legacy
   LegacySignedFetch: SignedFetchServiceClient.createLegacy,
   LegacyCommunicationsController: CommunicationsControllerServiceClient.createLegacy,
-  LegacyEnvironmentAPI: EnvironmentAPIServiceClient.createLegacy,
+  LegacyEnvironmentAPI: EnvironmentApiServiceClient.createLegacy,
   LegacyEthereumController: EthereumControllerServiceClient.createLegacy,
   LegacyParcelIdentity: ParcelIdentityServiceClient.createLegacy,
   LegacyPlayers: PlayersServiceClient.createLegacy,

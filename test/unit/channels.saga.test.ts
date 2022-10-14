@@ -132,7 +132,8 @@ const stubClient = (start: number, end: number, index: number) =>
     getUserId: () => '0xa1'
   } as unknown as SocialAPI)
 
-function mockStoreCalls(ops?: { start?: number; end?: number; index?: number }) {
+function mockStoreCalls(ops?: { start?: number; end?: number; index?: number; catalog?: boolean }) {
+  sinon.stub(friendsSelectors, 'getChannels').callsFake(() => allCurrentConversations)
   sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
   sinon
     .stub(friendsSelectors, 'getSocialClient')
@@ -140,6 +141,7 @@ function mockStoreCalls(ops?: { start?: number; end?: number; index?: number }) 
   sinon
     .stub(profilesSelectors, 'getCurrentUserProfile')
     .callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds) || null)
+  sinon.stub(profilesSelectors, 'isAddedToCatalog').callsFake(() => ops?.catalog ?? true)
   sinon.stub(profilesSelectors, 'getProfile').callsFake(() => getMockedAvatar('0xa1', 'martha', mutedIds))
 }
 
@@ -219,7 +221,7 @@ describe('Friends sagas - Channels Feature', () => {
             memberCount: conv.conversation.userIds?.length || 1,
             description: '',
             joined: true,
-            muted: false
+            muted: mutedIds.includes(conv.conversation.id)
           })
         }
 
@@ -261,7 +263,7 @@ describe('Friends sagas - Channels Feature', () => {
           }
           totalUnseenMessagesByChannel.unseenChannelMessages.push({
             count,
-            channelId: conv.conversation.name!
+            channelId: conv.conversation.id
           })
         }
 
@@ -277,7 +279,7 @@ describe('Friends sagas - Channels Feature', () => {
   })
 
   describe('Get channel messages', () => {
-    let opts = { start: 2, end: 4 }
+    let opts = { start: 2, end: 4, catalog: true }
 
     beforeEach(() => {
       const { store } = buildStore()
@@ -297,7 +299,7 @@ describe('Friends sagas - Channels Feature', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
-          fromMessageId: ''
+          from: ''
         }
 
         const channelMessagesFiltered = channelMessages.slice(opts.start, opts.end)
@@ -306,7 +308,7 @@ describe('Friends sagas - Channels Feature', () => {
         const addChatMessagesPayload: AddChatMessagesPayload = {
           messages: channelMessagesFiltered.map((message) => ({
             messageId: message.id,
-            messageType: ChatMessageType.PRIVATE,
+            messageType: ChatMessageType.PUBLIC,
             timestamp: message.timestamp,
             body: message.text,
             sender: getUserIdFromMatrix(message.sender),
@@ -323,7 +325,7 @@ describe('Friends sagas - Channels Feature', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
-          fromMessageId: '2'
+          from: '2'
         }
 
         const channelMessagesFiltered = channelMessages.slice(opts.start, opts.end)

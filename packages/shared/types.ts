@@ -751,6 +751,8 @@ export enum ChannelErrorCode {
   ALREADY_EXISTS = 4 // The name has already been used
 }
 
+export type JoinOrCreateChannelPayload = CreateChannelPayload
+
 export type CreateChannelPayload = {
   channelId: string
 }
@@ -794,7 +796,7 @@ export type UpdateTotalUnseenMessagesByChannelPayload = {
 export type GetChannelMessagesPayload = {
   channelId: string
   limit: number // max amount of entries to request
-  fromMessageId: string // pivot id to skip entries
+  from: string // pivot id to skip entries
 }
 
 export type GetChannelsPayload = {
@@ -818,7 +820,7 @@ export type MuteChannelPayload = {
 }
 
 export type GetChannelInfoPayload = {
-  channelsIds: string[]
+  channelIds: string[]
 }
 
 export type GetChannelMembersPayload = {

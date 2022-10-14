@@ -13,7 +13,6 @@ import { getCurrentUserId } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
-import { EventDataType } from 'shared/protocol/kernel/apis/EngineAPI.gen'
 import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -34,7 +33,8 @@ import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
-import { permissionItemFromJSON } from 'shared/protocol/kernel/apis/Permissions.gen'
+import { permissionItemFromJSON } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
+import { EventDataType } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -125,7 +125,7 @@ export class SceneWorker {
       sendSceneEvent: (type, data) => {
         if (this.rpcContext.subscribedEvents.has(type)) {
           this.rpcContext.events.push({
-            type: EventDataType.Generic,
+            type: EventDataType.EDT_GENERIC,
             generic: {
               eventId: type,
               eventData: JSON.stringify(data)
@@ -305,7 +305,7 @@ export class SceneWorker {
     if (this.rpcContext.subscribedEvents.has('positionChanged')) {
       if (!this.lastSentPosition.equals(positionReport.position)) {
         this.rpcContext.sendProtoSceneEvent({
-          type: EventDataType.PositionChanged,
+          type: EventDataType.EDT_POSITION_CHANGED,
           positionChanged: {
             position: {
               x: positionReport.position.x - this.position.x,
@@ -323,7 +323,7 @@ export class SceneWorker {
     if (this.rpcContext.subscribedEvents.has('rotationChanged')) {
       if (positionReport.cameraQuaternion && !this.lastSentRotation.equals(positionReport.cameraQuaternion)) {
         this.rpcContext.sendProtoSceneEvent({
-          type: EventDataType.RotationChanged,
+          type: EventDataType.EDT_ROTATION_CHANGED,
           rotationChanged: {
             rotation: positionReport.cameraEuler,
             quaternion: positionReport.cameraQuaternion
