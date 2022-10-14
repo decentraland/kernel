@@ -513,6 +513,7 @@ export type ChatMessage = {
   messageId: string
   messageType: ChatMessageType
   sender?: string | undefined
+  senderName?: string | undefined
   recipient?: string | undefined
   timestamp: number
   body: string
@@ -821,6 +822,7 @@ export type GetChannelMembersPayload = {
 
 export type ChannelMember = {
   userId: string
+  name: string
   isOnline: boolean
 }
 
