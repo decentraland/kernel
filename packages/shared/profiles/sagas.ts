@@ -343,7 +343,7 @@ function* readProfileFromLocalStorage() {
   }
 }
 
-export async function buildSnapshotContent(selector: string, value: string) {
+async function buildSnapshotContent(selector: string, value: string) {
   let hash: string
   let contentFile: ContentFile | undefined
 
