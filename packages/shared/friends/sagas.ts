@@ -123,6 +123,7 @@ import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { buildSnapshotContent } from 'shared/profiles/sagas'
+import { uuid } from 'atomicHelpers/math'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1416,7 +1417,13 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       if (channelByName) {
         yield apply(client, client.joinChannel, [channelByName.id])
       } else {
-        return
+        getUnityInstance().AddMessageToChatWindow({
+          messageType: ChatMessageType.SYSTEM,
+          messageId: uuid(),
+          sender: 'Decentraland',
+          body: `Ups, sorry! It seems you don't have permissions to create a channel.`,
+          timestamp: Date.now()
+        })
       }
     }
   } catch (e) {
