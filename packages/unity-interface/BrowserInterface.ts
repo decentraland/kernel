@@ -34,6 +34,7 @@ import {
   LeaveChannelPayload,
   MuteChannelPayload,
   GetChannelInfoPayload,
+  SetAudioDevicesPayload,
   JoinOrCreateChannelPayload,
   GetChannelMembersPayload
 } from 'shared/types'
@@ -61,7 +62,8 @@ import {
   requestVoiceChatRecording,
   setVoiceChatPolicy,
   setVoiceChatVolume,
-  requestToggleVoiceChatRecording
+  requestToggleVoiceChatRecording,
+  setAudioDevice
 } from 'shared/voiceChat/actions'
 import { getERC20Balance } from 'shared/ethereum/EthereumService'
 import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
@@ -104,6 +106,7 @@ import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
 import { signalSceneReady } from 'shared/world/actions'
+import { requestMediaDevice } from '../shared/voiceChat/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -502,6 +505,10 @@ export class BrowserInterface {
     store.dispatch(saveProfileDelta({ tutorialStep: data.tutorialStep }))
   }
 
+  public SetInputAudioDevice(data: { deviceId: string }) {
+    store.dispatch(setAudioDevice({ inputDeviceId: data.deviceId }))
+  }
+
   public ControlEvent({ eventType, payload }: { eventType: string; payload: any }) {
     switch (eventType) {
       case 'SceneReady': {
@@ -562,6 +569,36 @@ export class BrowserInterface {
 
   public SetHomeScene(data: { sceneId: string }) {
     store.dispatch(setHomeScene(data.sceneId))
+  }
+
+  public async RequestAudioDevices() {
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      defaultLogger.error('enumerateDevices() not supported.')
+    } else {
+      try {
+        await requestMediaDevice()
+
+        // List cameras and microphones.
+        const devices = await navigator.mediaDevices.enumerateDevices()
+
+        const filterDevices = (kind: string) => {
+          return devices
+            .filter((device) => device.kind === kind)
+            .map((device) => {
+              return { deviceId: device.deviceId, label: device.label }
+            })
+        }
+
+        const payload: SetAudioDevicesPayload = {
+          inputDevices: filterDevices('audioinput'),
+          outputDevices: filterDevices('audiooutput')
+        }
+
+        getUnityInstance().SetAudioDevices(payload)
+      } catch (err: any) {
+        defaultLogger.error(`${err.name}: ${err.message}`)
+      }
+    }
   }
 
   public GetFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload: GetFriendsWithDirectMessagesPayload) {

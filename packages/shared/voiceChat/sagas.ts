@@ -29,7 +29,9 @@ import {
   SET_VOICE_CHAT_MEDIA,
   setVoiceChatLiveKitRoom,
   joinVoiceChat,
-  clearVoiceChatError
+  clearVoiceChatError,
+  SET_AUDIO_DEVICE,
+  SetAudioDevice
 } from './actions'
 import { voiceChatLogger } from './context'
 import { store } from 'shared/store/isolatedStore'
@@ -57,6 +59,7 @@ import { IRealmAdapter } from 'shared/realm/types'
 import { realmToConnectionString } from 'shared/realm/resolver'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
+let audioRequestInitialized = false
 
 export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_LIVE_KIT_ROOM, handleSetVoiceChatLiveKitRoom)
@@ -75,6 +78,7 @@ export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
   yield takeLatest([SET_COMMS_ISLAND, SET_ROOM_CONNECTION], handleNewRoomOrCommsContext)
+  yield takeEvery(SET_AUDIO_DEVICE, setAudioDevices)
 }
 
 /*
@@ -227,11 +231,16 @@ function* handleVoiceChatMute(action: SetVoiceChatMuteAction) {
   voiceHandler?.setMute(action.payload.mute)
 }
 
-let audioRequestPending = false
+function* setAudioDevices(action: SetAudioDevice) {
+  if (!audioRequestInitialized && action.payload.devices.inputDeviceId) {
+    const media = yield call(requestMediaDevice, action.payload.devices.inputDeviceId)
+    yield put(setVoiceChatMedia(media))
+  }
+}
 
-async function requestMediaDevice(deviceId?: string) {
-  if (!audioRequestPending) {
-    audioRequestPending = true
+export async function requestMediaDevice(deviceId?: string) {
+  if (!audioRequestInitialized) {
+    audioRequestInitialized = true
 
     try {
       const media = await navigator.mediaDevices.getUserMedia({
@@ -256,7 +265,7 @@ async function requestMediaDevice(deviceId?: string) {
       })
       incrementCounter('voiceChatRequestMediaDeviceFail')
     } finally {
-      audioRequestPending = false
+      audioRequestInitialized = false
     }
   }
 }
