@@ -12,7 +12,8 @@ import {
   UpdateUserStatus,
   ConversationType,
   ChannelsError,
-  ChannelErrorKind
+  ChannelErrorKind,
+  GetOrCreateConversationResponse
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -1378,11 +1379,10 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     }
 
     // get or create channel
-    const { created, conversation }: { created: boolean; conversation: Conversation } = yield apply(
-      client,
-      client.getOrCreateChannel,
-      [channelId, []]
-    )
+    const { created, conversation }: GetOrCreateConversationResponse = yield apply(client, client.getOrCreateChannel, [
+      channelId,
+      []
+    ])
 
     const channel: ChannelInfoPayload = {
       name: conversation.name ?? action.payload.channelId,
@@ -1570,26 +1570,21 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     messages.splice(index)
   }
   const ownId = client.getUserId()
-  const missingUsers = messages
-    .map((message) => message.sender)
-    .filter((userId) => {
-      const localUserId = getUserIdFromMatrix(userId)
-      return userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
-    })
-    .map((userId) => {
-      const memberInfo = client.getMemberInfo(request.channelId, userId)
-      const member: [string, string] = [userId, memberInfo.displayName ?? '']
-      return member
-    })
 
-  if (missingUsers.length > 0) {
-    const missingProfiles = getMissingProfiles(missingUsers)
-    getUnityInstance().AddUserProfilesToCatalog({ users: missingProfiles })
-  }
+  // deduplicate sender IDs
+  const senderIds = [...new Set(messages.map((message) => message.sender))]
+
+  // get members from user IDs
+  const members = getMembers(client, senderIds, request.channelId)
+
+  // update catalog with missing users, by using default profiles with name and image url
+  sendMissingProfiles(members, ownId)
 
   const addChatMessages: AddChatMessagesPayload = {
     messages: []
   }
+
+  const membersById = new Map(members)
   for (const message of messages) {
     const sender = getUserIdFromMatrix(message.sender)
 
@@ -1599,11 +1594,26 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
       timestamp: message.timestamp,
       body: message.text,
       sender,
+      senderName: membersById.get(sender),
       recipient: request.channelId
     })
   }
 
   getUnityInstance().AddChatMessages(addChatMessages)
+}
+
+function findMissingMembers(members: [string, string][], ownId: string) {
+  return members.filter(([userId]) => {
+    const localUserId = getUserIdFromMatrix(userId)
+    return userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
+  })
+}
+
+function getMembers(client: SocialAPI, userIds: string[], channelId: string) {
+  return userIds.map((userId): [string, string] => {
+    const memberInfo = client.getMemberInfo(channelId, userId)
+    return [userId, memberInfo.displayName ?? '']
+  })
 }
 
 // Search channels
@@ -1819,31 +1829,28 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     members: []
   }
 
-  // list of users with matrix IDs
-  const channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
-  const channelMembers: Record<string, string> = {}
-  if (channelMemberIds) {
-    for (const userId of channelMemberIds) {
-      const memberInfo = client.getMemberInfo(request.channelId, userId)
+  const members = getMembers(client, channel.userIds ?? [], request.channelId)
+    .filter(([, name]) => {
       const searchTerm = request.userName.toLocaleLowerCase()
-      const name = memberInfo.displayName ?? ''
       const lowerCaseName = name.toLocaleLowerCase()
-      const index = lowerCaseName.search(searchTerm)
-      if (index >= 0) {
-        channelMembers[userId] = name
-      }
-    }
-  }
+      return lowerCaseName.search(searchTerm) >= 0
+    })
+    .slice(request.skip, request.skip + request.limit)
 
-  if (Object.keys(channelMembers).length === 0) {
+  if (members.length === 0) {
     // it means the channel has no members
     getUnityInstance().UpdateChannelMembers(channelMembersPayload)
     return
   }
-  const userStatuses = client.getUserStatuses(...Object.keys(channelMembers))
 
   const ownId = client.getUserId()
-  for (const [memberId, memberName] of Object.entries(channelMembers)) {
+
+  // update catalog with missing users, by using default profiles with name and image url
+  sendMissingProfiles(members, ownId)
+
+  const userStatuses = client.getUserStatuses(...members.map(([id]) => id))
+
+  for (const [memberId, memberName] of members) {
     const userId = getUserIdFromMatrix(memberId)
     if (ownId === memberId || userStatuses.get(memberId)?.presence === PresenceType.ONLINE) {
       channelMembersPayload.members.push({
@@ -1854,21 +1861,25 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     }
   }
 
-  // those profiles that are not in the store are prepared without any data but avatar url and name
-  const missingUsers = Object.entries(channelMembers).filter(
-    ([id]) => id !== ownId && !isAddedToCatalog(store.getState(), getUserIdFromMatrix(id))
-  )
-  if (missingUsers.length > 0) {
-    const missingProfilesForRenderer = getMissingProfiles(missingUsers)
-    getUnityInstance().AddUserProfilesToCatalog({ users: missingProfilesForRenderer })
-  }
   getUnityInstance().UpdateChannelMembers(channelMembersPayload)
 }
 
+/*
+ * Checks which members are present in the profile catalog and sends partial profiles for missing users
+ * @param members is an array of [member ID, name]
+ */
+function sendMissingProfiles(members: [string, string][], ownId: string) {
+  // find missing users
+  const missingUsers = findMissingMembers(members, ownId)
+
+  if (missingUsers.length > 0) {
+    const missingProfiles = getMissingProfiles(missingUsers)
+    getUnityInstance().AddUserProfilesToCatalog({ users: missingProfiles })
+  }
+}
+
 function getMissingProfiles(missingUsers: [string, string][]): NewProfileForRenderer[] {
-  return [...new Set(missingUsers)].map(([userId, name]) => {
-    return buildMissingProfile(userId, name)
-  })
+  return missingUsers.map(([userId, name]) => buildMissingProfile(userId, name))
 }
 
 function buildMissingProfile(userId: string, name: string) {
