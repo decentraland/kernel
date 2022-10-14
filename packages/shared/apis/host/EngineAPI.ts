@@ -93,14 +93,14 @@ function eATypeToCompatibilityAction(type: EAType): EntityActionType | null {
   return null
 }
 
-export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
+export function registerEngineApiServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, EngineApiServiceDefinition, async () => ({
     async sendBatch(req: ManyEntityAction, ctx) {
       const actions: EntityAction[] = []
 
       for (const action of req.actions) {
         const actionType = eATypeToCompatibilityAction(action.type)
-        if (actionType) {
+        if (actionType && action.payload) {
           actions.push({
             type: actionType,
             tag: action.tag,

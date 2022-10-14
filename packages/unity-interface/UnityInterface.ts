@@ -217,6 +217,19 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Bridges', 'SetLoadingScreen', JSON.stringify(data))
   }
 
+  public SendMemoryUsageToRenderer() {
+    const memory = (performance as any).memory
+    const jsHeapSizeLimit = memory?.jsHeapSizeLimit
+    const totalJSHeapSize = memory?.totalJSHeapSize
+    const usedJSHeapSize = memory?.usedJSHeapSize
+
+    this.SendMessageToUnity(
+      'Main',
+      'SetMemoryUsage',
+      JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
+    )
+  }
+
   public DeactivateRendering() {
     this.SendMessageToUnity('Main', 'DeactivateRendering')
   }

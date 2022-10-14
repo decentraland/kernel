@@ -40,7 +40,7 @@ describe('RestrictedActions tests', () => {
       const stub = sinon.stub(getUnityInstance(), 'TriggerSelfUserExpression')
 
       expect(() => triggerEmote({ predefinedEmote: 'emote' }, ctx)).to.throw(
-        /This scene doesn't have some of the next permissions: ALLOW_TO_TRIGGER_AVATAR_EMOTE/
+        /This scene doesn't have some of the next permissions: PI_ALLOW_TO_TRIGGER_AVATAR_EMOTE/
       )
 
       Sinon.assert.callCount(stub, 0)
@@ -87,7 +87,7 @@ describe('RestrictedActions tests', () => {
       const stub = sinon.stub(getUnityInstance(), 'Teleport')
 
       expect(() => movePlayerTo({ newRelativePosition: new Vector3(8, 0, 8) }, ctx)).to.throw(
-        /This scene doesn't have some of the next permissions: ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE/
+        /This scene doesn't have some of the next permissions: PI_ALLOW_TO_MOVE_PLAYER_INSIDE_SCENE/
       )
 
       Sinon.assert.callCount(stub, 0)
@@ -145,7 +145,7 @@ describe('RestrictedActions tests', () => {
       main: 'game.js',
       tags: [],
       requiredPermissions: permissions.map((item) => {
-        const ret = permissionItemToJSON(item)
+        const ret = permissionItemToJSON(item).replace('PI_', '')
         expect(ret).to.not.eq('UNRECOGNIZED')
         return ret
       }),

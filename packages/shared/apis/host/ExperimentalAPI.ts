@@ -6,7 +6,7 @@ import { ExperimentalApiServiceDefinition } from '@dcl/protocol/out-ts/decentral
 import { PortContext } from './context'
 
 /** @deprecated this is only for experimental purposes */
-export function registerExperimentalAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
+export function registerExperimentalApiServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, ExperimentalApiServiceDefinition, async () => ({
     async sendToRenderer(req, ctx) {
       const protocol = await rendererProtocol

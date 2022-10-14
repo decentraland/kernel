@@ -21,7 +21,7 @@ import { PortContextService } from './context'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import { IBff } from 'shared/bff/types'
 
-export function registerEnvironmentAPIServiceServerImplementation(
+export function registerEnvironmentApiServiceServerImplementation(
   port: RpcServerPort<PortContextService<'sceneData'>>
 ) {
   codegen.registerService(port, EnvironmentApiServiceDefinition, async () => ({
