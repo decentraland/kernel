@@ -1787,10 +1787,10 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
     const muted = profile?.muted?.includes(channelId) ?? false
 
-    let onlineMembers = 1
+    let onlineMembers = 0
     if (channel.userIds) {
       const userStatuses = client.getUserStatuses(...channel.userIds)
-      onlineMembers += Object.values(userStatuses).filter((status) => status.presence === PresenceType.ONLINE).length
+      onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
     }
     channels.push({
       name: getNormalizedRoomName(channel.name || ''),
@@ -1839,12 +1839,12 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     getUnityInstance().UpdateChannelMembers(channelMembersPayload)
     return
   }
-  const userStatuses = client.getUserStatuses(...(channelMemberIds ?? []))
+  const userStatuses = client.getUserStatuses(...Object.keys(channelMembers))
 
   const ownId = client.getUserId()
   for (const [memberId, memberName] of Object.entries(channelMembers)) {
     const userId = getUserIdFromMatrix(memberId)
-    if (ownId === memberId || userStatuses.get(userId)?.presence === PresenceType.ONLINE) {
+    if (ownId === memberId || userStatuses.get(memberId)?.presence === PresenceType.ONLINE) {
       channelMembersPayload.members.push({
         userId,
         name: memberName,
