@@ -1826,8 +1826,9 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
     for (const userId of channelMemberIds) {
       const memberInfo = client.getMemberInfo(request.channelId, userId)
       const searchTerm = request.userName.toLocaleLowerCase()
-      const name = (memberInfo.displayName ?? '').toLocaleLowerCase()
-      const index = name.search(searchTerm)
+      const name = memberInfo.displayName ?? ''
+      const lowerCaseName = name.toLocaleLowerCase()
+      const index = lowerCaseName.search(searchTerm)
       if (index >= 0) {
         channelMembers[userId] = name
       }
@@ -1875,7 +1876,7 @@ function buildMissingProfile(userId: string, name: string) {
   return defaultProfile({
     userId: localpart,
     name,
-    face256: buildProfilePictureURL(userId)
+    face256: buildProfilePictureURL(localpart)
   })
 }
 
