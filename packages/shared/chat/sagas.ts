@@ -147,9 +147,8 @@ function* handleSendMessage(action: SendMessage) {
         sender: currentUserId,
         body: message
       }
+      sendPublicChatMessage(message)
     }
-
-    sendPublicChatMessage(message)
   }
 
   yield call(waitForRendererInstance)
