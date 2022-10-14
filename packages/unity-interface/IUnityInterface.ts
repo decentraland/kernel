@@ -36,7 +36,8 @@ import {
   ChannelErrorPayload,
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
-  ChannelSearchResultsPayload
+  ChannelSearchResultsPayload,
+  SetAudioDevicesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -245,4 +246,6 @@ export interface IUnityInterface {
   OnBuilderKeyDown(key: string): void
   SetBuilderConfiguration(config: BuilderConfiguration): void
   SendMessageToUnity(object: string, method: string, payload?: any): void
+
+  SetAudioDevices(devices: SetAudioDevicesPayload): void
 }

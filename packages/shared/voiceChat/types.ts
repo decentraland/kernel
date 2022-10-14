@@ -9,6 +9,8 @@ export type VoiceChatState = {
   volume: number
   mute: boolean
   liveKitRoom: any | null
+  outputDeviceId: string | null
+  inputDeviceId: string | null
 }
 
 export enum VoicePolicy {
