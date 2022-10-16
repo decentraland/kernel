@@ -12,7 +12,8 @@ import {
   UpdateUserStatus,
   ConversationType,
   ChannelsError,
-  ChannelErrorKind
+  ChannelErrorKind,
+  GetOrCreateConversationResponse
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
@@ -122,7 +123,6 @@ import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
-import { buildSnapshotContent } from 'shared/profiles/sagas'
 import { uuid } from 'atomicHelpers/math'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
@@ -464,12 +464,7 @@ function* initializePrivateMessaging() {
   const profile: Avatar | null = yield select(getCurrentUserProfile)
   if (profile) {
     const displayName = calculateDisplayName(profile)
-    const {
-      hash
-    }: {
-      hash: string
-    } = yield buildSnapshotContent('face256', profile.avatar.snapshots.face256)
-    yield apply(client, client.setProfileInfo, [{ displayName, avatarUrl: hash }])
+    yield apply(client, client.setProfileInfo, [{ displayName }])
   }
 
   yield put(setMatrixClient(client))
@@ -1388,7 +1383,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     // check if the user has perms to create channels.
     const isAllowed = isAllowedToCreate()
     if (isAllowed) {
-      const { created, conversation }: { created: boolean; conversation: Conversation } = yield apply(
+      const { created, conversation }: GetOrCreateConversationResponse = yield apply(
         client,
         client.getOrCreateChannel,
         [channelId, []]
@@ -1596,22 +1591,21 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     messages.splice(index)
   }
   const ownId = client.getUserId()
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
-  const missingUserIds = messages
-    .map((message) => message.sender)
-    .filter((userId) => {
-      const localUserId = getUserIdFromMatrix(userId)
-      return userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
-    })
 
-  if (missingUserIds.length > 0) {
-    const missingUsers = getMissingProfiles(client, request.channelId, missingUserIds, fetchContentServer)
-    getUnityInstance().AddUserProfilesToCatalog({ users: missingUsers })
-  }
+  // deduplicate sender IDs
+  const senderIds = [...new Set(messages.map((message) => message.sender))]
+
+  // get members from user IDs
+  const members = getMembers(client, senderIds, request.channelId)
+
+  // update catalog with missing users, by using default profiles with name and image url
+  sendMissingProfiles(members, ownId)
 
   const addChatMessages: AddChatMessagesPayload = {
     messages: []
   }
+
+  const membersById = new Map(members)
   for (const message of messages) {
     const sender = getUserIdFromMatrix(message.sender)
 
@@ -1621,11 +1615,26 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
       timestamp: message.timestamp,
       body: message.text,
       sender,
+      senderName: membersById.get(sender),
       recipient: request.channelId
     })
   }
 
   getUnityInstance().AddChatMessages(addChatMessages)
+}
+
+function findMissingMembers(members: [string, string][], ownId: string) {
+  return members.filter(([userId]) => {
+    const localUserId = getUserIdFromMatrix(userId)
+    return userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
+  })
+}
+
+function getMembers(client: SocialAPI, userIds: string[], channelId: string) {
+  return userIds.map((userId): [string, string] => {
+    const memberInfo = client.getMemberInfo(channelId, userId)
+    return [userId, memberInfo.displayName ?? '']
+  })
 }
 
 // Search channels
@@ -1830,89 +1839,88 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 // Get channel members
 export function getChannelMembers(request: GetChannelMembersPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
   if (!client) return
 
   const channel = client.getChannel(request.channelId)
   if (!channel) return
 
-  const channelMembers: UpdateChannelMembersPayload = {
+  const channelMembersPayload: UpdateChannelMembersPayload = {
     channelId: request.channelId,
     members: []
   }
 
-  // list of users with matrix IDs
-  let channelMemberIds = channel.userIds?.slice(request.skip, request.skip + request.limit)
-  if (request.userName && request.userName !== '') {
-    channelMemberIds = channelMemberIds?.filter((userId) => {
-      const member = client.getMemberInfo(request.channelId, userId)
-      const memberName = member.displayName?.toLocaleLowerCase() ?? ''
+  const members = getMembers(client, channel.userIds ?? [], request.channelId)
+    .filter(([, name]) => {
       const searchTerm = request.userName.toLocaleLowerCase()
-      const index = memberName.search(searchTerm)
-      return index >= 0
+      const lowerCaseName = name.toLocaleLowerCase()
+      return lowerCaseName.search(searchTerm) >= 0
     })
-  }
-  if (!channelMemberIds) {
+    .slice(request.skip, request.skip + request.limit)
+
+  if (members.length === 0) {
     // it means the channel has no members
-    getUnityInstance().UpdateChannelMembers(channelMembers)
+    getUnityInstance().UpdateChannelMembers(channelMembersPayload)
     return
   }
-  const userStatuses = client.getUserStatuses(...(channelMemberIds ?? []))
 
   const ownId = client.getUserId()
-  for (const member of channelMemberIds) {
-    const userId = getUserIdFromMatrix(member)
-    if (ownId === member || userStatuses.get(userId)?.presence === PresenceType.ONLINE) {
-      channelMembers.members.push({
+
+  // update catalog with missing users, by using default profiles with name and image url
+  sendMissingProfiles(members, ownId)
+
+  const userStatuses = client.getUserStatuses(...members.map(([id]) => id))
+
+  for (const [memberId, memberName] of members) {
+    const userId = getUserIdFromMatrix(memberId)
+    if (ownId === memberId || userStatuses.get(memberId)?.presence === PresenceType.ONLINE) {
+      channelMembersPayload.members.push({
         userId,
+        name: memberName,
         isOnline: true
       })
     }
   }
 
-  // those profiles that are not in the store are prepared without any data but avatar url and name
-  const missingUsersIds = channelMemberIds.filter(
-    (id) => id !== ownId && !isAddedToCatalog(store.getState(), getUserIdFromMatrix(id))
-  )
-  if (missingUsersIds.length > 0) {
-    const missingProfilesForRenderer = getMissingProfiles(
-      client,
-      request.channelId,
-      missingUsersIds,
-      fetchContentServer
-    )
-    getUnityInstance().AddUserProfilesToCatalog({ users: missingProfilesForRenderer })
+  getUnityInstance().UpdateChannelMembers(channelMembersPayload)
+}
+
+/*
+ * Checks which members are present in the profile catalog and sends partial profiles for missing users
+ * @param members is an array of [member ID, name]
+ */
+function sendMissingProfiles(members: [string, string][], ownId: string) {
+  // find missing users
+  const missingUsers = findMissingMembers(members, ownId)
+
+  if (missingUsers.length > 0) {
+    const missingProfiles = getMissingProfiles(missingUsers)
+    getUnityInstance().AddUserProfilesToCatalog({ users: missingProfiles })
   }
-  getUnityInstance().UpdateChannelMembers(channelMembers)
 }
 
-function getMissingProfiles(
-  client: SocialAPI,
-  roomId: string,
-  missingUsersIds: string[],
-  fetchContentServer: string
-): NewProfileForRenderer[] {
-  return [...new Set(missingUsersIds)].map((userId) => {
-    return buildMissingProfile(client, roomId, userId, fetchContentServer)
-  })
+function getMissingProfiles(missingUsers: [string, string][]): NewProfileForRenderer[] {
+  return missingUsers.map(([userId, name]) => buildMissingProfile(userId, name))
 }
 
-function buildMissingProfile(client: SocialAPI, roomId: string, userId: string, fetchContentServer: string) {
-  const info = client.getMemberInfo(roomId, userId)
+function buildMissingProfile(userId: string, name: string) {
   const localpart = getUserIdFromMatrix(userId)
   return defaultProfile({
     userId: localpart,
-    name: info.displayName ?? '',
-    face256: info.avatarUrl ?? '',
-    baseUrl: fetchContentServer
+    name,
+    face256: buildProfilePictureURL(localpart)
   })
+}
+
+function buildProfilePictureURL(userId: string): string {
+  const synapseUrl = getSynapseUrl(store.getState())
+  return `${synapseUrl}/profile-pictures/${userId}`
 }
 
 /**
  * Check with a feature flag value if the user is allowed to create channels.
  * @return `true` if the user is allowed | `false` if it is not.
  */
-function isAllowedToCreate() {
+ function isAllowedToCreate() {
   const allowedUsers = getUsersAllowedToCreate(store.getState())
   const ownId = getCurrentUserId(store.getState())
 
@@ -1923,6 +1931,5 @@ function isAllowedToCreate() {
   if (allowedUsers.allowList.includes(ownId)) {
     return true
   }
-
-  return false
-}
+ }
+ 

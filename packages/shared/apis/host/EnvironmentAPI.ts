@@ -9,21 +9,21 @@ import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   AreUnsafeRequestAllowedResponse,
   BootstrapDataResponse,
-  EnvironmentAPIServiceDefinition,
+  EnvironmentApiServiceDefinition,
   GetCurrentRealmResponse,
   GetDecentralandTimeResponse,
   GetExplorerConfigurationResponse,
   GetPlatformResponse,
   PreviewModeResponse
-} from 'shared/protocol/kernel/apis/EnvironmentAPI.gen'
+} from 'shared/protocol/decentraland/kernel/apis/environment_api.gen'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 
-export function registerEnvironmentAPIServiceServerImplementation(
+export function registerEnvironmentApiServiceServerImplementation(
   port: RpcServerPort<PortContextService<'sceneData'>>
 ) {
-  codegen.registerService(port, EnvironmentAPIServiceDefinition, async () => ({
+  codegen.registerService(port, EnvironmentApiServiceDefinition, async () => ({
     async getBootstrapData(_req, ctx): Promise<BootstrapDataResponse> {
       return {
         id: ctx.sceneData.id,

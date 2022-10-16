@@ -34,7 +34,8 @@ import {
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
-  ChannelErrorPayload
+  ChannelErrorPayload,
+  SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -112,6 +113,10 @@ export class UnityInterface implements IUnityInterface {
 
   public SetRenderProfile(id: RenderProfile) {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
+  }
+
+  public SetAudioDevices(devices: SetAudioDevicesPayload) {
+    this.SendMessageToUnity('Bridges', 'SetAudioDevices', JSON.stringify(devices))
   }
 
   public CreateGlobalScene(data: {

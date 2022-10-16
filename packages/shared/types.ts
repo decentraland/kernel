@@ -504,6 +504,17 @@ export type WorldPosition = {
   }
 }
 
+export type SetAudioDevicesPayload = {
+  outputDevices: {
+    label: string
+    deviceId: string
+  }[]
+  inputDevices: {
+    label: string
+    deviceId: string
+  }[]
+}
+
 export enum ChatMessagePlayerType {
   WALLET = 0,
   GUEST = 1
@@ -513,6 +524,7 @@ export type ChatMessage = {
   messageId: string
   messageType: ChatMessageType
   sender?: string | undefined
+  senderName?: string | undefined
   recipient?: string | undefined
   timestamp: number
   body: string
@@ -821,6 +833,7 @@ export type GetChannelMembersPayload = {
 
 export type ChannelMember = {
   userId: string
+  name: string
   isOnline: boolean
 }
 

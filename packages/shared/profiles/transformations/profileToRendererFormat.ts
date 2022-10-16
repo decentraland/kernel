@@ -51,13 +51,11 @@ export function profileToRendererFormat(
 export function defaultProfile({
   userId,
   name,
-  face256,
-  baseUrl
+  face256
 }: {
   userId: string
   name: string
   face256: string
-  baseUrl: string
 }): NewProfileForRenderer {
   const avatar = {
     userId,
@@ -68,7 +66,7 @@ export function defaultProfile({
       ...defaultAvatar()
     }
   }
-  return profileToRendererFormat(avatar, { baseUrl })
+  return profileToRendererFormat(avatar, { baseUrl: '' })
 }
 
 function defaultAvatar(): Omit<AvatarInfo, 'snapshots'> {
