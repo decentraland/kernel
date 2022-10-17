@@ -1775,12 +1775,18 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
     store.dispatch(unmutePlayers([channelId]))
   }
 
+  let onlineMembers = 0
+  if (channel.userIds) {
+    const userStatuses = client.getUserStatuses(...channel.userIds)
+    onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
+  }
+
   const channelInfo: ChannelInfoPayload = {
     name: channel.name ?? '',
     channelId: channel.id,
     unseenMessages: channel.unreadMessages?.length ?? 0,
     lastMessageTimestamp: channel.lastEventTimestamp ?? undefined,
-    memberCount: channel.userIds?.length ?? 1,
+    memberCount: onlineMembers,
     description: '',
     joined: true,
     muted: muteChannel.muted
