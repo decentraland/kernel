@@ -412,7 +412,7 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('update friends status', () => {
+  describe.only('update friends status', () => {
     beforeEach(() => {
       const { store } = buildStore()
       globalThis.globalStore = store
@@ -434,7 +434,7 @@ describe('Friends sagas', () => {
         [select(getRealm), { serverName: 'realm-test', hostname: 'localhost', protocol: 'http' }]
       ])
       .dispatch(setMatrixClient(stubClient))
-      .run()
+      .silentRun() // due to initializeStatusUpdateInterval saga is a while(true) gen
       unityMock.verify()
     })
 
@@ -463,7 +463,7 @@ describe('Friends sagas', () => {
         [select(getRealm), { serverName: 'realm-test', hostname: 'localhost', protocol: 'http' }],
       ])
       .dispatch(setMatrixClient(client))
-      .run()
+      .silentRun()
       unityMock.verify()
     })
 
@@ -476,7 +476,7 @@ describe('Friends sagas', () => {
         [select(getRealm), { serverName: 'realm-test', hostname: 'localhost', protocol: 'http' }]
       ])
       .dispatch(setMatrixClient(stubClient))
-      .run()
+      .silentRun()
       unityMock.verify()
     })
   })
