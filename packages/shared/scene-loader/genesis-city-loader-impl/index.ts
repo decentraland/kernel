@@ -1,8 +1,8 @@
 import { Vector2 } from '@dcl/ecs-math'
 import { encodeParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { ISceneLoader, SetDesiredScenesCommand } from '../types'
-import { SceneDataDownloadManager } from './downloadManager'
-import { EmptyParcelController } from './EmptyParcelController'
+import { SceneDataDownloadManager } from './downloadManagera'
+import { EmptyParcelController } from './emptyParcelControllera'
 
 export function createGenesisCityLoader(options: {
   contentServer: string
