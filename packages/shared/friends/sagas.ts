@@ -1821,10 +1821,10 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
     const muted = profile?.muted?.includes(channelId) ?? false
 
-    let onlineMembers = 1
+    let onlineMembers = 0
     if (channel.userIds) {
       const userStatuses = client.getUserStatuses(...channel.userIds)
-      onlineMembers += Object.values(userStatuses).filter((status) => status.presence === PresenceType.ONLINE).length
+      onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
     }
     channels.push({
       name: getNormalizedRoomName(channel.name || ''),
