@@ -412,7 +412,7 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe.only('update friends status', () => {
+  describe('update friends status', () => {
     beforeEach(() => {
       const { store } = buildStore()
       globalThis.globalStore = store
