@@ -2,10 +2,13 @@ import { FETCH_CONTENT_SERVICE, UPDATE_CONTENT_SERVICE } from 'config'
 import { select, take } from 'redux-saga/effects'
 import { store } from 'shared/store/isolatedStore'
 import { SET_REALM_ADAPTER } from './actions'
-import { urlWithProtocol } from './resolver'
+import { realmToConnectionString, urlWithProtocol } from './resolver'
 import { IRealmAdapter, RootRealmState } from './types'
 
+export const OFFLINE_REALM = 'offline'
 export const getRealmAdapter = (state: RootRealmState): IRealmAdapter | undefined => state.realm.realmAdapter
+export const getRealmConnectionString = (state: RootRealmState): string =>
+  state.realm.realmAdapter ? realmToConnectionString(state.realm.realmAdapter) : OFFLINE_REALM
 
 export function* waitForRealmAdapter() {
   while (true) {

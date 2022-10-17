@@ -54,9 +54,7 @@ import { SET_COMMS_ISLAND, SET_ROOM_CONNECTION } from 'shared/comms/actions'
 import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
-import { getRealmAdapter } from 'shared/realm/selectors'
-import { IRealmAdapter } from 'shared/realm/types'
-import { realmToConnectionString } from 'shared/realm/resolver'
+import { getRealmConnectionString } from 'shared/realm/selectors'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 let audioRequestInitialized = false
@@ -90,8 +88,7 @@ export function* handleNewRoomOrCommsContext() {
   yield call(waitForMetaConfigurationInitialization)
 
   if (yield select(isLiveKitVoiceChatFeatureFlag)) {
-    const adapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
-    const realmName = adapter ? realmToConnectionString(adapter) : 'global'
+    const realmName: string = yield select(getRealmConnectionString)
     const island = (yield select(getCommsIsland)) ?? 'global'
     const roomName = `${realmName}-${island}`
 

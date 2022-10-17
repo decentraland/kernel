@@ -11,6 +11,7 @@ import {
 } from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
+import { setMatrixClient } from 'shared/friends/actions'
 import * as friendsSelectors from 'shared/friends/selectors'
 import * as profilesSelectors from 'shared/profiles/selectors'
 import { ProfileUserInfo } from 'shared/profiles/types'
@@ -28,6 +29,10 @@ import {
 } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
 import * as bffSelectors from 'shared/realm/selectors'
+import * as sceneLoaderSelectors from 'shared/scene-loader/selectors'
+import { expectSaga } from 'redux-saga-test-plan'
+import { select } from 'redux-saga/effects'
+import { getRealmConnectionString } from 'shared/realm/selectors'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -82,20 +87,17 @@ const toFriendRequest: FriendRequest = {
   createdAt: 123123132
 }
 
-const lastStatusOfFriendsEntries = [
-  [
-    '@0xa1:server',
-    {
-      realm: {
-        layer: '',
-        serverName: 'serverTest'
-      },
-      position: { x: 0, y: 1 },
-      presence: PresenceType.ONLINE,
-      lastActiveAgo: 1
-    }
-  ]
-] as const
+const lastStatusOfFriendsEntries = [[
+  '@0xa1:decentraland.org', {
+    realm: {
+      layer: '',
+      serverName: 'serverTest'
+    },
+    position: { x: 0, y: 1 },
+    presence: PresenceType.ONLINE,
+    lastActiveAgo: 1
+  }],
+] as const;
 
 const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
 
@@ -152,7 +154,8 @@ const stubClient = {
       }
     }
     return m
-  }
+  },
+  setStatus: () => Promise.resolve(),
 } as unknown as SocialAPI
 
 const FETCH_CONTENT_SERVER = 'base-url'
@@ -163,6 +166,7 @@ function mockStoreCalls(
 ) {
   sinon.stub(bffSelectors, 'getFetchContentServerFromRealmAdapter').callsFake(() => FETCH_CONTENT_SERVER)
   sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
+  sinon.stub(sceneLoaderSelectors, 'getParcelPosition').callsFake(() => ({x: 1, y: 2}))
   sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
   sinon
     .stub(profilesSelectors, 'getProfilesFromStore')
@@ -436,23 +440,22 @@ describe('Friends sagas', () => {
       sinon.reset()
     })
 
-    it("should send status when it's not stored in the redux state yet", () => {
+    it('should send status when it\'s not stored in the redux state yet', async () => {
       mockStoreCalls()
-      sinon
-        .mock(getUnityInstance())
-        .expects('UpdateUserPresence')
+      const unityMock = sinon.mock(getUnityInstance())
+      unityMock.expects('UpdateUserPresence')
         .once()
-        .withExactArgs({
-          userId: '0xa1',
-          realm: lastStatusOfFriendsEntries[0][1].realm,
-          position: lastStatusOfFriendsEntries[0][1].position,
-          presence: PresenceStatus.ONLINE
-        })
-      friendsSagas.updateUserStatus(stubClient, '@0xa1:server')
-      sinon.mock(getUnityInstance()).verify()
+        .withExactArgs({ userId: '0xa1', realm: lastStatusOfFriendsEntries[0][1].realm, position: lastStatusOfFriendsEntries[0][1].position, presence: PresenceStatus.ONLINE })
+      await expectSaga(friendsSagas.initializeStatusUpdateInterval)
+      .provide([
+        [select(getRealmConnectionString),  'realm-test']
+      ])
+      .dispatch(setMatrixClient(stubClient))
+      .silentRun() // due to initializeStatusUpdateInterval saga is a while(true) gen
+      unityMock.verify()
     })
 
-    it("should send status when it's stored but the new one is different", () => {
+    it('should send status when it\'s stored but the new one is different', async () => {
       mockStoreCalls(undefined, lastStatusOfFriends)
       const client: SocialAPI = {
         ...stubClient,
@@ -467,25 +470,31 @@ describe('Friends sagas', () => {
           return m
         }
       }
-      sinon
-        .mock(getUnityInstance())
-        .expects('UpdateUserPresence')
+      const unityMock = sinon.mock(getUnityInstance())
+      unityMock.expects('UpdateUserPresence')
         .once()
-        .withExactArgs({
-          userId: '0xa1',
-          realm: lastStatusOfFriendsEntries[0][1].realm,
-          position: { x: 100, y: 200 },
-          presence: PresenceStatus.ONLINE
-        })
-      friendsSagas.updateUserStatus(client, '@0xa1:server')
-      sinon.mock(getUnityInstance()).verify()
+        .withExactArgs({ userId: '0xa1', realm: lastStatusOfFriendsEntries[0][1].realm, position: {x: 100, y: 200}, presence: PresenceStatus.ONLINE })
+      await expectSaga(friendsSagas.initializeStatusUpdateInterval)
+      .provide([
+        [select(friendsSelectors.getSocialClient), client], // override the stubClient mocked by mockStoreCalls(). need this to tweak getUserStatuses client function
+        [select(getRealmConnectionString), 'realm-test'],
+      ])
+      .dispatch(setMatrixClient(client))
+      .silentRun()
+      unityMock.verify()
     })
 
-    it("should not send status when it's equal to the last sent", () => {
+    it('should not send status when it\'s equal to the last sent', async () => {
       mockStoreCalls(undefined, lastStatusOfFriends)
-      sinon.mock(getUnityInstance()).expects('UpdateUserPresence').notCalled
-      friendsSagas.updateUserStatus(stubClient, '@0xa1:server')
-      sinon.mock(getUnityInstance()).verify()
+      const unityMock = sinon.mock(getUnityInstance());
+      unityMock.expects('UpdateUserPresence').never()
+      await expectSaga(friendsSagas.initializeStatusUpdateInterval)
+      .provide([
+        [select(getRealmConnectionString), 'some-realm']
+      ])
+      .dispatch(setMatrixClient(stubClient))
+      .silentRun()
+      unityMock.verify()
     })
   })
 })

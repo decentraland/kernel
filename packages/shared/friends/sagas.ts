@@ -97,8 +97,9 @@ import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_ROOM_CONNECTION } from 'shared/comms/actions'
 import {
   ensureRealmAdapterPromise,
-  getRealmAdapter,
-  getFetchContentUrlPrefixFromRealmAdapter
+  getFetchContentUrlPrefixFromRealmAdapter,
+  getRealmConnectionString,
+  OFFLINE_REALM
 } from 'shared/realm/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
@@ -117,8 +118,6 @@ import {
   getNormalizedRoomName
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
-import { IRealmAdapter } from 'shared/realm/types'
-import { realmToConnectionString } from 'shared/realm/resolver'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 
@@ -860,7 +859,7 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
   getUnityInstance().UpdateUserPresence(updateMessage)
 }
 
-export function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
+function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
   const statuses = client.getUserStatuses(...socialIds)
   const lastStatuses = getLastStatusOfFriends(store.getState())
 
@@ -877,7 +876,7 @@ export function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
 /**
  * This saga updates the status of our player for the Presence feature
  */
-function* initializeStatusUpdateInterval() {
+export function* initializeStatusUpdateInterval() {
   let lastStatus: UpdateUserStatus | undefined = undefined
 
   while (true) {
@@ -888,10 +887,10 @@ function* initializeStatusUpdateInterval() {
     })
 
     const client: SocialAPI | null = yield select(getSocialClient)
-    const realmAdapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
+    const realmConnectionString: string = yield select(getRealmConnectionString)
     const position: ReadOnlyVector2 = yield select(getParcelPosition)
 
-    if (!client || !realmAdapter) {
+    if (!client || realmConnectionString === OFFLINE_REALM) {
       continue
     }
 
@@ -904,7 +903,7 @@ function* initializeStatusUpdateInterval() {
     const updateStatus: UpdateUserStatus = {
       realm: {
         layer: '',
-        serverName: realmToConnectionString(realmAdapter)
+        serverName: realmConnectionString
       },
       position,
       presence: PresenceType.ONLINE

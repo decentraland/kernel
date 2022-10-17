@@ -1,4 +1,4 @@
-import { call, fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
+import { apply, call, fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 import { SCENE_CHANGED } from 'shared/loading/actions'
 import { BEFORE_UNLOAD } from 'shared/actions'
 import { SetParcelPosition, SET_PARCEL_POSITION } from 'shared/scene-loader/actions'
@@ -6,6 +6,7 @@ import { getParcelPosition } from 'shared/scene-loader/selectors'
 import { setCurrentScene, SignalSceneReady, SIGNAL_SCENE_READY } from './actions'
 import { getLoadedParcelSceneByPointer, getSceneWorkerBySceneID, loadedSceneWorkers } from './parcelSceneManager'
 import { SceneWorker } from './SceneWorker'
+import { getCurrentUserId } from 'shared/session/selectors'
 
 declare let location: any
 declare let history: any
@@ -62,6 +63,7 @@ function* sceneObservableProcess() {
     if (!lastPlayerScene || !lastPlayerScene.loadableScene.entity.metadata.scene.parcels.includes(parcelString)) {
       // find which scene we are standing in
       const newScene: SceneWorker | undefined = yield call(getLoadedParcelSceneByPointer, parcelString)
+      const userId: string = yield select(getCurrentUserId)
 
       if (newScene === lastPlayerScene) continue
 
@@ -69,8 +71,8 @@ function* sceneObservableProcess() {
       yield put(setCurrentScene(newScene, lastPlayerScene))
 
       // send signals of enter and leave to the scenes
-      newScene?.onEnter()
-      newScene?.onLeave()
+      if (newScene) yield apply(newScene, newScene.onEnter, [userId])
+      if (lastPlayerScene) yield apply(lastPlayerScene, lastPlayerScene.onLeave, [userId])
 
       // new state
       lastPlayerScene = newScene
