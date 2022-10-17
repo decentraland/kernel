@@ -1920,7 +1920,7 @@ function buildProfilePictureURL(userId: string): string {
  * Check with a feature flag value if the user is allowed to create channels.
  * @return `true` if the user is allowed | `false` if it is not.
  */
- function isAllowedToCreate() {
+function isAllowedToCreate() {
   const allowedUsers = getUsersAllowedToCreate(store.getState())
   const ownId = getCurrentUserId(store.getState())
 
@@ -1931,5 +1931,4 @@ function buildProfilePictureURL(userId: string): string {
   if (allowedUsers.allowList.includes(ownId)) {
     return true
   }
- }
- 
+}
