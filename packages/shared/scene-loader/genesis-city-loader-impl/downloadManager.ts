@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/schemas'
 import future, { IFuture } from 'fp-future'
 import { LoadableScene } from 'shared/types'
-import { EmptyParcelController } from './emptyParcelControllera'
+import { EmptyParcelController } from './emptyParcelController'
 
 export class SceneDataDownloadManager {
   pointerToEntity: Map<string, IFuture<LoadableScene | null>> = new Map()
