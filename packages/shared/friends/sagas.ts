@@ -396,12 +396,18 @@ function* configureMatrixClient(action: SetMatrixClient) {
           break
         }
 
+        let onlineMembers = 0
+        if (conversation.userIds) {
+          const userStatuses = client.getUserStatuses(...conversation.userIds)
+          onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
+        }
+
         const channel: ChannelInfoPayload = {
           name: getNormalizedRoomName(conversation.name),
           channelId: conversation.id,
           unseenMessages: conversation.unreadMessages?.length ?? 0,
           lastMessageTimestamp: conversation.lastEventTimestamp ?? undefined,
-          memberCount: conversation.userIds?.length ?? 1,
+          memberCount: onlineMembers,
           description: '',
           joined: true,
           muted: false
