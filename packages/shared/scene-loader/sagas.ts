@@ -41,12 +41,13 @@ import {
   SCENE_UNLOAD,
   updateLoadingScreen
 } from 'shared/loading/actions'
-import { SceneWorker } from 'shared/world/SceneWorker'
-import { pickWorldSpawnpoint, receivePositionReport } from 'shared/world/positionThings'
+import { sceneEvents, SceneWorker } from 'shared/world/SceneWorker'
+import { pickWorldSpawnpoint, positionObservable, receivePositionReport } from 'shared/world/positionThings'
 import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { ENABLE_EMPTY_SCENES, PREVIEW, rootURLPreviewMode } from 'config'
 import { getResourcesURL } from 'shared/location'
+import { Vector2 } from '@dcl/ecs-math'
 
 export function* sceneLoaderSaga() {
   yield takeEvery(SET_REALM_ADAPTER, onSetBff)
@@ -55,6 +56,40 @@ export function* sceneLoaderSaga() {
   yield fork(rendererPositionSettler)
   yield fork(onWorldPositionChange)
   yield fork(positionSettler)
+
+  yield call(initSceneStateListener)
+  yield call(initPositionListener)
+}
+
+// this function listens for position changes of the player and dispatches an
+// action every time the current parcel changes.
+function initPositionListener() {
+  const lastPlayerParcel: Vector2 = new Vector2(Infinity, Infinity)
+  const currentParcel = Vector2.Zero()
+
+  positionObservable.add((event) => {
+    worldToGrid(event.position, currentParcel)
+
+    if (!currentParcel.equals(lastPlayerParcel)) {
+      queueMicrotask(() => {
+        store.dispatch(setParcelPosition(currentParcel))
+      })
+      lastPlayerParcel.copyFrom(currentParcel)
+    }
+  })
+}
+
+// this function listens for all the scene events and sends them to the store to
+// be processed by sagas
+function initSceneStateListener() {
+  sceneEvents.on('*', (_type, action) => {
+    // This action needs to run in a microTask to decouple the execution when
+    // the event is triggered inside a saga. Sagas cannot invoke the store.dispatch
+    // directly
+    queueMicrotask(() => {
+      store.dispatch(action)
+    })
+  })
 }
 
 function* waitForSceneLoader() {

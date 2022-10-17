@@ -1,16 +1,9 @@
-import { Vector3, EcsMathReadOnlyVector3, EcsMathReadOnlyQuaternion, Vector2, Quaternion } from '@dcl/ecs-math'
+import { Vector3, EcsMathReadOnlyVector3, EcsMathReadOnlyQuaternion, Quaternion } from '@dcl/ecs-math'
 import { Observable } from 'mz-observable'
 import { InstancedSpawnPoint } from '../types'
-import {
-  worldToGrid,
-  gridToWorld,
-  isWorldPositionInsideParcels,
-  parseParcelPosition
-} from 'atomicHelpers/parcelScenePositions'
+import { gridToWorld, isWorldPositionInsideParcels, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { DEBUG, playerConfigurations } from '../../config'
 import { isInsideWorldLimits, Scene } from '@dcl/schemas'
-import { store } from 'shared/store/isolatedStore'
-import { setParcelPosition } from 'shared/scene-loader/actions'
 
 export type PositionReport = {
   /** Camera position, world space */
@@ -34,28 +27,10 @@ export const positionObservable = new Observable<Readonly<PositionReport>>()
 export const lastPlayerPosition = new Vector3()
 export let lastPlayerPositionReport: Readonly<PositionReport> | null = null
 
-// Listen to position changes, and notify if the parcel changed
-let lastPlayerParcel: Vector2
 positionObservable.add((event) => {
   lastPlayerPosition.copyFrom(event.position)
   lastPlayerPositionReport = event
-
-  const parcel = Vector2.Zero()
-  worldToGrid(event.position, parcel)
-
-  if (!lastPlayerParcel || !parcel.equals(lastPlayerParcel)) {
-    store.dispatch(setParcelPosition(parcel))
-    setLastPlayerParcel(parcel)
-  }
 })
-
-function setLastPlayerParcel(parcel: Vector2) {
-  if (!lastPlayerParcel) {
-    lastPlayerParcel = parcel
-  } else {
-    lastPlayerParcel.copyFrom(parcel)
-  }
-}
 
 const positionEvent = {
   position: Vector3.Zero(),

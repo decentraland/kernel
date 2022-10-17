@@ -1,10 +1,9 @@
 import { getWorld, isInsideWorldLimits } from '@dcl/schemas'
 
-import { lastPlayerPosition } from 'shared/world/positionThings'
 import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
 import defaultLogger from 'shared/logger'
 
-import { gridToWorld, worldToGrid } from 'atomicHelpers/parcelScenePositions'
+import { gridToWorld } from 'atomicHelpers/parcelScenePositions'
 
 import { store } from 'shared/store/isolatedStore'
 import { getRealmAdapter } from 'shared/realm/selectors'
@@ -12,6 +11,7 @@ import { Parcel } from 'shared/dao/types'
 import { urlWithProtocol } from 'shared/realm/resolver'
 import { trackTeleportTriggered } from 'shared/loading/types'
 import { teleportToAction } from 'shared/scene-loader/actions'
+import { getParcelPosition } from 'shared/scene-loader/selectors'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -23,7 +23,7 @@ export class TeleportController {
     try {
       let usersParcels = await fetchLayerUsersParcels()
 
-      const currentParcel = worldToGrid(lastPlayerPosition)
+      const currentParcel = getParcelPosition(store.getState())
 
       usersParcels = usersParcels.filter(
         (it) => isInsideWorldLimits(it[0], it[1]) && currentParcel.x !== it[0] && currentParcel.y !== it[1]

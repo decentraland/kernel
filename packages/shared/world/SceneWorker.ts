@@ -10,7 +10,20 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { trackEvent } from 'shared/analytics'
 import { getSceneNameFromJsonData } from 'shared/selectors'
 import { Scene } from '@dcl/schemas'
-import { signalSceneLoad, signalSceneStart, signalSceneFail, signalSceneUnload } from 'shared/loading/actions'
+import {
+  signalSceneLoad,
+  signalSceneStart,
+  signalSceneFail,
+  signalSceneUnload,
+  SceneLoad,
+  SceneStart,
+  SceneFail,
+  SceneUnload,
+  SCENE_UNLOAD,
+  SCENE_LOAD,
+  SCENE_FAIL,
+  SCENE_START
+} from 'shared/loading/actions'
 import { EntityAction, LoadableScene } from 'shared/types'
 import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
@@ -18,8 +31,7 @@ import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
 import { permissionItemFromJSON } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
 import { incrementAvatarSceneMessages } from 'shared/session/getPerformanceInfo'
-import { getCurrentUserId } from 'shared/session/selectors'
-import { store } from 'shared/store/isolatedStore'
+import mitt from 'mitt'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
@@ -43,6 +55,9 @@ const sceneRuntimeUrl = URL.createObjectURL(sceneRuntimeBLOB)
 
 export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready' | 'failed'
 export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
+
+export const sceneEvents =
+  mitt<{ [SCENE_LOAD]: SceneLoad; [SCENE_START]: SceneStart; [SCENE_FAIL]: SceneFail; [SCENE_UNLOAD]: SceneUnload }>()
 
 function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
   const loggerName = getSceneNameFromJsonData(loadableScene.entity.metadata) || loadableScene.id
@@ -165,7 +180,7 @@ export class SceneWorker {
 
     queueMicrotask(() => {
       // this NEEDS to run in a microtask because sagas control this .dispose
-      store.dispatch(signalSceneUnload(this.loadableScene))
+      sceneEvents.emit(SCENE_UNLOAD, signalSceneUnload(this.loadableScene))
     })
 
     if ((this.ready & disposingFlags) === 0) {
@@ -200,23 +215,18 @@ export class SceneWorker {
         base: baseParcel
       })
 
-      queueMicrotask(() => {
-        // this NEEDS to run in a microtask
-        store.dispatch(signalSceneStart(this.loadableScene))
-      })
+      sceneEvents.emit(SCENE_START, signalSceneStart(this.loadableScene))
     }
   }
 
   // when the current user enters the scene
-  onEnter() {
-    const userId = getCurrentUserId(store.getState())
-    if (userId) this.rpcContext.sendSceneEvent('onEnterScene', { userId })
+  onEnter(currentUserId: string) {
+    this.rpcContext.sendSceneEvent('onEnterScene', { userId: currentUserId })
   }
 
   // when the current user leaves the scene
-  onLeave() {
-    const userId = getCurrentUserId(store.getState())
-    if (userId) this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
+  onLeave(currentUserId: string) {
+    this.rpcContext.sendSceneEvent('onLeaveScene', { userId: currentUserId })
   }
 
   private attachTransport() {
@@ -224,10 +234,7 @@ export class SceneWorker {
     this.rpcServer.attachTransport(this.transport, this.rpcContext)
     this.ready |= SceneWorkerReadyState.LOADED
 
-    queueMicrotask(() => {
-      // this NEEDS to run in a microtask or timeout
-      store.dispatch(signalSceneLoad(this.loadableScene))
-    })
+    sceneEvents.emit(SCENE_LOAD, signalSceneLoad(this.loadableScene))
 
     const WORKER_TIMEOUT = 30_000 // thirty seconds
 
@@ -238,7 +245,7 @@ export class SceneWorker {
         this.sceneStarted = true
         this.rpcContext.sendSceneEvent('sceneStart', {})
 
-        store.dispatch(signalSceneFail(this.loadableScene))
+        sceneEvents.emit(SCENE_FAIL, signalSceneFail(this.loadableScene))
       }
     }, WORKER_TIMEOUT)
   }

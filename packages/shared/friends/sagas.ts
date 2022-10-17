@@ -16,8 +16,6 @@ import {
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
-
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import defaultLogger, { createLogger, createDummyLogger } from 'shared/logger'
@@ -58,7 +56,6 @@ import {
   ChannelSearchResultsPayload,
   JoinOrCreateChannelPayload
 } from 'shared/types'
-import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -123,6 +120,7 @@ import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { IRealmAdapter } from 'shared/realm/types'
 import { realmToConnectionString } from 'shared/realm/resolver'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
+import { getParcelPosition } from 'shared/scene-loader/selectors'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -891,6 +889,7 @@ function* initializeStatusUpdateInterval() {
 
     const client: SocialAPI | null = yield select(getSocialClient)
     const realmAdapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
+    const position: ReadOnlyVector2 = yield select(getParcelPosition)
 
     if (!client || !realmAdapter) {
       continue
@@ -901,8 +900,6 @@ function* initializeStatusUpdateInterval() {
     const friends = rawFriends.map((x) => getMatrixIdFromUser(x))
 
     updateUserStatus(client, ...friends)
-
-    const position = worldToGrid(lastPlayerPosition.clone())
 
     const updateStatus: UpdateUserStatus = {
       realm: {
