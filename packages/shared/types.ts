@@ -841,3 +841,9 @@ export type UpdateChannelMembersPayload = {
   channelId: string
   members: ChannelMember[]
 }
+
+// Users allowed to create channels
+export type UsersAllowed = {
+  mode: number
+  allowList: string[]
+}

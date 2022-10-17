@@ -103,7 +103,7 @@ import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
 import { getRealm } from 'shared/comms/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
-import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
+import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getPeer } from 'shared/comms/peers'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
@@ -115,13 +115,15 @@ import {
   getMatrixIdFromUser,
   areChannelsEnabled,
   getMaxChannels,
-  getNormalizedRoomName
+  getNormalizedRoomName,
+  getUsersAllowedToCreate
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
+import { uuid } from 'atomicHelpers/math'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -726,6 +728,8 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
     initialSize: limit,
     limit
   })
+
+  if (!cursorMessage) return
 
   const messages = cursorMessage.getMessages()
   if (messageId !== undefined) {
@@ -1378,27 +1382,46 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       return
     }
 
-    // get or create channel
-    const { created, conversation }: GetOrCreateConversationResponse = yield apply(client, client.getOrCreateChannel, [
-      channelId,
-      []
-    ])
+    // check if the user has perms to create channels.
+    const isAllowed = isAllowedToCreate()
+    if (isAllowed) {
+      const { created, conversation }: GetOrCreateConversationResponse = yield apply(
+        client,
+        client.getOrCreateChannel,
+        [channelId, []]
+      )
 
-    const channel: ChannelInfoPayload = {
-      name: conversation.name ?? action.payload.channelId,
-      channelId: conversation.id,
-      unseenMessages: 0,
-      lastMessageTimestamp: undefined,
-      memberCount: 1,
-      description: '',
-      joined: true,
-      muted: false
-    }
+      const channel: ChannelInfoPayload = {
+        name: conversation.name ?? action.payload.channelId,
+        channelId: conversation.id,
+        unseenMessages: 0,
+        lastMessageTimestamp: undefined,
+        memberCount: 1,
+        description: '',
+        joined: true,
+        muted: false
+      }
 
-    if (created) {
-      getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+      if (created) {
+        getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
+      } else {
+        yield apply(client, client.joinChannel, [conversation.id])
+      }
+      // if the user does not have perms to create, we check if the channel exists and join if so.
     } else {
-      yield apply(client, client.joinChannel, [conversation.id])
+      const channelByName = yield apply(client, client.getChannelByName, [channelId])
+
+      if (channelByName) {
+        yield apply(client, client.joinChannel, [channelByName.id])
+      } else {
+        getUnityInstance().AddMessageToChatWindow({
+          messageType: ChatMessageType.SYSTEM,
+          messageId: uuid(),
+          sender: 'Decentraland',
+          body: `Ups, sorry! It seems you don't have permissions to create a channel.`,
+          timestamp: Date.now()
+        })
+      }
     }
   } catch (e) {
     if (e instanceof ChannelsError) {
@@ -1413,6 +1436,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   }
 }
 
+// Join channel
 export async function joinChannel(request: JoinOrCreateChannelPayload) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
@@ -1449,12 +1473,12 @@ export async function createChannel(request: CreateChannelPayload) {
     // create channel
     const { conversation, created } = await client.getOrCreateChannel(channelId, [])
 
+    // if it already exists, we notify an error
     if (!created) {
       notifyJoinChannelError(request.channelId, ChannelErrorCode.ALREADY_EXISTS)
       return
     }
 
-    // parse channel info
     const channel: ChannelInfoPayload = {
       name: conversation.name ?? request.channelId,
       channelId: conversation.id,
@@ -1466,7 +1490,6 @@ export async function createChannel(request: CreateChannelPayload) {
       muted: false
     }
 
-    // Send confirmation message to unity
     getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
   } catch (e) {
     if (e instanceof ChannelsError) {
@@ -1561,6 +1584,8 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     initialSize: limit,
     limit
   })
+
+  if (!cursorMessage) return
 
   // get list of messages currently in the window with the oldest event at index 0
   const messages = cursorMessage.getMessages()
@@ -1767,8 +1792,7 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
 
 /**
  * Get the number of channels the user is joined to and check with a feature flag value if the user has reached the maximum amount allowed.
- * @return True - if the user has reached the maximum amount allowed.
- * @return False - if the user has not reached the maximum amount allowed.
+ * @return `true` if the user has reached the maximum amount allowed | `false` if it has not.
  */
 function checkChannelsLimit() {
   const limit = getMaxChannels(store.getState())
@@ -1894,4 +1918,21 @@ function buildMissingProfile(userId: string, name: string) {
 function buildProfilePictureURL(userId: string): string {
   const synapseUrl = getSynapseUrl(store.getState())
   return `${synapseUrl}/profile-pictures/${userId}`
+}
+
+/**
+ * Check with a feature flag value if the user is allowed to create channels.
+ * @return `true` if the user is allowed | `false` if it is not.
+ */
+function isAllowedToCreate() {
+  const allowedUsers = getUsersAllowedToCreate(store.getState())
+  const ownId = getCurrentUserId(store.getState())
+
+  if (!allowedUsers || !ownId) {
+    return false
+  }
+
+  if (allowedUsers.allowList.includes(ownId)) {
+    return true
+  }
 }
