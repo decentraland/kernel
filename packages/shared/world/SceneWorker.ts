@@ -1,7 +1,6 @@
 import { Quaternion, Vector3 } from '@dcl/ecs-math'
 import { DEBUG_SCENE_LOG, FORCE_SEND_MESSAGE, playerConfigurations, WSS_ENABLED } from 'config'
 import { PositionReport } from './positionThings'
-import { store } from 'shared/store/isolatedStore'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 import { EventDataType } from '@dcl/protocol/out-ts/decentraland/kernel/apis/engine_api.gen'
@@ -20,6 +19,7 @@ import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
 import { permissionItemFromJSON } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
 import { incrementAvatarSceneMessages } from 'shared/session/getPerformanceInfo'
 import { getCurrentUserId } from 'shared/session/selectors'
+import { store } from 'shared/store/isolatedStore'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,

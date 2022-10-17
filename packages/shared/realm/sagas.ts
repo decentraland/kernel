@@ -147,7 +147,8 @@ function* handleNewBFF() {
       unbind = yield call(bindHandlersToBFF, action.payload, identity?.address)
 
       // enable/disable minimap
-      const miniMapVisible = !action.payload.about.configurations?.minimap || !action.payload.about.configurations?.minimap.enabled
+      const miniMapVisible =
+        !action.payload.about.configurations?.minimap || !action.payload.about.configurations?.minimap.enabled
       yield waitForRendererInstance()
       getUnityInstance().ConfigureHUDElement(HUDElementID.MINIMAP, { active: miniMapVisible, visible: miniMapVisible })
 

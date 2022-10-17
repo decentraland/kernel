@@ -11,7 +11,11 @@ import { setRealmAdapter } from 'shared/realm/actions'
 import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
-import { adapterForRealmString, prettyRealmName, resolveRealmBaseUrlFromRealmQueryParameter } from 'shared/realm/resolver'
+import {
+  adapterForRealmString,
+  prettyRealmName,
+  resolveRealmBaseUrlFromRealmQueryParameter
+} from 'shared/realm/resolver'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {

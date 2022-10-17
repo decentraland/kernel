@@ -30,7 +30,11 @@ import { CatalystNode } from 'shared/types'
 import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/realm/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { getFetchContentServerFromRealmAdapter, getProfilesContentServerFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
+import {
+  getFetchContentServerFromRealmAdapter,
+  getProfilesContentServerFromRealmAdapter,
+  waitForRealmAdapter
+} from 'shared/realm/selectors'
 import { SET_REALM_ADAPTER } from 'shared/realm/actions'
 import { IRealmAdapter } from 'shared/realm/types'
 import { getParcelPosition } from 'shared/scene-loader/selectors'

@@ -26,7 +26,11 @@ import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { ProfileUserInfo } from 'shared/profiles/types'
-import { getFetchContentServerFromRealmAdapter, getProfilesContentServerFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
+import {
+  getFetchContentServerFromRealmAdapter,
+  getProfilesContentServerFromRealmAdapter,
+  waitForRealmAdapter
+} from 'shared/realm/selectors'
 import { getExploreRealmsService } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'

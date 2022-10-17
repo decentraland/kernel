@@ -57,7 +57,46 @@ function getPayload(payloadType: EAType, payload: Payload): any {
   return {}
 }
 
-function eATypeToCompatibilityAction(type: EAType): EntityActionType | null {
+export function registerEngineApiServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, EngineApiServiceDefinition, async () => ({
+    async sendBatch(req: ManyEntityAction, ctx) {
+      const actions: EntityAction[] = []
+
+      for (const action of req.actions) {
+        const actionType = eaTypeToStr(action.type)
+        if (actionType && action.payload) {
+          actions.push({
+            type: actionType,
+            tag: action.tag,
+            payload: getPayload(action.type, action.payload as any)
+          })
+        }
+      }
+
+      if (actions.length) {
+        ctx.sendBatch(actions)
+      }
+
+      const events: EventData[] = ctx.events
+
+      if (events.length) {
+        ctx.events = []
+      }
+
+      return { events }
+    },
+
+    async subscribe(req, ctx) {
+      ctx.subscribedEvents.add(req.eventId)
+      return {}
+    },
+    async unsubscribe(req, ctx) {
+      ctx.subscribedEvents.delete(req.eventId)
+      return {}
+    }
+  }))
+}
+function eaTypeToStr(type: EAType): EntityActionType | null {
   switch (type) {
     case EAType.EAT_UPDATE_ENTITY_COMPONENT:
       return 'UpdateEntityComponent'
@@ -91,44 +130,4 @@ function eATypeToCompatibilityAction(type: EAType): EntityActionType | null {
       return 'InitMessagesFinished'
   }
   return null
-}
-
-export function registerEngineApiServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  codegen.registerService(port, EngineApiServiceDefinition, async () => ({
-    async sendBatch(req: ManyEntityAction, ctx) {
-      const actions: EntityAction[] = []
-
-      for (const action of req.actions) {
-        const actionType = eATypeToCompatibilityAction(action.type)
-        if (actionType && action.payload) {
-          actions.push({
-            type: actionType,
-            tag: action.tag,
-            payload: getPayload(action.type, action.payload as any)
-          })
-        }
-      }
-
-      if (actions.length) {
-        ctx.sendBatch(actions)
-      }
-
-      const events: EventData[] = ctx.events
-
-      if (events.length) {
-        ctx.events = []
-      }
-
-      return { events }
-    },
-
-    async subscribe(req, ctx) {
-      ctx.subscribedEvents.add(req.eventId)
-      return {}
-    },
-    async unsubscribe(req, ctx) {
-      ctx.subscribedEvents.delete(req.eventId)
-      return {}
-    }
-  }))
 }

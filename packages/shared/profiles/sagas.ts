@@ -47,7 +47,11 @@ import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
 import { getIdentity } from 'shared/session'
 import { RoomConnection } from 'shared/comms/interface'
-import { ensureRealmAdapterPromise, getProfilesContentServerFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
+import {
+  ensureRealmAdapterPromise,
+  getProfilesContentServerFromRealmAdapter,
+  waitForRealmAdapter
+} from 'shared/realm/selectors'
 import { IRealmAdapter } from 'shared/realm/types'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>

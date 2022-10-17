@@ -54,7 +54,11 @@ import { ExplorerIdentity } from 'shared/session/types'
 import { trackEvent } from 'shared/analytics'
 import { authorizeBuilderHeaders } from 'atomicHelpers/authenticateBuilder'
 import { IRealmAdapter } from 'shared/realm/types'
-import { getFetchContentServerFromRealmAdapter, getFetchContentUrlPrefixFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
+import {
+  getFetchContentServerFromRealmAdapter,
+  getFetchContentUrlPrefixFromRealmAdapter,
+  waitForRealmAdapter
+} from 'shared/realm/selectors'
 import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'

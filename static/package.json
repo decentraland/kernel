@@ -4,6 +4,6 @@
   "license": "Apache-2.0",
   "bundleDependencies": [],
   "devDependencies": {
-    "@dcl/unity-renderer": "^1.0.31370-20220328092623.commit-2b7cc9e"
+    "@dcl/unity-renderer": "^1.0.56758-20221010052915.commit-ecdab7d"
   }
 }

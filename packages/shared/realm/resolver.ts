@@ -54,24 +54,19 @@ function dclWorldUrl(dclName: string) {
 }
 
 export function realmToConnectionString(realm: IRealmAdapter) {
-  if (realm.about.comms?.protocol === 'v2' && realm.about.configurations?.realmName?.match(/^[a-z]+$/i)) {
-    return realm.about.configurations.realmName
+  const realmName = realm.about.configurations?.realmName
+  if (realm.about.comms?.protocol === 'v2' && realmName?.match(/^[a-z]+$/i)) {
+    return realmName
   }
 
-  if (
-    isDclEns(realm.about.configurations?.realmName) &&
-    realm.baseUrl == dclWorldUrl(realm.about.configurations?.realmName!)
-  ) {
-    return realm.about.configurations?.realmName!
+  if (isDclEns(realmName) && realm.baseUrl === dclWorldUrl(realmName)) {
+    return realmName
   }
 
   return realm.baseUrl.replace(/^https?:\/\//, '').replace(/^wss?:\/\//, '')
 }
 
-export function resolveRealmBaseUrlFromRealmQueryParameter(
-  realmString: string,
-  candidates: Candidate[]
-): string {
+export function resolveRealmBaseUrlFromRealmQueryParameter(realmString: string, candidates: Candidate[]): string {
   // is it a DAO realm?
   for (const candidate of candidates) {
     if (candidate.catalystName === realmString) {

@@ -98,7 +98,11 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
 import { SET_ROOM_CONNECTION } from 'shared/comms/actions'
-import { ensureRealmAdapterPromise, getRealmAdapter, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
+import {
+  ensureRealmAdapterPromise,
+  getRealmAdapter,
+  getFetchContentUrlPrefixFromRealmAdapter
+} from 'shared/realm/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
 import { getCurrentIdentity, getIsGuestLogin } from 'shared/session/selectors'
