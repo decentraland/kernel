@@ -26,5 +26,5 @@ export type VoiceHandler = {
   // Play audio when we recive it from comms (only for opus)
   playEncodedAudio?(src: string, relativePosition: rfc4.Position, encoded: rfc4.Voice): Promise<void>
 
-  leave?(): void
+  destroy(): void
 }

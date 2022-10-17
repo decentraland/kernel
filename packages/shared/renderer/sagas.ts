@@ -39,7 +39,6 @@ import { waitForRendererInstance } from './sagas-helper'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import {
   SetVoiceChatErrorAction,
-  SetVoiceChatHandlerAction,
   SET_VOICE_CHAT_ERROR,
   SET_VOICE_CHAT_HANDLER,
   VoicePlayingUpdateAction,
@@ -52,6 +51,8 @@ import { SET_REALM_ADAPTER } from 'shared/realm/actions'
 import { getAllowedContentServer } from 'shared/meta/selectors'
 import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
 import { RootState } from 'shared/store/rootTypes'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
+import { getVoiceHandler } from 'shared/voiceChat/selectors'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -59,7 +60,6 @@ export function* rendererSaga() {
   yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreen)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
-  yield takeEvery(SET_VOICE_CHAT_HANDLER, updateChangeVoiceChatHandler)
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
@@ -68,6 +68,7 @@ export function* rendererSaga() {
   yield takeEvery(SET_CURRENT_SCENE, listenToWhetherSceneSupportsVoiceChat)
 
   yield fork(reportRealmChangeToRenderer)
+  yield fork(updateChangeVoiceChatHandlerProcess)
 }
 
 /**
@@ -133,12 +134,28 @@ function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdateAction)
   getUnityInstance().SetPlayerTalking(action.payload.recording)
 }
 
-function* updateChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
-  yield call(waitForRendererInstance)
-  if (action.payload.voiceHandler) {
-    getUnityInstance().SetVoiceChatStatus({ isConnected: true })
-  } else {
-    getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+function* updateChangeVoiceChatHandlerProcess() {
+  let prevHandler: VoiceHandler | undefined = undefined
+  while (true) {
+    // wait for a new VoiceHandler
+    yield take(SET_VOICE_CHAT_HANDLER)
+
+    const handler: VoiceHandler | undefined = yield select(getVoiceHandler)
+
+    if (handler !== prevHandler) {
+      if (prevHandler) {
+        prevHandler.destroy()
+      }
+      prevHandler = handler
+    }
+
+    yield call(waitForRendererInstance)
+
+    if (handler) {
+      getUnityInstance().SetVoiceChatStatus({ isConnected: true })
+    } else {
+      getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+    }
   }
 }
 

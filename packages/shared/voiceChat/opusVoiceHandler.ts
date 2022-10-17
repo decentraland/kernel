@@ -7,11 +7,11 @@ import { getCommsRoom } from 'shared/comms/selectors'
 import { getSpatialParamsFor } from './utils'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { store } from 'shared/store/isolatedStore'
+import withCache from 'atomicHelpers/withCache'
 
-export const createOpusVoiceHandler = (): VoiceHandler => {
+const getVoiceCommunicator = withCache(() => {
   const logger = createLogger('OpusVoiceCommunicator: ')
-
-  const voiceCommunicator = new VoiceCommunicator(
+  return new VoiceCommunicator(
     {
       send(frame: rfc4.Voice) {
         const transport = getCommsRoom(store.getState())
@@ -24,8 +24,10 @@ export const createOpusVoiceHandler = (): VoiceHandler => {
       loopbackAudioElement: Html.loopbackAudioElement()
     }
   )
+})
 
-  logger.log('initialized')
+export const createOpusVoiceHandler = (): VoiceHandler => {
+  const voiceCommunicator = getVoiceCommunicator()
 
   return {
     setRecording(recording) {
@@ -67,6 +69,9 @@ export const createOpusVoiceHandler = (): VoiceHandler => {
     },
     playEncodedAudio: (src, position, encoded) => {
       return voiceCommunicator.playEncodedAudio(src, getSpatialParamsFor(position), encoded)
+    },
+    destroy() {
+      // noop
     }
   }
 }

@@ -219,7 +219,7 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     hasInput: () => {
       return validInput
     },
-    leave: () => {
+    destroy: () => {
       handleDisconnect()
     }
   }
