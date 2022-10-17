@@ -729,6 +729,8 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
     limit
   })
 
+  if (!cursorMessage) return
+
   const messages = cursorMessage.getMessages()
   if (messageId !== undefined) {
     // we remove the messages they already have.
@@ -1582,6 +1584,8 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     initialSize: limit,
     limit
   })
+
+  if (!cursorMessage) return
 
   // get list of messages currently in the window with the oldest event at index 0
   const messages = cursorMessage.getMessages()
