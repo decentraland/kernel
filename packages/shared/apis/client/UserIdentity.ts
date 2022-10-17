@@ -1,6 +1,6 @@
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcClientPort } from '@dcl/rpc/dist/types'
-import { UserIdentityServiceDefinition } from 'shared/protocol/kernel/apis/UserIdentity.gen'
+import { UserIdentityServiceDefinition } from 'shared/protocol/decentraland/kernel/apis/user_identity.gen'
 import { UserData } from '../../types'
 
 export namespace UserIdentityServiceClient {

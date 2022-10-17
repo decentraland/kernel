@@ -34,7 +34,8 @@ import {
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
-  ChannelErrorPayload
+  ChannelErrorPayload,
+  SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -112,6 +113,10 @@ export class UnityInterface implements IUnityInterface {
 
   public SetRenderProfile(id: RenderProfile) {
     this.SendMessageToUnity('Main', 'SetRenderProfile', JSON.stringify({ id: id }))
+  }
+
+  public SetAudioDevices(devices: SetAudioDevicesPayload) {
+    this.SendMessageToUnity('Bridges', 'SetAudioDevices', JSON.stringify(devices))
   }
 
   public CreateGlobalScene(data: {
@@ -225,12 +230,26 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Bridges', 'SetLoadingScreen', JSON.stringify(data))
   }
 
+
   public FadeInLoadingHUD(data: { xCoord: number; yCoord: number; message?: string }) {
     if (!this.gameInstance) {
       return
     }
 
     this.SendMessageToUnity('Bridges', 'FadeInLoadingHUD', JSON.stringify(data))
+  }
+
+  public SendMemoryUsageToRenderer() {
+    const memory = (performance as any).memory
+    const jsHeapSizeLimit = memory?.jsHeapSizeLimit
+    const totalJSHeapSize = memory?.totalJSHeapSize
+    const usedJSHeapSize = memory?.usedJSHeapSize
+
+    this.SendMessageToUnity(
+      'Main',
+      'SetMemoryUsage',
+      JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
+    )
   }
 
   public DeactivateRendering() {

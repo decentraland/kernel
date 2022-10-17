@@ -2,71 +2,70 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   EAType,
-  eATypeToJSON,
-  EngineAPIServiceDefinition,
+  EngineApiServiceDefinition,
   EventData,
   ManyEntityAction,
   Payload,
   queryTypeToJSON
-} from 'shared/protocol/kernel/apis/EngineAPI.gen'
+} from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
 
 import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
 
 function getPayload(payloadType: EAType, payload: Payload): any {
   switch (payloadType) {
-    case EAType.OpenExternalUrl: {
+    case EAType.EAT_OPEN_EXTERNAL_URL: {
       return payload.openExternalUrl?.url
     }
-    case EAType.OpenNFTDialog: {
+    case EAType.EAT_OPEN_NFT_DIALOG: {
       return payload.openNftDialog
     }
-    case EAType.CreateEntity: {
+    case EAType.EAT_CREATE_ENTITY: {
       return payload.createEntity
     }
-    case EAType.RemoveEntity: {
+    case EAType.EAT_REMOVE_ENTITY: {
       return payload.removeEntity
     }
-    case EAType.UpdateEntityComponent: {
+    case EAType.EAT_UPDATE_ENTITY_COMPONENT: {
       return payload.updateEntityComponent
     }
-    case EAType.AttachEntityComponent: {
+    case EAType.EAT_ATTACH_ENTITY_COMPONENT: {
       return payload.attachEntityComponent
     }
-    case EAType.ComponentRemoved: {
+    case EAType.EAT_COMPONENT_REMOVED: {
       return payload.componentRemoved
     }
-    case EAType.SetEntityParent: {
+    case EAType.EAT_SET_ENTITY_PARENT: {
       return payload.setEntityParent
     }
-    case EAType.Query: {
+    case EAType.EAT_QUERY: {
       return { queryId: queryTypeToJSON(payload.query!.queryId), payload: JSON.parse(payload.query!.payload) }
     }
-    case EAType.ComponentCreated: {
+    case EAType.EAT_COMPONENT_CREATED: {
       return payload.componentCreated
     }
-    case EAType.ComponentDisposed: {
+    case EAType.EAT_COMPONENT_DISPOSED: {
       return payload.componentDisposed
     }
-    case EAType.ComponentUpdated: {
+    case EAType.EAT_COMPONENT_UPDATED: {
       return payload.componentUpdated
     }
-    case EAType.InitMessagesFinished: {
+    case EAType.EAT_INIT_MESSAGES_FINISHED: {
       return payload.initMessagesFinished
     }
   }
   return {}
 }
 
-export function registerEngineAPIServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  codegen.registerService(port, EngineAPIServiceDefinition, async () => ({
+export function registerEngineApiServiceServerImplementation(port: RpcServerPort<PortContext>) {
+  codegen.registerService(port, EngineApiServiceDefinition, async () => ({
     async sendBatch(req: ManyEntityAction, ctx) {
       const actions: EntityAction[] = []
 
       for (const action of req.actions) {
         if (action.payload) {
           actions.push({
-            type: eATypeToJSON(action.type) as EntityActionType,
+            type: eaTypeToStr(action.type),
             tag: action.tag,
             payload: getPayload(action.type, action.payload)
           })
@@ -95,4 +94,35 @@ export function registerEngineAPIServiceServerImplementation(port: RpcServerPort
       return {}
     }
   }))
+}
+function eaTypeToStr(type: EAType): EntityActionType {
+  switch (type) {
+    case EAType.EAT_OPEN_EXTERNAL_URL:
+      return 'OpenExternalUrl'
+    case EAType.EAT_OPEN_NFT_DIALOG:
+      return 'OpenNFTDialog'
+    case EAType.EAT_CREATE_ENTITY:
+      return 'CreateEntity'
+    case EAType.EAT_REMOVE_ENTITY:
+      return 'RemoveEntity'
+    case EAType.EAT_UPDATE_ENTITY_COMPONENT:
+      return 'UpdateEntityComponent'
+    case EAType.EAT_ATTACH_ENTITY_COMPONENT:
+      return 'AttachEntityComponent'
+    case EAType.EAT_COMPONENT_REMOVED:
+      return 'ComponentRemoved'
+    case EAType.EAT_SET_ENTITY_PARENT:
+      return 'SetEntityParent'
+    case EAType.EAT_QUERY:
+      return 'Query'
+    case EAType.EAT_COMPONENT_CREATED:
+      return 'ComponentCreated'
+    case EAType.EAT_COMPONENT_DISPOSED:
+      return 'ComponentDisposed'
+    case EAType.EAT_COMPONENT_UPDATED:
+      return 'ComponentUpdated'
+    case EAType.EAT_INIT_MESSAGES_FINISHED:
+      return 'InitMessagesFinished'
+  }
+  return 'unknown' as EntityActionType
 }
