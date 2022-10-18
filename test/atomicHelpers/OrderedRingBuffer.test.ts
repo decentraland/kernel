@@ -129,8 +129,7 @@ describe('OrderedRingBuffer', () => {
       buffer.write(toWrite, i * 10)
     }
 
-    //@ts-ignore
-    expect(buffer.chunks.length).to.eql(5)
+    expect((buffer as any).chunks.length).to.eql(5)
 
     expect(buffer.peek()).to.eql(Float32Array.of(5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9))
 

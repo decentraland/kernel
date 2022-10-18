@@ -36,7 +36,7 @@ import './sceneEvents/comms.spec'
 
 import './dao'
 
-declare var mocha: Mocha
-declare var globalThis: any
+declare let mocha: Mocha
+declare let globalThis: any
 
 mocha.run()

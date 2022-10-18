@@ -22,7 +22,7 @@ import { commsEstablished } from 'shared/loading/types'
 import { RoomConnection } from 'shared/comms/interface'
 
 const about: AboutResponse = {
-  comms: {healthy: false, protocol: 'v2'},
+  comms: { healthy: false, protocol: 'v2' },
   configurations: {
     scenesUrn: [],
     globalScenesUrn: [],
@@ -95,16 +95,13 @@ describe('when the realm change: SET_WORLD_CONTEXT', () => {
   })
 })
 
-
 describe('Comms adapter', () => {
   it('setting adapter binds comms context to events and emits commsEstablished', () => {
     const action = setRoomConnection({} as any)
 
     return expectSaga(handleNewCommsContext)
       .withReducer(reducers)
-      .provide([
-        [call(bindHandlersToCommsContext, action.payload!), null],
-      ])
+      .provide([[call(bindHandlersToCommsContext, action.payload!), null]])
       .dispatch(action)
       .call(bindHandlersToCommsContext, action.payload)
       .put(commsEstablished())
@@ -120,7 +117,7 @@ describe('Comms adapter', () => {
       .withReducer(reducers)
       .provide([
         [call(bindHandlersToCommsContext, action.payload!), null],
-        [call(disconnectRoom, oldAdapter), null],
+        [call(disconnectRoom, oldAdapter), null]
       ])
       .dispatch(actionOld)
       .dispatch(action)
@@ -129,9 +126,7 @@ describe('Comms adapter', () => {
       .call(disconnectRoom, oldAdapter)
       .run()
   })
-
 })
-
 
 describe('when the island change: SET_COMMS_ISLAND', () => {
   it('should NOT call allScene events since the realm is null', () => {
@@ -175,4 +170,3 @@ describe('when the profile updates successfully: SAVE_PROFILE_SUCCESS', () => {
       .run()
   })
 })
-

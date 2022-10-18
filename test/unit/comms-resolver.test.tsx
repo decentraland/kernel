@@ -19,7 +19,7 @@ describe('Comms resolver', () => {
         comms: {
           healthy: false,
           protocol: 'offline',
-          fixedAdapter: ''
+          fixedAdapter: undefined
         },
         configurations: {
           realmName: 'offline',
@@ -46,7 +46,7 @@ describe('Comms resolver', () => {
         comms: {
           healthy: false,
           protocol: 'offline',
-          fixedAdapter: ''
+          fixedAdapter: undefined
         },
         configurations: {
           realmName: 'offline',
@@ -72,7 +72,7 @@ describe('Comms resolver', () => {
         comms: {
           healthy: false,
           protocol: 'offline',
-          fixedAdapter: ''
+          fixedAdapter: undefined
         },
         configurations: {
           realmName: 'offline',

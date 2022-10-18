@@ -11,7 +11,11 @@ import { setRealmAdapter } from 'shared/realm/actions'
 import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
-import { adapterForRealmConfig, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/realm/resolver'
+import {
+  adapterForRealmConfig,
+  resolveRealmBaseUrlFromRealmQueryParameter,
+  urlWithProtocol
+} from 'shared/realm/resolver'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
@@ -161,7 +165,7 @@ export async function resolveOfflineRealmAboutFromConnectionString(
         comms: {
           healthy: false,
           protocol: params.get('protocol') || 'offline',
-          fixedAdapter: params.get('fixedAdapter') || ''
+          fixedAdapter: params.get('fixedAdapter') || undefined
         },
         configurations: {
           realmName: params.get('realmName') || 'offline',

@@ -77,7 +77,7 @@ describe('Fetch catalyst server status', () => {
 
     const results = await fetchCatalystStatuses(NODES, ['peer-ec1.decentraland.org'])
     expect(results.length).to.eql(1)
-    console.log({a: results[0], b: EXPECTED})
+    console.log({ a: results[0], b: EXPECTED })
     expect(results[0]).to.eql(EXPECTED)
   })
 })
