@@ -1,12 +1,98 @@
 import { expect } from 'chai'
+import { resolveRealmConfigFromString } from 'shared/dao'
 import * as r from 'shared/realm/resolver'
 
 function eq<T>(given: T, expected: T) {
-  console.log({ given, expected })
-  expect(given).to.deep.eq(expected)
+  try {
+    expect(given).to.deep.eq(expected)
+  } catch (e) {
+    console.log({ given, expected })
+    throw e
+  }
 }
 
 describe('Comms resolver', () => {
+  it('resolveRealmConfigFromString', async () => {
+    eq(await resolveRealmConfigFromString('offline'), {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: 'offline',
+          fixedAdapter: ''
+        },
+        configurations: {
+          realmName: 'offline',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: []
+        },
+        content: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.org/content'
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.org/lambdas'
+        }
+      },
+      baseUrl: 'https://peer.decentraland.org/'
+    })
+
+    eq(await resolveRealmConfigFromString('offline?baseUrl=peer.decentraland.zone'), {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: 'offline',
+          fixedAdapter: ''
+        },
+        configurations: {
+          realmName: 'offline',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: []
+        },
+        content: {
+          healthy: true,
+          publicUrl: 'http://peer.decentraland.zone/content'
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: 'http://peer.decentraland.zone/lambdas'
+        }
+      },
+      baseUrl: 'http://peer.decentraland.zone/'
+    })
+    eq(await resolveRealmConfigFromString('offline?baseUrl=https://peer.decentraland.zone'), {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: 'offline',
+          fixedAdapter: ''
+        },
+        configurations: {
+          realmName: 'offline',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: []
+        },
+        content: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.zone/content'
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.zone/lambdas'
+        }
+      },
+      baseUrl: 'https://peer.decentraland.zone/'
+    })
+  })
   it('resolveCommsConnectionString', async () => {
     eq(r.resolveRealmBaseUrlFromRealmQueryParameter('unknown', []), 'http://unknown')
 

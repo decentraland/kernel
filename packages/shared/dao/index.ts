@@ -6,16 +6,12 @@ import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { ask } from './utils/ping'
-import { getRealmAdapter } from 'shared/realm/selectors'
+import { getRealmAdapter, OFFLINE_REALM } from 'shared/realm/selectors'
 import { setRealmAdapter } from 'shared/realm/actions'
 import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
 import { getCurrentIdentity } from 'shared/session/selectors'
-import {
-  adapterForRealmString,
-  prettyRealmName,
-  resolveRealmBaseUrlFromRealmQueryParameter
-} from 'shared/realm/resolver'
+import { adapterForRealmConfig, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/realm/resolver'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
@@ -132,7 +128,9 @@ export async function realmInitialized(): Promise<void> {
   })
 }
 
-export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
+export async function resolveRealmAboutFromBaseUrl(
+  realmString: string
+): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
   const candidates = getAllCatalystCandidates(store.getState())
   const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, candidates)
 
@@ -140,49 +138,79 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
     throw new Error(`Can't resolve realm ${realmString}`)
   }
 
+  const res = await checkValidRealm(realmBaseUrl)
+  if (!res || !res.result) {
+    return undefined
+  }
+
+  return { about: res.result!, baseUrl: realmBaseUrl }
+}
+
+export async function resolveOfflineRealmAboutFromConnectionString(
+  realmString: string
+): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
+  if (realmString === OFFLINE_REALM || realmString.startsWith(OFFLINE_REALM + '?')) {
+    const params = new URL('decentraland:' + realmString).searchParams
+    let baseUrl = urlWithProtocol(params.get('baseUrl') || 'https://peer.decentraland.org')
+
+    if (!baseUrl.endsWith('/')) baseUrl = baseUrl + '/'
+
+    return {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: params.get('protocol') || 'offline',
+          fixedAdapter: params.get('fixedAdapter') || ''
+        },
+        configurations: {
+          realmName: params.get('realmName') || 'offline',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: []
+        },
+        content: {
+          healthy: true,
+          publicUrl: `${baseUrl}content`
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: `${baseUrl}lambdas`
+        }
+      },
+      baseUrl
+    }
+  }
+}
+
+export async function resolveRealmConfigFromString(realmString: string) {
+  return (
+    (await resolveOfflineRealmAboutFromConnectionString(realmString)) ||
+    (await resolveRealmAboutFromBaseUrl(realmString))
+  )
+}
+
+export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
+  const realmConfig = await resolveRealmConfigFromString(realmString)
+
+  if (!realmConfig) {
+    throw new Error(`The realm ${realmString} isn't available right now.`)
+  }
+
   const currentRealmAdapter = getRealmAdapter(store.getState())
   const identity = getCurrentIdentity(store.getState())
+
+  // if not forceChange, then cancel operation if we are inside the desired realm
+  if (!forceChange && currentRealmAdapter && currentRealmAdapter.baseUrl === realmConfig.baseUrl) {
+    return
+  }
 
   if (!identity) throw new Error('Cant change realm without a valid identity')
 
   commsLogger.info('Connecting to realm', realmString)
 
-  // if not forceChange, then cancel operation if we are inside the desired realm
-  if (!forceChange && currentRealmAdapter && currentRealmAdapter.baseUrl === realmBaseUrl) {
-    return
-  }
-
-  let about: AboutResponse
-
-  if (realmString.startsWith(`offline~`)) {
-    about = {
-      bff: undefined,
-      comms: { healthy: false, protocol: 'offline', fixedAdapter: realmString },
-      configurations: {
-        realmName: 'offline',
-        networkId: 1,
-        globalScenesUrn: [],
-        scenesUrn: []
-      },
-      content: {
-        healthy: true,
-        publicUrl: 'https://peer.decentraland.org/content'
-      },
-      healthy: true,
-      lambdas: {
-        healthy: true,
-        publicUrl: 'https://peer.decentraland.org/lambdas'
-      }
-    }
-  } else {
-    const res = await checkValidRealm(realmBaseUrl)
-    if (!res || !res.result) {
-      throw new Error(`The realm ${prettyRealmName(realmString, candidates)} isn't available right now.`)
-    }
-    about = res.result!
-  }
-
-  const newAdapter = await adapterForRealmString(realmBaseUrl, about, identity)
+  const newAdapter = await adapterForRealmConfig(realmConfig.baseUrl, realmConfig.about, identity)
 
   if (newAdapter) {
     store.dispatch(setRealmAdapter(newAdapter))

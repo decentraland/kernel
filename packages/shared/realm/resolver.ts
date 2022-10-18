@@ -17,7 +17,7 @@ export function urlWithProtocol(urlOrHostname: string) {
   return normalizeUrl(urlOrHostname)
 }
 
-export async function adapterForRealmString(
+export async function adapterForRealmConfig(
   baseUrl: string,
   about: AboutResponse,
   identity: ExplorerIdentity
