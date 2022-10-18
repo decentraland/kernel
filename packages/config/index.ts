@@ -106,8 +106,6 @@ export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
 
 export const LOS = ensureSingleString(qs.get('LOS'))
 
-export const NO_REPORT_POS = location.search.includes('NO_REPORT_POS') || qs.has('NO_REPORT_POS')
-
 export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
 export const DEBUG_COMMS = qs.has('DEBUG_COMMS')
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')

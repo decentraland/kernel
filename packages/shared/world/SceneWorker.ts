@@ -341,8 +341,6 @@ export class SceneWorker {
   }
 
   private subscribeToSceneChangeEvents() {
-    console.log('PRAVS - SceneWorker - subscribeToSceneChangeEvents()!')
-
     this.sceneChangeObserver = sceneObservable.add((report) => {
       const userId = getCurrentUserId(store.getState())
 

@@ -7,9 +7,8 @@ import { worldToGrid, gridToWorld } from '../../../atomicHelpers/parcelScenePosi
 import { pickWorldSpawnpoint } from 'shared/world/positionThings'
 import { InstancedSpawnPoint } from 'shared/types'
 import { createLogger } from 'shared/logger'
-// import {NO_REPORT_POS} from "../../../config";
 
-const DEBUG = true
+const DEBUG = false
 
 const logger = createLogger('position: ')
 export class PositionLifecycleController extends EventEmitter {
@@ -47,8 +46,6 @@ export class PositionLifecycleController extends EventEmitter {
     let resolvedPosition = position
     this.currentPosition = resolvedPosition
 
-    console.log('PRAVS - reportCurrentPosition() - currentPosition: (' + this.currentPosition.x + ',' + this.currentPosition.y + ')')
-    
     if (teleported) {
       const lands = await this.downloadManager.resolveEntitiesByPosition([`${position.x},${position.y}`])
       if (lands.size) {
