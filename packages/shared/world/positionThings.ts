@@ -60,7 +60,7 @@ positionObservable.add(({ position, immediate }) => {
   worldToGrid(position, parcel)
 
   // if (!lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
-    console.log('PRAVS - positionThings - positionObservable.notifyObservers')
+  //   console.log('PRAVS - positionThings - positionObservable.notifyObservers')
     parcelObservable.notifyObservers({ previousParcel: lastPlayerParcel, newParcel: parcel, immediate })
     setLastPlayerParcel(parcel)
   // }
