@@ -219,14 +219,18 @@ export class SceneWorker {
     }
   }
 
-  // when the current user enters the scene
-  onEnter(currentUserId: string) {
-    this.rpcContext.sendSceneEvent('onEnterScene', { userId: currentUserId })
+  // when an user enters the scene
+  onEnter(userId: string) {
+    console.log('enterScene', userId, this.rpcContext.sceneData.id)
+    this.rpcContext.sendSceneEvent('onEnterScene', { userId })
   }
 
-  // when the current user leaves the scene
-  onLeave(currentUserId: string) {
-    this.rpcContext.sendSceneEvent('onLeaveScene', { userId: currentUserId })
+  // when an user leaves the scene
+  onLeave(userId: string, self: boolean) {
+    // if the scene is a portable experience, then we never leave the scene
+    if (self && this.rpcContext.sceneData.isPortableExperience) return
+    console.log('leaveScene', userId, this.rpcContext.sceneData.id)
+    this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
   }
 
   private attachTransport() {

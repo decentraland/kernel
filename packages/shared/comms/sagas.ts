@@ -9,6 +9,7 @@ import {
   HANDLE_ROOM_DISCONNECTION,
   setCommsIsland,
   setRoomConnection,
+  SetRoomConnectionAction,
   SET_COMMS_ISLAND,
   SET_ROOM_CONNECTION
 } from './actions'
@@ -441,27 +442,29 @@ function* handleAnnounceProfile() {
 }
 
 // this saga reacts to changes in context and disconnects the old context
-function* handleNewCommsContext() {
-  let roomConnection: RoomConnection | undefined = undefined
+export function* handleNewCommsContext() {
+  let oldRoomConnection: RoomConnection | undefined = undefined
 
-  yield takeEvery(SET_ROOM_CONNECTION, function* () {
-    const oldContext = roomConnection
-    roomConnection = yield select(getCommsRoom)
+  while (true) {
+    const action: SetRoomConnectionAction = yield take(SET_ROOM_CONNECTION)
+    const newRoomConnection = action.payload
 
-    if (oldContext !== roomConnection) {
-      if (roomConnection) {
+    if (oldRoomConnection !== newRoomConnection) {
+      if (newRoomConnection) {
         // bind messages to this comms instance
-        yield call(bindHandlersToCommsContext, roomConnection)
+        yield call(bindHandlersToCommsContext, newRoomConnection)
         yield put(commsEstablished())
-        console.log('Comms context connected')
       }
 
-      if (oldContext) {
+      if (oldRoomConnection) {
         // disconnect previous context
-        yield call(disconnectRoom, oldContext)
+        yield call(disconnectRoom, oldRoomConnection)
       }
+
+      // lastly, replace the state of this saga
+      oldRoomConnection = newRoomConnection
     }
-  })
+  }
 }
 
 export async function disconnectRoom(context: RoomConnection) {

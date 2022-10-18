@@ -72,7 +72,7 @@ function* sceneObservableProcess() {
 
       // send signals of enter and leave to the scenes
       if (newScene) yield apply(newScene, newScene.onEnter, [userId])
-      if (lastPlayerScene) yield apply(lastPlayerScene, lastPlayerScene.onLeave, [userId])
+      if (lastPlayerScene) yield apply(lastPlayerScene, lastPlayerScene.onLeave, [userId, true])
 
       // new state
       lastPlayerScene = newScene

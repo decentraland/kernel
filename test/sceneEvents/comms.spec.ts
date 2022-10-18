@@ -1,7 +1,7 @@
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 import mitt from 'mitt'
 import { expectSaga } from 'redux-saga-test-plan'
-import { select } from 'redux-saga/effects'
+import { call, select } from 'redux-saga/effects'
 import { toEnvironmentRealmType } from 'shared/apis/host/EnvironmentAPI'
 import { setRealmAdapter } from 'shared/realm/actions'
 import { legacyServices } from 'shared/realm/local-services/legacy'
@@ -10,13 +10,13 @@ import { IRealmAdapter } from 'shared/realm/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { reducers } from 'shared/store/rootReducer'
 import { setCommsIsland, setRoomConnection } from '../../packages/shared/comms/actions'
-import { getCommsIsland, getCommsRoom } from '../../packages/shared/comms/selectors'
+import { getCommsIsland } from '../../packages/shared/comms/selectors'
 import { saveProfileDelta } from '../../packages/shared/profiles/actions'
 import { sceneEventsSaga, updateLocation } from '../../packages/shared/sceneEvents/sagas'
 import { allScenesEvent } from '../../packages/shared/world/parcelSceneManager'
 import { localCommsService } from '../../packages/shared/realm/local-services/comms'
 import { getRealmAdapter } from 'shared/realm/selectors'
-import { commsSaga, disconnectRoom } from 'shared/comms/sagas'
+import { disconnectRoom, handleNewCommsContext } from 'shared/comms/sagas'
 import { bindHandlersToCommsContext } from 'shared/comms/handlers'
 import { commsEstablished } from 'shared/loading/types'
 import { RoomConnection } from 'shared/comms/interface'
@@ -96,14 +96,14 @@ describe('when the realm change: SET_WORLD_CONTEXT', () => {
 })
 
 
-describe.skip('Comms adapter', () => {
+describe('Comms adapter', () => {
   it('setting adapter binds comms context to events and emits commsEstablished', () => {
     const action = setRoomConnection({} as any)
 
-    return expectSaga(commsSaga)
+    return expectSaga(handleNewCommsContext)
       .withReducer(reducers)
       .provide([
-        [select(getCommsRoom), null],
+        [call(bindHandlersToCommsContext, action.payload!), null],
       ])
       .dispatch(action)
       .call(bindHandlersToCommsContext, action.payload)
@@ -112,14 +112,17 @@ describe.skip('Comms adapter', () => {
   })
 
   it('setting new adapter disconnects old adapter', async () => {
-    const action = setRoomConnection({} as any)
     const oldAdapter: RoomConnection = {} as any
+    const actionOld = setRoomConnection(oldAdapter as any)
+    const action = setRoomConnection({} as any)
 
-    await expectSaga(commsSaga)
+    await expectSaga(handleNewCommsContext)
       .withReducer(reducers)
       .provide([
-        [select(getCommsRoom), oldAdapter],
+        [call(bindHandlersToCommsContext, action.payload!), null],
+        [call(disconnectRoom, oldAdapter), null],
       ])
+      .dispatch(actionOld)
       .dispatch(action)
       .call(bindHandlersToCommsContext, action.payload)
       .put(commsEstablished())

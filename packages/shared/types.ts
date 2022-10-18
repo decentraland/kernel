@@ -675,6 +675,7 @@ export type AvatarRendererBasePayload = {
 export type AvatarRendererPositionMessage = {
   type: AvatarRendererMessageType.SCENE_CHANGED
   sceneId?: string
+  sceneNumber?: number
 } & AvatarRendererBasePayload
 
 export type AvatarRendererRemovedMessage = {
