@@ -197,6 +197,8 @@ describe('Friends sagas', () => {
 
     describe("When there's a filter by id", () => {
       it('Should filter the responses to have only the ones that include the userId and have the full friends length as total', () => {
+        const unityInstance = getUnityInstance()
+        const unityMock = sinon.mock(unityInstance)
         const request: GetFriendsPayload = {
           limit: 1000,
           skip: 0,
@@ -213,10 +215,11 @@ describe('Friends sagas', () => {
           totalFriends: profilesFromStore.length
         }
 
-        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
-        friendsSagas.getFriends(request)
-        sinon.mock(getUnityInstance()).verify()
+       sinon.stub(unityInstance, 'UpdateUserPresence').callsFake(() => {}) // friendsSagas.getFriends update user presence internally
+       unityMock.expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
+       unityMock.expects('AddFriends').once().withExactArgs(addedFriends)
+       friendsSagas.getFriends(request)
+       unityMock.verify()
       })
     })
 
@@ -358,6 +361,8 @@ describe('Friends sagas', () => {
       })
 
       it('Should send unity the expected profiles and the expected friend conversations', () => {
+        const unityInstance = getUnityInstance();
+        const unityMock = sinon.mock(unityInstance)
         const request: GetFriendsWithDirectMessagesPayload = {
           limit: 1000,
           skip: 0,
@@ -377,14 +382,14 @@ describe('Friends sagas', () => {
           totalFriendsWithDirectMessages: allCurrentConversations.length
         }
 
-        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
-        sinon
-          .mock(getUnityInstance())
+        sinon.stub(unityInstance, 'UpdateUserPresence').callsFake(() => {}) // friendsSagas.getFriendsWithDirectMessages update user presence internally
+        unityMock.expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
+        unityMock
           .expects('AddFriendsWithDirectMessages')
           .once()
           .withExactArgs(expectedAddFriendsWithDirectMessagesPayload)
         friendsSagas.getFriendsWithDirectMessages(request)
-        sinon.mock(getUnityInstance()).verify()
+        unityMock.verify()
       })
     })
   })
@@ -441,7 +446,7 @@ describe('Friends sagas', () => {
     })
 
     it('should send status when it\'s not stored in the redux state yet', async () => {
-      mockStoreCalls()
+      mockStoreCalls(undefined, new Map()) // restore statuses
       const unityMock = sinon.mock(getUnityInstance())
       unityMock.expects('UpdateUserPresence')
         .once()
