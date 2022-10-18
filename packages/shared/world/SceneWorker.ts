@@ -341,14 +341,19 @@ export class SceneWorker {
   }
 
   private subscribeToSceneChangeEvents() {
+    console.log('PRAVS - SceneWorker - subscribeToSceneChangeEvents()!')
+
     this.sceneChangeObserver = sceneObservable.add((report) => {
       const userId = getCurrentUserId(store.getState())
+
       if (userId) {
         const sceneId = this.loadableScene.id
         if (report.newScene?.id === sceneId) {
           this.rpcContext.sendSceneEvent('onEnterScene', { userId })
+          console.log('PRAVS - SceneWorker - onEnterScene!')
         } else if (report.previousScene?.id === sceneId) {
           this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
+          console.log('PRAVS - SceneWorker - onLeaveScene!')
         }
       }
     })

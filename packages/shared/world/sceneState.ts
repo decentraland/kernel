@@ -20,9 +20,13 @@ parcelObservable.add(async ({ newParcel }) => {
   if (!lastPlayerScene || !lastPlayerScene.entity.metadata.scene.parcels.includes(parcelString)) {
     const lands = await fetchScenesByLocation([parcelString])
     if (lands.length) {
+      console.log('PRAVS - sceneState - notifyObservers - A - lastPlayerScene:' + lastPlayerScene?.id)
+      // debugger
       sceneObservable.notifyObservers({ previousScene: lastPlayerScene, newScene: lands[0] })
       lastPlayerScene = lands[0]
     } else {
+      console.log('PRAVS - sceneState - notifyObservers - B - lastPlayerScene:' + lastPlayerScene?.id)
+      // debugger
       sceneObservable.notifyObservers({ previousScene: lastPlayerScene })
       lastPlayerScene = undefined
     }

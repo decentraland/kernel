@@ -58,10 +58,12 @@ let lastPlayerParcel: Vector2
 positionObservable.add(({ position, immediate }) => {
   const parcel = Vector2.Zero()
   worldToGrid(position, parcel)
-  if (!lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
+
+  // if (!lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
+    console.log('PRAVS - positionThings - positionObservable.notifyObservers')
     parcelObservable.notifyObservers({ previousParcel: lastPlayerParcel, newParcel: parcel, immediate })
     setLastPlayerParcel(parcel)
-  }
+  // }
 })
 
 function setLastPlayerParcel(parcel: Vector2) {

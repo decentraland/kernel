@@ -27,11 +27,7 @@ export class PositionLifecycleController extends EventEmitter {
     sceneController.on('Scene status', () => this.checkPositionSettlement())
   }
 
-  private alreadyRun: boolean = false
   async reportCurrentPosition(position: Vector2Component, teleported: boolean) {
-    if(this.alreadyRun) return
-    this.alreadyRun = true
-
     if (
       !this.positionSettled ||
       (this.currentPosition &&
@@ -52,7 +48,7 @@ export class PositionLifecycleController extends EventEmitter {
     this.currentPosition = resolvedPosition
 
     console.log('PRAVS - reportCurrentPosition() - currentPosition: (' + this.currentPosition.x + ',' + this.currentPosition.y + ')')
-
+    
     if (teleported) {
       const lands = await this.downloadManager.resolveEntitiesByPosition([`${position.x},${position.y}`])
       if (lands.size) {
