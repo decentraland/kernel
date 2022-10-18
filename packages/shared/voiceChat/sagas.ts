@@ -49,12 +49,12 @@ import { VoiceChatState } from './types'
 import { Observer } from 'mz-observable'
 
 import { Room } from 'livekit-client' // temp
-import { getIdentity } from 'shared/session'
 import { SET_COMMS_ISLAND, SET_ROOM_CONNECTION } from 'shared/comms/actions'
 import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
 import { getRealmConnectionString } from 'shared/realm/selectors'
+import { getCurrentIdentity } from 'shared/session/selectors'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 let audioRequestInitialized = false
@@ -92,7 +92,7 @@ export function* handleNewRoomOrCommsContext() {
     const island = (yield select(getCommsIsland)) ?? 'global'
     const roomName = `${realmName}-${island}`
 
-    const identity = yield select(getIdentity)
+    const identity = yield select(getCurrentIdentity)
     if (identity) {
       const url = `https://livekit-token.decentraland.io/create?participantName=${identity.address}&roomName=${roomName}`
       const res: Response = yield fetch(url)

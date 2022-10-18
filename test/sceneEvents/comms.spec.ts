@@ -9,13 +9,17 @@ import { realmToConnectionString } from 'shared/realm/resolver'
 import { IRealmAdapter } from 'shared/realm/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { reducers } from 'shared/store/rootReducer'
-import { setCommsIsland } from '../../packages/shared/comms/actions'
-import { getCommsIsland } from '../../packages/shared/comms/selectors'
+import { setCommsIsland, setRoomConnection } from '../../packages/shared/comms/actions'
+import { getCommsIsland, getCommsRoom } from '../../packages/shared/comms/selectors'
 import { saveProfileDelta } from '../../packages/shared/profiles/actions'
 import { sceneEventsSaga, updateLocation } from '../../packages/shared/sceneEvents/sagas'
 import { allScenesEvent } from '../../packages/shared/world/parcelSceneManager'
 import { localCommsService } from '../../packages/shared/realm/local-services/comms'
 import { getRealmAdapter } from 'shared/realm/selectors'
+import { commsSaga, disconnectRoom } from 'shared/comms/sagas'
+import { bindHandlersToCommsContext } from 'shared/comms/handlers'
+import { commsEstablished } from 'shared/loading/types'
+import { RoomConnection } from 'shared/comms/interface'
 
 const about: AboutResponse = {
   comms: {healthy: false, protocol: 'v2'},
@@ -91,6 +95,41 @@ describe('when the realm change: SET_WORLD_CONTEXT', () => {
   })
 })
 
+
+describe.skip('Comms adapter', () => {
+  it('setting adapter binds comms context to events and emits commsEstablished', () => {
+    const action = setRoomConnection({} as any)
+
+    return expectSaga(commsSaga)
+      .withReducer(reducers)
+      .provide([
+        [select(getCommsRoom), null],
+      ])
+      .dispatch(action)
+      .call(bindHandlersToCommsContext, action.payload)
+      .put(commsEstablished())
+      .run()
+  })
+
+  it('setting new adapter disconnects old adapter', async () => {
+    const action = setRoomConnection({} as any)
+    const oldAdapter: RoomConnection = {} as any
+
+    await expectSaga(commsSaga)
+      .withReducer(reducers)
+      .provide([
+        [select(getCommsRoom), oldAdapter],
+      ])
+      .dispatch(action)
+      .call(bindHandlersToCommsContext, action.payload)
+      .put(commsEstablished())
+      .call(disconnectRoom, oldAdapter)
+      .run()
+  })
+
+})
+
+
 describe('when the island change: SET_COMMS_ISLAND', () => {
   it('should NOT call allScene events since the realm is null', () => {
     const island = 'casla-island'
@@ -133,3 +172,4 @@ describe('when the profile updates successfully: SAVE_PROFILE_SUCCESS', () => {
       .run()
   })
 })
+

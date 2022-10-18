@@ -28,7 +28,7 @@ import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGL
 import { ProfileUserInfo } from 'shared/profiles/types'
 import {
   getFetchContentServerFromRealmAdapter,
-  getProfilesContentServerFromRealmAdapter,
+  getFetchContentUrlPrefixFromRealmAdapter,
   waitForRealmAdapter
 } from 'shared/realm/selectors'
 import { getExploreRealmsService } from 'shared/dao/selectors'
@@ -277,7 +277,7 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   }
 
   const bff: IRealmAdapter = yield call(waitForRealmAdapter)
-  const fetchContentServer = getProfilesContentServerFromRealmAdapter(bff)
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(bff)
 
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
@@ -290,7 +290,7 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     const forRenderer = profileToRendererFormat(profile.data, {
       address: identity.address,
       parcels,
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
     forRenderer.hasConnectedWeb3 = identity.hasConnectedWeb3
     // TODO: this condition shouldn't be necessary. Unity fails with setThrew
@@ -302,12 +302,12 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     }
   } else {
     const forRenderer = profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
     getUnityInstance().AddUserProfileToCatalog(forRenderer)
     yield put(addedProfileToCatalog(userId, profile.data))
 
     // send to Avatars scene
-    receivePeerUserData(profile.data, fetchContentServer)
+    receivePeerUserData(profile.data, fetchContentServerWithPrefix)
   }
 }

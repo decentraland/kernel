@@ -4,7 +4,7 @@ import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
-import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
+import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin, hasWallet } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -50,7 +50,6 @@ import { updateStatusMessage } from 'shared/loading/actions'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
 import { setAudioStream } from './audioStream'
 import { logout, redirectToSignUp, signUp, signUpCancel } from 'shared/session/actions'
-import { getIdentity, hasWallet } from 'shared/session'
 import { getUnityInstance } from './IUnityInterface'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
 import future, { IFuture } from 'fp-future'
@@ -364,7 +363,7 @@ export class BrowserInterface {
   }
 
   public MotdConfirmClicked() {
-    if (!hasWallet()) {
+    if (!hasWallet(store.getState())) {
       globalObservable.emit('openUrl', { url: 'https://docs.decentraland.org/get-a-wallet/' })
     }
   }
@@ -812,13 +811,13 @@ export class BrowserInterface {
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
     async function work() {
       const adapter = await ensureRealmAdapterPromise()
-      const baseUrl = getFetchContentUrlPrefixFromRealmAdapter(adapter)
+      const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(adapter)
 
       try {
         const profiles = await fetchENSOwnerProfile(data.name, data.maxResults)
-        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles, baseUrl)
+        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles, fetchContentServerWithPrefix)
       } catch (error: any) {
-        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined, baseUrl)
+        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined, fetchContentServerWithPrefix)
         defaultLogger.error(error)
       }
     }
@@ -895,7 +894,7 @@ export class BrowserInterface {
 
   public FetchBalanceOfMANA() {
     const fn = async () => {
-      const identity = getIdentity()
+      const identity = getCurrentIdentity(store.getState())
 
       if (!identity?.hasConnectedWeb3) {
         return

@@ -592,7 +592,7 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
 export async function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
   const realmAdapter = await ensureRealmAdapterPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
 
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
@@ -605,7 +605,7 @@ export async function getFriends(request: GetFriendsPayload) {
 
   const profilesForRenderer = friendsToReturn.map((profile) =>
     profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
   )
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
@@ -633,7 +633,7 @@ export async function getFriends(request: GetFriendsPayload) {
 export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
   const realmAdapter = await ensureRealmAdapterPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
   const fromFriendRequests = friends.fromFriendRequests.slice(
     request.receivedSkip,
@@ -653,7 +653,7 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
   const profilesForRenderer = friendRequestsProfiles.map((friend) =>
     profileToRendererFormat(friend.data, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
   )
 
@@ -765,7 +765,7 @@ export function getUnseenMessagesByUser() {
 
 export async function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
   const realmAdapter = await ensureRealmAdapterPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.DIRECT
   )
@@ -808,7 +808,7 @@ export async function getFriendsWithDirectMessages(request: GetFriendsWithDirect
 
   const profilesForRenderer = friendsConversations.map((friend) =>
     profileToRendererFormat(friend.avatar, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
   )
 
@@ -1788,7 +1788,7 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
   const realmAdapter = await ensureRealmAdapterPromise()
-  const fetchContentServer = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
   const channel = client.getChannel(request.channelId)
   if (!channel) return
@@ -1821,7 +1821,7 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
 
   const profilesForRenderer = filteredProfiles.map((profile) =>
     profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
   )
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })

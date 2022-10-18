@@ -15,7 +15,6 @@ import { store } from 'shared/store/isolatedStore'
 import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/selectors'
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
-import { getIdentity } from 'shared/session'
 import { processVoiceFragment } from 'shared/voiceChat/handlers'
 import future, { IFuture } from 'fp-future'
 import { handleRoomDisconnection } from './actions'
@@ -34,6 +33,7 @@ import { AdapterDisconnectedEvent, PeerDisconnectedEvent } from './adapters/type
 import { RoomConnection } from './interface'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
 import { sendPublicChatMessage } from '.'
+import { getCurrentIdentity } from 'shared/session/selectors'
 
 type PingRequest = {
   alias: number
@@ -227,7 +227,7 @@ function processChatMessage(message: Package<proto.Chat>) {
 
 // Receive a "rpc" signal over comms to send our profile
 function processProfileRequest(message: Package<proto.ProfileRequest>) {
-  const myIdentity = getIdentity()
+  const myIdentity = getCurrentIdentity(store.getState())
   const myAddress = myIdentity?.address
 
   // We only send profile responses for our own address

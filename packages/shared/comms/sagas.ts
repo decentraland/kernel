@@ -24,7 +24,6 @@ import { processAvatarVisibility } from './peers'
 import { getFatalError } from 'shared/loading/selectors'
 import { EventChannel } from 'redux-saga'
 import { ExplorerIdentity } from 'shared/session/types'
-import { getIdentity } from 'shared/session'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
@@ -263,7 +262,7 @@ function* createLighthouseConnection(url: string) {
         commsLogger.info(`error while trying to sign message from lighthouse '${msg}'`)
       }
       // if any error occurs
-      return getIdentity()
+      return getCurrentIdentity(store.getState())
     },
     logLevel: DEBUG_COMMS ? 'TRACE' : 'NONE',
     targetConnections: commsConfig.targetConnections ?? 4,
@@ -329,7 +328,7 @@ function* initAvatarVisibilityProcess() {
 
     if (reason.unload) break
 
-    const account: ExplorerIdentity | undefined = yield select(getIdentity)
+    const account: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
 
     processAvatarVisibility(maxVisiblePeers, account?.address)
   }
@@ -350,7 +349,7 @@ function* respondCommsProfileRequests() {
     const profile: Avatar | null = yield select(getCurrentUserProfile)
     const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
     const contentServer: string = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
-    const identity: ExplorerIdentity | null = yield select(getIdentity)
+    const identity: ExplorerIdentity | null = yield select(getCurrentIdentity)
 
     if (profile && context) {
       profile.hasConnectedWeb3 = identity?.hasConnectedWeb3 || profile.hasConnectedWeb3
@@ -406,7 +405,7 @@ function* handleCommsReconnectionInterval() {
     const coomConnection: RoomConnection | undefined = yield select(getCommsRoom)
     const realmAdapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
     const hasFatalError: string | undefined = yield select(getFatalError)
-    const identity: ExplorerIdentity | undefined = yield select(getIdentity)
+    const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
 
     const shouldReconnect = !coomConnection && !hasFatalError && identity?.address && !realmAdapter
 
@@ -465,7 +464,7 @@ function* handleNewCommsContext() {
   })
 }
 
-async function disconnectRoom(context: RoomConnection) {
+export async function disconnectRoom(context: RoomConnection) {
   try {
     await context.disconnect()
   } catch (err: any) {

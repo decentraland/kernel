@@ -45,7 +45,6 @@ import { Avatar, Profile, Snapshots } from '@dcl/schemas'
 import { validateAvatar } from './schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
-import { getIdentity } from 'shared/session'
 import { RoomConnection } from 'shared/comms/interface'
 import {
   ensureRealmAdapterPromise,
@@ -171,7 +170,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
     if (shouldReadProfileFromLocalStorage) {
       // for local user, hasConnectedWeb3 == identity.hasConnectedWeb3
-      const identity: ExplorerIdentity | undefined = yield call(getIdentity)
+      const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
       avatar.hasConnectedWeb3 = identity?.hasConnectedWeb3 || avatar.hasConnectedWeb3
     }
 
@@ -340,7 +339,7 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
 
 function* readProfileFromLocalStorage() {
   const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-  const identity: ExplorerIdentity = yield select(getIdentity)
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const profile = (yield apply(localProfilesRepo, localProfilesRepo.get, [identity.address, network])) as Avatar | null
   if (profile && profile.userId === identity.address) {
     return ensureAvatarCompatibilityFormat(profile)
