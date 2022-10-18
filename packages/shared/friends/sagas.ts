@@ -389,6 +389,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
 
+  client.onChannelMembers((conversation) => {
+    updateChannelInfo(conversation, client)
+  })
+
   client.onChannelMembership((conversation, membership) => {
     switch (membership) {
       case 'join':
@@ -396,11 +400,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
           break
         }
 
-        let onlineMembers = 0
-        if (conversation.userIds) {
-          const userStatuses = client.getUserStatuses(...conversation.userIds)
-          onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
-        }
+        const onlineMembers = getOnlineMembers(conversation, client)
 
         const channel: ChannelInfoPayload = {
           name: getNormalizedRoomName(conversation.name),
@@ -438,6 +438,25 @@ function* configureMatrixClient(action: SetMatrixClient) {
         break
     }
   })
+}
+
+function updateChannelInfo(conversation: Conversation, client: SocialAPI) {
+  const onlineMembers = getOnlineMembers(conversation, client)
+  const profile = getCurrentUserProfile(store.getState())
+  const muted = profile?.muted?.includes(conversation.id) ?? false
+
+  const channel = {
+    name: getNormalizedRoomName(conversation.name || ''),
+    channelId: conversation.id,
+    unseenMessages: muted ? 0 : conversation.unreadMessages?.length || 0,
+    lastMessageTimestamp: conversation.lastEventTimestamp || undefined,
+    memberCount: onlineMembers,
+    description: '',
+    joined: true,
+    muted
+  }
+
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
 }
 
 // this saga needs to throw in case of failure
@@ -1780,11 +1799,7 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
     store.dispatch(unmutePlayers([channelId]))
   }
 
-  let onlineMembers = 0
-  if (channel.userIds) {
-    const userStatuses = client.getUserStatuses(...channel.userIds)
-    onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
-  }
+  const onlineMembers = getOnlineMembers(channel, client)
 
   const channelInfo: ChannelInfoPayload = {
     name: channel.name ?? '',
@@ -1832,11 +1847,8 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
     const muted = profile?.muted?.includes(channelId) ?? false
 
-    let onlineMembers = 0
-    if (channel.userIds) {
-      const userStatuses = client.getUserStatuses(...channel.userIds)
-      onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
-    }
+    const onlineMembers = getOnlineMembers(channel, client)
+
     channels.push({
       name: getNormalizedRoomName(channel.name || ''),
       channelId: channel.id,
@@ -1946,4 +1958,13 @@ function isAllowedToCreate() {
   if (allowedUsers.allowList.includes(ownId)) {
     return true
   }
+}
+
+function getOnlineMembers(channel: Conversation, client: SocialAPI) {
+  let onlineMembers = 0
+  if (channel.userIds) {
+    const userStatuses = client.getUserStatuses(...channel.userIds)
+    onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
+  }
+  return onlineMembers
 }
