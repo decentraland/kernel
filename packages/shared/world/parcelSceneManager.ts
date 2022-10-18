@@ -65,9 +65,9 @@ export function forceStopScene(sceneId: string) {
   }
 }
 
-export function getLoadedParcelSceneByPointer(pointer: string) {
+export function getLoadedParcelSceneByParcel(parcelPosition: string) {
   for (const [, w] of loadedSceneWorkers) {
-    if (!w.rpcContext.sceneData.isPortableExperience && w.loadableScene.entity.pointers.includes(pointer)) {
+    if (!w.rpcContext.sceneData.isPortableExperience && w.metadata.scene?.parcels?.includes(parcelPosition)) {
       return w
     }
   }

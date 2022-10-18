@@ -221,14 +221,16 @@ export class SceneWorker {
 
   // when an user enters the scene
   onEnter(userId: string) {
+    // if the scene is a portable experience, then people never enters the scene
+    if (this.rpcContext.sceneData.isPortableExperience) return
     console.log('enterScene', userId, this.rpcContext.sceneData.id)
     this.rpcContext.sendSceneEvent('onEnterScene', { userId })
   }
 
   // when an user leaves the scene
   onLeave(userId: string, self: boolean) {
-    // if the scene is a portable experience, then we never leave the scene
-    if (self && this.rpcContext.sceneData.isPortableExperience) return
+    // if the scene is a portable experience, then people never leaves the scene
+    if (this.rpcContext.sceneData.isPortableExperience) return
     console.log('leaveScene', userId, this.rpcContext.sceneData.id)
     this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
   }

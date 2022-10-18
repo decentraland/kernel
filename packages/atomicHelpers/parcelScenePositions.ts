@@ -45,15 +45,8 @@ export function isInParcel(test: Vector3Component, center: Vector3Component): bo
  * Returns true if a world position is inside a group of parcels
  */
 export function isWorldPositionInsideParcels(parcels: string[], testWorldPosition: Vector3Component): boolean {
-  let isInside = false
-
-  parcels.some((parcel) => {
-    const { x, y } = parseParcelPosition(parcel)
-    isInside = isInParcel(testWorldPosition, gridToWorld(x, y))
-    return isInside
-  })
-
-  return isInside
+  const parcel = encodeParcelPosition(worldToGrid(testWorldPosition))
+  return parcels.includes(parcel)
 }
 
 export function isOnLimits({ maximum, minimum }: BoundingInfo, parcels: Vector3Component[]): boolean {

@@ -41,8 +41,11 @@ function handleRendererAvatarSceneChanged(evt: AvatarRendererPositionMessage) {
   const avatarData: RendererAvatarData | undefined = rendererAvatars.get(evt.avatarShapeId)
 
   if (avatarData?.sceneId) {
-    const selfUser = evt.avatarShapeId.toLowerCase() == getCurrentIdentity(store.getState())?.address.toLowerCase()
-    getSceneWorkerBySceneID(avatarData.sceneId)?.onLeave(evt.avatarShapeId, selfUser)
+    const selfUser = evt.avatarShapeId.toLowerCase() === getCurrentIdentity(store.getState())?.address.toLowerCase()
+    if (!selfUser) {
+      // this is handled by the scene-loader saga for the selfUser
+      getSceneWorkerBySceneID(avatarData.sceneId)?.onLeave(evt.avatarShapeId, selfUser)
+    }
   }
 
   const sceneWorker = getSceneWorkerBySceneID(evt.sceneId || 'any')
@@ -55,8 +58,11 @@ function handleRendererAvatarRemoved(userId: string) {
   const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
   if (avatarData && avatarData.sceneId) {
     const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
-    const selfUser = userId.toLowerCase() == getCurrentIdentity(store.getState())?.address.toLowerCase()
-    sceneWorker?.onLeave(userId, selfUser)
+    const selfUser = userId.toLowerCase() === getCurrentIdentity(store.getState())?.address.toLowerCase()
+    if (!selfUser) {
+      // this is handled by the scene-loader saga for the selfUser
+      sceneWorker?.onLeave(userId, selfUser)
+    }
     rendererAvatars.delete(userId)
   }
 }

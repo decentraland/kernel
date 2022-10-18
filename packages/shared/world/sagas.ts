@@ -4,7 +4,7 @@ import { BEFORE_UNLOAD } from 'shared/actions'
 import { SetParcelPosition, SET_PARCEL_POSITION } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 import { setCurrentScene, SignalSceneReady, SIGNAL_SCENE_READY } from './actions'
-import { getLoadedParcelSceneByPointer, getSceneWorkerBySceneID, loadedSceneWorkers } from './parcelSceneManager'
+import { getLoadedParcelSceneByParcel, getSceneWorkerBySceneID, loadedSceneWorkers } from './parcelSceneManager'
 import { SceneWorker } from './SceneWorker'
 import { getCurrentUserId } from 'shared/session/selectors'
 
@@ -56,13 +56,17 @@ function* sceneObservableProcess() {
     const newParcel: ReadOnlyVector2 = yield select(getParcelPosition)
     const parcelString = `${newParcel.x},${newParcel.y}`
 
+    // clear the lastPlayerScene if the scene was unloaded
     if (lastPlayerScene && !loadedSceneWorkers.has(lastPlayerScene.loadableScene.id)) {
       lastPlayerScene = undefined
     }
 
-    if (!lastPlayerScene || !lastPlayerScene.loadableScene.entity.metadata.scene.parcels.includes(parcelString)) {
+    const isInScene =
+      lastPlayerScene && lastPlayerScene.loadableScene.entity.metadata.scene.parcels.includes(parcelString)
+
+    if (!lastPlayerScene || !isInScene) {
       // find which scene we are standing in
-      const newScene: SceneWorker | undefined = yield call(getLoadedParcelSceneByPointer, parcelString)
+      const newScene: SceneWorker | undefined = yield call(getLoadedParcelSceneByParcel, parcelString)
       const userId: string = yield select(getCurrentUserId)
 
       if (newScene === lastPlayerScene) continue
