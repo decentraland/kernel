@@ -54,16 +54,18 @@ positionObservable.add((event) => {
 })
 
 // Listen to position changes, and notify if the parcel changed
+let calledInitialNotification = false
 let lastPlayerParcel: Vector2
 positionObservable.add(({ position, immediate }) => {
   const parcel = Vector2.Zero()
   worldToGrid(position, parcel)
 
-  // if (!lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
-  //   console.log('PRAVS - positionThings - positionObservable.notifyObservers')
+  if (!calledInitialNotification || !lastPlayerParcel || parcel.x !== lastPlayerParcel.x || parcel.y !== lastPlayerParcel.y) {
+    calledInitialNotification = true
+    console.log('PRAVS - positionThings - positionObservable.notifyObservers')
     parcelObservable.notifyObservers({ previousParcel: lastPlayerParcel, newParcel: parcel, immediate })
     setLastPlayerParcel(parcel)
-  // }
+  }
 })
 
 function setLastPlayerParcel(parcel: Vector2) {
