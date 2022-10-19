@@ -343,6 +343,7 @@ export class SceneWorker {
   private subscribeToSceneChangeEvents() {
     this.sceneChangeObserver = sceneObservable.add((report) => {
       const userId = getCurrentUserId(store.getState())
+
       if (userId) {
         const sceneId = this.loadableScene.id
         if (report.newScene?.id === sceneId) {
