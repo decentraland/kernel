@@ -1549,6 +1549,9 @@ export function getUnseenMessagesByChannel() {
 
 // Get user's joined channels
 export function getJoinedChannels(request: GetJoinedChannelsPayload) {
+  const client = getSocialClient(store.getState())
+  if (!client) return []
+
   // get user joined channels
   const joinedChannels = getChannels(store.getState())
 
@@ -1561,7 +1564,7 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     channelId: conv.conversation.id,
     unseenMessages: conv.conversation.unreadMessages?.length || 0,
     lastMessageTimestamp: conv.conversation.lastEventTimestamp || undefined,
-    memberCount: conv.conversation.userIds?.length || 1,
+    memberCount: getOnlineMembers(conv.conversation, client),
     description: '',
     joined: true,
     muted: profile?.muted?.includes(conv.conversation.id) ?? false
