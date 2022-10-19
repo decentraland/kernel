@@ -117,10 +117,10 @@ function* handleSendMessage(action: SendMessage) {
         body: `That command doesn’t exist. Type /help for a full list of commands.`,
         timestamp: Date.now()
       }
-
-      yield call(waitForRendererInstance)
-      getUnityInstance().AddMessageToChatWindow(entry)
     }
+    
+    yield call(waitForRendererInstance)
+    getUnityInstance().AddMessageToChatWindow(entry)
   } else {
     // If the message was not a command ("/cmdname"), then send message through wire
     const currentUserId = yield select(getCurrentUserId)
