@@ -4,6 +4,8 @@ import { CommsServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/co
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 import { IslandChangedMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
 
+export const OFFLINE_REALM = 'offline'
+
 export type RealmState = {
   realmAdapter: IRealmAdapter | undefined
 }

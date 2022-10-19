@@ -3,8 +3,7 @@ import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoi
 import { ExplorerIdentity } from 'shared/session/types'
 import { createBffRpcConnection } from './connections/BFFConnection'
 import { localBff } from './connections/BFFLegacy'
-import { IRealmAdapter } from './types'
-import { OFFLINE_REALM } from './selectors'
+import { IRealmAdapter, OFFLINE_REALM } from './types'
 
 function normalizeUrl(url: string) {
   return url.replace(/^:\/\//, window.location.protocol + '//')

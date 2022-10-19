@@ -6,7 +6,7 @@ import { CatalystNode } from '../types'
 import { PIN_CATALYST } from 'config'
 import { store } from 'shared/store/isolatedStore'
 import { ask } from './utils/ping'
-import { getRealmAdapter, OFFLINE_REALM } from 'shared/realm/selectors'
+import { getRealmAdapter } from 'shared/realm/selectors'
 import { setRealmAdapter } from 'shared/realm/actions'
 import { checkValidRealm } from './sagas'
 import { commsLogger } from 'shared/comms/context'
@@ -17,6 +17,7 @@ import {
   urlWithProtocol
 } from 'shared/realm/resolver'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
+import { OFFLINE_REALM } from 'shared/realm/types'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {

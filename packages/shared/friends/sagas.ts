@@ -98,8 +98,7 @@ import { SET_ROOM_CONNECTION } from 'shared/comms/actions'
 import {
   ensureRealmAdapterPromise,
   getFetchContentUrlPrefixFromRealmAdapter,
-  getRealmConnectionString,
-  OFFLINE_REALM
+  getRealmConnectionString
 } from 'shared/realm/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
@@ -120,6 +119,7 @@ import {
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
+import { OFFLINE_REALM } from 'shared/realm/types'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 

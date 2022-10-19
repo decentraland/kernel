@@ -3,9 +3,8 @@ import { select, take } from 'redux-saga/effects'
 import { store } from 'shared/store/isolatedStore'
 import { SET_REALM_ADAPTER } from './actions'
 import { realmToConnectionString, urlWithProtocol } from './resolver'
-import { IRealmAdapter, RootRealmState } from './types'
+import { IRealmAdapter, RootRealmState, OFFLINE_REALM } from './types'
 
-export const OFFLINE_REALM = 'offline'
 export const getRealmAdapter = (state: RootRealmState): IRealmAdapter | undefined => state.realm.realmAdapter
 export const getRealmConnectionString = (state: RootRealmState): string =>
   state.realm.realmAdapter ? realmToConnectionString(state.realm.realmAdapter) : OFFLINE_REALM
