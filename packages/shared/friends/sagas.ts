@@ -319,12 +319,12 @@ function* configureMatrixClient(action: SetMatrixClient) {
         await ensureFriendProfile(senderUserId)
       }
 
-      addNewChatMessage(chatMessage)
-
-      if (message.sender === ownId) {
+      if (message.sender === ownId && !isChannelType) {
         // ignore messages sent by the local user
         return
       }
+
+      addNewChatMessage(chatMessage)
 
       if (isChannelType) {
         const muted = profile?.muted ?? []
@@ -996,7 +996,12 @@ function* handleSendChannelMessage(action: SendChannelMessage) {
   try {
     const conversation: Conversation | undefined = yield apply(client, client.getChannel, [channelId])
     if (conversation) {
-      yield apply(client, client.sendMessageTo, [conversation.id, message])
+      const messageId = yield apply(client, client.sendMessageTo, [conversation.id, message.body])
+
+      if (messageId) {
+        message.messageId = messageId
+      }
+      getUnityInstance().AddMessageToChatWindow(message)
     }
   } catch (e: any) {
     logger.error(e)
@@ -1031,7 +1036,11 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
 
   try {
     const conversation: Conversation = yield apply(client, client.createDirectConversation, [userData.socialId])
-    yield apply(client, client.sendMessageTo, [conversation.id, message])
+    const messageId = yield apply(client, client.sendMessageTo, [conversation.id, message.body])
+    if (messageId) {
+      message.messageId = messageId
+    }
+    getUnityInstance().AddMessageToChatWindow(message)
   } catch (e: any) {
     logger.error(e)
     trackEvent('error', {

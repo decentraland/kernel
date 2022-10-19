@@ -117,6 +117,9 @@ function* handleSendMessage(action: SendMessage) {
         body: `That command doesn’t exist. Type /help for a full list of commands.`,
         timestamp: Date.now()
       }
+
+      yield call(waitForRendererInstance)
+      getUnityInstance().AddMessageToChatWindow(entry)
     }
   } else {
     // If the message was not a command ("/cmdname"), then send message through wire
@@ -139,7 +142,7 @@ function* handleSendMessage(action: SendMessage) {
         body: message,
         timestamp: Date.now()
       }
-      yield put(sendChannelMessage(recipient, message))
+      yield put(sendChannelMessage(recipient, entry))
     } else {
       entry = {
         messageType: ChatMessageType.PUBLIC,
@@ -149,11 +152,11 @@ function* handleSendMessage(action: SendMessage) {
         body: message
       }
       sendPublicChatMessage(entry.messageId, entry.body)
+
+      yield call(waitForRendererInstance)
+      getUnityInstance().AddMessageToChatWindow(entry)
     }
   }
-
-  yield call(waitForRendererInstance)
-  getUnityInstance().AddMessageToChatWindow(entry)
 }
 
 function handleChatCommand(message: string) {
@@ -350,9 +353,7 @@ function initChatCommands() {
       }
     }
 
-    store.dispatch(sendPrivateMessage(user.userId, message))
-
-    return {
+    const chatMessage = {
       messageId: uuid(),
       messageType: ChatMessageType.PRIVATE,
       sender: currentUserId,
@@ -360,6 +361,10 @@ function initChatCommands() {
       timestamp: Date.now(),
       body: message
     }
+
+    store.dispatch(sendPrivateMessage(user.userId, chatMessage))
+
+    return chatMessage
   }
 
   addChatCommand('whisper', 'Send a private message to a friend', whisperFn)
