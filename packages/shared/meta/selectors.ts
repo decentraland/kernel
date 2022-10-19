@@ -1,6 +1,6 @@
 import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
-import { PIN_CATALYST } from 'config'
+import { BYPASS_CONTENT_ALLOWLIST } from 'config'
 import { urlWithProtocol } from 'shared/realm/resolver'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 import { QS_MAX_VISIBLE_PEERS } from 'config'
@@ -102,7 +102,7 @@ export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefin
  */
 export function getAllowedContentServer(meta: RootMetaState, givenServer: string): string {
   // if a catalyst is pinned => avoid any override
-  if (PIN_CATALYST) {
+  if (BYPASS_CONTENT_ALLOWLIST) {
     return givenServer
   }
 

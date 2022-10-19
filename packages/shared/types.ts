@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
-import type { QueryType } from '@dcl/legacy-ecs'
 import { Entity, ContentMapping } from '@dcl/schemas'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
 
@@ -333,6 +332,8 @@ export type Ray = {
   direction: Vector3Component
   distance: number
 }
+
+export type QueryType = 'HitFirst' | 'HitAll' | 'HitFirstAvatar' | 'HitAllAvatars'
 
 export type RayQuery = {
   queryId: string

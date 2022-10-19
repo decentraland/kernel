@@ -6,7 +6,6 @@ import { InitializeRenderer } from './actions'
 import { getParcelLoadingStarted } from './selectors'
 import { RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
-import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import {
   SendProfileToRenderer,
   addedProfileToCatalog,
@@ -19,7 +18,6 @@ import { isCurrentUserId, getCurrentIdentity, getCurrentUserId } from 'shared/se
 import { ExplorerIdentity } from 'shared/session/types'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { takeLatestByUserId } from 'shared/profiles/sagas'
-import { fetchParcelsWithAccess } from 'shared/profiles/fetchLand'
 import { UPDATE_LOADING_SCREEN } from 'shared/loading/actions'
 import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selectors'
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
@@ -289,15 +287,9 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
 
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-    let parcels: ParcelsWithAccess = []
-
-    if (identity.hasConnectedWeb3) {
-      parcels = yield call(fetchParcelsWithAccess, identity.address)
-    }
 
     const forRenderer = profileToRendererFormat(profile.data, {
       address: identity.address,
-      parcels,
       baseUrl: fetchContentServerWithPrefix
     })
     forRenderer.hasConnectedWeb3 = identity.hasConnectedWeb3

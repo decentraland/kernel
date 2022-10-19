@@ -1,4 +1,3 @@
-import { ParcelsWithAccess } from '@dcl/legacy-ecs/dist/decentraland/Types'
 import { convertToRGBObject } from './convertToRGBObject'
 import { isURL } from 'atomicHelpers/isURL'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
@@ -11,10 +10,6 @@ export function profileToRendererFormat(
   profile: Partial<Avatar>,
   options: {
     address?: string
-
-    // TODO: there is no explaination why the profile has the parcels of Builder. Remove it from here
-    parcels?: ParcelsWithAccess
-
     // TODO: when profiles are federated, we must change this to accept the profile's
     //       home server
     baseUrl: string
@@ -49,8 +44,7 @@ export function profileToRendererFormat(
       hairColor: convertToRGBObject(profile.avatar?.hair.color),
       skinColor: convertToRGBObject(profile.avatar?.skin.color)
     },
-    baseUrl: options.baseUrl,
-    parcelsWithAccess: options.parcels || []
+    baseUrl: options.baseUrl
   }
 }
 

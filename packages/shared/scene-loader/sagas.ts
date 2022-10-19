@@ -49,6 +49,7 @@ import { ENABLE_EMPTY_SCENES, PREVIEW, rootURLPreviewMode } from 'config'
 import { getResourcesURL } from 'shared/location'
 import { Vector2 } from '@dcl/ecs-math'
 import { trackEvent } from 'shared/analytics'
+import { getAllowedContentServer } from 'shared/meta/selectors'
 
 export function* sceneLoaderSaga() {
   yield takeEvery(SET_REALM_ADAPTER, onSetRealm)
@@ -186,7 +187,8 @@ function* onSetRealm(action: SetRealmAdapterAction) {
   } else {
     // if the /about endpoint returns scenesUrn(s) then those need to be loaded
     // and the genesis city should not start
-    const loadFixedWorld = !!adapter.about.configurations?.scenesUrn?.length
+    const loadFixedWorld =
+      !!adapter.about.configurations?.scenesUrn?.length || adapter.about.configurations?.cityLoaderContentServer === ''
 
     if (loadFixedWorld) {
       // TODO: disable green blockers here
@@ -204,8 +206,13 @@ function* onSetRealm(action: SetRealmAdapterAction) {
           : getResourcesURL('.')
         : undefined
 
+      const contentServer: string = yield select(
+        getAllowedContentServer,
+        adapter.about.configurations?.cityLoaderContentServer || getFetchContentServerFromRealmAdapter(adapter)
+      )
+
       const loader: ISceneLoader = yield call(createGenesisCityLoader, {
-        contentServer: getFetchContentServerFromRealmAdapter(adapter),
+        contentServer,
         emptyParcelsBaseUrl
       })
       yield put(setSceneLoader(loader))

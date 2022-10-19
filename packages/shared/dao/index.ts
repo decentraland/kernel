@@ -172,7 +172,8 @@ export async function resolveOfflineRealmAboutFromConnectionString(
           realmName: realmString,
           networkId: 1,
           globalScenesUrn: [],
-          scenesUrn: []
+          scenesUrn: [],
+          cityLoaderContentServer: params.get('cityLoaderContentServer') ?? undefined
         },
         content: {
           healthy: true,
