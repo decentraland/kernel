@@ -424,13 +424,13 @@ function* configureMatrixClient(action: SetMatrixClient) {
         getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
         break
       case 'leave':
-        const onlineMembersAfterLeave = getOnlineMembers(conversation, client)
+        const joinedMembers = client.getChannel(channel.channelId).userIds?.length ?? 0
         const leavingChannelPayload: ChannelInfoPayload = {
           name: conversation.name ?? '',
           channelId: conversation.id,
           unseenMessages: 0,
           lastMessageTimestamp: undefined,
-          memberCount: onlineMembersAfterLeave,
+          memberCount: joinedMembers,
           description: '',
           joined: false,
           muted: false
@@ -966,6 +966,7 @@ export function* initializeStatusUpdateInterval() {
  *
  * @param socialId a string with the aforementioned pattern
  */
+
 function parseUserId(socialId: string) {
   if (EthAddress.validate(socialId) as any) return socialId
   const result = socialId.match(/@(\w+):.*/)
