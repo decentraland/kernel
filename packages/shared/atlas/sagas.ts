@@ -43,6 +43,7 @@ import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { homePointKey } from './utils'
 import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
+import { trackEvent } from 'shared/analytics'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -108,9 +109,17 @@ function* initializePois() {
 
 function* reportScenesFromTilesAction(action: ReportScenesFromTile) {
   const tiles = action.payload.tiles
-  const result: Array<LoadableScene> = yield call(fetchScenesByLocation, tiles)
+  try {
+    const result: Array<LoadableScene> = yield call(fetchScenesByLocation, tiles)
 
-  yield call(reportScenes, result)
+    yield call(reportScenes, result)
+  } catch (err: any) {
+    trackEvent('error', {
+      context: 'reportScenesFromTilesAction',
+      message: err.message,
+      stack: err.stack
+    })
+  }
   yield put(reportedScenes(tiles))
 }
 

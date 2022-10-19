@@ -8,6 +8,8 @@ export function hookConnectToFixedAdaptersIfNecessary(bff: IRealmAdapter) {
     connStr = bff.about.comms?.fixedAdapter
   } else if (bff.about.comms?.protocol === 'v2') {
     connStr = `lighthouse:${bff.baseUrl}/comms`
+  } else if (bff.about.comms?.protocol === 'v3' && !bff.about.bff?.healthy) {
+    connStr = `offline`
   }
 
   if (connStr) {

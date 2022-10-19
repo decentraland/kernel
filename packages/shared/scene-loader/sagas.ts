@@ -43,11 +43,12 @@ import {
 } from 'shared/loading/actions'
 import { sceneEvents, SceneWorker } from 'shared/world/SceneWorker'
 import { pickWorldSpawnpoint, positionObservable, receivePositionReport } from 'shared/world/positionThings'
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
+import { encodeParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { ENABLE_EMPTY_SCENES, PREVIEW, rootURLPreviewMode } from 'config'
 import { getResourcesURL } from 'shared/location'
 import { Vector2 } from '@dcl/ecs-math'
+import { trackEvent } from 'shared/analytics'
 
 export function* sceneLoaderSaga() {
   yield takeEvery(SET_REALM_ADAPTER, onSetRealm)
@@ -114,32 +115,38 @@ A scene can fail loading due to an error or timeout.
 
 function* teleportHandler(action: TeleportToAction) {
   const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
+  try {
+    // look for the target scene
+    const pointer = encodeParcelPosition(worldToGrid(action.payload.position))
+    const command: SetDesiredScenesCommand = yield apply(sceneLoader, sceneLoader.fetchScenesByLocation, [[pointer]])
 
-  // look for the target scene
-  const { x, y } = worldToGrid(action.payload.position)
-  const pointer = `${x},${y}`
-  const command: SetDesiredScenesCommand = yield apply(sceneLoader, sceneLoader.fetchScenesByLocation, [[pointer]])
+    // is a target scene, then it will be used to settle the position
+    if (command && command.scenes && command.scenes.length) {
+      // pick always the first scene to unsettle the position once loaded
+      const settlerScene = command.scenes[0].id
 
-  // is a target scene, then it will be used to settle the position
-  if (command && command.scenes && command.scenes.length) {
-    // pick always the first scene to unsettle the position once loaded
-    const settlerScene = command.scenes[0].id
+      const scene: SceneWorker | undefined = yield call(getSceneWorkerBySceneID, settlerScene)
 
-    const scene: SceneWorker | undefined = yield call(getSceneWorkerBySceneID, settlerScene)
-
-    const spawnPoint = pickWorldSpawnpoint(scene?.metadata || command.scenes[0].entity.metadata) || action.payload
-    if (scene) {
-      // if the scene is loaded then there is no unsettlement of the position
-      // we teleport directly to that scene
-      yield put(positionSettled(spawnPoint))
+      const spawnPoint = pickWorldSpawnpoint(scene?.metadata || command.scenes[0].entity.metadata) || action.payload
+      if (scene) {
+        // if the scene is loaded then there is no unsettlement of the position
+        // we teleport directly to that scene
+        yield put(positionSettled(spawnPoint))
+      } else {
+        // set the unsettler once again using the proper ID
+        yield put(positionUnsettled(settlerScene, spawnPoint))
+      }
     } else {
-      // set the unsettler once again using the proper ID
-      yield put(positionUnsettled(settlerScene, spawnPoint))
+      // if there is no scene to load at the target position, then settle the position
+      // to activate the renderer. otherwise there will be no event to activate the renderer
+      yield put(positionSettled(action.payload))
     }
-  } else {
-    // if there is no scene to load at the target position, then settle the position
-    // to activate the renderer. otherwise there will be no event to activate the renderer
-    yield put(positionSettled(action.payload))
+  } catch (err: any) {
+    trackEvent('error', {
+      context: 'teleportHandler',
+      message: err.message,
+      stack: err.stack
+    })
   }
 }
 
@@ -263,16 +270,23 @@ function* onWorldPositionChange() {
         position,
         teleported: false
       }
+      try {
+        const command: SetDesiredScenesCommand = yield apply(sceneLoader, sceneLoader.reportPosition, [report])
 
-      const command: SetDesiredScenesCommand = yield apply(sceneLoader, sceneLoader.reportPosition, [report])
+        const map = new Map<string, LoadableScene>()
 
-      const map = new Map<string, LoadableScene>()
+        for (const scene of command.scenes) {
+          map.set(scene.id, scene)
+        }
 
-      for (const scene of command.scenes) {
-        map.set(scene.id, scene)
+        yield call(setDesiredParcelScenes, map)
+      } catch (err: any) {
+        trackEvent('error', {
+          context: 'onWorldPositionChange',
+          message: err.message,
+          stack: err.stack
+        })
       }
-
-      yield call(setDesiredParcelScenes, map)
     }
   }
 }

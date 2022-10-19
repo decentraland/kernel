@@ -4,6 +4,7 @@ import { ExplorerIdentity } from 'shared/session/types'
 import { createBffRpcConnection } from './connections/BFFConnection'
 import { localBff } from './connections/BFFLegacy'
 import { IRealmAdapter } from './types'
+import { OFFLINE_REALM } from './selectors'
 
 function normalizeUrl(url: string) {
   return url.replace(/^:\/\//, window.location.protocol + '//')
@@ -12,7 +13,7 @@ function normalizeUrl(url: string) {
 // adds the currently used protocol to the given URL
 export function urlWithProtocol(urlOrHostname: string) {
   if (!urlOrHostname.startsWith('http://') && !urlOrHostname.startsWith('https://') && !urlOrHostname.startsWith('://'))
-    return normalizeUrl(`://${urlOrHostname}`)
+    return normalizeUrl(`https://${urlOrHostname}`)
 
   return normalizeUrl(urlOrHostname)
 }
@@ -23,7 +24,7 @@ export async function adapterForRealmConfig(
   identity: ExplorerIdentity
 ): Promise<IRealmAdapter> {
   // TODO: We are checking !v2 until all migration is finished
-  const isValidBff = about.comms?.protocol !== 'v2' && about.bff?.healthy // about.bff?.healthy
+  const isValidBff = about.comms?.protocol === 'v3' && about.bff?.healthy // about.bff?.healthy
 
   // connect the real BFF
   if (isValidBff) {
@@ -55,11 +56,16 @@ function dclWorldUrl(dclName: string) {
 
 export function realmToConnectionString(realm: IRealmAdapter) {
   const realmName = realm.about.configurations?.realmName
+
   if (realm.about.comms?.protocol === 'v2' && realmName?.match(/^[a-z]+$/i)) {
     return realmName
   }
 
   if (isDclEns(realmName) && realm.baseUrl === dclWorldUrl(realmName)) {
+    return realmName
+  }
+
+  if (realmName === OFFLINE_REALM || realmName?.startsWith(OFFLINE_REALM + '?')) {
     return realmName
   }
 

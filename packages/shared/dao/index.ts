@@ -136,7 +136,7 @@ export async function resolveRealmAboutFromBaseUrl(
   realmString: string
 ): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
   const candidates = getAllCatalystCandidates(store.getState())
-  const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, candidates)
+  const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, candidates).replace(/\/+$/, '')
 
   if (!realmBaseUrl) {
     throw new Error(`Can't resolve realm ${realmString}`)
@@ -165,10 +165,10 @@ export async function resolveOfflineRealmAboutFromConnectionString(
         comms: {
           healthy: false,
           protocol: params.get('protocol') || 'offline',
-          fixedAdapter: params.get('fixedAdapter') || undefined
+          fixedAdapter: params.get('fixedAdapter') || 'offline:offline'
         },
         configurations: {
-          realmName: params.get('realmName') || 'offline',
+          realmName: realmString,
           networkId: 1,
           globalScenesUrn: [],
           scenesUrn: []
@@ -183,7 +183,7 @@ export async function resolveOfflineRealmAboutFromConnectionString(
           publicUrl: `${baseUrl}lambdas`
         }
       },
-      baseUrl
+      baseUrl: baseUrl.replace(/\/+$/, '')
     }
   }
 }
