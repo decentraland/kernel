@@ -348,10 +348,8 @@ export class SceneWorker {
         const sceneId = this.loadableScene.id
         if (report.newScene?.id === sceneId) {
           this.rpcContext.sendSceneEvent('onEnterScene', { userId })
-          console.log('PRAVS - SceneWorker - onEnterScene!')
         } else if (report.previousScene?.id === sceneId) {
           this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
-          console.log('PRAVS - SceneWorker - onLeaveScene!')
         }
       }
     })
