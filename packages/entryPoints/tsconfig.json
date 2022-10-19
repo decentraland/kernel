@@ -3,10 +3,12 @@
     "outDir": "../../static",
     "baseUrl": "..",
     "strict": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "rootDir": "../"
   },
   "extends": "../../tsconfig.json",
   "include": [
     "*.ts"
-  ]
+  ],
+  "files": ["../modules.d.ts"]
 }

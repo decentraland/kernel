@@ -13,7 +13,7 @@ import { createLogger } from 'shared/logger'
 import { VoiceHandler } from './VoiceHandler'
 import { getPeer } from 'shared/comms/peers'
 import { getSpatialParamsFor, isChrome } from './utils'
-import { startLoopback } from '../../voice-chat-codec/loopback'
+import { startLoopback } from './loopback'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
 type ParticipantInfo = {

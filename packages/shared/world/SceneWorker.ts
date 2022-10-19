@@ -47,8 +47,8 @@ export enum SceneWorkerReadyState {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sceneRuntimeRaw =
   process.env.NODE_ENV === 'production'
-    ? require('raw-loader!@dcl/scene-runtime/dist/webworker.js')
-    : require('raw-loader!@dcl/scene-runtime/dist/webworker.dev.js')
+    ? require('@dcl/scene-runtime/dist/webworker.js.txt')
+    : require('@dcl/scene-runtime/dist/webworker.dev.js.txt')
 
 const sceneRuntimeBLOB = new Blob([sceneRuntimeRaw])
 const sceneRuntimeUrl = URL.createObjectURL(sceneRuntimeBLOB)

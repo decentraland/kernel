@@ -5,7 +5,7 @@
     "strictNullChecks": true,
     "experimentalDecorators": true,
     "strict": true,
-    "types": ["@dcl/posix", "segment-analytics"]
+    "types": ["@dcl/posix"]
   },
   "include": ["*.ts"],
   "extends": "../../tsconfig.json"
