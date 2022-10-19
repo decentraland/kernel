@@ -856,7 +856,7 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
   getUnityInstance().UpdateUserPresence(updateMessage)
 }
 
-export function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
+function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
   const statuses = client.getUserStatuses(...socialIds)
   const lastStatuses = getLastStatusOfFriends(store.getState())
 
@@ -870,7 +870,7 @@ export function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
   })
 }
 
-function* initializeStatusUpdateInterval() {
+export function* initializeStatusUpdateInterval() {
   let lastStatus: UpdateUserStatus | undefined = undefined
 
   while (true) {
