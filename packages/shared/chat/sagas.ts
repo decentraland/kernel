@@ -118,7 +118,7 @@ function* handleSendMessage(action: SendMessage) {
         timestamp: Date.now()
       }
     }
-    
+
     yield call(waitForRendererInstance)
     getUnityInstance().AddMessageToChatWindow(entry)
   } else {
