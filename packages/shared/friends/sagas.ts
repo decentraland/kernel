@@ -389,8 +389,16 @@ function* configureMatrixClient(action: SetMatrixClient) {
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
 
-  client.onChannelMembers((conversation) => {
+  client.onChannelMembers((conversation, members) => {
     updateChannelInfo(conversation, client)
+
+    const userStatuses = client.getUserStatuses(...members.map((member) => member.userId))
+    const membersPayload = members
+      .filter((member) => userStatuses.get(member.userId)?.presence === PresenceType.ONLINE)
+      .map((member) => ({ ...member, isOnline: true }))
+
+    const update: UpdateChannelMembersPayload = { channelId: conversation.id, members: membersPayload }
+    getUnityInstance().UpdateChannelMembers(update)
   })
 
   client.onChannelMembership((conversation, membership) => {
