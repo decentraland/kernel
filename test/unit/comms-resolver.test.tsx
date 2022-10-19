@@ -25,7 +25,8 @@ describe('Comms resolver', () => {
           realmName: 'offline',
           networkId: 1,
           globalScenesUrn: [],
-          scenesUrn: []
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
         },
         content: {
           healthy: true,
@@ -52,7 +53,8 @@ describe('Comms resolver', () => {
           realmName: 'offline?baseUrl=peer.decentraland.zone',
           networkId: 1,
           globalScenesUrn: [],
-          scenesUrn: []
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
         },
         content: {
           healthy: true,
@@ -78,7 +80,8 @@ describe('Comms resolver', () => {
           realmName: 'offline?baseUrl=https://peer.decentraland.zone',
           networkId: 1,
           globalScenesUrn: [],
-          scenesUrn: []
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
         },
         content: {
           healthy: true,
@@ -104,7 +107,8 @@ describe('Comms resolver', () => {
           realmName: 'offline?baseUrl=http://peer.decentraland.zone',
           networkId: 1,
           globalScenesUrn: [],
-          scenesUrn: []
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
         },
         content: {
           healthy: true,
