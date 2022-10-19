@@ -53,6 +53,8 @@ import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
 import { RootState } from 'shared/store/rootTypes'
 import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 import { getVoiceHandler } from 'shared/voiceChat/selectors'
+import { SceneWorker } from 'shared/world/SceneWorker'
+import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -65,7 +67,7 @@ export function* rendererSaga() {
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
 
-  yield takeEvery(SET_CURRENT_SCENE, listenToWhetherSceneSupportsVoiceChat)
+  yield takeLatest(SET_CURRENT_SCENE, listenToWhetherSceneSupportsVoiceChat)
 
   yield fork(reportRealmChangeToRenderer)
   yield fork(updateChangeVoiceChatHandlerProcess)
@@ -173,9 +175,15 @@ function* handleVoiceChatError(action: SetVoiceChatErrorAction) {
 }
 
 function* listenToWhetherSceneSupportsVoiceChat(data: SetCurrentScene) {
-  const nowEnabled = data.payload.currentScene
-    ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, data.payload.currentScene.loadableScene.entity.metadata)
+  const currentScene: SceneWorker | undefined = data.payload.currentScene
+    ? yield call(getSceneWorkerBySceneID, data.payload.currentScene)
+    : undefined
+
+  const nowEnabled = currentScene
+    ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, currentScene?.metadata)
     : isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE)
+
+  yield call(waitForRendererInstance)
 
   getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
 }

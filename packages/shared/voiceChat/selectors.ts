@@ -11,6 +11,7 @@ import { VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
 import { RootWorldState } from 'shared/world/types'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { RootSessionState } from 'shared/session/types'
+import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 
 export const hasJoinedVoiceChat = (store: RootVoiceChatState) => store.voiceChat.joined
 
@@ -27,7 +28,8 @@ export const getVoicePolicy = (store: RootVoiceChatState) => store.voiceChat.pol
 export const getVoiceHandler = (store: RootVoiceChatState) => store.voiceChat.voiceHandler
 
 export function isVoiceChatAllowedByCurrentScene(store: RootVoiceChatState & RootWorldState) {
-  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, store.world.currentScene?.loadableScene.entity.metadata)
+  const currentScene = store.world.currentScene ? getSceneWorkerBySceneID(store.world.currentScene) : undefined
+  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, currentScene?.loadableScene.entity.metadata)
 }
 
 export function isBlockedOrBanned(profile: Avatar, bannedUsers: BannedUsers, userId: string): boolean {

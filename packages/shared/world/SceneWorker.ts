@@ -199,7 +199,9 @@ export class SceneWorker {
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
 
-  // when the engine says "the scene is ready" or it did fail to load
+  // when the engine says "the scene is ready" or it did fail to load. it is of
+  // extreme importance that this method always emits a SCENE_START signal that
+  // later will be injected into the redux-saga context
   onReady() {
     this.ready |= SceneWorkerReadyState.STARTED
 

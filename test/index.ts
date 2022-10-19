@@ -29,6 +29,7 @@ import './unit/logger.spec'
 import './unit/comms-resolver.test'
 import './unit/friends.saga.test'
 import './unit/channels.saga.test'
+import './unit/world.saga.test'
 
 /* SCENE EVENTS */
 import './sceneEvents/visibleAvatars.spec'

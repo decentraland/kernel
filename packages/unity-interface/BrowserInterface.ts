@@ -104,7 +104,7 @@ import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
-import { signalSceneReady } from 'shared/world/actions'
+import { rendererSignalSceneReady } from 'shared/world/actions'
 import { requestMediaDevice } from '../shared/voiceChat/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
@@ -512,7 +512,7 @@ export class BrowserInterface {
     switch (eventType) {
       case 'SceneReady': {
         const { sceneId, sceneNumber } = payload
-        store.dispatch(signalSceneReady(sceneId, sceneNumber))
+        store.dispatch(rendererSignalSceneReady(sceneId, sceneNumber))
 
         break
       }

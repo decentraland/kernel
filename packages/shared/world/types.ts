@@ -1,5 +1,4 @@
 import { LoadableScene } from 'shared/types'
-import { SceneWorker } from './SceneWorker'
 
 export type ParcelSceneLoadingState = {
   isWorldLoadingEnabled: boolean
@@ -7,7 +6,7 @@ export type ParcelSceneLoadingState = {
 }
 
 export type WorldState = {
-  currentScene: SceneWorker | undefined
+  currentScene: string | undefined
 }
 
 export type RootWorldState = {

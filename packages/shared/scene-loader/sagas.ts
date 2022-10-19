@@ -50,7 +50,7 @@ import { getResourcesURL } from 'shared/location'
 import { Vector2 } from '@dcl/ecs-math'
 
 export function* sceneLoaderSaga() {
-  yield takeEvery(SET_REALM_ADAPTER, onSetBff)
+  yield takeEvery(SET_REALM_ADAPTER, onSetRealm)
   yield takeEvery([POSITION_SETTLED, POSITION_UNSETTLED], onPositionSettled)
   yield takeLatest(TELEPORT_TO, teleportHandler)
   yield fork(rendererPositionSettler)
@@ -171,7 +171,7 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 }
 
 // This saga reacts to new realms/bff and creates the proper scene loader
-function* onSetBff(action: SetRealmAdapterAction) {
+function* onSetRealm(action: SetRealmAdapterAction) {
   const adapter: IRealmAdapter | undefined = action.payload
 
   if (!adapter) {

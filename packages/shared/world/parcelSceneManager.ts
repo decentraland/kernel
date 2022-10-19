@@ -12,13 +12,6 @@ import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { getAssetBundlesBaseUrl, ETHEREUM_NETWORK } from 'config'
 import { normalizeContentMappings, getSceneNameFromJsonData } from 'shared/selectors'
 import { ContentMapping } from '@dcl/schemas'
-import { positionObservable } from './positionThings'
-
-positionObservable.add((obj) => {
-  for (const [, scene] of loadedSceneWorkers) {
-    scene.sendUserViewMatrix(obj)
-  }
-})
 
 declare const globalThis: any
 
@@ -65,6 +58,7 @@ export function forceStopScene(sceneId: string) {
   }
 }
 
+// finds a parcel scene by parcel position (that is not a portable experience)
 export function getLoadedParcelSceneByParcel(parcelPosition: string) {
   for (const [, w] of loadedSceneWorkers) {
     if (!w.rpcContext.sceneData.isPortableExperience && w.metadata.scene?.parcels?.includes(parcelPosition)) {
@@ -90,17 +84,21 @@ export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: 
 }
 
 /**
- * idempotent
+ * idempotent.
+ *
+ * accepts a new worker, stops the previous one if there was any collision with
+ * the same ID
  */
 function setNewParcelScene(worker: SceneWorker) {
   const sceneId = worker.loadableScene.id
-  const parcelSceneWorker = loadedSceneWorkers.get(worker.loadableScene.id)
+  // NOTE: getSceneWorkerBySceneID is not used because when the change to
+  //       sceneNumber happens we still need to look for ID collissions
 
-  if (worker === parcelSceneWorker) return
-
-  if (parcelSceneWorker) {
-    // stop the current scene, forcing a reload
-    forceStopScene(sceneId)
+  // unload all the conflicting workers
+  for (const [id, w] of loadedSceneWorkers) {
+    if (worker !== w && w.loadableScene.id === sceneId) {
+      forceStopScene(id)
+    }
   }
 
   loadedSceneWorkers.set(sceneId, worker)
