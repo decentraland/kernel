@@ -3,6 +3,7 @@ import {
   Conversation,
   ConversationType,
   MessageStatus,
+  PresenceType,
   SearchChannelsResponse,
   SocialAPI,
   TextMessage
@@ -125,13 +126,32 @@ const publicRooms: SearchChannelsResponse[] = [
   }
 ]
 
+const userStatuses = new Map()
+userStatuses.set('0xa1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+userStatuses.set('0xb1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+userStatuses.set('0xc1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+userStatuses.set('0xd1', {
+  presence: PresenceType.ONLINE,
+  lastActiveAgo: 32201
+})
+
 const stubClient = (start: number, end: number, index: number) =>
-  ({
-    getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
-    searchChannel: () => Promise.resolve(publicRooms[index]),
-    getMemberInfo: () => ({displayName: undefined, avatarUrl: undefined}),
-    getUserId: () => '0xa1'
-  } as unknown as SocialAPI)
+({
+  getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
+  getUserStatuses: () => (userStatuses),
+  searchChannel: () => Promise.resolve(publicRooms[index]),
+  getMemberInfo: () => ({ displayName: undefined, avatarUrl: undefined }),
+  getUserId: () => '0xa1'
+} as unknown as SocialAPI)
 
 function mockStoreCalls(ops?: { start?: number; end?: number; index?: number; catalog?: boolean }) {
   sinon.stub(friendsSelectors, 'getChannels').callsFake(() => allCurrentConversations)
