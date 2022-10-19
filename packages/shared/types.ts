@@ -692,6 +692,7 @@ export type KernelConfigForRenderer = {
   validWorldRanges: Object
   kernelVersion: string
   rendererVersion: string
+  avatarTextureAPIBaseUrl: string
 }
 
 export type RealmsInfoForRenderer = {
