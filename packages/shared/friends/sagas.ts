@@ -424,12 +424,13 @@ function* configureMatrixClient(action: SetMatrixClient) {
         getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
         break
       case 'leave':
+        const onlineMembersAfterLeave = getOnlineMembers(conversation, client)
         const leavingChannelPayload: ChannelInfoPayload = {
           name: conversation.name ?? '',
           channelId: conversation.id,
           unseenMessages: 0,
           lastMessageTimestamp: undefined,
-          memberCount: 0,
+          memberCount: onlineMembersAfterLeave,
           description: '',
           joined: false,
           muted: false
@@ -1407,7 +1408,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
 
-    const channelId = action.payload.channelId
+    const channelId = action.payload.channelId.toLowerCase()
 
     const reachedLimit = checkChannelsLimit()
     if (reachedLimit) {
