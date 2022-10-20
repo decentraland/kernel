@@ -108,6 +108,9 @@ function* handleSendMessage(action: SendMessage) {
       return
     }
 
+    if (entry && entry.messageType === ChatMessageType.PRIVATE) {
+      return
+    }
     // If no such command was found, provide some feedback
     if (!entry) {
       entry = {
@@ -133,6 +136,7 @@ function* handleSendMessage(action: SendMessage) {
       })
       return
     }
+
     if (isChannel) {
       entry = {
         messageType: ChatMessageType.PUBLIC,
