@@ -14,7 +14,7 @@ import { getCommsIsland } from '../../packages/shared/comms/selectors'
 import { saveProfileDelta } from '../../packages/shared/profiles/actions'
 import { sceneEventsSaga, updateLocation } from '../../packages/shared/sceneEvents/sagas'
 import { allScenesEvent } from '../../packages/shared/world/parcelSceneManager'
-import { localCommsService } from '../../packages/shared/realm/local-services/comms'
+import { localCommsService, localRoutingService } from '../../packages/shared/realm/local-services/comms'
 import { getRealmAdapter } from 'shared/realm/selectors'
 import { disconnectRoom, handleNewCommsContext } from 'shared/comms/sagas'
 import { bindHandlersToCommsContext } from 'shared/comms/handlers'
@@ -47,7 +47,8 @@ const realmAdapter: IRealmAdapter = {
   async disconnect() {},
   services: {
     legacy: legacyServices('https://realm', about),
-    comms: localCommsService()
+    comms: localCommsService(),
+    routing: localRoutingService()
   }
 }
 
