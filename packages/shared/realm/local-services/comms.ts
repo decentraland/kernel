@@ -5,6 +5,11 @@ import {
   PeerTopicSubscriptionResultElem,
   SystemTopicSubscriptionResultElem
 } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
+import { RoutingServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
+
+export function localRoutingService(): RpcClientModule<RoutingServiceDefinition, any> {
+  throw new Error()
+}
 
 export function localCommsService(): RpcClientModule<CommsServiceDefinition, any> {
   type TestTopicListener = {

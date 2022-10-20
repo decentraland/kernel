@@ -8,6 +8,7 @@ import {
   WelcomePeerInformation
 } from '@dcl/protocol/out-ts/decentraland/bff/authentication_service.gen'
 import { CommsServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/comms_service.gen'
+import { RoutingServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
 import { trackEvent } from 'shared/analytics'
 import { ExplorerIdentity } from 'shared/session/types'
 import { RealmConnectionEvents, BffServices, IRealmAdapter } from '../types'
@@ -97,6 +98,7 @@ export class BffRpcConnection implements IRealmAdapter<any> {
 
     this.services = {
       comms: loadService(port, CommsServiceDefinition),
+      routing: loadService(port, RoutingServiceDefinition),
       legacy: legacyServices(baseUrl, about)
     }
   }

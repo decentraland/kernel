@@ -48,3 +48,16 @@ export function pickBy<T>(array: T[], count: number, criteria: (t1: T, t2: T) =>
 
   return selected
 }
+
+export function pickRandom<T>(array: T[], count: number): T[] {
+  const n = array.length < count ? array.length : count
+  const indexes: Set<number> = new Set()
+  while (indexes.size < n) {
+    indexes.add(Math.floor(Math.random() * array.length))
+  }
+  const response: T[] = []
+  for (const i of indexes) {
+    response.push(array[i])
+  }
+  return response
+}

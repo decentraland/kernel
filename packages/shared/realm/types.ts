@@ -3,6 +3,7 @@ import { Emitter } from 'mitt'
 import { CommsServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/comms_service.gen'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 import { IslandChangedMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
+import { RoutingServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
 
 export const OFFLINE_REALM = 'offline'
 
@@ -30,6 +31,7 @@ export type LegacyServices = {
 
 export type BffServices<CallContext = any> = {
   comms: RpcClientModule<CommsServiceDefinition, CallContext>
+  routing: RpcClientModule<RoutingServiceDefinition, CallContext>
   legacy: LegacyServices
 }
 
