@@ -390,7 +390,9 @@ function* configureMatrixClient(action: SetMatrixClient) {
   )
 
   client.onChannelMembers((conversation, members) => {
-    updateChannelInfo(conversation, client)
+    if (conversation.name && !conversation.name.startsWith('Empty room')) {
+      updateChannelInfo(conversation, client)
+    }
 
     const userStatuses = client.getUserStatuses(...members.map((member) => member.userId))
     const membersPayload = members
