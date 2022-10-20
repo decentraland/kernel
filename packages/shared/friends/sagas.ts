@@ -320,7 +320,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
       }
 
       if (message.sender === ownId && !isChannelType) {
-        // ignore messages sent by the local user
+        // ignore messages sent to private chats by the local user
         return
       }
 

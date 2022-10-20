@@ -109,8 +109,10 @@ function* handleSendMessage(action: SendMessage) {
     }
 
     if (entry && entry.messageType === ChatMessageType.PRIVATE) {
+      // Command is found and it is a private message, we've already added the message to the chat window
       return
     }
+
     // If no such command was found, provide some feedback
     if (!entry) {
       entry = {
