@@ -424,7 +424,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
         getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
         break
       case 'leave':
-        const joinedMembers = client.getChannel(channel.channelId).userIds?.length ?? 0
+        const joinedMembers = client.getChannel(conversation.id)?.userIds?.length ?? 0
         const leavingChannelPayload: ChannelInfoPayload = {
           name: conversation.name ?? '',
           channelId: conversation.id,
