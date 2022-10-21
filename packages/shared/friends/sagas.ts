@@ -58,7 +58,7 @@ import {
   GetChannelsPayload,
   ChannelSearchResultsPayload,
   JoinOrCreateChannelPayload,
-  ChannelMemberProfile
+  ChannelMember
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -1632,7 +1632,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   getUnityInstance().AddChatMessages(addChatMessages)
 }
 
-function findMissingMembers(members: ChannelMemberProfile[], ownId: string) {
+function findMissingMembers(members: ChannelMember[], ownId: string) {
   return members.filter((member) => {
     const localUserId = getUserIdFromMatrix(member.userId)
     return member.userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
@@ -1640,7 +1640,7 @@ function findMissingMembers(members: ChannelMemberProfile[], ownId: string) {
 }
 
 function getMembers(client: SocialAPI, userIds: string[], channelId: string) {
-  return userIds.map((userId): ChannelMemberProfile => {
+  return userIds.map((userId): ChannelMember => {
     const memberInfo = client.getMemberInfo(channelId, userId)
     return { userId, name: memberInfo.displayName ?? '' }
   })
@@ -1903,7 +1903,7 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
  * Checks which members are present in the profile catalog and sends partial profiles for missing users
  * @param members is an array of [member ID, name]
  */
-function sendMissingProfiles(members: ChannelMemberProfile[], ownId: string) {
+function sendMissingProfiles(members: ChannelMember[], ownId: string) {
   // find missing users
   const missingUsers = findMissingMembers(members, ownId)
 
@@ -1913,11 +1913,11 @@ function sendMissingProfiles(members: ChannelMemberProfile[], ownId: string) {
   }
 }
 
-function getMissingProfiles(missingUsers: ChannelMemberProfile[]): NewProfileForRenderer[] {
+function getMissingProfiles(missingUsers: ChannelMember[]): NewProfileForRenderer[] {
   return missingUsers.map((missingUser) => buildMissingProfile(missingUser))
 }
 
-function buildMissingProfile(user: ChannelMemberProfile) {
+function buildMissingProfile(user: ChannelMember) {
   const localpart = getUserIdFromMatrix(user.userId)
   return defaultProfile({
     userId: localpart,
