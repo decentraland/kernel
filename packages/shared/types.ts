@@ -837,6 +837,11 @@ export type ChannelMember = {
   isOnline: boolean
 }
 
+export type ChannelMemberProfile = {
+  userId: string
+  name: string
+}
+
 export type UpdateChannelMembersPayload = {
   channelId: string
   members: ChannelMember[]

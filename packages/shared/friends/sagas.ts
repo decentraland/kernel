@@ -57,7 +57,8 @@ import {
   UpdateChannelMembersPayload,
   GetChannelsPayload,
   ChannelSearchResultsPayload,
-  JoinOrCreateChannelPayload
+  JoinOrCreateChannelPayload,
+  ChannelMemberProfile
 } from 'shared/types'
 import { Realm } from 'shared/dao/types'
 import { lastPlayerPosition } from 'shared/world/positionThings'
@@ -299,7 +300,6 @@ function* configureMatrixClient(action: SetMatrixClient) {
       const profile = getProfile(store.getState(), identity.address)
       const blocked = profile?.blocked ?? []
       if (blocked.includes(senderUserId)) {
-        logger.warn(`got a message from blocked user`, message, conversation)
         return
       }
 
@@ -1398,7 +1398,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
       )
 
       const channel: ChannelInfoPayload = {
-        name: conversation.name ?? action.payload.channelId,
+        name: channelId,
         channelId: conversation.id,
         unseenMessages: 0,
         lastMessageTimestamp: undefined,
@@ -1603,7 +1603,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   const ownId = client.getUserId()
 
   // deduplicate sender IDs
-  const senderIds = [...new Set(messages.map((message) => message.sender))]
+  const senderIds = Array.from(new Set(messages.map((message) => message.sender)))
 
   // get members from user IDs
   const members = getMembers(client, senderIds, request.channelId)
@@ -1615,7 +1615,6 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
     messages: []
   }
 
-  const membersById = new Map(members)
   for (const message of messages) {
     const sender = getUserIdFromMatrix(message.sender)
 
@@ -1625,7 +1624,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
       timestamp: message.timestamp,
       body: message.text,
       sender,
-      senderName: membersById.get(sender),
+      senderName: members.find((member) => member.userId === sender)?.name,
       recipient: request.channelId
     })
   }
@@ -1633,17 +1632,17 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   getUnityInstance().AddChatMessages(addChatMessages)
 }
 
-function findMissingMembers(members: [string, string][], ownId: string) {
-  return members.filter(([userId]) => {
-    const localUserId = getUserIdFromMatrix(userId)
-    return userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
+function findMissingMembers(members: ChannelMemberProfile[], ownId: string) {
+  return members.filter((member) => {
+    const localUserId = getUserIdFromMatrix(member.userId)
+    return member.userId !== ownId && !isAddedToCatalog(store.getState(), localUserId)
   })
 }
 
 function getMembers(client: SocialAPI, userIds: string[], channelId: string) {
-  return userIds.map((userId): [string, string] => {
+  return userIds.map((userId): ChannelMemberProfile => {
     const memberInfo = client.getMemberInfo(channelId, userId)
-    return [userId, memberInfo.displayName ?? '']
+    return { userId, name: memberInfo.displayName ?? '' }
   })
 }
 
@@ -1866,7 +1865,7 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   }
 
   const members = getMembers(client, channel.userIds ?? [], request.channelId)
-    .filter(([, name]) => {
+    .filter(({ name }) => {
       const searchTerm = request.userName.toLocaleLowerCase()
       const lowerCaseName = name.toLocaleLowerCase()
       return lowerCaseName.search(searchTerm) >= 0
@@ -1884,14 +1883,14 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   // update catalog with missing users, by using default profiles with name and image url
   sendMissingProfiles(members, ownId)
 
-  const userStatuses = client.getUserStatuses(...members.map(([id]) => id))
+  const userStatuses = client.getUserStatuses(...members.map(({ userId }) => userId))
 
-  for (const [memberId, memberName] of members) {
-    const userId = getUserIdFromMatrix(memberId)
-    if (ownId === memberId || userStatuses.get(memberId)?.presence === PresenceType.ONLINE) {
+  for (const member of members) {
+    const userId = getUserIdFromMatrix(member.userId)
+    if (ownId === member.userId || userStatuses.get(member.userId)?.presence === PresenceType.ONLINE) {
       channelMembersPayload.members.push({
         userId,
-        name: memberName,
+        name: member.name,
         isOnline: true
       })
     }
@@ -1904,7 +1903,7 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
  * Checks which members are present in the profile catalog and sends partial profiles for missing users
  * @param members is an array of [member ID, name]
  */
-function sendMissingProfiles(members: [string, string][], ownId: string) {
+function sendMissingProfiles(members: ChannelMemberProfile[], ownId: string) {
   // find missing users
   const missingUsers = findMissingMembers(members, ownId)
 
@@ -1914,15 +1913,15 @@ function sendMissingProfiles(members: [string, string][], ownId: string) {
   }
 }
 
-function getMissingProfiles(missingUsers: [string, string][]): NewProfileForRenderer[] {
-  return missingUsers.map(([userId, name]) => buildMissingProfile(userId, name))
+function getMissingProfiles(missingUsers: ChannelMemberProfile[]): NewProfileForRenderer[] {
+  return missingUsers.map((missingUser) => buildMissingProfile(missingUser))
 }
 
-function buildMissingProfile(userId: string, name: string) {
-  const localpart = getUserIdFromMatrix(userId)
+function buildMissingProfile(user: ChannelMemberProfile) {
+  const localpart = getUserIdFromMatrix(user.userId)
   return defaultProfile({
     userId: localpart,
-    name,
+    name: user.name,
     face256: buildProfilePictureURL(localpart)
   })
 }
