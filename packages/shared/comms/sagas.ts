@@ -222,7 +222,6 @@ function* createP2PAdapter(islandId: string) {
   const realmAdapter: IRealmAdapter = yield select(getRealmAdapter)
   if (!realmAdapter) throw new Error('p2p transport requires a valid realm adapter')
   const peers = new Map<string, Position3D>()
-  const commsConfig: CommsConfig = yield select(getCommsConfig)
   // for (const [id, p] of Object.entries(islandChangedMessage.peers)) {
   //   if (peerId !== id) {
   //     peers.set(id, [p.x, p.y, p.z])
@@ -237,10 +236,6 @@ function* createP2PAdapter(islandId: string) {
         debugUpdateNetwork: !!DEBUG_COMMS,
         debugIceCandidates: !!DEBUG_COMMS,
         debugMesh: !!DEBUG_COMMS
-      },
-      relaySuspensionConfig: {
-        relaySuspensionInterval: commsConfig.relaySuspensionInterval ?? 750,
-        relaySuspensionDuration: commsConfig.relaySuspensionDuration ?? 5000
       },
       islandId,
       // TODO: is this peerId correct?
