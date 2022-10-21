@@ -3,7 +3,7 @@ import { JoinIslandMessage, LeftIslandMessage } from '@dcl/protocol/out-ts/decen
 import { Mesh } from './p2p/Mesh'
 import mitt from 'mitt'
 import { pickRandom } from './p2p/utils'
-import { P2PLogConfig, MinPeerData, KnownPeerData } from './p2p/types'
+import { P2PLogConfig, KnownPeerData } from './p2p/types'
 import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
 import { Position3D } from '@dcl/catalyst-peer'
 import { ILogger } from 'shared/logger'
@@ -82,16 +82,6 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         }
       }
     })
-
-    // TODO: MENDEZ: Why is this necessary and not an internal thing of the transport?
-    // this.transport.onPeerPositionChange(peer, [position.positionX, position.positionY, position.positionZ])
-  }
-
-  onPeerPositionChange(peerId: string, p: Position3D) {
-    const peer = this.knownPeers[peerId]
-    if (peer) {
-      peer.position = p
-    }
   }
 
   private async onPeerJoined(message: PeerTopicSubscriptionResultElem) {
@@ -288,13 +278,9 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     this.mesh.disconnectFrom(peerId)
   }
 
-  private addKnownPeerIfNotExists(peer: MinPeerData) {
+  private addKnownPeerIfNotExists(peer: KnownPeerData) {
     if (!this.knownPeers[peer.id]) {
-      this.knownPeers[peer.id] = {
-        ...peer,
-        subtypeData: {},
-        reachableThrough: {}
-      }
+      this.knownPeers[peer.id] = peer
     }
 
     return this.knownPeers[peer.id]
