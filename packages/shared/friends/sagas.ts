@@ -319,12 +319,12 @@ function* configureMatrixClient(action: SetMatrixClient) {
         await ensureFriendProfile(senderUserId)
       }
 
-      addNewChatMessage(chatMessage)
-
-      if (message.sender === ownId) {
-        // ignore messages sent by the local user
+      if (message.sender === ownId && !isChannelType) {
+        // ignore messages sent to private chats by the local user
         return
       }
+
+      addNewChatMessage(chatMessage)
 
       if (isChannelType) {
         const muted = profile?.muted ?? []
@@ -998,7 +998,12 @@ function* handleSendChannelMessage(action: SendChannelMessage) {
   try {
     const conversation: Conversation | undefined = yield apply(client, client.getChannel, [channelId])
     if (conversation) {
-      yield apply(client, client.sendMessageTo, [conversation.id, message])
+      const messageId = yield apply(client, client.sendMessageTo, [conversation.id, message.body])
+
+      if (messageId) {
+        message.messageId = messageId
+      }
+      getUnityInstance().AddMessageToChatWindow(message)
     }
   } catch (e: any) {
     logger.error(e)
@@ -1033,7 +1038,11 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
 
   try {
     const conversation: Conversation = yield apply(client, client.createDirectConversation, [userData.socialId])
-    yield apply(client, client.sendMessageTo, [conversation.id, message])
+    const messageId = yield apply(client, client.sendMessageTo, [conversation.id, message.body])
+    if (messageId) {
+      message.messageId = messageId
+    }
+    getUnityInstance().AddMessageToChatWindow(message)
   } catch (e: any) {
     logger.error(e)
     trackEvent('error', {
@@ -1698,16 +1707,20 @@ export async function searchChannels(request: GetChannelsPayload) {
   // search channels
   const { channels, nextBatch } = await client.searchChannel(request.limit, searchTerm, since)
 
-  const channelsToReturn: ChannelInfoPayload[] = channels.map((channel) => ({
-    channelId: channel.id,
-    name: channel.name || '',
-    unseenMessages: 0,
-    lastMessageTimestamp: undefined,
-    memberCount: channel.memberCount,
-    description: channel.description || '',
-    joined: joinedChannelIds.includes(channel.id),
-    muted: profile?.muted?.includes(channel.id) ?? false
-  }))
+  const channelsToReturn: ChannelInfoPayload[] = channels
+    .filter(function (str) {
+      return str.name?.includes(searchTerm ?? '')
+    })
+    .map((channel) => ({
+      channelId: channel.id,
+      name: channel.name || '',
+      unseenMessages: 0,
+      lastMessageTimestamp: undefined,
+      memberCount: channel.memberCount,
+      description: channel.description || '',
+      joined: joinedChannelIds.includes(channel.id),
+      muted: profile?.muted?.includes(channel.id) ?? false
+    }))
 
   // sort in descending order by memberCount value
   const channelsSorted = channelsToReturn.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
