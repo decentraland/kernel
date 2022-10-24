@@ -1708,9 +1708,7 @@ export async function searchChannels(request: GetChannelsPayload) {
   const { channels, nextBatch } = await client.searchChannel(request.limit, searchTerm, since)
 
   const channelsToReturn: ChannelInfoPayload[] = channels
-    .filter(function (str) {
-      return str.name?.includes(searchTerm ?? '')
-    })
+    .filter((str) => str.name?.includes(searchTerm ?? ''))
     .map((channel) => ({
       channelId: channel.id,
       name: channel.name || '',
