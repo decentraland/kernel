@@ -394,10 +394,12 @@ function* configureMatrixClient(action: SetMatrixClient) {
       updateChannelInfo(conversation, client)
     }
 
-    const userStatuses = client.getUserStatuses(...members.map((member) => member.userId))
+    // we only notify members who are online
+    const memberIds = getOnlineMembers([...members.map((member) => member.userId)], client)
+
     const membersPayload = members
-      .filter((member) => userStatuses.get(member.userId)?.presence === PresenceType.ONLINE)
-      .map((member) => ({ ...member, isOnline: true }))
+      .filter((member) => memberIds.includes(member.userId))
+      .map((member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true }))
 
     const update: UpdateChannelMembersPayload = { channelId: conversation.id, members: membersPayload }
     getUnityInstance().UpdateChannelMembers(update)
@@ -410,7 +412,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
           break
         }
 
-        const onlineMembers = getOnlineMembers(conversation, client)
+        const onlineMembers = getOnlineMembers(conversation.userIds ?? [], client).length
 
         const channel: ChannelInfoPayload = {
           name: getNormalizedRoomName(conversation.name),
@@ -452,7 +454,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
 }
 
 function updateChannelInfo(conversation: Conversation, client: SocialAPI) {
-  const onlineMembers = getOnlineMembers(conversation, client)
+  const onlineMembers = getOnlineMembers(conversation.userIds ?? [], client).length
   const profile = getCurrentUserProfile(store.getState())
   const muted = profile?.muted?.includes(conversation.id) ?? false
 
@@ -1568,7 +1570,7 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     channelId: conv.conversation.id,
     unseenMessages: conv.conversation.unreadMessages?.length || 0,
     lastMessageTimestamp: conv.conversation.lastEventTimestamp || undefined,
-    memberCount: getOnlineMembers(conv.conversation, client),
+    memberCount: getOnlineMembers(conv.conversation.userIds ?? [], client).length,
     description: '',
     joined: true,
     muted: profile?.muted?.includes(conv.conversation.id) ?? false
@@ -1814,7 +1816,7 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
     store.dispatch(unmutePlayers([channelId]))
   }
 
-  const onlineMembers = getOnlineMembers(channel, client)
+  const onlineMembers = getOnlineMembers(channel.userIds ?? [], client).length
 
   const channelInfo: ChannelInfoPayload = {
     name: channel.name ?? '',
@@ -1862,7 +1864,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
     const muted = profile?.muted?.includes(channelId) ?? false
 
-    const onlineMembers = getOnlineMembers(channel, client)
+    const onlineMembers = getOnlineMembers(channel.userIds ?? [], client).length
 
     channels.push({
       name: getNormalizedRoomName(channel.name || ''),
@@ -1910,23 +1912,19 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   // update catalog with missing users, by using default profiles with name and image url
   sendMissingProfiles(members, ownId)
 
-  const userStatuses = client.getUserStatuses(...members.map(({ userId }) => userId))
+  // we only notify members who are online
+  const memberIds = getOnlineMembers([...members.map(({ userId }) => userId)], client)
 
-  for (const member of members) {
-    const userId = getUserIdFromMatrix(member.userId)
-    if (ownId === member.userId || userStatuses.get(member.userId)?.presence === PresenceType.ONLINE) {
-      channelMembersPayload.members.push({
-        userId,
-        name: member.name,
-        isOnline: true
-      })
-    }
-  }
+  const membersPayload = members
+    .filter((member) => memberIds.includes(member.userId))
+    .map((member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true }))
+
+  channelMembersPayload.members.push(...membersPayload)
 
   getUnityInstance().UpdateChannelMembers(channelMembersPayload)
 }
 
-/*
+/**
  * Checks which members are present in the profile catalog and sends partial profiles for missing users
  * @param members is an array of [member ID, name]
  */
@@ -1975,11 +1973,13 @@ function isAllowedToCreate() {
   }
 }
 
-function getOnlineMembers(channel: Conversation, client: SocialAPI) {
-  let onlineMembers = 0
-  if (channel.userIds) {
-    const userStatuses = client.getUserStatuses(...channel.userIds)
-    onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
-  }
+/**
+ * Filter members online from a given list of user ids.
+ * @return `string[]` with the ids of the members who are online.
+ */
+function getOnlineMembers(userIds: string[], client: SocialAPI) {
+  const userStatuses = client.getUserStatuses(...userIds)
+  const onlineMembers = userIds.filter((id) => userStatuses.get(id)?.presence === PresenceType.ONLINE)
+
   return onlineMembers
 }
