@@ -849,6 +849,10 @@ export class BrowserInterface {
     )
   }
 
+  public async LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
+    TeleportController.LoadingHUDReadyForTeleport(data)
+  }
+
   public async UpdateMemoryUsage() {
     getUnityInstance().SendMemoryUsageToRenderer()
   }

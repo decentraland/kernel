@@ -12,6 +12,7 @@ import { urlWithProtocol } from 'shared/realm/resolver'
 import { trackTeleportTriggered } from 'shared/loading/types'
 import { teleportToAction } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -64,16 +65,24 @@ export class TeleportController {
 
   public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
-
     if (isInsideWorldLimits(x, y)) {
-      store.dispatch(trackTeleportTriggered(tpMessage || `Teleporting to ${x}, ${y}`))
-      store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
+      store.dispatch(trackTeleportTriggered(tpMessage))
+      const data = {
+        xCoord: x,
+        yCoord: y,
+        message: teleportMessage
+      }
+      getUnityInstance().FadeInLoadingHUD(data)
 
       return { message: tpMessage, success: true }
     } else {
       const errorMessage = `Coordinates are outside of the boundaries. Valid ranges are: ${descriptiveValidWorldRanges}.`
       return { message: errorMessage, success: false }
     }
+  }
+
+  public static LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
+    store.dispatch(teleportToAction({ position: gridToWorld(data.x, data.y) }))
   }
 }
 

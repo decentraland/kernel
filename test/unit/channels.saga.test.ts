@@ -129,6 +129,7 @@ const stubClient = (start: number, end: number, index: number) =>
   ({
     getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
     searchChannel: () => Promise.resolve(publicRooms[index]),
+    getMemberInfo: () => ({ displayName: undefined, avatarUrl: undefined }),
     getUserId: () => '0xa1'
   } as unknown as SocialAPI)
 
@@ -289,7 +290,7 @@ describe('Friends sagas - Channels Feature', () => {
     })
 
     afterEach(() => {
-      opts.end = opts.start - 2
+      opts.start = opts.start - 2
       sinon.restore()
       sinon.reset()
     })
@@ -312,6 +313,7 @@ describe('Friends sagas - Channels Feature', () => {
             timestamp: message.timestamp,
             body: message.text,
             sender: getUserIdFromMatrix(message.sender),
+            senderName: undefined,
             recipient: request.channelId
           }))
         }
@@ -325,19 +327,20 @@ describe('Friends sagas - Channels Feature', () => {
         const request: GetChannelMessagesPayload = {
           channelId: '000',
           limit: 2,
-          from: '2'
+          from: '3'
         }
 
-        const channelMessagesFiltered = channelMessages.slice(opts.start, opts.end)
+        const channelMessagesFiltered = channelMessages.slice(opts.start, 2)
 
         // parse messages
         const addChatMessagesPayload: AddChatMessagesPayload = {
           messages: channelMessagesFiltered.map((message) => ({
             messageId: message.id,
-            messageType: ChatMessageType.PRIVATE,
+            messageType: ChatMessageType.PUBLIC,
             timestamp: message.timestamp,
             body: message.text,
             sender: getUserIdFromMatrix(message.sender),
+            senderName: undefined,
             recipient: request.channelId
           }))
         }

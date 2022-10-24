@@ -32,6 +32,7 @@ import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { SocialAPI } from 'dcl-social-client'
 import { joinOrCreateChannel, leaveChannel, sendChannelMessage } from 'shared/friends/actions'
+import { areChannelsEnabled } from 'shared/friends/utils'
 
 interface IChatCommand {
   name: string
@@ -424,6 +425,8 @@ function initChatCommands() {
   })
 
   addChatCommand('help', 'Show a list of commands', (_message) => {
+    const excludeListChannels = areChannelsEnabled() ? [] : ['join', 'leave']
+
     return {
       messageId: uuid(),
       messageType: ChatMessageType.SYSTEM,
@@ -435,6 +438,7 @@ function initChatCommands() {
         `\n\nYou can toggle the chat with the [ENTER] key.` +
         `\n\nAvailable commands:\n${Object.keys(chatCommands)
           .filter((name) => !excludeList.includes(name))
+          .filter((name) => !excludeListChannels.includes(name))
           .map((name) => `\t/${name}: ${chatCommands[name].description}`)
           .concat('\t/help: Show this list of commands')
           .join('\n')}`
@@ -482,6 +486,15 @@ function initChatCommands() {
   })
 
   addChatCommand('join', 'Join or create channel', (channelId) => {
+    if (!areChannelsEnabled()) {
+      return {
+        messageType: ChatMessageType.SYSTEM,
+        messageId: uuid(),
+        sender: 'Decentraland',
+        body: `That command doesn’t exist. Type /help for a full list of commands.`,
+        timestamp: Date.now()
+      }
+    }
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) {
       return {
@@ -506,6 +519,15 @@ function initChatCommands() {
   })
 
   addChatCommand('leave', 'Leave channel', (channelId) => {
+    if (!areChannelsEnabled()) {
+      return {
+        messageType: ChatMessageType.SYSTEM,
+        messageId: uuid(),
+        sender: 'Decentraland',
+        body: `That command doesn’t exist. Type /help for a full list of commands.`,
+        timestamp: Date.now()
+      }
+    }
     store.dispatch(leaveChannel(channelId))
 
     return {
