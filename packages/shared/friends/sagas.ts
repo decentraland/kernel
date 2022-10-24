@@ -1796,7 +1796,7 @@ function getTotalUnseenMessagesByChannel() {
   return updateTotalUnseenMessagesByChannelPayload
 }
 
-// Enable / disable channel notifications
+// Enable / disable channel notifications.
 export function muteChannel(muteChannel: MuteChannelPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
