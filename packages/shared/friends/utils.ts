@@ -1,6 +1,7 @@
 import { getFeatureFlagEnabled, getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { RootMetaState } from 'shared/meta/types'
 import { store } from 'shared/store/isolatedStore'
+import { UsersAllowed } from 'shared/types'
 
 /**
  * Get the local part of the userId from matrixUserId
@@ -56,6 +57,16 @@ export function areChannelsEnabled(): boolean {
 
 export const DEFAULT_MAX_CHANNELS_VALUE = 5
 
+/*
+ * Returns the maximum allowed number of channels a user can join.
+ */
 export function getMaxChannels(store: RootMetaState): number {
   return (getFeatureFlagVariantValue(store, 'max_joined_channels') as number) ?? DEFAULT_MAX_CHANNELS_VALUE
+}
+
+/*
+ * Returns a list of users who are allowed to create channels.
+ */
+export function getUsersAllowedToCreate(store: RootMetaState): UsersAllowed | undefined {
+  return getFeatureFlagVariantValue(store, 'users_allowed_to_create_channels') as UsersAllowed | undefined
 }
