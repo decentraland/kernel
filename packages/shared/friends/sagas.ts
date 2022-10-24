@@ -1519,7 +1519,7 @@ export async function createChannel(request: CreateChannelPayload) {
     }
 
     const channel: ChannelInfoPayload = {
-      name: request.channelId,
+      name: conversation.name ?? request.channelId,
       channelId: conversation.id,
       unseenMessages: 0,
       lastMessageTimestamp: undefined,
