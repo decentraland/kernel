@@ -204,8 +204,7 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   const catalystURL = new URL(realmConfig.baseUrl)
 
   if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
-    commsLogger.log(`The realm is blacklisted.`)
-    return
+    throw new Error(`The realm is denylisted.`)
   }
 
   const currentRealmAdapter = getRealmAdapter(store.getState())
