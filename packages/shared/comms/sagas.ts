@@ -157,7 +157,6 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
     const protocol = action.payload.event.connStr.substring(0, ix)
     const url = action.payload.event.connStr.substring(ix + 1)
 
-    console.log('HANDLE CONNECT TO COMMS', action.payload.event.islandId)
     yield put(setCommsIsland(action.payload.event.islandId))
 
     let adapter: RoomConnection | undefined = undefined
@@ -208,7 +207,6 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
 
     yield put(establishingComms())
     yield apply(adapter, adapter.connect, [])
-    console.log('SET ROOM CONNECTION')
     yield put(setRoomConnection(adapter))
   } catch (error: any) {
     notifyStatusThroughChat('Error connecting to comms. Will try another realm')
@@ -306,7 +304,6 @@ function* createLighthouseConnection(url: string) {
   )
 
   lighthouse.onIslandChangedObservable.add(({ island }) => {
-    console.log('ON CHANGE', island)
     store.dispatch(setCommsIsland(island))
   })
 

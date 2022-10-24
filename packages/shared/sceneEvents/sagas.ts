@@ -31,7 +31,6 @@ function* islandChanged() {
 
 // @internal
 export function updateLocation(realm: string | undefined, island: string | undefined) {
-  console.log('sceneEvents updateLocation', island)
   const q = new URLSearchParams(window.location.search)
   if (realm) q.set('realm', realm)
   else q.delete('realm')
