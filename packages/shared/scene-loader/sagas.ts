@@ -130,6 +130,8 @@ A scene can fail loading due to an error or timeout.
 */
 
 function* teleportHandler(action: TeleportToAction) {
+  yield put(setParcelPosition(worldToGrid(action.payload.position)))
+
   const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
   try {
     // look for the target scene
