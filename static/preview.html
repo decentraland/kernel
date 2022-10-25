@@ -752,6 +752,11 @@
 
 
       function initDesktop() {
+        // When run within VSCode the isElectron check passes, but it fails here because window.electron does not exist there
+        if (!window.electron || !window.electron.ipcRenderer) {
+          return
+        }
+        
         const ipcRenderer = window.electron.ipcRenderer
 
         ipcRenderer.on('downloadState', (event, payload) => {
