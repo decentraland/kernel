@@ -37,8 +37,8 @@ import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePosit
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
 import mitt from 'mitt'
-import { PermissionItem, permissionItemFromJSON } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
-import { EventDataType } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
+import { PermissionItem, permissionItemFromJSON } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
+import { incrementAvatarSceneMessages } from 'shared/session/getPerformanceInfo'
 
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
