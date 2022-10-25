@@ -1,4 +1,5 @@
 import { LoginState } from '@dcl/kernel-interface'
+import { DEBUG_DISABLE_LOADING } from 'config'
 import { getIsSignUp } from 'shared/session/selectors'
 import { RootState } from 'shared/store/rootTypes'
 import { RootLoadingState } from './reducer'
@@ -12,6 +13,11 @@ export function hasPendingScenes(state: RootLoadingState) {
 
 export function isLoadingScreenVisible(state: RootState) {
   const { session, renderer, sceneLoader } = state
+
+  if (state.loading.renderingWasActivated && DEBUG_DISABLE_LOADING) {
+    // hack, remove in RFC-1
+    return false
+  }
 
   // in the case of signup, we show the avatars editor instead of the loading screen
   // that is so, to enable the user to customize the avatar while loading the world

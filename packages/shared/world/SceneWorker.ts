@@ -251,7 +251,7 @@ export class SceneWorker {
   private attachTransport() {
     // ensure that the scenes will load when workers are created.
     if (this.rpcContext.sceneData.isPortableExperience) {
-      const showAsPortableExperience = !this.rpcContext.sceneData.id.startsWith('urn:')
+      const showAsPortableExperience = this.rpcContext.sceneData.id.startsWith('urn:')
 
       getUnityInstance().CreateGlobalScene({
         id: this.rpcContext.sceneData.id,
@@ -267,6 +267,7 @@ export class SceneWorker {
       getUnityInstance().LoadParcelScenes([sceneWorkerToLoadableParcelScene(this)])
     }
 
+    // from now on, the sceneData object is read-only
     Object.freeze(this.rpcContext.sceneData)
 
     this.rpcServer.setHandler(registerServices)
