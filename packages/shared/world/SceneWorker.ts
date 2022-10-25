@@ -244,6 +244,10 @@ export class SceneWorker {
     this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
   }
 
+  isStarted(): boolean {
+    return !!(this.ready & SceneWorkerReadyState.STARTED)
+  }
+
   private attachTransport() {
     // ensure that the scenes will load when workers are created.
     if (this.rpcContext.sceneData.isPortableExperience) {
@@ -281,7 +285,7 @@ export class SceneWorker {
 
       const state: string[] = []
 
-      for (let i in SceneWorkerReadyState) {
+      for (const i in SceneWorkerReadyState) {
         if (!isNaN(i as any)) {
           if (this.ready & (i as any)) {
             state.push(SceneWorkerReadyState[i])

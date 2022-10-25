@@ -16,6 +16,7 @@ import {
   SET_PARCEL_POSITION,
   SET_SCENE_LOADER,
   SET_WORLD_LOADING_RADIUS,
+  teleportToAction,
   TeleportToAction,
   TELEPORT_TO
 } from './actions'
@@ -42,7 +43,12 @@ import {
   updateLoadingScreen
 } from 'shared/loading/actions'
 import { sceneEvents, SceneWorker } from 'shared/world/SceneWorker'
-import { pickWorldSpawnpoint, positionObservable, receivePositionReport } from 'shared/world/positionThings'
+import {
+  lastPlayerPosition,
+  pickWorldSpawnpoint,
+  positionObservable,
+  receivePositionReport
+} from 'shared/world/positionThings'
 import { encodeParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { ENABLE_EMPTY_SCENES, PREVIEW, rootURLPreviewMode } from 'config'
@@ -52,9 +58,10 @@ import { trackEvent } from 'shared/analytics'
 import { getAllowedContentServer } from 'shared/meta/selectors'
 
 export function* sceneLoaderSaga() {
-  yield takeEvery(SET_REALM_ADAPTER, onSetRealm)
+  yield takeEvery(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
   yield takeEvery([POSITION_SETTLED, POSITION_UNSETTLED], onPositionSettled)
   yield takeLatest(TELEPORT_TO, teleportHandler)
+  yield takeLatest(SET_SCENE_LOADER, unsettlePositionOnSceneLoader)
   yield fork(rendererPositionSettler)
   yield fork(onWorldPositionChange)
   yield fork(positionSettler)
@@ -102,6 +109,12 @@ function* waitForSceneLoader() {
   }
 }
 
+// We teleport the user to its current position on every change of scene loader
+// to unsettle the position.
+function* unsettlePositionOnSceneLoader() {
+  yield put(teleportToAction({ position: lastPlayerPosition }))
+}
+
 /*
 Position settling algorithm:
 - If the user teleports to a scene that is not present or not loaded
@@ -129,7 +142,7 @@ function* teleportHandler(action: TeleportToAction) {
       const scene: SceneWorker | undefined = yield call(getSceneWorkerBySceneID, settlerScene)
 
       const spawnPoint = pickWorldSpawnpoint(scene?.metadata || command.scenes[0].entity.metadata) || action.payload
-      if (scene) {
+      if (scene?.isStarted()) {
         // if the scene is loaded then there is no unsettlement of the position
         // we teleport directly to that scene
         yield put(positionSettled(spawnPoint))
@@ -179,7 +192,7 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 }
 
 // This saga reacts to new realms/bff and creates the proper scene loader
-function* onSetRealm(action: SetRealmAdapterAction) {
+function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
   const adapter: IRealmAdapter | undefined = action.payload
 
   if (!adapter) {
