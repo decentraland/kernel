@@ -38,7 +38,7 @@ export function isLoadingScreenVisible(state: RootState) {
   // This logic should be handled by Unity
   // Teleporting is also handled by this function. Since rendering is
   // deactivated on Position.unsettled events
-  return !state.loading.renderingActivated
+  return !state.loading.renderingWasActivated
 }
 
 // the strategy with this function is to fail fast with "false" and then

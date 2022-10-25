@@ -1,11 +1,9 @@
 import { LoadableScene } from '../shared/types'
 import { forceStopScene, getSceneWorkerBySceneID, loadParcelSceneWorker } from 'shared/world/parcelSceneManager'
-import { getUnityInstance } from './IUnityInterface'
 import { parseUrn, resolveContentUrl } from '@dcl/urn-resolver'
 import { Entity } from '@dcl/schemas'
 import { store } from 'shared/store/isolatedStore'
 import { addScenePortableExperience, removeScenePortableExperience } from 'shared/portableExperiences/actions'
-import { getSceneNameFromJsonData } from '../shared/selectors'
 import { defaultPortableExperiencePermissions } from 'shared/apis/host/Permissions'
 import { SceneWorker } from 'shared/world/SceneWorker'
 
@@ -109,16 +107,6 @@ function spawnPortableExperience(spawnData: LoadableScene): PortableExperienceHa
   scene.rpcContext.sceneData.useFPSThrottling = false
 
   currentPortableExperiences.set(sceneId, scene)
-
-  getUnityInstance().CreateGlobalScene({
-    id: sceneId,
-    name: getSceneNameFromJsonData(scene.loadableScene.entity.metadata),
-    baseUrl: scene.loadableScene.baseUrl,
-    contents: scene.loadableScene.entity.content,
-    icon: spawnData.entity.metadata.menuBarIcon || '',
-    isPortableExperience: true,
-    sceneNumber: scene.rpcContext.sceneData.sceneNumber
-  })
 
   return { pid: sceneId, parentCid: spawnData.parentCid || '' }
 }

@@ -12,7 +12,6 @@ import { urlWithProtocol } from 'shared/realm/resolver'
 import { trackTeleportTriggered } from 'shared/loading/types'
 import { teleportToAction } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -67,12 +66,15 @@ export class TeleportController {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
     if (isInsideWorldLimits(x, y)) {
       store.dispatch(trackTeleportTriggered(tpMessage))
-      const data = {
-        xCoord: x,
-        yCoord: y,
-        message: teleportMessage
-      }
-      getUnityInstance().FadeInLoadingHUD(data)
+      /// This doesn't work when the logic of activate/deactivate rendering is so tightly coupled with the loading
+      /// screen. The code needs rework
+      // const data = {
+      //   xCoord: x,
+      //   yCoord: y,
+      //   message: teleportMessage
+      // }
+      // getUnityInstance().FadeInLoadingHUD(data)
+      store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
 
       return { message: tpMessage, success: true }
     } else {

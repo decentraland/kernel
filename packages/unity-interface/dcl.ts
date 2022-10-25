@@ -114,16 +114,6 @@ async function startGlobalScene(
   scene.rpcContext.sceneData.isPortableExperience = true
   // portable experiences have no FPS limit
   scene.rpcContext.sceneData.useFPSThrottling = false
-
-  getUnityInstance().CreateGlobalScene({
-    id: cid,
-    name: title,
-    baseUrl: scene.loadableScene.baseUrl,
-    isPortableExperience: false,
-    //                    ^^^^^ this is important to not show the avatar scene as a portable experience
-    contents: scene.loadableScene.entity.content,
-    sceneNumber: scene.rpcContext.sceneData.sceneNumber
-  })
 }
 
 export async function getPreviewSceneId(): Promise<{ sceneId: string | null; sceneBase: string }> {

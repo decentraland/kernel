@@ -72,7 +72,6 @@ import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
-import { renderStateObservable } from 'shared/world/worldState'
 import { store } from 'shared/store/isolatedStore'
 import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
@@ -521,7 +520,7 @@ export class BrowserInterface {
          * This event is called everytime the renderer deactivates its camera
          */
         store.dispatch(renderingDectivated())
-        renderStateObservable.notifyObservers()
+        console.log('DeactivateRenderingACK')
         break
       }
       case 'ActivateRenderingACK': {
@@ -529,7 +528,7 @@ export class BrowserInterface {
          * This event is called everytime the renderer activates the main camera
          */
         store.dispatch(renderingActivated())
-        renderStateObservable.notifyObservers()
+        console.log('ActivateRenderingACK')
         break
       }
       default: {

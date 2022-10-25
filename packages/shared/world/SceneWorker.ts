@@ -1,5 +1,12 @@
 import { Quaternion, Vector3 } from '@dcl/ecs-math'
-import { DEBUG_SCENE_LOG, FORCE_SEND_MESSAGE, playerConfigurations, WSS_ENABLED } from 'config'
+import {
+  DEBUG_SCENE_LOG,
+  ETHEREUM_NETWORK,
+  FORCE_SEND_MESSAGE,
+  getAssetBundlesBaseUrl,
+  playerConfigurations,
+  WSS_ENABLED
+} from 'config'
 import { PositionReport } from './positionThings'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
@@ -8,8 +15,8 @@ import { registerServices } from 'shared/apis/host'
 import { PortContext } from 'shared/apis/host/context'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { trackEvent } from 'shared/analytics'
-import { getSceneNameFromJsonData } from 'shared/selectors'
-import { Scene } from '@dcl/schemas'
+import { getSceneNameFromJsonData, normalizeContentMappings } from 'shared/selectors'
+import { ContentMapping, Scene } from '@dcl/schemas'
 import {
   signalSceneLoad,
   signalSceneStart,
@@ -24,7 +31,7 @@ import {
   SCENE_FAIL,
   SCENE_START
 } from 'shared/loading/actions'
-import { EntityAction, LoadableScene } from 'shared/types'
+import { EntityAction, LoadableParcelScene, LoadableScene } from 'shared/types'
 import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/logger'
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
@@ -36,12 +43,14 @@ import mitt from 'mitt'
 export enum SceneWorkerReadyState {
   LOADING = 1 << 0,
   LOADED = 1 << 1,
-  STARTED = 1 << 2,
-  LOADING_FAILED = 1 << 4,
-  SYSTEM_FAILED = 1 << 5,
-  DISPOSING = 1 << 6,
-  SYSTEM_DISPOSED = 1 << 7,
-  DISPOSED = 1 << 8
+  INITIALIZED = 1 << 2,
+  STARTED = 1 << 3,
+  RECEIVED_MESSAGES = 1 << 4,
+  LOADING_FAILED = 1 << 5,
+  SYSTEM_FAILED = 1 << 6,
+  DISPOSING = 1 << 7,
+  SYSTEM_DISPOSED = 1 << 8,
+  DISPOSED = 1 << 9
 }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -225,7 +234,6 @@ export class SceneWorker {
   onEnter(userId: string) {
     // if the scene is a portable experience, then people never enters the scene
     if (this.rpcContext.sceneData.isPortableExperience) return
-    console.log('enterScene', userId, this.rpcContext.sceneData.id)
     this.rpcContext.sendSceneEvent('onEnterScene', { userId })
   }
 
@@ -233,34 +241,91 @@ export class SceneWorker {
   onLeave(userId: string, self: boolean) {
     // if the scene is a portable experience, then people never leaves the scene
     if (this.rpcContext.sceneData.isPortableExperience) return
-    console.log('leaveScene', userId, this.rpcContext.sceneData.id)
     this.rpcContext.sendSceneEvent('onLeaveScene', { userId })
   }
 
   private attachTransport() {
+    // ensure that the scenes will load when workers are created.
+    if (this.rpcContext.sceneData.isPortableExperience) {
+      const showAsPortableExperience = !this.rpcContext.sceneData.id.startsWith('urn:')
+
+      getUnityInstance().CreateGlobalScene({
+        id: this.rpcContext.sceneData.id,
+        sceneNumber: this.rpcContext.sceneData.sceneNumber,
+        baseUrl: this.loadableScene.baseUrl,
+        contents: this.loadableScene.entity.content,
+        // ---------------------------------------------------------------------
+        name: getSceneNameFromJsonData(this.loadableScene.entity.metadata),
+        icon: this.metadata.menuBarIcon || '',
+        isPortableExperience: showAsPortableExperience
+      })
+    } else {
+      getUnityInstance().LoadParcelScenes([sceneWorkerToLoadableParcelScene(this)])
+    }
+
+    Object.freeze(this.rpcContext.sceneData)
+
     this.rpcServer.setHandler(registerServices)
     this.rpcServer.attachTransport(this.transport, this.rpcContext)
     this.ready |= SceneWorkerReadyState.LOADED
 
     sceneEvents.emit(SCENE_LOAD, signalSceneLoad(this.loadableScene))
 
-    const WORKER_TIMEOUT = 30_000 // thirty seconds
+    const WORKER_TIMEOUT = 30_000 // thirty seconds to mars
+    setTimeout(() => this.onLoadTimeout(), WORKER_TIMEOUT)
+  }
 
-    setTimeout(() => {
-      if (!this.sceneStarted) {
-        this.ready |= SceneWorkerReadyState.LOADING_FAILED
+  private onLoadTimeout() {
+    if (!this.sceneStarted) {
+      this.ready |= SceneWorkerReadyState.LOADING_FAILED
 
-        this.sceneStarted = true
-        this.rpcContext.sendSceneEvent('sceneStart', {})
+      const state: string[] = []
 
-        sceneEvents.emit(SCENE_FAIL, signalSceneFail(this.loadableScene))
+      for (let i in SceneWorkerReadyState) {
+        if (!isNaN(i as any)) {
+          if (this.ready & (i as any)) {
+            state.push(SceneWorkerReadyState[i])
+          }
+        }
       }
-    }, WORKER_TIMEOUT)
+
+      this.logger.warn('SceneTimedOut', state.join('+'))
+
+      this.sceneStarted = true
+      this.rpcContext.sendSceneEvent('sceneStart', {})
+
+      if (!(this.ready & SceneWorkerReadyState.INITIALIZED)) {
+        // this message should be sent upon failure to unlock the loading screen
+        // when a scene is malformed and never emits InitMessagesFinished
+        this.sendBatch([{ payload: {}, type: 'InitMessagesFinished' }])
+      }
+
+      sceneEvents.emit(SCENE_FAIL, signalSceneFail(this.loadableScene))
+    }
   }
 
   private sendBatch(actions: EntityAction[]): void {
     if (this.loadableScene.id === 'dcl-gs-avatars') {
       incrementAvatarSceneMessages(actions.length)
+    }
+
+    this.ready |= SceneWorkerReadyState.RECEIVED_MESSAGES
+
+    if (!(this.ready & SceneWorkerReadyState.INITIALIZED)) {
+      let present = false
+      for (const action of actions) {
+        if (action.type === 'InitMessagesFinished') {
+          present = true
+          break
+        }
+      }
+      if (!present) {
+        actions.push({
+          payload: {},
+          type: 'InitMessagesFinished'
+        })
+      }
+      this.ready |= SceneWorkerReadyState.INITIALIZED
     }
 
     if (WSS_ENABLED || FORCE_SEND_MESSAGE) {
@@ -347,5 +412,26 @@ export class SceneWorker {
         this.lastSentRotation.copyFrom(positionReport.cameraQuaternion)
       }
     }
+  }
+}
+
+/**
+ * This is the format of scenes that needs to be sent to Unity to create its counterpart
+ * of a SceneWorker
+ */
+function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
+  const entity = worker.loadableScene.entity
+  const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
+
+  return {
+    id: worker.loadableScene.id,
+    sceneNumber: worker.rpcContext.sceneData.sceneNumber,
+    basePosition: parseParcelPosition(entity.metadata?.scene?.base || '0,0'),
+    name: getSceneNameFromJsonData(entity.metadata),
+    parcels: entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
+    baseUrl: worker.loadableScene.baseUrl,
+    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
+    contents: mappings,
+    loadableScene: worker.loadableScene
   }
 }
