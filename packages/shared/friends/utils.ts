@@ -55,7 +55,7 @@ export function areChannelsEnabled(): boolean {
   return getFeatureFlagEnabled(store.getState(), 'matrix_channels_enabled')
 }
 
-export const DEFAULT_MAX_CHANNELS_VALUE = 5
+export const DEFAULT_MAX_CHANNELS_VALUE = 10
 
 /*
  * Returns the maximum allowed number of channels a user can join.
