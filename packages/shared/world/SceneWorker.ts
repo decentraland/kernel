@@ -33,7 +33,7 @@ import defaultLogger, { createDummyLogger, createLogger, ILogger } from 'shared/
 import { gridToWorld, parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
 import { nativeMsgBridge } from 'unity-interface/nativeMessagesBridge'
 import { protobufMsgBridge } from 'unity-interface/protobufMessagesBridge'
-import { permissionItemFromJSON } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
+import { PermissionItem, permissionItemFromJSON } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
 import { EventDataType } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
 
 export enum SceneWorkerReadyState {
@@ -161,7 +161,12 @@ export class SceneWorker {
 
     if (this.metadata.requiredPermissions) {
       for (const permissionItemString of this.metadata.requiredPermissions) {
-        this.rpcContext.permissionGranted.add(permissionItemFromJSON(permissionItemString))
+        const item = permissionItemFromJSON(`PI_${permissionItemString}`)
+        if (item !== PermissionItem.UNRECOGNIZED) {
+          this.rpcContext.permissionGranted.add(item)
+        } else {
+          defaultLogger.error('Invalid permission in metadata', permissionItemString)
+        }
       }
     }
 
