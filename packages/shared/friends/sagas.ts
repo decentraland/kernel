@@ -390,6 +390,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
   )
 
   client.onChannelMembers((conversation, members) => {
+    if (!areChannelsEnabled()) return
+
     if (conversation.name && !conversation.name.startsWith('Empty room')) {
       updateChannelInfo(conversation, client)
     }
@@ -411,6 +413,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
   })
 
   client.onChannelMembership((conversation, membership) => {
+    if (!areChannelsEnabled()) return
+
     switch (membership) {
       case 'join':
         if (!conversation.name || conversation.name?.startsWith('Empty room')) {
