@@ -1989,7 +1989,7 @@ function isAllowedToCreate() {
   const allowedUsers = getUsersAllowedToCreate(store.getState())
   const ownId = getCurrentUserId(store.getState())
 
-  if (!allowedUsers || !ownId || allowedUsers.mode != 0) {
+  if (!allowedUsers || !ownId || allowedUsers.mode !== 0) {
     return false
   }
 
