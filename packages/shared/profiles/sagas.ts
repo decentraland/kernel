@@ -23,7 +23,7 @@ import {
   ProfileSuccessAction,
   profileFailure
 } from './actions'
-import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
+import { getProfileFromStore } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
 import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
