@@ -148,8 +148,8 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
 
   try {
-    const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
-    const shouldFetchViaComms = roomConnection && !shouldReadProfileFromLocalStorage
+    const isCurrentUser = yield select(isCurrentUserId, userId)
+    const shouldFetchViaComms = roomConnection && !isCurrentUser
     const shouldLoadFromCatalyst = true
     const shouldFallbackToRandomProfile = true
 
@@ -158,8 +158,6 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const profile: Avatar =
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
-      // then for my profile, try localStorage
-      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
       // lastly, come up with a random profile
@@ -168,7 +166,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
     avatar.userId = userId
 
-    if (shouldReadProfileFromLocalStorage) {
+    if (isCurrentUser) {
       // for local user, hasConnectedWeb3 == identity.hasConnectedWeb3
       const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
       avatar.hasConnectedWeb3 = identity?.hasConnectedWeb3 || avatar.hasConnectedWeb3
@@ -262,8 +260,8 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
   const userId: string = yield select(getCurrentUserId)
 
   try {
-    // get the avatar, no matter if it is in a loading or dirty state
-    const savedProfile: Avatar | null = yield select(getCurrentUserProfileDirty)
+    // get the avatar always from remote
+    const savedProfile: Avatar | null = yield call(getRemoteProfile, userId)
     const currentVersion: number = Math.max(savedProfile?.version || 0, 0)
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
@@ -334,17 +332,6 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
     })
     defaultLogger.error('Error deploying profile!', e)
     yield put(deployProfileFailure(userId, profile, e))
-  }
-}
-
-function* readProfileFromLocalStorage() {
-  const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-  const profile = (yield apply(localProfilesRepo, localProfilesRepo.get, [identity.address, network])) as Avatar | null
-  if (profile && profile.userId === identity.address) {
-    return ensureAvatarCompatibilityFormat(profile)
-  } else {
-    return null
   }
 }
 
