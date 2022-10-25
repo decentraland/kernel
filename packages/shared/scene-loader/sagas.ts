@@ -27,7 +27,8 @@ import {
   getParcelPosition,
   isPositionSettled,
   getPositionSpawnPointAndScene,
-  getSceneLoader
+  getSceneLoader,
+  getPositionSettled
 } from './selectors'
 import { getFetchContentServerFromRealmAdapter } from 'shared/realm/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
@@ -43,15 +44,10 @@ import {
   updateLoadingScreen
 } from 'shared/loading/actions'
 import { sceneEvents, SceneWorker } from 'shared/world/SceneWorker'
-import {
-  lastPlayerPosition,
-  pickWorldSpawnpoint,
-  positionObservable,
-  receivePositionReport
-} from 'shared/world/positionThings'
-import { encodeParcelPosition, worldToGrid } from 'atomicHelpers/parcelScenePositions'
+import { pickWorldSpawnpoint, positionObservable, receivePositionReport } from 'shared/world/positionThings'
+import { encodeParcelPosition, gridToWorld, worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { ENABLE_EMPTY_SCENES, PREVIEW, rootURLPreviewMode } from 'config'
+import { ENABLE_EMPTY_SCENES, LOS, PREVIEW, rootURLPreviewMode } from 'config'
 import { getResourcesURL } from 'shared/location'
 import { Vector2 } from '@dcl/ecs-math'
 import { trackEvent } from 'shared/analytics'
@@ -79,11 +75,16 @@ function initPositionListener() {
   positionObservable.add((event) => {
     worldToGrid(event.position, currentParcel)
 
-    if (!currentParcel.equals(lastPlayerParcel)) {
+    // if the position is not settled it may mean that we may be teleporting or
+    // loading the world (without an esablished spawn point) and for that reason,
+    // we shouldn't update the currentParcel, which would trigger unwanted teleports
+    const positionSettled = getPositionSettled(store.getState())
+
+    if (!currentParcel.equals(lastPlayerParcel) && positionSettled) {
       queueMicrotask(() => {
         store.dispatch(setParcelPosition(currentParcel))
+        lastPlayerParcel.copyFrom(currentParcel)
       })
-      lastPlayerParcel.copyFrom(currentParcel)
     }
   })
 }
@@ -112,7 +113,8 @@ function* waitForSceneLoader() {
 // We teleport the user to its current position on every change of scene loader
 // to unsettle the position.
 function* unsettlePositionOnSceneLoader() {
-  yield put(teleportToAction({ position: lastPlayerPosition }))
+  const lastPosition: ReadOnlyVector2 = yield select(getParcelPosition)
+  yield put(teleportToAction({ position: gridToWorld(lastPosition.x, lastPosition.y) }))
 }
 
 /*
@@ -284,7 +286,7 @@ function* onWorldPositionChange() {
 
     if (sceneLoader) {
       const position: ReadOnlyVector2 = yield select(getParcelPosition)
-      const loadingRadius: number = yield select(getLoadingRadius)
+      const loadingRadius: number = LOS ? +(LOS || '0') : yield select(getLoadingRadius)
       const report: SceneLoaderPositionReport = {
         loadingRadius,
         position,
