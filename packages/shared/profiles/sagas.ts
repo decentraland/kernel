@@ -149,6 +149,8 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
 
   try {
     const isCurrentUser = yield select(isCurrentUserId, userId)
+    const isGuest = !identity.hasConnectedWeb3
+    const shouldReadProfileFromLocalStorage = isCurrentUser && isGuest
     const shouldFetchViaComms = roomConnection && !isCurrentUser
     const shouldLoadFromCatalyst = true
     const shouldFallbackToRandomProfile = true
@@ -158,6 +160,8 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const profile: Avatar =
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
+      // then for my profile if guest, try localStorage
+      (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
       // lastly, come up with a random profile
@@ -333,6 +337,17 @@ function* handleDeployProfile(deployProfileAction: DeployProfile) {
     })
     defaultLogger.error('Error deploying profile!', e)
     yield put(deployProfileFailure(userId, profile, e))
+  }
+}
+
+function* readProfileFromLocalStorage() {
+  const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
+  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+  const profile = (yield apply(localProfilesRepo, localProfilesRepo.get, [identity.address, network])) as Avatar | null
+  if (profile && profile.userId === identity.address) {
+    return ensureAvatarCompatibilityFormat(profile)
+  } else {
+    return null
   }
 }
 
