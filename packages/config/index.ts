@@ -217,6 +217,11 @@ function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
   return `https://content-assets-as-bundle.decentraland.${tld}`
 }
 
+export function getAvatarTextureAPIBaseUrl(network: ETHEREUM_NETWORK): string {
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  return `https://synapse.decentraland.${tld}/profile-pictures/`
+}
+
 export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
 
