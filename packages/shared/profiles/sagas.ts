@@ -218,6 +218,7 @@ export async function profileServerRequest(userId: string, version?: number): Pr
   try {
     let url = `${bff.services.legacy.lambdasServer}/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
+    url = url + `&no-cache=${Math.random()}`
 
     const response = await fetch(url)
 
