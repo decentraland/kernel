@@ -1946,6 +1946,7 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
 }
 
 /**
+ * TODO: This method should be removed once we implement the correct member resolution in Explorer
  * Checks which members are present in the profile catalog and sends partial profiles for missing users
  * @param members is an array of [member ID, name]
  */
@@ -1959,10 +1960,12 @@ function sendMissingProfiles(members: ChannelMember[], ownId: string) {
   }
 }
 
+// TODO: This method should be removed once we implement the correct member resolution in Explorer
 function getMissingProfiles(missingUsers: ChannelMember[]): NewProfileForRenderer[] {
   return missingUsers.map((missingUser) => buildMissingProfile(missingUser))
 }
 
+// TODO: This method should be removed once we implement the correct member resolution in Explorer
 function buildMissingProfile(user: ChannelMember) {
   const localpart = getUserIdFromMatrix(user.userId)
   return defaultProfile({
@@ -1972,6 +1975,7 @@ function buildMissingProfile(user: ChannelMember) {
   })
 }
 
+// TODO: This method should be removed once we implement the correct member resolution in Explorer
 function buildProfilePictureURL(userId: string): string {
   const synapseUrl = getSynapseUrl(store.getState())
   return `${synapseUrl}/profile-pictures/${userId}`
