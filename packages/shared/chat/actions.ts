@@ -11,5 +11,6 @@ export const sendMessage = (message: ChatMessage) => action(SEND_MESSAGE, messag
 export type SendMessage = ReturnType<typeof sendMessage>
 
 export const SEND_PRIVATE_MESSAGE = '[Request] Send private message'
-export const sendPrivateMessage = (userId: string, message: string) => action(SEND_PRIVATE_MESSAGE, { userId, message })
+export const sendPrivateMessage = (userId: string, message: ChatMessage) =>
+  action(SEND_PRIVATE_MESSAGE, { userId, message })
 export type SendPrivateMessage = ReturnType<typeof sendPrivateMessage>

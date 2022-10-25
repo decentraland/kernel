@@ -319,12 +319,12 @@ function* configureMatrixClient(action: SetMatrixClient) {
         await ensureFriendProfile(senderUserId)
       }
 
-      addNewChatMessage(chatMessage)
-
-      if (message.sender === ownId) {
-        // ignore messages sent by the local user
+      if (message.sender === ownId && !isChannelType) {
+        // ignore messages sent to private chats by the local user
         return
       }
+
+      addNewChatMessage(chatMessage)
 
       if (isChannelType) {
         const muted = profile?.muted ?? []
@@ -389,18 +389,39 @@ function* configureMatrixClient(action: SetMatrixClient) {
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
 
+  client.onChannelMembers((conversation, members) => {
+    if (!areChannelsEnabled()) return
+
+    if (conversation.name && !conversation.name.startsWith('Empty room')) {
+      updateChannelInfo(conversation, client)
+    }
+
+    // we only notify members who are online
+    const memberIds = members.map((member) => member.userId)
+    const onlineMemberIds = getOnlineMembers(memberIds, client)
+
+    const channelMembers: ChannelMember[] = members
+      .filter((member) => onlineMemberIds.includes(member.userId))
+      .map((member) => ({
+        userId: getUserIdFromMatrix(member.userId),
+        name: member.name,
+        isOnline: true
+      }))
+
+    const update: UpdateChannelMembersPayload = { channelId: conversation.id, members: channelMembers }
+    getUnityInstance().UpdateChannelMembers(update)
+  })
+
   client.onChannelMembership((conversation, membership) => {
+    if (!areChannelsEnabled()) return
+
     switch (membership) {
       case 'join':
         if (!conversation.name || conversation.name?.startsWith('Empty room')) {
           break
         }
 
-        let onlineMembers = 0
-        if (conversation.userIds) {
-          const userStatuses = client.getUserStatuses(...conversation.userIds)
-          onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
-        }
+        const onlineMembers = getOnlineMembersCount(client, conversation.userIds)
 
         const channel: ChannelInfoPayload = {
           name: getNormalizedRoomName(conversation.name),
@@ -416,12 +437,13 @@ function* configureMatrixClient(action: SetMatrixClient) {
         getUnityInstance().JoinChannelConfirmation({ channelInfoPayload: [channel] })
         break
       case 'leave':
+        const joinedMembers = client.getChannel(conversation.id)?.userIds?.length ?? 0
         const leavingChannelPayload: ChannelInfoPayload = {
           name: conversation.name ?? '',
           channelId: conversation.id,
           unseenMessages: 0,
           lastMessageTimestamp: undefined,
-          memberCount: 0,
+          memberCount: joinedMembers,
           description: '',
           joined: false,
           muted: false
@@ -438,6 +460,25 @@ function* configureMatrixClient(action: SetMatrixClient) {
         break
     }
   })
+}
+
+function updateChannelInfo(conversation: Conversation, client: SocialAPI) {
+  const onlineMembers = getOnlineMembersCount(client, conversation.userIds)
+  const profile = getCurrentUserProfile(store.getState())
+  const muted = profile?.muted?.includes(conversation.id) ?? false
+
+  const channel = {
+    name: getNormalizedRoomName(conversation.name || ''),
+    channelId: conversation.id,
+    unseenMessages: muted ? 0 : conversation.unreadMessages?.length || 0,
+    lastMessageTimestamp: conversation.lastEventTimestamp || undefined,
+    memberCount: onlineMembers,
+    description: '',
+    joined: true,
+    muted
+  }
+
+  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
 }
 
 // this saga needs to throw in case of failure
@@ -938,6 +979,7 @@ export function* initializeStatusUpdateInterval() {
  *
  * @param socialId a string with the aforementioned pattern
  */
+
 function parseUserId(socialId: string) {
   if (EthAddress.validate(socialId) as any) return socialId
   const result = socialId.match(/@(\w+):.*/)
@@ -965,7 +1007,12 @@ function* handleSendChannelMessage(action: SendChannelMessage) {
   try {
     const conversation: Conversation | undefined = yield apply(client, client.getChannel, [channelId])
     if (conversation) {
-      yield apply(client, client.sendMessageTo, [conversation.id, message])
+      const messageId = yield apply(client, client.sendMessageTo, [conversation.id, message.body])
+
+      if (messageId) {
+        message.messageId = messageId
+      }
+      getUnityInstance().AddMessageToChatWindow(message)
     }
   } catch (e: any) {
     logger.error(e)
@@ -1000,7 +1047,11 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
 
   try {
     const conversation: Conversation = yield apply(client, client.createDirectConversation, [userData.socialId])
-    yield apply(client, client.sendMessageTo, [conversation.id, message])
+    const messageId = yield apply(client, client.sendMessageTo, [conversation.id, message.body])
+    if (messageId) {
+      message.messageId = messageId
+    }
+    getUnityInstance().AddMessageToChatWindow(message)
   } catch (e: any) {
     logger.error(e)
     trackEvent('error', {
@@ -1380,7 +1431,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
     const client: SocialAPI | null = getSocialClient(store.getState())
     if (!client) return
 
-    const channelId = action.payload.channelId
+    const channelId = action.payload.channelId.toLowerCase()
 
     const reachedLimit = checkChannelsLimit()
     if (reachedLimit) {
@@ -1522,6 +1573,9 @@ export function getUnseenMessagesByChannel() {
 
 // Get user's joined channels
 export function getJoinedChannels(request: GetJoinedChannelsPayload) {
+  const client = getSocialClient(store.getState())
+  if (!client) return []
+
   // get user joined channels
   const joinedChannels = getChannels(store.getState())
 
@@ -1534,7 +1588,7 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     channelId: conv.conversation.id,
     unseenMessages: conv.conversation.unreadMessages?.length || 0,
     lastMessageTimestamp: conv.conversation.lastEventTimestamp || undefined,
-    memberCount: conv.conversation.userIds?.length || 1,
+    memberCount: getOnlineMembersCount(client, conv.conversation.userIds),
     description: '',
     joined: true,
     muted: profile?.muted?.includes(conv.conversation.id) ?? false
@@ -1662,16 +1716,18 @@ export async function searchChannels(request: GetChannelsPayload) {
   // search channels
   const { channels, nextBatch } = await client.searchChannel(request.limit, searchTerm, since)
 
-  const channelsToReturn: ChannelInfoPayload[] = channels.map((channel) => ({
-    channelId: channel.id,
-    name: channel.name || '',
-    unseenMessages: 0,
-    lastMessageTimestamp: undefined,
-    memberCount: channel.memberCount,
-    description: channel.description || '',
-    joined: joinedChannelIds.includes(channel.id),
-    muted: profile?.muted?.includes(channel.id) ?? false
-  }))
+  const channelsToReturn: ChannelInfoPayload[] = channels
+    .filter((channel) => channel.name?.includes(searchTerm ?? ''))
+    .map((channel) => ({
+      channelId: channel.id,
+      name: channel.name || '',
+      unseenMessages: 0,
+      lastMessageTimestamp: undefined,
+      memberCount: channel.memberCount,
+      description: channel.description || '',
+      joined: joinedChannelIds.includes(channel.id),
+      muted: profile?.muted?.includes(channel.id) ?? false
+    }))
 
   // sort in descending order by memberCount value
   const channelsSorted = channelsToReturn.sort((a, b) => (a.memberCount > b.memberCount ? -1 : 1))
@@ -1780,11 +1836,7 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
     store.dispatch(unmutePlayers([channelId]))
   }
 
-  let onlineMembers = 0
-  if (channel.userIds) {
-    const userStatuses = client.getUserStatuses(...channel.userIds)
-    onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
-  }
+  const onlineMembers = getOnlineMembersCount(client, channel.userIds)
 
   const channelInfo: ChannelInfoPayload = {
     name: channel.name ?? '',
@@ -1832,11 +1884,8 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
     const muted = profile?.muted?.includes(channelId) ?? false
 
-    let onlineMembers = 0
-    if (channel.userIds) {
-      const userStatuses = client.getUserStatuses(...channel.userIds)
-      onlineMembers += [...userStatuses.values()].filter((status) => status.presence === PresenceType.ONLINE).length
-    }
+    const onlineMembers = getOnlineMembersCount(client, channel.userIds)
+
     channels.push({
       name: getNormalizedRoomName(channel.name || ''),
       channelId: channel.id,
@@ -1883,23 +1932,21 @@ export function getChannelMembers(request: GetChannelMembersPayload) {
   // update catalog with missing users, by using default profiles with name and image url
   sendMissingProfiles(members, ownId)
 
-  const userStatuses = client.getUserStatuses(...members.map(({ userId }) => userId))
+  // we only notify members who are online
+  const memberIds = members.map((member) => member.userId)
+  const onlineMemberIds = getOnlineMembers(memberIds, client)
 
-  for (const member of members) {
-    const userId = getUserIdFromMatrix(member.userId)
-    if (ownId === member.userId || userStatuses.get(member.userId)?.presence === PresenceType.ONLINE) {
-      channelMembersPayload.members.push({
-        userId,
-        name: member.name,
-        isOnline: true
-      })
-    }
-  }
+  const membersPayload = members
+    .filter((member) => onlineMemberIds.includes(member.userId))
+    .map((member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true }))
+
+  channelMembersPayload.members.push(...membersPayload)
 
   getUnityInstance().UpdateChannelMembers(channelMembersPayload)
 }
 
-/*
+/**
+ * TODO: This method should be removed once we implement the correct member resolution in Explorer
  * Checks which members are present in the profile catalog and sends partial profiles for missing users
  * @param members is an array of [member ID, name]
  */
@@ -1913,10 +1960,12 @@ function sendMissingProfiles(members: ChannelMember[], ownId: string) {
   }
 }
 
+// TODO: This method should be removed once we implement the correct member resolution in Explorer
 function getMissingProfiles(missingUsers: ChannelMember[]): NewProfileForRenderer[] {
   return missingUsers.map((missingUser) => buildMissingProfile(missingUser))
 }
 
+// TODO: This method should be removed once we implement the correct member resolution in Explorer
 function buildMissingProfile(user: ChannelMember) {
   const localpart = getUserIdFromMatrix(user.userId)
   return defaultProfile({
@@ -1926,6 +1975,7 @@ function buildMissingProfile(user: ChannelMember) {
   })
 }
 
+// TODO: This method should be removed once we implement the correct member resolution in Explorer
 function buildProfilePictureURL(userId: string): string {
   const synapseUrl = getSynapseUrl(store.getState())
   return `${synapseUrl}/profile-pictures/${userId}`
@@ -1939,11 +1989,28 @@ function isAllowedToCreate() {
   const allowedUsers = getUsersAllowedToCreate(store.getState())
   const ownId = getCurrentUserId(store.getState())
 
-  if (!allowedUsers || !ownId) {
+  if (!allowedUsers || !ownId || allowedUsers.mode !== 0) {
     return false
   }
 
   if (allowedUsers.allowList.includes(ownId)) {
     return true
   }
+}
+
+/**
+ * Filter members online from a given list of user ids.
+ * @return `string[]` with the ids of the members who are online.
+ */
+function getOnlineMembers(userIds: string[], client: SocialAPI): string[] {
+  const userStatuses = client.getUserStatuses(...userIds)
+  const onlineMembers = userIds.filter((id) => userStatuses.get(id)?.presence === PresenceType.ONLINE)
+
+  return onlineMembers
+}
+
+function getOnlineMembersCount(client: SocialAPI, userIds?: string[]): number {
+  if (!userIds) return 0
+
+  return getOnlineMembers(userIds, client).length
 }
