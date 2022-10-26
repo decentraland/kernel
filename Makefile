@@ -13,7 +13,6 @@ SOURCE_SUPPORT_TS_FILES := $(wildcard scripts/*.ts)
 COMPILED_SUPPORT_JS_FILES := $(subst .ts,.js,$(SOURCE_SUPPORT_TS_FILES))
 
 GIF_PROCESSOR := static/gif-processor/worker.js
-INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
 VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
 
 EMPTY_SCENES := public/empty-scenes/common
@@ -31,7 +30,7 @@ empty-parcels:
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
 	cp -R $(EMPTY_SCENES)/contents static/loader/empty-scenes/contents
 
-build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(INTERNAL_SCENES) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
+build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(GIF_PROCESSOR) $(VOICE_CHAT_CODEC_WORKER) empty-parcels
 	echo 'declare module "env" {}' > node_modules/env.d.ts
 	echo 'declare module "dcl" {}' > node_modules/dcl.d.ts
 	cp node_modules/@dcl/scene-runtime/dist/webworker.js node_modules/@dcl/scene-runtime/dist/webworker.js.txt

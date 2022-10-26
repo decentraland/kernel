@@ -29,7 +29,8 @@
     ],
     "types": ["@dcl/posix"],
     "typeRoots": ["./node_modules"],
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "exclude": [
     "node_modules",

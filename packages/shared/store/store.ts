@@ -1,5 +1,5 @@
 import { AnyAction, applyMiddleware, compose, createStore, Middleware, StoreEnhancer } from 'redux'
-import createSagaMiddleware from 'redux-saga'
+const createSagaMiddleware = require('@redux-saga/core').default
 import { createLogger } from 'redux-logger'
 import { reducers } from './rootReducer'
 import { createRootSaga } from './rootSaga'
@@ -11,10 +11,8 @@ import { composeWithDevTools } from 'redux-devtools-extension'
 import { logTrace } from 'unity-interface/trace'
 
 export const buildStore = () => {
-  const sagaMonitor = DEBUG_REDUX ? require('@redux-saga/simple-saga-monitor') : undefined
-
   const sagaMiddleware = createSagaMiddleware({
-    sagaMonitor,
+    sagaMonitor: undefined,
     onError: (error: Error, { sagaStack }: { sagaStack: string }) => {
       defaultLogger.log('SAGA-ERROR: ', error)
       BringDownClientAndReportFatalError(error, ErrorContext.KERNEL_SAGA, { sagaStack })

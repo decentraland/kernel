@@ -1909,8 +1909,6 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 export async function getChannelMembers(request: GetChannelMembersPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
-  const realmAdapter = await ensureRealmAdapterPromise()
-  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
   const channel = client.getChannel(request.channelId)
   if (!channel) return
