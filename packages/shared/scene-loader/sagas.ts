@@ -219,7 +219,7 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
 
       const emptyParcelsBaseUrl = enableEmptyParcels
         ? PREVIEW
-          ? rootURLPreviewMode() + '/'
+          ? rootURLPreviewMode() + '/@/artifacts/'
           : getResourcesURL('.')
         : undefined
 
