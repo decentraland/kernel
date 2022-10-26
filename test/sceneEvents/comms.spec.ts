@@ -20,6 +20,7 @@ import { disconnectRoom, handleNewCommsContext } from 'shared/comms/sagas'
 import { bindHandlersToCommsContext } from 'shared/comms/handlers'
 import { commsEstablished } from 'shared/loading/types'
 import { RoomConnection } from 'shared/comms/interface'
+import { expect } from 'chai'
 
 const about: AboutResponse = {
   comms: { healthy: false, protocol: 'v2' },
@@ -51,6 +52,18 @@ const realmAdapter: IRealmAdapter = {
 }
 
 describe('when the realm change: SET_WORLD_CONTEXT', () => {
+  it('sanity toEnvironmentRealmType', () => {
+    expect(toEnvironmentRealmType(realmAdapter, 'test')).to.deep.eq({
+      protocol: 'v2',
+      // domain explicitly expects the URL with the protocol
+      domain: 'https://realm',
+      layer: 'test',
+      room: 'test',
+      serverName: 'realm',
+      displayName: 'realm'
+    })
+  })
+
   it('should call allScene events with empty string island', () => {
     const action = setRealmAdapter(realmAdapter)
     const island = ''
