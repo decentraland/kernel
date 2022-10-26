@@ -162,7 +162,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const shouldLoadFromCatalyst = true
     const shouldFallbackToRandomProfile = true
 
-    const versionNumber = +(version || '0')
+    const versionNumber = +(version || '1')
 
     const profile: Avatar =
       // first fetch avatar through comms
@@ -170,7 +170,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, 0))) ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, loadingMyOwnProfile ? 0 : versionNumber))) ||
       // last resort, localStorage
       (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
