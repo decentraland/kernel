@@ -1,6 +1,6 @@
 import { action } from 'typesafe-actions'
 
-import { FriendshipAction } from 'shared/types'
+import { ChatMessage, FriendshipAction } from 'shared/types'
 
 import { FriendsState } from './types'
 import { SocialAPI, SocialId } from 'dcl-social-client'
@@ -33,6 +33,6 @@ export const leaveChannel = (channelId: string) => action(LEAVE_CHANNEL, { chann
 export type LeaveChannel = ReturnType<typeof leaveChannel>
 
 export const SEND_CHANNEL_MESSAGE = '[Request] Send channel message'
-export const sendChannelMessage = (channelId: string, message: string) =>
+export const sendChannelMessage = (channelId: string, message: ChatMessage) =>
   action(SEND_CHANNEL_MESSAGE, { channelId, message })
 export type SendChannelMessage = ReturnType<typeof sendChannelMessage>
