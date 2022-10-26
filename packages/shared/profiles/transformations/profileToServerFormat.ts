@@ -5,6 +5,7 @@ import { validateAvatar } from '../schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import defaultLogger from 'shared/logger'
 import { AvatarForUserData } from 'shared/apis/host/Players'
+import { backupProfile } from '../generateRandomUserProfile'
 
 type OldAvatar = Omit<Avatar, 'avatar'> & {
   avatar: AvatarForUserData
@@ -13,24 +14,26 @@ type OldAvatar = Omit<Avatar, 'avatar'> & {
 export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAvatar>): Avatar {
   const avatarInfo: AvatarInfo = {} as any
 
+  const avatar: AvatarForUserData | AvatarInfo = profile.avatar || backupProfile(profile.userId).avatar
+
   // These mappings from legacy id are here just in case they still have the legacy id in local storage
   avatarInfo.bodyShape =
-    mapLegacyIdToUrn(profile.avatar?.bodyShape) || 'urn:decentraland:off-chain:base-avatars:BaseFemale'
-  avatarInfo.wearables = (profile.avatar?.wearables || []).map(mapLegacyIdToUrn).filter(Boolean) as string[]
-  avatarInfo.emotes = profile.avatar?.emotes
-  avatarInfo.snapshots = profile.avatar?.snapshots
+    mapLegacyIdToUrn(avatar?.bodyShape) || 'urn:decentraland:off-chain:base-avatars:BaseFemale'
+  avatarInfo.wearables = (avatar?.wearables || []).map(mapLegacyIdToUrn).filter(Boolean) as string[]
+  avatarInfo.emotes = avatar?.emotes
+  avatarInfo.snapshots = avatar?.snapshots
 
-  if (profile.avatar && 'eyeColor' in profile.avatar) {
-    const eyes = stripAlpha(analizeColorPart(profile.avatar, 'eyeColor', 'eyes'))
-    const hair = stripAlpha(analizeColorPart(profile.avatar, 'hairColor', 'hair'))
-    const skin = stripAlpha(analizeColorPart(profile.avatar, 'skinColor', 'skin'))
+  if (avatar && 'eyeColor' in avatar) {
+    const eyes = stripAlpha(analizeColorPart(avatar, 'eyeColor', 'eyes'))
+    const hair = stripAlpha(analizeColorPart(avatar, 'hairColor', 'hair'))
+    const skin = stripAlpha(analizeColorPart(avatar, 'skinColor', 'skin'))
     avatarInfo.eyes = { color: eyes }
     avatarInfo.hair = { color: hair }
     avatarInfo.skin = { color: skin }
   } else {
-    avatarInfo.eyes = profile.avatar.eyes
-    avatarInfo.hair = profile.avatar.hair
-    avatarInfo.skin = profile.avatar.skin
+    avatarInfo.eyes = avatar.eyes
+    avatarInfo.hair = avatar.hair
+    avatarInfo.skin = avatar.skin
   }
 
   const invalidWearables =
