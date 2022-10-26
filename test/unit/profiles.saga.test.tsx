@@ -4,7 +4,7 @@ import * as matchers from 'redux-saga-test-plan/matchers'
 import { profileRequest, profileSuccess } from 'shared/profiles/actions'
 import { handleFetchProfile, profileServerRequest } from 'shared/profiles/sagas'
 import { getCommsRoom } from 'shared/comms/selectors'
-import { getCurrentUserId, getCurrentIdentity, isCurrentUserId } from 'shared/session/selectors'
+import { getCurrentUserId, getCurrentIdentity, isCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { profileSaga } from '../../packages/shared/profiles/sagas'
 import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
@@ -111,6 +111,7 @@ describe('fetchProfile behavior', () => {
 
     return expectSaga(handleFetchProfile, profileRequest(userId))
       .provide([
+        [select(getIsGuestLogin), false],
         [select(getCurrentIdentity), {}], // the content of the identity is not used
         [select(isCurrentUserId, userId), false],
         [select(getCommsRoom), undefined],
