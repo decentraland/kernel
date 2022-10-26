@@ -30,7 +30,13 @@ import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
-import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, isCurrentUserId } from 'shared/session/selectors'
+import {
+  getCurrentUserId,
+  getCurrentIdentity,
+  getCurrentNetwork,
+  isCurrentUserId,
+  getIsGuestLogin
+} from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
@@ -148,12 +154,15 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
 
   try {
-    const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
-    const shouldFetchViaComms = roomConnection && !shouldReadProfileFromLocalStorage
+    const isGuest = yield select(getIsGuestLogin)
+    const loadingMyOwnProfile = yield select(isCurrentUserId, userId)
+    const shouldReadProfileFromLocalStorage = isGuest && loadingMyOwnProfile
+    const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
+    const shouldFetchViaComms = roomConnection && !loadingMyOwnProfile
     const shouldLoadFromCatalyst = true
     const shouldFallbackToRandomProfile = true
 
-    const versionNumber = +(version || '0')
+    const versionNumber = +(version || '1')
 
     const profile: Avatar =
       // first fetch avatar through comms
@@ -161,7 +170,9 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
-      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
+      (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, loadingMyOwnProfile ? 0 : versionNumber))) ||
+      // last resort, localStorage
+      (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
       (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
 
@@ -220,6 +231,7 @@ export async function profileServerRequest(userId: string, version?: number): Pr
   try {
     let url = `${bff.services.legacy.lambdasServer}/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
+    else url = url + `&no-cache=${Math.random()}`
 
     const response = await fetch(url)
 
@@ -342,7 +354,10 @@ function* readProfileFromLocalStorage() {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const profile = (yield apply(localProfilesRepo, localProfilesRepo.get, [identity.address, network])) as Avatar | null
   if (profile && profile.userId === identity.address) {
-    return ensureAvatarCompatibilityFormat(profile)
+    try {
+      return ensureAvatarCompatibilityFormat(profile)
+    } catch {}
+    return null
   } else {
     return null
   }

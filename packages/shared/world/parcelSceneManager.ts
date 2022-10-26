@@ -1,5 +1,5 @@
 import { scenesChanged } from '../loading/actions'
-import { LoadableParcelScene, LoadableScene } from '../types'
+import { LoadableScene } from '../types'
 import { SceneWorker } from './SceneWorker'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from 'mz-observable'
@@ -7,11 +7,6 @@ import { ParcelSceneLoadingState } from './types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { Transport } from '@dcl/rpc'
 import { defaultParcelPermissions } from 'shared/apis/host/Permissions'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { parseParcelPosition } from 'atomicHelpers/parcelScenePositions'
-import { getAssetBundlesBaseUrl, ETHEREUM_NETWORK } from 'config'
-import { normalizeContentMappings, getSceneNameFromJsonData } from 'shared/selectors'
-import { ContentMapping } from '@dcl/schemas'
 
 declare const globalThis: any
 
@@ -172,30 +167,6 @@ async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableSce
     worker.rpcContext.sceneData.useFPSThrottling = true
 
     setNewParcelScene(worker)
-
-    // ensure that the scenes will load when workers are created.
-    getUnityInstance().LoadParcelScenes([sceneWorkerToLoadableParcelScene(worker)])
-  }
-}
-
-/**
- * This is the format of scenes that needs to be sent to Unity to create its counterpart
- * of a SceneWorker
- */
-function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelScene {
-  const entity = worker.loadableScene.entity
-  const mappings: ContentMapping[] = normalizeContentMappings(entity.content)
-
-  return {
-    id: worker.loadableScene.id,
-    sceneNumber: worker.rpcContext.sceneData.sceneNumber,
-    basePosition: parseParcelPosition(entity.metadata?.scene?.base || '0,0'),
-    name: getSceneNameFromJsonData(entity.metadata),
-    parcels: entity.metadata?.scene?.parcels?.map(parseParcelPosition) || [],
-    baseUrl: worker.loadableScene.baseUrl,
-    baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
-    contents: mappings,
-    loadableScene: worker.loadableScene
   }
 }
 

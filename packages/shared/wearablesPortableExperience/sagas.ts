@@ -30,7 +30,7 @@ function* handleProfileSuccess(action: ProfileSuccessAction): any {
     return
   }
 
-  const newProfileWearables = action.payload.profile.avatar.wearables
+  const newProfileWearables = action.payload.profile.avatar?.wearables || []
   const currentDesiredPortableExperiences: Record<string, LoadableScene | null> = yield select(
     getDesiredWearablePortableExpriences
   )

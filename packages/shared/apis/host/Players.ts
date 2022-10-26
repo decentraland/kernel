@@ -27,8 +27,8 @@ export type AvatarForUserData = {
 export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
   return {
     ...avatar,
-    bodyShape: avatar.bodyShape,
-    wearables: avatar.wearables,
+    bodyShape: avatar?.bodyShape,
+    wearables: avatar?.wearables || [],
     snapshots: {
       ...avatar.snapshots,
       face: avatar.snapshots.face256,

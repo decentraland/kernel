@@ -18,6 +18,8 @@ export type LoadingState = {
   pendingScenes: number
   message: string
   renderingActivated: boolean
+  // true if the rendering was activated at least once
+  renderingWasActivated: boolean
   isForeground: boolean
   initialLoad: boolean
   error: string | null
@@ -40,6 +42,7 @@ export function loadingReducer(state?: LoadingState, action?: AnyAction): Loadin
       pendingScenes: 0,
       message: '',
       renderingActivated: false,
+      renderingWasActivated: false,
       isForeground: true,
       initialLoad: true,
       error: null,
@@ -57,7 +60,7 @@ export function loadingReducer(state?: LoadingState, action?: AnyAction): Loadin
     }
   }
   if (action.type === RENDERING_ACTIVATED) {
-    return { ...state, renderingActivated: true }
+    return { ...state, renderingActivated: true, renderingWasActivated: true }
   }
   if (action.type === RENDERING_DEACTIVATED) {
     return { ...state, renderingActivated: false }

@@ -18,6 +18,7 @@ import {
 } from 'shared/realm/resolver'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 import { OFFLINE_REALM } from 'shared/realm/types'
+import { getDisabledCatalystConfig } from 'shared/meta/selectors'
 
 async function fetchCatalystNodes(endpoint: string | undefined): Promise<CatalystNode[]> {
   if (endpoint) {
@@ -55,46 +56,42 @@ export async function fetchCatalystStatus(
 
   const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
 
-  if (aboutResponse.httpStatus !== 404) {
-    const result = aboutResponse.result
-    if (
-      aboutResponse.status === ServerConnectionStatus.OK &&
-      result &&
-      result.comms &&
-      result.configurations &&
-      result.bff
-    ) {
-      const { comms, configurations, bff } = result
+  const result = aboutResponse.result
+  if (
+    aboutResponse.status === ServerConnectionStatus.OK &&
+    result &&
+    result.comms &&
+    result.configurations &&
+    result.bff
+  ) {
+    const { comms, configurations, bff } = result
 
-      // TODO(hugo): this is kind of hacky, the original representation is much better,
-      // but I don't want to change the whole pick-realm algorithm now
-      const usersParcels: Parcel[] = []
+    // TODO(hugo): this is kind of hacky, the original representation is much better,
+    // but I don't want to change the whole pick-realm algorithm now
+    const usersParcels: Parcel[] = []
 
-      if (parcelsResponse.result && parcelsResponse.result.parcels) {
-        for (const {
-          peersCount,
-          parcel: { x, y }
-        } of parcelsResponse.result.parcels) {
-          const parcel: Parcel = [x, y]
-          for (let i = 0; i < peersCount; i++) {
-            usersParcels.push(parcel)
-          }
+    if (parcelsResponse.result && parcelsResponse.result.parcels) {
+      for (const {
+        peersCount,
+        parcel: { x, y }
+      } of parcelsResponse.result.parcels) {
+        const parcel: Parcel = [x, y]
+        for (let i = 0; i < peersCount; i++) {
+          usersParcels.push(parcel)
         }
-      }
-
-      return {
-        protocol: comms.protocol,
-        catalystName: configurations.realmName,
-        domain: domain,
-        status: aboutResponse.status,
-        elapsed: aboutResponse.elapsed!,
-        usersCount: bff.userCount || comms.usersCount || 0,
-        maxUsers: 2000,
-        usersParcels
       }
     }
 
-    return undefined
+    return {
+      protocol: comms.protocol,
+      catalystName: configurations.realmName,
+      domain: domain,
+      status: aboutResponse.status,
+      elapsed: aboutResponse.elapsed!,
+      usersCount: bff.userCount || comms.usersCount || 0,
+      maxUsers: 2000,
+      usersParcels
+    }
   }
 
   return undefined
@@ -198,10 +195,16 @@ export async function resolveRealmConfigFromString(realmString: string) {
 }
 
 export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
+  const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
   const realmConfig = await resolveRealmConfigFromString(realmString)
 
   if (!realmConfig) {
     throw new Error(`The realm ${realmString} isn't available right now.`)
+  }
+  const catalystURL = new URL(realmConfig.baseUrl)
+
+  if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
+    throw new Error(`The realm is denylisted.`)
   }
 
   const currentRealmAdapter = getRealmAdapter(store.getState())

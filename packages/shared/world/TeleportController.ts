@@ -64,9 +64,16 @@ export class TeleportController {
 
   public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
-
     if (isInsideWorldLimits(x, y)) {
-      store.dispatch(trackTeleportTriggered(tpMessage || `Teleporting to ${x}, ${y}`))
+      store.dispatch(trackTeleportTriggered(tpMessage))
+      /// This doesn't work when the logic of activate/deactivate rendering is so tightly coupled with the loading
+      /// screen. The code needs rework
+      // const data = {
+      //   xCoord: x,
+      //   yCoord: y,
+      //   message: teleportMessage
+      // }
+      // getUnityInstance().FadeInLoadingHUD(data)
       store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
 
       return { message: tpMessage, success: true }
@@ -74,6 +81,10 @@ export class TeleportController {
       const errorMessage = `Coordinates are outside of the boundaries. Valid ranges are: ${descriptiveValidWorldRanges}.`
       return { message: errorMessage, success: false }
     }
+  }
+
+  public static LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
+    store.dispatch(teleportToAction({ position: gridToWorld(data.x, data.y) }))
   }
 }
 

@@ -12,6 +12,10 @@ CWD = $(shell pwd)
 SOURCE_SUPPORT_TS_FILES := $(wildcard scripts/*.ts)
 COMPILED_SUPPORT_JS_FILES := $(subst .ts,.js,$(SOURCE_SUPPORT_TS_FILES))
 
+GIF_PROCESSOR := static/gif-processor/worker.js
+INTERNAL_SCENES := static/systems/decentraland-ui.scene.js
+VOICE_CHAT_CODEC_WORKER := static/voice-chat-codec/worker.js static/voice-chat-codec/audioWorkletProcessors.js
+
 EMPTY_SCENES := public/empty-scenes/common
 
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json

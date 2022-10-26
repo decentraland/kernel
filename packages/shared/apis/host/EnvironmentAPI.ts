@@ -20,7 +20,7 @@ import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import { IRealmAdapter } from 'shared/realm/types'
-import { realmToConnectionString } from 'shared/realm/resolver'
+import { realmToConnectionString, urlWithProtocol } from 'shared/realm/resolver'
 
 export function registerEnvironmentApiServiceServerImplementation(
   port: RpcServerPort<PortContextService<'sceneData'>>
@@ -98,7 +98,8 @@ export function toEnvironmentRealmType(realm: IRealmAdapter, island: string | un
   const hostname = new URL(realm.baseUrl).hostname
   return {
     protocol: realm.about.comms?.protocol || 'v3',
-    domain: hostname,
+    // domain explicitly expects the URL with the protocol
+    domain: urlWithProtocol(hostname),
     layer: island ?? '',
     room: island ?? '',
     serverName,

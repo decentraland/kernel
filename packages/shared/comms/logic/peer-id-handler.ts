@@ -26,7 +26,6 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
 
   function disconnectPeer(id: string) {
     const peer = getPeer(id)
-    console.log('Disconnecting peer', id, peer)
     if (peer.address) {
       options.events.emit('PEER_DISCONNECTED', { address: peer.address })
     }
@@ -54,7 +53,6 @@ export function peerIdHandler(options: { events: Emitter<CommsEvents> }) {
 
       if (!peer.address) {
         peer.address = address
-        console.log('Recognized peer', id, peer)
         if (peer.position) {
           options.events.emit('position', { address, data: peer.position })
         }

@@ -116,6 +116,7 @@ export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
 export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
 export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
 export const DEBUG_PREFIX = ensureSingleString(qs.get('DEBUG_PREFIX'))
+export const DEBUG_DISABLE_LOADING = qs.has('DEBUG_DISABLE_LOADING')
 
 export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
@@ -213,6 +214,11 @@ export function getAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
 function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
   return `https://content-assets-as-bundle.decentraland.${tld}`
+}
+
+export function getAvatarTextureAPIBaseUrl(network: ETHEREUM_NETWORK): string {
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  return `https://synapse.decentraland.${tld}/profile-pictures/`
 }
 
 export function getServerConfigurations(network: ETHEREUM_NETWORK) {
