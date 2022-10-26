@@ -23,7 +23,7 @@ import {
   ProfileSuccessAction,
   profileFailure
 } from './actions'
-import { getProfileFromStore } from './selectors'
+import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
 import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -148,10 +148,8 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
 
   try {
-    const isCurrentUser = yield select(isCurrentUserId, userId)
-    const isGuest = !identity.hasConnectedWeb3
-    const shouldReadProfileFromLocalStorage = isCurrentUser && isGuest
-    const shouldFetchViaComms = roomConnection && !isCurrentUser
+    const shouldReadProfileFromLocalStorage = yield select(isCurrentUserId, userId)
+    const shouldFetchViaComms = roomConnection && !shouldReadProfileFromLocalStorage
     const shouldLoadFromCatalyst = true
     const shouldFallbackToRandomProfile = true
 
@@ -160,7 +158,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const profile: Avatar =
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
-      // then for my profile if guest, try localStorage
+      // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // and then via catalyst
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, version))) ||
@@ -170,7 +168,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
     avatar.userId = userId
 
-    if (isCurrentUser) {
+    if (shouldReadProfileFromLocalStorage) {
       // for local user, hasConnectedWeb3 == identity.hasConnectedWeb3
       const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
       avatar.hasConnectedWeb3 = identity?.hasConnectedWeb3 || avatar.hasConnectedWeb3
@@ -222,7 +220,6 @@ export async function profileServerRequest(userId: string, version?: number): Pr
   try {
     let url = `${bff.services.legacy.lambdasServer}/profiles?id=${userId}`
     if (version) url = url + `&version=${version}`
-    url = url + `&no-cache=${Math.random()}`
 
     const response = await fetch(url)
 
@@ -265,8 +262,8 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
   const userId: string = yield select(getCurrentUserId)
 
   try {
-    // get the avatar always from remote
-    const savedProfile: Avatar | null = yield call(getRemoteProfile, userId)
+    // get the avatar, no matter if it is in a loading or dirty state
+    const savedProfile: Avatar | null = yield select(getCurrentUserProfileDirty)
     const currentVersion: number = Math.max(savedProfile?.version || 0, 0)
 
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)

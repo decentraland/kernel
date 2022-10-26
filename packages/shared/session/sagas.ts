@@ -115,7 +115,7 @@ function* authenticate(action: AuthenticateAction) {
 
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
 
-  // set the Ethereum network to start loading profiles
+  // set the etherum network to start loading profiles
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
   yield put(selectNetwork(net))
   registerProviderNetChanges()
