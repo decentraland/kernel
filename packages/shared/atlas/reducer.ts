@@ -24,7 +24,7 @@ export function atlasReducer(state?: AtlasState, action?: AnyAction) {
   return state
 }
 
-function reduceInitializePoiTiles(state: AtlasState, action: InitializePoiTiles) {
+function reduceInitializePoiTiles(state: AtlasState, action: InitializePoiTiles): AtlasState {
   return { ...state, hasPois: true, pois: action.payload.tiles }
 }
 

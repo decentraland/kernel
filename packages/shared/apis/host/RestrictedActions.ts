@@ -17,9 +17,9 @@ import {
   RestrictedActionsServiceDefinition,
   TriggerEmoteRequest,
   TriggerEmoteResponse
-} from 'shared/protocol/decentraland/kernel/apis/restricted_actions.gen'
+} from '@dcl/protocol/out-ts/decentraland/kernel/apis/restricted_actions.gen'
 import { assertHasPermission } from './Permissions'
-import { PermissionItem } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
+import { PermissionItem } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
 
 export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePlayerToResponse {
   //   checks permissions

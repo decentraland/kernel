@@ -1,51 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
-import type { QueryType } from '@dcl/legacy-ecs'
-import type { WearableId } from 'shared/catalogs/types'
-import { Entity, Scene, Snapshots } from '@dcl/schemas'
+import { Entity, ContentMapping } from '@dcl/schemas'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
-
-export type MappingsResponse = {
-  parcel_id: string
-  root_cid: string
-  contents: Array<ContentMapping>
-}
-
-export type ParcelInfoResponse = {
-  scene_cid: string
-  root_cid: string
-  content: MappingsResponse
-}
-
-export type ContentMapping = { file: string; hash: string }
 
 export interface MessageDict {
   [key: string]: string
-}
-
-/** THIS TYPE IS APPEND ONLY BECAUSE IT IS USED FOR THE SDK APIs */
-export type UserData = {
-  displayName: string
-  publicKey: string | null
-  hasConnectedWeb3: boolean
-  userId: string
-  version: number
-  avatar: AvatarForUserData
-}
-
-export type ColorString = string
-
-export type AvatarForUserData = {
-  bodyShape: WearableId
-  skinColor: ColorString
-  hairColor: ColorString
-  eyeColor: ColorString
-  wearables: WearableId[]
-  emotes?: {
-    slot: number
-    urn: string
-  }[]
-  snapshots: Snapshots
 }
 
 export type MessageEntry = {
@@ -249,26 +208,6 @@ export type LoadableScene = {
   readonly parentCid?: string
 }
 
-export interface ILand {
-  /**
-   * sceneId: Now it is either an internal identifier or the rootCID.
-   * In the future will change to the sceneCID
-   */
-  sceneId: string
-  sceneJsonData: Scene
-  baseUrl: string
-  baseUrlBundles: string
-  mappingsResponse: MappingsResponse
-}
-
-export interface IPortableExperience {
-  cid: string
-  baseUrl: string
-  baseUrlBundles: string
-  sceneJsonData: Scene
-  mappingsResponse: MappingsResponse
-}
-
 export type SceneSpawnPoint = {
   name?: string
   position: {
@@ -393,6 +332,8 @@ export type Ray = {
   direction: Vector3Component
   distance: number
 }
+
+export type QueryType = 'HitFirst' | 'HitAll' | 'HitFirstAvatar' | 'HitAllAvatars'
 
 export type RayQuery = {
   queryId: string
@@ -737,6 +678,7 @@ export type AvatarRendererBasePayload = {
 export type AvatarRendererPositionMessage = {
   type: AvatarRendererMessageType.SCENE_CHANGED
   sceneId?: string
+  sceneNumber?: number
 } & AvatarRendererBasePayload
 
 export type AvatarRendererRemovedMessage = {

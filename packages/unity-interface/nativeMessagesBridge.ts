@@ -12,9 +12,9 @@ import {
   ComponentCreatedPayload,
   AttachEntityComponentPayload,
   UpdateEntityComponentPayload,
-  EntityActionType
+  EntityActionType,
+  QueryType
 } from 'shared/types'
-import type { QueryType } from '@dcl/legacy-ecs'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { incrementMessageFromKernelToRendererNative } from 'shared/session/getPerformanceInfo'
 

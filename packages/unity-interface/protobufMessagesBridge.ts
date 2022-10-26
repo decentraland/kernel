@@ -12,7 +12,7 @@ import {
   PBOpenExternalUrl,
   PBOpenNFTDialog,
   PBSendSceneMessage
-} from 'shared/protocol/decentraland/renderer/engine_interface.gen'
+} from '@dcl/protocol/out-ts/decentraland/renderer/engine_interface.gen'
 import {
   CreateEntityPayload,
   RemoveEntityPayload,
@@ -46,43 +46,49 @@ export class ProtobufMessagesBridge {
 
     switch (method) {
       case 'CreateEntity':
-        message.createEntity = this.encodeCreateEntity(payload)
+        message.payload = { $case: 'createEntity', createEntity: this.encodeCreateEntity(payload) }
         break
       case 'RemoveEntity':
-        message.removeEntity = this.encodeRemoveEntity(payload)
+        message.payload = { $case: 'removeEntity', removeEntity: this.encodeRemoveEntity(payload) }
         break
       case 'UpdateEntityComponent':
-        message.updateEntityComponent = this.encodeUpdateEntityComponent(payload)
+        message.payload = {
+          $case: 'updateEntityComponent',
+          updateEntityComponent: this.encodeUpdateEntityComponent(payload)
+        }
         break
       case 'AttachEntityComponent':
-        message.attachEntityComponent = this.encodeAttachEntityComponent(payload)
+        message.payload = {
+          $case: 'attachEntityComponent',
+          attachEntityComponent: this.encodeAttachEntityComponent(payload)
+        }
         break
       case 'ComponentRemoved':
-        message.componentRemoved = this.encodeComponentRemoved(payload)
+        message.payload = { $case: 'componentRemoved', componentRemoved: this.encodeComponentRemoved(payload) }
         break
       case 'SetEntityParent':
-        message.setEntityParent = this.encodeSetEntityParent(payload)
+        message.payload = { $case: 'setEntityParent', setEntityParent: this.encodeSetEntityParent(payload) }
         break
       case 'Query':
-        message.query = this.encodeQuery(payload)
+        message.payload = { $case: 'query', query: this.encodeQuery(payload) }
         break
       case 'ComponentCreated':
-        message.componentCreated = this.encodeComponentCreated(payload)
+        message.payload = { $case: 'componentCreated', componentCreated: this.encodeComponentCreated(payload) }
         break
       case 'ComponentDisposed':
-        message.componentDisposed = this.encodeComponentDisposed(payload)
+        message.payload = { $case: 'componentDisposed', componentDisposed: this.encodeComponentDisposed(payload) }
         break
       case 'ComponentUpdated':
-        message.componentUpdated = this.encodeComponentUpdated(payload)
+        message.payload = { $case: 'componentUpdated', componentUpdated: this.encodeComponentUpdated(payload) }
         break
       case 'InitMessagesFinished':
-        message.sceneStarted = {}
+        message.payload = { $case: 'sceneStarted', sceneStarted: {} }
         break
       case 'OpenExternalUrl':
-        message.openExternalUrl = this.encodeOpenExternalUrl(payload)
+        message.payload = { $case: 'openExternalUrl', openExternalUrl: this.encodeOpenExternalUrl(payload) }
         break
       case 'OpenNFTDialog':
-        message.openNFTDialog = this.encodeOpenNFTDialog(payload)
+        message.payload = { $case: 'openNFTDialog', openNFTDialog: this.encodeOpenNFTDialog(payload) }
         break
     }
 

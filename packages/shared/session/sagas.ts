@@ -34,7 +34,7 @@ import {
 } from './actions'
 import { localProfilesRepo } from '../profiles/sagas'
 import { getCurrentIdentity, getIsGuestLogin, isLoginCompleted } from './selectors'
-import { waitForRealmInitialized } from '../dao/sagas'
+import { waitForRoomConnection } from '../dao/sagas'
 import { profileRequest, PROFILE_SUCCESS, saveProfileDelta, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
 import { DecentralandIdentity, LoginState } from '@dcl/kernel-interface'
 import { RequestManager } from 'eth-connect'
@@ -44,7 +44,7 @@ import { store } from 'shared/store/isolatedStore'
 import { globalObservable } from 'shared/observables'
 import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
-import { setWorldContext } from 'shared/comms/actions'
+import { setRoomConnection } from 'shared/comms/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar } from '@dcl/schemas'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
@@ -115,7 +115,7 @@ function* authenticate(action: AuthenticateAction) {
 
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
 
-  // set the etherum network to start loading profiles
+  // set the Ethereum network to start loading profiles
   const net: ETHEREUM_NETWORK = yield call(getAppNetwork)
   yield put(selectNetwork(net))
   registerProviderNetChanges()
@@ -123,7 +123,7 @@ function* authenticate(action: AuthenticateAction) {
   // 1. authenticate our user
   yield put(userAuthentified(identity, net, isGuest))
   // 2. wait for comms to connect, it only requires the Identity authentication
-  yield call(waitForRealmInitialized)
+  yield call(waitForRoomConnection)
   // 3. then ask for our profile
   yield put(profileRequest(identity.address))
   // 4. wait for the response of the profile
@@ -282,7 +282,7 @@ function* logout() {
     globalObservable.emit('logout', { address: identity.address, network })
   }
 
-  yield put(setWorldContext(undefined))
+  yield put(setRoomConnection(undefined))
 
   if (identity?.address) {
     yield call(removeStoredSession, identity.address)

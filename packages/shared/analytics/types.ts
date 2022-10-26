@@ -37,7 +37,6 @@ export type TrackEvents = PositionTrackEvents & {
   ['scene_loading_failed']: {
     sceneId: string
     contentServer: string
-    catalystServer: string
     contentServerBundles: string
     rootUrl: string
   }
@@ -80,4 +79,5 @@ export type TrackEvents = PositionTrackEvents & {
   ['Remote avatar for profile is invalid']: { avatar: Avatar }
 
   ['pickedRealm']: { algorithm: string; domain: string }
+  ['errorInSceneWorker']: { message: string; scene: string; pointers: string[] }
 }

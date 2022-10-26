@@ -1,5 +1,4 @@
 import { Observable } from 'mz-observable'
-import { store } from 'shared/store/isolatedStore'
 
 let hidden: 'hidden' | 'msHidden' | 'webkitHidden' = 'hidden'
 let visibilityChange: 'visibilitychange' | 'msvisibilitychange' | 'webkitvisibilitychange' = 'visibilitychange'
@@ -16,7 +15,6 @@ if (typeof (document as any).hidden !== 'undefined') {
   visibilityChange = 'webkitvisibilitychange'
 }
 
-export const renderStateObservable = new Observable<void>()
 export const foregroundChangeObservable = new Observable<void>()
 
 function handleVisibilityChange() {
@@ -27,28 +25,6 @@ if (hidden && visibilityChange) {
   document.addEventListener(visibilityChange, handleVisibilityChange, false)
 }
 
-export function isRendererEnabled(): boolean {
-  return store.getState().loading.renderingActivated
-}
-
 export function isForeground(): boolean {
   return !(document as any)[hidden]
-}
-
-export async function ensureRendererEnabled() {
-  if (isRendererEnabled()) {
-    return
-  }
-
-  return new Promise<void>((resolve) => onNextRendererEnabled(resolve))
-}
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-function onNextRendererEnabled(callback: Function) {
-  const observer = renderStateObservable.add(() => {
-    if (isRendererEnabled()) {
-      renderStateObservable.remove(observer)
-      callback()
-    }
-  })
 }

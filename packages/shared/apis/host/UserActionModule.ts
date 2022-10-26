@@ -3,17 +3,14 @@ import {
   getSceneNameFromJsonData,
   getThumbnailUrlFromJsonDataAndContent
 } from 'shared/selectors'
-import { getFetchContentServer } from 'shared/dao/selectors'
-import { fetchScenesByLocation } from 'decentraland-loader/lifecycle/utils/fetchSceneIds'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { store } from 'shared/store/isolatedStore'
-
-import { UserActionModuleServiceDefinition } from 'shared/protocol/decentraland/kernel/apis/user_action_module.gen'
+import { UserActionModuleServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/user_action_module.gen'
 import { PortContext } from './context'
 import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { Scene } from '@dcl/schemas'
 import { postProcessSceneName } from 'shared/atlas/selectors'
+import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 
 export function registerUserActionModuleServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, UserActionModuleServiceDefinition, async () => ({
@@ -45,7 +42,7 @@ export function registerUserActionModuleServiceServerImplementation(port: RpcSer
           getThumbnailUrlFromJsonDataAndContent(
             mapSceneData.entity.metadata,
             mapSceneData.entity.content,
-            getFetchContentServer(store.getState())
+            mapSceneData.baseUrl
           ) || sceneData.previewImageUrl
       } else {
         debugger

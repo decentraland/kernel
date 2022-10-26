@@ -1,7 +1,7 @@
 import { ILogger } from './../../logger'
 import { EntityAction, LoadableScene } from './../../types'
-import { PermissionItem } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
-import { EventData } from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
+import { PermissionItem } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
+import { EventData } from '@dcl/protocol/out-ts/decentraland/kernel/apis/engine_api.gen'
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 

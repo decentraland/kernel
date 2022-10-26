@@ -1,16 +1,17 @@
 import { getWorld, isInsideWorldLimits } from '@dcl/schemas'
 
-import { lastPlayerPosition, teleportObservable } from 'shared/world/positionThings'
 import { countParcelsCloseTo, ParcelArray } from 'shared/comms/interface/utils'
 import defaultLogger from 'shared/logger'
 
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
+import { gridToWorld } from 'atomicHelpers/parcelScenePositions'
 
 import { store } from 'shared/store/isolatedStore'
-import { getCommsContext } from 'shared/comms/selectors'
+import { getRealmAdapter } from 'shared/realm/selectors'
 import { Parcel } from 'shared/dao/types'
-import { urlWithProtocol } from 'shared/comms/v3/resolver'
-import { getUnityInstance } from '../../unity-interface/IUnityInterface'
+import { urlWithProtocol } from 'shared/realm/resolver'
+import { trackTeleportTriggered } from 'shared/loading/types'
+import { teleportToAction } from 'shared/scene-loader/actions'
+import { getParcelPosition } from 'shared/scene-loader/selectors'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -22,7 +23,7 @@ export class TeleportController {
     try {
       let usersParcels = await fetchLayerUsersParcels()
 
-      const currentParcel = worldToGrid(lastPlayerPosition)
+      const currentParcel = getParcelPosition(store.getState())
 
       usersParcels = usersParcels.filter(
         (it) => isInsideWorldLimits(it[0], it[1]) && currentParcel.x !== it[0] && currentParcel.y !== it[1]
@@ -64,12 +65,16 @@ export class TeleportController {
   public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
     if (isInsideWorldLimits(x, y)) {
-      const data = {
-        xCoord: x,
-        yCoord: y,
-        message: teleportMessage
-      }
-      getUnityInstance().FadeInLoadingHUD(data)
+      store.dispatch(trackTeleportTriggered(tpMessage))
+      /// This doesn't work when the logic of activate/deactivate rendering is so tightly coupled with the loading
+      /// screen. The code needs rework
+      // const data = {
+      //   xCoord: x,
+      //   yCoord: y,
+      //   message: teleportMessage
+      // }
+      // getUnityInstance().FadeInLoadingHUD(data)
+      store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
 
       return { message: tpMessage, success: true }
     } else {
@@ -79,19 +84,16 @@ export class TeleportController {
   }
 
   public static LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
-    teleportObservable.notifyObservers({
-      x: data.x,
-      y: data.y
-    })
+    store.dispatch(teleportToAction({ position: gridToWorld(data.x, data.y) }))
   }
 }
 
 async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
-  const context = getCommsContext(store.getState())
+  const realmAdapter = getRealmAdapter(store.getState())
 
   try {
-    if (context) {
-      const parcelsResponse = await fetch(`${urlWithProtocol(context.realm.hostname)}/stats/parcels`)
+    if (realmAdapter) {
+      const parcelsResponse = await fetch(`${urlWithProtocol(realmAdapter.baseUrl)}/stats/parcels`)
 
       if (parcelsResponse.ok) {
         const parcelsBody = await parcelsResponse.json()

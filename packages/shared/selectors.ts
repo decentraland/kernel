@@ -1,5 +1,5 @@
-import { Scene } from '@dcl/schemas'
-import { ContentMapping, SceneFeatureToggle } from './types'
+import { ContentMapping, Scene } from '@dcl/schemas'
+import { SceneFeatureToggle } from './types'
 
 export function normalizeContentMappings(
   mappings: Record<string, string> | Array<ContentMapping>
@@ -73,7 +73,7 @@ export function getThumbnailUrlFromJsonDataAndContent(
     // We are assuming that the thumbnail is an uploaded file. We will try to find the matching hash
     const thumbnailHash = contents?.find(({ file }) => file === thumbnail)?.hash
     if (thumbnailHash) {
-      thumbnail = `${downloadUrl}/contents/${thumbnailHash}`
+      thumbnail = `${downloadUrl}/${thumbnailHash}`
     } else {
       // If we couldn't find a file with the correct path, then we ignore whatever was set on the thumbnail property
       thumbnail = undefined

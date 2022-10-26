@@ -1,7 +1,6 @@
 import { defaultLogger } from 'shared/logger'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { ensureRendererEnabled } from 'shared/world/worldState'
 
 const TIMEOUT_MS = 10 * 60 * 1000
 
@@ -19,32 +18,28 @@ export function setDelightedSurveyEnabled(enabled: boolean) {
 }
 
 function delightedSurvey() {
-  void ensureRendererEnabled()
-    .then(() => {
-      if (typeof globalThis === 'undefined' || typeof globalThis !== 'object') {
-        return
+  if (typeof globalThis === 'undefined' || typeof globalThis !== 'object') {
+    return
+  }
+  const { analytics, delighted } = globalThis
+  if (!analytics || !delighted) {
+    return
+  }
+  const profile = getCurrentUserProfile(store.getState())
+  if (profile) {
+    const payload = {
+      email: profile.userId + '@dcl.gg',
+      name: profile.name || 'Guest',
+      properties: {
+        userId: profile.userId,
+        anonymous_id: analytics && analytics.user ? analytics.user().anonymousId() : null
       }
-      const { analytics, delighted } = globalThis
-      if (!analytics || !delighted) {
-        return
-      }
-      const profile = getCurrentUserProfile(store.getState())
-      if (profile) {
-        const payload = {
-          email: profile.userId + '@dcl.gg',
-          name: profile.name || 'Guest',
-          properties: {
-            userId: profile.userId,
-            anonymous_id: analytics && analytics.user ? analytics.user().anonymousId() : null
-          }
-        }
+    }
 
-        try {
-          delighted.survey(payload)
-        } catch (error: any) {
-          defaultLogger.error('Delighted error: ' + error.message, error)
-        }
-      }
-    })
-    .catch()
+    try {
+      delighted.survey(payload)
+    } catch (error: any) {
+      defaultLogger.error('Delighted error: ' + error.message, error)
+    }
+  }
 }

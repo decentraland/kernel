@@ -1,9 +1,9 @@
-import type { CommsContext } from './context'
+import { RoomConnection } from './interface'
 
 export type CommsState = {
   initialized: boolean
   island?: string
-  context: CommsContext | undefined
+  context: RoomConnection | undefined
 }
 
 export type CommsConnectionState =

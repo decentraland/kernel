@@ -17,8 +17,6 @@ import {
 } from 'dcl-social-client'
 
 import { DEBUG_KERNEL_LOG } from 'config'
-
-import { worldToGrid } from 'atomicHelpers/parcelScenePositions'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import defaultLogger, { createLogger, createDummyLogger } from 'shared/logger'
@@ -60,8 +58,6 @@ import {
   JoinOrCreateChannelPayload,
   ChannelMember
 } from 'shared/types'
-import { Realm } from 'shared/dao/types'
-import { lastPlayerPosition } from 'shared/world/positionThings'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -96,12 +92,16 @@ import {
   SEND_CHANNEL_MESSAGE,
   SendChannelMessage
 } from 'shared/friends/actions'
-import { waitForRealmInitialized } from 'shared/dao/sagas'
+import { waitForRoomConnection } from 'shared/dao/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ensureFriendProfile } from './ensureFriendProfile'
 import { getFeatureFlagEnabled, getSynapseUrl } from 'shared/meta/selectors'
-import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { getRealm } from 'shared/comms/selectors'
+import { SET_ROOM_CONNECTION } from 'shared/comms/actions'
+import {
+  ensureRealmAdapterPromise,
+  getFetchContentUrlPrefixFromRealmAdapter,
+  getRealmConnectionString
+} from 'shared/realm/selectors'
 import { Avatar, EthAddress } from '@dcl/schemas'
 import { trackEvent } from '../analytics'
 import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
@@ -121,10 +121,11 @@ import {
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
-import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
-import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { getParcelPosition } from 'shared/scene-loader/selectors'
+import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
+import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -167,7 +168,7 @@ function* initializeFriendsSaga() {
       delay: delay(secondsToRetry)
     })
 
-    yield call(waitForRealmInitialized)
+    yield call(waitForRoomConnection)
     yield call(waitForRendererInstance)
 
     const currentIdentity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
@@ -646,11 +647,11 @@ function getTotalUnseenMessages(client: SocialAPI, ownId: string, friendIds: str
   return totalUnseenMessages
 }
 
-export function getFriends(request: GetFriendsPayload) {
+export async function getFriends(request: GetFriendsPayload) {
   // ensure friend profiles are sent to renderer
-
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
 
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
@@ -662,7 +663,7 @@ export function getFriends(request: GetFriendsPayload) {
 
   const profilesForRenderer = friendsToReturn.map((profile) =>
     profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
   )
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
@@ -687,9 +688,10 @@ export function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
-export function getFriendRequests(request: GetFriendRequestsPayload) {
+export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
   const fromFriendRequests = friends.fromFriendRequests.slice(
     request.receivedSkip,
@@ -709,7 +711,7 @@ export function getFriendRequests(request: GetFriendRequestsPayload) {
   const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
   const profilesForRenderer = friendRequestsProfiles.map((friend) =>
     profileToRendererFormat(friend.data, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
   )
 
@@ -821,8 +823,9 @@ export function getUnseenMessagesByUser() {
   getUnityInstance().UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload)
 }
 
-export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
-  const fetchContentServer = getFetchContentUrlPrefix(store.getState())
+export async function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
     (conv) => conv.conversation.type === ConversationType.DIRECT
   )
@@ -865,7 +868,7 @@ export function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessag
 
   const profilesForRenderer = friendsConversations.map((friend) =>
     profileToRendererFormat(friend.avatar, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
   )
 
@@ -930,20 +933,24 @@ function updateUserStatus(client: SocialAPI, ...socialIds: string[]) {
   })
 }
 
+/**
+ * This saga updates the status of our player for the Presence feature
+ */
 export function* initializeStatusUpdateInterval() {
   let lastStatus: UpdateUserStatus | undefined = undefined
 
   while (true) {
     yield race({
       SET_MATRIX_CLIENT: take(SET_MATRIX_CLIENT),
-      SET_WORLD_CONTEXT: take(SET_WORLD_CONTEXT),
+      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION),
       timeout: delay(SEND_STATUS_INTERVAL_MILLIS)
     })
 
     const client: SocialAPI | null = yield select(getSocialClient)
-    const realm: Realm | null = yield select(getRealm)
+    const realmConnectionString: string = yield select(getRealmConnectionString)
+    const position: ReadOnlyVector2 = yield select(getParcelPosition)
 
-    if (!client || !realm) {
+    if (!client || realmConnectionString === OFFLINE_REALM) {
       continue
     }
 
@@ -953,12 +960,10 @@ export function* initializeStatusUpdateInterval() {
 
     updateUserStatus(client, ...friends)
 
-    const position = worldToGrid(lastPlayerPosition.clone())
-
     const updateStatus: UpdateUserStatus = {
       realm: {
         layer: '',
-        serverName: realm.serverName
+        serverName: realmConnectionString
       },
       position,
       presence: PresenceType.ONLINE
@@ -1901,7 +1906,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 }
 
 // Get channel members
-export function getChannelMembers(request: GetChannelMembersPayload) {
+export async function getChannelMembers(request: GetChannelMembersPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
   if (!client) return
 

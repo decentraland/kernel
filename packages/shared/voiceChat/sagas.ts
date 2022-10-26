@@ -1,10 +1,10 @@
 import { call, select, takeEvery, takeLatest, put } from 'redux-saga/effects'
 import { receiveUserTalking } from 'shared/comms/peers'
-import { getCommsContext, getCommsIsland, getRealm } from 'shared/comms/selectors'
+import { getCommsIsland } from 'shared/comms/selectors'
 import { VOICE_CHAT_SAMPLE_RATE } from 'voice-chat-codec/constants'
-import { createOpusVoiceHandler } from 'voice-chat-codec/opusVoiceHandler'
-import { createLiveKitVoiceHandler } from 'voice-chat-codec/liveKitVoiceHandler'
-import { VoiceHandler } from 'voice-chat-codec/VoiceHandler'
+import { createOpusVoiceHandler } from './opusVoiceHandler'
+import { createLiveKitVoiceHandler } from './liveKitVoiceHandler'
+import { VoiceHandler } from './VoiceHandler'
 import {
   LEAVE_VOICE_CHAT,
   SET_VOICE_CHAT_MUTE,
@@ -40,21 +40,21 @@ import {
   isVoiceChatAllowedByCurrentScene,
   isRequestedVoiceChatRecording,
   getVoiceChatState,
-  hasJoined
+  hasJoinedVoiceChat
 } from './selectors'
 import { positionObservable, PositionReport } from 'shared/world/positionThings'
-import { positionReportToCommsPosition } from 'shared/comms/interface/utils'
+import { positionReportToCommsPositionRfc4 } from 'shared/comms/interface/utils'
 import { trackEvent } from 'shared/analytics'
 import { VoiceChatState } from './types'
 import { Observer } from 'mz-observable'
 
 import { Room } from 'livekit-client' // temp
-import { getIdentity } from 'shared/session'
-import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from 'shared/comms/actions'
-import { realmToConnectionString } from 'shared/comms/v3/resolver'
-import { getLiveKitVoiceChat } from 'shared/meta/selectors'
+import { SET_COMMS_ISLAND, SET_ROOM_CONNECTION } from 'shared/comms/actions'
+import { isLiveKitVoiceChatFeatureFlag } from 'shared/meta/selectors'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { incrementCounter } from 'shared/occurences'
+import { getRealmConnectionString } from 'shared/realm/selectors'
+import { getCurrentIdentity } from 'shared/session/selectors'
 
 let positionObserver: Observer<Readonly<PositionReport>> | null
 let audioRequestInitialized = false
@@ -75,7 +75,7 @@ export function* voiceChatSaga() {
 
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
-  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], customLiveKitRoom)
+  yield takeLatest([SET_COMMS_ISLAND, SET_ROOM_CONNECTION], handleNewRoomOrCommsContext)
   yield takeEvery(SET_AUDIO_DEVICE, setAudioDevices)
 }
 
@@ -84,15 +84,15 @@ export function* voiceChatSaga() {
  * This will get the token from a custom/temporal server which generates token for LiveKit
  * TODO: Move this to Comms v3 with LiveKit, and set the room there
  */
-export function* customLiveKitRoom() {
+export function* handleNewRoomOrCommsContext() {
   yield call(waitForMetaConfigurationInitialization)
-  if (yield select(getLiveKitVoiceChat)) {
-    const realm = yield select(getRealm)
-    const realmName = realm ? realmToConnectionString(realm) : 'global'
+
+  if (yield select(isLiveKitVoiceChatFeatureFlag)) {
+    const realmName: string = yield select(getRealmConnectionString)
     const island = (yield select(getCommsIsland)) ?? 'global'
     const roomName = `${realmName}-${island}`
 
-    const identity = yield select(getIdentity)
+    const identity = yield select(getCurrentIdentity)
     if (identity) {
       const url = `https://livekit-token.decentraland.io/create?participantName=${identity.address}&roomName=${roomName}`
       const res: Response = yield fetch(url)
@@ -105,6 +105,9 @@ export function* customLiveKitRoom() {
       yield room.connect('wss://test-livekit.decentraland.today', data.token)
       yield put(setVoiceChatLiveKitRoom(room))
     }
+  } else {
+    // reconnect voice chat
+    yield call(handleSetVoiceChatLiveKitRoom)
   }
 }
 
@@ -113,7 +116,8 @@ function* handleRecordingRequest() {
   const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
 
   if (voiceHandler) {
-    if (!isVoiceChatAllowedByCurrentScene() || !requestedRecording) {
+    const isAlowedByScene: boolean = yield select(isVoiceChatAllowedByCurrentScene)
+    if (!isAlowedByScene || !requestedRecording) {
       voiceHandler.setRecording(false)
     } else {
       yield call(requestUserMedia)
@@ -124,7 +128,7 @@ function* handleRecordingRequest() {
 
 // on change the livekit room or token, we just leave and join the room to use (or not) the LiveKit
 function* handleSetVoiceChatLiveKitRoom() {
-  if (yield select(hasJoined)) {
+  if (yield select(hasJoinedVoiceChat)) {
     yield put(leaveVoiceChat())
     yield put(joinVoiceChat())
   }
@@ -132,43 +136,41 @@ function* handleSetVoiceChatLiveKitRoom() {
 
 function* handleJoinVoiceChat() {
   voiceChatLogger.log('join voice chat')
-  const commsContext = yield select(getCommsContext)
   const voiceChatState: VoiceChatState = yield select(getVoiceChatState)
-  if (commsContext) {
-    const voiceHandler: VoiceHandler =
-      voiceChatState.liveKitRoom !== null
-        ? yield call(createLiveKitVoiceHandler, voiceChatState.liveKitRoom)
-        : createOpusVoiceHandler(commsContext.worldInstanceConnection)
 
-    yield put(clearVoiceChatError())
+  const voiceHandler: VoiceHandler =
+    voiceChatState.liveKitRoom !== null
+      ? yield call(createLiveKitVoiceHandler, voiceChatState.liveKitRoom)
+      : yield call(createOpusVoiceHandler)
 
-    voiceHandler.onRecording((recording) => {
-      store.dispatch(voiceRecordingUpdate(recording))
-    })
+  yield put(clearVoiceChatError())
 
-    voiceHandler.onUserTalking((userId, talking) => {
-      store.dispatch(voicePlayingUpdate(userId, talking))
-    })
+  voiceHandler.onRecording((recording) => {
+    store.dispatch(voiceRecordingUpdate(recording))
+  })
 
-    voiceHandler.onError((message) => {
-      put(setVoiceChatError(message))
-    })
+  voiceHandler.onUserTalking((userId, talking) => {
+    store.dispatch(voicePlayingUpdate(userId, talking))
+  })
 
-    if (positionObserver) {
-      positionObservable.remove(positionObserver)
-    }
-    positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
-      voiceHandler.reportPosition(positionReportToCommsPosition(obj))
-    })
+  voiceHandler.onError((message) => {
+    put(setVoiceChatError(message))
+  })
 
-    voiceHandler.setVolume(voiceChatState.volume)
-    voiceHandler.setMute(voiceChatState.mute)
-    if (voiceChatState.media) {
-      yield voiceHandler.setInputStream(voiceChatState.media)
-    }
-
-    yield put(setVoiceChatHandler(voiceHandler))
+  if (positionObserver) {
+    positionObservable.remove(positionObserver)
   }
+  positionObserver = positionObservable.add((obj: Readonly<PositionReport>) => {
+    voiceHandler.reportPosition(positionReportToCommsPositionRfc4(obj))
+  })
+
+  voiceHandler.setVolume(voiceChatState.volume)
+  voiceHandler.setMute(voiceChatState.mute)
+  if (voiceChatState.media) {
+    yield voiceHandler.setInputStream(voiceChatState.media)
+  }
+
+  yield put(setVoiceChatHandler(voiceHandler))
 }
 
 function* handleVoiceChatError({ payload }: SetVoiceChatErrorAction) {
@@ -186,10 +188,6 @@ function* handleVoiceChatError({ payload }: SetVoiceChatErrorAction) {
 function* handleLeaveVoiceChat() {
   if (positionObserver) {
     positionObservable.remove(positionObserver)
-  }
-  const voiceHandler: VoiceHandler | null = yield select(getVoiceHandler)
-  if (voiceHandler && voiceHandler.leave) {
-    yield voiceHandler.leave()
   }
   yield put(setVoiceChatHandler(null))
 }

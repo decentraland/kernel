@@ -6,12 +6,14 @@ import { getBannedUsers } from 'shared/meta/selectors'
 import { BannedUsers, RootMetaState } from 'shared/meta/types'
 import { getProfile } from 'shared/profiles/selectors'
 import { RootProfileState } from 'shared/profiles/types'
-import { getIdentity } from 'shared/session'
 import { RootVoiceChatState, VoicePolicy } from './types'
 import { VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
-import { lastPlayerScene } from 'shared/world/sceneState'
+import { RootWorldState } from 'shared/world/types'
+import { getCurrentIdentity } from 'shared/session/selectors'
+import { RootSessionState } from 'shared/session/types'
+import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 
-export const hasJoined = (store: RootVoiceChatState) => store.voiceChat.joined
+export const hasJoinedVoiceChat = (store: RootVoiceChatState) => store.voiceChat.joined
 
 export const getVoiceChatState = (store: RootVoiceChatState) => store.voiceChat
 
@@ -25,8 +27,9 @@ export const getVoicePolicy = (store: RootVoiceChatState) => store.voiceChat.pol
 
 export const getVoiceHandler = (store: RootVoiceChatState) => store.voiceChat.voiceHandler
 
-export function isVoiceChatAllowedByCurrentScene() {
-  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, lastPlayerScene?.entity.metadata)
+export function isVoiceChatAllowedByCurrentScene(store: RootVoiceChatState & RootWorldState) {
+  const currentScene = store.world.currentScene ? getSceneWorkerBySceneID(store.world.currentScene) : undefined
+  return isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, currentScene?.loadableScene.entity.metadata)
 }
 
 export function isBlockedOrBanned(profile: Avatar, bannedUsers: BannedUsers, userId: string): boolean {
@@ -53,17 +56,17 @@ function isMuted(profile: Avatar, userId: string): boolean {
 }
 
 export function shouldPlayVoice(
-  state: RootVoiceChatState & RootFriendsState & RootProfileState & RootMetaState,
+  state: RootVoiceChatState & RootFriendsState & RootProfileState & RootMetaState & RootWorldState & RootSessionState,
   profile: Avatar,
   voiceUserId: string
 ) {
-  const myAddress = getIdentity()?.address
+  const myAddress = getCurrentIdentity(state)?.address
   return (
     isVoiceAllowedByPolicy(state, voiceUserId) &&
     !isBlockedOrBanned(profile, getBannedUsers(state), voiceUserId) &&
     !isMuted(profile, voiceUserId) &&
     !hasBlockedMe(state, myAddress, voiceUserId) &&
-    isVoiceChatAllowedByCurrentScene()
+    isVoiceChatAllowedByCurrentScene(state)
   )
 }
 

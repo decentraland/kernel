@@ -1,33 +1,12 @@
-/* eslint-disable prefer-const */
-import {
-  initParcelSceneWorker,
-  LifecycleManager,
-  ParcelSceneLoadingParams
-} from 'decentraland-loader/lifecycle/manager'
-import {
-  NewDrawingDistanceReport,
-  SceneLifeCycleStatusReport
-} from '../../decentraland-loader/lifecycle/controllers/scene'
-import { scenesChanged, SCENE_FAIL, SCENE_LOAD, SCENE_START } from '../loading/actions'
-import { InstancedSpawnPoint, LoadableScene } from '../types'
-import { parcelObservable, teleportObservable } from './positionThings'
-import { SceneWorker, workerStatusObservable } from './SceneWorker'
+import { scenesChanged } from '../loading/actions'
+import { LoadableScene } from '../types'
+import { SceneWorker } from './SceneWorker'
 import { store } from 'shared/store/isolatedStore'
 import { Observable } from 'mz-observable'
 import { ParcelSceneLoadingState } from './types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
-import { signalParcelLoadingStarted } from 'shared/renderer/actions'
 import { Transport } from '@dcl/rpc'
 import { defaultParcelPermissions } from 'shared/apis/host/Permissions'
-import { SceneLifeCycleStatusType } from 'decentraland-loader/lifecycle/lib/scene.status'
-
-export type EnableParcelSceneLoadingOptions = {
-  parcelSceneClass: {
-    new (x: LoadableScene): SceneWorker
-  }
-  onPositionSettled?: (spawnPoint: InstancedSpawnPoint) => void
-  onPositionUnsettled?(): void
-}
 
 declare const globalThis: any
 
@@ -54,14 +33,7 @@ export function generateBannedLoadableScene(entity: LoadableScene): LoadableScen
   }
 }
 
-export const renderDistanceObservable = new Observable<Readonly<NewDrawingDistanceReport>>()
-export const onLoadParcelScenesObservable = new Observable<SceneWorker>()
-/**
- * Array of sceneId's
- */
-export const onPositionSettledObservable = new Observable<InstancedSpawnPoint>()
-export const onPositionUnsettledObservable = new Observable()
-
+export const onLoadParcelScenesObservable = new Observable<LoadableScene[]>()
 export const loadedSceneWorkers = new Map<string, SceneWorker>()
 globalThis['sceneWorkers'] = loadedSceneWorkers
 
@@ -78,6 +50,15 @@ export function forceStopScene(sceneId: string) {
     worker.dispose()
     loadedSceneWorkers.delete(sceneId)
     store.dispatch(scenesChanged())
+  }
+}
+
+// finds a parcel scene by parcel position (that is not a portable experience)
+export function getLoadedParcelSceneByParcel(parcelPosition: string) {
+  for (const [, w] of loadedSceneWorkers) {
+    if (!w.rpcContext.sceneData.isPortableExperience && w.metadata.scene?.parcels?.includes(parcelPosition)) {
+      return w
+    }
   }
 }
 
@@ -98,17 +79,21 @@ export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: 
 }
 
 /**
- * idempotent
+ * idempotent.
+ *
+ * accepts a new worker, stops the previous one if there was any collision with
+ * the same ID
  */
 function setNewParcelScene(worker: SceneWorker) {
   const sceneId = worker.loadableScene.id
-  const parcelSceneWorker = loadedSceneWorkers.get(worker.loadableScene.id)
+  // NOTE: getSceneWorkerBySceneID is not used because when the change to
+  //       sceneNumber happens we still need to look for ID collissions
 
-  if (worker === parcelSceneWorker) return
-
-  if (parcelSceneWorker) {
-    // stop the current scene, forcing a reload
-    forceStopScene(sceneId)
+  // unload all the conflicting workers
+  for (const [id, w] of loadedSceneWorkers) {
+    if (worker !== w && w.loadableScene.id === sceneId) {
+      forceStopScene(id)
+    }
   }
 
   loadedSceneWorkers.set(sceneId, worker)
@@ -117,8 +102,7 @@ function setNewParcelScene(worker: SceneWorker) {
 // @internal
 export const parcelSceneLoadingState: ParcelSceneLoadingState = {
   isWorldLoadingEnabled: true,
-  desiredParcelScenes: new Map(),
-  lifecycleManager: null as any as LifecycleManager
+  desiredParcelScenes: new Map()
 }
 
 /**
@@ -130,10 +114,9 @@ export function getDesiredParcelScenes(): Map<string, LoadableScene> {
 }
 
 /**
- * @internal
  * Receives a set of Set<SceneId>
  */
-async function setDesiredParcelScenes(desiredParcelScenes: Map<string, LoadableScene>) {
+export async function setDesiredParcelScenes(desiredParcelScenes: Map<string, LoadableScene>) {
   const previousSet = new Set(parcelSceneLoadingState.desiredParcelScenes)
   const newSet = (parcelSceneLoadingState.desiredParcelScenes = desiredParcelScenes)
 
@@ -163,18 +146,13 @@ export function unloadParcelSceneById(sceneId: string) {
   if (!worker) {
     return
   }
-  //We notify that the scene has been unloaded, the sceneId must have the same name
-  parcelSceneLoadingState.lifecycleManager?.notify('Scene.status', {
-    sceneId: sceneId,
-    status: 'unloaded'
-  })
   forceStopScene(sceneId)
 }
 
 /**
  * @internal
  **/
-export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableScene) {
+async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableScene) {
   // create the worker if don't exis
   if (!getSceneWorkerBySceneID(sceneId)) {
     // If we are running in isolated mode and it is builder mode, we create a stateless worker instead of a normal worker
@@ -187,98 +165,7 @@ export async function loadParcelSceneByIdIfMissing(sceneId: string, entity: Load
     defaultParcelPermissions.forEach(($) => worker.rpcContext.permissionGranted.add($))
     // and enablle FPS throttling, it will lower the frame-rate based on the distance
     worker.rpcContext.sceneData.useFPSThrottling = true
-
-    setNewParcelScene(worker)
-
-    onLoadParcelScenesObservable.notifyObservers(worker)
   }
-}
-
-async function removeDesiredParcel(sceneId: string) {
-  const desiredScenes = getDesiredParcelScenes()
-  if (!hasDesiredParcelScenes(sceneId)) return
-  desiredScenes.delete(sceneId)
-  await setDesiredParcelScenes(desiredScenes)
-}
-
-export async function addDesiredParcel(entity: LoadableScene) {
-  const desiredScenes = getDesiredParcelScenes()
-  if (hasDesiredParcelScenes(entity.id)) return
-  desiredScenes.set(entity.id, entity)
-  await setDesiredParcelScenes(desiredScenes)
-}
-
-function hasDesiredParcelScenes(sceneId: string): boolean {
-  return parcelSceneLoadingState.desiredParcelScenes.has(sceneId)
-}
-
-export async function enableParcelSceneLoading(params: ParcelSceneLoadingParams) {
-  const lifecycleManager = await initParcelSceneWorker(params)
-
-  parcelSceneLoadingState.lifecycleManager = lifecycleManager
-
-  lifecycleManager.on('Scene.shouldStart', async (opts: { entity: LoadableScene }) => {
-    await addDesiredParcel(opts.entity)
-  })
-
-  lifecycleManager.on('Scene.shouldUnload', async (opts: { sceneId: string }) => {
-    await removeDesiredParcel(opts.sceneId)
-  })
-
-  lifecycleManager.on('Position.settled', async (opts: { spawnPoint: InstancedSpawnPoint }) => {
-    onPositionSettledObservable.notifyObservers(opts.spawnPoint)
-  })
-
-  lifecycleManager.on('Position.unsettled', () => {
-    onPositionUnsettledObservable.notifyObservers({})
-  })
-
-  teleportObservable.add((position: { x: number; y: number }) => {
-    lifecycleManager.notify('User.setPosition', { position, teleported: true })
-  })
-
-  renderDistanceObservable.add((event) => {
-    lifecycleManager.notify('SetScenesLoadRadius', event)
-  })
-
-  workerStatusObservable.add((action) => {
-    let status: SceneLifeCycleStatusType = 'failed'
-
-    switch (action.type) {
-      case SCENE_FAIL: {
-        status = 'failed'
-        break
-      }
-      case SCENE_LOAD: {
-        status = 'loaded'
-        break
-      }
-      case SCENE_START: {
-        status = 'ready'
-        break
-      }
-    }
-
-    const sceneStatus: SceneLifeCycleStatusReport = {
-      sceneId: action.payload.id,
-      status
-    }
-
-    lifecycleManager.notify('Scene.status', sceneStatus)
-  })
-
-  parcelObservable.add((obj) => {
-    // immediate reposition should only be broadcasted to others, otherwise our scene reloads
-    if (obj.immediate) return
-
-    // If we are in isolated mode we don't report the position
-    lifecycleManager.notify('User.setPosition', {
-      position: obj.newParcel,
-      teleported: false
-    })
-  })
-
-  store.dispatch(signalParcelLoadingStarted())
 }
 
 export type AllScenesEvents<T extends IEventNames> = {

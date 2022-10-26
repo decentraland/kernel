@@ -4,13 +4,14 @@ import { getSelectedNetwork } from './../../dao/selectors'
 import { store } from './../../store/isolatedStore'
 import { getIsGuestLogin } from './../../session/selectors'
 import { onLoginCompleted } from './../../session/sagas'
-import { getRealm } from './../../comms/selectors'
 
 import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { SignedFetchServiceDefinition } from 'shared/protocol/decentraland/kernel/apis/signed_fetch.gen'
+import { SignedFetchServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/signed_fetch.gen'
+import { getRealmAdapter } from 'shared/realm/selectors'
+import { Realm } from 'shared/dao/types'
 
 export function registerSignedFetchServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, SignedFetchServiceDefinition, async () => ({
@@ -18,7 +19,19 @@ export function registerSignedFetchServiceServerImplementation(port: RpcServerPo
       const { identity } = await onLoginCompleted()
 
       const state = store.getState()
-      const realm = getRealm(state)
+      const realmAdapter = getRealmAdapter(state)
+
+      const realm: Realm = realmAdapter
+        ? {
+            hostname: new URL(realmAdapter?.baseUrl).hostname,
+            protocol: realmAdapter.about.comms?.protocol || 'v3',
+            serverName: realmAdapter.about.configurations?.realmName || realmAdapter.baseUrl
+          }
+        : {
+            hostname: 'offline',
+            protocol: 'offline',
+            serverName: 'offline'
+          }
       const isGuest = !!getIsGuestLogin(state)
       const network = getSelectedNetwork(state)
 

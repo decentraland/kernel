@@ -1,33 +1,32 @@
 import { Avatar } from '@dcl/schemas'
 import { call, select, takeLatest } from 'redux-saga/effects'
-import { realmToConnectionString } from 'shared/comms/v3/resolver'
+import { SET_REALM_ADAPTER } from 'shared/realm/actions'
+import { realmToConnectionString } from 'shared/realm/resolver'
+import { getRealmAdapter } from 'shared/realm/selectors'
+import { IRealmAdapter } from 'shared/realm/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { toEnvironmentRealmType } from '../apis/host/EnvironmentAPI'
-import { SET_COMMS_ISLAND, SET_WORLD_CONTEXT } from '../comms/actions'
-import { getCommsIsland, getRealm } from '../comms/selectors'
-import { Realm } from '../dao/types'
+import { SET_COMMS_ISLAND, SET_ROOM_CONNECTION } from '../comms/actions'
+import { getCommsIsland } from '../comms/selectors'
 import { SAVE_PROFILE } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
 import { allScenesEvent } from '../world/parcelSceneManager'
 
 export function* sceneEventsSaga() {
-  yield takeLatest([SET_COMMS_ISLAND, SET_WORLD_CONTEXT], islandChanged)
+  yield takeLatest([SET_COMMS_ISLAND, SET_ROOM_CONNECTION, SET_REALM_ADAPTER], islandChanged)
   yield takeLatestByUserId(SAVE_PROFILE, submitProfileToScenes)
 }
 
 function* islandChanged() {
-  const realm: Realm = yield select(getRealm)
+  const adapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
   const island: string | undefined = yield select(getCommsIsland)
 
-  if (!realm) {
-    return
+  if (adapter) {
+    const payload = toEnvironmentRealmType(adapter, island)
+    yield call(allScenesEvent, { eventType: 'onRealmChanged', payload })
   }
 
-  const payload = toEnvironmentRealmType(realm, island)
-  yield call(allScenesEvent, { eventType: 'onRealmChanged', payload })
-
-  const realmString = realmToConnectionString(realm)
-  yield call(updateLocation, realmString, island)
+  yield call(updateLocation, adapter ? realmToConnectionString(adapter) : undefined, island)
 }
 
 // @internal
@@ -40,7 +39,6 @@ export function updateLocation(realm: string | undefined, island: string | undef
   } else {
     q.delete('island')
   }
-
   history.replaceState({ island, realm }, '', `?${q.toString()}`)
 }
 

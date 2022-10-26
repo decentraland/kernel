@@ -7,7 +7,7 @@ import {
   ManyEntityAction,
   Payload,
   queryTypeToJSON
-} from 'shared/protocol/decentraland/kernel/apis/engine_api.gen'
+} from '@dcl/protocol/out-ts/decentraland/kernel/apis/engine_api.gen'
 
 import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
@@ -63,11 +63,12 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
       const actions: EntityAction[] = []
 
       for (const action of req.actions) {
-        if (action.payload) {
+        const actionType = eaTypeToStr(action.type)
+        if (actionType && action.payload) {
           actions.push({
-            type: eaTypeToStr(action.type),
+            type: actionType,
             tag: action.tag,
-            payload: getPayload(action.type, action.payload)
+            payload: getPayload(action.type, action.payload as any)
           })
         }
       }
@@ -95,18 +96,22 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
     }
   }))
 }
-function eaTypeToStr(type: EAType): EntityActionType {
+function eaTypeToStr(type: EAType): EntityActionType | null {
   switch (type) {
+    case EAType.EAT_UPDATE_ENTITY_COMPONENT:
+      return 'UpdateEntityComponent'
+    case EAType.EAT_COMPONENT_UPDATED:
+      return 'ComponentUpdated'
+    case EAType.EAT_COMPONENT_CREATED:
+      return 'ComponentCreated'
+    case EAType.EAT_CREATE_ENTITY:
+      return 'CreateEntity'
     case EAType.EAT_OPEN_EXTERNAL_URL:
       return 'OpenExternalUrl'
     case EAType.EAT_OPEN_NFT_DIALOG:
       return 'OpenNFTDialog'
-    case EAType.EAT_CREATE_ENTITY:
-      return 'CreateEntity'
     case EAType.EAT_REMOVE_ENTITY:
       return 'RemoveEntity'
-    case EAType.EAT_UPDATE_ENTITY_COMPONENT:
-      return 'UpdateEntityComponent'
     case EAType.EAT_ATTACH_ENTITY_COMPONENT:
       return 'AttachEntityComponent'
     case EAType.EAT_COMPONENT_REMOVED:
@@ -124,5 +129,5 @@ function eaTypeToStr(type: EAType): EntityActionType {
     case EAType.EAT_INIT_MESSAGES_FINISHED:
       return 'InitMessagesFinished'
   }
-  return 'unknown' as EntityActionType
+  return null
 }

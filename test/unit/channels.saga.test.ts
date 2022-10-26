@@ -145,13 +145,13 @@ userStatuses.set('0xd1', {
 })
 
 const stubClient = (start: number, end: number, index: number) =>
-({
-  getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
-  getUserStatuses: () => (userStatuses),
-  searchChannel: () => Promise.resolve(publicRooms[index]),
-  getMemberInfo: () => ({ displayName: undefined, avatarUrl: undefined }),
-  getUserId: () => '0xa1'
-} as unknown as SocialAPI)
+  ({
+    getCursorOnMessage: () => Promise.resolve({ getMessages: () => channelMessages.slice(start, end) }),
+    getUserStatuses: () => userStatuses,
+    searchChannel: () => Promise.resolve(publicRooms[index]),
+    getMemberInfo: () => ({ displayName: undefined, avatarUrl: undefined }),
+    getUserId: () => '0xa1'
+  } as unknown as SocialAPI)
 
 function mockStoreCalls(ops?: { start?: number; end?: number; index?: number; catalog?: boolean }) {
   sinon.stub(friendsSelectors, 'getChannels').callsFake(() => allCurrentConversations)
@@ -300,7 +300,7 @@ describe('Friends sagas - Channels Feature', () => {
   })
 
   describe('Get channel messages', () => {
-    let opts = { start: 2, end: 4, catalog: true }
+    const opts = { start: 2, end: 4, catalog: true }
 
     beforeEach(() => {
       const { store } = buildStore()
@@ -373,7 +373,7 @@ describe('Friends sagas - Channels Feature', () => {
   })
 
   describe('Search channels', () => {
-    let opts = { index: 0 }
+    const opts = { index: 0 }
 
     beforeEach(() => {
       const { store } = buildStore()
@@ -420,11 +420,7 @@ describe('Friends sagas - Channels Feature', () => {
           channels: channelsToReturn
         }
 
-        sinon
-          .mock(getUnityInstance())
-          .expects('UpdateChannelSearchResults')
-          .once()
-          .withExactArgs(searchResult)
+        sinon.mock(getUnityInstance()).expects('UpdateChannelSearchResults').once().withExactArgs(searchResult)
         await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -462,11 +458,7 @@ describe('Friends sagas - Channels Feature', () => {
           channels: channelsToReturn
         }
 
-        sinon
-          .mock(getUnityInstance())
-          .expects('UpdateChannelSearchResults')
-          .once()
-          .withExactArgs(searchResult)
+        sinon.mock(getUnityInstance()).expects('UpdateChannelSearchResults').once().withExactArgs(searchResult)
         await friendsSagas.searchChannels(request)
         sinon.mock(getUnityInstance()).verify()
       })

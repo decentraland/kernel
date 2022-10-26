@@ -2,20 +2,22 @@ import * as sinon from 'sinon'
 import { getUnityInstance, setUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import defaultLogger from '../../packages/shared/logger'
 import { lastPlayerPosition } from '../../packages/shared/world/positionThings'
-import { PermissionItem, permissionItemToJSON } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
+import { PermissionItem, permissionItemToJSON } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
 import { movePlayerTo, triggerEmote } from 'shared/apis/host/RestrictedActions'
 import { PortContext } from 'shared/apis/host/context'
-import { Vector3 } from '@dcl/legacy-ecs'
+import { Vector3 } from '@dcl/ecs-math'
 import { EntityType, Scene } from '@dcl/schemas'
 import { expect } from 'chai'
 import Sinon from 'sinon'
 import { UnityInterface } from 'unity-interface/UnityInterface'
+import { buildStore } from 'shared/store/store'
 
 describe('RestrictedActions tests', () => {
   beforeEach(() => {
     sinon.reset()
     sinon.restore()
     setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
+    buildStore()
   })
 
   after(() => {

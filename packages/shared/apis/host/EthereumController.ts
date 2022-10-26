@@ -17,10 +17,10 @@ import {
   SendAsyncResponse,
   SignMessageRequest,
   SignMessageResponse
-} from 'shared/protocol/decentraland/kernel/apis/ethereum_controller.gen'
+} from '@dcl/protocol/out-ts/decentraland/kernel/apis/ethereum_controller.gen'
 import { PortContext } from './context'
 import { RPCSendableMessage } from 'shared/types'
-import { PermissionItem } from 'shared/protocol/decentraland/kernel/apis/permissions.gen'
+import { PermissionItem } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
 import { assertHasPermission } from './Permissions'
 
 async function requirePayment(req: RequirePaymentRequest, ctx: PortContext): Promise<RequirePaymentResponse> {

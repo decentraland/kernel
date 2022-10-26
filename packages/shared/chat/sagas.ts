@@ -157,7 +157,7 @@ function* handleSendMessage(action: SendMessage) {
         sender: currentUserId,
         body: message
       }
-      sendPublicChatMessage(entry.messageId, entry.body)
+      sendPublicChatMessage(message)
 
       yield call(waitForRendererInstance)
       getUnityInstance().AddMessageToChatWindow(entry)
@@ -316,7 +316,7 @@ function initChatCommands() {
 
       const time = Date.now()
 
-      sendPublicChatMessage(uuid(), `␐${expression} ${time}`)
+      sendPublicChatMessage(`␐${expression} ${time}`)
 
       getUnityInstance().TriggerSelfUserExpression(expression)
 

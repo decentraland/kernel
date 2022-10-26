@@ -1,5 +1,7 @@
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
-import { AvatarRendererMessage, AvatarRendererMessageType } from 'shared/types'
+import { AvatarRendererMessage, AvatarRendererMessageType, AvatarRendererPositionMessage } from 'shared/types'
+import { getCurrentIdentity } from 'shared/session/selectors'
+import { store } from 'shared/store/isolatedStore'
 
 export function* getInSceneAvatarsUserId(sceneId: string): Iterable<string> {
   for (const [userId, avatarData] of rendererAvatars) {
@@ -8,7 +10,8 @@ export function* getInSceneAvatarsUserId(sceneId: string): Iterable<string> {
 }
 
 type RendererAvatarData = {
-  sceneId: string
+  sceneId?: string
+  sceneNumber?: number
 }
 
 const rendererAvatars: Map<string, RendererAvatarData> = new Map<string, RendererAvatarData>()
@@ -28,31 +31,38 @@ export function setRendererAvatarState(evt: AvatarRendererMessage) {
     }
 
     // Handle avatars spawning or moving to a scene already loaded by the renderer.
-    handleRendererAvatarSceneChanged(userId, evt.sceneId)
+    handleRendererAvatarSceneChanged(evt)
   } else if (evt.type === AvatarRendererMessageType.REMOVED) {
     handleRendererAvatarRemoved(userId)
   }
 }
 
-function handleRendererAvatarSceneChanged(userId: string, sceneId: string) {
-  const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
+function handleRendererAvatarSceneChanged(evt: AvatarRendererPositionMessage) {
+  const avatarData: RendererAvatarData | undefined = rendererAvatars.get(evt.avatarShapeId)
 
   if (avatarData?.sceneId) {
-    const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
-    sceneWorker?.rpcContext.sendSceneEvent('onLeaveScene', { userId })
+    const selfUser = evt.avatarShapeId.toLowerCase() === getCurrentIdentity(store.getState())?.address.toLowerCase()
+    if (!selfUser) {
+      // this is handled by the scene-loader saga for the selfUser
+      getSceneWorkerBySceneID(avatarData.sceneId)?.onLeave(evt.avatarShapeId, selfUser)
+    }
   }
 
-  const sceneWorker = getSceneWorkerBySceneID(sceneId)
-  sceneWorker?.rpcContext.sendSceneEvent('onEnterScene', { userId })
+  const sceneWorker = getSceneWorkerBySceneID(evt.sceneId || 'any')
+  sceneWorker?.onEnter(evt.avatarShapeId)
 
-  rendererAvatars.set(userId, { sceneId: sceneId })
+  rendererAvatars.set(evt.avatarShapeId, evt)
 }
 
 function handleRendererAvatarRemoved(userId: string) {
   const avatarData: RendererAvatarData | undefined = rendererAvatars.get(userId)
-  if (avatarData) {
+  if (avatarData && avatarData.sceneId) {
     const sceneWorker = getSceneWorkerBySceneID(avatarData.sceneId)
-    sceneWorker?.rpcContext.sendSceneEvent('onLeaveScene', { userId })
+    const selfUser = userId.toLowerCase() === getCurrentIdentity(store.getState())?.address.toLowerCase()
+    if (!selfUser) {
+      // this is handled by the scene-loader saga for the selfUser
+      sceneWorker?.onLeave(userId, selfUser)
+    }
     rendererAvatars.delete(userId)
   }
 }

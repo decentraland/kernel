@@ -22,13 +22,13 @@ import './unit/profiles.saga.test'
 import './unit/getPerformanceInfo.test'
 import './unit/positionThings.test'
 import './unit/RestrictedActions.test'
-import './unit/engine.test'
 import './unit/catalog.saga.test'
 import './unit/portable-experiences.test'
 import './unit/logger.spec'
 import './unit/comms-resolver.test'
 import './unit/friends.saga.test'
 import './unit/channels.saga.test'
+import './unit/world.saga.test'
 
 /* SCENE EVENTS */
 import './sceneEvents/visibleAvatars.spec'
@@ -36,10 +36,7 @@ import './sceneEvents/comms.spec'
 
 import './dao'
 
-import './scene-system/websocketWrapper.spec'
-import './scene-system/fetchWrapper.spec'
-
-declare var mocha: Mocha
-declare var globalThis: any
+declare let mocha: Mocha
+declare let globalThis: any
 
 mocha.run()

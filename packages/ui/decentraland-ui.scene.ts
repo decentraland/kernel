@@ -18,11 +18,15 @@ void executeTask(async () => {
       []
     )
 
+    let lastProcessed = ''
     for (const { payload } of ret.events) {
-      try {
-        avatarMessageObservable.notifyObservers(JSON.parse(payload))
-      } catch (err) {
-        console.error(err)
+      if (payload !== lastProcessed) {
+        try {
+          lastProcessed = payload
+          avatarMessageObservable.emit('message', JSON.parse(payload))
+        } catch (err) {
+          console.error(err)
+        }
       }
     }
   })

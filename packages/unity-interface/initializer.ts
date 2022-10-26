@@ -103,6 +103,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
   })
 
   await engineStartedFuture
+  await browserInterface.startedFuture
 
   return originalUnity
 }

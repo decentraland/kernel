@@ -100,11 +100,17 @@ describe('parcelScenePositions unit tests', () => {
   })
   describe('areConnected', () => {
     it('should return true for connected parcels', () => {
-      const result = areConnected([{ x: 1, y: 2 }, { x: 1, y: 3 }])
+      const result = areConnected([
+        { x: 1, y: 2 },
+        { x: 1, y: 3 }
+      ])
       expect(result).to.deep.equal(true)
     })
     it('should return false for not connected parcels', () => {
-      const result = areConnected([{ x: 1, y: 2 }, { x: 1, y: 5 }])
+      const result = areConnected([
+        { x: 1, y: 2 },
+        { x: 1, y: 5 }
+      ])
       expect(result).to.deep.equal(false)
     })
     it('should return true for one parcel.', () => {
@@ -112,7 +118,12 @@ describe('parcelScenePositions unit tests', () => {
       expect(result).to.deep.equal(true)
     })
     it('should return false for connected parcels but not all of them', () => {
-      const result = areConnected([{ x: 1, y: 2 }, { x: 1, y: 3 }, { x: 1, y: 5 }, { x: 1, y: 6 }])
+      const result = areConnected([
+        { x: 1, y: 2 },
+        { x: 1, y: 3 },
+        { x: 1, y: 5 },
+        { x: 1, y: 6 }
+      ])
       expect(result).to.deep.equal(false)
     })
   })

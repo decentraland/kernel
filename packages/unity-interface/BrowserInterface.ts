@@ -1,11 +1,10 @@
-import { Quaternion, EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3, Vector3 } from '@dcl/ecs-math'
+import { EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3 } from '@dcl/ecs-math'
 
-import { uuid } from 'atomicHelpers/math'
 import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
-import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
+import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin, hasWallet } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -39,14 +38,9 @@ import {
   JoinOrCreateChannelPayload,
   GetChannelMembersPayload
 } from 'shared/types'
-import {
-  getSceneWorkerBySceneID,
-  allScenesEvent,
-  AllScenesEvents,
-  renderDistanceObservable
-} from 'shared/world/parcelSceneManager'
+import { getSceneWorkerBySceneID, allScenesEvent, AllScenesEvents } from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
-import { positionObservable } from 'shared/world/positionThings'
+import { receivePositionReport } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
 import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
@@ -56,12 +50,11 @@ import { updateStatusMessage } from 'shared/loading/actions'
 import { blockPlayers, mutePlayers, unblockPlayers, unmutePlayers } from 'shared/social/actions'
 import { setAudioStream } from './audioStream'
 import { logout, redirectToSignUp, signUp, signUpCancel } from 'shared/session/actions'
-import { getIdentity, hasWallet } from 'shared/session'
 import { getUnityInstance } from './IUnityInterface'
 import { setDelightedSurveyEnabled } from './delightedSurvey'
-import { IFuture } from 'fp-future'
+import future, { IFuture } from 'fp-future'
 import { reportHotScenes } from 'shared/social/hotScenes'
-import { GIFProcessor } from 'gif-processor/processor'
+import { GIFProcessor } from './gif-processor'
 import {
   joinVoiceChat,
   leaveVoiceChat,
@@ -77,11 +70,9 @@ import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
 import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
 import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
-import { getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
-import { renderStateObservable } from 'shared/world/worldState'
 import { store } from 'shared/store/isolatedStore'
-import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { setRendererAvatarState } from 'shared/social/avatarTracker'
 import { isAddress } from 'eth-connect'
 import { getAuthHeaders } from 'atomicHelpers/signedFetch'
@@ -89,7 +80,6 @@ import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
-import { sceneLifeCycleObservable } from 'shared/world/SceneWorker'
 import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import {
   getFriendRequests,
@@ -110,21 +100,14 @@ import {
   getChannelMembers
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
+import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
+import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
+import { rendererSignalSceneReady } from 'shared/world/actions'
 import { requestMediaDevice } from '../shared/voiceChat/sagas'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
-
-const positionEvent = {
-  position: Vector3.Zero(),
-  quaternion: Quaternion.Identity,
-  rotation: Vector3.Zero(),
-  playerHeight: playerConfigurations.height,
-  mousePosition: Vector3.Zero(),
-  immediate: false, // By default the renderer lerps avatars position
-  cameraQuaternion: Quaternion.Identity,
-  cameraEuler: Vector3.Zero()
-}
 
 type UnityEvent = any
 
@@ -247,6 +230,8 @@ const validateRendererSaveProfileV1 = generateLazyValidator<RendererSaveProfile>
 export class BrowserInterface {
   private lastBalanceOfMana: number = -1
 
+  startedFuture = future<void>()
+
   /**
    * This is the only method that should be called publically in this class.
    * It dispatches "renderer messages" to the correct handlers.
@@ -284,28 +269,15 @@ export class BrowserInterface {
     immediate?: boolean
     cameraRotation?: EcsMathReadOnlyQuaternion
   }) {
-    positionEvent.position.set(data.position.x, data.position.y, data.position.z)
-    positionEvent.quaternion.set(data.rotation.x, data.rotation.y, data.rotation.z, data.rotation.w)
-    positionEvent.rotation.copyFrom(positionEvent.quaternion.eulerAngles)
-    positionEvent.playerHeight = data.playerHeight || playerConfigurations.height
-
-    const cameraQuaternion = data.cameraRotation ?? data.rotation
-    positionEvent.cameraQuaternion.set(cameraQuaternion.x, cameraQuaternion.y, cameraQuaternion.z, cameraQuaternion.w)
-    positionEvent.cameraEuler.copyFrom(positionEvent.cameraQuaternion.eulerAngles)
-
-    // By default the renderer lerps avatars position
-    positionEvent.immediate = false
-
-    if (data.immediate !== undefined) {
-      positionEvent.immediate = data.immediate
-    }
-
-    positionObservable.notifyObservers(positionEvent)
+    receivePositionReport(
+      data.position,
+      data.rotation,
+      data.cameraRotation || data.rotation,
+      data.playerHeight || playerConfigurations.height
+    )
   }
 
   public ReportMousePosition(data: { id: string; mousePosition: EcsMathReadOnlyVector3 }) {
-    positionEvent.mousePosition.set(data.mousePosition.x, data.mousePosition.y, data.mousePosition.z)
-    positionObservable.notifyObservers(positionEvent)
     futures[data.id].resolve(data.mousePosition)
   }
 
@@ -350,11 +322,7 @@ export class BrowserInterface {
 
     transformSerializeOpt.useBinaryTransform = !!data.useBinaryTransform
 
-    queueMicrotask(() => {
-      // send an "engineStarted" notification, use a queueMicrotask
-      // to escape the current stack leveraging the JS event loop
-      store.dispatch(signalRendererInitializedCorrectly())
-    })
+    this.startedFuture.resolve()
   }
 
   public CrashPayloadResponse(data: { payload: any }) {
@@ -384,10 +352,9 @@ export class BrowserInterface {
       }
     })
 
-    const messageId = uuid()
     const body = `␐${data.id} ${data.timestamp}`
 
-    sendPublicChatMessage(messageId, body)
+    sendPublicChatMessage(body)
   }
 
   public TermsOfServiceResponse(data: { sceneId: string; accepted: boolean; dontShowAgain: boolean }) {
@@ -395,7 +362,7 @@ export class BrowserInterface {
   }
 
   public MotdConfirmClicked() {
-    if (!hasWallet()) {
+    if (!hasWallet(store.getState())) {
       globalObservable.emit('openUrl', { url: 'https://docs.decentraland.org/get-a-wallet/' })
     }
   }
@@ -496,11 +463,11 @@ export class BrowserInterface {
   }
 
   public GetFriends(getFriendsRequest: GetFriendsPayload) {
-    getFriends(getFriendsRequest)
+    getFriends(getFriendsRequest).catch(defaultLogger.error)
   }
 
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    getFriendRequests(getFriendRequestsPayload)
+    getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
@@ -528,7 +495,6 @@ export class BrowserInterface {
 
   public CloseUserAvatar(isSignUpFlow = false) {
     if (isSignUpFlow) {
-      getUnityInstance().DeactivateRendering()
       store.dispatch(signUpCancel())
     }
   }
@@ -544,8 +510,9 @@ export class BrowserInterface {
   public ControlEvent({ eventType, payload }: { eventType: string; payload: any }) {
     switch (eventType) {
       case 'SceneReady': {
-        const { sceneId } = payload
-        sceneLifeCycleObservable.notifyObservers({ sceneId, status: 'ready' })
+        const { sceneId, sceneNumber } = payload
+        store.dispatch(rendererSignalSceneReady(sceneId, sceneNumber))
+
         break
       }
       case 'DeactivateRenderingACK': {
@@ -553,7 +520,7 @@ export class BrowserInterface {
          * This event is called everytime the renderer deactivates its camera
          */
         store.dispatch(renderingDectivated())
-        renderStateObservable.notifyObservers()
+        console.log('DeactivateRenderingACK')
         break
       }
       case 'ActivateRenderingACK': {
@@ -561,7 +528,7 @@ export class BrowserInterface {
          * This event is called everytime the renderer activates the main camera
          */
         store.dispatch(renderingActivated())
-        renderStateObservable.notifyObservers()
+        console.log('ActivateRenderingACK')
         break
       }
       default: {
@@ -591,9 +558,7 @@ export class BrowserInterface {
   public SetScenesLoadRadius(data: { newRadius: number }) {
     parcelLimits.visibleRadius = Math.round(data.newRadius)
 
-    renderDistanceObservable.notifyObservers({
-      distanceInParcels: parcelLimits.visibleRadius
-    })
+    store.dispatch(setWorldLoadingRadius(parcelLimits.visibleRadius))
   }
 
   public GetUnseenMessagesByUser() {
@@ -635,7 +600,7 @@ export class BrowserInterface {
   }
 
   public GetFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload: GetFriendsWithDirectMessagesPayload) {
-    getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload)
+    getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload).catch(defaultLogger.error)
   }
 
   public ReportScene(data: { sceneId: string }) {
@@ -807,7 +772,14 @@ export class BrowserInterface {
 
   public GetChannelMembers(getChannelMembersPayload: GetChannelMembersPayload) {
     if (!areChannelsEnabled()) return
-    getChannelMembers(getChannelMembersPayload)
+    getChannelMembers(getChannelMembersPayload).catch((err) => {
+      defaultLogger.error('error getChannelMembers', err),
+        trackEvent('error', {
+          message: `error getChannelMembers ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'GetChannelMembers'
+        })
+    })
   }
 
   public GetUnseenMessagesByChannel() {
@@ -836,18 +808,20 @@ export class BrowserInterface {
   }
 
   public SearchENSOwner(data: { name: string; maxResults?: number }) {
-    const profilesPromise = fetchENSOwnerProfile(data.name, data.maxResults)
+    async function work() {
+      const adapter = await ensureRealmAdapterPromise()
+      const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(adapter)
 
-    const baseUrl = getFetchContentUrlPrefix(store.getState())
-
-    profilesPromise
-      .then((profiles) => {
-        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles, baseUrl)
-      })
-      .catch((error) => {
-        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined, baseUrl)
+      try {
+        const profiles = await fetchENSOwnerProfile(data.name, data.maxResults)
+        getUnityInstance().SetENSOwnerQueryResult(data.name, profiles, fetchContentServerWithPrefix)
+      } catch (error: any) {
+        getUnityInstance().SetENSOwnerQueryResult(data.name, undefined, fetchContentServerWithPrefix)
         defaultLogger.error(error)
-      })
+      }
+    }
+
+    work().catch(defaultLogger.error)
   }
 
   public async JumpIn(data: WorldPosition) {
@@ -923,7 +897,7 @@ export class BrowserInterface {
 
   public FetchBalanceOfMANA() {
     const fn = async () => {
-      const identity = getIdentity()
+      const identity = getCurrentIdentity(store.getState())
 
       if (!identity?.hasConnectedWeb3) {
         return
@@ -1024,7 +998,7 @@ export class BrowserInterface {
   }
 
   public RequestUserProfile(userIdPayload: { value: string }) {
-    store.dispatch(profileRequest(userIdPayload.value, ProfileType.DEPLOYED))
+    ProfileAsPromise(userIdPayload.value, ProfileType.DEPLOYED).catch(defaultLogger.error)
   }
 
   public ReportAvatarFatalError() {

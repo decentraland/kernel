@@ -1,28 +1,26 @@
-import {
-  AvatarShape,
-  engine,
-  Entity,
-  Observable,
-  Transform,
-  EventManager
-  // BoxShape,
-  // IEntity,
-  // Material,
-  // Color4
-} from '@dcl/legacy-ecs'
+import { AvatarShape, engine, Entity, Transform, EventManager } from '@dcl/legacy-ecs'
 import type {
   AvatarMessage,
-  Pose,
   ReceiveUserDataMessage,
   ReceiveUserExpressionMessage,
   ReceiveUserTalkingMessage,
   ReceiveUserVisibleMessage,
   UserInformation,
-  UserRemovedMessage,
-  UUID
+  UserRemovedMessage
 } from 'shared/comms/interface/types'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-export const avatarMessageObservable = new Observable<AvatarMessage>()
+import mitt from 'mitt'
+export const avatarMessageObservable = mitt<{ message: AvatarMessage }>()
+
+type Position = {
+  positionX: number
+  positionY: number
+  positionZ: number
+  rotationX: number
+  rotationY: number
+  rotationZ: number
+  rotationW: number
+}
 
 const avatarMap = new Map<string, AvatarEntity>()
 // const box = new BoxShape()
@@ -113,22 +111,9 @@ export class AvatarEntity extends Entity {
     shape.expressionTriggerTimestamp = timestamp
   }
 
-  setPose(pose: Pose): void {
-    const [x, y, z, Qx, Qy, Qz, Qw, immediate] = pose
-
-    // We re-add the entity to the engine when reposition is immediate to avoid lerping its position in the renderer (and avoid adding a property to the transform for that)
-    const shouldReAddEntity = immediate && this.visible
-
-    if (shouldReAddEntity) {
-      this.remove()
-    }
-
-    this.transform.position.set(x, y, z)
-    this.transform.rotation.set(Qx, Qy, Qz, Qw)
-
-    if (shouldReAddEntity) {
-      engine.addEntity(this)
-    }
+  setPose(pose: Position): void {
+    this.transform.position.set(pose.positionX, pose.positionY, pose.positionZ)
+    this.transform.rotation.set(pose.rotationX, pose.rotationY, pose.rotationZ, pose.rotationW)
   }
 
   public remove() {
@@ -151,17 +136,17 @@ export class AvatarEntity extends Entity {
 /**
  * For every UUID, ensures synchronously that an avatar exists in the local state.
  * Returns the AvatarEntity instance
- * @param userId
+ * @param address
  */
-function ensureAvatar(userId: UUID): AvatarEntity {
-  let avatar = avatarMap.get(userId)
+function ensureAvatar(address: string): AvatarEntity {
+  let avatar = avatarMap.get(address)
 
   if (avatar) {
     return avatar
   }
 
-  avatar = new AvatarEntity(userId)
-  avatarMap.set(userId, avatar)
+  avatar = new AvatarEntity(address)
+  avatarMap.set(address, avatar)
 
   return avatar
 }
@@ -200,7 +185,7 @@ function handleUserRemoved({ userId }: UserRemovedMessage): void {
   }
 }
 
-avatarMessageObservable.add((evt) => {
+avatarMessageObservable.on('message', (evt) => {
   if (evt.type === 'USER_DATA') {
     handleUserData(evt)
   } else if (evt.type === 'USER_VISIBLE') {
