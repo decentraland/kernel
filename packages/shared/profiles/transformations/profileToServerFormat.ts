@@ -15,12 +15,12 @@ export function ensureAvatarCompatibilityFormat(profile: Readonly<Avatar | OldAv
 
   // These mappings from legacy id are here just in case they still have the legacy id in local storage
   avatarInfo.bodyShape =
-    mapLegacyIdToUrn(profile.avatar.bodyShape) || 'urn:decentraland:off-chain:base-avatars:BaseFemale'
-  avatarInfo.wearables = (profile.avatar.wearables || []).map(mapLegacyIdToUrn).filter(Boolean) as string[]
-  avatarInfo.emotes = profile.avatar.emotes
-  avatarInfo.snapshots = profile.avatar.snapshots
+    mapLegacyIdToUrn(profile.avatar?.bodyShape) || 'urn:decentraland:off-chain:base-avatars:BaseFemale'
+  avatarInfo.wearables = (profile.avatar?.wearables || []).map(mapLegacyIdToUrn).filter(Boolean) as string[]
+  avatarInfo.emotes = profile.avatar?.emotes
+  avatarInfo.snapshots = profile.avatar?.snapshots
 
-  if ('eyeColor' in profile.avatar) {
+  if (profile.avatar && 'eyeColor' in profile.avatar) {
     const eyes = stripAlpha(analizeColorPart(profile.avatar, 'eyeColor', 'eyes'))
     const hair = stripAlpha(analizeColorPart(profile.avatar, 'hairColor', 'hair'))
     const skin = stripAlpha(analizeColorPart(profile.avatar, 'skinColor', 'skin'))

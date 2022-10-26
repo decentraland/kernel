@@ -60,7 +60,7 @@ export function* metricSaga() {
       trackEvent('avatar_edit_success', {
         userId: profile.userId,
         version: profile.version,
-        wearables: profile.avatar.wearables
+        wearables: profile.avatar?.wearables
       })
     }
   })

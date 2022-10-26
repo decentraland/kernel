@@ -57,7 +57,7 @@ export class AvatarEntity extends Entity {
   }
 
   loadProfile(profile: Pick<NewProfileForRenderer, 'avatar' | 'name'>) {
-    if (profile && profile.name && profile.avatar.bodyShape) {
+    if (profile && profile.name && profile.avatar?.bodyShape) {
       // this.sub.addComponentOrReplace(green)
       const { avatar } = profile
 

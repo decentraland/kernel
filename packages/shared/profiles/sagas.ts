@@ -345,7 +345,10 @@ function* readProfileFromLocalStorage() {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const profile = (yield apply(localProfilesRepo, localProfilesRepo.get, [identity.address, network])) as Avatar | null
   if (profile && profile.userId === identity.address) {
-    return ensureAvatarCompatibilityFormat(profile)
+    try {
+      return ensureAvatarCompatibilityFormat(profile)
+    } catch {}
+    return null
   } else {
     return null
   }
