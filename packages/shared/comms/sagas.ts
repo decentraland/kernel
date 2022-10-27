@@ -296,7 +296,9 @@ function* createLighthouseConnection(url: string) {
         case 'realm-full':
         case 'reconnection-error':
         case 'id-taken':
-          lighthouse.disconnect({ kicked: true, error: new Error(status.status) }).catch(commsLogger.error)
+          lighthouse
+            .disconnect({ kicked: status.status === 'id-taken', error: new Error(status.status) })
+            .catch(commsLogger.error)
           store.dispatch(setRealmAdapter(undefined))
           store.dispatch(setRoomConnection(undefined))
           break
