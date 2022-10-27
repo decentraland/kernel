@@ -38,7 +38,12 @@ import {
   JoinOrCreateChannelPayload,
   GetChannelMembersPayload
 } from 'shared/types'
-import { getSceneWorkerBySceneNumber, allScenesEvent, AllScenesEvents } from 'shared/world/parcelSceneManager'
+import {
+  getSceneWorkerBySceneID,
+  getSceneWorkerBySceneNumber,
+  allScenesEvent,
+  AllScenesEvents
+} from 'shared/world/parcelSceneManager'
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { receivePositionReport } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
@@ -281,8 +286,8 @@ export class BrowserInterface {
     futures[data.id].resolve(data.mousePosition)
   }
 
-  public SceneEvent(data: { sceneNumber: number; eventType: string; payload: any }) {
-    const scene = getSceneWorkerBySceneNumber(data.sceneNumber)
+  public SceneEvent(data: { sceneId: string; sceneNumber: number; eventType: string; payload: any }) {
+    const scene = data.sceneId ? getSceneWorkerBySceneID(data.sceneId) : getSceneWorkerBySceneNumber(data.sceneNumber)
 
     if (scene) {
       scene.rpcContext.sendSceneEvent(data.eventType as IEventNames, data.payload)
@@ -297,7 +302,10 @@ export class BrowserInterface {
       }
     } else {
       if (data.eventType !== 'metricsUpdate') {
-        defaultLogger.error(`SceneEvent: Scene number ${data.sceneNumber} not found`, data)
+        if(data.sceneId)
+          defaultLogger.error(`SceneEvent: Scene id ${data.sceneId} not found`, data)
+        else
+          defaultLogger.error(`SceneEvent: Scene number ${data.sceneNumber} not found`, data)
       }
     }
   }
@@ -330,7 +338,7 @@ export class BrowserInterface {
     getUnityInstance().crashPayloadResponseObservable.notifyObservers(JSON.stringify(data))
   }
 
-  public PreloadFinished(_data: { sceneNumber: number }) {
+  public PreloadFinished(_data: { sceneId: string; sceneNumber: number }) {
     // stub. there is no code about this in unity side yet
   }
 
@@ -358,7 +366,7 @@ export class BrowserInterface {
     sendPublicChatMessage(body)
   }
 
-  public TermsOfServiceResponse(data: { sceneNumber: number; accepted: boolean; dontShowAgain: boolean }) {
+  public TermsOfServiceResponse(data: { sceneId: string; sceneNumber: number; accepted: boolean; dontShowAgain: boolean }) {
     trackEvent('TermsOfServiceResponse', data)
   }
 
@@ -603,10 +611,18 @@ export class BrowserInterface {
     getFriendsWithDirectMessages(getFriendsWithDirectMessagesPayload).catch(defaultLogger.error)
   }
 
-  public ReportScene(data: { sceneNumber: number }) {
-    this.OpenWebURL({
-      url: `https://dcl.gg/report-user-or-scene?scene_or_name=${getSceneWorkerBySceneNumber(data.sceneNumber)?.rpcContext.sceneData.id}`
-    })
+  public ReportScene(data: { sceneId: string; sceneNumber: number }) {
+    if(data.sceneId) {
+      this.OpenWebURL({
+        url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
+      })
+    } else {
+      this.OpenWebURL({
+        url: `https://dcl.gg/report-user-or-scene?scene_or_name=${
+          getSceneWorkerBySceneNumber(data.sceneNumber)?.rpcContext.sceneData.id
+        }`
+      })
+    }
   }
 
   public ReportPlayer(data: { userId: string }) {
@@ -1017,13 +1033,14 @@ export class BrowserInterface {
 
   public VideoProgressEvent(videoEvent: {
     componentId: string
+    sceneId: string
     sceneNumber: number
     videoTextureId: string
     status: number
     currentOffset: number
     videoLength: number
   }) {
-    const scene = getSceneWorkerBySceneNumber(videoEvent.sceneNumber)
+    const scene = videoEvent.sceneId ? getSceneWorkerBySceneID(videoEvent.sceneId) : getSceneWorkerBySceneNumber(videoEvent.sceneNumber)
     if (scene) {
       scene.rpcContext.sendSceneEvent('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,
@@ -1033,7 +1050,10 @@ export class BrowserInterface {
         totalVideoLength: videoEvent.videoLength
       })
     } else {
-      defaultLogger.error(`SceneEvent: Scene number ${videoEvent.sceneNumber} not found`, videoEvent)
+      if(videoEvent.sceneId)
+        defaultLogger.error(`SceneEvent: Scene id ${videoEvent.sceneId} not found`, videoEvent)
+      else
+        defaultLogger.error(`SceneEvent: Scene number ${videoEvent.sceneNumber} not found`, videoEvent)
     }
   }
 

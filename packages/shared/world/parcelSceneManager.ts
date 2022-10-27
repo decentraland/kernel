@@ -50,7 +50,7 @@ export function getSceneWorkerBySceneID(sceneId: string) {
 export function getSceneWorkerBySceneNumber(sceneNumber: number) {
   // TODO: Optimize this fetch
   for (const sceneWorker of loadedSceneWorkers.values()) {
-    if(sceneWorker.rpcContext.sceneData.sceneNumber == sceneNumber) {
+    if(sceneWorker.rpcContext.sceneData.sceneNumber === sceneNumber) {
       return sceneWorker
     }
   }
