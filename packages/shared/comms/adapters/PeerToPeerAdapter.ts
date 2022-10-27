@@ -207,13 +207,31 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     return !!this.knownPeers[peerId]
   }
 
-  private handlePeerPacket(data: Uint8Array, peerId: string) {
+  private handlePeerPacket(data: Uint8Array, reliable: boolean) {
     if (this.disposed) return
-    // TODO: Implement
-    // this.events.emit('message', {
-    //   address: packet.src,
-    //   data: messageData.payload
-    // })
+
+    const packet = Packet.decode(data)
+
+    this.events.emit('message', {
+      address: packet.source,
+      data: packet.payload
+    })
+
+    const peersToSend: Set<string> = firstStep(this.paths, this.config.peerId)
+
+    const peersThroughMS: Set<string> = new Set()
+    for (const neighbor of peersToSend) {
+      const success = this.mesh.sendPacketToPeer(neighbor, data, reliable)
+      if (!success) {
+        peersThroughMS.add(neighbor)
+        allSteps(this.paths, neighbor).forEach((p: string) => peersThroughMS.add(p))
+      }
+    }
+
+    for (const peer of peersThroughMS) {
+      // TODO:
+      // this.sendMS(peer, packet)
+    }
   }
 
   private scheduleUpdateNetwork() {
