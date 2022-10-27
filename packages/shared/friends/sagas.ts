@@ -1128,6 +1128,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   try {
     const state: ReturnType<typeof getPrivateMessaging> = yield select(getPrivateMessaging)
 
+    // TODO JULI
+    console.log(`JULI - handleUpdateFriendship - state: ${JSON.stringify(state)}`)
+    console.log(`JULI - handleUpdateFriendship - action: ${JSON.stringify(action)}`)
+
     let newState: FriendsState | undefined
 
     const socialData: SocialData | undefined = yield select(findPrivateMessagingFriendsByUserId, userId)
@@ -1204,12 +1208,19 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       case FriendshipAction.CANCELED: {
         const requests = [...state[friendRequestTypeSelector]]
 
+        // TODO JULI
+        console.log(`JULI - handleUpdateFriendship - FriendshipAction.CANCELED - requests: ${JSON.stringify(requests)}`)
+
         const index = requests.findIndex((request) => request.userId === userId)
 
         if (index !== -1) {
           requests.splice(index, 1)
 
           newState = { ...state, [friendRequestTypeSelector]: requests }
+          // TODO JULI
+          console.log(
+            `JULI - handleUpdateFriendship - FriendshipAction.CANCELED - newState: ${JSON.stringify(newState)}`
+          )
         }
 
         updateTotalFriendRequestsPayload = {
@@ -1257,11 +1268,19 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       case FriendshipAction.DELETED: {
         const index = state.friends.indexOf(userId)
 
+        // TODO JULI
+        console.log(`JULI - handleUpdateFriendship - FriendshipAction.DELETED - index: ${JSON.stringify(index)}`)
+
         if (index !== -1) {
           const friends = [...state.friends]
           friends.splice(index, 1)
 
           newState = { ...state, friends }
+
+          // TODO JULI
+          console.log(
+            `JULI - handleUpdateFriendship - FriendshipAction.DELETED - newState: ${JSON.stringify(newState)}`
+          )
         }
 
         totalFriends -= 1
