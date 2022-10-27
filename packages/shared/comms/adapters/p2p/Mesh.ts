@@ -15,7 +15,7 @@ export const defaultIceServers = [
 
 type Config = {
   logger: ILogger
-  packetHandler: (data: Uint8Array, peerId: string) => void
+  packetHandler: (data: Uint8Array, reliable: boolean) => void
   shouldAcceptOffer(peerId: string): boolean
   logConfig: P2PLogConfig
 }
@@ -31,7 +31,7 @@ const PEER_CONNECT_TIMEOUT = 3500
 export class Mesh {
   private disposed = false
   private logger: ILogger
-  private packetHandler: (data: Uint8Array, peerId: string) => void
+  private packetHandler: (data: Uint8Array, reliable: boolean) => void
   private shouldAcceptOffer: (peerId: string) => boolean
   private initiatedConnections = new Map<string, Connection>()
   private receivedConnections = new Map<string, Connection>()
@@ -92,7 +92,7 @@ export class Mesh {
     dc.addEventListener('message', async (event) => {
       const data = new Uint8Array(event.data)
 
-      this.packetHandler(data, peerId)
+      this.packetHandler(data, false)
     })
 
     const offer = await instance.createOffer({
@@ -350,7 +350,7 @@ export class Mesh {
 
       dc.addEventListener('message', (event) => {
         const data = new Uint8Array(event.data)
-        this.packetHandler(data, peerId)
+        this.packetHandler(data, false)
       })
     })
 

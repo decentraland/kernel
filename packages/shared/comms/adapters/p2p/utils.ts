@@ -1,4 +1,3 @@
-import { keccak256Hash } from '@dcl/hashing'
 import { Position3D } from 'shared/comms/v3/types'
 
 export const DISCRETIZE_POSITION_INTERVALS = [32, 64, 80, 128, 160]

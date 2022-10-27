@@ -12,7 +12,6 @@ import { IRealmAdapter } from '../../realm/types'
 import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
 import { Path } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
 import { Packet } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
-import { peerIdHandler } from '../logic/peer-id-handler'
 
 export type P2PConfig = {
   islandId: string
@@ -45,6 +44,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
   private listeners: { close(): void }[] = []
 
+  // TODO: Update this
   private paths: Path[] = []
   private unreachablePeers: Set<string> = new Set()
 
@@ -154,6 +154,19 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       )
     )
 
+    // TODO: When disconnected need to return from this for
+    const listenMessages = async () => {
+      for await (const packet of this.config.bff.services.messaging.read({})) {
+        this.events.emit('message', {
+          address: packet.source,
+          data: packet.payload
+        })
+      }
+    }
+    listenMessages().catch((error) => {
+      console.error(error)
+    })
+
     this.triggerUpdateNetwork(`changed to island ${this.config.islandId}`)
   }
 
@@ -197,17 +210,20 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       }
     }
 
-    for (const peer of peersThroughMS) {
-      // TODO:
-      // this.sendMS(peer, packet)
-    }
+    await this.config.bff.services.messaging.publish({
+      packet: {
+        payload,
+        source: this.config.peerId
+      },
+      peers: Array.from(peersThroughMS)
+    })
   }
 
   isKnownPeer(peerId: string): boolean {
     return !!this.knownPeers[peerId]
   }
 
-  private handlePeerPacket(data: Uint8Array, reliable: boolean) {
+  private async handlePeerPacket(data: Uint8Array, reliable: boolean) {
     if (this.disposed) return
 
     const packet = Packet.decode(data)
@@ -228,10 +244,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       }
     }
 
-    for (const peer of peersThroughMS) {
-      // TODO:
-      // this.sendMS(peer, packet)
-    }
+    await this.config.bff.services.messaging.publish({ packet, peers: Array.from(peersThroughMS) })
   }
 
   private scheduleUpdateNetwork() {

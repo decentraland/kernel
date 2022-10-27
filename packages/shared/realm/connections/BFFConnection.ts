@@ -15,6 +15,7 @@ import { RealmConnectionEvents, BffServices, IRealmAdapter } from '../types'
 import mitt from 'mitt'
 import { legacyServices } from '../local-services/legacy'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
+import { MessagingServiceDefinition } from '@dcl/protocol/out-ts/decentraland/bff/messaging_service.gen'
 
 export type TopicData = {
   peerId: string
@@ -99,6 +100,7 @@ export class BffRpcConnection implements IRealmAdapter<any> {
     this.services = {
       comms: loadService(port, CommsServiceDefinition),
       routing: loadService(port, RoutingServiceDefinition),
+      messaging: loadService(port, MessagingServiceDefinition),
       legacy: legacyServices(baseUrl, about)
     }
   }
