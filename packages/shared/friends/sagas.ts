@@ -254,6 +254,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
         // When it's a friend and is not added to catalog
         // unity needs to know this information to show that the user has connected
         if (isFriend(store.getState(), userId)) {
+          // TODO JULI
+          console.log(`JULI - onStatusChange - isFriend - userId: ${userId} - status: ${JSON.stringify(status)}`)
           if (!isAddedToCatalog(store.getState(), userId)) {
             await ensureFriendProfile(userId)
           }
@@ -263,6 +265,10 @@ function* configureMatrixClient(action: SetMatrixClient) {
           })
         }
 
+        // TODO JULI
+        console.log(
+          `JULI - onStatusChange - sendUpdateUserStatus - userId: ${userId} - status: ${JSON.stringify(status)}`
+        )
         sendUpdateUserStatus(userId, status)
       }
     } catch (error) {
@@ -543,6 +549,10 @@ function* refreshFriends() {
     const fromFriendRequestsIds = fromFriendRequests.map((request) => request.from)
     const fromFriendRequestsSocial = toSocialData(fromFriendRequestsIds)
 
+    // TODO JULI
+    console.log(`JULI - refreshFriends - getFriendIds - friendIds: ${JSON.stringify(friendIds)}`)
+    console.log(`JULI - refreshFriends - getPendingRequests - friendRequests: ${JSON.stringify(friendRequests)}`)
+
     const socialInfo: Record<string, SocialData> = [
       ...friendsSocial,
       ...toFriendRequestsSocial,
@@ -653,6 +663,9 @@ export async function getFriends(request: GetFriendsPayload) {
   const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
 
+  // TODO JULI
+  console.log(`JULI - getFriends - getPrivateMessagingFriends - friendsIds: ${JSON.stringify(friendsIds)}`)
+
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
     friendsIds,
@@ -674,6 +687,9 @@ export async function getFriends(request: GetFriendsPayload) {
     friends: friendIdsToReturn,
     totalFriends: friendsIds.length
   }
+
+  // TODO JULI
+  console.log(`JULI - getFriends - AddFriends - addFriendsPayload: ${JSON.stringify(addFriendsPayload)}`)
 
   getUnityInstance().AddFriends(addFriendsPayload)
 
@@ -699,6 +715,12 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   )
   const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
 
+  // TODO JULI
+  console.log(
+    `JULI - getFriendRequests - getPrivateMessaging - fromFriendRequests: ${JSON.stringify(fromFriendRequests)}`
+  )
+  console.log(`JULI - getFriendRequests - getPrivateMessaging - toFriendRequests: ${JSON.stringify(toFriendRequests)}`)
+
   const addFriendRequestsPayload: AddFriendRequestsPayload = {
     requestedTo: toFriendRequests.map((friend) => friend.userId),
     requestedFrom: fromFriendRequests.map((friend) => friend.userId),
@@ -718,6 +740,13 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   // send friend requests profiles
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
+
+  // TODO JULI
+  console.log(
+    `JULI - getFriendRequests - AddFriendRequests - addFriendRequestsPayload: ${JSON.stringify(
+      addFriendRequestsPayload
+    )}`
+  )
 
   // send friend requests
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
@@ -830,6 +859,13 @@ export async function getFriendsWithDirectMessages(request: GetFriendsWithDirect
     (conv) => conv.conversation.type === ConversationType.DIRECT
   )
 
+  // TODO JULI
+  console.log(
+    `JULI - getFriendsWithDirectMessages - getAllConversationsWithMessages - conversationsWithMessages: ${JSON.stringify(
+      conversationsWithMessages
+    )}`
+  )
+
   if (conversationsWithMessages.length === 0) {
     return
   }
@@ -842,6 +878,11 @@ export async function getFriendsWithDirectMessages(request: GetFriendsWithDirect
     store.getState(),
     friendsIds,
     request.userNameOrId
+  )
+
+  // TODO JULI
+  console.log(
+    `JULI - getFriendsWithDirectMessages - getProfilesFromStore - filteredFriends: ${JSON.stringify(filteredFriends)}`
   )
 
   const friendsConversations: Array<{ userId: string; conversation: Conversation; avatar: Avatar }> = []
@@ -874,6 +915,13 @@ export async function getFriendsWithDirectMessages(request: GetFriendsWithDirect
 
   getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
   store.dispatch(addedProfilesToCatalog(friendsConversations.map((friend) => friend.avatar)))
+
+  // TODO JULI
+  console.log(
+    `JULI - getFriendsWithDirectMessages - AddFriendsWithDirectMessages - addFriendsWithDirectMessagesPayload: ${JSON.stringify(
+      addFriendsWithDirectMessagesPayload
+    )}`
+  )
 
   getUnityInstance().AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload)
 
@@ -1228,6 +1276,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     })
 
     if (newState) {
+      // TODO JULI
+      console.log(`JULI - handleUpdateFriendship - newState - newState: ${JSON.stringify(newState)}`)
+
       yield put(updatePrivateMessagingState(newState))
 
       if (incoming) {
