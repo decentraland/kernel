@@ -149,8 +149,10 @@ function* authenticate(action: AuthenticateAction) {
     yield call(referUser, identity)
   }
 
-  // HACK to fix onboarding flow, remove in RFC-1 impl
-  getUnityInstance().FadeInLoadingHUD({} as any)
+  if (isSignUp) {
+    // HACK to fix onboarding flow, remove in RFC-1 impl
+    getUnityInstance().FadeInLoadingHUD({} as any)
+  }
 }
 
 function* authorize(requestManager: RequestManager) {
