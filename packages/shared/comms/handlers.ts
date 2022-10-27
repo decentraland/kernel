@@ -141,7 +141,7 @@ function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVers
       ProfileAsPromise(
         message.address,
         profileVersion,
-        /* we ask for LOCAL to ask information about the profile using comms o not overload the servers*/
+        /* we ask for LOCAL to ask information about the profile using comms to not overload the servers*/
         ProfileType.LOCAL
       ).catch((e: Error) => {
         trackEvent('error', {

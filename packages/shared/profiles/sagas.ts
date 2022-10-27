@@ -146,7 +146,7 @@ function* initialRemoteProfileLoad() {
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
-  const { userId, version } = action.payload
+  const { userId, version, profileType } = action.payload
 
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
   const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
@@ -154,12 +154,12 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
 
   try {
-    const isGuest = yield select(getIsGuestLogin)
+    const iAmAGuest: boolean = yield select(getIsGuestLogin)
     const loadingMyOwnProfile = yield select(isCurrentUserId, userId)
-    const shouldReadProfileFromLocalStorage = isGuest && loadingMyOwnProfile
+    const shouldReadProfileFromLocalStorage = loadingMyOwnProfile && iAmAGuest
     const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
     const shouldFetchViaComms = roomConnection && !loadingMyOwnProfile
-    const shouldLoadFromCatalyst = true
+    const shouldLoadFromCatalyst = profileType === ProfileType.DEPLOYED || (loadingMyOwnProfile && !iAmAGuest)
     const shouldFallbackToRandomProfile = true
 
     const versionNumber = +(version || '1')
@@ -229,9 +229,9 @@ function* getRemoteProfile(userId: string, version?: number) {
 export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
   const bff = await ensureRealmAdapterPromise()
   try {
-    let url = `${bff.services.legacy.lambdasServer}/profiles?id=${userId}`
+    let url = `${bff.services.legacy.lambdasServer}/profiles/${userId}`
     if (version) url = url + `&version=${version}`
-    else url = url + `&no-cache=${Math.random()}`
+    else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
 
     const response = await fetch(url)
 

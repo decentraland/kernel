@@ -89,7 +89,7 @@ function ensureSingleString(value: string | string[] | null): string | null {
 const USE_LOCAL_COMMS = location.search.includes('LOCAL_COMMS') || PREVIEW
 export const COMMS =
   !qs.has('COMMS') && USE_LOCAL_COMMS ? 'v1' : qs.get('COMMS') ? ensureSingleString(qs.get('COMMS'))! : 'v2' // by default
-export const COMMS_PROFILE_TIMEOUT = 10000
+export const COMMS_PROFILE_TIMEOUT = 5000
 
 export const DECENTRALAND_SPACE = qs.get('SPACE')
 

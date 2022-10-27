@@ -119,7 +119,7 @@ function convertCurrentRealmType(realmAdapter: IRealmAdapter, contentServerUrl: 
   return {
     serverName: realmAdapter.about.configurations?.realmName || realmAdapter.baseUrl,
     layer: '',
-    domain: new URL(realmAdapter.baseUrl).hostname,
+    domain: realmAdapter.baseUrl,
     contentServerUrl: contentServerUrl
   }
 }

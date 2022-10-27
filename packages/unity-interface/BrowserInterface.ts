@@ -998,7 +998,7 @@ export class BrowserInterface {
   }
 
   public RequestUserProfile(userIdPayload: { value: string }) {
-    ProfileAsPromise(userIdPayload.value, ProfileType.DEPLOYED).catch(defaultLogger.error)
+    ProfileAsPromise(userIdPayload.value, undefined, ProfileType.DEPLOYED).catch(defaultLogger.error)
   }
 
   public ReportAvatarFatalError() {
