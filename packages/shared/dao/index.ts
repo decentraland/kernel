@@ -153,7 +153,6 @@ async function resolveOfflineRealmAboutFromConnectionString(
   realmString: string
 ): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
   if (realmString === OFFLINE_REALM || realmString.startsWith(OFFLINE_REALM + '?')) {
-    debugger
     const params = new URL('decentraland:' + realmString).searchParams
     let baseUrl = urlWithProtocol(params.get('baseUrl') || 'https://peer.decentraland.org')
 

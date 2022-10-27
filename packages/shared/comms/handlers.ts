@@ -35,6 +35,7 @@ import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } fr
 import { sendPublicChatMessage } from '.'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { commsLogger } from './context'
+import { incrementCounter } from 'shared/occurences'
 
 type PingRequest = {
   alias: number
@@ -85,9 +86,8 @@ export async function requestProfileToPeers(
 
   pendingProfileRequests.get(address)!.add(thisFuture)
 
-  const start = Date.now()
-  thisFuture.then((value) => {
-    console.log('comms profile ' + (value ? 'resolved' : 'failed ❌'), address, Date.now() - start)
+  void thisFuture.then((value) => {
+    incrementCounter(value ? 'profile-over-comms-succesful' : 'profile-over-comms-failed')
   })
 
   // send the request
@@ -99,20 +99,24 @@ export async function requestProfileToPeers(
   // send another retry in a couple seconds
   setTimeout(function () {
     if (thisFuture.isPending) {
-      roomConnection.sendProfileRequest({
-        address,
-        profileVersion
-      }).catch(commsLogger.error)
+      roomConnection
+        .sendProfileRequest({
+          address,
+          profileVersion
+        })
+        .catch(commsLogger.error)
     }
   }, COMMS_PROFILE_TIMEOUT / 3)
 
   // send another retry in a couple seconds
   setTimeout(function () {
     if (thisFuture.isPending) {
-      roomConnection.sendProfileRequest({
-        address,
-        profileVersion
-      }).catch(commsLogger.error)
+      roomConnection
+        .sendProfileRequest({
+          address,
+          profileVersion
+        })
+        .catch(commsLogger.error)
     }
   }, COMMS_PROFILE_TIMEOUT / 2)
 

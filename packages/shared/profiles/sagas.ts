@@ -146,10 +146,8 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
   const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
 
-  if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
-
   try {
-    const loadingMyOwnProfile = identity?.address.toLowerCase() == userId.toLowerCase()
+    const loadingMyOwnProfile = identity?.address.toLowerCase() === userId.toLowerCase()
     const iAmAGuest: boolean = loadingMyOwnProfile && (yield select(getIsGuestLogin))
     const shouldReadProfileFromLocalStorage = iAmAGuest
     const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
@@ -225,7 +223,7 @@ const cachedRequests = new Map<string, Promise<RemoteProfile>>()
 
 function requestCacheKey(userId: string, version?: number) {
   if (userId.startsWith('default')) return userId
-  if (typeof version == 'number') return `${userId}:${version}`
+  if (version) return `${userId}:${version}`
   return null
 }
 
