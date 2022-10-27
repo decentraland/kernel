@@ -9,7 +9,7 @@ import { store } from 'shared/store/isolatedStore'
 import { getRealmAdapter } from 'shared/realm/selectors'
 import { Parcel } from 'shared/dao/types'
 import { urlWithProtocol } from 'shared/realm/resolver'
-import { trackTeleportTriggered } from 'shared/loading/types'
+//import { trackTeleportTriggered } from 'shared/loading/types'
 import { teleportToAction } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 
