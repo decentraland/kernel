@@ -74,5 +74,9 @@ export function isRendererVisible(state: RootState) {
     return false
   }
 
-  return state.loading.renderingActivated || isLoadingScreenVisible(state)
+  if (loginState === LoginState.COMPLETED) {
+    return true
+  }
+
+  return state.loading.renderingWasActivated || isLoadingScreenVisible(state)
 }
