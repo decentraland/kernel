@@ -1119,9 +1119,14 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
 function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   const { action, userId } = payload
 
+  // TODO JULI
+  console.log(`JULI - handleUpdateFriendship - payload: ${payload} - meta: ${meta}}`)
+
   const client: SocialAPI | undefined = yield select(getSocialClient)
 
   if (!client) {
+    // TODO JULI
+    console.log(`JULI - handleUpdateFriendship - client - return}`)
     return
   }
 
@@ -1368,6 +1373,9 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
   const client: SocialAPI | undefined = yield select(getSocialClient)
   const socialData: SocialData = yield select(findPrivateMessagingFriendsByUserId, update.userId)
 
+  // TODO JULI
+  console.log(`JULI - handleOutgoingUpdateFriendshipStatus}`)
+
   if (!client) {
     return
   }
@@ -1396,6 +1404,8 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
         break
       }
       case FriendshipAction.CANCELED: {
+        // TODO JULI
+        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.CANCELED - socialId: ${socialId}}`)
         yield client.cancelFriendshipRequestTo(socialId)
         break
       }
@@ -1409,6 +1419,8 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
       case FriendshipAction.DELETED: {
         yield client.deleteFriendshipWith(socialId)
+        // TODO JULI
+        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.DELETED - socialId: ${socialId}}`)
         break
       }
     }
