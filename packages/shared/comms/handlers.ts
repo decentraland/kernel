@@ -34,6 +34,7 @@ import { RoomConnection } from './interface'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
 import { sendPublicChatMessage } from '.'
 import { getCurrentIdentity } from 'shared/session/selectors'
+import { commsLogger } from './context'
 
 type PingRequest = {
   alias: number
@@ -84,11 +85,38 @@ export async function requestProfileToPeers(
 
   pendingProfileRequests.get(address)!.add(thisFuture)
 
+  const start = Date.now()
+  thisFuture.then((value) => {
+    console.log('comms profile ' + (value ? 'resolved' : 'failed ❌'), address, Date.now() - start)
+  })
+
+  // send the request
   await roomConnection.sendProfileRequest({
     address,
     profileVersion
   })
 
+  // send another retry in a couple seconds
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      roomConnection.sendProfileRequest({
+        address,
+        profileVersion
+      }).catch(commsLogger.error)
+    }
+  }, COMMS_PROFILE_TIMEOUT / 3)
+
+  // send another retry in a couple seconds
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      roomConnection.sendProfileRequest({
+        address,
+        profileVersion
+      }).catch(commsLogger.error)
+    }
+  }, COMMS_PROFILE_TIMEOUT / 2)
+
+  // and lastly fail
   setTimeout(function () {
     if (thisFuture.isPending) {
       // We resolve with a null profile. This will fallback to a random profile
@@ -168,6 +196,13 @@ function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
   }
 }
 
+function pingMessage(nonce: number) {
+  return `␑${nonce}`
+}
+function pongMessage(nonce: number) {
+  return `␆${nonce}`
+}
+
 globalThis.__sendPing = () => {
   const nonce = Math.floor(Math.random() * 0xffffffff)
   pingRequests.set(nonce, {
@@ -175,8 +210,10 @@ globalThis.__sendPing = () => {
     sentTime: Date.now(),
     alias: pingIndex++
   })
-  sendPublicChatMessage(`␑${nonce}`)
+  sendPublicChatMessage(pingMessage(nonce))
 }
+
+const answeredPings = new Set<number>()
 
 function processChatMessage(message: Package<proto.Chat>) {
   const myProfile = getCurrentUserProfile(store.getState())
@@ -186,15 +223,18 @@ function processChatMessage(message: Package<proto.Chat>) {
   senderPeer.lastUpdate = Date.now()
 
   if (senderPeer.ethereumAddress) {
-    if (message.data.message.startsWith('␑')) {
+    if (message.data.message.startsWith('␆') /* pong */) {
       const nonce = parseInt(message.data.message.slice(1), 10)
       const request = pingRequests.get(nonce)
       if (request) {
         request.responses++
         console.log(`ping ${request.alias} has ${request.responses} responses (nonce: ${nonce})`)
-      } else {
-        sendPublicChatMessage(message.data.message)
       }
+    } else if (message.data.message.startsWith('␑') /* ping */) {
+      const nonce = parseInt(message.data.message.slice(1), 10)
+      if (answeredPings.has(nonce)) return
+      answeredPings.add(nonce)
+      sendPublicChatMessage(pongMessage(nonce))
     } else if (message.data.message.startsWith('␐')) {
       const [id, timestamp] = message.data.message.split(' ')
 
@@ -246,7 +286,10 @@ function processProfileResponse(message: Package<proto.ProfileResponse>) {
     debugger
   }
 
-  if (peerTrackingInfo.ethereumAddress !== profile.userId) return
+  if (peerTrackingInfo.ethereumAddress !== profile.userId) {
+    debugger
+    return
+  }
 
   const promises = pendingProfileRequests.get(profile.userId)
 
