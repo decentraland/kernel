@@ -658,6 +658,9 @@ export class BrowserInterface {
 
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     try {
+      // TODO JULI
+      console.log(`JULI - UpdateFriendshipStatus - message: ${JSON.stringify(message)}`)
+
       let { userId } = message
       let found = false
       const state = store.getState()
@@ -695,6 +698,8 @@ export class BrowserInterface {
       }
 
       store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+      // TODO JULI
+      console.log(`JULI - dispatch.updateFriendship - message: ${JSON.stringify(message)}`)
       store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
     } catch (error) {
       const message = 'Failed while processing updating friendship status'
