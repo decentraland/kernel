@@ -65,7 +65,7 @@ export class TeleportController {
   public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
     if (isInsideWorldLimits(x, y)) {
-      store.dispatch(trackTeleportTriggered(tpMessage))
+      // store.dispatch(trackTeleportTriggered(tpMessage))
       /// This doesn't work when the logic of activate/deactivate rendering is so tightly coupled with the loading
       /// screen. The code needs rework
       // const data = {
