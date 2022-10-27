@@ -366,10 +366,12 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddFriends(addFriendsPayload: AddFriendsPayload): void {
+    console.log(`JULI - AddFriends addFriendsPayload: ${JSON.stringify(addFriendsPayload)}`)
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
   }
 
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
+    console.log(`JULI - AddFriendRequests addFriendRequestsPayload: ${JSON.stringify(addFriendRequestsPayload)}`)
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
 
@@ -384,6 +386,11 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void {
+    console.log(
+      `JULI - AddFriendsWithDirectMessages addFriendsWithDirectMessagesPayload: ${JSON.stringify(
+        addFriendsWithDirectMessagesPayload
+      )}`
+    )
     this.SendMessageToUnity('Main', 'AddFriendsWithDirectMessages', JSON.stringify(addFriendsWithDirectMessagesPayload))
   }
 
