@@ -3,6 +3,7 @@ import { listenPeerMessage } from '../../logic/subscription-adapter'
 import { ILogger } from 'shared/logger'
 import { P2PLogConfig } from './types'
 import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
+import { SendHints } from '../types'
 
 export const defaultIceServers = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -204,7 +205,7 @@ export class Mesh {
     })
   }
 
-  public sendPacketToPeer(peerId: string, data: Uint8Array): boolean {
+  public sendPacketToPeer(peerId: string, data: Uint8Array, reliable: boolean = false): boolean {
     let conn = this.initiatedConnections.get(peerId)
     if (conn && conn.dc && conn.dc.readyState === 'open') {
       conn.dc.send(data)

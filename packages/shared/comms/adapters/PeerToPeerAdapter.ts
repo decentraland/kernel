@@ -10,6 +10,9 @@ import { ILogger } from 'shared/logger'
 import { listenPeerMessage } from '../logic/subscription-adapter'
 import { IRealmAdapter } from '../../realm/types'
 import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
+import { Path } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
+import { Packet } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
+import { peerIdHandler } from '../logic/peer-id-handler'
 
 export type P2PConfig = {
   islandId: string
@@ -41,6 +44,9 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   private disposed: boolean = false
 
   private listeners: { close(): void }[] = []
+
+  private paths: Path[] = []
+  private unreachablePeers: Set<string> = new Set()
 
   constructor(private config: P2PConfig, peers: Map<string, Position3D>) {
     this.logConfig = config.logConfig
@@ -173,13 +179,28 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       return
     }
 
-    // TODO: implement
-    // const peersToSend = this.mesh
-    // .fullyConnectedPeerIds()
-    // .filter(
-    //   (it) =>
-    //     !packet.receivedBy.includes(it) && (packet.hops === 0 || !this.isRelayToConnectionSuspended(it, packet.src))
-    // )
+    // TODO: Make it more efficient (only one writer for all packets)
+    const packet = Packet.encode({
+      payload,
+      source: this.config.peerId,
+      target: this.paths
+    }).finish()
+
+    const peersToSend: Set<string> = firstStep(this.paths, this.config.peerId)
+
+    const peersThroughMS: Set<string> = new Set(this.unreachablePeers)
+    for (const neighbor of peersToSend) {
+      const success = this.mesh.sendPacketToPeer(neighbor, packet, reliable)
+      if (!success) {
+        peersThroughMS.add(neighbor)
+        allSteps(this.paths, neighbor).forEach((p: string) => peersThroughMS.add(p))
+      }
+    }
+
+    for (const peer of peersThroughMS) {
+      // TODO:
+      // this.sendMS(peer, packet)
+    }
   }
 
   isKnownPeer(peerId: string): boolean {
@@ -285,4 +306,34 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
     return this.knownPeers[peer.id]
   }
+}
+
+function firstStep(paths: Path[], peerId: string): Set<string> {
+  const response: Set<string> = new Set()
+  for (const path of paths) {
+    const peers = path.peers
+    const currentIndex = peers.indexOf(peerId)
+
+    if (currentIndex === -1) continue
+    if (currentIndex >= peers.length - 1) continue
+
+    response.add(peers[currentIndex + 1])
+  }
+  return response
+}
+
+function allSteps(paths: Path[], peerId: string): Set<string> {
+  const response: Set<string> = new Set()
+  for (const path of paths) {
+    const peers = path.peers
+    const currentIndex = peers.indexOf(peerId)
+
+    if (currentIndex === -1) continue
+    if (currentIndex >= peers.length - 1) continue
+
+    for (let i = currentIndex + 1; i < peers.length; i++) {
+      response.add(peers[i])
+    }
+  }
+  return response
 }

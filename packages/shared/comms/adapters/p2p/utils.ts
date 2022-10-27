@@ -1,3 +1,4 @@
+import { keccak256Hash } from '@dcl/hashing'
 import { Position3D } from 'shared/comms/v3/types'
 
 export const DISCRETIZE_POSITION_INTERVALS = [32, 64, 80, 128, 160]
@@ -49,15 +50,20 @@ export function pickBy<T>(array: T[], count: number, criteria: (t1: T, t2: T) =>
   return selected
 }
 
-export function pickRandom<T>(array: T[], count: number): T[] {
-  const n = array.length < count ? array.length : count
-  const indexes: Set<number> = new Set()
-  while (indexes.size < n) {
-    indexes.add(Math.floor(Math.random() * array.length))
+// Disclaimer: this method modifies the ls array
+export function pickRandom<T>(ls: T[], count: number): T[] {
+  let len = ls.length
+  if (len <= count) {
+    return ls
   }
-  const response: T[] = []
-  for (const i of indexes) {
-    response.push(array[i])
+
+  for (let i = 0; i < count; i++) {
+    const randomIndex = Math.floor(Math.random() * len)
+    const randomElement = ls[randomIndex]
+    ls[i] = ls[len - 1]
+    ls[len - 1] = randomElement
+    len--
   }
-  return response
+
+  return ls.slice(-count)
 }
