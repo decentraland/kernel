@@ -62,7 +62,9 @@ function createRequest(userId: string, version?: number, profileType?: ProfileTy
   })
 
   promise.finally(() => {
-    if (inFlightPromises.get(userId) == promise) inFlightPromises.delete(userId)
+    if (inFlightPromises.get(userId) === promise) {
+      inFlightPromises.delete(userId)
+    }
   })
 
   inFlightPromises.set(userId, promise)
