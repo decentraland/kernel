@@ -30,7 +30,7 @@ import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
-import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, getIsGuestLogin } from 'shared/session/selectors'
+import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, getIsGuestLogin, isCurrentUserId } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
@@ -143,11 +143,10 @@ function* initialRemoteProfileLoad() {
 export function* handleFetchProfile(action: ProfileRequestAction): any {
   const { userId, version, profileType } = action.payload
 
-  const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
   const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
 
   try {
-    const loadingMyOwnProfile = identity?.address.toLowerCase() === userId.toLowerCase()
+    const loadingMyOwnProfile: boolean = yield select(isCurrentUserId, userId)
     const iAmAGuest: boolean = loadingMyOwnProfile && (yield select(getIsGuestLogin))
     const shouldReadProfileFromLocalStorage = iAmAGuest
     const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
