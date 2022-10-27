@@ -1,5 +1,17 @@
-import { ProfileForRenderer } from '@dcl/legacy-ecs'
+import { ReadOnlyColor4 } from '@dcl/ecs-math'
 import { Snapshots } from '@dcl/schemas'
+
+export type AvatarForRenderer = {
+  bodyShape: string
+  skinColor: ReadOnlyColor4
+  hairColor: ReadOnlyColor4
+  eyeColor: ReadOnlyColor4
+  wearables: string[]
+  emotes: {
+    slot: number
+    urn: string
+  }[]
+}
 
 export type NewProfileForRenderer = {
   userId: string
@@ -7,7 +19,6 @@ export type NewProfileForRenderer = {
   name: string
   // @deprecated
   email: string
-  parcelsWithAccess: ProfileForRenderer['parcelsWithAccess']
   snapshots: Snapshots
   blocked: string[]
   muted: string[]
@@ -15,12 +26,7 @@ export type NewProfileForRenderer = {
   hasConnectedWeb3: boolean
   hasClaimedName: boolean
   baseUrl: string
-  avatar: ProfileForRenderer['avatar'] & {
-    emotes: {
-      slot: number
-      urn: string
-    }[]
-  }
+  avatar: AvatarForRenderer
 
   // TODO evaluate usage of the following
   version: number

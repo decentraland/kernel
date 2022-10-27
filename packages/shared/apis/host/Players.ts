@@ -1,6 +1,5 @@
 import { store } from 'shared/store/isolatedStore'
 
-import { AvatarForUserData } from 'shared/types'
 import { getProfileFromStore } from 'shared/profiles/selectors'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
@@ -9,14 +8,27 @@ import { getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { isWorldPositionInsideParcels } from 'atomicHelpers/parcelScenePositions'
-import { AvatarInfo } from '@dcl/schemas'
+import { AvatarInfo, Snapshots, WearableId } from '@dcl/schemas'
 import { rgbToHex } from 'shared/profiles/transformations/convertToRGBObject'
+
+export type AvatarForUserData = {
+  bodyShape: WearableId
+  skinColor: string
+  hairColor: string
+  eyeColor: string
+  wearables: WearableId[]
+  emotes?: {
+    slot: number
+    urn: string
+  }[]
+  snapshots: Snapshots
+}
 
 export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
   return {
     ...avatar,
-    bodyShape: avatar.bodyShape,
-    wearables: avatar.wearables,
+    bodyShape: avatar?.bodyShape,
+    wearables: avatar?.wearables || [],
     snapshots: {
       ...avatar.snapshots,
       face: avatar.snapshots.face256,
@@ -32,7 +44,7 @@ import { RpcServerPort } from '@dcl/rpc'
 import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { PlayersServiceDefinition } from 'shared/protocol/kernel/apis/Players.gen'
+import { PlayersServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/players.gen'
 
 export function registerPlayersServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PlayersServiceDefinition, async () => ({

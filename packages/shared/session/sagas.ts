@@ -34,8 +34,8 @@ import {
 } from './actions'
 import { localProfilesRepo } from '../profiles/sagas'
 import { getCurrentIdentity, getIsGuestLogin, isLoginCompleted } from './selectors'
-import { waitForRealmInitialized } from '../dao/sagas'
-import { profileRequest, PROFILE_SUCCESS, saveProfileDelta, SEND_PROFILE_TO_RENDERER } from '../profiles/actions'
+import { waitForRoomConnection } from '../dao/sagas'
+import { saveProfileDelta } from '../profiles/actions'
 import { DecentralandIdentity, LoginState } from '@dcl/kernel-interface'
 import { RequestManager } from 'eth-connect'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
@@ -44,11 +44,13 @@ import { store } from 'shared/store/isolatedStore'
 import { globalObservable } from 'shared/observables'
 import { selectNetwork } from 'shared/dao/actions'
 import { getSelectedNetwork } from 'shared/dao/selectors'
-import { setWorldContext } from 'shared/comms/actions'
-import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { setRoomConnection } from 'shared/comms/actions'
 import { Avatar } from '@dcl/schemas'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { createUnsafeIdentity } from '@dcl/crypto/dist/crypto'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
+import { ProfileType } from 'shared/profiles/types'
 
 const TOS_KEY = 'tos'
 const logger = DEBUG_KERNEL_LOG ? createLogger('session: ') : createDummyLogger()
@@ -123,33 +125,33 @@ function* authenticate(action: AuthenticateAction) {
   // 1. authenticate our user
   yield put(userAuthentified(identity, net, isGuest))
   // 2. wait for comms to connect, it only requires the Identity authentication
-  yield call(waitForRealmInitialized)
+  yield call(waitForRoomConnection)
   // 3. then ask for our profile
-  yield put(profileRequest(identity.address))
-  // 4. wait for the response of the profile
-  yield call(waitForLocalProfile)
+  const avatar: Avatar = yield call(
+    ProfileAsPromise,
+    identity.address,
+    0,
+    isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED
+  )
 
-  const avatar: Avatar = yield select(getCurrentUserProfile)
-
-  // 6. continue with signin/signup (only not in preview)
+  // 4. continue with signin/signup (only not in preview)
   const isSignUp = avatar.version <= 0 && !PREVIEW
   if (isSignUp) {
     yield put(signUpSetIsSignUp(isSignUp))
     yield take(SIGNUP)
   }
 
-  // 7. finish sign in
+  // 5. finish sign in
   yield call(ensureMetaConfigurationInitialized)
   yield put(changeLoginState(LoginState.COMPLETED))
 
   if (!isGuest) {
     yield call(referUser, identity)
   }
-}
 
-function* waitForLocalProfile() {
-  while (!(yield select(getCurrentUserProfile))) {
-    yield take([SEND_PROFILE_TO_RENDERER, PROFILE_SUCCESS])
+  if (isSignUp) {
+    // HACK to fix onboarding flow, remove in RFC-1 impl
+    getUnityInstance().FadeInLoadingHUD({} as any)
   }
 }
 
@@ -282,7 +284,7 @@ function* logout() {
     globalObservable.emit('logout', { address: identity.address, network })
   }
 
-  yield put(setWorldContext(undefined))
+  yield put(setRoomConnection(undefined))
 
   if (identity?.address) {
     yield call(removeStoredSession, identity.address)

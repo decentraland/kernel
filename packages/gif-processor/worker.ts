@@ -1,4 +1,3 @@
-import defaultLogger from 'shared/logger'
 import { processGif } from './processors/gifuct-jsProcessor'
 import { ProcessorMessage, WorkerMessageData } from './types'
 
@@ -21,7 +20,7 @@ declare const self: any
     payloads.push(e)
     if (payloads.length === 1) {
       const promise = ConsumePayload()
-      promise.catch((error) => defaultLogger.log(error))
+      promise.catch((error) => console.log(error))
     }
   }
 

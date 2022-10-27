@@ -2,7 +2,6 @@ public/
 docs/
 static/
 scripts/
-test/
 coverage/
 targets/
 *.js

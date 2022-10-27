@@ -3,11 +3,9 @@ import { Vector3 } from '@dcl/ecs-math'
 import { QuestForRenderer } from '@dcl/ecs-quests/@dcl/types'
 import type { UnityGame } from '@dcl/unity-renderer/src'
 import { Observable } from 'mz-observable'
-import type { MinimapSceneInfo } from '@dcl/legacy-ecs'
 import { AirdropInfo } from '../shared/airdrops/interface'
 import {
   RenderProfile,
-  ContentMapping,
   InstancedSpawnPoint,
   LoadableParcelScene,
   WearableV2,
@@ -36,11 +34,12 @@ import {
   ChannelErrorPayload,
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
-  ChannelSearchResultsPayload
+  ChannelSearchResultsPayload,
+  SetAudioDevicesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
-import { Avatar } from '@dcl/schemas'
+import { Avatar, ContentMapping } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { Emote } from 'shared/catalogs/types'
@@ -63,6 +62,19 @@ export type HotSceneInfo = {
   parcels: { x: number; y: number }[]
   usersTotalCount: number
   realms: RealmInfo[]
+}
+
+export type MinimapSceneInfo = {
+  name: string
+  owner: string
+  description: string
+  previewImageUrl: string | undefined
+  type: number
+  parcels: {
+    x: number
+    y: number
+  }[]
+  isPOI: boolean
 }
 
 let instance: IUnityInterface | null = null
@@ -124,6 +136,7 @@ export interface IUnityInterface {
   CrashPayloadRequest(): Promise<string>
   ActivateRendering(): void
   SetLoadingScreen(data: { isVisible: boolean; message: string; showTips: boolean }): void
+  FadeInLoadingHUD(data: { xCoord: number; yCoord: number; message?: string }): void
   DeactivateRendering(): void
   ReportFocusOn(): void
   ReportFocusOff(): void
@@ -178,6 +191,7 @@ export interface IUnityInterface {
   UpdateChannelInfo(channelsInfoPayload: ChannelInfoPayloads): void
   UpdateChannelSearchResults(channelSearchResultsPayload: ChannelSearchResultsPayload): void
   LeaveChannelError(leaveChannelErrorPayload: ChannelErrorPayload): void
+  MuteChannelError(muteChannelErrorPayload: ChannelErrorPayload): void
   UpdateChannelMembers(updateChannelMembersPayload: UpdateChannelMembersPayload): void
 
   RequestTeleport(teleportData: {}): void
@@ -200,6 +214,7 @@ export interface IUnityInterface {
   UpdateRealmsInfo(realmsInfo: Partial<RealmsInfoForRenderer>): void
   SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
+  SendMemoryUsageToRenderer(): void
 
   // *********************************************************************************
   // ************** Builder in world messages **************
@@ -243,4 +258,6 @@ export interface IUnityInterface {
   OnBuilderKeyDown(key: string): void
   SetBuilderConfiguration(config: BuilderConfiguration): void
   SendMessageToUnity(object: string, method: string, payload?: any): void
+
+  SetAudioDevices(devices: SetAudioDevicesPayload): void
 }

@@ -1,5 +1,5 @@
 import { KernelConfigForRenderer } from 'shared/types'
-import { commConfigurations, WSS_ENABLED } from 'config'
+import { getAvatarTextureAPIBaseUrl, commConfigurations, WSS_ENABLED } from 'config'
 import { nameValidCharacterRegex, nameValidRegex } from 'shared/profiles/utils/names'
 import { getWorld } from '@dcl/schemas'
 import { injectVersions } from 'shared/rolloutVersions'
@@ -34,6 +34,7 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
     network,
     validWorldRanges: getWorld().validWorldRanges,
     kernelVersion: versions['@dcl/kernel'] || 'unknown-kernel-version',
-    rendererVersion: versions['@dcl/unity-renderer'] || 'unknown-renderer-version'
+    rendererVersion: versions['@dcl/unity-renderer'] || 'unknown-renderer-version',
+    avatarTextureAPIBaseUrl: getAvatarTextureAPIBaseUrl(getSelectedNetwork(globalState))
   }
 }

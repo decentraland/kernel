@@ -6,7 +6,6 @@ import { InitializeRenderer } from './actions'
 import { getParcelLoadingStarted } from './selectors'
 import { RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
-import { ParcelsWithAccess } from '@dcl/legacy-ecs'
 import {
   SendProfileToRenderer,
   addedProfileToCatalog,
@@ -19,18 +18,18 @@ import { isCurrentUserId, getCurrentIdentity, getCurrentUserId } from 'shared/se
 import { ExplorerIdentity } from 'shared/session/types'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { takeLatestByUserId } from 'shared/profiles/sagas'
-import { fetchParcelsWithAccess } from 'shared/profiles/fetchLand'
 import { UPDATE_LOADING_SCREEN } from 'shared/loading/actions'
 import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selectors'
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
-import { sceneObservable } from 'shared/world/sceneState'
 import { ProfileUserInfo } from 'shared/profiles/types'
-import { getCommsContext } from 'shared/comms/selectors'
-import { getExploreRealmsService, getFetchContentServer, getFetchContentUrlPrefix } from 'shared/dao/selectors'
-import { Realm } from 'shared/dao/types'
-import { CommsContext } from 'shared/comms/context'
+import {
+  getFetchContentServerFromRealmAdapter,
+  getFetchContentUrlPrefixFromRealmAdapter,
+  waitForRealmAdapter
+} from 'shared/realm/selectors'
+import { getExploreRealmsService } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { receivePeerUserData } from 'shared/comms/peers'
 import { deepEqual } from 'atomicHelpers/deepEqual'
@@ -38,7 +37,6 @@ import { waitForRendererInstance } from './sagas-helper'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import {
   SetVoiceChatErrorAction,
-  SetVoiceChatHandlerAction,
   SET_VOICE_CHAT_ERROR,
   SET_VOICE_CHAT_HANDLER,
   VoicePlayingUpdateAction,
@@ -46,7 +44,16 @@ import {
   VOICE_PLAYING_UPDATE,
   VOICE_RECORDING_UPDATE
 } from 'shared/voiceChat/actions'
-import { SET_WORLD_CONTEXT } from 'shared/comms/actions'
+import { IRealmAdapter } from 'shared/realm/types'
+import { SET_REALM_ADAPTER } from 'shared/realm/actions'
+import { getAllowedContentServer } from 'shared/meta/selectors'
+import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
+import { RootState } from 'shared/store/rootTypes'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
+import { getVoiceHandler } from 'shared/voiceChat/selectors'
+import { SceneWorker } from 'shared/world/SceneWorker'
+import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
+import { LoadingState } from 'shared/loading/reducer'
 
 export function* rendererSaga() {
   yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -54,37 +61,45 @@ export function* rendererSaga() {
   yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreen)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
-  yield takeEvery(SET_VOICE_CHAT_HANDLER, updateChangeVoiceChatHandler)
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
 
-  yield call(listenToWhetherSceneSupportsVoiceChat)
+  yield takeLatest(SET_CURRENT_SCENE, listenToWhetherSceneSupportsVoiceChat)
 
   yield fork(reportRealmChangeToRenderer)
+  yield fork(updateChangeVoiceChatHandlerProcess)
 }
 
+/**
+ * This saga sends the BFF configuration changes to the renderer upon every change
+ */
 function* reportRealmChangeToRenderer() {
   yield call(waitForRendererInstance)
 
   while (true) {
-    const context: CommsContext | null = yield select(getCommsContext)
+    const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
 
-    if (context) {
-      const contentServerUrl: string = yield select(getFetchContentServer)
-      const current = convertCurrentRealmType(context.realm, contentServerUrl)
+    try {
+      const configuredContentServer: string = yield call(getFetchContentServerFromRealmAdapter, realmAdapter)
+      const contentServerUrl: string = yield select(getAllowedContentServer, configuredContentServer)
+      const current = convertCurrentRealmType(realmAdapter, contentServerUrl)
+      defaultLogger.info('UpdateRealmsInfo', current)
       getUnityInstance().UpdateRealmsInfo({ current })
+
+      const realmsService = yield select(getExploreRealmsService)
+
+      if (realmsService) {
+        yield call(fetchAndReportRealmsInfo, realmsService)
+      }
+
+      // wait for the next context
+    } catch (err: any) {
+      defaultLogger.error(err)
     }
 
-    const realmsService = yield select(getExploreRealmsService)
-
-    if (realmsService) {
-      yield call(fetchAndReportRealmsInfo, realmsService)
-    }
-
-    // wait for the next context
-    yield take(SET_WORLD_CONTEXT)
+    yield take(SET_REALM_ADAPTER)
   }
 }
 
@@ -100,11 +115,11 @@ async function fetchAndReportRealmsInfo(url: string) {
   }
 }
 
-function convertCurrentRealmType(realm: Realm, contentServerUrl: string): CurrentRealmInfoForRenderer {
+function convertCurrentRealmType(realmAdapter: IRealmAdapter, contentServerUrl: string): CurrentRealmInfoForRenderer {
   return {
-    serverName: realm.serverName,
+    serverName: realmAdapter.about.configurations?.realmName || realmAdapter.baseUrl,
     layer: '',
-    domain: realm.hostname,
+    domain: realmAdapter.baseUrl,
     contentServerUrl: contentServerUrl
   }
 }
@@ -120,12 +135,28 @@ function* updatePlayerVoiceRecordingRenderer(action: VoiceRecordingUpdateAction)
   getUnityInstance().SetPlayerTalking(action.payload.recording)
 }
 
-function* updateChangeVoiceChatHandler(action: SetVoiceChatHandlerAction) {
-  yield call(waitForRendererInstance)
-  if (action.payload.voiceHandler) {
-    getUnityInstance().SetVoiceChatStatus({ isConnected: true })
-  } else {
-    getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+function* updateChangeVoiceChatHandlerProcess() {
+  let prevHandler: VoiceHandler | undefined = undefined
+  while (true) {
+    // wait for a new VoiceHandler
+    yield take(SET_VOICE_CHAT_HANDLER)
+
+    const handler: VoiceHandler | undefined = yield select(getVoiceHandler)
+
+    if (handler !== prevHandler) {
+      if (prevHandler) {
+        prevHandler.destroy()
+      }
+      prevHandler = handler
+    }
+
+    yield call(waitForRendererInstance)
+
+    if (handler) {
+      getUnityInstance().SetVoiceChatStatus({ isConnected: true })
+    } else {
+      getUnityInstance().SetVoiceChatStatus({ isConnected: false })
+    }
   }
 }
 
@@ -142,14 +173,18 @@ function* handleVoiceChatError(action: SetVoiceChatErrorAction) {
   }
 }
 
-function* listenToWhetherSceneSupportsVoiceChat() {
-  sceneObservable.add(({ newScene }) => {
-    const nowEnabled = newScene
-      ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, newScene.entity.metadata)
-      : isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE)
+function* listenToWhetherSceneSupportsVoiceChat(data: SetCurrentScene) {
+  const currentScene: SceneWorker | undefined = data.payload.currentScene
+    ? yield call(getSceneWorkerBySceneID, data.payload.currentScene)
+    : undefined
 
-    getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
-  })
+  const nowEnabled = currentScene
+    ? isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE, currentScene?.metadata)
+    : isFeatureToggleEnabled(VOICE_CHAT_FEATURE_TOGGLE)
+
+  yield call(waitForRendererInstance)
+
+  getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
 }
 
 /**
@@ -159,11 +194,33 @@ function* updateLoadingScreen() {
   yield call(waitForRendererInstance)
 
   const isVisible = yield select(isLoadingScreenVisible)
-  const loadingState = yield select(getLoadingState)
+
   const parcelLoadingStarted = yield select(getParcelLoadingStarted)
+  const loadingState: LoadingState = yield select(getLoadingState)
+  const loadingMessage: string | undefined = yield select((state: RootState): string | undefined => {
+    const msgs: string[] = []
+    if (!state.realm.realmAdapter) msgs.push('Picking realm...')
+    else if (!state.sceneLoader) msgs.push('Initializing world loader...')
+    else if (!parcelLoadingStarted) msgs.push('Fetching initial parcels...')
+    else if (!state.sceneLoader.positionSettled) msgs.push('Waiting for spawn point...')
+
+    if (!state.comms.context) msgs.push('Connecting to comms...')
+
+    if (state.loading.pendingScenes && state.loading.totalScenes > 1) {
+      msgs.push(
+        `Initializing scenes ${state.loading.totalScenes - state.loading.pendingScenes}/${state.loading.totalScenes}...`
+      )
+    } else if (state.loading.renderingWasActivated) {
+      msgs.push(`Waiting for initial render...`)
+    }
+
+    msgs.push(loadingState.message)
+    return msgs.join('\n')
+  })
+
   const loadingScreen = {
     isVisible,
-    message: loadingState.message || loadingState.status || '',
+    message: loadingMessage || loadingState.message || loadingState.status || '',
     showTips: loadingState.initialLoad || !parcelLoadingStarted
   }
   getUnityInstance().SetLoadingScreen(loadingScreen)
@@ -231,20 +288,15 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     throw new Error('Avatar not available for Unity')
   }
 
-  const fetchContentServer = yield select(getFetchContentUrlPrefix)
+  const bff: IRealmAdapter = yield call(waitForRealmAdapter)
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(bff)
 
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
-    let parcels: ParcelsWithAccess = []
-
-    if (identity.hasConnectedWeb3) {
-      parcels = yield call(fetchParcelsWithAccess, identity.address)
-    }
 
     const forRenderer = profileToRendererFormat(profile.data, {
       address: identity.address,
-      parcels,
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
     forRenderer.hasConnectedWeb3 = identity.hasConnectedWeb3
     // TODO: this condition shouldn't be necessary. Unity fails with setThrew
@@ -256,12 +308,12 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     }
   } else {
     const forRenderer = profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServer
+      baseUrl: fetchContentServerWithPrefix
     })
     getUnityInstance().AddUserProfileToCatalog(forRenderer)
     yield put(addedProfileToCatalog(userId, profile.data))
 
     // send to Avatars scene
-    receivePeerUserData(profile.data)
+    receivePeerUserData(profile.data, fetchContentServerWithPrefix)
   }
 }

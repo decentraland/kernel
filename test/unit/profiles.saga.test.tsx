@@ -3,14 +3,14 @@ import { call, select } from 'redux-saga/effects'
 import * as matchers from 'redux-saga-test-plan/matchers'
 import { profileRequest, profileSuccess } from 'shared/profiles/actions'
 import { handleFetchProfile, profileServerRequest } from 'shared/profiles/sagas'
-import { getCommsContext } from 'shared/comms/selectors'
-import { getCurrentUserId, getCurrentIdentity, isCurrentUserId } from 'shared/session/selectors'
+import { getCommsRoom } from 'shared/comms/selectors'
+import { getCurrentUserId, getCurrentIdentity, isCurrentUserId, getIsGuestLogin } from 'shared/session/selectors'
 import { profileSaga } from '../../packages/shared/profiles/sagas'
 import { dynamic } from 'redux-saga-test-plan/providers'
 import { expect } from 'chai'
 import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
 import { sleep } from 'atomicHelpers/sleep'
-import { getRealm } from 'shared/comms/selectors'
+import { getRealmAdapter } from 'shared/realm/selectors'
 import { Avatar } from '@dcl/schemas'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
 
@@ -73,7 +73,7 @@ describe('fetchProfile behavior', () => {
         .dispatch(profileRequest('user|1'))
         .dispatch(profileRequest('user|1'))
         .provide([
-          [select(getRealm), {}],
+          [select(getRealmAdapter), {}],
           [call(profileServerRequest, 'user|1'), delayedProfile],
           [select(getCurrentUserId), 'myid'],
           [call(ensureAvatarCompatibilityFormat, profile), 'passport']
@@ -92,7 +92,7 @@ describe('fetchProfile behavior', () => {
       .dispatch(profileRequest('user|2'))
       .dispatch(profileRequest('user|2'))
       .provide([
-        [select(getRealm), {}],
+        [select(getRealmAdapter), {}],
         [call(profileServerRequest, 'user|1'), delayedProfile],
         [select(getCurrentUserId), 'myid'],
         [call(ensureAvatarCompatibilityFormat, profile), 'passport1'],
@@ -111,9 +111,10 @@ describe('fetchProfile behavior', () => {
 
     return expectSaga(handleFetchProfile, profileRequest(userId))
       .provide([
+        [select(getIsGuestLogin), false],
         [select(getCurrentIdentity), {}], // the content of the identity is not used
         [select(isCurrentUserId, userId), false],
-        [select(getCommsContext), undefined],
+        [select(getCommsRoom), undefined],
         [call(profileServerRequest, userId, undefined), delayed({ avatars: [profile1] })]
       ])
       .run()

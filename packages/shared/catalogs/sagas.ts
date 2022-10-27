@@ -47,12 +47,19 @@ import {
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import { CatalystClient, OwnedItemsWithDefinition } from 'dcl-catalyst-client'
 import { fetchJson } from 'dcl-catalyst-commons'
-import { getCatalystServer, getFetchContentUrlPrefix, getSelectedNetwork } from 'shared/dao/selectors'
+import { getSelectedNetwork } from 'shared/dao/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { ExplorerIdentity } from 'shared/session/types'
 import { trackEvent } from 'shared/analytics'
 import { authorizeBuilderHeaders } from 'atomicHelpers/authenticateBuilder'
+import { IRealmAdapter } from 'shared/realm/types'
+import {
+  getFetchContentServerFromRealmAdapter,
+  getFetchContentUrlPrefixFromRealmAdapter,
+  waitForRealmAdapter
+} from 'shared/realm/selectors'
+import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
@@ -80,9 +87,10 @@ export function* handleItemRequest(action: EmotesRequest | WearablesRequest) {
   const isRequestingEmotes = action.type === EMOTES_REQUEST
   const failureAction = isRequestingEmotes ? emotesFailure : wearablesFailure
   if (valid) {
-    try {
-      const contentBaseUrl: string = yield select(getFetchContentUrlPrefix)
+    const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
+    const contentBaseUrl: string = yield call(getFetchContentUrlPrefixFromRealmAdapter, realmAdapter)
 
+    try {
       const response: PartialItem[] = yield call(fetchItemsFromCatalyst, action, filters)
       const net: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
       const assetBundlesBaseUrl: string = getAssetBundlesBaseUrl(net) + '/'
@@ -110,7 +118,10 @@ function* fetchItemsFromCatalyst(
   action: EmotesRequest | WearablesRequest,
   filters: EmotesRequestFilters | WearablesRequestFilters
 ) {
-  const catalystUrl: string = yield select(getCatalystServer)
+  const realmAdapter: IRealmAdapter = yield call(waitForRealmAdapter)
+  const contentBaseUrl: string = yield call(getFetchContentServerFromRealmAdapter, realmAdapter)
+  // TODO: stop using CatalystClient and move endpoints to BFF
+  const catalystUrl: string = contentBaseUrl.replace(/\/content\/?.*$/, '')
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const client: CatalystClient = new CatalystClient({ catalystUrl })
   const network: ETHEREUM_NETWORK = yield select(getSelectedNetwork)
@@ -277,8 +288,11 @@ async function fetchItemsByIdFromBuilder(
       const itemResponse = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
         headers
       })) as { data: UnpublishedWearable; ok: boolean; error?: string }
+
       if (!itemResponse.ok) {
-        throw new Error(itemResponse.error)
+        const err = new Error('Cannot load items from Builder')
+        BringDownClientAndReportFatalError(err, ErrorContext.KERNEL_SAGA)
+        throw err
       }
 
       return mapUnpublishedItemIntoCatalystItem(action, itemResponse.data) as WearableV2

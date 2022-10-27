@@ -1,110 +1,170 @@
 import { expect } from 'chai'
-import * as r from 'shared/comms/v3/resolver'
+import { resolveRealmConfigFromString } from 'shared/dao'
+import * as r from 'shared/realm/resolver'
 
 function eq<T>(given: T, expected: T) {
-  console.log({ given, expected })
-  expect(given).to.deep.eq(expected)
+  try {
+    expect(given).to.deep.eq(expected)
+  } catch (e) {
+    console.log({ given, expected })
+    throw e
+  }
 }
 
 describe('Comms resolver', () => {
-  it('resolveCommsConnectionString', async () => {
-    eq(await r.resolveCommsConnectionString('v1~local', []), {
-      protocol: 'v1',
-      serverName: 'local',
-      hostname: 'http://local'
+  it('resolveRealmConfigFromString', async () => {
+    eq(await resolveRealmConfigFromString('offline'), {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: 'offline',
+          fixedAdapter: 'offline:offline'
+        },
+        configurations: {
+          realmName: 'offline',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
+        },
+        content: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.org/content'
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.org/lambdas'
+        }
+      },
+      baseUrl: 'https://peer.decentraland.org'
     })
 
-    eq(await r.resolveCommsConnectionString('unknown', []), undefined)
+    eq(await resolveRealmConfigFromString('offline?baseUrl=peer.decentraland.zone'), {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: 'offline',
+          fixedAdapter: 'offline:offline'
+        },
+        configurations: {
+          realmName: 'offline?baseUrl=peer.decentraland.zone',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
+        },
+        content: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.zone/content'
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.zone/lambdas'
+        }
+      },
+      baseUrl: 'https://peer.decentraland.zone'
+    })
+    eq(await resolveRealmConfigFromString('offline?baseUrl=https://peer.decentraland.zone'), {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: 'offline',
+          fixedAdapter: 'offline:offline'
+        },
+        configurations: {
+          realmName: 'offline?baseUrl=https://peer.decentraland.zone',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
+        },
+        content: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.zone/content'
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: 'https://peer.decentraland.zone/lambdas'
+        }
+      },
+      baseUrl: 'https://peer.decentraland.zone'
+    })
+    eq(await resolveRealmConfigFromString('offline?baseUrl=http://peer.decentraland.zone'), {
+      about: {
+        bff: undefined,
+        comms: {
+          healthy: false,
+          protocol: 'offline',
+          fixedAdapter: 'offline:offline'
+        },
+        configurations: {
+          realmName: 'offline?baseUrl=http://peer.decentraland.zone',
+          networkId: 1,
+          globalScenesUrn: [],
+          scenesUrn: [],
+          cityLoaderContentServer: undefined
+        },
+        content: {
+          healthy: true,
+          publicUrl: 'http://peer.decentraland.zone/content'
+        },
+        healthy: true,
+        lambdas: {
+          healthy: true,
+          publicUrl: 'http://peer.decentraland.zone/lambdas'
+        }
+      },
+      baseUrl: 'http://peer.decentraland.zone'
+    })
+  })
+  it('resolveCommsConnectionString', async () => {
+    eq(r.resolveRealmBaseUrlFromRealmQueryParameter('unknown', []), 'https://unknown')
 
     eq(
-      await r.resolveCommsConnectionString('unknown', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('unknown', [
         { catalystName: 'unknown', domain: 'unknowndomain', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'http://unknowndomain',
-        protocol: 'v2',
-        serverName: 'unknown'
-      }
+      'https://unknowndomain'
     )
 
     eq(
-      await r.resolveCommsConnectionString('v2~dg', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('dg', [
+        { catalystName: 'dg', domain: 'peer.decentral1.io', protocol: 'v2' } as any
+      ]),
+      'https://peer.decentral1.io'
+    )
+
+    eq(
+      r.resolveRealmBaseUrlFromRealmQueryParameter('peer.decentral2.io', [
+        { catalystName: 'dg', domain: 'peer.decentral2.io', protocol: 'v2' } as any
+      ]),
+      'https://peer.decentral2.io'
+    )
+
+    eq(
+      r.resolveRealmBaseUrlFromRealmQueryParameter('https://peer.decentral.io', [
         { catalystName: 'dg', domain: 'peer.decentral.io', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'http://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'dg'
-      }
+      'https://peer.decentral.io'
     )
 
     eq(
-      await r.resolveCommsConnectionString('v2~peer.decentral.io', [
-        { catalystName: 'dg', domain: 'peer.decentral.io', protocol: 'v2' } as any
-      ]),
-      {
-        hostname: 'http://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'dg'
-      }
-    )
-
-    eq(
-      await r.resolveCommsConnectionString('v2~https://peer.decentral.io', [
-        { catalystName: 'dg', domain: 'peer.decentral.io', protocol: 'v2' } as any
-      ]),
-      {
-        hostname: 'https://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'https://peer.decentral.io'
-      }
-    )
-
-    eq(
-      await r.resolveCommsConnectionString('v2~https://peer.decentral.io', [
+      r.resolveRealmBaseUrlFromRealmQueryParameter('http://peer.decentral.io', [
         { catalystName: 'dg', domain: 'https://peer.decentral.io', protocol: 'v2' } as any
       ]),
-      {
-        hostname: 'https://peer.decentral.io',
-        protocol: 'v2',
-        serverName: 'dg'
-      }
-    )
-  })
-
-  it('realmToConnectionString', async () => {
-    eq(r.realmToConnectionString({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), 'abc')
-    eq(
-      r.realmToConnectionString({ hostname: 'http://test.com', protocol: 'v2', serverName: 'http://test.com' }),
-      'v2~test.com'
+      'http://peer.decentral.io'
     )
     eq(
-      r.realmToConnectionString({ hostname: 'https://test.com', protocol: 'v2', serverName: 'https://test.com' }),
-      'v2~test.com'
+      r.resolveRealmBaseUrlFromRealmQueryParameter('https://peer.decentral.io', [
+        { catalystName: 'dg', domain: 'https://peer.decentral.io', protocol: 'v2' } as any
+      ]),
+      'https://peer.decentral.io'
     )
-    eq(
-      r.realmToConnectionString({ hostname: 'ws://test.com', protocol: 'v3', serverName: 'ws://test.com' }),
-      'v3~test.com'
-    )
-    eq(
-      r.realmToConnectionString({ hostname: 'wss://test.com', protocol: 'v3', serverName: 'wss://test.com' }),
-      'v3~test.com'
-    )
-  })
-
-  it('resolveCommsV3Urls', async () => {
-    eq(r.resolveCommsV3Urls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
-    eq(r.resolveCommsV3Urls({ hostname: 'http://test.com', protocol: 'v3', serverName: 'http://test.com' }), {
-      pingUrl: 'http://test.com/about',
-      wsUrl: 'ws://test.com/bff/rpc'
-    })
-  })
-
-  it('resolveCommsV4Urls', async () => {
-    eq(r.resolveCommsV4Urls({ hostname: 'test', protocol: 'v2', serverName: 'abc' }), undefined)
-    eq(r.resolveCommsV4Urls({ hostname: 'http://test.com', protocol: 'v4', serverName: 'http://test.com' }), {
-      pingUrl: 'http://test.com/status',
-      wsUrl: 'ws://test.com/ws'
-    })
   })
 })

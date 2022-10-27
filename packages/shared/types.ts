@@ -1,51 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import type { Vector3Component, Vector2Component } from '../atomicHelpers/landHelpers'
-import type { QueryType } from '@dcl/legacy-ecs'
-import type { WearableId } from 'shared/catalogs/types'
-import { Entity, Scene, Snapshots } from '@dcl/schemas'
+import { Entity, ContentMapping } from '@dcl/schemas'
 export { WearableId, Wearable, WearableV2 } from './catalogs/types'
-
-export type MappingsResponse = {
-  parcel_id: string
-  root_cid: string
-  contents: Array<ContentMapping>
-}
-
-export type ParcelInfoResponse = {
-  scene_cid: string
-  root_cid: string
-  content: MappingsResponse
-}
-
-export type ContentMapping = { file: string; hash: string }
 
 export interface MessageDict {
   [key: string]: string
-}
-
-/** THIS TYPE IS APPEND ONLY BECAUSE IT IS USED FOR THE SDK APIs */
-export type UserData = {
-  displayName: string
-  publicKey: string | null
-  hasConnectedWeb3: boolean
-  userId: string
-  version: number
-  avatar: AvatarForUserData
-}
-
-export type ColorString = string
-
-export type AvatarForUserData = {
-  bodyShape: WearableId
-  skinColor: ColorString
-  hairColor: ColorString
-  eyeColor: ColorString
-  wearables: WearableId[]
-  emotes?: {
-    slot: number
-    urn: string
-  }[]
-  snapshots: Snapshots
 }
 
 export type MessageEntry = {
@@ -249,26 +208,6 @@ export type LoadableScene = {
   readonly parentCid?: string
 }
 
-export interface ILand {
-  /**
-   * sceneId: Now it is either an internal identifier or the rootCID.
-   * In the future will change to the sceneCID
-   */
-  sceneId: string
-  sceneJsonData: Scene
-  baseUrl: string
-  baseUrlBundles: string
-  mappingsResponse: MappingsResponse
-}
-
-export interface IPortableExperience {
-  cid: string
-  baseUrl: string
-  baseUrlBundles: string
-  sceneJsonData: Scene
-  mappingsResponse: MappingsResponse
-}
-
 export type SceneSpawnPoint = {
   name?: string
   position: {
@@ -394,6 +333,8 @@ export type Ray = {
   distance: number
 }
 
+export type QueryType = 'HitFirst' | 'HitAll' | 'HitFirstAvatar' | 'HitAllAvatars'
+
 export type RayQuery = {
   queryId: string
   queryType: QueryType
@@ -504,6 +445,17 @@ export type WorldPosition = {
   }
 }
 
+export type SetAudioDevicesPayload = {
+  outputDevices: {
+    label: string
+    deviceId: string
+  }[]
+  inputDevices: {
+    label: string
+    deviceId: string
+  }[]
+}
+
 export enum ChatMessagePlayerType {
   WALLET = 0,
   GUEST = 1
@@ -513,6 +465,7 @@ export type ChatMessage = {
   messageId: string
   messageType: ChatMessageType
   sender?: string | undefined
+  senderName?: string | undefined
   recipient?: string | undefined
   timestamp: number
   body: string
@@ -681,6 +634,7 @@ export type KernelConfigForRenderer = {
   validWorldRanges: Object
   kernelVersion: string
   rendererVersion: string
+  avatarTextureAPIBaseUrl: string
 }
 
 export type RealmsInfoForRenderer = {
@@ -724,6 +678,7 @@ export type AvatarRendererBasePayload = {
 export type AvatarRendererPositionMessage = {
   type: AvatarRendererMessageType.SCENE_CHANGED
   sceneId?: string
+  sceneNumber?: number
 } & AvatarRendererBasePayload
 
 export type AvatarRendererRemovedMessage = {
@@ -739,6 +694,8 @@ export enum ChannelErrorCode {
   RESERVED_NAME = 3, // Such as nearby
   ALREADY_EXISTS = 4 // The name has already been used
 }
+
+export type JoinOrCreateChannelPayload = CreateChannelPayload
 
 export type CreateChannelPayload = {
   channelId: string
@@ -783,7 +740,7 @@ export type UpdateTotalUnseenMessagesByChannelPayload = {
 export type GetChannelMessagesPayload = {
   channelId: string
   limit: number // max amount of entries to request
-  fromMessageId: string // pivot id to skip entries
+  from: string // pivot id to skip entries
 }
 
 export type GetChannelsPayload = {
@@ -807,7 +764,7 @@ export type MuteChannelPayload = {
 }
 
 export type GetChannelInfoPayload = {
-  channelsIds: string[]
+  channelIds: string[]
 }
 
 export type GetChannelMembersPayload = {
@@ -819,10 +776,17 @@ export type GetChannelMembersPayload = {
 
 export type ChannelMember = {
   userId: string
-  isOnline: boolean
+  name: string
+  isOnline?: boolean
 }
 
 export type UpdateChannelMembersPayload = {
   channelId: string
   members: ChannelMember[]
+}
+
+// Users allowed to create channels
+export type UsersAllowed = {
+  mode: number
+  allowList: string[]
 }

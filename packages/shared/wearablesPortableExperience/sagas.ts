@@ -2,8 +2,9 @@ import { EntityType, Scene } from '@dcl/schemas'
 import { call, select, takeEvery, takeLatest } from '@redux-saga/core/effects'
 import { jsonFetch } from 'atomicHelpers/jsonFetch'
 import { put } from 'redux-saga-test-plan/matchers'
+import { getFetchContentUrlPrefixFromRealmAdapter, waitForRealmAdapter } from 'shared/realm/selectors'
+import { IRealmAdapter } from 'shared/realm/types'
 import { wearablesRequest, WearablesSuccess, WEARABLES_SUCCESS } from 'shared/catalogs/actions'
-import { getFetchContentUrlPrefix } from 'shared/dao/selectors'
 import defaultLogger from 'shared/logger'
 import { ProfileSuccessAction, PROFILE_SUCCESS } from 'shared/profiles/actions'
 import { isCurrentUserId } from 'shared/session/selectors'
@@ -29,7 +30,7 @@ function* handleProfileSuccess(action: ProfileSuccessAction): any {
     return
   }
 
-  const newProfileWearables = action.payload.profile.avatar.wearables
+  const newProfileWearables = action.payload.profile.avatar?.wearables || []
   const currentDesiredPortableExperiences: Record<string, LoadableScene | null> = yield select(
     getDesiredWearablePortableExpriences
   )
@@ -77,7 +78,8 @@ function* handleWearablesSuccess(action: WearablesSuccess): any {
   )
 
   if (wearablesToProcess.length > 0) {
-    const defaultBaseUrl: string = yield select(getFetchContentUrlPrefix)
+    const adapter: IRealmAdapter = yield call(waitForRealmAdapter)
+    const defaultBaseUrl: string = yield call(getFetchContentUrlPrefixFromRealmAdapter, adapter)
 
     for (const wearable of wearablesToProcess) {
       try {

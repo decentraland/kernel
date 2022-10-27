@@ -10,16 +10,17 @@ import { RpcServerPort } from '@dcl/rpc'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { sendParcelSceneCommsMessage } from './../../comms'
 import { PortContext } from './context'
-import { CommunicationsControllerServiceDefinition } from 'shared/protocol/kernel/apis/CommunicationsController.gen'
+import { CommunicationsControllerServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/communications_controller.gen'
 
 export function registerCommunicationsControllerServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, CommunicationsControllerServiceDefinition, async (port, ctx) => {
     const commsController: ICommunicationsController = {
       cid: ctx.sceneData.id,
-      receiveCommsMessage(message: string, sender: PeerInformation) {
+      receiveCommsMessage(data: Uint8Array, sender: PeerInformation) {
+        const message = new TextDecoder().decode(data)
         ctx.sendSceneEvent('comms', {
           message,
-          sender: sender.ethereumAddress || sender.uuid
+          sender: sender.ethereumAddress
         })
       }
     }
@@ -32,7 +33,8 @@ export function registerCommunicationsControllerServiceServerImplementation(port
 
     return {
       async send(req, ctx) {
-        sendParcelSceneCommsMessage(ctx.sceneData.id, req.message)
+        const message = new TextEncoder().encode(req.message)
+        sendParcelSceneCommsMessage(ctx.sceneData.id, message)
         return {}
       }
     }
