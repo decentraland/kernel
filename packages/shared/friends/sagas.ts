@@ -1120,7 +1120,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   const { action, userId } = payload
 
   // TODO JULI
-  console.log(`JULI - handleUpdateFriendship - payload: ${payload} - meta: ${meta}}`)
+  console.log(`JULI - handleUpdateFriendship - payload: ${JSON.stringify(payload)} - meta: ${JSON.stringify(meta)}}`)
 
   const client: SocialAPI | undefined = yield select(getSocialClient)
 
@@ -1405,7 +1405,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
       case FriendshipAction.CANCELED: {
         // TODO JULI
-        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.CANCELED - socialId: ${socialId}}`)
+        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.CANCELED - socialId: ${JSON.stringify(socialId)}}`)
         yield client.cancelFriendshipRequestTo(socialId)
         break
       }
@@ -1420,7 +1420,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       case FriendshipAction.DELETED: {
         yield client.deleteFriendshipWith(socialId)
         // TODO JULI
-        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.DELETED - socialId: ${socialId}}`)
+        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.DELETED - socialId: ${JSON.stringify(socialId)}}`)
         break
       }
     }
