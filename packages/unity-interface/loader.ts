@@ -2,6 +2,7 @@ import future from 'fp-future'
 import type * as _TheRenderer from '@dcl/unity-renderer/src/index'
 import { trackEvent } from 'shared/analytics'
 import { BringDownClientAndShowError } from 'shared/loading/ReportFatalError'
+import { PREVIEW } from 'config'
 
 declare const globalThis: { DclRenderer?: DclRenderer }
 
@@ -89,7 +90,11 @@ export async function loadUnity(baseUrl: string, options: CommonRendererOptions)
       return globalThis.DclRenderer!.initializeWebRenderer({
         baseUrl,
         canvas,
-        versionQueryParam: rendererVersion === 'dynamic' ? Date.now().toString() : rendererVersion,
+        versionQueryParam: PREVIEW
+          ? 'preview'
+          : rendererVersion === 'dynamic'
+          ? Date.now().toString()
+          : rendererVersion,
         onProgress,
         onMessageLegacy: options.onMessage,
         onError: (error) => {
