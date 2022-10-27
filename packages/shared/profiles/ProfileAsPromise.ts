@@ -7,7 +7,7 @@ import { Avatar } from '@dcl/schemas'
 import { isCurrentUserId } from 'shared/session/selectors'
 
 // We resolve a profile with an older version after this time, if there is that info
-const PROFILE_SOFT_TIMEOUT_MS = 15000
+const PROFILE_SOFT_TIMEOUT_MS = 5000
 
 // We reject the profile promise if more time than this has passed
 const PROFILE_HARD_TIMEOUT_MS = COMMS_PROFILE_TIMEOUT + 20000
