@@ -129,8 +129,6 @@ export function* anounceOnReadyOnSceneReady() {
     const scene: SceneWorker | undefined = yield call(getSceneWorkerBySceneID, event.payload.sceneId)
     if (scene) {
       yield apply(scene, scene.onReady, [])
-    } else {
-      debugger
     }
   }
 }

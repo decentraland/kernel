@@ -4,7 +4,7 @@ import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
-import { getCurrentIdentity, getCurrentUserId, getIsGuestLogin, hasWallet } from 'shared/session/selectors'
+import { getCurrentIdentity, getCurrentUserId, hasWallet } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -13,7 +13,7 @@ import {
   ReportFatalErrorWithUnityPayload
 } from 'shared/loading/ReportFatalError'
 import { defaultLogger } from 'shared/logger'
-import { profileRequest, saveProfileDelta } from 'shared/profiles/actions'
+import { saveProfileDelta, sendProfileToRenderer } from 'shared/profiles/actions'
 import { ProfileType } from 'shared/profiles/types'
 import {
   ChatMessage,
@@ -448,9 +448,8 @@ export class BrowserInterface {
 
   public RequestOwnProfileUpdate() {
     const userId = getCurrentUserId(store.getState())
-    const isGuest = getIsGuestLogin(store.getState())
-    if (!isGuest && userId) {
-      store.dispatch(profileRequest(userId))
+    if (userId) {
+      store.dispatch(sendProfileToRenderer(userId))
     }
   }
 
