@@ -11,6 +11,7 @@ import { listenPeerMessage } from '../logic/subscription-adapter'
 import { IRealmAdapter } from '../../realm/types'
 import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
 import { Path } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
+import { Reason } from '@dcl/protocol/out-ts/decentraland/bff/messaging_service.gen'
 import { Packet } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
 
 export type P2PConfig = {
@@ -36,7 +37,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   public readonly mesh: Mesh
   public readonly events = mitt<CommsAdapterEvents>()
   public logConfig: P2PLogConfig
-  public knownPeers: Record<string, KnownPeerData> = {}
+  public knownPeers = new Map<string, KnownPeerData>()
 
   private updatingNetwork: boolean = false
   private updateNetworkTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -44,7 +45,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
   private listeners: { close(): void }[] = []
 
-  // TODO: Update this
+  // NOTE: when a new routing table arrives, both fields need to be updated
   private paths: Path[] = []
   private unreachablePeers: Set<string> = new Set()
 
@@ -75,7 +76,14 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
         return true
       },
-      logConfig: this.logConfig
+      logConfig: this.logConfig,
+      onChange: () => {
+        this.config.bff.services.routing.updatePeerStatus({
+          timestamp: Date.now(),
+          room: this.config.islandId,
+          connectedTo: this.mesh.connectedPeerIds()
+        })
+      }
     })
 
     this.scheduleUpdateNetwork()
@@ -84,7 +92,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       if (peerId !== this.config.peerId) {
         this.addKnownPeerIfNotExists({ id: peerId, position: p })
         if (p) {
-          this.knownPeers[peerId].position = p
+          this.knownPeers.get(peerId)!.position = p
         }
       }
     })
@@ -130,7 +138,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     if (peerLeftMessage.islandId === this.config.islandId) {
       this.config.logger.log(`peer ${peerId} left ${this.config.islandId}`)
       this.disconnectFrom(peerId)
-      delete this.knownPeers[peerId]
+      this.knownPeers.delete(peerId)
       this.events.emit('PEER_DISCONNECTED', { address: peerId })
       this.triggerUpdateNetwork(`peer ${peerId} left island`)
     } else {
@@ -164,7 +172,19 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       }
     }
     listenMessages().catch((error) => {
-      console.error(error)
+      this.config.logger.error(error)
+    })
+
+    const listenRoutingChanges = async () => {
+      for await (const routingTable of this.config.bff.services.routing.getRoutingTable({})) {
+        const unreachablePeers = new Set<string>(this.knownPeers.keys())
+        for (const path of routingTable.paths) {
+          path.peers.forEach((p) => unreachablePeers.delete(p))
+        }
+      }
+    }
+    listenRoutingChanges().catch((error) => {
+      this.config.logger.error(error)
     })
 
     this.triggerUpdateNetwork(`changed to island ${this.config.islandId}`)
@@ -182,7 +202,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       listener.close()
     }
 
-    this.knownPeers = {}
+    this.knownPeers.clear()
     await this.mesh.dispose()
     this.events.emit('DISCONNECTION', { kicked: false })
   }
@@ -201,7 +221,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
     const peersToSend: Set<string> = firstStep(this.paths, this.config.peerId)
 
-    const peersThroughMS: Set<string> = new Set(this.unreachablePeers)
+    const peersThroughMS: Set<string> = new Set()
     for (const neighbor of peersToSend) {
       const success = this.mesh.sendPacketToPeer(neighbor, packet, reliable)
       if (!success) {
@@ -215,12 +235,22 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         payload,
         source: this.config.peerId
       },
+      reason: Reason.REASON_NO_ROUTE,
+      peers: Array.from(this.unreachablePeers)
+    })
+
+    await this.config.bff.services.messaging.publish({
+      packet: {
+        payload,
+        source: this.config.peerId
+      },
+      reason: Reason.REASON_ROUTE_CUT,
       peers: Array.from(peersThroughMS)
     })
   }
 
   isKnownPeer(peerId: string): boolean {
-    return !!this.knownPeers[peerId]
+    return !!this.knownPeers.get(peerId)
   }
 
   private async handlePeerPacket(data: Uint8Array, reliable: boolean) {
@@ -244,7 +274,11 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       }
     }
 
-    await this.config.bff.services.messaging.publish({ packet, peers: Array.from(peersThroughMS) })
+    await this.config.bff.services.messaging.publish({
+      packet,
+      peers: Array.from(peersThroughMS),
+      reason: Reason.REASON_ROUTE_CUT
+    })
   }
 
   private scheduleUpdateNetwork() {
@@ -292,7 +326,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         }
 
         const candidates = pickRandom(
-          Object.values(this.knownPeers).filter((peer) => {
+          Array.from(this.knownPeers.values()).filter((peer) => {
             return !this.mesh.hasConnectionsFor(peer.id)
           }),
           neededConnections
@@ -312,7 +346,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         if (this.logConfig.debugUpdateNetwork) {
           this.config.logger.log(`Too many connections. Need to disconnect from: ${toDisconnect}`)
         }
-        Object.values(this.knownPeers)
+        Array.from(this.knownPeers.values())
           .filter((peer) => this.mesh.isConnectedTo(peer.id))
           .slice(0, toDisconnect)
           .forEach((peer) => this.disconnectFrom(peer.id))
@@ -331,11 +365,11 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   }
 
   private addKnownPeerIfNotExists(peer: KnownPeerData) {
-    if (!this.knownPeers[peer.id]) {
-      this.knownPeers[peer.id] = peer
+    if (!this.knownPeers.has(peer.id)) {
+      this.knownPeers.set(peer.id, peer)
     }
 
-    return this.knownPeers[peer.id]
+    return this.knownPeers.get(peer.id)!
   }
 }
 

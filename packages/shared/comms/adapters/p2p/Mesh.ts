@@ -17,6 +17,7 @@ type Config = {
   logger: ILogger
   packetHandler: (data: Uint8Array, reliable: boolean) => void
   shouldAcceptOffer(peerId: string): boolean
+  onChange: () => void
   logConfig: P2PLogConfig
 }
 
@@ -33,6 +34,7 @@ export class Mesh {
   private logger: ILogger
   private packetHandler: (data: Uint8Array, reliable: boolean) => void
   private shouldAcceptOffer: (peerId: string) => boolean
+  private onChange: () => void
   private initiatedConnections = new Map<string, Connection>()
   private receivedConnections = new Map<string, Connection>()
   private logConfig: P2PLogConfig
@@ -44,11 +46,12 @@ export class Mesh {
   constructor(
     private realmAdapter: IRealmAdapter,
     private peerId: string,
-    { logger, packetHandler, shouldAcceptOffer, logConfig }: Config
+    { logger, packetHandler, shouldAcceptOffer, onChange, logConfig }: Config
   ) {
     this.logger = logger
     this.packetHandler = packetHandler
     this.shouldAcceptOffer = shouldAcceptOffer
+    this.onChange = onChange
     this.logConfig = logConfig
 
     this.listeners.push(
@@ -72,8 +75,12 @@ export class Mesh {
         case 'new':
           conn.createTimestamp = Date.now()
           break
+        case 'connected':
+          this.onChange()
+          break
         case 'closed':
           this.receivedConnections.delete(peerId)
+          this.onChange()
           break
         case 'failed':
           this.receivedConnections.delete(peerId)
@@ -330,8 +337,12 @@ export class Mesh {
         case 'new':
           conn.createTimestamp = Date.now()
           break
+        case 'connected':
+          this.onChange()
+          break
         case 'closed':
           this.receivedConnections.delete(peerId)
+          this.onChange()
           break
         case 'failed':
           this.receivedConnections.delete(peerId)
