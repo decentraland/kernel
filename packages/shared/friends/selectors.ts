@@ -55,6 +55,32 @@ export const getAllConversationsWithMessages = (
     }))
 }
 
+export const getAllFriendsConversationsWithMessages = (
+  store: RootFriendsState
+): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
+  const client = getSocialClient(store)
+  if (!client) return []
+
+  const conversations = client.getAllCurrentFriendsConversations()
+
+  // TODO JULI
+  console.log(
+    `JULI - getAllFriendsConversationsWithMessages - client.getAllFriendsConversations - conversations: ${JSON.stringify(
+      conversations
+    )}`
+  )
+
+  return conversations
+    .filter((conv) => conv.conversation.hasMessages)
+    .map((conv) => ({
+      ...conv,
+      conversation: {
+        ...conv.conversation,
+        userIds: conv.conversation.userIds?.map((userId) => getUserIdFromMatrix(userId))
+      }
+    }))
+}
+
 export const getTotalFriendRequests = (store: RootFriendsState): UpdateTotalFriendRequestsPayload => ({
   totalReceivedRequests: store.friends.fromFriendRequests.length,
   totalSentRequests: store.friends.toFriendRequests.length
