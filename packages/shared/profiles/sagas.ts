@@ -30,7 +30,13 @@ import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
 import { takeLatestById } from './utils/takeLatestById'
-import { getCurrentUserId, getCurrentIdentity, getCurrentNetwork, getIsGuestLogin, isCurrentUserId } from 'shared/session/selectors'
+import {
+  getCurrentUserId,
+  getCurrentIdentity,
+  getCurrentNetwork,
+  getIsGuestLogin,
+  isCurrentUserId
+} from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
 import { fetchOwnedENS } from 'shared/web3'
