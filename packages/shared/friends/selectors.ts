@@ -63,13 +63,6 @@ export const getAllFriendsConversationsWithMessages = (
 
   const conversations = client.getAllCurrentFriendsConversations()
 
-  // TODO JULI
-  console.log(
-    `JULI - getAllFriendsConversationsWithMessages - client.getAllFriendsConversations - conversations: ${JSON.stringify(
-      conversations
-    )}`
-  )
-
   return conversations
     .filter((conv) => conv.conversation.hasMessages)
     .map((conv) => ({
