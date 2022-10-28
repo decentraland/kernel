@@ -19,7 +19,6 @@ import {
 import { getAllCatalystCandidates, getCatalystCandidatesReceived } from './selectors'
 import { saveToPersistentStorage, getFromPersistentStorage } from '../../atomicHelpers/persistentStorage'
 import { BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
-import { commsLogger } from 'shared/comms/context'
 import { createAlgorithm } from './pick-realm-algorithm/index'
 import { AlgorithmChainConfig } from './pick-realm-algorithm/types'
 import { defaultChainConfig } from './pick-realm-algorithm/defaults'
@@ -27,7 +26,7 @@ import defaultLogger from 'shared/logger'
 import { SET_ROOM_CONNECTION } from 'shared/comms/actions'
 import { getCommsRoom } from 'shared/comms/selectors'
 import { CatalystNode } from 'shared/types'
-import { candidateToRealm, resolveRealmBaseUrlFromRealmQueryParameter, urlWithProtocol } from 'shared/realm/resolver'
+import { candidateToRealm, urlWithProtocol } from 'shared/realm/resolver'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import {
@@ -83,6 +82,23 @@ function qsRealm() {
   return qs.get('realm')
 }
 
+function clearQsRealm() {
+  const q = new URLSearchParams(globalThis.location.search)
+  q.delete('realm')
+  globalThis.history.replaceState({}, 'realm', `?${q.toString()}`)
+}
+
+function* tryConnectRealm() {
+  const realm: string | undefined = yield call(selectRealm)
+
+  if (realm) {
+    yield call(waitForExplorerIdentity)
+    yield call(changeRealm, realm, true)
+  } else {
+    throw new Error("Couldn't select a suitable realm to join.")
+  }
+}
+
 /**
  * This method will try to load the candidates as well as the selected realm.
  *
@@ -94,19 +110,19 @@ function qsRealm() {
  */
 export function* selectAndReconnectRealm() {
   try {
-    const realm: string | undefined = yield call(selectRealm)
-
-    if (realm) {
-      yield call(waitForExplorerIdentity)
-      yield call(changeRealm, realm, true)
-    } else {
-      throw new Error("Couldn't select a suitable realm to join.")
-    }
+    yield call(tryConnectRealm)
     // if no realm was selected, then do the whole initialization dance
   } catch (e: any) {
-    debugger
-    BringDownClientAndReportFatalError(e, 'comms#init')
-    throw e
+    // if it failed, try changing the queryString
+    clearQsRealm()
+    try {
+      // and try again
+      yield call(tryConnectRealm)
+    } catch (e: any) {
+      debugger
+      BringDownClientAndReportFatalError(e, 'comms#init')
+      throw e
+    }
   }
 }
 
@@ -127,15 +143,9 @@ function* selectRealm() {
     yield call(waitForCandidates)
   }
 
-  // load candidates if necessary
-  const allCandidates: Candidate[] = yield select(getAllCatalystCandidates)
-
-  const cachedCandidates: Candidate[] = yield call(getFromPersistentStorage, getLastRealmCandidatesCacheKey(network)) ??
-    []
-
   const realm: string | undefined =
     // query param (dao candidates & cached)
-    (yield call(getConfiguredRealm, [...allCandidates, ...cachedCandidates])) ||
+    (yield call(qsRealm)) ||
     // preview mode
     (PREVIEW ? rootURLPreviewMode() : null) ||
     // CATALYST from url parameter
@@ -162,20 +172,6 @@ async function getRealmFromLocalStorage(network: ETHEREUM_NETWORK) {
     }
   } catch {
     await saveToPersistentStorage(key, null)
-  }
-}
-
-// Gets a realm from the query parameters (if present)
-function* getConfiguredRealm(candidates: Candidate[]) {
-  const realmName = qsRealm()
-  if (realmName) {
-    const realm = yield call(resolveRealmBaseUrlFromRealmQueryParameter, realmName, candidates)
-    const isValid: boolean = realm && (yield call(checkValidRealm, realm))
-    if (isValid) {
-      return realm
-    } else {
-      commsLogger.warn(`Provided realm is not valid: ${realmName}`)
-    }
   }
 }
 
