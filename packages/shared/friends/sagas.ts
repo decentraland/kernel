@@ -1405,7 +1405,11 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
       case FriendshipAction.CANCELED: {
         // TODO JULI
-        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.CANCELED - socialId: ${JSON.stringify(socialId)}}`)
+        console.log(
+          `JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.CANCELED - socialId: ${JSON.stringify(
+            socialId
+          )}}`
+        )
         yield client.cancelFriendshipRequestTo(socialId)
         break
       }
@@ -1420,7 +1424,11 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       case FriendshipAction.DELETED: {
         yield client.deleteFriendshipWith(socialId)
         // TODO JULI
-        console.log(`JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.DELETED - socialId: ${JSON.stringify(socialId)}}`)
+        console.log(
+          `JULI - handleOutgoingUpdateFriendshipStatus - FriendshipAction.DELETED - socialId: ${JSON.stringify(
+            socialId
+          )}}`
+        )
         break
       }
     }
