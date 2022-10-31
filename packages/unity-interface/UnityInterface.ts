@@ -52,6 +52,7 @@ import { trackEvent } from 'shared/analytics'
 import { Avatar, ContentMapping } from '@dcl/schemas'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { incrementCounter } from '../shared/occurences'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 const MINIMAP_CHUNK_SIZE = 100
 
@@ -240,6 +241,10 @@ export class UnityInterface implements IUnityInterface {
       'SetMemoryUsage',
       JSON.stringify({ jsHeapSizeLimit, totalJSHeapSize, usedJSHeapSize })
     )
+  }
+
+  public UpdateRealmAbout(configurations: AboutResponse) {
+    this.SendMessageToUnity('Bridges', 'SetRealmAbout', JSON.stringify(configurations))
   }
 
   public DeactivateRendering() {

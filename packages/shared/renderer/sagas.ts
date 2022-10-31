@@ -45,7 +45,7 @@ import {
 } from 'shared/voiceChat/actions'
 import { IRealmAdapter } from 'shared/realm/types'
 import { SET_REALM_ADAPTER } from 'shared/realm/actions'
-import { getAllowedContentServer } from 'shared/meta/selectors'
+import { getAllowedContentServer, getFeatureFlagEnabled } from 'shared/meta/selectors'
 import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
 import { RootState } from 'shared/store/rootTypes'
 import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
@@ -53,6 +53,8 @@ import { getVoiceHandler } from 'shared/voiceChat/selectors'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { LoadingState } from 'shared/loading/reducer'
+import { isRealmsAboutEnabled } from '../friends/utils'
+import { store } from '../store/isolatedStore'
 
 export function* rendererSaga() {
   yield takeEvery(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -85,7 +87,11 @@ function* reportRealmChangeToRenderer() {
       const contentServerUrl: string = yield select(getAllowedContentServer, configuredContentServer)
       const current = convertCurrentRealmType(realmAdapter, contentServerUrl)
       defaultLogger.info('UpdateRealmsInfo', current)
-      getUnityInstance().UpdateRealmsInfo({ current })
+      if (getFeatureFlagEnabled(store.getState(), 'realm_about_enabled')) {
+        getUnityInstance().UpdateRealmsInfo({ current })
+      } else {
+        getUnityInstance().UpdateRealmAbout(realmAdapter.about)
+      }
 
       const realmsService = yield select(getExploreRealmsService)
 
