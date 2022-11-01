@@ -28,7 +28,7 @@ export async function adapterForRealmConfig(
     publicUrl: baseUrl + '/content',
     ...about.content
   }
-  about.content = {
+  about.lambdas = {
     healthy: false,
     publicUrl: baseUrl + '/lambdas',
     ...about.lambdas
