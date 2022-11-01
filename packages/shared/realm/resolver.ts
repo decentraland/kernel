@@ -22,6 +22,18 @@ export async function adapterForRealmConfig(
   about: AboutResponse,
   identity: ExplorerIdentity
 ): Promise<IRealmAdapter> {
+  // normalize about response
+  about.content = {
+    healthy: false,
+    publicUrl: baseUrl + '/content',
+    ...about.content
+  }
+  about.content = {
+    healthy: false,
+    publicUrl: baseUrl + '/lambdas',
+    ...about.lambdas
+  }
+
   // TODO: We are checking !v2 until all migration is finished
   const isValidBff = about.comms?.protocol === 'v3' && about.bff?.healthy // about.bff?.healthy
 
