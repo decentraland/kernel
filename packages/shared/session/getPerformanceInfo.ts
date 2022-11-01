@@ -209,6 +209,7 @@ export function getPerformanceInfo(data: {
   }
 
   pingResponseTimes.length = 0
+  
 
   sentCommsMessagesCounter = 0
   receivedCommsMessagesCounter = 0
