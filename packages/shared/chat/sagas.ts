@@ -33,6 +33,7 @@ import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { SocialAPI } from 'dcl-social-client'
 import { joinOrCreateChannel, leaveChannel, sendChannelMessage } from 'shared/friends/actions'
 import { areChannelsEnabled } from 'shared/friends/utils'
+import { rendererProtocol } from 'renderer-protocol/rpcClient'
 
 interface IChatCommand {
   name: string
@@ -318,7 +319,9 @@ function initChatCommands() {
 
       sendPublicChatMessage(`␐${expression} ${time}`)
 
-      getUnityInstance().TriggerSelfUserExpression(expression)
+      void rendererProtocol.then(async (protocol) => {
+        await protocol.emotesService.triggerSelfUserExpression({ id: expression })
+      })
 
       return {
         messageId: uuid(),

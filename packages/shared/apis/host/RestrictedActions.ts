@@ -20,6 +20,7 @@ import {
 } from '@dcl/protocol/out-ts/decentraland/kernel/apis/restricted_actions.gen'
 import { assertHasPermission } from './Permissions'
 import { PermissionItem } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
+import { rendererProtocol } from 'renderer-protocol/rpcClient'
 
 export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePlayerToResponse {
   //   checks permissions
@@ -72,7 +73,9 @@ export function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Trigge
     return {}
   }
 
-  getUnityInstance().TriggerSelfUserExpression(req.predefinedEmote)
+  void rendererProtocol.then(async (protocol) => {
+    await protocol.emotesService.triggerSelfUserExpression({ id: req.predefinedEmote })
+  })
   return {}
 }
 

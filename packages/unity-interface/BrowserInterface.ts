@@ -1,6 +1,5 @@
 import { EcsMathReadOnlyQuaternion, EcsMathReadOnlyVector3 } from '@dcl/ecs-math'
 
-import { sendPublicChatMessage } from 'shared/comms'
 import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
@@ -342,19 +341,6 @@ export class BrowserInterface {
     }
 
     trackEvent(data.name as UnityEvent, { context: properties.context || 'unity-event', ...properties })
-  }
-
-  public TriggerExpression(data: { id: string; timestamp: number }) {
-    allScenesEvent({
-      eventType: 'playerExpression',
-      payload: {
-        expressionId: data.id
-      }
-    })
-
-    const body = `␐${data.id} ${data.timestamp}`
-
-    sendPublicChatMessage(body)
   }
 
   public TermsOfServiceResponse(data: { sceneId: string; accepted: boolean; dontShowAgain: boolean }) {
