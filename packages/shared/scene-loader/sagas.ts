@@ -180,16 +180,12 @@ function* rendererPositionSettler() {
       getPositionSpawnPointAndScene
     )
 
-    if (!!spawnPointAndScene.sceneId) {
-      // and then settle the position
-      if (!isSettled) {
-        console.log('Move to parcel, Settled,', spawnPointAndScene, isSettled)
-        // Then set the parcel position for the scene loader
-        receivePositionReport(spawnPointAndScene.spawnPoint.position)
-      }
-      // then update the position in the engine
-      getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
+    if (!isSettled && !!spawnPointAndScene.sceneId) {
+      // Then set the parcel position for the scene loader
+      receivePositionReport(spawnPointAndScene.spawnPoint.position)
     }
+    // then update the position in the engine
+    getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
     yield take([POSITION_SETTLED, POSITION_UNSETTLED])
   }
 }
