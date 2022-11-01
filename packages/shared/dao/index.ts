@@ -196,7 +196,6 @@ export async function resolveRealmConfigFromString(realmString: string) {
 }
 
 export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
-  const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
   const realmConfig = await resolveRealmConfigFromString(realmString)
 
   if (!realmConfig) {
@@ -205,8 +204,11 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
 
   const catalystURL = new URL(realmConfig.baseUrl)
 
-  if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
-    throw new Error(`The realm is denylisted.`)
+  if (!forceChange) {
+    const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
+    if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
+      throw new Error(`The realm is denylisted.`)
+    }
   }
 
   const currentRealmAdapter = getRealmAdapter(store.getState())

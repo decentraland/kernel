@@ -712,7 +712,7 @@ export class UnityInterface implements IUnityInterface {
       return
     }
 
-    incrementCounter(method)
+    incrementCounter(method as any)
 
     const originalSetThrew = this.Module['setThrew']
     const unityModule = this.Module

@@ -39,8 +39,8 @@ import { incrementCounter } from 'shared/occurences'
 
 type PingRequest = {
   alias: number
-  responses: number
   sentTime: number
+  onPong: (dt: number, address: string) => void
 }
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
@@ -203,19 +203,29 @@ function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
 function pingMessage(nonce: number) {
   return `␑${nonce}`
 }
-function pongMessage(nonce: number) {
-  return `␆${nonce}`
+function pongMessage(nonce: number, address: string) {
+  return `␆${nonce} ${address}`
 }
 
-globalThis.__sendPing = () => {
+export function sendPing(onPong?: (dt: number, address: string) => void) {
   const nonce = Math.floor(Math.random() * 0xffffffff)
+  let responses = 0
   pingRequests.set(nonce, {
-    responses: 0,
     sentTime: Date.now(),
-    alias: pingIndex++
+    alias: pingIndex++,
+    onPong:
+      onPong ||
+      ((dt, address) => {
+        console.log(
+          `ping got ${++responses} responses (ping: ${dt.toFixed(2)}ms, nonce: ${nonce}, address: ${address})`
+        )
+      })
   })
   sendPublicChatMessage(pingMessage(nonce))
+  incrementCounter('ping_sent_counter')
 }
+
+globalThis.__sendPing = sendPing
 
 const answeredPings = new Set<number>()
 
@@ -228,17 +238,22 @@ function processChatMessage(message: Package<proto.Chat>) {
 
   if (senderPeer.ethereumAddress) {
     if (message.data.message.startsWith('␆') /* pong */) {
-      const nonce = parseInt(message.data.message.slice(1), 10)
+      const [nonceStr, address] = message.data.message.slice(1).split(' ')
+      const nonce = parseInt(nonceStr, 10)
       const request = pingRequests.get(nonce)
       if (request) {
-        request.responses++
-        console.log(`ping ${request.alias} has ${request.responses} responses (nonce: ${nonce})`)
+        incrementCounter('pong_received_counter')
+        request.onPong(Date.now() - request.sentTime, address || 'none')
       }
     } else if (message.data.message.startsWith('␑') /* ping */) {
       const nonce = parseInt(message.data.message.slice(1), 10)
-      if (answeredPings.has(nonce)) return
+      if (answeredPings.has(nonce)) {
+        incrementCounter('ping_received_twice_counter')
+        return
+      }
       answeredPings.add(nonce)
-      sendPublicChatMessage(pongMessage(nonce))
+      if (myProfile) sendPublicChatMessage(pongMessage(nonce, myProfile.ethAddress))
+      incrementCounter('pong_sent_counter')
     } else if (message.data.message.startsWith('␐')) {
       const [id, timestamp] = message.data.message.split(' ')
 
