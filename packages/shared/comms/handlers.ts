@@ -239,10 +239,10 @@ function processChatMessage(message: Package<proto.Chat>) {
   if (senderPeer.ethereumAddress) {
     if (message.data.message.startsWith('␆') /* pong */) {
       const [nonceStr, address] = message.data.message.slice(1).split(' ')
-      incrementCounter('pong_received_counter')
       const nonce = parseInt(nonceStr, 10)
       const request = pingRequests.get(nonce)
       if (request) {
+        incrementCounter('pong_received_counter')
         request.onPong(Date.now() - request.sentTime, address || 'none')
       }
     } else if (message.data.message.startsWith('␑') /* ping */) {
