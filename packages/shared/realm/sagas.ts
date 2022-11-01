@@ -26,7 +26,6 @@ import { BEFORE_UNLOAD } from 'shared/actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { realmToConnectionString } from './resolver'
 import { hookConnectToFixedAdaptersIfNecessary } from './logic'
-import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 
 const logger = createLogger('BffSagas')
 
@@ -143,8 +142,6 @@ function* handleNewBFF() {
       const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       // bind messages to this comms instance
       unbind = yield call(bindHandlersToBFF, action.payload, identity?.address)
-
-      yield waitForRendererInstance()
     }
   })
 }
