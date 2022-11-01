@@ -14,14 +14,14 @@ import {
   SET_ROOM_CONNECTION
 } from './actions'
 import { notifyStatusThroughChat } from 'shared/chat'
-import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel } from './handlers'
+import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel, sendPing } from './handlers'
 import { Rfc4RoomConnection } from './logic/rfc-4-room-connection'
 import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
 import { commConfigurations, COMMS_GRAPH, DEBUG_COMMS, genericAvatarSnapshots, PREFERED_ISLAND } from 'config'
 import { isURL } from 'atomicHelpers/isURL'
-import { processAvatarVisibility } from './peers'
+import { getAllPeers, processAvatarVisibility } from './peers'
 import { getFatalError } from 'shared/loading/selectors'
 import { EventChannel } from 'redux-saga'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -29,7 +29,7 @@ import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
-import { getCommsConfig, getMaxVisiblePeers } from 'shared/meta/selectors'
+import { getCommsConfig, getFeatureFlagEnabled, getMaxVisiblePeers } from 'shared/meta/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { OfflineAdapter } from './adapters/OfflineAdapter'
 import { WebSocketAdapter } from './adapters/WebSocketAdapter'
@@ -49,7 +49,7 @@ import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
-import { debugCommsGraph } from 'shared/session/getPerformanceInfo'
+import { debugCommsGraph, measurePingTime } from 'shared/session/getPerformanceInfo'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -77,7 +77,7 @@ export function* commsSaga() {
   yield fork(handleAnnounceProfile)
   yield fork(initAvatarVisibilityProcess)
   yield fork(handleCommsReconnectionInterval)
-
+  yield fork(pingerProcess)
   yield fork(reportPositionSaga)
 
   if (COMMS_GRAPH) {
@@ -143,6 +143,39 @@ function* reportPositionSaga() {
   }
 
   positionObservable.remove(observer)
+}
+
+/**
+ * This saga sends random pings to all peers if the conditions are met.
+ */
+function* pingerProcess() {
+  yield call(waitForMetaConfigurationInitialization)
+
+  const enabled: boolean = yield select(getFeatureFlagEnabled, 'ping_enabled')
+
+  if (enabled) {
+    while (true) {
+      yield delay(15_000 + Math.random() * 60_000)
+
+      const responses = new Map<string, number[]>()
+      const expectedResponses = getAllPeers().size
+
+      yield call(sendPing, (dt, address) => {
+        const list = responses.get(address) || []
+        responses.set(address, list)
+        list.push(dt)
+        measurePingTime(dt)
+        if (list.length > 1) {
+          incrementCounter('pong_duplicated_response_counter')
+        }
+      })
+
+      yield delay(15_000)
+
+      incrementCounter('pong_expected_counter', expectedResponses)
+      incrementCounter('pong_given_counter', responses.size)
+    }
+  }
 }
 
 /**
