@@ -4,6 +4,7 @@ import { incrementCounter, getAndClearOccurenceCounters } from 'shared/occurence
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
 const pingResponseTimes: number[] = []
+const pingResponsePercentages: number[] = []
 let kernelToRendererMessageCounter = 0
 let rendererToKernelMessageCounter = 0
 let receivedCommsMessagesCounter = 0
@@ -13,6 +14,9 @@ let lastReport = 0
 
 export function measurePingTime(ping: number) {
   pingResponseTimes.push(ping)
+}
+export function measurePingTimePercentages(percent: number) {
+  pingResponsePercentages.push(percent)
 }
 
 export function incrementMessageFromRendererToKernel() {
@@ -203,12 +207,14 @@ export function getPerformanceInfo(data: {
     sceneScores: (data.sceneScores && Object.values(data.sceneScores)) || null,
 
     pingResponseTimes: pingResponseTimes.slice(),
+    pingResponsePercentages: pingResponsePercentages.slice(),
 
     // misc metric counters
     metrics: getAndClearOccurenceCounters()
   }
 
   pingResponseTimes.length = 0
+  pingResponsePercentages.length = 0
 
   sentCommsMessagesCounter = 0
   receivedCommsMessagesCounter = 0
