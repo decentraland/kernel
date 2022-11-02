@@ -5,18 +5,20 @@ import { getUserIdFromMatrix } from './utils'
 
 export const getSocialClient = (store: RootFriendsState) => store.friends.client
 
+/**
+ * Get all conversations `ConversationType.CHANNEL` that the user has
+ * @return `conversation` & `unreadMessages` boolean that indicates whether the chat has unread messages.
+ */
 export const getChannels = (
   store: RootFriendsState
 ): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
   return getConversations(store, ConversationType.CHANNEL)
 }
 
-export const getDirectMessages = (
-  store: RootFriendsState
-): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
-  return getConversations(store, ConversationType.DIRECT)
-}
-
+/**
+ * Get all current conversations the user has including DMs, channels, etc
+ * @return `conversation` & `unreadMessages` boolean that indicates whether the conversation has unread messages.
+ */
 export const getConversations = (
   store: RootFriendsState,
   conversationType: ConversationType
@@ -36,6 +38,10 @@ export const getConversations = (
     }))
 }
 
+/**
+ * Get all current conversations with messages the user has including DMs, channels, etc
+ * @return `conversation` & `unreadMessages` boolean that indicates whether the conversation has unread messages.
+ */
 export const getAllConversationsWithMessages = (
   store: RootFriendsState
 ): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
@@ -43,6 +49,29 @@ export const getAllConversationsWithMessages = (
   if (!client) return []
 
   const conversations = client.getAllCurrentConversations()
+
+  return conversations
+    .filter((conv) => conv.conversation.hasMessages)
+    .map((conv) => ({
+      ...conv,
+      conversation: {
+        ...conv.conversation,
+        userIds: conv.conversation.userIds?.map((userId) => getUserIdFromMatrix(userId))
+      }
+    }))
+}
+
+/**
+ * Get all conversations `ConversationType.DIRECT` with friends the user has befriended
+ * @return `conversation` & `unreadMessages` boolean that indicates whether the conversation has unread messages.
+ */
+export const getAllFriendsConversationsWithMessages = (
+  store: RootFriendsState
+): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
+  const client = getSocialClient(store)
+  if (!client) return []
+
+  const conversations = client.getAllCurrentFriendsConversations()
 
   return conversations
     .filter((conv) => conv.conversation.hasMessages)
