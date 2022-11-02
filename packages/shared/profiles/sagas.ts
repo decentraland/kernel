@@ -327,11 +327,19 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
   const userId: string = yield select(getCurrentUserId)
 
   try {
-    // get the avatar, no matter if it is in a loading or dirty state
-    const savedProfile: Avatar | null = yield select(getCurrentUserProfileDirty)
-    const currentVersion: number = Math.max(savedProfile?.version || 0, 0)
-
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+
+    // get the avatar, try from catalyst first default to local
+    let savedProfile: Avatar | null = null
+    if (identity.hasConnectedWeb3) {
+      savedProfile = yield call(getRemoteProfile, userId)
+      if (!savedProfile) {
+        defaultLogger.warn(`An update on profile for ${userId} will be done from a local version`)
+      }
+    }
+    savedProfile = savedProfile || (yield select(getCurrentUserProfileDirty))
+
+    const currentVersion: number = Math.max(savedProfile?.version || 0, 0)
     const network: ETHEREUM_NETWORK = yield select(getCurrentNetwork)
 
     const profile: Avatar = {
