@@ -273,7 +273,7 @@ async function createAuthIdentity(requestManager: RequestManager, isGuest: boole
 
   const auth = await Authenticator.initializeAuthChain(address, ephemeral, ephemeralLifespanMinutes, signer)
 
-  return { ...auth, rawAddress: address, address: address.toLocaleLowerCase(), hasConnectedWeb3 }
+  return { ...auth, rawAddress: address, address: address.toLowerCase(), hasConnectedWeb3 }
 }
 
 function* logout() {

@@ -8,8 +8,8 @@ export const getProfileStatusAndData = (
   store: RootProfileState,
   userId: string
 ): [ProfileStatus | undefined, Avatar | undefined] => [
-  store?.profiles?.userInfo[userId]?.status,
-  store?.profiles?.userInfo[userId]?.data
+  store?.profiles?.userInfo[userId.toLowerCase()]?.status,
+  store?.profiles?.userInfo[userId.toLowerCase()]?.data
 ]
 
 export const getProfileFromStore = (store: RootProfileState, userId: string): ProfileUserInfo | null =>
@@ -99,8 +99,8 @@ export function filterProfilesByUserNameOrId(
     }
     // keep the ones userId or name includes the filter
     return (
-      friend.data.userId.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase()) ||
-      friend.data.name.toLocaleLowerCase().includes(userNameOrId.toLocaleLowerCase())
+      friend.data.userId.toLowerCase().includes(userNameOrId.toLowerCase()) ||
+      friend.data.name.toLowerCase().includes(userNameOrId.toLowerCase())
     )
   }) as Array<ProfileUserInfo>
 }
@@ -111,10 +111,6 @@ function getProfileValueIfOkOrLoading<T>(
   getter: (p: ProfileUserInfo) => T,
   ifNotFound: () => T
 ): T {
-  return store.profiles &&
-    store.profiles.userInfo &&
-    store.profiles.userInfo[userId] &&
-    (store.profiles.userInfo[userId].status === 'ok' || store.profiles.userInfo[userId].status === 'loading')
-    ? getter(store.profiles.userInfo[userId])
-    : ifNotFound()
+  const prof: ProfileUserInfo | undefined = store.profiles.userInfo[userId.toLowerCase()]
+  return prof?.status === 'ok' || prof?.status === 'loading' ? getter(prof) : ifNotFound()
 }

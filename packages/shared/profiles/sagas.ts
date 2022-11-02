@@ -177,11 +177,13 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const iAmAGuest: boolean = loadingMyOwnProfile && (yield select(getIsGuestLogin))
     const shouldReadProfileFromLocalStorage = iAmAGuest
     const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
-    const shouldFetchViaComms = roomConnection && !loadingMyOwnProfile
-    const shouldLoadFromCatalyst = profileType === ProfileType.DEPLOYED || (loadingMyOwnProfile && !iAmAGuest)
+    const shouldFetchViaComms = roomConnection && profileType == ProfileType.LOCAL && !loadingMyOwnProfile
+    const shouldLoadFromCatalyst = shouldFetchViaComms || (loadingMyOwnProfile && !iAmAGuest)
     const shouldFallbackToRandomProfile = true
 
     const versionNumber = +(version || '1')
+
+    const reasons = [shouldFetchViaComms ? 'comms' : '', shouldLoadFromCatalyst ? 'catalyst' : ''].join('-')
 
     const profile: Avatar =
       // first fetch avatar through comms
@@ -193,7 +195,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // last resort, localStorage
       (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
-      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
+      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId, reasons)))
 
     const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
     avatar.userId = userId
@@ -499,8 +501,8 @@ async function makeContentFile(path: string, content: string | Blob | Buffer): P
   }
 }
 
-export async function generateRandomUserProfile(userId: string): Promise<Avatar> {
-  defaultLogger.info('Generating random profile for ' + userId)
+export async function generateRandomUserProfile(userId: string, reason: string): Promise<Avatar> {
+  defaultLogger.info('Generating random profile for ' + userId + ' ' + reason)
 
   const bytes = new TextEncoder().encode(userId)
 
