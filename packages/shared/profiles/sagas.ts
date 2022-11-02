@@ -177,8 +177,9 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     const iAmAGuest: boolean = loadingMyOwnProfile && (yield select(getIsGuestLogin))
     const shouldReadProfileFromLocalStorage = iAmAGuest
     const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
-    const shouldFetchViaComms = roomConnection && profileType == ProfileType.LOCAL && !loadingMyOwnProfile
-    const shouldLoadFromCatalyst = shouldFetchViaComms || (loadingMyOwnProfile && !iAmAGuest) || profileType == ProfileType.DEPLOYED
+    const shouldFetchViaComms = roomConnection && profileType === ProfileType.LOCAL && !loadingMyOwnProfile
+    const shouldLoadFromCatalyst =
+      shouldFetchViaComms || (loadingMyOwnProfile && !iAmAGuest) || profileType === ProfileType.DEPLOYED
     const shouldFallbackToRandomProfile = true
 
     const versionNumber = +(version || '1')
