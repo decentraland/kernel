@@ -213,6 +213,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
     yield put(profileSuccess(avatar))
   } catch (error: any) {
     debugger
+    yield call(future.reject, error)
     trackEvent('error', {
       context: 'kernel#saga',
       message: `Error requesting profile for ${userId}: ${error}`,
