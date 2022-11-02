@@ -22,16 +22,9 @@ export type P2PConfig = {
   logConfig: P2PLogConfig
 }
 
-// const MAX_CONNECTION_DISTANCE = 4
-// const DISCONNECT_DISTANCE = 5
-// const EXPIRATION_LOOP_INTERVAL = 2000
-// const KNOWN_PEER_RELAY_EXPIRE_TIME = 30000
 const UPDATE_NETWORK_INTERVAL = 30000
-// const DEFAULT_TTL = 10
-// const DEFAULT_PING_TIMEOUT = 7000
 const DEFAULT_TARGET_CONNECTIONS = 4
 const DEFAULT_MAX_CONNECTIONS = 6
-// const DEFAULT_MESSAGE_EXPIRATION_TIME = 10000
 
 export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   public readonly mesh: Mesh
@@ -175,6 +168,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       this.config.logger.error(error)
     })
 
+    // TODO: When disconnected need to return from this for
     const listenRoutingChanges = async () => {
       for await (const routingTable of this.config.bff.services.routing.getRoutingTable({})) {
         const unreachablePeers = new Set<string>(this.knownPeers.keys())
