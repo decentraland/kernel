@@ -1,6 +1,5 @@
 import { expectSaga } from 'redux-saga-test-plan'
 import { call, select } from 'redux-saga/effects'
-import * as matchers from 'redux-saga-test-plan/matchers'
 import { profileRequest, profileSuccess } from 'shared/profiles/actions'
 import { handleFetchProfile, profileServerRequest } from 'shared/profiles/sagas'
 import { getCommsRoom } from 'shared/comms/selectors'
@@ -13,6 +12,7 @@ import { sleep } from 'atomicHelpers/sleep'
 import { getRealmAdapter } from 'shared/realm/selectors'
 import { Avatar } from '@dcl/schemas'
 import { ensureAvatarCompatibilityFormat } from 'shared/profiles/transformations/profileToServerFormat'
+import future from 'fp-future'
 
 const profile: Avatar = { data: 'profile' } as any
 
@@ -69,9 +69,9 @@ describe('fetchProfile behavior', () => {
       return expectSaga(profileSaga)
         .put(profileSuccess('passport' as any))
         .not.put(profileSuccess('passport' as any))
-        .dispatch(profileRequest('user|1'))
-        .dispatch(profileRequest('user|1'))
-        .dispatch(profileRequest('user|1'))
+        .dispatch(profileRequest('user|1', future()))
+        .dispatch(profileRequest('user|1', future()))
+        .dispatch(profileRequest('user|1', future()))
         .provide([
           [select(getRealmAdapter), {}],
           [call(profileServerRequest, 'user|1'), delayedProfile],
@@ -87,10 +87,10 @@ describe('fetchProfile behavior', () => {
       .put(profileSuccess('passport2' as any))
       .not.put(profileSuccess('passport1' as any))
       .not.put(profileSuccess('passport2' as any))
-      .dispatch(profileRequest('user|1'))
-      .dispatch(profileRequest('user|1'))
-      .dispatch(profileRequest('user|2'))
-      .dispatch(profileRequest('user|2'))
+      .dispatch(profileRequest('user|1', future()))
+      .dispatch(profileRequest('user|1', future()))
+      .dispatch(profileRequest('user|2', future()))
+      .dispatch(profileRequest('user|2', future()))
       .provide([
         [select(getRealmAdapter), {}],
         [call(profileServerRequest, 'user|1'), delayedProfile],
@@ -109,7 +109,7 @@ describe('fetchProfile behavior', () => {
     const profile1 = { ...profileWithCorruptedSnapshots, ethAddress: 'eth1' }
     const userId = 'user|1'
 
-    return expectSaga(handleFetchProfile, profileRequest(userId))
+    return expectSaga(handleFetchProfile, profileRequest(userId, future()))
       .provide([
         [select(getIsGuestLogin), false],
         [select(isCurrentUserId, userId), false],
@@ -124,36 +124,6 @@ describe('fetchProfile behavior', () => {
 
         const { face256 } = lastPut.payload.profile.avatar.snapshots
         expect(typeof face256).to.eq(typeof 'String')
-      })
-  })
-
-  it.skip('falls back when resize not working in current server', () => {
-    const profileWithCorruptedSnapshots = {
-      avatar: { snapshots: { face256: 'http://fake.url/contents/facehash' } }
-    }
-    const profile1 = { ...profileWithCorruptedSnapshots, ethAddress: 'eth1' }
-    return expectSaga(handleFetchProfile, profileRequest('user|1'))
-      .provide([
-        [select(getCurrentUserId), 'myid'],
-        // [select(getResizeService), 'http://fake/resizeurl'],
-        [matchers.call.fn(fetch), dynamic((call) => ({ ok: !call.args[0].startsWith('http://fake/resizeurl') }))],
-        [call(profileServerRequest, 'user|1'), delayed({ avatars: [profile1] })]
-        // [call(ensureAvatarCompatibilityFormat, 'user|1', profile1), dynamic((effect) => effect.args[1])]
-      ])
-      .run()
-      .then((result) => {
-        const putEffects = result.effects.put
-        const lastPut = putEffects[putEffects.length - 1].payload.action
-        expect(lastPut.type).to.eq(PROFILE_SUCCESS)
-
-        // const { face, face128, face256 } = lastPut.payload.profile.avatar.snapshots
-        // expect(face).to.eq('http://fake.url/contents/facehash')
-        // expect(face128).to.eq(
-        //   `${getServerConfigurations(ETHEREUM_NETWORK.MAINNET).fallbackResizeServiceUrl}/facehash/128`
-        // )
-        // expect(face256).to.eq(
-        //   `${getServerConfigurations(ETHEREUM_NETWORK.MAINNET).fallbackResizeServiceUrl}/facehash/256`
-        // )
       })
   })
 })

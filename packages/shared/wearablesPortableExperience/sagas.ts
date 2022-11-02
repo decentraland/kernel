@@ -19,14 +19,16 @@ import {
 } from './actions'
 
 export function* wearablesPortableExperienceSaga(): any {
-  yield takeLatest(PROFILE_SUCCESS, handleProfileSuccess)
+  yield takeLatest(PROFILE_SUCCESS, handleSelfProfileSuccess)
   yield takeEvery(WEARABLES_SUCCESS, handleWearablesSuccess)
   yield takeEvery(PROCESS_WEARABLES, handleProcessWearables)
 }
 
-function* handleProfileSuccess(action: ProfileSuccessAction): any {
+function* handleSelfProfileSuccess(action: ProfileSuccessAction): any {
+  const isMyProfile: boolean = yield select(isCurrentUserId, action.payload.profile.userId)
+
   // cancel the saga if we receive a profile from a different user
-  if (!(yield select(isCurrentUserId, action.payload.profile.userId))) {
+  if (!isMyProfile) {
     return
   }
 
