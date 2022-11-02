@@ -7,12 +7,13 @@ import {
   ensureTrackingUniqueAndLatest,
   receiveUserPosition,
   removeAllPeers,
-  removePeerByAddress
+  removePeerByAddress,
+  receivePeerUserData
 } from './peers'
 import { AvatarMessageType, Package } from './interface/types'
 import * as proto from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { store } from 'shared/store/isolatedStore'
-import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/selectors'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { processVoiceFragment } from 'shared/voiceChat/handlers'
@@ -36,6 +37,7 @@ import { sendPublicChatMessage } from '.'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { commsLogger } from './context'
 import { incrementCounter } from 'shared/occurences'
+import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 
 type PingRequest = {
   alias: number
@@ -162,27 +164,26 @@ function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVers
     ensureTrackingUniqueAndLatest(peerTrackingInfo)
 
     const profileVersion = +message.data.profileVersion
-    const currentProfile = getProfileFromStore(store.getState(), message.address)
 
-    const shouldLoadRemoteProfile =
-      !currentProfile ||
-      currentProfile.status === 'error' ||
-      (currentProfile.status === 'ok' && currentProfile.data.version < profileVersion)
-
-    if (shouldLoadRemoteProfile) {
-      ProfileAsPromise(
-        message.address,
-        profileVersion,
-        /* we ask for LOCAL to ask information about the profile using comms to not overload the servers*/
-        ProfileType.LOCAL
-      ).catch((e: Error) => {
+    ProfileAsPromise(
+      message.address,
+      profileVersion,
+      /* we ask for LOCAL to ask information about the profile using comms to not overload the servers*/
+      ProfileType.LOCAL
+    )
+      .then(async (avatar) => {
+        // send to Avatars scene
+        const realmAdapter = await ensureRealmAdapterPromise()
+        const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+        receivePeerUserData(avatar, peerTrackingInfo.baseUrl || fetchContentServerWithPrefix)
+      })
+      .catch((e: Error) => {
         trackEvent('error', {
           message: `error loading profile ${message.address}:${profileVersion}: ` + e.message,
           context: 'kernel#saga',
           stack: e.stack || 'processProfileUpdatedMessage'
         })
       })
-    }
   }
 }
 
