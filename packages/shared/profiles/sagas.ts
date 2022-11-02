@@ -531,6 +531,7 @@ export async function generateRandomUserProfile(userId: string): Promise<Avatar>
 
   return ensureAvatarCompatibilityFormat(profile)
 }
-function isExpectedVersion(existingProfile: Avatar) {
-  throw new Error('Function not implemented.')
+
+function isExpectedVersion(aProfile: Avatar, version?: number) {
+  return !version || aProfile.version >= version
 }
