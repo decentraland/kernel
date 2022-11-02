@@ -49,7 +49,7 @@ import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
-import { debugCommsGraph, measurePingTime } from 'shared/session/getPerformanceInfo'
+import { debugCommsGraph, measurePingTime, measurePingTimePercentages } from 'shared/session/getPerformanceInfo'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -171,6 +171,11 @@ function* pingerProcess() {
       })
 
       yield delay(15_000)
+
+      // measure the response ratio
+      if (expectedResponses) {
+        measurePingTimePercentages(Math.round((responses.size / expectedResponses) * 100))
+      }
 
       incrementCounter('pong_expected_counter', expectedResponses)
       incrementCounter('pong_given_counter', responses.size)

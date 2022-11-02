@@ -1,18 +1,18 @@
 const occurrencesCounter = new Map<Counters, number>()
 
 export type Counters =
-  | 'pong_duplicated_response_counter'
-  | 'pong_expected_counter'
-  | 'pong_given_counter'
   | 'failed:sendPositionMessage'
   | `commMessage:${string}`
   | `setThrew:${string}`
   | 'voiceChatHandlerError'
   | 'voiceChatRequestMediaDeviceFail'
-  | 'ping_sent_counter'
-  | 'pong_sent_counter'
-  | 'pong_received_counter'
-  | 'ping_received_twice_counter'
+  | 'pong_duplicated_response_counter' // duplicated pong responses (nonce*address)
+  | 'pong_expected_counter' // expected amount of responses of the current pong
+  | 'pong_given_counter' // total amount of responses of the current ping
+  | 'ping_sent_counter' // amount of ping requests sent by myself
+  | 'pong_sent_counter' // amount of pong responses sent by peeds
+  | 'pong_received_counter' // amount of pong responses received by myself
+  | 'ping_received_twice_counter' // amount of times the same ping reaches myself (nonce)
   | 'profile-over-comms-succesful'
   | 'profile-over-comms-failed'
 
