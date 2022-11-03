@@ -65,9 +65,8 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   if (SCENE_DEBUG_PANEL) {
     getUnityInstance().SetKernelConfiguration({ debugConfig: { sceneDebugPanelEnabled: true } })
-  }
-
-  if (SHOW_FPS_COUNTER) {
+    getUnityInstance().ShowFPSPanel()
+  }else if (SHOW_FPS_COUNTER) {
     getUnityInstance().ShowFPSPanel()
   }
 
