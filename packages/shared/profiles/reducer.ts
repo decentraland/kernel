@@ -28,7 +28,7 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         ...state,
         userInfo: {
           ...state.userInfo,
-          [action.payload.userId]: { ...state.userInfo[action.payload.userId], status: 'loading' }
+          [action.payload.userId.toLowerCase()]: { ...state.userInfo[action.payload.userId], status: 'loading' }
         }
       }
     case PROFILE_SUCCESS:
@@ -37,8 +37,8 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         ...state,
         userInfo: {
           ...state.userInfo,
-          [profile.userId]: {
-            ...state.userInfo[profile.userId],
+          [profile.userId.toLowerCase()]: {
+            ...state.userInfo[profile.userId.toLowerCase()],
             data: profile,
             status: 'ok'
           }
@@ -51,7 +51,7 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         ...state,
         userInfo: {
           ...state.userInfo,
-          [userId]: { status: 'error', data: action.payload.error }
+          [userId.toLowerCase()]: { status: 'error', data: action.payload.error }
         }
       }
     case ADDED_PROFILE_TO_CATALOG:
@@ -59,8 +59,8 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         ...state,
         userInfo: {
           ...state.userInfo,
-          [action.payload.userId]: {
-            ...state.userInfo[action.payload.userId],
+          [action.payload.userId.toLowerCase()]: {
+            ...state.userInfo[action.payload.userId.toLowerCase()],
             addedToCatalog: true
           }
         }
@@ -70,8 +70,8 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
       const addedProfiles = (action as AddedProfilesToCatalog).payload.profiles
       const updatedProfilesState = {}
       for (const profile of addedProfiles) {
-        updatedProfilesState[profile.userId] = {
-          ...state.userInfo[profile.userId],
+        updatedProfilesState[profile.userId.toLowerCase()] = {
+          ...state.userInfo[profile.userId.toLowerCase()],
           addedToCatalog: true
         }
       }

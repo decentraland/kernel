@@ -133,8 +133,9 @@ export async function realmInitialized(): Promise<void> {
 export async function resolveRealmAboutFromBaseUrl(
   realmString: string
 ): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
-  const candidates = getAllCatalystCandidates(store.getState())
-  const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, candidates).replace(/\/+$/, '')
+  // load candidates if necessary
+  const allCandidates: Candidate[] = getAllCatalystCandidates(store.getState())
+  const realmBaseUrl = resolveRealmBaseUrlFromRealmQueryParameter(realmString, allCandidates).replace(/\/+$/, '')
 
   if (!realmBaseUrl) {
     throw new Error(`Can't resolve realm ${realmString}`)
@@ -148,7 +149,7 @@ export async function resolveRealmAboutFromBaseUrl(
   return { about: res.result!, baseUrl: realmBaseUrl }
 }
 
-export async function resolveOfflineRealmAboutFromConnectionString(
+async function resolveOfflineRealmAboutFromConnectionString(
   realmString: string
 ): Promise<{ about: AboutResponse; baseUrl: string } | undefined> {
   if (realmString === OFFLINE_REALM || realmString.startsWith(OFFLINE_REALM + '?')) {
@@ -195,16 +196,19 @@ export async function resolveRealmConfigFromString(realmString: string) {
 }
 
 export async function changeRealm(realmString: string, forceChange: boolean = false): Promise<void> {
-  const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
   const realmConfig = await resolveRealmConfigFromString(realmString)
 
   if (!realmConfig) {
     throw new Error(`The realm ${realmString} isn't available right now.`)
   }
+
   const catalystURL = new URL(realmConfig.baseUrl)
 
-  if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
-    throw new Error(`The realm is denylisted.`)
+  if (!forceChange) {
+    const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
+    if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
+      throw new Error(`The realm is denylisted.`)
+    }
   }
 
   const currentRealmAdapter = getRealmAdapter(store.getState())

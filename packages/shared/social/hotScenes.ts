@@ -13,6 +13,7 @@ import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } f
 import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 
 export async function fetchHotScenes(): Promise<HotSceneInfo[]> {
+  await ensureRealmAdapterPromise()
   const url = getHotScenesService(store.getState())
   const response = await fetch(url)
   if (response.ok) {

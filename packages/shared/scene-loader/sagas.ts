@@ -52,9 +52,11 @@ import { getResourcesURL } from 'shared/location'
 import { Vector2 } from '@dcl/ecs-math'
 import { trackEvent } from 'shared/analytics'
 import { getAllowedContentServer } from 'shared/meta/selectors'
+import { CHANGE_LOGIN_STAGE } from 'shared/session/actions'
+import { isLoginCompleted } from 'shared/session/selectors'
 
 export function* sceneLoaderSaga() {
-  yield takeEvery(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
+  yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
   yield takeEvery([POSITION_SETTLED, POSITION_UNSETTLED], onPositionSettled)
   yield takeLatest(TELEPORT_TO, teleportHandler)
   yield takeLatest(SET_SCENE_LOADER, unsettlePositionOnSceneLoader)
@@ -178,14 +180,12 @@ function* rendererPositionSettler() {
       getPositionSpawnPointAndScene
     )
 
-    // and then settle the position
-    if (!isSettled) {
+    if (!isSettled && !!spawnPointAndScene.sceneId) {
       // Then set the parcel position for the scene loader
       receivePositionReport(spawnPointAndScene.spawnPoint.position)
     }
     // then update the position in the engine
     getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
-
     yield take([POSITION_SETTLED, POSITION_UNSETTLED])
   }
 }
@@ -269,21 +269,20 @@ function* positionSettler() {
   }
 }
 
+function* waitForUserAuthenticated() {
+  while (!(yield select(isLoginCompleted))) {
+    yield take(CHANGE_LOGIN_STAGE)
+  }
+}
+
 // This saga reacts to every parcel position change and signals the scene loader
 // about it
 function* onWorldPositionChange() {
+  // wait for user authenticated before start loading
+  yield call(waitForUserAuthenticated)
+
+  // start the loop to load scenes
   while (true) {
-    const reason = yield race({
-      timeout: delay(5000),
-      newSceneLoader: take(SET_SCENE_LOADER),
-      newParcel: take(SET_PARCEL_POSITION),
-      SCENE_START: take(SCENE_START),
-      newLoadingRadius: take(SET_WORLD_LOADING_RADIUS),
-      unload: take(BEFORE_UNLOAD)
-    })
-
-    if (reason.unload) return
-
     const sceneLoader: ISceneLoader | undefined = yield select(getSceneLoader)
 
     if (sceneLoader) {
@@ -312,6 +311,17 @@ function* onWorldPositionChange() {
         })
       }
     }
+
+    const { unload } = yield race({
+      timeout: delay(5000),
+      newSceneLoader: take(SET_SCENE_LOADER),
+      newParcel: take(SET_PARCEL_POSITION),
+      SCENE_START: take(SCENE_START),
+      newLoadingRadius: take(SET_WORLD_LOADING_RADIUS),
+      unload: take(BEFORE_UNLOAD)
+    })
+
+    if (unload) return
   }
 }
 

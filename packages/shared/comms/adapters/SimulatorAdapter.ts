@@ -55,7 +55,7 @@ export class SimulationRoom implements RoomConnection {
     const identity = createUnsafeIdentity()
     const address = identity.address
 
-    const avatar = await generateRandomUserProfile(address)
+    const avatar = await generateRandomUserProfile(address, 'simulator')
 
     this.peers.set(address, {
       identity,

@@ -218,6 +218,15 @@ function initChatCommands() {
             // Do nothing. This is handled inside controller
           }
         )
+      } else if (message.trim().toLowerCase() === 'home') {
+        response = `Teleporting to home`
+
+        TeleportController.goToHome().then(
+          ({ message }) => notifyStatusThroughChat(message),
+          () => {
+            // Do nothing. This is handled inside controller
+          }
+        )
       } else {
         response = 'Could not recognize the coordinates provided. Example usage: /goto 42,42'
       }

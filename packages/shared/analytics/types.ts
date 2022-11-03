@@ -80,4 +80,5 @@ export type TrackEvents = PositionTrackEvents & {
 
   ['pickedRealm']: { algorithm: string; domain: string }
   ['errorInSceneWorker']: { message: string; scene: string; pointers: string[] }
+  ['disconnect_lighthouse']: { message: string; reason: string; url: string }
 }

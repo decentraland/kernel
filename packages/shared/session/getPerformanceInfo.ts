@@ -3,12 +3,21 @@ import { TimelineDataSeries, TimelineGraphView } from 'shared/comms/lines'
 import { incrementCounter, getAndClearOccurenceCounters } from 'shared/occurences'
 import { getUsedComponentVersions } from 'shared/rolloutVersions'
 
+const pingResponseTimes: number[] = []
+const pingResponsePercentages: number[] = []
 let kernelToRendererMessageCounter = 0
 let rendererToKernelMessageCounter = 0
 let receivedCommsMessagesCounter = 0
 let sentCommsMessagesCounter = 0
 let kernelToRendererMessageNativeCounter = 0
 let lastReport = 0
+
+export function measurePingTime(ping: number) {
+  pingResponseTimes.push(ping)
+}
+export function measurePingTimePercentages(percent: number) {
+  pingResponsePercentages.push(percent)
+}
 
 export function incrementMessageFromRendererToKernel() {
   rendererToKernelMessageCounter++
@@ -197,9 +206,15 @@ export function getPerformanceInfo(data: {
     // replace sceneScores by the values only
     sceneScores: (data.sceneScores && Object.values(data.sceneScores)) || null,
 
+    pingResponseTimes: pingResponseTimes.slice(),
+    pingResponsePercentages: pingResponsePercentages.slice(),
+
     // misc metric counters
     metrics: getAndClearOccurenceCounters()
   }
+
+  pingResponseTimes.length = 0
+  pingResponsePercentages.length = 0
 
   sentCommsMessagesCounter = 0
   receivedCommsMessagesCounter = 0
