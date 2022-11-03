@@ -2,10 +2,10 @@ import {
   DEBUG,
   EDITOR,
   ENGINE_DEBUG_PANEL,
-  PREVIEW,
   rootURLPreviewMode,
   SCENE_DEBUG_PANEL,
-  SHOW_FPS_COUNTER, WORLD_EXPLORER
+  SHOW_FPS_COUNTER,
+  WORLD_EXPLORER
 } from 'config'
 import './UnityInterface'
 import {
@@ -76,7 +76,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
     getUnityInstance().ShowFPSPanel()
   }
 
-  if(SHOW_FPS_COUNTER && WORLD_EXPLORER){
+  if (SHOW_FPS_COUNTER && WORLD_EXPLORER) {
     getUnityInstance().ShowFPSPanel()
   }
 
