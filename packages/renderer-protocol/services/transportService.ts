@@ -3,7 +3,7 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import mitt from 'mitt'
 import { Payload, TransportServiceDefinition } from '@dcl/protocol/out-ts/decentraland/renderer/transport.gen'
 import { createRendererProtocolInverseRpcServer } from '../inverseRpc/rpcServer'
-import { AsyncQueue } from '../push-channel'
+import { AsyncQueue } from '@well-known-components/pushable-channel'
 
 function createRpcTransport<Context>(
   transportService: codegen.RpcClientModule<TransportServiceDefinition, Context>
