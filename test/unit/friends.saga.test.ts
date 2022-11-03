@@ -145,6 +145,7 @@ const allCurrentConversations: Array<{ conversation: Conversation; unreadMessage
 
 const stubClient = {
   getAllCurrentConversations: () => allCurrentConversations,
+  getAllCurrentFriendsConversations: () => allCurrentConversations,
   getCursorOnMessage: () => Promise.resolve({ getMessages: () => textMessages }),
   getUserId: () => '0xa2',
   createDirectConversation: () => allCurrentConversations[0].conversation,

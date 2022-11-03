@@ -67,12 +67,12 @@ import {
   findPrivateMessagingFriendsByUserId,
   getPrivateMessaging,
   getPrivateMessagingFriends,
-  getAllConversationsWithMessages,
   getTotalFriendRequests,
   getTotalFriends,
   isFriend,
   getLastStatusOfFriends,
-  getChannels
+  getChannels,
+  getAllFriendsConversationsWithMessages
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -803,9 +803,7 @@ export async function getPrivateMessages(getPrivateMessagesPayload: GetPrivateMe
 }
 
 export function getUnseenMessagesByUser() {
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.DIRECT
-  )
+  const conversationsWithMessages = getAllFriendsConversationsWithMessages(store.getState())
 
   if (conversationsWithMessages.length === 0) {
     return
@@ -826,9 +824,7 @@ export function getUnseenMessagesByUser() {
 export async function getFriendsWithDirectMessages(request: GetFriendsWithDirectMessagesPayload) {
   const realmAdapter = await ensureRealmAdapterPromise()
   const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.DIRECT
-  )
+  const conversationsWithMessages = getAllFriendsConversationsWithMessages(store.getState())
 
   if (conversationsWithMessages.length === 0) {
     return
@@ -1789,9 +1785,7 @@ function notifyMuteChannelError(channelId: string, errorCode: ChannelErrorCode) 
  */
 function getTotalUnseenMessagesByChannel() {
   // get conversations messages
-  const conversationsWithMessages = getAllConversationsWithMessages(store.getState()).filter(
-    (conv) => conv.conversation.type === ConversationType.CHANNEL
-  )
+  const conversationsWithMessages = getChannels(store.getState())
 
   const updateTotalUnseenMessagesByChannelPayload: UpdateTotalUnseenMessagesByChannelPayload = {
     unseenChannelMessages: []

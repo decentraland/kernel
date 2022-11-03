@@ -154,8 +154,9 @@ const stubClient = (start: number, end: number, index: number) =>
   } as unknown as SocialAPI)
 
 function mockStoreCalls(ops?: { start?: number; end?: number; index?: number; catalog?: boolean }) {
-  sinon.stub(friendsSelectors, 'getChannels').callsFake(() => allCurrentConversations)
-  sinon.stub(friendsSelectors, 'getAllConversationsWithMessages').callsFake(() => allCurrentConversations)
+  sinon
+    .stub(friendsSelectors, 'getChannels')
+    .callsFake(() => allCurrentConversations.filter((conv) => conv.conversation.type === ConversationType.CHANNEL))
   sinon
     .stub(friendsSelectors, 'getSocialClient')
     .callsFake(() => stubClient(ops?.start ?? 0, ops?.end ?? 0, ops?.index ?? 0))

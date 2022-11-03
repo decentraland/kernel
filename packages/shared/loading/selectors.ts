@@ -61,6 +61,11 @@ export function isRendererVisible(state: RootState) {
     return true
   }
 
+  // once the renderer starts, it should be visible forever
+  if (state.loading.renderingWasActivated) {
+    return true
+  }
+
   // if it is not yet loading scenes, renderer should not be visible either
   if (!state.renderer.parcelLoadingStarted) {
     return false
@@ -74,5 +79,9 @@ export function isRendererVisible(state: RootState) {
     return false
   }
 
-  return state.loading.renderingActivated || isLoadingScreenVisible(state)
+  if (loginState === LoginState.COMPLETED) {
+    return true
+  }
+
+  return isLoadingScreenVisible(state)
 }

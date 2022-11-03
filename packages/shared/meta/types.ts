@@ -40,6 +40,7 @@ export type FeatureFlagsName =
   | 'web_cap_fps' // caps the web client FPS
   | 'disabled-catalyst'
   | 'livekit-voicechat'
+  | 'ping_enabled'
 
 export type BannedUsers = Record<string, Ban[]>
 

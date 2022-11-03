@@ -37,12 +37,12 @@ import { getPOIService } from 'shared/dao/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { getUnityInstance, MinimapSceneInfo } from 'unity-interface/IUnityInterface'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { waitForRoomConnection } from 'shared/dao/sagas'
 import { Scene } from '@dcl/schemas'
 import { saveToPersistentStorage } from 'atomicHelpers/persistentStorage'
 import { homePointKey } from './utils'
 import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 import { trackEvent } from 'shared/analytics'
+import { waitForRealmAdapter } from 'shared/realm/selectors'
 
 export function* atlasSaga(): any {
   yield takeEvery(SCENE_LOAD, checkAndReportAround)
@@ -95,7 +95,7 @@ function* reportScenesAroundParcelAction(action: ReportScenesAroundParcel) {
 }
 
 function* initializePois() {
-  yield call(waitForRoomConnection)
+  yield call(waitForRealmAdapter)
 
   const daoPOIs: string[] | undefined = yield call(fetchPOIsFromDAO)
 

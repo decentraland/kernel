@@ -23,9 +23,16 @@ import {
   ProfileSuccessAction,
   profileFailure
 } from './actions'
-import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
+import { getCurrentUserProfileDirty, getProfileFromStore, getProfileStatusAndData } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
-import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
+import {
+  ContentFile,
+  ProfileStatus,
+  ProfileType,
+  ProfileUserInfo,
+  RemoteProfile,
+  REMOTE_AVATAR_IS_INVALID
+} from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
@@ -34,8 +41,8 @@ import {
   getCurrentUserId,
   getCurrentIdentity,
   getCurrentNetwork,
-  isCurrentUserId,
-  getIsGuestLogin
+  getIsGuestLogin,
+  isCurrentUserId
 } from 'shared/session/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { ProfileAsPromise } from './ProfileAsPromise'
@@ -58,6 +65,7 @@ import {
   waitForRealmAdapter
 } from 'shared/realm/selectors'
 import { IRealmAdapter } from 'shared/realm/types'
+import { unsignedCRC32 } from 'atomicHelpers/crc32'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -146,23 +154,37 @@ function* initialRemoteProfileLoad() {
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
-  const { userId, version } = action.payload
+  const { userId, future, version, profileType } = action.payload
 
-  const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
   const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
 
-  if (!identity) throw new Error("Can't fetch profile if there is no ExplorerIdentity")
+  const loadingMyOwnProfile: boolean = yield select(isCurrentUserId, userId)
+
+  {
+    // first check if we have a cached copy of the requested Profile
+    const [_, existingProfile]: [ProfileStatus | undefined, Avatar | undefined] = yield select(
+      getProfileStatusAndData,
+      userId
+    )
+    const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+    if (existingProfileWithCorrectVersion) {
+      // resolve the future
+      yield call(future.resolve, existingProfile)
+    }
+  }
 
   try {
-    const isGuest = yield select(getIsGuestLogin)
-    const loadingMyOwnProfile = yield select(isCurrentUserId, userId)
-    const shouldReadProfileFromLocalStorage = isGuest && loadingMyOwnProfile
+    const iAmAGuest: boolean = loadingMyOwnProfile && (yield select(getIsGuestLogin))
+    const shouldReadProfileFromLocalStorage = iAmAGuest
     const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
-    const shouldFetchViaComms = roomConnection && !loadingMyOwnProfile
-    const shouldLoadFromCatalyst = true
+    const shouldFetchViaComms = roomConnection && profileType === ProfileType.LOCAL && !loadingMyOwnProfile
+    const shouldLoadFromCatalyst =
+      shouldFetchViaComms || (loadingMyOwnProfile && !iAmAGuest) || profileType === ProfileType.DEPLOYED
     const shouldFallbackToRandomProfile = true
 
     const versionNumber = +(version || '1')
+
+    const reasons = [shouldFetchViaComms ? 'comms' : '', shouldLoadFromCatalyst ? 'catalyst' : ''].join('-')
 
     const profile: Avatar =
       // first fetch avatar through comms
@@ -174,20 +196,24 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       // last resort, localStorage
       (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
-      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
+      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId, reasons)))
 
     const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
     avatar.userId = userId
 
-    if (shouldReadProfileFromLocalStorage) {
+    if (loadingMyOwnProfile && shouldReadProfileFromLocalStorage) {
       // for local user, hasConnectedWeb3 == identity.hasConnectedWeb3
       const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
       avatar.hasConnectedWeb3 = identity?.hasConnectedWeb3 || avatar.hasConnectedWeb3
     }
 
+    // resolve the future of the request
+    yield call(future.resolve, avatar)
+
     yield put(profileSuccess(avatar))
   } catch (error: any) {
     debugger
+    yield call(future.reject, error)
     trackEvent('error', {
       context: 'kernel#saga',
       message: `Error requesting profile for ${userId}: ${error}`,
@@ -226,26 +252,53 @@ function* getRemoteProfile(userId: string, version?: number) {
   return null
 }
 
-export async function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
-  const bff = await ensureRealmAdapterPromise()
-  try {
-    let url = `${bff.services.legacy.lambdasServer}/profiles?id=${userId}`
-    if (version) url = url + `&version=${version}`
-    else url = url + `&no-cache=${Math.random()}`
+const cachedRequests = new Map<string, Promise<RemoteProfile>>()
 
-    const response = await fetch(url)
+function requestCacheKey(userId: string, version?: number) {
+  if (userId.startsWith('default')) return userId
+  if (version) return `${userId}:${version}`
+  return null
+}
 
-    if (!response.ok) {
-      throw new Error(`Invalid response from ${url}`)
-    }
+export function profileServerRequest(userId: string, version?: number): Promise<RemoteProfile> {
+  const key = requestCacheKey(userId, version)
 
-    const res: RemoteProfile[] = await response.json()
-
-    return res[0] || { avatars: [], timestamp: Date.now() }
-  } catch (e: any) {
-    defaultLogger.error(e)
-    return { avatars: [], timestamp: Date.now() }
+  if (key !== null && cachedRequests.has(key)) {
+    return cachedRequests.get(key)!
   }
+
+  async function doTheRequest() {
+    const bff = await ensureRealmAdapterPromise()
+    try {
+      let url = `${bff.services.legacy.lambdasServer}/profiles/${userId}`
+      if (version) url = url + `&version=${version}`
+      else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
+
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error(`Invalid response from ${url}`)
+      }
+
+      const res: RemoteProfile = await response.json()
+
+      return res || { avatars: [], timestamp: Date.now() }
+    } catch (e: any) {
+      defaultLogger.error(e)
+      if (key) {
+        cachedRequests.delete(key)
+      }
+      return { avatars: [], timestamp: Date.now() }
+    }
+  }
+
+  const req = doTheRequest()
+
+  if (key) {
+    cachedRequests.set(key, req)
+  }
+
+  return req
 }
 
 /**
@@ -283,7 +336,7 @@ function* handleSaveLocalAvatar(saveAvatar: SaveProfileDelta) {
 
     const profile: Avatar = {
       hasClaimedName: false,
-      name: createFakeName(),
+      name: createFakeName(userId),
       description: '',
       tutorialStep: 0,
       ...savedProfile,
@@ -450,14 +503,13 @@ async function makeContentFile(path: string, content: string | Blob | Buffer): P
   }
 }
 
-function randomBetween(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
+export async function generateRandomUserProfile(userId: string, reason: string): Promise<Avatar> {
+  defaultLogger.info('Generating random profile for ' + userId + ' ' + reason)
 
-export async function generateRandomUserProfile(userId: string): Promise<Avatar> {
-  defaultLogger.info('Generating random profile for ' + userId)
+  const bytes = new TextEncoder().encode(userId)
 
-  const _number = randomBetween(1, 160)
+  // deterministically find the same random profile for each user
+  const _number = 1 + (unsignedCRC32(bytes) % 160)
 
   let profile: Avatar | undefined = undefined
   try {
@@ -476,10 +528,14 @@ export async function generateRandomUserProfile(userId: string): Promise<Avatar>
   profile.ethAddress = userId
   profile.userId = userId
   profile.avatar.snapshots.face256 = profile.avatar.snapshots.face256 ?? (profile.avatar.snapshots as any).face
-  profile.name = createFakeName()
+  profile.name = createFakeName(userId)
   profile.hasClaimedName = false
   profile.tutorialStep = 0
   profile.version = 0
 
   return ensureAvatarCompatibilityFormat(profile)
+}
+
+function isExpectedVersion(aProfile: Avatar, version?: number) {
+  return !version || aProfile.version >= version
 }

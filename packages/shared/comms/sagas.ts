@@ -14,14 +14,14 @@ import {
   SET_ROOM_CONNECTION
 } from './actions'
 import { notifyStatusThroughChat } from 'shared/chat'
-import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel } from './handlers'
+import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel, sendPing } from './handlers'
 import { Rfc4RoomConnection } from './logic/rfc-4-room-connection'
 import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
 import { commConfigurations, COMMS_GRAPH, DEBUG_COMMS, genericAvatarSnapshots, PREFERED_ISLAND } from 'config'
 import { isURL } from 'atomicHelpers/isURL'
-import { processAvatarVisibility } from './peers'
+import { getAllPeers, processAvatarVisibility } from './peers'
 import { getFatalError } from 'shared/loading/selectors'
 import { EventChannel } from 'redux-saga'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -29,7 +29,7 @@ import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { selectAndReconnectRealm } from 'shared/dao/sagas'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
-import { getCommsConfig, getMaxVisiblePeers } from 'shared/meta/selectors'
+import { getCommsConfig, getFeatureFlagEnabled, getMaxVisiblePeers } from 'shared/meta/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { OfflineAdapter } from './adapters/OfflineAdapter'
 import { WebSocketAdapter } from './adapters/WebSocketAdapter'
@@ -49,7 +49,10 @@ import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
-import { debugCommsGraph } from 'shared/session/getPerformanceInfo'
+import { debugCommsGraph, measurePingTime, measurePingTimePercentages } from 'shared/session/getPerformanceInfo'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { NotificationType } from 'shared/types'
+import { trackEvent } from 'shared/analytics'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -77,7 +80,7 @@ export function* commsSaga() {
   yield fork(handleAnnounceProfile)
   yield fork(initAvatarVisibilityProcess)
   yield fork(handleCommsReconnectionInterval)
-
+  yield fork(pingerProcess)
   yield fork(reportPositionSaga)
 
   if (COMMS_GRAPH) {
@@ -143,6 +146,44 @@ function* reportPositionSaga() {
   }
 
   positionObservable.remove(observer)
+}
+
+/**
+ * This saga sends random pings to all peers if the conditions are met.
+ */
+function* pingerProcess() {
+  yield call(waitForMetaConfigurationInitialization)
+
+  const enabled: boolean = yield select(getFeatureFlagEnabled, 'ping_enabled')
+
+  if (enabled) {
+    while (true) {
+      yield delay(15_000 + Math.random() * 60_000)
+
+      const responses = new Map<string, number[]>()
+      const expectedResponses = getAllPeers().size
+
+      yield call(sendPing, (dt, address) => {
+        const list = responses.get(address) || []
+        responses.set(address, list)
+        list.push(dt)
+        measurePingTime(dt)
+        if (list.length > 1) {
+          incrementCounter('pong_duplicated_response_counter')
+        }
+      })
+
+      yield delay(15_000)
+
+      // measure the response ratio
+      if (expectedResponses) {
+        measurePingTimePercentages(Math.round((responses.size / expectedResponses) * 100))
+      }
+
+      incrementCounter('pong_expected_counter', expectedResponses)
+      incrementCounter('pong_given_counter', responses.size)
+    }
+  }
 }
 
 /**
@@ -275,7 +316,7 @@ function* createLighthouseConnection(url: string) {
       },
       maxConnectionDistance: 4,
       nearbyPeersDistance: 5,
-      disconnectDistance: 5
+      disconnectDistance: 6
     },
     preferedIslandId: PREFERED_ISLAND ?? ''
   }
@@ -294,14 +335,45 @@ function* createLighthouseConnection(url: string) {
       commsLogger.log('Lighthouse status: ', status)
       switch (status.status) {
         case 'realm-full':
+          disconnect(status.status, 'The realm is full, reconnecting')
+          break
         case 'reconnection-error':
+          disconnect(status.status, 'Reconnection comms error')
+          break
         case 'id-taken':
-          lighthouse.disconnect({ kicked: true, error: new Error(status.status) }).catch(commsLogger.error)
+          disconnect(status.status, 'A previous connection to the connection server is still active')
+          break
+        case 'error':
+          disconnect(status.status, 'An error has ocurred in the communications server, reconnecting.')
           break
       }
     },
     identity
   )
+
+  function disconnect(reason: string, message: string) {
+    trackEvent('disconnect_lighthouse', { message, reason, url })
+
+    getUnityInstance().ShowNotification({
+      type: NotificationType.GENERIC,
+      message: message,
+      buttonMessage: 'OK',
+      timer: 10
+    })
+
+    lighthouse
+      .disconnect({ kicked: reason === 'id-taken', error: new Error(message) })
+      .catch(commsLogger.error)
+      .finally(() => {
+        setTimeout(
+          () => {
+            store.dispatch(setRealmAdapter(undefined))
+            store.dispatch(setRoomConnection(undefined))
+          },
+          reason === 'id-taken' ? 10000 : 300
+        )
+      })
+  }
 
   lighthouse.onIslandChangedObservable.add(({ island }) => {
     store.dispatch(setCommsIsland(island))

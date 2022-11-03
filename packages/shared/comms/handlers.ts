@@ -7,12 +7,13 @@ import {
   ensureTrackingUniqueAndLatest,
   receiveUserPosition,
   removeAllPeers,
-  removePeerByAddress
+  removePeerByAddress,
+  receivePeerUserData
 } from './peers'
 import { AvatarMessageType, Package } from './interface/types'
 import * as proto from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { store } from 'shared/store/isolatedStore'
-import { getCurrentUserProfile, getProfileFromStore } from 'shared/profiles/selectors'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { messageReceived } from '../chat/actions'
 import { getBannedUsers } from 'shared/meta/selectors'
 import { processVoiceFragment } from 'shared/voiceChat/handlers'
@@ -34,11 +35,14 @@ import { RoomConnection } from './interface'
 import { incrementCommsMessageReceived, incrementCommsMessageReceivedByName } from 'shared/session/getPerformanceInfo'
 import { sendPublicChatMessage } from '.'
 import { getCurrentIdentity } from 'shared/session/selectors'
+import { commsLogger } from './context'
+import { incrementCounter } from 'shared/occurences'
+import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 
 type PingRequest = {
   alias: number
-  responses: number
   sentTime: number
+  onPong: (dt: number, address: string) => void
 }
 
 const receiveProfileOverCommsChannel = new Observable<Avatar>()
@@ -84,11 +88,41 @@ export async function requestProfileToPeers(
 
   pendingProfileRequests.get(address)!.add(thisFuture)
 
+  void thisFuture.then((value) => {
+    incrementCounter(value ? 'profile-over-comms-succesful' : 'profile-over-comms-failed')
+  })
+
+  // send the request
   await roomConnection.sendProfileRequest({
     address,
     profileVersion
   })
 
+  // send another retry in a couple seconds
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      roomConnection
+        .sendProfileRequest({
+          address,
+          profileVersion
+        })
+        .catch(commsLogger.error)
+    }
+  }, COMMS_PROFILE_TIMEOUT / 3)
+
+  // send another retry in a couple seconds
+  setTimeout(function () {
+    if (thisFuture.isPending) {
+      roomConnection
+        .sendProfileRequest({
+          address,
+          profileVersion
+        })
+        .catch(commsLogger.error)
+    }
+  }, COMMS_PROFILE_TIMEOUT / 2)
+
+  // and lastly fail
   setTimeout(function () {
     if (thisFuture.isPending) {
       // We resolve with a null profile. This will fallback to a random profile
@@ -130,27 +164,26 @@ function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVers
     ensureTrackingUniqueAndLatest(peerTrackingInfo)
 
     const profileVersion = +message.data.profileVersion
-    const currentProfile = getProfileFromStore(store.getState(), message.address)
 
-    const shouldLoadRemoteProfile =
-      !currentProfile ||
-      currentProfile.status === 'error' ||
-      (currentProfile.status === 'ok' && currentProfile.data.version < profileVersion)
-
-    if (shouldLoadRemoteProfile) {
-      ProfileAsPromise(
-        message.address,
-        profileVersion,
-        /* we ask for LOCAL to ask information about the profile using comms o not overload the servers*/
-        ProfileType.LOCAL
-      ).catch((e: Error) => {
+    ProfileAsPromise(
+      message.address,
+      profileVersion,
+      /* we ask for LOCAL to ask information about the profile using comms to not overload the servers*/
+      ProfileType.LOCAL
+    )
+      .then(async (avatar) => {
+        // send to Avatars scene
+        const realmAdapter = await ensureRealmAdapterPromise()
+        const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+        receivePeerUserData(avatar, peerTrackingInfo.baseUrl || fetchContentServerWithPrefix)
+      })
+      .catch((e: Error) => {
         trackEvent('error', {
           message: `error loading profile ${message.address}:${profileVersion}: ` + e.message,
           context: 'kernel#saga',
           stack: e.stack || 'processProfileUpdatedMessage'
         })
       })
-    }
   }
 }
 
@@ -168,15 +201,34 @@ function processParcelSceneCommsMessage(message: Package<proto.Scene>) {
   }
 }
 
-globalThis.__sendPing = () => {
-  const nonce = Math.floor(Math.random() * 0xffffffff)
-  pingRequests.set(nonce, {
-    responses: 0,
-    sentTime: Date.now(),
-    alias: pingIndex++
-  })
-  sendPublicChatMessage(`␑${nonce}`)
+function pingMessage(nonce: number) {
+  return `␑${nonce}`
 }
+function pongMessage(nonce: number, address: string) {
+  return `␆${nonce} ${address}`
+}
+
+export function sendPing(onPong?: (dt: number, address: string) => void) {
+  const nonce = Math.floor(Math.random() * 0xffffffff)
+  let responses = 0
+  pingRequests.set(nonce, {
+    sentTime: Date.now(),
+    alias: pingIndex++,
+    onPong:
+      onPong ||
+      ((dt, address) => {
+        console.log(
+          `ping got ${++responses} responses (ping: ${dt.toFixed(2)}ms, nonce: ${nonce}, address: ${address})`
+        )
+      })
+  })
+  sendPublicChatMessage(pingMessage(nonce))
+  incrementCounter('ping_sent_counter')
+}
+
+globalThis.__sendPing = sendPing
+
+const answeredPings = new Set<number>()
 
 function processChatMessage(message: Package<proto.Chat>) {
   const myProfile = getCurrentUserProfile(store.getState())
@@ -186,15 +238,23 @@ function processChatMessage(message: Package<proto.Chat>) {
   senderPeer.lastUpdate = Date.now()
 
   if (senderPeer.ethereumAddress) {
-    if (message.data.message.startsWith('␑')) {
-      const nonce = parseInt(message.data.message.slice(1), 10)
+    if (message.data.message.startsWith('␆') /* pong */) {
+      const [nonceStr, address] = message.data.message.slice(1).split(' ')
+      const nonce = parseInt(nonceStr, 10)
       const request = pingRequests.get(nonce)
       if (request) {
-        request.responses++
-        console.log(`ping ${request.alias} has ${request.responses} responses (nonce: ${nonce})`)
-      } else {
-        sendPublicChatMessage(message.data.message)
+        incrementCounter('pong_received_counter')
+        request.onPong(Date.now() - request.sentTime, address || 'none')
       }
+    } else if (message.data.message.startsWith('␑') /* ping */) {
+      const nonce = parseInt(message.data.message.slice(1), 10)
+      if (answeredPings.has(nonce)) {
+        incrementCounter('ping_received_twice_counter')
+        return
+      }
+      answeredPings.add(nonce)
+      if (myProfile) sendPublicChatMessage(pongMessage(nonce, myProfile.ethAddress))
+      incrementCounter('pong_sent_counter')
     } else if (message.data.message.startsWith('␐')) {
       const [id, timestamp] = message.data.message.split(' ')
 
@@ -246,7 +306,10 @@ function processProfileResponse(message: Package<proto.ProfileResponse>) {
     debugger
   }
 
-  if (peerTrackingInfo.ethereumAddress !== profile.userId) return
+  if (peerTrackingInfo.ethereumAddress !== profile.userId) {
+    debugger
+    return
+  }
 
   const promises = pendingProfileRequests.get(profile.userId)
 

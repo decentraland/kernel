@@ -17,7 +17,6 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { isCurrentUserId, getCurrentIdentity, getCurrentUserId } from 'shared/session/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { takeLatestByUserId } from 'shared/profiles/sagas'
 import { UPDATE_LOADING_SCREEN } from 'shared/loading/actions'
 import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selectors'
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
@@ -56,7 +55,7 @@ import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { LoadingState } from 'shared/loading/reducer'
 
 export function* rendererSaga() {
-  yield takeLatestByUserId(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
+  yield takeEvery(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
   yield takeLatest(SIGNUP_SET_IS_SIGNUP, sendSignUpToRenderer)
   yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreen)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
@@ -119,7 +118,7 @@ function convertCurrentRealmType(realmAdapter: IRealmAdapter, contentServerUrl: 
   return {
     serverName: realmAdapter.about.configurations?.realmName || realmAdapter.baseUrl,
     layer: '',
-    domain: new URL(realmAdapter.baseUrl).hostname,
+    domain: realmAdapter.baseUrl,
     contentServerUrl: contentServerUrl
   }
 }
@@ -279,13 +278,9 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   yield call(waitForRendererInstance)
 
   const profile: ProfileUserInfo | null = yield select(getProfileFromStore, userId)
-  if (!profile) {
+  if (!profile || !profile.data) {
     debugger
-    throw new Error('Profile not available for Unity')
-  }
-  if (!profile.data) {
-    debugger
-    throw new Error('Avatar not available for Unity')
+    return
   }
 
   const bff: IRealmAdapter = yield call(waitForRealmAdapter)
