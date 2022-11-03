@@ -302,10 +302,11 @@ export class BrowserInterface {
       }
     } else {
       if (data.eventType !== 'metricsUpdate') {
-        if(data.sceneId)
+        if (data.sceneId) {
           defaultLogger.error(`SceneEvent: Scene id ${data.sceneId} not found`, data)
-        else
+        } else {
           defaultLogger.error(`SceneEvent: Scene number ${data.sceneNumber} not found`, data)
+        }
       }
     }
   }
@@ -366,7 +367,12 @@ export class BrowserInterface {
     sendPublicChatMessage(body)
   }
 
-  public TermsOfServiceResponse(data: { sceneId: string; sceneNumber: number; accepted: boolean; dontShowAgain: boolean }) {
+  public TermsOfServiceResponse(data: {
+    sceneId: string
+    sceneNumber: number
+    accepted: boolean
+    dontShowAgain: boolean
+  }) {
     trackEvent('TermsOfServiceResponse', data)
   }
 
@@ -1031,7 +1037,9 @@ export class BrowserInterface {
     currentOffset: number
     videoLength: number
   }) {
-    const scene = videoEvent.sceneId ? getSceneWorkerBySceneID(videoEvent.sceneId) : getSceneWorkerBySceneNumber(videoEvent.sceneNumber)
+    const scene = videoEvent.sceneId
+      ? getSceneWorkerBySceneID(videoEvent.sceneId)
+      : getSceneWorkerBySceneNumber(videoEvent.sceneNumber)
     if (scene) {
       scene.rpcContext.sendSceneEvent('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,
@@ -1041,10 +1049,8 @@ export class BrowserInterface {
         totalVideoLength: videoEvent.videoLength
       })
     } else {
-      if(videoEvent.sceneId)
-        defaultLogger.error(`SceneEvent: Scene id ${videoEvent.sceneId} not found`, videoEvent)
-      else
-        defaultLogger.error(`SceneEvent: Scene number ${videoEvent.sceneNumber} not found`, videoEvent)
+      if (videoEvent.sceneId) defaultLogger.error(`SceneEvent: Scene id ${videoEvent.sceneId} not found`, videoEvent)
+      else defaultLogger.error(`SceneEvent: Scene number ${videoEvent.sceneNumber} not found`, videoEvent)
     }
   }
 
