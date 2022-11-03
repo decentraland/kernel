@@ -1,12 +1,4 @@
-import {
-  DEBUG,
-  EDITOR,
-  ENGINE_DEBUG_PANEL,
-  rootURLPreviewMode,
-  SCENE_DEBUG_PANEL,
-  SHOW_FPS_COUNTER,
-  WORLD_EXPLORER
-} from 'config'
+import { DEBUG, EDITOR, ENGINE_DEBUG_PANEL, rootURLPreviewMode, SCENE_DEBUG_PANEL, SHOW_FPS_COUNTER } from 'config'
 import './UnityInterface'
 import {
   allScenesEvent,
@@ -76,7 +68,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
     getUnityInstance().ShowFPSPanel()
   }
 
-  if (SHOW_FPS_COUNTER && WORLD_EXPLORER) {
+  if (SHOW_FPS_COUNTER) {
     getUnityInstance().ShowFPSPanel()
   }
 
