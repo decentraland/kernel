@@ -612,17 +612,9 @@ export class BrowserInterface {
   }
 
   public ReportScene(data: { sceneId: string; sceneNumber: number }) {
-    if(data.sceneId) {
-      this.OpenWebURL({
-        url: `https://dcl.gg/report-user-or-scene?scene_or_name=${data.sceneId}`
-      })
-    } else {
-      this.OpenWebURL({
-        url: `https://dcl.gg/report-user-or-scene?scene_or_name=${
-          getSceneWorkerBySceneNumber(data.sceneNumber)?.rpcContext.sceneData.id
-        }`
-      })
-    }
+    const sceneId = data.sceneId ?? getSceneWorkerBySceneNumber(data.sceneNumber)?.rpcContext.sceneData.id
+
+    this.OpenWebURL({ url: `https://dcl.gg/report-user-or-scene?scene_or_name=${sceneId}` })
   }
 
   public ReportPlayer(data: { userId: string }) {
