@@ -13,6 +13,10 @@ import { trackTeleportTriggered } from 'shared/loading/types'
 import { teleportToAction } from 'shared/scene-loader/actions'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 
+import { lastPlayerPosition } from 'shared/world/positionThings'
+import { homePointKey } from 'shared/atlas/utils'
+import { getFromPersistentStorage } from 'atomicHelpers/persistentStorage'
+
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
   .join(' or ')
@@ -62,6 +66,24 @@ export class TeleportController {
     return TeleportController.goTo(x, y, tpMessage)
   }
 
+  public static async goToHome(): Promise<{ message: string; success: boolean }> {
+    try {
+      const homeCoordinates = await fetchHomePoint()
+
+      return TeleportController.goTo(
+        homeCoordinates.x,
+        homeCoordinates.y,
+        `Teleporting to Home (${homeCoordinates.x},${homeCoordinates.y})...`
+      )
+    } catch (e) {
+      defaultLogger.error('Error while trying to teleport to Home', e)
+      return {
+        message: 'Could not teleport to Home!',
+        success: false
+      }
+    }
+  }
+
   public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
     if (isInsideWorldLimits(x, y)) {
@@ -88,6 +110,16 @@ export class TeleportController {
     /// screen. The code needs rework
     // store.dispatch(teleportToAction({ position: gridToWorld(data.x, data.y) }))
   }
+}
+
+async function fetchHomePoint(): Promise<{ x: number; y: number }> {
+  const homePoint: string = await getFromPersistentStorage(homePointKey)
+  if (homePoint) {
+    const [x, y] = homePoint.split(',').map((p) => parseFloat(p))
+    gridToWorld(x, y, lastPlayerPosition)
+    return { x, y }
+  }
+  return { x: 0, y: 0 }
 }
 
 async function fetchLayerUsersParcels(): Promise<ParcelArray[]> {
