@@ -35,7 +35,6 @@ build-essentials: $(COMPILED_SUPPORT_JS_FILES) $(GIF_PROCESSOR) $(VOICE_CHAT_COD
 	echo 'declare module "dcl" {}' > node_modules/dcl.d.ts
 	cp node_modules/@dcl/scene-runtime/dist/webworker.js node_modules/@dcl/scene-runtime/dist/webworker.js.txt
 	cp node_modules/@dcl/scene-runtime/dist/webworker.dev.js node_modules/@dcl/scene-runtime/dist/webworker.dev.js.txt
-	# echo 'declare module "dcl-social-client"' > node_modules/dcl-social-client/dist/index.d.ts
 	ESSENTIALS_ONLY=true node ./build.js
 	BUNDLES_ONLY=true node ./build.js
 

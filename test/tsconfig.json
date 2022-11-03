@@ -10,8 +10,5 @@
     "typeRoots": ["../node_modules/"]
   },
   "exclude": ["../packages/engine"],
-  "extends": "../tsconfig.json",
-  "include": [
-    "../modules.d.ts"
-  ]
+  "extends": "../tsconfig.json"
 }

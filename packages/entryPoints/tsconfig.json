@@ -9,6 +9,5 @@
   "extends": "../../tsconfig.json",
   "include": [
     "*.ts"
-  ],
-  "files": ["../modules.d.ts"]
+  ]
 }
