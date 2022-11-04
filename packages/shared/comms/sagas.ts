@@ -274,10 +274,10 @@ function* createP2PAdapter(islandId: string, initialPeers: Record<string, Positi
       logger: commsLogger,
       bff: realmAdapter,
       logConfig: {
-        debugWebRtcEnabled: true,
-        debugUpdateNetwork: true,
+        debugWebRtcEnabled: !!DEBUG_COMMS,
+        debugUpdateNetwork: !!DEBUG_COMMS,
         debugIceCandidates: !!DEBUG_COMMS,
-        debugMesh: true
+        debugMesh: !!DEBUG_COMMS
       },
       islandId,
       // TODO: is this peerId correct?
