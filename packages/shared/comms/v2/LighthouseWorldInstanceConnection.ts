@@ -77,10 +77,12 @@ function ProfileRequestResponseType(action: 'request' | 'response'): PeerMessage
 
 declare let globalThis: any
 
+const previousLighthouseConnections = new Set<LighthouseWorldInstanceConnection>()
+
 export class LighthouseWorldInstanceConnection implements RoomConnection {
   events = mitt<CommsEvents>()
 
-  private peer: PeerType
+  protected peer: PeerType
 
   private rooms: string[] = []
   private disposed = false
@@ -99,10 +101,17 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     this.profileType = identity.hasConnectedWeb3 ? ProfileType.DEPLOYED : ProfileType.LOCAL
     // This assignment is to "definetly initialize" peer
     this.peer = this.initializePeer()
+    previousLighthouseConnections.add(this)
   }
 
   async connect() {
     try {
+      for (const connection of previousLighthouseConnections) {
+        if (connection !== this) {
+          await connection.disconnect()
+        }
+      }
+
       if (!this.peer.connectedCount()) {
         await this.peer.awaitConnectionEstablished(60000)
       }
@@ -123,6 +132,8 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     this.disposed = true
 
     await this.peer.dispose()
+
+    previousLighthouseConnections.delete(this)
 
     this.events.emit('DISCONNECTION', data ?? { kicked: false })
   }
