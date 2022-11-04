@@ -25,8 +25,8 @@ export type P2PConfig = {
 }
 
 const UPDATE_NETWORK_INTERVAL = 30000
-const DEFAULT_TARGET_CONNECTIONS = 4
-const DEFAULT_MAX_CONNECTIONS = 6
+const DEFAULT_TARGET_CONNECTIONS = 1
+const DEFAULT_MAX_CONNECTIONS = 2
 
 // shared writer to leverage pools
 const writer = new Writer()
