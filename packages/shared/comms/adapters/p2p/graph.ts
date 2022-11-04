@@ -1,11 +1,11 @@
-import { Path } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
+import { Edge } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
 
 // TODO metrica por cada metodo + metrica por cada vez que se genera el árbol
 export type Graph = {
   addConnection: (p1: string, p2: string) => void
   removeConnection: (p1: string, p2: string) => void
   removePeer: (p: string) => void
-  getMST: () => Path[]
+  getMST: () => Edge[]
 
   // asDot: () => string
   // asMatrixString: () => string
@@ -16,7 +16,7 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
   const matrix = new Uint8Array(maxPeers * maxPeers)
   matrix.fill(0)
 
-  let mst: Path[] = []
+  let mst: Edge[] = []
   let dirty = true
   function getMST() {
     if (dirty) {
@@ -96,7 +96,7 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
     peers.pop()
   }
 
-  function primMST(): Path[] {
+  function primMST(): Edge[] {
     // A utility function to find the vertex with
     // minimum key value, from the set of vertices
     // not yet included in MST
@@ -158,10 +158,10 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
         }
     }
 
-    const mstEdges: Path[] = []
+    const mstEdges: Edge[] = []
     for (let i = 1; i < peers.length; i++) {
       if (parent[i] !== undefined) {
-        mstEdges.push({ peers: [peers[parent[i]], peers[i]] })
+        mstEdges.push({ u: peers[parent[i]], v: peers[i] })
       }
     }
 
@@ -169,7 +169,7 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
   }
 
   // function asDot(): string {
-  //   const mst: Path[] = getMST()
+  //   const mst: Edge[] = getMST()
 
   //   const dot: string[] = []
 

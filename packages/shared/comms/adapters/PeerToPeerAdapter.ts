@@ -1,4 +1,4 @@
-import { Reader } from 'protobufjs/minimal'
+import { Writer } from 'protobufjs/minimal'
 import { JoinIslandMessage, LeftIslandMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
 import { Mesh } from './p2p/Mesh'
 import mitt from 'mitt'
@@ -13,8 +13,7 @@ import {
   PeerTopicSubscriptionResultElem,
   SystemTopicSubscriptionResultElem
 } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
-import { Path } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
-import { Packet } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
+import { Packet, Edge } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
 import { createConnectionsGraph, Graph } from './p2p/graph'
 
 export type P2PConfig = {
@@ -28,6 +27,15 @@ export type P2PConfig = {
 const UPDATE_NETWORK_INTERVAL = 30000
 const DEFAULT_TARGET_CONNECTIONS = 4
 const DEFAULT_MAX_CONNECTIONS = 6
+
+// shared writer to leverage pools
+const writer = new Writer()
+
+function craftMessage(packet: Packet): Uint8Array {
+  writer.reset()
+  Packet.encode(packet as any, writer)
+  return writer.finish()
+}
 
 export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   public readonly mesh: Mesh
@@ -113,7 +121,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   private async onPeerJoined(message: SystemTopicSubscriptionResultElem) {
     let peerJoinMessage: JoinIslandMessage
     try {
-      peerJoinMessage = JoinIslandMessage.decode(Reader.create(message.payload))
+      peerJoinMessage = JoinIslandMessage.decode(message.payload)
     } catch (e) {
       this.config.logger.error('cannot process peer join message', e)
       return
@@ -149,7 +157,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   private async onPeerLeft(message: SystemTopicSubscriptionResultElem) {
     let peerLeftMessage: LeftIslandMessage
     try {
-      peerLeftMessage = LeftIslandMessage.decode(Reader.create(message.payload))
+      peerLeftMessage = LeftIslandMessage.decode(message.payload)
     } catch (e) {
       this.config.logger.error('cannot process peer left message', e)
       return
@@ -214,25 +222,20 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     if (this.disposed) {
       return
     }
-    const target = this.graph.getMST()
-    // TODO: Make it more efficient (only one writer for all packets)
-    const packet = Packet.encode({
+    const edges = this.graph.getMST()
+    const packet = craftMessage({
       payload,
       source: this.config.peerId,
-      target
-    }).finish()
+      edges
+    })
 
-    const peersToSend: Set<string> = firstStep(target, this.config.peerId)
+    const peersToSend: Set<string> = nextSteps(edges, this.config.peerId)
 
-    const peersThroughMS: Set<string> = new Set()
     for (const neighbor of peersToSend) {
-      const success = this.mesh.sendPacketToPeer(neighbor, packet, reliable)
-      if (!success) {
-        peersThroughMS.add(neighbor)
-        allSteps(target, neighbor).forEach((p: string) => peersThroughMS.add(p))
-      }
+      this.mesh.sendPacketToPeer(neighbor, packet, reliable)
     }
 
+    // TODO
     // await this.config.bff.services.messaging.publish({
     //   packet: {
     //     payload,
@@ -240,15 +243,6 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     //   },
     //   reason: Reason.REASON_NO_ROUTE,
     //   peers: Array.from(this.unreachablePeers)
-    // })
-
-    // await this.config.bff.services.messaging.publish({
-    //   packet: {
-    //     payload,
-    //     source: this.config.peerId
-    //   },
-    //   reason: Reason.REASON_ROUTE_CUT,
-    //   peers: Array.from(peersThroughMS)
     // })
   }
 
@@ -266,15 +260,10 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       data: packet.payload
     })
 
-    const peersToSend: Set<string> = firstStep(packet.target, this.config.peerId)
+    const peersToSend: Set<string> = nextSteps(packet.edges, this.config.peerId)
 
-    const peersThroughMS: Set<string> = new Set()
     for (const neighbor of peersToSend) {
-      const success = this.mesh.sendPacketToPeer(neighbor, data, reliable)
-      if (!success) {
-        peersThroughMS.add(neighbor)
-        allSteps(packet.target, neighbor).forEach((p: string) => peersThroughMS.add(p))
-      }
+      this.mesh.sendPacketToPeer(neighbor, data, reliable)
     }
   }
 
@@ -370,31 +359,11 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   }
 }
 
-function firstStep(paths: Path[], peerId: string): Set<string> {
+function nextSteps(edges: Edge[], peerId: string): Set<string> {
   const response: Set<string> = new Set()
-  for (const path of paths) {
-    const peers = path.peers
-    const currentIndex = peers.indexOf(peerId)
-
-    if (currentIndex === -1) continue
-    if (currentIndex >= peers.length - 1) continue
-
-    response.add(peers[currentIndex + 1])
-  }
-  return response
-}
-
-function allSteps(paths: Path[], peerId: string): Set<string> {
-  const response: Set<string> = new Set()
-  for (const path of paths) {
-    const peers = path.peers
-    const currentIndex = peers.indexOf(peerId)
-
-    if (currentIndex === -1) continue
-    if (currentIndex >= peers.length - 1) continue
-
-    for (let i = currentIndex + 1; i < peers.length; i++) {
-      response.add(peers[i])
+  for (const edge of edges) {
+    if (edge.u === peerId) {
+      response.add(edge.v)
     }
   }
   return response
