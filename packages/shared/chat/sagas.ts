@@ -319,6 +319,7 @@ function initChatCommands() {
 
       sendPublicChatMessage(`␐${expression} ${time}`)
 
+      getUnityInstance().TriggerSelfUserExpression(expression)
       void rendererProtocol.then(async (protocol) => {
         await protocol.emotesService.triggerSelfUserExpression({ id: expression })
       })

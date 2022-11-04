@@ -73,9 +73,11 @@ export function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Trigge
     return {}
   }
 
+  getUnityInstance().TriggerSelfUserExpression(req.predefinedEmote)
   void rendererProtocol.then(async (protocol) => {
     await protocol.emotesService.triggerSelfUserExpression({ id: req.predefinedEmote })
   })
+
   return {}
 }
 

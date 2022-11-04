@@ -16,7 +16,7 @@ describe('RestrictedActions tests', () => {
   beforeEach(() => {
     sinon.reset()
     sinon.restore()
-    setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
+    setUnityInstance({ Teleport: () => {}, TriggerSelfUserExpression: () => {} } as any)
     buildStore()
   })
 

@@ -314,6 +314,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('HUDController', 'ShowWelcomeNotification')
   }
 
+  /** @deprecated */
   public TriggerSelfUserExpression(expressionId: string) {
     this.SendMessageToUnity('HUDController', 'TriggerSelfUserExpression', expressionId)
   }
