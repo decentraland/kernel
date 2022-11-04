@@ -195,7 +195,6 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
 
         info.position = info.position || currentPeer.position
         info.visible = info.visible || currentPeer.visible
-        info.profile = info.profile || currentPeer.profile
 
         currentPeer = info
       }
