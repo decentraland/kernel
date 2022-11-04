@@ -17,7 +17,8 @@ type Config = {
   logger: ILogger
   packetHandler: (data: Uint8Array, reliable: boolean) => void
   shouldAcceptOffer(peerId: string): boolean
-  onChange: () => void
+  onConnectionEstablished: (peerId: string) => void
+  onConnectionClosed: (peerId: string) => void
   logConfig: P2PLogConfig
 }
 
@@ -34,7 +35,8 @@ export class Mesh {
   private logger: ILogger
   private packetHandler: (data: Uint8Array, reliable: boolean) => void
   private shouldAcceptOffer: (peerId: string) => boolean
-  private onChange: () => void
+  private onConnectionEstablished: (peerId: string) => void
+  private onConnectionClosed: (peerId: string) => void
   private initiatedConnections = new Map<string, Connection>()
   private receivedConnections = new Map<string, Connection>()
   private logConfig: P2PLogConfig
@@ -46,12 +48,13 @@ export class Mesh {
   constructor(
     private realmAdapter: IRealmAdapter,
     private peerId: string,
-    { logger, packetHandler, shouldAcceptOffer, onChange, logConfig }: Config
+    { logger, packetHandler, shouldAcceptOffer, onConnectionClosed, onConnectionEstablished, logConfig }: Config
   ) {
     this.logger = logger
     this.packetHandler = packetHandler
     this.shouldAcceptOffer = shouldAcceptOffer
-    this.onChange = onChange
+    this.onConnectionClosed = onConnectionClosed
+    this.onConnectionEstablished = onConnectionEstablished
     this.logConfig = logConfig
 
     this.listeners.push(
@@ -76,11 +79,11 @@ export class Mesh {
           conn.createTimestamp = Date.now()
           break
         case 'connected':
-          this.onChange()
+          this.onConnectionEstablished(peerId)
           break
         case 'closed':
           this.receivedConnections.delete(peerId)
-          this.onChange()
+          this.onConnectionClosed(peerId)
           break
         case 'failed':
           this.receivedConnections.delete(peerId)
@@ -338,11 +341,11 @@ export class Mesh {
           conn.createTimestamp = Date.now()
           break
         case 'connected':
-          this.onChange()
+          this.onConnectionEstablished(peerId)
           break
         case 'closed':
           this.receivedConnections.delete(peerId)
-          this.onChange()
+          this.onConnectionClosed(peerId)
           break
         case 'failed':
           this.receivedConnections.delete(peerId)

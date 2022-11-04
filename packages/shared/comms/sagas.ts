@@ -50,6 +50,7 @@ import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
 import { debugCommsGraph } from 'shared/session/getPerformanceInfo'
+import { Position3DMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/archipelago.gen'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -192,7 +193,9 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
         break
       }
       case 'p2p': {
-        adapter = new Rfc4RoomConnection(yield call(createP2PAdapter, action.payload.event.islandId))
+        adapter = new Rfc4RoomConnection(
+          yield call(createP2PAdapter, action.payload.event.islandId, action.payload.event.peers)
+        )
         break
       }
       case 'lighthouse': {
@@ -215,25 +218,25 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
   }
 }
 
-function* createP2PAdapter(islandId: string) {
+function* createP2PAdapter(islandId: string, initialPeers: Record<string, Position3DMessage>) {
   const identity: ExplorerIdentity = yield select(getCurrentIdentity)
   const realmAdapter: IRealmAdapter = yield select(getRealmAdapter)
   if (!realmAdapter) throw new Error('p2p transport requires a valid realm adapter')
   const peers = new Map<string, Position3D>()
-  // for (const [id, p] of Object.entries(islandChangedMessage.peers)) {
-  //   if (peerId !== id) {
-  //     peers.set(id, [p.x, p.y, p.z])
-  //   }
-  // }
+  for (const [id, p] of Object.entries(initialPeers)) {
+    if (identity.address !== id) {
+      peers.set(id, [p.x, p.y, p.z])
+    }
+  }
   return new PeerToPeerAdapter(
     {
       logger: commsLogger,
       bff: realmAdapter,
       logConfig: {
-        debugWebRtcEnabled: !!DEBUG_COMMS,
-        debugUpdateNetwork: !!DEBUG_COMMS,
+        debugWebRtcEnabled: true,
+        debugUpdateNetwork: true,
         debugIceCandidates: !!DEBUG_COMMS,
-        debugMesh: !!DEBUG_COMMS
+        debugMesh: true
       },
       islandId,
       // TODO: is this peerId correct?

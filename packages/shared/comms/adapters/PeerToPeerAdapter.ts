@@ -7,12 +7,15 @@ import { P2PLogConfig, KnownPeerData } from './p2p/types'
 import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
 import { Position3D } from '@dcl/catalyst-peer'
 import { ILogger } from 'shared/logger'
-import { listenPeerMessage } from '../logic/subscription-adapter'
+import { listenSystemMessage, listenPeerMessage } from '../logic/subscription-adapter'
 import { IRealmAdapter } from '../../realm/types'
-import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
+import {
+  PeerTopicSubscriptionResultElem,
+  SystemTopicSubscriptionResultElem
+} from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
 import { Path } from '@dcl/protocol/out-ts/decentraland/bff/routing_service.gen'
-import { Reason } from '@dcl/protocol/out-ts/decentraland/bff/messaging_service.gen'
 import { Packet } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
+import { createConnectionsGraph, Graph } from './p2p/graph'
 
 export type P2PConfig = {
   islandId: string
@@ -38,12 +41,13 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
   private listeners: { close(): void }[] = []
 
-  // NOTE: when a new routing table arrives, both fields need to be updated
-  private paths: Path[] = []
-  private unreachablePeers: Set<string> = new Set()
+  private graph: Graph
+  private encoder = new TextEncoder()
+  private decoder = new TextDecoder()
 
   constructor(private config: P2PConfig, peers: Map<string, Position3D>) {
     this.logConfig = config.logConfig
+    this.graph = createConnectionsGraph(config.peerId)
 
     this.mesh = new Mesh(this.config.bff, this.config.peerId, {
       logger: this.config.logger,
@@ -70,12 +74,27 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         return true
       },
       logConfig: this.logConfig,
-      onChange: () => {
-        this.config.bff.services.routing.updatePeerStatus({
-          timestamp: Date.now(),
-          room: this.config.islandId,
-          connectedTo: this.mesh.connectedPeerIds()
-        })
+      onConnectionEstablished: (peerId: string) => {
+        this.graph.addConnection(this.config.peerId, peerId)
+        this.config.bff.services.comms
+          .publishToTopic({
+            topic: `${this.config.islandId}.mesh`,
+            payload: this.encoder.encode(
+              JSON.stringify({ action: 'connected', peer1: this.config.peerId, peer2: peerId })
+            )
+          })
+          .catch((err) => this.config.logger.error(err))
+      },
+      onConnectionClosed: (peerId: string) => {
+        this.graph.removeConnection(this.config.peerId, peerId)
+        this.config.bff.services.comms
+          .publishToTopic({
+            topic: `${this.config.islandId}.mesh`,
+            payload: this.encoder.encode(
+              JSON.stringify({ action: 'disconnected', peer1: this.config.peerId, peer2: peerId })
+            )
+          })
+          .catch((err) => this.config.logger.error(err))
       }
     })
 
@@ -91,7 +110,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     })
   }
 
-  private async onPeerJoined(message: PeerTopicSubscriptionResultElem) {
+  private async onPeerJoined(message: SystemTopicSubscriptionResultElem) {
     let peerJoinMessage: JoinIslandMessage
     try {
       peerJoinMessage = JoinIslandMessage.decode(Reader.create(message.payload))
@@ -117,7 +136,17 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     }
   }
 
-  private async onPeerLeft(message: PeerTopicSubscriptionResultElem) {
+  private async onMeshChanged(message: PeerTopicSubscriptionResultElem) {
+    const { action, peer1, peer2 } = JSON.parse(this.decoder.decode(message.payload))
+
+    if (action === 'connected') {
+      this.graph.addConnection(peer1, peer2)
+    } else {
+      this.graph.removeConnection(peer1, peer2)
+    }
+  }
+
+  private async onPeerLeft(message: SystemTopicSubscriptionResultElem) {
     let peerLeftMessage: LeftIslandMessage
     try {
       peerLeftMessage = LeftIslandMessage.decode(Reader.create(message.payload))
@@ -127,6 +156,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     }
 
     const peerId = peerLeftMessage.peerId
+    this.graph.removePeer(peerId)
 
     if (peerLeftMessage.islandId === this.config.islandId) {
       this.config.logger.log(`peer ${peerId} left ${this.config.islandId}`)
@@ -143,43 +173,22 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
   async connect() {
     this.listeners.push(
-      listenPeerMessage(
+      listenSystemMessage(
         this.config.bff.services.comms,
         `island.${this.config.islandId}.peer_join`,
         this.onPeerJoined.bind(this)
       ),
-      listenPeerMessage(
+      listenSystemMessage(
         this.config.bff.services.comms,
         `island.${this.config.islandId}.peer_left`,
         this.onPeerLeft.bind(this)
+      ),
+      listenPeerMessage(
+        this.config.bff.services.comms,
+        `island.${this.config.islandId}.mesh`,
+        this.onMeshChanged.bind(this)
       )
     )
-
-    // TODO: When disconnected need to return from this for
-    const listenMessages = async () => {
-      for await (const packet of this.config.bff.services.messaging.read({})) {
-        this.events.emit('message', {
-          address: packet.source,
-          data: packet.payload
-        })
-      }
-    }
-    listenMessages().catch((error) => {
-      this.config.logger.error(error)
-    })
-
-    // TODO: When disconnected need to return from this for
-    const listenRoutingChanges = async () => {
-      for await (const routingTable of this.config.bff.services.routing.getRoutingTable({})) {
-        const unreachablePeers = new Set<string>(this.knownPeers.keys())
-        for (const path of routingTable.paths) {
-          path.peers.forEach((p) => unreachablePeers.delete(p))
-        }
-      }
-    }
-    listenRoutingChanges().catch((error) => {
-      this.config.logger.error(error)
-    })
 
     this.triggerUpdateNetwork(`changed to island ${this.config.islandId}`)
   }
@@ -205,42 +214,42 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     if (this.disposed) {
       return
     }
-
+    const target = this.graph.getMST()
     // TODO: Make it more efficient (only one writer for all packets)
     const packet = Packet.encode({
       payload,
       source: this.config.peerId,
-      target: this.paths
+      target
     }).finish()
 
-    const peersToSend: Set<string> = firstStep(this.paths, this.config.peerId)
+    const peersToSend: Set<string> = firstStep(target, this.config.peerId)
 
     const peersThroughMS: Set<string> = new Set()
     for (const neighbor of peersToSend) {
       const success = this.mesh.sendPacketToPeer(neighbor, packet, reliable)
       if (!success) {
         peersThroughMS.add(neighbor)
-        allSteps(this.paths, neighbor).forEach((p: string) => peersThroughMS.add(p))
+        allSteps(target, neighbor).forEach((p: string) => peersThroughMS.add(p))
       }
     }
 
-    await this.config.bff.services.messaging.publish({
-      packet: {
-        payload,
-        source: this.config.peerId
-      },
-      reason: Reason.REASON_NO_ROUTE,
-      peers: Array.from(this.unreachablePeers)
-    })
+    // await this.config.bff.services.messaging.publish({
+    //   packet: {
+    //     payload,
+    //     source: this.config.peerId
+    //   },
+    //   reason: Reason.REASON_NO_ROUTE,
+    //   peers: Array.from(this.unreachablePeers)
+    // })
 
-    await this.config.bff.services.messaging.publish({
-      packet: {
-        payload,
-        source: this.config.peerId
-      },
-      reason: Reason.REASON_ROUTE_CUT,
-      peers: Array.from(peersThroughMS)
-    })
+    // await this.config.bff.services.messaging.publish({
+    //   packet: {
+    //     payload,
+    //     source: this.config.peerId
+    //   },
+    //   reason: Reason.REASON_ROUTE_CUT,
+    //   peers: Array.from(peersThroughMS)
+    // })
   }
 
   isKnownPeer(peerId: string): boolean {
@@ -257,22 +266,16 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       data: packet.payload
     })
 
-    const peersToSend: Set<string> = firstStep(this.paths, this.config.peerId)
+    const peersToSend: Set<string> = firstStep(packet.target, this.config.peerId)
 
     const peersThroughMS: Set<string> = new Set()
     for (const neighbor of peersToSend) {
       const success = this.mesh.sendPacketToPeer(neighbor, data, reliable)
       if (!success) {
         peersThroughMS.add(neighbor)
-        allSteps(this.paths, neighbor).forEach((p: string) => peersThroughMS.add(p))
+        allSteps(packet.target, neighbor).forEach((p: string) => peersThroughMS.add(p))
       }
     }
-
-    await this.config.bff.services.messaging.publish({
-      packet,
-      peers: Array.from(peersThroughMS),
-      reason: Reason.REASON_ROUTE_CUT
-    })
   }
 
   private scheduleUpdateNetwork() {
