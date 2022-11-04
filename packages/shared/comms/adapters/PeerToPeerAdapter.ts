@@ -25,8 +25,8 @@ export type P2PConfig = {
 }
 
 const UPDATE_NETWORK_INTERVAL = 30000
-const DEFAULT_TARGET_CONNECTIONS = 1
-const DEFAULT_MAX_CONNECTIONS = 2
+const DEFAULT_TARGET_CONNECTIONS = 4
+const DEFAULT_MAX_CONNECTIONS = 6
 
 // shared writer to leverage pools
 const writer = new Writer()
@@ -86,7 +86,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         this.graph.addConnection(this.config.peerId, peerId)
         this.config.bff.services.comms
           .publishToTopic({
-            topic: `${this.config.islandId}.mesh`,
+            topic: `island.${this.config.islandId}.mesh`,
             payload: this.encoder.encode(
               JSON.stringify({ action: 'connected', peer1: this.config.peerId, peer2: peerId })
             )
@@ -97,7 +97,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         this.graph.removeConnection(this.config.peerId, peerId)
         this.config.bff.services.comms
           .publishToTopic({
-            topic: `${this.config.islandId}.mesh`,
+            topic: `island.${this.config.islandId}.mesh`,
             payload: this.encoder.encode(
               JSON.stringify({ action: 'disconnected', peer1: this.config.peerId, peer2: peerId })
             )
@@ -145,11 +145,17 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   }
 
   private async onMeshChanged(message: PeerTopicSubscriptionResultElem) {
-    const { action, peer1, peer2 } = JSON.parse(this.decoder.decode(message.payload))
+    const data = JSON.parse(this.decoder.decode(message.payload))
 
-    if (action === 'connected') {
+    if (data.action === 'status') {
+      data.connections.forEach(({ peer1, peer2 }) => {
+        this.graph.addConnection(peer1, peer2)
+      })
+    } else if (data.action === 'connected') {
+      const { peer1, peer2 } = data
       this.graph.addConnection(peer1, peer2)
     } else {
+      const { peer1, peer2 } = data
       this.graph.removeConnection(peer1, peer2)
     }
   }
@@ -276,6 +282,13 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     }
     this.updateNetworkTimeoutId = setTimeout(() => {
       this.triggerUpdateNetwork('scheduled network update')
+      const connections = this.mesh.connectedPeerIds().map((id) => ({ peer1: id, peer2: this.config.peerId }))
+      this.config.bff.services.comms
+        .publishToTopic({
+          topic: `island.${this.config.islandId}.mesh`,
+          payload: this.encoder.encode(JSON.stringify({ action: 'status', connections }))
+        })
+        .catch((err) => this.config.logger.error(err))
     }, UPDATE_NETWORK_INTERVAL)
   }
 
