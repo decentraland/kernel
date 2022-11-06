@@ -287,7 +287,9 @@ export class BrowserInterface {
   }
 
   public SceneEvent(data: { sceneId: string; sceneNumber: number; eventType: string; payload: any }) {
-    const scene = data.sceneId ? getSceneWorkerBySceneID(data.sceneId) : getSceneWorkerBySceneNumber(data.sceneNumber)
+    const scene = data.sceneNumber
+      ? getSceneWorkerBySceneNumber(data.sceneNumber)
+      : getSceneWorkerBySceneID(data.sceneId)
 
     if (scene) {
       scene.rpcContext.sendSceneEvent(data.eventType as IEventNames, data.payload)
@@ -1037,9 +1039,9 @@ export class BrowserInterface {
     currentOffset: number
     videoLength: number
   }) {
-    const scene = videoEvent.sceneId
-      ? getSceneWorkerBySceneID(videoEvent.sceneId)
-      : getSceneWorkerBySceneNumber(videoEvent.sceneNumber)
+    const scene = videoEvent.sceneNumber
+      ? getSceneWorkerBySceneNumber(videoEvent.sceneNumber)
+      : getSceneWorkerBySceneID(videoEvent.sceneId)
     if (scene) {
       scene.rpcContext.sendSceneEvent('videoEvent' as IEventNames, {
         componentId: videoEvent.componentId,

@@ -131,9 +131,9 @@ export function* anounceOnEnterOnSceneStart() {
 export function* anounceOnReadyOnSceneReady() {
   while (true) {
     const event: RendererSignalSceneReady = yield take(RENDERER_SIGNAL_SCENE_READY)
-    const scene: SceneWorker | undefined = yield event.payload.sceneId
-      ? call(getSceneWorkerBySceneID, event.payload.sceneId)
-      : call(getSceneWorkerBySceneNumber, event.payload.sceneNumber)
+    const scene: SceneWorker | undefined = event.payload.sceneNumber
+      ? getSceneWorkerBySceneNumber(event.payload.sceneNumber)
+      : getSceneWorkerBySceneID(event.payload.sceneId)
 
     if (scene) {
       yield apply(scene, scene.onReady, [])
