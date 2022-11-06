@@ -375,6 +375,13 @@ export class BrowserInterface {
     accepted: boolean
     dontShowAgain: boolean
   }) {
+    if (data.sceneNumber) {
+      const sceneId = getSceneWorkerBySceneNumber(data.sceneNumber)?.loadableScene.id
+      if (sceneId) {
+        data.sceneId = sceneId
+      }
+    }
+
     trackEvent('TermsOfServiceResponse', data)
   }
 
