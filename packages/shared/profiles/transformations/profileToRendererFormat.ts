@@ -5,7 +5,7 @@ import { backupProfile } from '../generateRandomUserProfile'
 import { genericAvatarSnapshots } from 'config'
 import { calculateDisplayName } from './processServerProfile'
 import { NewProfileForRenderer } from './types'
-import { Color3 } from 'decentraland-ecs'
+import { Color3 } from '@dcl/ecs-math'
 
 export function profileToRendererFormat(
   profile: Partial<Avatar>,
