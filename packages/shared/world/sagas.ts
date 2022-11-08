@@ -3,7 +3,12 @@ import { SceneStart, SCENE_CHANGED, SCENE_START } from 'shared/loading/actions'
 import { SetParcelPosition, SET_PARCEL_POSITION } from 'shared/scene-loader/actions'
 import { getParcelPositionAsString } from 'shared/scene-loader/selectors'
 import { setCurrentScene, RendererSignalSceneReady, RENDERER_SIGNAL_SCENE_READY } from './actions'
-import { getLoadedParcelSceneByParcel, getSceneWorkerBySceneID, loadedSceneWorkers } from './parcelSceneManager'
+import {
+  getLoadedParcelSceneByParcel,
+  getSceneWorkerBySceneID,
+  getSceneWorkerBySceneNumber,
+  loadedSceneWorkers
+} from './parcelSceneManager'
 import { SceneWorker } from './SceneWorker'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { positionObservable } from './positionThings'
@@ -126,7 +131,10 @@ export function* anounceOnEnterOnSceneStart() {
 export function* anounceOnReadyOnSceneReady() {
   while (true) {
     const event: RendererSignalSceneReady = yield take(RENDERER_SIGNAL_SCENE_READY)
-    const scene: SceneWorker | undefined = yield call(getSceneWorkerBySceneID, event.payload.sceneId)
+    const scene: SceneWorker | undefined = event.payload.sceneNumber
+      ? yield call(getSceneWorkerBySceneNumber, event.payload.sceneNumber)
+      : yield call(getSceneWorkerBySceneID, event.payload.sceneId)
+
     if (scene) {
       yield apply(scene, scene.onReady, [])
     }
