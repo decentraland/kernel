@@ -7,8 +7,8 @@ export type Graph = {
   removePeer: (p: string) => void
   getMST: () => Edge[]
 
-  // asDot: () => string
-  // asMatrixString: () => string
+  asDot: () => string
+  asMatrixString: () => string
 }
 
 export function createConnectionsGraph(peerId: string, maxPeers: number = 100): Graph {
@@ -106,7 +106,7 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
       let min_index: number = 0
 
       for (let v = 0; v < peers.length; v++) {
-        if (mstSet[v] == false && key[v] < min) {
+        if (mstSet[v] === false && key[v] < min) {
           min = key[v]
           min_index = v
         }
@@ -116,13 +116,13 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
     }
 
     // Array to store constructed MST
-    let parent: number[] = []
+    const parent: number[] = []
 
     // Key values used to pick minimum weight edge in cut
-    let key: number[] = []
+    const key: number[] = []
 
     // To represent set of vertices included in MST
-    let mstSet: boolean[] = []
+    const mstSet: boolean[] = []
 
     // Initialize all keys as INFINITE
     for (let i = 0; i < peers.length; i++) {
@@ -139,7 +139,7 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
     for (let count = 0; count < peers.length - 1; count++) {
       // Pick the minimum key vertex from the
       // set of vertices not yet included in MST
-      let u = minKey(key, mstSet)
+      const u = minKey(key, mstSet)
 
       // Add the picked vertex to the MST Set
       mstSet[u] = true
@@ -152,7 +152,7 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
         // matrix[u][v] is non zero only for adjacent vertices of m
         // mstSet[v] is false for vertices not yet included in MST
         // Update the key only if matrix[u][v] is smaller than key[v]
-        if (matrix[u * maxPeers + v] && mstSet[v] == false && matrix[u * maxPeers + v] < key[v]) {
+        if (matrix[u * maxPeers + v] && mstSet[v] === false && matrix[u * maxPeers + v] < key[v]) {
           parent[v] = u
           key[v] = matrix[u * maxPeers + v]
         }
@@ -168,63 +168,65 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
     return mstEdges
   }
 
-  // function asDot(): string {
-  //   const mst: Edge[] = getMST()
+  function asDot(): string {
+    const mst: Edge[] = getMST()
 
-  //   const dot: string[] = []
+    const dot: string[] = []
 
-  //   dot.push('graph {')
-  //   for (let u = 0; u < peers.length; u++) {
-  //     dot.push(peers[u])
-  //   }
+    dot.push('graph {')
+    for (let u = 0; u < peers.length; u++) {
+      dot.push(peers[u])
+    }
 
-  //   for (let u = 0; u < peers.length; u++) {
-  //     for (let v = u; v < peers.length; v++) {
-  //       if (matrix[u * maxPeers + v]) {
-  //         if (mst.find(([_u, _v]) => (_u === peers[u] && _v === peers[v]) || (_v === peers[u] && _u === peers[v]))) {
-  //           dot.push(`${peers[u]} -- ${peers[v]} [color=red]`)
-  //         } else {
-  //           dot.push(`${peers[u]} -- ${peers[v]}`)
-  //         }
-  //       }
-  //     }
-  //   }
-  //   dot.push('}')
-  //   return dot.join('\n')
-  // }
+    for (let u = 0; u < peers.length; u++) {
+      for (let v = u; v < peers.length; v++) {
+        if (matrix[u * maxPeers + v]) {
+          if (
+            mst.find(({ u: _u, v: _v }) => (_u === peers[u] && _v === peers[v]) || (_v === peers[u] && _u === peers[v]))
+          ) {
+            dot.push(`${peers[u]} -- ${peers[v]} [color=red]`)
+          } else {
+            dot.push(`${peers[u]} -- ${peers[v]}`)
+          }
+        }
+      }
+    }
+    dot.push('}')
+    return dot.join('\n')
+  }
 
-  // function asMatrixString(): string {
-  //   const padding = 5
-  //   let s = ''
+  function asMatrixString(): string {
+    const padding = peerId.length
+    let s = ''
 
-  //   // space for the vertical names
-  //   s += ''.padStart(padding, ' ')
-  //   s += ' '
+    // space for the vertical names
+    s += ''.padStart(padding, ' ')
+    s += ' '
 
-  //   for (let u = 0; u < peers.length; u++) {
-  //     s += peers[u].padStart(padding, ' ')
-  //     s += ' '
-  //   }
-  //   s += '\n'
+    for (let u = 0; u < peers.length; u++) {
+      s += peers[u].padStart(padding, ' ')
+      s += ' '
+    }
+    s += '\n'
 
-  //   for (let u = 0; u < peers.length; u++) {
-  //     s += peers[u].padStart(padding, ' ') + ' '
-  //     for (let j = 0; j < peers.length; j++) {
-  //       s += (matrix[u * maxPeers + j] ? '1' : '0').padStart(padding, ' ')
-  //       s += ' '
-  //     }
-  //     s += '\n'
-  //   }
+    for (let u = 0; u < peers.length; u++) {
+      s += peers[u].padStart(padding, ' ') + ' '
+      for (let j = 0; j < peers.length; j++) {
+        s += (matrix[u * maxPeers + j] ? '1' : '0').padStart(padding, ' ')
+        s += ' '
+      }
+      s += '\n'
+    }
 
-  //   return s
-  // }
+    return s
+  }
 
   return {
     addConnection,
     removeConnection,
     removePeer,
-    getMST
-    // asDot,
-    // asMatrixString
+    getMST,
+    asDot,
+    asMatrixString
   }
 }
