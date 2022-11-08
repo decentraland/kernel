@@ -90,8 +90,13 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
   return store.meta.config.featureFlagsV2 || { flags: {}, variants: {} }
 }
 
-export const getSynapseUrl = (store: RootMetaState): string =>
-  store.meta.config.synapseUrl ?? 'https://synapse.decentraland.zone'
+export const getSynapseUrl = (store: RootMetaState): string => {
+  if (getFeatureFlagEnabled(store, 'use-synapse-server')) {
+    return store.meta.config.synapseUrl ?? 'https://synapse.decentraland.zone'
+  }
+
+  return store.meta.config.socialServerUrl ?? 'https://social.decentraland.zone'
+}
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint

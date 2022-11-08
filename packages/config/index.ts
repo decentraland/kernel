@@ -218,6 +218,7 @@ function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
 
 export function getAvatarTextureAPIBaseUrl(network: ETHEREUM_NETWORK): string {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  // TODO!: Change this to point to social once the rollout is complete
   return `https://synapse.decentraland.${tld}/profile-pictures/`
 }
 
@@ -229,9 +230,13 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   const questsUrl =
     ensureSingleString(qs.get('QUESTS_SERVER_URL')) ?? `https://quests-api.decentraland.${network ? 'org' : 'io'}`
 
+  const socialServerUrl =
+    ensureSingleString(qs.get('SOCIAL_SERVER_URL')) ?? `https://social.decentraland.${tld}`
+
   return {
     explorerConfiguration: `${metaConfigBaseUrl}?t=${new Date().getTime()}`,
-    questsUrl
+    questsUrl,
+    socialServerUrl
   }
 }
 
