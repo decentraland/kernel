@@ -587,8 +587,12 @@ export class BrowserInterface {
     getUnseenMessagesByUser()
   }
 
-  public SetHomeScene(data: { sceneCoords: string }) {
-    store.dispatch(setHomeScene(data.sceneCoords))
+  public SetHomeScene(data: { sceneId: string; sceneCoords: string }) {
+    if (data.sceneCoords) {
+      store.dispatch(setHomeScene(data.sceneCoords))
+    } else {
+      store.dispatch(setHomeScene(data.sceneId))
+    }
   }
 
   public async RequestAudioDevices() {
