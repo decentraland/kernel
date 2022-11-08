@@ -255,6 +255,7 @@ export class BrowserInterface {
    * and independant workflows for both teams.
    */
   public handleUnityMessage(type: string, message: any) {
+    // comment
     if (type in this) {
       ;(this as any)[type](message)
     } else {
