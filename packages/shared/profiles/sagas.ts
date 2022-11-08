@@ -167,9 +167,12 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       userId
     )
     const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+
     if (existingProfileWithCorrectVersion) {
       // resolve the future
       yield call(future.resolve, existingProfile)
+      yield put(profileSuccess(existingProfile))
+      return
     }
   }
 
@@ -191,7 +194,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
-      // and then via catalyst
+      // and then via catalyst before localstorage because when you change the name from the builder we need to loaded from the catalyst first.
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, loadingMyOwnProfile ? 0 : versionNumber))) ||
       // last resort, localStorage
       (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||
