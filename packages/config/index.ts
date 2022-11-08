@@ -72,7 +72,7 @@ export const OPEN_AVATAR_EDITOR = location.search.includes('OPEN_AVATAR_EDITOR')
 export const ENV_OVERRIDE = location.search.includes('ENV')
 export const GIF_WORKERS = location.search.includes('GIF_WORKERS')
 
-export const qs = new URLSearchParams(location.search)
+const qs = new URLSearchParams(location.search)
 
 function ensureQueryStringUrl(value: string | null): string | null {
   if (!value) return null
@@ -128,6 +128,7 @@ export const WSS_ENABLED = !!ensureSingleString(qs.get('ws'))
 export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.get('ASSET_BUNDLES_DOMAIN'))
+export const SOCIAL_SERVER_URL = ensureSingleString(qs.get('SOCIAL_SERVER_URL'))
 
 export const QS_MAX_VISIBLE_PEERS =
   typeof qs.get('MAX_VISIBLE_PEERS') === 'string' ? parseInt(qs.get('MAX_VISIBLE_PEERS')!, 10) : undefined
