@@ -18,6 +18,7 @@ export type MetaConfiguration = {
   comms: CommsConfig
   minCatalystVersion?: string
   featureFlagsV2?: FeatureFlag
+  bannedUsers?: BannedUsers
 }
 
 export type FeatureFlagsName =

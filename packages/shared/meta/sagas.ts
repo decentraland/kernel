@@ -141,12 +141,11 @@ async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<
 async function fetchMetaConfiguration(network: ETHEREUM_NETWORK): Promise<Partial<MetaConfiguration>> {
   const serverConfiguration = getServerConfigurations(network)
   const explorerConfigurationEndpoint = serverConfiguration.explorerConfiguration
-  const socialServerUrl = serverConfiguration.socialServerUrl
 
   try {
     const response = await fetch(explorerConfigurationEndpoint)
     if (response.ok) {
-      return { ...response.json(), socialServerUrl }
+      return response.json()
     }
     throw new Error('Meta Response Not Ok')
   } catch (e) {
@@ -163,9 +162,11 @@ async function fetchMetaConfiguration(network: ETHEREUM_NETWORK): Promise<Partia
         denied: [],
         contentWhitelist: []
       },
+      bannedUsers: {},
       synapseUrl:
         network === ETHEREUM_NETWORK.MAINNET ? 'https://synapse.decentraland.org' : 'https://synapse.decentraland.zone',
-      socialServerUrl,
+      socialServerUrl:
+        network === ETHEREUM_NETWORK.MAINNET ? 'https://social.decentraland.org' : 'https://social.decentraland.zone',
       world: {
         pois: []
       },

@@ -72,14 +72,14 @@ export const OPEN_AVATAR_EDITOR = location.search.includes('OPEN_AVATAR_EDITOR')
 export const ENV_OVERRIDE = location.search.includes('ENV')
 export const GIF_WORKERS = location.search.includes('GIF_WORKERS')
 
-const qs = new URLSearchParams(location.search)
+export const qs = new URLSearchParams(location.search)
 
 function ensureQueryStringUrl(value: string | null): string | null {
   if (!value) return null
   if (typeof value === 'string') return addHttpsIfNoProtocolIsSet(value)
   return addHttpsIfNoProtocolIsSet(value[0])
 }
-function ensureSingleString(value: string | string[] | null): string | null {
+export function ensureSingleString(value: string | string[] | null): string | null {
   if (!value) return null
   if (typeof value === 'string') return value
   return value[0]
@@ -230,13 +230,9 @@ export function getServerConfigurations(network: ETHEREUM_NETWORK) {
   const questsUrl =
     ensureSingleString(qs.get('QUESTS_SERVER_URL')) ?? `https://quests-api.decentraland.${network ? 'org' : 'io'}`
 
-  const socialServerUrl =
-    ensureSingleString(qs.get('SOCIAL_SERVER_URL')) ?? `https://social.decentraland.${tld}`
-
   return {
     explorerConfiguration: `${metaConfigBaseUrl}?t=${new Date().getTime()}`,
-    questsUrl,
-    socialServerUrl
+    questsUrl
   }
 }
 
