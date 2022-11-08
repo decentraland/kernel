@@ -82,11 +82,13 @@ export class Mesh {
           this.onConnectionEstablished(peerId)
           break
         case 'closed':
-          this.receivedConnections.delete(peerId)
-          this.onConnectionClosed(peerId)
+          this.initiatedConnections.delete(peerId)
+          if (!this.isConnectedTo(peerId)) {
+            this.onConnectionClosed(peerId)
+          }
           break
         case 'failed':
-          this.receivedConnections.delete(peerId)
+          this.initiatedConnections.delete(peerId)
           break
         default:
           break
@@ -144,13 +146,11 @@ export class Mesh {
     let conn = this.initiatedConnections.get(peerId)
     if (conn) {
       conn.instance.close()
-      this.initiatedConnections.delete(peerId)
     }
 
     conn = this.receivedConnections.get(peerId)
     if (conn) {
       conn.instance.close()
-      this.receivedConnections.delete(peerId)
     }
   }
 
@@ -196,12 +196,25 @@ export class Mesh {
   }
 
   public checkConnectionsSanity(): void {
+    // check for duplicated connections
+    this.initiatedConnections.forEach((conn: Connection, peerId: string) => {
+      if (this.peerId < peerId) {
+        const otherConnection = this.receivedConnections.get(peerId)
+        if (otherConnection) {
+          if (conn.instance.connectionState === 'connected') {
+            otherConnection.instance.close()
+          } else if (otherConnection.instance.connectionState === 'connected') {
+            conn.instance.close()
+          }
+        }
+      }
+    })
+
     this.initiatedConnections.forEach((conn: Connection, peerId: string) => {
       const state = conn.instance.connectionState
       if (state !== 'connected' && Date.now() - conn.createTimestamp > PEER_CONNECT_TIMEOUT) {
         this.debugWebRtc(`The connection ->${peerId} is not in a sane state ${state}. Discarding it.`)
         conn.instance.close()
-        this.initiatedConnections.delete(peerId)
       }
     })
     this.receivedConnections.forEach((conn: Connection, peerId: string) => {
@@ -209,7 +222,6 @@ export class Mesh {
       if (state !== 'connected' && Date.now() - conn.createTimestamp > PEER_CONNECT_TIMEOUT) {
         this.debugWebRtc(`The connection <-${peerId} is not in a sane state ${state}. Discarding it.`)
         conn.instance.close()
-        this.receivedConnections.delete(peerId)
       }
     })
   }
@@ -233,7 +245,7 @@ export class Mesh {
     this.disposed = true
 
     for (const listener of this.listeners) {
-      await listener.close()
+      listener.close()
     }
 
     this.initiatedConnections.forEach(({ instance }: Connection) => {
@@ -318,18 +330,6 @@ export class Mesh {
     }
 
     this.debugWebRtc(`Got offer message from ${peerId}`)
-
-    const existentConnection = this.initiatedConnections.get(peerId)
-    if (existentConnection) {
-      if (this.peerId < peerId) {
-        this.debugWebRtc(`Both peers try to establish connection with each other ${peerId}, closing old connection`)
-        existentConnection.instance.close()
-        this.initiatedConnections.delete(peerId)
-        return
-      }
-      this.debugWebRtc(`Both peers try to establish connection with each other ${peerId}, keeping this offer`)
-    }
-
     const offer = JSON.parse(this.decoder.decode(message.payload))
     const instance = this.createConnection(peerId, peerId)
     const conn: Connection = { instance, createTimestamp: Date.now() }
@@ -345,7 +345,9 @@ export class Mesh {
           break
         case 'closed':
           this.receivedConnections.delete(peerId)
-          this.onConnectionClosed(peerId)
+          if (!this.isConnectedTo(peerId)) {
+            this.onConnectionClosed(peerId)
+          }
           break
         case 'failed':
           this.receivedConnections.delete(peerId)
