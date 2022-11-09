@@ -11,7 +11,7 @@ import { traceDecoratorRendererOptions } from './trace'
 import {
   BringDownClientAndShowError,
   ErrorContext,
-  ReportFatalErrorWithUnityPayloadAsync,
+  ReportFatalErrorWithUnityPayloadAsync
 } from 'shared/loading/ReportFatalError'
 import { store } from 'shared/store/isolatedStore'
 import defaultLogger from 'shared/logger'
