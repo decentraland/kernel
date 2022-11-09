@@ -105,7 +105,7 @@ export const TRACE_RENDERER = ensureSingleString(qs.get('TRACE_RENDERER'))
 
 export const LOS = ensureSingleString(qs.get('LOS'))
 
-export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha
+export const DEBUG = location.search.includes('DEBUG_MODE') || !!(globalThis as any).mocha || PREVIEW || EDITOR
 export const DEBUG_COMMS = qs.has('DEBUG_COMMS')
 export const COMMS_GRAPH = qs.has('COMMS_GRAPH')
 export const DEBUG_ANALYTICS = location.search.includes('DEBUG_ANALYTICS')
@@ -113,7 +113,7 @@ export const DEBUG_MOBILE = location.search.includes('DEBUG_MOBILE')
 export const DEBUG_WS_MESSAGES = location.search.includes('DEBUG_WS_MESSAGES')
 export const DEBUG_REDUX = location.search.includes('DEBUG_REDUX')
 export const DEBUG_LOGIN = location.search.includes('DEBUG_LOGIN')
-export const DEBUG_SCENE_LOG = DEBUG || PREVIEW || EDITOR || location.search.includes('DEBUG_SCENE_LOG')
+export const DEBUG_SCENE_LOG = DEBUG || location.search.includes('DEBUG_SCENE_LOG')
 export const DEBUG_KERNEL_LOG = !PREVIEW || location.search.includes('DEBUG_KERNEL_LOG')
 export const DEBUG_PREFIX = ensureSingleString(qs.get('DEBUG_PREFIX'))
 export const DEBUG_DISABLE_LOADING = qs.has('DEBUG_DISABLE_LOADING')
@@ -122,7 +122,7 @@ export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
 export const ENGINE_DEBUG_PANEL = location.search.includes('ENGINE_DEBUG_PANEL')
 export const SCENE_DEBUG_PANEL = location.search.includes('SCENE_DEBUG_PANEL') && !ENGINE_DEBUG_PANEL
-export const SHOW_FPS_COUNTER = location.search.includes('SHOW_FPS_COUNTER') || DEBUG
+export const SHOW_FPS_COUNTER = location.search.includes('SHOW_FPS_COUNTER') || location.search.includes('DEBUG_MODE')
 export const HAS_INITIAL_POSITION_MARK = location.search.includes('position')
 export const WSS_ENABLED = !!ensureSingleString(qs.get('ws'))
 export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
