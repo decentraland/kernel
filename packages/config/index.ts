@@ -79,7 +79,7 @@ function ensureQueryStringUrl(value: string | null): string | null {
   if (typeof value === 'string') return addHttpsIfNoProtocolIsSet(value)
   return addHttpsIfNoProtocolIsSet(value[0])
 }
-export function ensureSingleString(value: string | string[] | null): string | null {
+function ensureSingleString(value: string | string[] | null): string | null {
   if (!value) return null
   if (typeof value === 'string') return value
   return value[0]
