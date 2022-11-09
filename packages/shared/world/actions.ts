@@ -10,6 +10,6 @@ export const RENDERER_SIGNAL_SCENE_READY = 'RENDERER_SIGNAL_SCENE_READY'
  * This action marks a scene "Ready". It is used to start the internal game loop
  * of each scene and to remove the loading screen.
  */
-export const rendererSignalSceneReady = (sceneId: string, sceneNumber: number) =>
+export const rendererSignalSceneReady = (sceneId: string, sceneNumber: number | undefined = undefined) =>
   action(RENDERER_SIGNAL_SCENE_READY, { sceneId, sceneNumber })
 export type RendererSignalSceneReady = ReturnType<typeof rendererSignalSceneReady>

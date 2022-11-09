@@ -44,6 +44,18 @@ export function getSceneWorkerBySceneID(sceneId: string) {
   return loadedSceneWorkers.get(sceneId)
 }
 
+/**
+ * Retrieve the Scene based on it's Scene Number
+ */
+export function getSceneWorkerBySceneNumber(sceneNumber: number) {
+  // TODO: Optimize this fetch
+  for (const sceneWorker of loadedSceneWorkers.values()) {
+    if (sceneWorker.rpcContext.sceneData.sceneNumber === sceneNumber) {
+      return sceneWorker
+    }
+  }
+}
+
 export function forceStopScene(sceneId: string) {
   const worker = loadedSceneWorkers.get(sceneId)
   if (worker) {

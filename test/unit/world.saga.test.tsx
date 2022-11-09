@@ -6,13 +6,36 @@ import { getParcelPositionAsString } from 'shared/scene-loader/selectors'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { LoadableScene } from 'shared/types'
 import { rendererSignalSceneReady } from 'shared/world/actions'
-import { getLoadedParcelSceneByParcel, getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
+import {
+  getLoadedParcelSceneByParcel,
+  getSceneWorkerBySceneID,
+  getSceneWorkerBySceneNumber
+} from 'shared/world/parcelSceneManager'
 import { anounceOnEnterOnSceneStart, anounceOnReadyOnSceneReady } from 'shared/world/sagas'
 import { SceneWorker } from 'shared/world/SceneWorker'
 
 describe('World', () => {
-  it('anounceOnReadyOnSceneReady', async () => {
+  it('anounceOnReadyOnSceneReady -> sceneNumber', async () => {
     const action = rendererSignalSceneReady('abc', 123)
+    let called = false
+    await expectSaga(anounceOnReadyOnSceneReady)
+      .provide([
+        [
+          call(getSceneWorkerBySceneNumber, 123),
+          {
+            onReady() {
+              called = true
+            }
+          }
+        ]
+      ])
+      .dispatch(action)
+      .run()
+    expect({ called }).to.deep.eq({ called: true })
+  })
+
+  it('anounceOnReadyOnSceneReady -> sceneId', async () => {
+    const action = rendererSignalSceneReady('abc')
     let called = false
     await expectSaga(anounceOnReadyOnSceneReady)
       .provide([

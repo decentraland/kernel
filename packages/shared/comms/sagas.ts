@@ -49,7 +49,10 @@ import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
-import { debugCommsGraph, measurePingTime } from 'shared/session/getPerformanceInfo'
+import { debugCommsGraph, measurePingTime, measurePingTimePercentages } from 'shared/session/getPerformanceInfo'
+import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import { NotificationType } from 'shared/types'
+import { trackEvent } from 'shared/analytics'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
@@ -171,6 +174,11 @@ function* pingerProcess() {
       })
 
       yield delay(15_000)
+
+      // measure the response ratio
+      if (expectedResponses) {
+        measurePingTimePercentages(Math.round((responses.size / expectedResponses) * 100))
+      }
 
       incrementCounter('pong_expected_counter', expectedResponses)
       incrementCounter('pong_given_counter', responses.size)
@@ -308,7 +316,7 @@ function* createLighthouseConnection(url: string) {
       },
       maxConnectionDistance: 4,
       nearbyPeersDistance: 5,
-      disconnectDistance: 5
+      disconnectDistance: 6
     },
     preferedIslandId: PREFERED_ISLAND ?? ''
   }
@@ -327,18 +335,45 @@ function* createLighthouseConnection(url: string) {
       commsLogger.log('Lighthouse status: ', status)
       switch (status.status) {
         case 'realm-full':
+          disconnect(status.status, 'The realm is full, reconnecting')
+          break
         case 'reconnection-error':
+          disconnect(status.status, 'Reconnection comms error')
+          break
         case 'id-taken':
-          lighthouse
-            .disconnect({ kicked: status.status === 'id-taken', error: new Error(status.status) })
-            .catch(commsLogger.error)
-          store.dispatch(setRealmAdapter(undefined))
-          store.dispatch(setRoomConnection(undefined))
+          disconnect(status.status, 'A previous connection to the connection server is still active')
+          break
+        case 'error':
+          disconnect(status.status, 'An error has ocurred in the communications server, reconnecting.')
           break
       }
     },
     identity
   )
+
+  function disconnect(reason: string, message: string) {
+    trackEvent('disconnect_lighthouse', { message, reason, url })
+
+    getUnityInstance().ShowNotification({
+      type: NotificationType.GENERIC,
+      message: message,
+      buttonMessage: 'OK',
+      timer: 10
+    })
+
+    lighthouse
+      .disconnect({ kicked: reason === 'id-taken', error: new Error(message) })
+      .catch(commsLogger.error)
+      .finally(() => {
+        setTimeout(
+          () => {
+            store.dispatch(setRealmAdapter(undefined))
+            store.dispatch(setRoomConnection(undefined))
+          },
+          reason === 'id-taken' ? 10000 : 300
+        )
+      })
+  }
 
   lighthouse.onIslandChangedObservable.add(({ island }) => {
     store.dispatch(setCommsIsland(island))

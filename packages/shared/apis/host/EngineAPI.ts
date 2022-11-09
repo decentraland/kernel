@@ -12,6 +12,8 @@ import {
 import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
 
+import { rendererProtocol } from './../../../renderer-protocol/rpcClient'
+
 function getPayload(payloadType: EAType, payload: Payload): any {
   switch (payloadType) {
     case EAType.EAT_OPEN_EXTERNAL_URL: {
@@ -93,6 +95,23 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
     async unsubscribe(req, ctx) {
       ctx.subscribedEvents.delete(req.eventId)
       return {}
+    },
+    async crdtSendToRenderer(req, ctx) {
+      const protocol = await rendererProtocol
+      return protocol.crdtService.sendCrdt({
+        sceneId: ctx.sceneData.id,
+        payload: req.data,
+        sceneNumber: ctx.sceneData.sceneNumber
+      })
+    },
+
+    async crdtGetMessageFromRenderer(_, ctx) {
+      const protocol = await rendererProtocol
+      const response = await protocol.crdtService.pullCrdt({
+        sceneId: ctx.sceneData.id,
+        sceneNumber: ctx.sceneData.sceneNumber
+      })
+      return { data: [response.payload] }
     }
   }))
 }

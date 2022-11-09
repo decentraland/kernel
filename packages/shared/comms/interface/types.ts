@@ -82,7 +82,6 @@ export type UserInformation = {
   baseUrl?: string
   expression?: AvatarExpression
   position?: rfc4.Position
-  profile?: NewProfileForRenderer
   visible?: boolean
 }
 

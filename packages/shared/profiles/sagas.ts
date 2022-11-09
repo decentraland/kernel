@@ -23,9 +23,16 @@ import {
   ProfileSuccessAction,
   profileFailure
 } from './actions'
-import { getCurrentUserProfileDirty, getProfileFromStore } from './selectors'
+import { getCurrentUserProfileDirty, getProfileFromStore, getProfileStatusAndData } from './selectors'
 import { buildServerMetadata, ensureAvatarCompatibilityFormat } from './transformations/profileToServerFormat'
-import { ContentFile, ProfileType, ProfileUserInfo, RemoteProfile, REMOTE_AVATAR_IS_INVALID } from './types'
+import {
+  ContentFile,
+  ProfileStatus,
+  ProfileType,
+  ProfileUserInfo,
+  RemoteProfile,
+  REMOTE_AVATAR_IS_INVALID
+} from './types'
 import { ExplorerIdentity } from 'shared/session/types'
 import { Authenticator } from '@dcl/crypto'
 import { backupProfile } from 'shared/profiles/generateRandomUserProfile'
@@ -147,32 +154,52 @@ function* initialRemoteProfileLoad() {
 }
 
 export function* handleFetchProfile(action: ProfileRequestAction): any {
-  const { userId, version, profileType } = action.payload
+  const { userId, future, version, profileType } = action.payload
 
   const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
 
+  const loadingMyOwnProfile: boolean = yield select(isCurrentUserId, userId)
+
+  {
+    // first check if we have a cached copy of the requested Profile
+    const [_, existingProfile]: [ProfileStatus | undefined, Avatar | undefined] = yield select(
+      getProfileStatusAndData,
+      userId
+    )
+    const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+
+    if (existingProfileWithCorrectVersion) {
+      // resolve the future
+      yield call(future.resolve, existingProfile)
+      yield put(profileSuccess(existingProfile))
+      return
+    }
+  }
+
   try {
-    const loadingMyOwnProfile: boolean = yield select(isCurrentUserId, userId)
     const iAmAGuest: boolean = loadingMyOwnProfile && (yield select(getIsGuestLogin))
     const shouldReadProfileFromLocalStorage = iAmAGuest
     const shouldFallbackToLocalStorage = !shouldReadProfileFromLocalStorage && loadingMyOwnProfile
-    const shouldFetchViaComms = roomConnection && !loadingMyOwnProfile
-    const shouldLoadFromCatalyst = profileType === ProfileType.DEPLOYED || (loadingMyOwnProfile && !iAmAGuest)
+    const shouldFetchViaComms = roomConnection && profileType === ProfileType.LOCAL && !loadingMyOwnProfile
+    const shouldLoadFromCatalyst =
+      shouldFetchViaComms || (loadingMyOwnProfile && !iAmAGuest) || profileType === ProfileType.DEPLOYED
     const shouldFallbackToRandomProfile = true
 
     const versionNumber = +(version || '1')
+
+    const reasons = [shouldFetchViaComms ? 'comms' : '', shouldLoadFromCatalyst ? 'catalyst' : ''].join('-')
 
     const profile: Avatar =
       // first fetch avatar through comms
       (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
-      // and then via catalyst
+      // and then via catalyst before localstorage because when you change the name from the builder we need to loaded from the catalyst first.
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, loadingMyOwnProfile ? 0 : versionNumber))) ||
       // last resort, localStorage
       (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||
       // lastly, come up with a random profile
-      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId)))
+      (shouldFallbackToRandomProfile && (yield call(generateRandomUserProfile, userId, reasons)))
 
     const avatar: Avatar = yield call(ensureAvatarCompatibilityFormat, profile)
     avatar.userId = userId
@@ -183,9 +210,13 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       avatar.hasConnectedWeb3 = identity?.hasConnectedWeb3 || avatar.hasConnectedWeb3
     }
 
+    // resolve the future of the request
+    yield call(future.resolve, avatar)
+
     yield put(profileSuccess(avatar))
   } catch (error: any) {
     debugger
+    yield call(future.reject, error)
     trackEvent('error', {
       context: 'kernel#saga',
       message: `Error requesting profile for ${userId}: ${error}`,
@@ -475,8 +506,8 @@ async function makeContentFile(path: string, content: string | Blob | Buffer): P
   }
 }
 
-export async function generateRandomUserProfile(userId: string): Promise<Avatar> {
-  defaultLogger.info('Generating random profile for ' + userId)
+export async function generateRandomUserProfile(userId: string, reason: string): Promise<Avatar> {
+  defaultLogger.info('Generating random profile for ' + userId + ' ' + reason)
 
   const bytes = new TextEncoder().encode(userId)
 
@@ -506,4 +537,8 @@ export async function generateRandomUserProfile(userId: string): Promise<Avatar>
   profile.version = 0
 
   return ensureAvatarCompatibilityFormat(profile)
+}
+
+function isExpectedVersion(aProfile: Avatar, version?: number) {
+  return !version || aProfile.version >= version
 }
