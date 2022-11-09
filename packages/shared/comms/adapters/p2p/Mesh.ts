@@ -73,21 +73,16 @@ export class Mesh {
 
     const instance = this.createConnection(peerId, this.peerId)
     const conn: Connection = { instance, createTimestamp: Date.now() }
+    this.initiatedConnections.set(peerId, conn)
     instance.addEventListener('connectionstatechange', (_) => {
       switch (instance.connectionState) {
         case 'new':
           conn.createTimestamp = Date.now()
           break
         case 'connected':
-          this.onConnectionEstablished(peerId)
           break
         case 'closed':
-          this.initiatedConnections.delete(peerId)
-          if (!this.isConnectedTo(peerId)) {
-            this.onConnectionClosed(peerId)
-          }
-          break
-        case 'failed':
+        case 'disconnected':
           this.initiatedConnections.delete(peerId)
           break
         default:
@@ -97,15 +92,7 @@ export class Mesh {
 
     this.debugWebRtc(`Opening dc for ${peerId}`)
     const dc = instance.createDataChannel('data')
-    dc.binaryType = 'arraybuffer'
-    dc.addEventListener('open', () => {
-      conn.dc = dc
-    })
-    dc.addEventListener('message', async (event) => {
-      const data = new Uint8Array(event.data)
-
-      this.packetHandler(data, false)
-    })
+    this.registerDc(conn, dc, peerId)
 
     const offer = await instance.createOffer({
       offerToReceiveAudio: true,
@@ -118,8 +105,6 @@ export class Mesh {
       topic: `${peerId}.offer`,
       payload: this.encoder.encode(JSON.stringify(offer))
     })
-
-    this.initiatedConnections.set(peerId, conn)
   }
 
   public connectedCount(): number {
@@ -160,11 +145,11 @@ export class Mesh {
 
   public isConnectedTo(peerId: string): boolean {
     let conn = this.initiatedConnections.get(peerId)
-    if (conn && conn.instance.connectionState === 'connected') {
+    if (conn && conn.instance.connectionState === 'connected' && conn.dc && conn.dc.readyState === 'open') {
       return true
     }
     conn = this.receivedConnections.get(peerId)
-    if (conn && conn.instance.connectionState === 'connected') {
+    if (conn && conn.instance.connectionState === 'connected' && conn.dc && conn.dc.readyState === 'open') {
       return true
     }
 
@@ -341,15 +326,9 @@ export class Mesh {
           conn.createTimestamp = Date.now()
           break
         case 'connected':
-          this.onConnectionEstablished(peerId)
           break
         case 'closed':
-          this.receivedConnections.delete(peerId)
-          if (!this.isConnectedTo(peerId)) {
-            this.onConnectionClosed(peerId)
-          }
-          break
-        case 'failed':
+        case 'disconnected':
           this.receivedConnections.delete(peerId)
           break
         default:
@@ -358,16 +337,7 @@ export class Mesh {
     })
     instance.addEventListener('datachannel', (event) => {
       this.debugWebRtc(`Got data channel from ${peerId}`)
-      const dc = event.channel
-      dc.binaryType = 'arraybuffer'
-      dc.addEventListener('open', () => {
-        conn.dc = dc
-      })
-
-      dc.addEventListener('message', (event) => {
-        const data = new Uint8Array(event.data)
-        this.packetHandler(data, false)
-      })
+      this.registerDc(conn, event.channel, peerId)
     })
 
     try {
@@ -411,6 +381,27 @@ export class Mesh {
     } catch (e: any) {
       this.logger.error(`Failed to set remote description: ${e.toString()}`)
     }
+  }
+  private registerDc(conn: Connection, dc: RTCDataChannel, peerId: string) {
+    dc.binaryType = 'arraybuffer'
+    dc.addEventListener('open', () => {
+      conn.dc = dc
+      this.onConnectionEstablished(peerId)
+    })
+    dc.addEventListener('closing', () => {
+      if (!this.isConnectedTo(peerId)) {
+        this.onConnectionClosed(peerId)
+      }
+    })
+    dc.addEventListener('close', () => {
+      if (!this.isConnectedTo(peerId)) {
+        this.onConnectionClosed(peerId)
+      }
+    })
+    dc.addEventListener('message', async (event) => {
+      const data = new Uint8Array(event.data)
+      this.packetHandler(data, false)
+    })
   }
 
   private debugWebRtc(message: string) {

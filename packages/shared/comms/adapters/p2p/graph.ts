@@ -6,6 +6,7 @@ export type Graph = {
   removeConnection: (p1: string, p2: string) => void
   removePeer: (p: string) => void
   getMST: () => Edge[]
+  getReachablePeers: () => Set<string>
 
   asDot: () => string
   asMatrixString: () => string
@@ -18,12 +19,22 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
 
   let mst: Edge[] = []
   let dirty = true
+  const reachablePeers = new Set<string>()
+
   function getMST() {
     if (dirty) {
-      mst = primMST()
+      calculate()
       dirty = false
     }
     return mst
+  }
+
+  function getReachablePeers(): Set<string> {
+    if (dirty) {
+      calculate()
+      dirty = false
+    }
+    return reachablePeers
   }
 
   function addConnection(p1: string, p2: string): void {
@@ -96,7 +107,8 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
     peers.pop()
   }
 
-  function primMST(): Edge[] {
+  // primMST
+  function calculate() {
     // A utility function to find the vertex with
     // minimum key value, from the set of vertices
     // not yet included in MST
@@ -158,14 +170,18 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
         }
     }
 
+    reachablePeers.clear()
     const mstEdges: Edge[] = []
     for (let i = 1; i < peers.length; i++) {
       if (parent[i] !== undefined) {
-        mstEdges.push({ u: peers[parent[i]], v: peers[i] })
+        const u = peers[parent[i]]
+        const v = peers[i]
+        reachablePeers.add(u)
+        reachablePeers.add(v)
+        mstEdges.push({ u, v })
       }
     }
-
-    return mstEdges
+    mst = mstEdges
   }
 
   function asDot(): string {
@@ -226,6 +242,7 @@ export function createConnectionsGraph(peerId: string, maxPeers: number = 100): 
     removeConnection,
     removePeer,
     getMST,
+    getReachablePeers,
     asDot,
     asMatrixString
   }

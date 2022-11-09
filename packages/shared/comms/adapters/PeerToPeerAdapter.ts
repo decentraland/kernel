@@ -13,7 +13,7 @@ import {
   PeerTopicSubscriptionResultElem,
   SystemTopicSubscriptionResultElem
 } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
-import { Packet, Edge } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
+import { Packet, Edge, MeshUpdateMessage } from '@dcl/protocol/out-ts/decentraland/kernel/comms/v3/p2p.gen'
 import { createConnectionsGraph, Graph } from './p2p/graph'
 
 export type P2PConfig = {
@@ -24,6 +24,7 @@ export type P2PConfig = {
   logConfig: P2PLogConfig
 }
 
+const MESH_UPDATE_FREQ = 3 * 1000
 const UPDATE_NETWORK_INTERVAL = 30000
 const DEFAULT_TARGET_CONNECTIONS = 4
 const DEFAULT_MAX_CONNECTIONS = 6
@@ -37,6 +38,12 @@ function craftMessage(packet: Packet): Uint8Array {
   return writer.finish()
 }
 
+function craftUpdateMessage(update: MeshUpdateMessage): Uint8Array {
+  writer.reset()
+  MeshUpdateMessage.encode(update as any, writer)
+  return writer.finish()
+}
+
 export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   public readonly mesh: Mesh
   public readonly events = mitt<CommsAdapterEvents>()
@@ -45,13 +52,12 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
   private updatingNetwork: boolean = false
   private updateNetworkTimeoutId: ReturnType<typeof setTimeout> | null = null
+  private shareMeshInterval: ReturnType<typeof setInterval> | null = null
   private disposed: boolean = false
 
   private listeners: { close(): void }[] = []
 
   private graph: Graph
-  private encoder = new TextEncoder()
-  private decoder = new TextDecoder()
 
   constructor(private config: P2PConfig, peers: Map<string, Position3D>) {
     this.logConfig = config.logConfig
@@ -72,7 +78,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
           return false
         }
 
-        if (this.mesh.connectedCount() >= DEFAULT_TARGET_CONNECTIONS) {
+        if (this.mesh.connectedCount() >= DEFAULT_MAX_CONNECTIONS) {
           if (this.logConfig.debugMesh) {
             this.config.logger.log('Rejecting offer, already enough connections')
           }
@@ -84,25 +90,23 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       logConfig: this.logConfig,
       onConnectionEstablished: (peerId: string) => {
         this.graph.addConnection(this.config.peerId, peerId)
-        this.config.bff.services.comms
-          .publishToTopic({
-            topic: `island.${this.config.islandId}.mesh`,
-            payload: this.encoder.encode(
-              JSON.stringify({ action: 'connected', peer1: this.config.peerId, peer2: peerId })
-            )
-          })
-          .catch((err) => this.config.logger.error(err))
+        this.sendMeshUpdate({
+          source: this.config.peerId,
+          data: {
+            $case: 'connectedTo',
+            connectedTo: peerId
+          }
+        })
       },
       onConnectionClosed: (peerId: string) => {
         this.graph.removeConnection(this.config.peerId, peerId)
-        this.config.bff.services.comms
-          .publishToTopic({
-            topic: `island.${this.config.islandId}.mesh`,
-            payload: this.encoder.encode(
-              JSON.stringify({ action: 'disconnected', peer1: this.config.peerId, peer2: peerId })
-            )
-          })
-          .catch((err) => this.config.logger.error(err))
+        this.sendMeshUpdate({
+          source: this.config.peerId,
+          data: {
+            $case: 'disconnectedFrom',
+            disconnectedFrom: peerId
+          }
+        })
       }
     })
 
@@ -116,6 +120,21 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         }
       }
     })
+
+    this.shareMeshInterval = setInterval(() => {
+      if (this.disposed) {
+        return
+      }
+      this.sendMeshUpdate({
+        source: this.config.peerId,
+        data: {
+          $case: 'status',
+          status: {
+            connectedTo: this.mesh.connectedPeerIds()
+          }
+        }
+      })
+    }, MESH_UPDATE_FREQ)
   }
 
   private async onPeerJoined(message: SystemTopicSubscriptionResultElem) {
@@ -145,19 +164,41 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
   }
 
   private async onMeshChanged(message: PeerTopicSubscriptionResultElem) {
-    const data = JSON.parse(this.decoder.decode(message.payload))
-
-    if (data.action === 'status') {
-      data.connections.forEach(({ peer1, peer2 }) => {
-        this.graph.addConnection(peer1, peer2)
-      })
-    } else if (data.action === 'connected') {
-      const { peer1, peer2 } = data
-      this.graph.addConnection(peer1, peer2)
-    } else {
-      const { peer1, peer2 } = data
-      this.graph.removeConnection(peer1, peer2)
+    const { data, source } = MeshUpdateMessage.decode(message.payload)
+    if (source === this.config.peerId) {
+      return
     }
+
+    switch (data?.$case) {
+      case 'disconnectedFrom': {
+        if (data.disconnectedFrom !== this.config.peerId) {
+          this.graph.removeConnection(source, data.disconnectedFrom)
+        }
+        break
+      }
+      case 'connectedTo': {
+        if (data.connectedTo !== this.config.peerId) {
+          this.graph.addConnection(source, data.connectedTo)
+        }
+        break
+      }
+      case 'status': {
+        for (const p of data.status.connectedTo) {
+          if (p !== this.config.peerId) {
+            this.graph.addConnection(source, p)
+          }
+        }
+        break
+      }
+    }
+  }
+
+  private async onFallback(message: PeerTopicSubscriptionResultElem) {
+    const packet = Packet.decode(message.payload)
+    this.events.emit('message', {
+      address: packet.source,
+      data: packet.payload
+    })
   }
 
   private async onPeerLeft(message: SystemTopicSubscriptionResultElem) {
@@ -201,7 +242,8 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         this.config.bff.services.comms,
         `island.${this.config.islandId}.mesh`,
         this.onMeshChanged.bind(this)
-      )
+      ),
+      listenPeerMessage(this.config.bff.services.comms, `${this.config.peerId}.fallback`, this.onFallback.bind(this))
     )
 
     this.triggerUpdateNetwork(`changed to island ${this.config.islandId}`)
@@ -213,6 +255,10 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     this.disposed = true
     if (this.updateNetworkTimeoutId) {
       clearTimeout(this.updateNetworkTimeoutId)
+    }
+
+    if (this.shareMeshInterval) {
+      clearInterval(this.shareMeshInterval)
     }
 
     for (const listener of this.listeners) {
@@ -229,6 +275,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
       return
     }
     const edges = this.graph.getMST()
+    const reachablePeers = this.graph.getReachablePeers()
     const packet = craftMessage({
       payload,
       source: this.config.peerId,
@@ -238,18 +285,23 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     const peersToSend: Set<string> = nextSteps(edges, this.config.peerId)
 
     for (const neighbor of peersToSend) {
-      this.mesh.sendPacketToPeer(neighbor, packet, reliable)
+      if (!this.mesh.sendPacketToPeer(neighbor, packet, reliable)) {
+        // TODO metric
+        this.config.logger.warn(`cannot send package to ${neighbor}`)
+      }
     }
 
-    // TODO
-    // await this.config.bff.services.messaging.publish({
-    //   packet: {
-    //     payload,
-    //     source: this.config.peerId
-    //   },
-    //   reason: Reason.REASON_NO_ROUTE,
-    //   peers: Array.from(this.unreachablePeers)
-    // })
+    for (const peerId of this.knownPeers.keys()) {
+      if (!reachablePeers.has(peerId)) {
+        // TODO: metric
+        this.config.bff.services.comms
+          .publishToTopic({
+            topic: `${this.config.peerId}.fallback`,
+            payload: packet
+          })
+          .catch((err) => this.config.logger.error(err))
+      }
+    }
   }
 
   isKnownPeer(peerId: string): boolean {
@@ -269,7 +321,10 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     const peersToSend: Set<string> = nextSteps(packet.edges, this.config.peerId)
 
     for (const neighbor of peersToSend) {
-      this.mesh.sendPacketToPeer(neighbor, data, reliable)
+      if (!this.mesh.sendPacketToPeer(neighbor, data, reliable)) {
+        // TODO: metric
+        this.config.logger.warn(`cannot relay package to ${neighbor}`)
+      }
     }
   }
 
@@ -282,13 +337,6 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
     }
     this.updateNetworkTimeoutId = setTimeout(() => {
       this.triggerUpdateNetwork('scheduled network update')
-      const connections = this.mesh.connectedPeerIds().map((id) => ({ peer1: id, peer2: this.config.peerId }))
-      this.config.bff.services.comms
-        .publishToTopic({
-          topic: `island.${this.config.islandId}.mesh`,
-          payload: this.encoder.encode(JSON.stringify({ action: 'status', connections }))
-        })
-        .catch((err) => this.config.logger.error(err))
     }, UPDATE_NETWORK_INTERVAL)
   }
 
@@ -313,8 +361,6 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
       this.mesh.checkConnectionsSanity()
 
-      // NOTE(hugo): this operation used to be part of calculateNextNetworkOperation
-      // but that was wrong, since no new connected peers will be added after a given iteration
       const neededConnections = DEFAULT_TARGET_CONNECTIONS - this.mesh.connectedCount()
       // If we need to establish new connections because we are below the target, we do that
       if (neededConnections > 0 && this.mesh.connectionsCount() < DEFAULT_MAX_CONNECTIONS) {
@@ -328,6 +374,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
           Array.from(this.knownPeers.values()).filter((peer) => {
             return !this.mesh.hasConnectionsFor(peer.id)
           }),
+          // TODO
           neededConnections
         )
 
@@ -361,6 +408,15 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
   private disconnectFrom(peerId: string) {
     this.mesh.disconnectFrom(peerId)
+  }
+
+  private sendMeshUpdate(update: MeshUpdateMessage) {
+    this.config.bff.services.comms
+      .publishToTopic({
+        topic: `island.${this.config.islandId}.mesh`,
+        payload: craftUpdateMessage(update)
+      })
+      .catch((err) => this.config.logger.error(err))
   }
 
   private addKnownPeerIfNotExists(peer: KnownPeerData) {
