@@ -1,6 +1,6 @@
 import type { BannedUsers, CommsConfig, FeatureFlag, FeatureFlagsName, RootMetaState, WorldConfig } from './types'
 import { AlgorithmChainConfig } from 'shared/dao/pick-realm-algorithm/types'
-import { BYPASS_CONTENT_ALLOWLIST } from 'config'
+import { BYPASS_CONTENT_ALLOWLIST, SOCIAL_SERVER_URL } from 'config'
 import { urlWithProtocol } from 'shared/realm/resolver'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 import { QS_MAX_VISIBLE_PEERS } from 'config'
@@ -90,8 +90,15 @@ export function getFeatureFlags(store: RootMetaState): FeatureFlag {
   return store.meta.config.featureFlagsV2 || { flags: {}, variants: {} }
 }
 
-export const getSynapseUrl = (store: RootMetaState): string =>
-  store.meta.config.synapseUrl ?? 'https://synapse.decentraland.zone'
+export const getSynapseUrl = (store: RootMetaState): string => {
+  if (getFeatureFlagEnabled(store, 'use-synapse-server')) {
+    return store.meta.config.synapseUrl ?? 'https://synapse.decentraland.zone'
+  }
+
+  const defaultSocialServerUrl = store.meta.config.socialServerUrl ?? 'https://social.decentraland.zone'
+
+  return SOCIAL_SERVER_URL ?? defaultSocialServerUrl
+}
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>
   store.meta.config.servers?.catalystsNodesEndpoint

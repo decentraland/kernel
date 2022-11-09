@@ -13,10 +13,12 @@ export type MetaConfiguration = {
     catalystsNodesEndpoint?: string
   }
   synapseUrl: string
+  socialServerUrl: string
   world: WorldConfig
   comms: CommsConfig
   minCatalystVersion?: string
   featureFlagsV2?: FeatureFlag
+  bannedUsers?: BannedUsers
 }
 
 export type FeatureFlagsName =
@@ -41,6 +43,7 @@ export type FeatureFlagsName =
   | 'disabled-catalyst'
   | 'livekit-voicechat'
   | 'ping_enabled'
+  | 'use-synapse-server'
 
 export type BannedUsers = Record<string, Ban[]>
 
@@ -49,9 +52,15 @@ export type Ban = {
   expiration: number // Timestamp
 }
 
+export interface POI {
+  x: number
+  y: number
+}
+
 export type WorldConfig = {
   renderProfile?: RenderProfile
   enableNewTutorialCamera?: boolean
+  pois?: Array<POI>
 }
 
 export type MetaState = {
