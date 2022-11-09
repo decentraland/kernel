@@ -1426,7 +1426,7 @@ function* handleLeaveChannel(action: LeaveChannel) {
   }
 }
 
-// Join or create channel
+// Join or create channel via command
 function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
@@ -1494,7 +1494,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   }
 }
 
-// Join channel
+// Join channel via UI
 export async function joinChannel(request: JoinOrCreateChannelPayload) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
@@ -1514,7 +1514,7 @@ export async function joinChannel(request: JoinOrCreateChannelPayload) {
   }
 }
 
-// Create channel
+// Create channel via UI
 export async function createChannel(request: CreateChannelPayload) {
   try {
     const channelId = request.channelId
