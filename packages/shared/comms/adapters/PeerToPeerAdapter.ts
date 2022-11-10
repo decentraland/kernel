@@ -78,7 +78,7 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
           return false
         }
 
-        if (this.mesh.connectedCount() >= DEFAULT_MAX_CONNECTIONS) {
+        if (this.mesh.connectionsCount() >= DEFAULT_MAX_CONNECTIONS) {
           if (this.logConfig.debugMesh) {
             this.config.logger.log('Rejecting offer, already enough connections')
           }
@@ -183,9 +183,14 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
         break
       }
       case 'status': {
-        for (const p of data.status.connectedTo) {
-          if (p !== this.config.peerId) {
+        for (const p of this.knownPeers.keys()) {
+          if (p === this.config.peerId) {
+            continue
+          }
+          if (data.status.connectedTo.includes(p)) {
             this.graph.addConnection(source, p)
+          } else {
+            this.graph.removeConnection(source, p)
           }
         }
         break
@@ -361,9 +366,12 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
       this.mesh.checkConnectionsSanity()
 
-      const neededConnections = DEFAULT_TARGET_CONNECTIONS - this.mesh.connectedCount()
+      const neededConnections = Math.min(
+        DEFAULT_TARGET_CONNECTIONS - this.mesh.connectedCount(),
+        DEFAULT_MAX_CONNECTIONS - this.mesh.connectionsCount()
+      )
       // If we need to establish new connections because we are below the target, we do that
-      if (neededConnections > 0 && this.mesh.connectionsCount() < DEFAULT_MAX_CONNECTIONS) {
+      if (neededConnections > 0) {
         if (this.logConfig.debugUpdateNetwork) {
           this.config.logger.log(
             `Establishing connections to reach target. I need ${neededConnections} more connections`
@@ -374,7 +382,6 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
           Array.from(this.knownPeers.values()).filter((peer) => {
             return !this.mesh.hasConnectionsFor(peer.id)
           }),
-          // TODO
           neededConnections
         )
 
