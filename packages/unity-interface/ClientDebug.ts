@@ -24,10 +24,6 @@ export class ClientDebug {
 
   public TestErrorReport(message: string, context: ErrorContextTypes) {
     ReportFatalErrorWithUnityPayloadAsync(new Error(message), context)
-      .then(() => defaultLogger.log(`Report sent success.`))
-      .catch(() => defaultLogger.log(`Report sent fail.`))
-
-    defaultLogger.log(`Report being sent.`)
   }
 
   public DumpCrashPayload() {

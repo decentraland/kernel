@@ -10,6 +10,7 @@ import { action } from 'typesafe-actions'
 import { globalObservable } from '../observables'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { store } from 'shared/store/isolatedStore'
+import defaultLogger from 'shared/logger'
 
 export function BringDownClientAndShowError(event: ExecutionLifecycleEvent | string) {
   if (ExecutionLifecycleEventsList.includes(event as any)) {
@@ -59,16 +60,6 @@ export function ReportFatalErrorWithCommsPayload(error: Error, context: ErrorCon
   BringDownClientAndReportFatalError(error, context)
 }
 
-export function ReportFatalErrorWithUnityPayload(error: Error, context: ErrorContextTypes) {
-  ReportFatalErrorWithUnityPayloadAsync(error, context)
-    .then((_x) => {
-      //
-    })
-    .catch(() => {
-      //
-    })
-}
-
 Object.assign(globalThis, {
   BringDownClientAndShowError,
   ReportFatalErrorWithUnityPayloadAsync,
@@ -76,13 +67,17 @@ Object.assign(globalThis, {
   BringDownClientAndReportFatalError
 })
 
-export async function ReportFatalErrorWithUnityPayloadAsync(error: Error, context: ErrorContextTypes) {
-  try {
-    const payload = await getUnityInstance().CrashPayloadRequest()
-    BringDownClientAndReportFatalError(error, context, { rendererPayload: payload })
-  } catch (e) {
-    BringDownClientAndReportFatalError(error, context)
-  }
+export function ReportFatalErrorWithUnityPayloadAsync(error: Error, context: ErrorContextTypes) {
+  getUnityInstance()
+    .CrashPayloadRequest()
+    .then((payload) => {
+      defaultLogger.error(payload)
+      BringDownClientAndReportFatalError(error, context, { rendererPayload: payload })
+    })
+    .catch((err) => {
+      defaultLogger.error(err)
+      BringDownClientAndReportFatalError(error, context, { rendererPayload: err })
+    })
 }
 
 export function BringDownClientAndReportFatalError(

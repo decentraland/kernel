@@ -11,9 +11,8 @@ import { traceDecoratorRendererOptions } from './trace'
 import {
   BringDownClientAndShowError,
   ErrorContext,
-  ReportFatalErrorWithUnityPayload
+  ReportFatalErrorWithUnityPayloadAsync
 } from 'shared/loading/ReportFatalError'
-import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { store } from 'shared/store/isolatedStore'
 import defaultLogger from 'shared/logger'
 import { browserInterface } from './BrowserInterface'
@@ -91,8 +90,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     }
 
     const error = new Error(`${message} ... file: ${filename} - lineno: ${lineno}`)
-    ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_ERRORHANDLER)
-    BringDownClientAndShowError(UNEXPECTED_ERROR)
+    ReportFatalErrorWithUnityPayloadAsync(error, ErrorContext.RENDERER_ERRORHANDLER)
     return true
   }
 
