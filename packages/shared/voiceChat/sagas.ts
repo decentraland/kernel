@@ -63,7 +63,7 @@ export function* voiceChatSaga() {
   yield takeEvery(SET_VOICE_CHAT_MEDIA, handleVoiceChatMedia)
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
 
-  yield takeLatest([SET_ROOM_CONNECTION, JOIN_VOICE_CHAT, LEAVE_VOICE_CHAT], handleConnectVoiceChatToRoom)
+  yield fork(handleConnectVoiceChatToRoom)
   yield takeEvery(SET_AUDIO_DEVICE, setAudioDevices)
 }
 
@@ -73,17 +73,27 @@ export function* voiceChatSaga() {
 function* handleConnectVoiceChatToRoom() {
   yield call(waitForMetaConfigurationInitialization)
 
-  const joined: boolean = yield select(hasJoinedVoiceChat)
+  while (true) {
+    const joined: boolean = yield select(hasJoinedVoiceChat)
 
-  // if we are supposed to be joined, then ask the RoomConnection about the handler
-  if (joined) {
-    const room: RoomConnection = yield select(getCommsRoom)
-    if (room) {
-      const voiceHandler: VoiceHandler = yield apply(room, room.getVoiceHandler, [])
-      yield put(setVoiceChatHandler(voiceHandler || null))
+    // if we are supposed to be joined, then ask the RoomConnection about the handler
+    if (joined) {
+      const room: RoomConnection = yield select(getCommsRoom)
+      if (room) {
+        try {
+          const voiceHandler: VoiceHandler = yield apply(room, room.getVoiceHandler, [])
+          yield put(setVoiceChatHandler(voiceHandler || null))
+        } catch (err: any) {
+          yield put(setVoiceChatError(err.toString()))
+          yield put(setVoiceChatHandler(null))
+        }
+      }
+    } else {
+      yield put(setVoiceChatHandler(null))
     }
-  } else {
-    yield put(setVoiceChatHandler(null))
+
+    // wait for next event to happen
+    yield take([SET_ROOM_CONNECTION, JOIN_VOICE_CHAT, LEAVE_VOICE_CHAT])
   }
 }
 
@@ -120,7 +130,7 @@ function* reactToNewVoiceChatHandler() {
     }
 
     if (voiceHandler !== previousHandler && previousHandler) {
-      previousHandler.destroy()
+      yield previousHandler.destroy()
     }
 
     // set the state for the next round

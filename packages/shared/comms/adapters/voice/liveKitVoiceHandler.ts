@@ -6,7 +6,9 @@ import {
   RemoteTrackPublication,
   RemoteTrack,
   Track,
-  ParticipantEvent
+  ParticipantEvent,
+  RemoteAudioTrack,
+  LocalAudioTrack
 } from 'livekit-client'
 import Html from 'shared/Html'
 import { createLogger } from 'shared/logger'
@@ -18,13 +20,18 @@ import { startLoopback } from './loopback'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
 type ParticipantInfo = {
+  participant: RemoteParticipant
+  tracks: Map<string, ParticipantTrack>
+}
+
+type ParticipantTrack = {
+  track: LocalAudioTrack | RemoteAudioTrack
   streamNode: MediaStreamAudioSourceNode
   panNode: PannerNode
-  gainNode: GainNode
 }
 
 export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandler> => {
-  const logger = createLogger('LiveKitVoiceCommunicator: ')
+  const logger = createLogger('🎙 LiveKitVoiceCommunicator: ')
 
   const parentElement = Html.loopbackAudioElement()
 
@@ -40,6 +47,10 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
   const destination = audioContext.createMediaStreamDestination()
   const destinationStream = isChrome() ? await startLoopback(destination.stream) : destination.stream
 
+  const gainNode = audioContext.createGain()
+  gainNode.connect(destination)
+  gainNode.gain.value = 1
+
   if (parentElement) {
     parentElement.srcObject = destinationStream
   }
@@ -48,57 +59,85 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     return globalMuted ? 0.0 : globalVolume
   }
 
-  function addTrack(participant: RemoteParticipant, track: RemoteTrack) {
-    participant.on(ParticipantEvent.IsSpeakingChanged, (talking: boolean) => {
-      onUserTalkingCallback(participant.identity, talking)
-    })
-    participant.on(ParticipantEvent.TrackPublished, (...args) => {
-      logger.info('ParticipantEvent.TrackPublished', args)
-    })
-    participant.on(ParticipantEvent.LocalTrackPublished, (...args) => {
-      logger.info('ParticipantEvent.LocalTrackPublished', args)
-    })
-    if (track.kind === Track.Kind.Audio) {
-      if (track.mediaStream) {
-        logger.log('Adding media track', track)
-        const streamNode = audioContext.createMediaStreamSource(track.mediaStream)
-        const options = {
-          maxDistance: 10000,
-          refDistance: 5,
-          panningModel: 'equalpower',
-          distanceModel: 'inverse'
-        } as const
+  function getParticipantInfo(participant: RemoteParticipant): ParticipantInfo {
+    let $: ParticipantInfo | undefined = participantsInfo.get(participant.identity)
 
-        const panNode = audioContext.createPanner()
-        const gainNode = audioContext.createGain()
+    if (!$) {
+      $ = {
+        participant,
+        tracks: new Map()
+      }
+      participantsInfo.set(participant.identity, $)
 
-        streamNode.connect(panNode)
-        panNode.connect(gainNode)
-        gainNode.connect(destination)
+      participant.on(ParticipantEvent.IsSpeakingChanged, (talking: boolean) => {
+        onUserTalkingCallback(participant.identity, talking)
+      })
 
-        // configure pan node
-        panNode.coneInnerAngle = 180
-        panNode.coneOuterAngle = 360
-        panNode.coneOuterGain = 0.91
-        panNode.maxDistance = options.maxDistance ?? 10000
-        panNode.refDistance = options.refDistance ?? 5
-        panNode.panningModel = options.panningModel ?? 'equalpower'
-        panNode.distanceModel = options.distanceModel ?? 'inverse'
-        panNode.rolloffFactor = 1.0
+      logger.info('Adding participant', participant.identity)
+    }
 
-        participantsInfo.set(participant.identity, {
-          panNode,
-          gainNode,
-          streamNode
-        })
-      } else debugger
-    } else debugger
+    return $
   }
 
-  function disconnectParticipantInfo(participantInfo: ParticipantInfo) {
-    participantInfo.gainNode.disconnect()
-    participantInfo.panNode.disconnect()
-    participantInfo.streamNode.disconnect()
+  // this function sets up the local tracking of the remote participant
+  // and refreshes the audio nodes based on the most up-to-date audio tracks
+  function setupTracksForParticipant(participant: RemoteParticipant) {
+    const info = getParticipantInfo(participant)
+
+    // first remove extra tracks
+    for (const [trackId, track] of info.tracks) {
+      if (!participant.audioTracks.has(trackId)) {
+        disconnectParticipantTrack(track)
+        info.tracks.delete(trackId)
+      }
+    }
+
+    // and subscribe to new ones
+    for (const [, track] of participant.audioTracks) {
+      if (track.audioTrack?.kind === Track.Kind.Audio) {
+        subscribeParticipantTrack(participant, track.audioTrack as any)
+      }
+    }
+  }
+
+  function subscribeParticipantTrack(participant: RemoteParticipant, track: RemoteAudioTrack) {
+    const info = getParticipantInfo(participant)
+    const trackId = track.sid
+    if (trackId && !info.tracks.has(trackId) && track.kind === Track.Kind.Audio && track.mediaStream) {
+      info.tracks.set(trackId, setupAudioTrackForRemoteTrack(track))
+    }
+  }
+
+  function setupAudioTrackForRemoteTrack(track: RemoteAudioTrack): ParticipantTrack {
+    logger.info('Adding media track', track.sid)
+    const streamNode = audioContext.createMediaStreamSource(track.mediaStream!)
+    const panNode = audioContext.createPanner()
+
+    streamNode.connect(panNode)
+    panNode.connect(gainNode)
+
+    panNode.panningModel = 'equalpower'
+    panNode.distanceModel = 'inverse'
+    panNode.refDistance = 5
+    panNode.maxDistance = 10000
+    panNode.coneOuterAngle = 360
+    panNode.coneInnerAngle = 180
+    panNode.coneOuterGain = 0.9
+    panNode.rolloffFactor = 1.0
+
+    return {
+      panNode,
+      streamNode,
+      track
+    }
+  }
+
+  function disconnectParticipantTrack(participantTrack: ParticipantTrack) {
+    logger.info('Disconnecting media track', participantTrack.track.sid)
+    participantTrack.panNode.disconnect()
+    participantTrack.streamNode.disconnect()
+    participantTrack.track.stop()
+    participantTrack.track.detach()
   }
 
   function handleTrackSubscribed(
@@ -106,31 +145,40 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     publication: RemoteTrackPublication,
     participant: RemoteParticipant
   ) {
-    addTrack(participant, track)
+    if (track.kind === Track.Kind.Audio) {
+      subscribeParticipantTrack(participant, track as RemoteAudioTrack)
+    }
   }
-
   function handleTrackUnsubscribed(
     track: RemoteTrack,
     publication: RemoteTrackPublication,
     participant: RemoteParticipant
   ) {
-    removeParticipant(participant)
+    setupTracksForParticipant(participant)
   }
 
-  function handleDisconnect() {
-    logger.log('Disconnected!')
+  async function handleDisconnect() {
+    logger.log('HANDLER DISCONNECTED')
+
     room
       .off(RoomEvent.Disconnected, handleDisconnect)
       .off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
       .off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
+      .off(RoomEvent.TrackPublished, handleTrackPublished)
+      .off(RoomEvent.TrackUnpublished, handleTrackUnpublished)
       .off(RoomEvent.MediaDevicesError, handleMediaDevicesError)
       .off(RoomEvent.ParticipantConnected, addParticipant)
       .off(RoomEvent.ParticipantDisconnected, removeParticipant)
 
-    for (const [_, participantInfo] of participantsInfo) {
-      disconnectParticipantInfo(participantInfo)
+    for (const [userId] of participantsInfo) {
+      removeParticipantById(userId)
     }
     participantsInfo.clear()
+
+    gainNode.disconnect()
+    try {
+      await audioContext.close()
+    } catch (err) {}
   }
 
   function handleMediaDevicesError() {
@@ -138,32 +186,54 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
   }
 
   function addParticipant(participant: RemoteParticipant) {
-    for (const [_, trackPublication] of participant.audioTracks) {
-      const track = trackPublication.track
-      if (track) {
-        addTrack(participant, track)
-      }
-      console.log('publication', participant, _, trackPublication)
-    }
+    setupTracksForParticipant(participant)
   }
 
-  function removeParticipant(participant: RemoteParticipant) {
+  function removeParticipantById(userId: string) {
     // remove tracks from all attached elements
-    const userId = participant.identity
     const participantInfo = participantsInfo.get(userId)
     if (participantInfo) {
-      try {
-        disconnectParticipantInfo(participantInfo)
-      } catch (err: any) {
-        logger.error(err)
+      logger.info('Removing participant', userId)
+      for (const [trackId, participantTrack] of participantInfo.tracks) {
+        try {
+          disconnectParticipantTrack(participantTrack)
+          participantInfo.tracks.delete(trackId)
+        } catch (err: any) {
+          logger.error(err)
+        }
       }
       participantsInfo.delete(userId)
     }
   }
 
-  // add existing tracks
-  for (const [_, participant] of room.participants) {
-    addParticipant(participant)
+  function removeParticipant(participant: RemoteParticipant) {
+    removeParticipantById(participant.identity)
+  }
+
+  function handleTrackPublished(trackPublication: RemoteTrackPublication, remoteParticipant: RemoteParticipant) {
+    if (trackPublication.audioTrack) {
+      subscribeParticipantTrack(remoteParticipant, trackPublication.audioTrack as RemoteAudioTrack)
+    }
+  }
+
+  function handleTrackUnpublished(trackPublication: RemoteTrackPublication, remoteParticipant: RemoteParticipant) {
+    setupTracksForParticipant(remoteParticipant)
+  }
+
+  function reconnectAllParticipants() {
+    // remove all participants
+    for (const [identity] of participantsInfo) {
+      removeParticipantById(identity)
+    }
+
+    // add existing participants
+    for (const [_, participant] of room.participants) {
+      addParticipant(participant)
+    }
+  }
+
+  function updateParticipantsVolume() {
+    gainNode.gain.value = getGlobalVolume()
   }
 
   room
@@ -171,26 +241,26 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     .on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
     .on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
     .on(RoomEvent.MediaDevicesError, handleMediaDevicesError)
-    .on(RoomEvent.TrackPublished, function (publication, remoteParticipant) {
-      console.log('TrackPublished', publication, remoteParticipant)
-      addParticipant(remoteParticipant)
-    })
     .on(RoomEvent.ParticipantConnected, addParticipant)
     .on(RoomEvent.ParticipantDisconnected, removeParticipant)
     .on(RoomEvent.RoomMetadataChanged, function (...args) {
-      console.log('RoomMetadataChanged', args)
+      logger.log('RoomMetadataChanged', args)
     })
-    .on(RoomEvent.LocalTrackPublished, function (...args) {
-      console.log('LocalTrackPublished', args)
+    .on(RoomEvent.Reconnected, function (...args) {
+      reconnectAllParticipants()
     })
     .on(RoomEvent.MediaDevicesChanged, function (...args) {
-      console.log('MediaDevicesChanged', args)
+      logger.log('MediaDevicesChanged', args)
     })
     .on(RoomEvent.ParticipantMetadataChanged, function (...args) {
-      console.log('ParticipantMetadataChanged', args)
+      logger.log('ParticipantMetadataChanged', args)
     })
 
+  if (audioContext.state !== 'running') await audioContext.resume()
+
   logger.log('initialized')
+
+  reconnectAllParticipants()
 
   return {
     setRecording(recording) {
@@ -205,7 +275,7 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
       onUserTalkingCallback = cb
       try {
         if (!room.canPlaybackAudio) {
-          room.startAudio()
+          room.startAudio().catch(logger.error)
         }
 
         parentElement?.play().catch(logger.log)
@@ -222,43 +292,66 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     reportPosition(position: rfc4.Position) {
       const spatialParams = getSpatialParamsFor(position)
       const listener = audioContext.listener
-      listener.setPosition(spatialParams.position[0], spatialParams.position[1], spatialParams.position[2])
-      listener.setOrientation(
-        spatialParams.orientation[0],
-        spatialParams.orientation[1],
-        spatialParams.orientation[2],
-        0,
-        1,
-        0
-      )
+
+      if (listener.positionX) {
+        listener.positionX.setValueAtTime(spatialParams.position[0], audioContext.currentTime)
+        listener.positionY.setValueAtTime(spatialParams.position[1], audioContext.currentTime)
+        listener.positionZ.setValueAtTime(spatialParams.position[2], audioContext.currentTime)
+      } else {
+        listener.setPosition(spatialParams.position[0], spatialParams.position[1], spatialParams.position[2])
+      }
+
+      if (listener.forwardX) {
+        listener.forwardX.setValueAtTime(spatialParams.orientation[0], audioContext.currentTime)
+        listener.forwardY.setValueAtTime(spatialParams.orientation[1], audioContext.currentTime)
+        listener.forwardZ.setValueAtTime(spatialParams.orientation[2], audioContext.currentTime)
+        listener.upX.setValueAtTime(0, audioContext.currentTime)
+        listener.upY.setValueAtTime(1, audioContext.currentTime)
+        listener.upZ.setValueAtTime(0, audioContext.currentTime)
+      } else {
+        listener.setOrientation(
+          spatialParams.orientation[0],
+          spatialParams.orientation[1],
+          spatialParams.orientation[2],
+          0,
+          1,
+          0
+        )
+      }
 
       for (const [_, participant] of room.participants) {
         const address = participant.identity
         const peer = getPeer(address)
         const participantInfo = participantsInfo.get(address)
-        if (peer && peer.position && participantInfo) {
-          const panNode = participantInfo.panNode
-          const spatialParams = getSpatialParamsFor(peer.position)
-          panNode.positionX.value = spatialParams.position[0]
-          panNode.positionY.value = spatialParams.position[1]
-          panNode.positionZ.value = spatialParams.position[2]
-          panNode.orientationX.value = spatialParams.orientation[0]
-          panNode.orientationY.value = spatialParams.orientation[1]
-          panNode.orientationZ.value = spatialParams.orientation[2]
+        if (participantInfo) {
+          const spatialParams = peer?.position || position
+          for (const [_, { panNode }] of participantInfo.tracks) {
+            if (panNode.positionX) {
+              panNode.positionX.setValueAtTime(spatialParams.positionX, audioContext.currentTime)
+              panNode.positionY.setValueAtTime(spatialParams.positionY, audioContext.currentTime)
+              panNode.positionZ.setValueAtTime(spatialParams.positionZ, audioContext.currentTime)
+            } else {
+              panNode.setPosition(spatialParams.positionX, spatialParams.positionY, spatialParams.positionZ)
+            }
+
+            if (panNode.orientationX) {
+              panNode.orientationX.setValueAtTime(0, audioContext.currentTime)
+              panNode.orientationY.setValueAtTime(0, audioContext.currentTime)
+              panNode.orientationZ.setValueAtTime(1, audioContext.currentTime)
+            } else {
+              panNode.setOrientation(0, 0, 1)
+            }
+          }
         }
       }
     },
     setVolume: function (volume) {
       globalVolume = volume
-      for (const [_, participant] of room.participants) {
-        participant.setVolume(getGlobalVolume())
-      }
+      updateParticipantsVolume()
     },
     setMute: (mute) => {
       globalMuted = mute
-      for (const [_, participant] of room.participants) {
-        participant.setVolume(getGlobalVolume())
-      }
+      updateParticipantsVolume()
     },
     setInputStream: async (localStream) => {
       try {
@@ -272,9 +365,13 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     hasInput: () => {
       return validInput
     },
-    destroy: () => {
-      handleDisconnect()
-    },
-    participantsInfo
-  } as any
+    async destroy() {
+      room.localParticipant.unpublishTracks(
+        Array.from(room.localParticipant.audioTracks.values())
+          .map(($) => $.audioTrack!)
+          .filter(Boolean)
+      )
+      await handleDisconnect()
+    }
+  }
 }

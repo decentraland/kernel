@@ -9,6 +9,8 @@ import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms
 import { store } from 'shared/store/isolatedStore'
 import withCache from 'atomicHelpers/withCache'
 
+import './audioDebugger'
+
 const getVoiceCommunicator = withCache(() => {
   const logger = createLogger('OpusVoiceCommunicator: ')
   return new VoiceCommunicator(
@@ -70,7 +72,7 @@ export const createOpusVoiceHandler = (): VoiceHandler => {
     playEncodedAudio: (src, position, encoded) => {
       return voiceCommunicator.playEncodedAudio(src, getSpatialParamsFor(position), encoded)
     },
-    destroy() {
+    async destroy() {
       // noop
     }
   }

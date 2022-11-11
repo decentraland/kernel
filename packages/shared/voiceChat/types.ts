@@ -1,4 +1,4 @@
-import { VoiceHandler } from "./VoiceHandler"
+import { VoiceHandler } from './VoiceHandler'
 
 export type VoiceChatState = {
   joined: boolean

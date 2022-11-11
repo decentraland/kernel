@@ -667,9 +667,11 @@ export class BrowserInterface {
   }
 
   public JoinVoiceChat() {
-    this.onUserInteraction.then(() => {
-      store.dispatch(joinVoiceChat())
-    })
+    this.onUserInteraction
+      .then(() => {
+        store.dispatch(joinVoiceChat())
+      })
+      .catch(defaultLogger.error)
   }
 
   public LeaveVoiceChat() {
