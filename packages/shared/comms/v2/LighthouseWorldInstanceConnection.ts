@@ -32,6 +32,8 @@ import { commConfigurations, parcelLimits } from 'config'
 import { peerIdHandler } from '../logic/peer-id-handler'
 import { Observable } from 'mz-observable'
 import { AdapterDisconnectedEvent } from '../adapters/types'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
+import { createOpusVoiceHandler } from '../adapters/voice/opusVoiceHandler'
 
 type PeerType = IslandBasedPeer
 
@@ -102,6 +104,10 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
     // This assignment is to "definetly initialize" peer
     this.peer = this.initializePeer()
     previousLighthouseConnections.add(this)
+  }
+
+  async getVoiceHandler(): Promise<VoiceHandler> {
+    return createOpusVoiceHandler()
   }
 
   async connect() {

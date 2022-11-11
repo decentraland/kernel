@@ -5,15 +5,16 @@ import {
   RemoteParticipant,
   RemoteTrackPublication,
   RemoteTrack,
-  Participant,
-  Track
+  Track,
+  ParticipantEvent
 } from 'livekit-client'
 import Html from 'shared/Html'
 import { createLogger } from 'shared/logger'
-import { VoiceHandler } from './VoiceHandler'
+import { VoiceHandler } from '../../../voiceChat/VoiceHandler'
 import { getPeer } from 'shared/comms/peers'
-import { getSpatialParamsFor, isChrome } from './utils'
-import { startLoopback } from '../../voice-chat-codec/loopback'
+import { getSpatialParamsFor, isChrome } from '../../../voiceChat/utils'
+import { startLoopback } from './loopback'
+
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 
 type ParticipantInfo = {
@@ -31,7 +32,8 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
   let errorListener: ((message: string) => void) | undefined
   let globalVolume: number = 1.0
   let globalMuted: boolean = false
-  let validInput = true
+  let validInput = false
+  let onUserTalkingCallback: (userId: string, talking: boolean) => void = () => {}
 
   const participantsInfo = new Map<string, ParticipantInfo>()
   const audioContext = new AudioContext()
@@ -46,9 +48,19 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     return globalMuted ? 0.0 : globalVolume
   }
 
-  function addTrack(userId: string, track: RemoteTrack) {
+  function addTrack(participant: RemoteParticipant, track: RemoteTrack) {
+    participant.on(ParticipantEvent.IsSpeakingChanged, (talking: boolean) => {
+      onUserTalkingCallback(participant.identity, talking)
+    })
+    participant.on(ParticipantEvent.TrackPublished, (...args) => {
+      logger.info('ParticipantEvent.TrackPublished', args)
+    })
+    participant.on(ParticipantEvent.LocalTrackPublished, (...args) => {
+      logger.info('ParticipantEvent.LocalTrackPublished', args)
+    })
     if (track.kind === Track.Kind.Audio) {
       if (track.mediaStream) {
+        logger.log('Adding media track', track)
         const streamNode = audioContext.createMediaStreamSource(track.mediaStream)
         const options = {
           maxDistance: 10000,
@@ -74,13 +86,13 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
         panNode.distanceModel = options.distanceModel ?? 'inverse'
         panNode.rolloffFactor = 1.0
 
-        participantsInfo.set(userId, {
+        participantsInfo.set(participant.identity, {
           panNode,
           gainNode,
           streamNode
         })
-      }
-    }
+      } else debugger
+    } else debugger
   }
 
   function disconnectParticipantInfo(participantInfo: ParticipantInfo) {
@@ -94,7 +106,7 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     publication: RemoteTrackPublication,
     participant: RemoteParticipant
   ) {
-    addTrack(participant.identity, track)
+    addTrack(participant, track)
   }
 
   function handleTrackUnsubscribed(
@@ -102,14 +114,7 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     publication: RemoteTrackPublication,
     participant: RemoteParticipant
   ) {
-    // remove tracks from all attached elements
-    //track.detach()
-    const userId = participant.identity
-    const participantInfo = participantsInfo.get(userId)
-    if (participantInfo) {
-      disconnectParticipantInfo(participantInfo)
-      participantsInfo.delete(userId)
-    }
+    removeParticipant(participant)
   }
 
   function handleDisconnect() {
@@ -119,6 +124,8 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
       .off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
       .off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
       .off(RoomEvent.MediaDevicesError, handleMediaDevicesError)
+      .off(RoomEvent.ParticipantConnected, addParticipant)
+      .off(RoomEvent.ParticipantDisconnected, removeParticipant)
 
     for (const [_, participantInfo] of participantsInfo) {
       disconnectParticipantInfo(participantInfo)
@@ -130,14 +137,33 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     if (errorListener) errorListener('Media Device Error')
   }
 
-  // add existing tracks
-  for (const [_, participant] of room.participants) {
+  function addParticipant(participant: RemoteParticipant) {
     for (const [_, trackPublication] of participant.audioTracks) {
       const track = trackPublication.track
       if (track) {
-        addTrack(participant.identity, track)
+        addTrack(participant, track)
       }
+      console.log('publication', participant, _, trackPublication)
     }
+  }
+
+  function removeParticipant(participant: RemoteParticipant) {
+    // remove tracks from all attached elements
+    const userId = participant.identity
+    const participantInfo = participantsInfo.get(userId)
+    if (participantInfo) {
+      try {
+        disconnectParticipantInfo(participantInfo)
+      } catch (err: any) {
+        logger.error(err)
+      }
+      participantsInfo.delete(userId)
+    }
+  }
+
+  // add existing tracks
+  for (const [_, participant] of room.participants) {
+    addParticipant(participant)
   }
 
   room
@@ -145,8 +171,27 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     .on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
     .on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
     .on(RoomEvent.MediaDevicesError, handleMediaDevicesError)
+    .on(RoomEvent.TrackPublished, function (publication, remoteParticipant) {
+      console.log('TrackPublished', publication, remoteParticipant)
+      addParticipant(remoteParticipant)
+    })
+    .on(RoomEvent.ParticipantConnected, addParticipant)
+    .on(RoomEvent.ParticipantDisconnected, removeParticipant)
+    .on(RoomEvent.RoomMetadataChanged, function (...args) {
+      console.log('RoomMetadataChanged', args)
+    })
+    .on(RoomEvent.LocalTrackPublished, function (...args) {
+      console.log('LocalTrackPublished', args)
+    })
+    .on(RoomEvent.MediaDevicesChanged, function (...args) {
+      console.log('MediaDevicesChanged', args)
+    })
+    .on(RoomEvent.ParticipantMetadataChanged, function (...args) {
+      console.log('ParticipantMetadataChanged', args)
+    })
 
   logger.log('initialized')
+
   return {
     setRecording(recording) {
       room.localParticipant
@@ -157,11 +202,16 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
         .catch((err) => logger.error('Error: ', err, ', recording=', recording))
     },
     onUserTalking(cb) {
-      room.on(RoomEvent.ActiveSpeakersChanged, (speakers: Participant[]) => {
-        for (const [_, participant] of room.participants) {
-          cb(participant.identity, participant.isSpeaking)
+      onUserTalkingCallback = cb
+      try {
+        if (!room.canPlaybackAudio) {
+          room.startAudio()
         }
-      })
+
+        parentElement?.play().catch(logger.log)
+      } catch (err: any) {
+        logger.error(err)
+      }
     },
     onRecording(cb) {
       recordingListener = cb
@@ -206,6 +256,9 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     },
     setMute: (mute) => {
       globalMuted = mute
+      for (const [_, participant] of room.participants) {
+        participant.setVolume(getGlobalVolume())
+      }
     },
     setInputStream: async (localStream) => {
       try {
@@ -221,6 +274,7 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
     },
     destroy: () => {
       handleDisconnect()
-    }
-  }
+    },
+    participantsInfo
+  } as any
 }

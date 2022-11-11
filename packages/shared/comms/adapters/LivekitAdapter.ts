@@ -6,12 +6,14 @@ import {
   RemoteTrack,
   Participant,
   DataPacket_Kind,
-  DisconnectReason
+  DisconnectReason,
 } from 'livekit-client'
 import mitt from 'mitt'
 import { ILogger } from 'shared/logger'
 import { incrementCommsMessageSent } from 'shared/session/getPerformanceInfo'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 import { commsLogger } from '../context'
+import { createLiveKitVoiceHandler } from './voice/liveKitVoiceHandler'
 import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
 
 export type LivekitConfig = {
@@ -26,8 +28,10 @@ export class LivekitAdapter implements MinimumCommunicationsAdapter {
   private disconnected = false
   private room: Room
 
+  private voiceChatHandlerCache?: VoiceHandler
+
   constructor(private config: LivekitConfig) {
-    this.room = new Room()
+    this.room = new Room({ dynacast: true })
 
     this.room
       .on(RoomEvent.TrackSubscribed, (_: RemoteTrack, __: RemoteTrackPublication, ___: RemoteParticipant) => {
@@ -55,14 +59,26 @@ export class LivekitAdapter implements MinimumCommunicationsAdapter {
       })
   }
 
+  async getVoiceHandler(): Promise<VoiceHandler> {
+    if (!this.voiceChatHandlerCache) {
+      this.voiceChatHandlerCache = await createLiveKitVoiceHandler(this.room)
+    }
+    return this.voiceChatHandlerCache!
+  }
+
   async connect(): Promise<void> {
     await this.room.connect(this.config.url, this.config.token, { autoSubscribe: true })
     this.config.logger.log(`Connected to livekit room ${this.room.name}`)
   }
 
-  send(data: Uint8Array, { reliable }: SendHints): Promise<void> {
+  async send(data: Uint8Array, { reliable }: SendHints): Promise<void> {
     incrementCommsMessageSent(data.length)
-    return this.room.localParticipant.publishData(data, reliable ? DataPacket_Kind.RELIABLE : DataPacket_Kind.LOSSY)
+    try {
+      await this.room.localParticipant.publishData(data, reliable ? DataPacket_Kind.RELIABLE : DataPacket_Kind.LOSSY)
+    } catch (err: any) {
+      // this fails in some cases, catch is needed
+      this.config.logger.error(err)
+    }
   }
 
   async disconnect() {
