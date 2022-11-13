@@ -82,4 +82,6 @@ export type TrackEvents = PositionTrackEvents & {
   ['errorInSceneWorker']: { message: string; scene: string; pointers: string[] }
   ['disconnect_lighthouse']: { message: string; reason: string; url: string }
   ['Invalid user version']: { address: string; version: number }
+  ['non_json_message_from_engine']: { type: string; payload: string }
+  ['invalid_denied_catalyst_url']: { url: string }
 }
