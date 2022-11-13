@@ -1,5 +1,12 @@
 import { Quaternion, Vector3 } from '@dcl/ecs-math'
-import { DEBUG_SCENE_LOG, ETHEREUM_NETWORK, FORCE_SEND_MESSAGE, getAssetBundlesBaseUrl, playerConfigurations, WSS_ENABLED } from 'config'
+import {
+  DEBUG_SCENE_LOG,
+  ETHEREUM_NETWORK,
+  FORCE_SEND_MESSAGE,
+  getAssetBundlesBaseUrl,
+  playerConfigurations,
+  WSS_ENABLED
+} from 'config'
 import { PositionReport } from './positionThings'
 import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'

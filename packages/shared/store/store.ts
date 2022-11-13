@@ -1,4 +1,5 @@
 import { AnyAction, applyMiddleware, compose, createStore, Middleware, StoreEnhancer } from 'redux'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const createSagaMiddleware = require('@redux-saga/core').default
 import { createLogger } from 'redux-logger'
 import { reducers } from './rootReducer'

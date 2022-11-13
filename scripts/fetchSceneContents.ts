@@ -8,9 +8,9 @@
  */
 
 import { fetch } from 'undici'
-import { CatalystClient } from 'dcl-catalyst-client'
-import { EntityType, EntityContentItemReference } from 'dcl-catalyst-commons'
+import { CatalystClient } from 'dcl-catalyst-client/dist/CatalystClient'
 import * as fs from 'fs'
+import { ContentMapping, EntityType } from '@dcl/schemas'
 
 const sceneId = process.env.SCENE_ID
 const parcel = process.env.PARCEL
@@ -34,12 +34,12 @@ async function main() {
     : (await client.fetchEntitiesByPointers(EntityType.SCENE, [parcel]))[0]
 
   const pending: Record<string, Promise<any>> = {}
-  const queued: EntityContentItemReference[] = []
+  const queued: ContentMapping[] = []
   const scenePath = `${outputRoot}/${sceneData.pointers[0]}-scene-${sceneData.id}`
 
   await fs.promises.mkdir(scenePath, { recursive: true })
 
-  function download(content: EntityContentItemReference) {
+  function download(content: ContentMapping) {
     const url = `${contentServerUrl}/content/contents/${content.hash}`
     console.log(`Downloading ${content.file} from ${url}`)
     pending[content.file] = fetch(url)
