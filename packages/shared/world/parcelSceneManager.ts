@@ -191,4 +191,7 @@ export function allScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) 
   for (const [, scene] of loadedSceneWorkers) {
     scene.rpcContext.sendSceneEvent(data.eventType, data.payload)
   }
+  TEST_OBJECT_ObservableAllScenesEvent.notifyObservers(data)
 }
+
+export const TEST_OBJECT_ObservableAllScenesEvent = new Observable<AllScenesEvents<any>>()

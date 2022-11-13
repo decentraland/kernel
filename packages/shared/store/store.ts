@@ -11,7 +11,7 @@ import { setStore } from './isolatedStore'
 import { composeWithDevTools } from 'redux-devtools-extension'
 import { logTrace } from 'unity-interface/trace'
 
-export const buildStore = () => {
+export const buildStore = (enhancer?: StoreEnhancer<any>) => {
   const sagaMiddleware = createSagaMiddleware({
     sagaMonitor: undefined,
     onError: (error: Error, { sagaStack }: { sagaStack: string }) => {
@@ -43,6 +43,10 @@ export const buildStore = () => {
         })
       )
     )
+  }
+
+  if (enhancer) {
+    enhancers.push(enhancer)
   }
 
   const store = createStore(reducers, composeEnhancers(...enhancers))
