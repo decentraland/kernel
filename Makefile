@@ -70,7 +70,6 @@ test-docker: ## Run all the tests using a docker container
 
 test-ci: # Run the tests (for use in the continuous integration environment)
 	@SINGLE_RUN=true NODE_ENV=production $(MAKE) test
-	@node_modules/.bin/nyc report --temp-directory ./test/tmp --reporter=html --reporter=lcov --reporter=text
 
 npm-link: build-essentials ## Run `npm link` to develop local scenes against this project
 	cd static; npm link
