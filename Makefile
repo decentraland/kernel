@@ -53,10 +53,7 @@ build-release: $(DIST_ENTRYPOINTS) $(DIST_STATIC_FILES) $(DIST_PACKAGE_JSON) ## 
 
 TEST_SOURCE_FILES := $(wildcard test/**/*.ts)
 
-test/out/index.js: build-essentials $(TEST_SOURCE_FILES)
-	@$(COMPILER) ./targets/test.json
-
-test: build-essentials test/out/index.js ## Run all the tests
+test: build-essentials ## Run all the tests
 	@node scripts/runTestServer.js
 
 test-docker: ## Run all the tests using a docker container
@@ -95,9 +92,6 @@ watch: $(SOME_MAPPINGS) build-essentials static/index.js ## Watch the files requ
 
 fetchSceneContents: scripts/fetchSceneContents.js
 	@node ./scripts/fetchSceneContents.js
-
-clean: ## Clean all generated files
-	@$(COMPILER) targets/clean.json
 
 update-renderer:  ## Update the renderer
 	npm install @dcl/unity-renderer@latest
