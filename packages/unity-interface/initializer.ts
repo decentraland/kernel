@@ -98,7 +98,6 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
 
   const transport = webTransport({ wasmModule: originalUnity.Module })
 
-
   await engineStartedFuture
   await browserInterface.startedFuture
 
