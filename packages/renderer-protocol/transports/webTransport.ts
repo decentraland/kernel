@@ -19,7 +19,9 @@ export function webTransport(options: WebTransportOptions): Transport {
   let isClosed = false
 
   ;(globalThis as any).DCL.BinaryMessageFromEngine = function (data: Uint8Array) {
-    // TODO: temporal fix - @dcl/rpc should handle sequencial callbacks
+    // TODO: remove this. The queueMicrotask handles the sequential calls when a `send` 
+    //  is invoked and the answer is immediately invoked 
+    // This should be handlering by `@dcl/rpc` and delete this workaround
     queueMicrotask(() => {
       const copiedData = new Uint8Array(data)
       events.emit('message', copiedData)
@@ -29,7 +31,7 @@ export function webTransport(options: WebTransportOptions): Transport {
   const transport: Transport = {
     ...events,
     sendMessage(message) {
-      // TODO: temporal fix - @dcl/rpc should handle sequencial callbacks
+      // TODO: remove this, see the comment above
       queueMicrotask(() => {
         if (!!sendMessageToRenderer && !isClosed) {
           options.wasmModule.HEAPU8.set(message, heapPtr)
