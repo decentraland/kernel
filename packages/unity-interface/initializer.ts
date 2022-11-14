@@ -105,6 +105,13 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
   await engineStartedFuture
   await browserInterface.startedFuture
 
+  document.body.addEventListener('click', () => {
+    browserInterface.onUserInteraction.resolve()
+  })
+  document.body.addEventListener('pointerdown', () => {
+    browserInterface.onUserInteraction.resolve()
+  })
+
   return originalUnity
 }
 
@@ -125,6 +132,7 @@ export async function initializeUnity(options: KernelOptions['rendererOptions'])
   if (queryParams.has('ws')) {
     // load unity renderer using WebSocket
     store.dispatch(initializeRenderer(loadWsEditorDelegate, container))
+    browserInterface.onUserInteraction.resolve()
   } else {
     // load injected renderer
     store.dispatch(initializeRenderer(loadInjectedUnityDelegate, container))

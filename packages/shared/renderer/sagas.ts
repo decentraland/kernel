@@ -145,7 +145,7 @@ function* updateChangeVoiceChatHandlerProcess() {
 
     if (handler !== prevHandler) {
       if (prevHandler) {
-        prevHandler.destroy()
+        yield prevHandler.destroy()
       }
       prevHandler = handler
     }

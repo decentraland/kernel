@@ -6,7 +6,6 @@ import {
   SET_AUDIO_DEVICE,
   SET_VOICE_CHAT_ERROR,
   SET_VOICE_CHAT_HANDLER,
-  SET_VOICE_CHAT_LIVE_KIT_ROOM,
   SET_VOICE_CHAT_MEDIA,
   SET_VOICE_CHAT_MUTE,
   SET_VOICE_CHAT_POLICY,
@@ -25,7 +24,6 @@ const INITIAL_STATE: VoiceChatState = {
   volume: 1.0,
   mute: false,
   error: null,
-  liveKitRoom: null,
   inputDeviceId: null,
   outputDeviceId: null
 }
@@ -40,10 +38,6 @@ export function voiceChatReducer(state?: VoiceChatState, action?: VoiceChatActio
   }
 
   switch (action.type) {
-    case SET_VOICE_CHAT_LIVE_KIT_ROOM: {
-      const { payload } = action
-      return { ...state, liveKitRoom: payload.room }
-    }
     case SET_VOICE_CHAT_HANDLER: {
       const { payload } = action
       return { ...state, voiceHandler: payload.voiceHandler }
