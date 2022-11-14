@@ -97,7 +97,7 @@ export class NativeMessagesBridge {
 
     this.callSetEntityId = this.unityModule.cwrap('call_SetEntityId', null, ['string'])
     this.callSetSceneId = this.unityModule.cwrap('call_SetSceneId', null, ['string'])
-    this.callSetSceneNumber = this.unityModule.cwrap('call_SetSceneNumber', null, ['string'])
+    this.callSetSceneNumber = this.unityModule.cwrap('call_SetSceneNumber', null, ['number'])
     this.callSetTag = this.unityModule.cwrap('call_SetTag', null, ['string'])
 
     this.callSetEntityParent = this.unityModule.cwrap('call_SetEntityParent', null, ['string'])
