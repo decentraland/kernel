@@ -22,6 +22,29 @@ export async function adapterForRealmConfig(
   about: AboutResponse,
   identity: ExplorerIdentity
 ): Promise<IRealmAdapter> {
+  // normalize about response
+  about.content = {
+    healthy: false,
+    publicUrl: baseUrl + '/content',
+    ...about.content
+  }
+  about.lambdas = {
+    healthy: false,
+    publicUrl: baseUrl + '/lambdas',
+    ...about.lambdas
+  }
+  about.configurations = {
+    networkId: 1,
+    globalScenesUrn: [],
+    scenesUrn: [],
+    minimap: {
+      enabled: true,
+      dataImage: 'https://api.decentraland.org/v1/minimap.png',
+      estateImage: 'https://api.decentraland.org/v1/estatemap.png'
+    },
+    ...about.configurations
+  }
+
   // TODO: We are checking !v2 until all migration is finished
   const isValidBff = about.comms?.protocol === 'v3' && about.bff?.healthy // about.bff?.healthy
 

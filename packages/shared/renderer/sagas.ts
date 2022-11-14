@@ -86,6 +86,7 @@ function* reportRealmChangeToRenderer() {
       const current = convertCurrentRealmType(realmAdapter, contentServerUrl)
       defaultLogger.info('UpdateRealmsInfo', current)
       getUnityInstance().UpdateRealmsInfo({ current })
+      getUnityInstance().UpdateRealmAbout(realmAdapter.about)
 
       const realmsService = yield select(getExploreRealmsService)
 
