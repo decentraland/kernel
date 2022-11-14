@@ -19,17 +19,23 @@ export function webTransport(options: WebTransportOptions): Transport {
   let isClosed = false
 
   ;(globalThis as any).DCL.BinaryMessageFromEngine = function (data: Uint8Array) {
-    const copiedData = new Uint8Array(data)
-    events.emit('message', copiedData)
+    // TODO: temporal fix - @dcl/rpc should handle sequencial callbacks
+    queueMicrotask(() => {
+      const copiedData = new Uint8Array(data)
+      events.emit('message', copiedData)
+    })
   }
 
   const transport: Transport = {
     ...events,
     sendMessage(message) {
-      if (!!sendMessageToRenderer && !isClosed) {
-        options.wasmModule.HEAPU8.set(message, heapPtr)
-        sendMessageToRenderer(heapPtr, message.length)
-      }
+      // TODO: temporal fix - @dcl/rpc should handle sequencial callbacks
+      queueMicrotask(() => {
+        if (!!sendMessageToRenderer && !isClosed) {
+          options.wasmModule.HEAPU8.set(message, heapPtr)
+          sendMessageToRenderer(heapPtr, message.length)
+        }
+      })
     },
     close() {
       if (!isClosed) {
