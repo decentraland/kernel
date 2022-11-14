@@ -875,6 +875,27 @@ export class BrowserInterface {
     )
   }
 
+  public async JumpInHome(data: WorldPosition) {
+    const mostPopulatedRealm = data.realm.serverName
+
+    notifyStatusThroughChat(`Jumping home to ${mostPopulatedRealm}...`)
+
+    changeRealm(mostPopulatedRealm).then(
+      () => {
+        const successMessage = `Jumped home in realm ${mostPopulatedRealm}!`
+        notifyStatusThroughChat(successMessage)
+        getUnityInstance().ConnectionToRealmSuccess(data)
+        TeleportController.goToHome()
+      },
+      (e) => {
+        const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
+        notifyStatusThroughChat('changerealm: Could not join realm.' + cause)
+        getUnityInstance().ConnectionToRealmFailed(data)
+        defaultLogger.error(e)
+      }
+    )
+  }
+
   public async LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
     TeleportController.LoadingHUDReadyForTeleport(data)
   }
