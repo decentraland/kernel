@@ -5,7 +5,7 @@ export type WebTransportOptions = {
   wasmModule: any
 }
 
-export function webTransport(options: WebTransportOptions): Transport {
+export function webTransport(options: WebTransportOptions) {
   const events = mitt<TransportEvents>()
   const ALLOC_SIZE = 8388608
   let heapPtr: number
@@ -38,8 +38,20 @@ export function webTransport(options: WebTransportOptions): Transport {
       }
     }
   }
+  let didConnect = false
 
-  queueMicrotask(() => events.emit('connect', {}))
+  events.on('connect', () => {
+    didConnect = true
+  })
 
-  return transport
+  return {
+    ...transport,
+    get isConnected() {
+      return didConnect
+    },
+    connect() {
+      if (didConnect) return
+      events.emit('connect', {})
+    }
+  }
 }

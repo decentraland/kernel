@@ -97,13 +97,18 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
   }
 
   const transport = webTransport({ wasmModule: originalUnity.Module })
+
+
+  await engineStartedFuture
+  await browserInterface.startedFuture
+
   createRendererRpcClient(transport).catch((e) => {
     console.error(e)
     debugger
   })
 
-  await engineStartedFuture
-  await browserInterface.startedFuture
+  // connect the transport
+  transport.connect()
 
   document.body.addEventListener('click', () => {
     browserInterface.onUserInteraction.resolve()
