@@ -11,6 +11,8 @@ import { getCommsIsland } from '../comms/selectors'
 import { SAVE_PROFILE } from '../profiles/actions'
 import { takeLatestByUserId } from '../profiles/sagas'
 import { allScenesEvent } from '../world/parcelSceneManager'
+import { avatarMessageObservable } from 'shared/comms/peers'
+import { AvatarMessageType } from 'shared/comms/interface/types'
 
 export function* sceneEventsSaga() {
   yield takeLatest([SET_COMMS_ISLAND, SET_ROOM_CONNECTION, SET_REALM_ADAPTER], islandChanged)
@@ -54,3 +56,20 @@ function* submitProfileToScenes() {
     })
   }
 }
+
+// this imperative code should be erased from the world
+avatarMessageObservable.add((evt) => {
+  // Tracks avatar state from comms side.
+  // Listen to which avatars are visible or removed to keep track of connected and visible players.
+  if (evt.type === AvatarMessageType.USER_VISIBLE) {
+    allScenesEvent({
+      eventType: evt.visible ? 'playerConnected' : 'playerDisconnected',
+      payload: { userId: evt.userId }
+    })
+  } else if (evt.type === AvatarMessageType.USER_REMOVED) {
+    allScenesEvent({
+      eventType: 'playerDisconnected',
+      payload: { userId: evt.userId }
+    })
+  }
+})

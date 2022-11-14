@@ -7,7 +7,7 @@ declare const Worker: any
 declare const DCL: { GL: any }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const gifProcessorWorkerRaw = require('raw-loader!../../static/gif-processor/worker.js')
+const gifProcessorWorkerRaw = require('../../static/gif-processor/worker.js.txt')
 const gifProcessorWorkerUrl = URL.createObjectURL(new Blob([gifProcessorWorkerRaw]))
 const multipleGIFWorkers = GIF_WORKERS
 
