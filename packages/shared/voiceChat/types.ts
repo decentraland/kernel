@@ -1,14 +1,15 @@
+import { VoiceHandler } from './VoiceHandler'
+
 export type VoiceChatState = {
   joined: boolean
   recording: boolean
   requestRecording: boolean
   policy: VoicePolicy
-  voiceHandler: any | null // TODO: Replace any by VoiceHandler
+  voiceHandler: VoiceHandler | null // TODO: Replace any by VoiceHandler
   error: string | null
   media?: any
   volume: number
   mute: boolean
-  liveKitRoom: any | null
   outputDeviceId: string | null
   inputDeviceId: string | null
 }

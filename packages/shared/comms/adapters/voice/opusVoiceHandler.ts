@@ -1,13 +1,15 @@
 import { createLogger } from 'shared/logger'
-import { VoiceHandler } from './VoiceHandler'
-import { VoiceCommunicator } from './VoiceCommunicator'
+import { VoiceHandler } from '../../../voiceChat/VoiceHandler'
+import { VoiceCommunicator } from '../../../voiceChat/VoiceCommunicator'
 import { commConfigurations } from 'config'
 import Html from 'shared/Html'
 import { getCommsRoom } from 'shared/comms/selectors'
-import { getSpatialParamsFor } from './utils'
+import { getSpatialParamsFor } from '../../../voiceChat/utils'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { store } from 'shared/store/isolatedStore'
 import withCache from 'atomicHelpers/withCache'
+
+import './audioDebugger'
 
 const getVoiceCommunicator = withCache(() => {
   const logger = createLogger('OpusVoiceCommunicator: ')
@@ -70,7 +72,7 @@ export const createOpusVoiceHandler = (): VoiceHandler => {
     playEncodedAudio: (src, position, encoded) => {
       return voiceCommunicator.playEncodedAudio(src, getSpatialParamsFor(position), encoded)
     },
-    destroy() {
+    async destroy() {
       // noop
     }
   }
