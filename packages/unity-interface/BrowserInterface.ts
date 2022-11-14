@@ -232,6 +232,7 @@ export class BrowserInterface {
   private lastBalanceOfMana: number = -1
 
   startedFuture = future<void>()
+  onUserInteraction = future<void>()
 
   /**
    * This is the only method that should be called publically in this class.
@@ -662,7 +663,11 @@ export class BrowserInterface {
   }
 
   public JoinVoiceChat() {
-    store.dispatch(joinVoiceChat())
+    this.onUserInteraction
+      .then(() => {
+        store.dispatch(joinVoiceChat())
+      })
+      .catch(defaultLogger.error)
   }
 
   public LeaveVoiceChat() {
