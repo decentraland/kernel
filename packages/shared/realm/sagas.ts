@@ -26,9 +26,6 @@ import { BEFORE_UNLOAD } from 'shared/actions'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { realmToConnectionString } from './resolver'
 import { hookConnectToFixedAdaptersIfNecessary } from './logic'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { HUDElementID } from 'shared/types'
-import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 
 const logger = createLogger('BffSagas')
 
@@ -145,14 +142,6 @@ function* handleNewBFF() {
       const identity: ExplorerIdentity = yield select(getCurrentIdentity)
       // bind messages to this comms instance
       unbind = yield call(bindHandlersToBFF, action.payload, identity?.address)
-
-      // enable/disable minimap
-      const miniMapVisible =
-        !action.payload.about.configurations?.minimap || !action.payload.about.configurations?.minimap.enabled
-      yield waitForRendererInstance()
-      getUnityInstance().ConfigureHUDElement(HUDElementID.MINIMAP, { active: miniMapVisible, visible: miniMapVisible })
-
-      // TODO: configure skybox
     }
   })
 }
