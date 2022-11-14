@@ -86,6 +86,7 @@ function* reportRealmChangeToRenderer() {
       const current = convertCurrentRealmType(realmAdapter, contentServerUrl)
       defaultLogger.info('UpdateRealmsInfo', current)
       getUnityInstance().UpdateRealmsInfo({ current })
+      getUnityInstance().UpdateRealmAbout(realmAdapter.about)
 
       const realmsService = yield select(getExploreRealmsService)
 
@@ -297,7 +298,10 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     // TODO: this condition shouldn't be necessary. Unity fails with setThrew
     //       if LoadProfile is called rapidly because it cancels ongoing
     //       requests and those cancellations throw exceptions
-    if (!deepEqual(lastSentProfile, forRenderer)) {
+    if (lastSentProfile && lastSentProfile?.version > forRenderer.version) {
+      const event = 'Invalid user version' as const
+      trackEvent(event, { address: userId, version: forRenderer.version })
+    } else if (!deepEqual(lastSentProfile, forRenderer)) {
       lastSentProfile = forRenderer
       getUnityInstance().LoadProfile(forRenderer)
     }

@@ -11,11 +11,11 @@ import { traceDecoratorRendererOptions } from './trace'
 import {
   BringDownClientAndShowError,
   ErrorContext,
-  ReportFatalErrorWithUnityPayload
+  ReportFatalErrorWithUnityPayloadAsync
 } from 'shared/loading/ReportFatalError'
-import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { store } from 'shared/store/isolatedStore'
 import defaultLogger from 'shared/logger'
+import { trackEvent } from '../shared/analytics'
 import { browserInterface } from './BrowserInterface'
 import { webTransport } from '../renderer-protocol/transports/webTransport'
 import { createRendererRpcClient } from '../renderer-protocol/rpcClient'
@@ -34,7 +34,8 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
     } catch (e: any) {
       // we log the whole message to gain visibility
       defaultLogger.error(e.message + ' messageFromEngine: ' + type + ' ' + jsonEncodedMessage)
-      throw e
+      trackEvent('non_json_message_from_engine', { type, payload: jsonEncodedMessage })
+      return
     }
     // this is outside of the try-catch to enable V8 path optimizations
     // keep the following line outside the `try`
@@ -91,8 +92,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     }
 
     const error = new Error(`${message} ... file: ${filename} - lineno: ${lineno}`)
-    ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_ERRORHANDLER)
-    BringDownClientAndShowError(UNEXPECTED_ERROR)
+    ReportFatalErrorWithUnityPayloadAsync(error, ErrorContext.RENDERER_ERRORHANDLER)
     return true
   }
 
