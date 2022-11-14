@@ -39,29 +39,6 @@ export const getConversations = (
 }
 
 /**
- * Get all current conversations with messages the user has including DMs, channels, etc
- * @return `conversation` & `unreadMessages` boolean that indicates whether the conversation has unread messages.
- */
-export const getAllConversationsWithMessages = (
-  store: RootFriendsState
-): Array<{ conversation: Conversation; unreadMessages: boolean }> => {
-  const client = getSocialClient(store)
-  if (!client) return []
-
-  const conversations = client.getAllCurrentConversations()
-
-  return conversations
-    .filter((conv) => conv.conversation.hasMessages)
-    .map((conv) => ({
-      ...conv,
-      conversation: {
-        ...conv.conversation,
-        userIds: conv.conversation.userIds?.map((userId) => getUserIdFromMatrix(userId))
-      }
-    }))
-}
-
-/**
  * Get all conversations `ConversationType.DIRECT` with friends the user has befriended
  * @return `conversation` & `unreadMessages` boolean that indicates whether the conversation has unread messages.
  */
