@@ -7,11 +7,7 @@ import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, hasWallet } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { trackEvent } from 'shared/analytics'
-import {
-  BringDownClientAndShowError,
-  ErrorContext,
-  ReportFatalErrorWithUnityPayload
-} from 'shared/loading/ReportFatalError'
+import { ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { defaultLogger } from 'shared/logger'
 import { saveProfileDelta, sendProfileToRenderer } from 'shared/profiles/actions'
 import { ProfileType } from 'shared/profiles/types'
@@ -1027,14 +1023,16 @@ export class BrowserInterface {
     ProfileAsPromise(userIdPayload.value, undefined, ProfileType.DEPLOYED).catch(defaultLogger.error)
   }
 
-  public ReportAvatarFatalError() {
-    // TODO(Brian): Add more parameters?
-    ReportFatalErrorWithUnityPayload(new Error(AVATAR_LOADING_ERROR), ErrorContext.RENDERER_AVATARS)
-    BringDownClientAndShowError(AVATAR_LOADING_ERROR)
+  public ReportAvatarFatalError(payload: any) {
+    defaultLogger.error(payload)
+    ReportFatalErrorWithUnityPayloadAsync(
+      new Error(AVATAR_LOADING_ERROR + ' ' + JSON.stringify(payload)),
+      'renderer#avatars'
+    )
   }
 
   public UnpublishScene(data: any) {
-    defaultLogger.warn('UnpublishScene', data)
+    // deprecated
   }
 
   public async NotifyStatusThroughChat(data: { value: string }) {
