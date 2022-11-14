@@ -876,16 +876,20 @@ export class BrowserInterface {
   }
 
   public async JumpInHome(data: WorldPosition) {
-    const mostPopulatedRealm = data.realm.serverName
+    const {
+      realm: { serverName }
+    } = data
 
-    notifyStatusThroughChat(`Jumping home to ${mostPopulatedRealm}...`)
+    notifyStatusThroughChat(`Jumping home to ${serverName}...`)
 
-    changeRealm(mostPopulatedRealm).then(
+    changeRealm(serverName).then(
       () => {
-        const successMessage = `Jumped home in realm ${mostPopulatedRealm}!`
-        notifyStatusThroughChat(successMessage)
-        getUnityInstance().ConnectionToRealmSuccess(data)
-        TeleportController.goToHome()
+        TeleportController.goToHome().then(
+          ({ message }) => notifyStatusThroughChat(message),
+          () => {
+            // Do nothing. This is handled inside controller
+          }
+        )
       },
       (e) => {
         const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
