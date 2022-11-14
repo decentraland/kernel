@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import fs = require('fs-extra')
 import path = require('path')
 

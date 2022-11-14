@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "esnext",
-    "target": "es2017",
+    "target": "es2020",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "sourceMap": true,
@@ -21,9 +21,8 @@
     "pretty": true,
     "outDir": "../../static/voice-chat-codec",
     "lib": [
-      "es2017",
-      "dom",
-      "webworker"
+      "es2020",
+      "dom"
     ],
     "baseUrl": ".."
   },

@@ -2,7 +2,6 @@ import { ETHEREUM_NETWORK, ethereumConfigurations } from 'config'
 import { defaultLogger } from './logger'
 import { CatalystNode, GraphResponse } from './types'
 import { retry } from '../atomicHelpers/retry'
-import { Fetcher } from 'dcl-catalyst-commons'
 import { requestManager } from './ethereum/provider'
 import { ContractFactory, bytesToHex } from 'eth-connect'
 
@@ -390,9 +389,16 @@ export async function fetchENSOwnersContains(url: string, name: string, maxResul
   }
 }
 
-const fetcher = new Fetcher()
 async function queryGraph(url: string, query: string, variables: any, totalAttempts: number = 5) {
-  return fetcher.queryGraph(url, query, variables, { attempts: totalAttempts })
+  const ret = await fetch(url, {
+    body: JSON.stringify({ query, variables }),
+    headers: { 'Content-Type': 'application/json' }
+  })
+  const response = await ret.json()
+  if (response.errors) {
+    throw new Error(`Error querying graph. Reasons: ${JSON.stringify(response.errors)}`)
+  }
+  return response.data
 }
 
 /**

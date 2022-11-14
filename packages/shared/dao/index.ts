@@ -50,11 +50,15 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
 
 export async function fetchCatalystStatus(
   domain: string,
-  denylistedCatalysts: string[]
+  denylistedCatalysts: string[],
+  askFunction: typeof ask
 ): Promise<Candidate | undefined> {
   if (denylistedCatalysts.includes(domain)) return undefined
 
-  const [aboutResponse, parcelsResponse] = await Promise.all([ask(`${domain}/about`), ask(`${domain}/stats/parcels`)])
+  const [aboutResponse, parcelsResponse] = await Promise.all([
+    askFunction(`${domain}/about`),
+    askFunction(`${domain}/stats/parcels`)
+  ])
 
   const result = aboutResponse.result
   if (
@@ -99,13 +103,14 @@ export async function fetchCatalystStatus(
 
 export async function fetchCatalystStatuses(
   nodes: { domain: string }[],
-  denylistedCatalysts: string[]
+  denylistedCatalysts: string[],
+  askFunction: typeof ask
 ): Promise<Candidate[]> {
   const results: Candidate[] = []
 
   await Promise.all(
     nodes.map(async (node) => {
-      const result = await fetchCatalystStatus(node.domain, denylistedCatalysts)
+      const result = await fetchCatalystStatus(node.domain, denylistedCatalysts, askFunction)
       if (result) {
         results.push(result)
       }

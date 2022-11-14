@@ -1,21 +1,13 @@
 const fs = require("fs")
 const path = require("path")
-const fetch = require("node-fetch")
+const {fetch} = require("undici")
 
 const contentsDir = "contents"
 
 const downloadFile = async (url, path) => {
   const res = await fetch(url)
-  const fileStream = fs.createWriteStream(path)
-  await new Promise((resolve, reject) => {
-    res.body.pipe(fileStream)
-    res.body.on("error", (err) => {
-      reject(err)
-    })
-    fileStream.on("finish", function () {
-      resolve()
-    })
-  })
+  const content = new Uint8Array(await res.arrayBuffer())
+  fs.writeFileSync(path, content)
 }
 
 let contentPath
