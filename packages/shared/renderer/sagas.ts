@@ -86,6 +86,7 @@ function* reportRealmChangeToRenderer() {
       const current = convertCurrentRealmType(realmAdapter, contentServerUrl)
       defaultLogger.info('UpdateRealmsInfo', current)
       getUnityInstance().UpdateRealmsInfo({ current })
+      getUnityInstance().UpdateRealmAbout(realmAdapter.about)
 
       const realmsService = yield select(getExploreRealmsService)
 
@@ -144,7 +145,7 @@ function* updateChangeVoiceChatHandlerProcess() {
 
     if (handler !== prevHandler) {
       if (prevHandler) {
-        prevHandler.destroy()
+        yield prevHandler.destroy()
       }
       prevHandler = handler
     }

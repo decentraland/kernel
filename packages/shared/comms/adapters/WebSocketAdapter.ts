@@ -8,6 +8,8 @@ import { wsAsAsyncChannel } from '../logic/ws-async-channel'
 import { Authenticator } from '@dcl/crypto'
 import mitt from 'mitt'
 import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
+import { createOpusVoiceHandler } from './voice/opusVoiceHandler'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 
 // shared writer to leverage pools
 const writer = new Writer()
@@ -121,6 +123,10 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
     } finally {
       channel.close()
     }
+  }
+
+  async getVoiceHandler(): Promise<VoiceHandler> {
+    return createOpusVoiceHandler()
   }
 
   handleWelcomeMessage(welcomeMessage: rfc5.WsWelcome, socket: WebSocket) {

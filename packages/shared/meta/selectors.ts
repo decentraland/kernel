@@ -4,6 +4,7 @@ import { BYPASS_CONTENT_ALLOWLIST, SOCIAL_SERVER_URL } from 'config'
 import { urlWithProtocol } from 'shared/realm/resolver'
 import { DEFAULT_MAX_VISIBLE_PEERS } from '.'
 import { QS_MAX_VISIBLE_PEERS } from 'config'
+import { trackEvent } from '../analytics'
 
 export const getAddedServers = (store: RootMetaState): string[] => {
   const { config } = store.meta
@@ -43,8 +44,17 @@ export const getBannedUsers = (store: RootMetaState): BannedUsers =>
 export const getPickRealmsAlgorithmConfig = (store: RootMetaState): AlgorithmChainConfig | undefined =>
   getFeatureFlagVariantValue(store, 'pick_realm_algorithm_config') as AlgorithmChainConfig | undefined
 
-export const getDisabledCatalystConfig = (store: RootMetaState): string[] | undefined =>
-  getFeatureFlagVariantValue(store, 'disabled-catalyst') as string[] | undefined
+export const getDisabledCatalystConfig = (store: RootMetaState): string[] => {
+  const disabledCatalysts = getFeatureFlagVariantValue<string[]>(store, 'disabled-catalyst') || []
+  return disabledCatalysts.filter((catalyst) => {
+    try {
+      return !!new URL(catalyst)
+    } catch (e) {
+      trackEvent('invalid_denied_catalyst_url', { url: catalyst })
+      return false
+    }
+  })
+}
 
 export const isLiveKitVoiceChatFeatureFlag = (store: RootMetaState): boolean =>
   getFeatureFlagEnabled(store, 'livekit-voicechat') as boolean
@@ -60,17 +70,21 @@ export function getMaxVisiblePeers(store: RootMetaState): number {
 /**
  * Returns the variant content of a feature flag
  */
-export function getFeatureFlagVariantValue(store: RootMetaState, featureName: FeatureFlagsName): unknown {
+export function getFeatureFlagVariantValue<T = unknown>(
+  store: RootMetaState,
+  featureName: FeatureFlagsName
+): T | undefined {
   const ff = getFeatureFlags(store)
   const variant = ff.variants[featureName]?.payload
   if (variant) {
     try {
-      if (variant.type === 'json') return JSON.parse(variant.value)
-      if (variant.type === 'csv') return (variant.value ?? '').split(',')
+      if (variant.type === 'json') return JSON.parse(variant.value) as any as T
+      if (variant.type === 'csv') return (variant.value ?? '').split(',') as any as T
+      return variant.value as any as T
     } catch (e) {
       console.warn(`Couldn't parse value for ${featureName} from variants.`)
+      return undefined
     }
-    return variant.value
   }
   return undefined
 }

@@ -226,7 +226,7 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
         adapter = new Rfc4RoomConnection(
           new LivekitAdapter({
             logger: commsLogger,
-            url,
+            url: theUrl.origin + theUrl.pathname,
             token
           })
         )

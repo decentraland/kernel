@@ -9,7 +9,7 @@ import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'con
 import { waitForMetaConfigurationInitialization, waitForNetworkSelected } from '../meta/sagas'
 import { Candidate, PingResult, Realm, ServerConnectionStatus } from './types'
 import { fetchCatalystRealms, fetchCatalystStatuses, changeRealm } from '.'
-import { ping } from './utils/ping'
+import { ask, ping } from './utils/ping'
 import {
   getAddedServers,
   getCatalystNodesEndpoint,
@@ -189,7 +189,8 @@ function* initializeCatalystCandidates() {
   const candidates: Candidate[] = yield call(
     fetchCatalystStatuses,
     added.map((url) => ({ domain: url })).concat(nodes),
-    denylistedCatalysts
+    denylistedCatalysts,
+    ask
   )
 
   yield put(setCatalystCandidates(candidates))

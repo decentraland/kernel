@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "es2020",
     "outDir": "out",
     "declaration": false,
     "strictNullChecks": true,
-    "lib": ["es2017", "dom"],
+    "lib": ["es2020", "dom"],
     "baseUrl": "../packages",
-    "types": ["mocha", "@dcl/posix", "segment-analytics"],
+    "types": ["mocha", "@dcl/posix"],
     "typeRoots": ["../node_modules/"]
   },
   "exclude": ["../packages/engine"],

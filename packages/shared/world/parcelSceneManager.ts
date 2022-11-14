@@ -177,6 +177,8 @@ async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableSce
     defaultParcelPermissions.forEach(($) => worker.rpcContext.permissionGranted.add($))
     // and enablle FPS throttling, it will lower the frame-rate based on the distance
     worker.rpcContext.sceneData.useFPSThrottling = true
+
+    setNewParcelScene(worker)
   }
 }
 
@@ -189,4 +191,7 @@ export function allScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) 
   for (const [, scene] of loadedSceneWorkers) {
     scene.rpcContext.sendSceneEvent(data.eventType, data.payload)
   }
+  TEST_OBJECT_ObservableAllScenesEvent.notifyObservers(data)
 }
+
+export const TEST_OBJECT_ObservableAllScenesEvent = new Observable<AllScenesEvents<any>>()

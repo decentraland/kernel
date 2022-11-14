@@ -4,6 +4,7 @@ import { JoinIslandMessage, LeftIslandMessage } from '@dcl/protocol/out-ts/decen
 import { SuspendRelayData, PingData, PongData, Packet, MessageData } from './p2p/p2p'
 import { Mesh } from './p2p/Mesh'
 import mitt from 'mitt'
+import { createOpusVoiceHandler } from './voice/opusVoiceHandler'
 import { pickBy, randomUint32, discretizedPositionDistanceXZ } from './p2p/utils'
 import {
   PeerMessageType,
@@ -29,6 +30,7 @@ import { listenPeerMessage } from '../logic/subscription-adapter'
 import { IRealmAdapter } from '../../realm/types'
 import { lastPlayerPositionReport } from 'shared/world/positionThings'
 import { PeerTopicSubscriptionResultElem } from '@dcl/protocol/out-ts/decentraland/bff/topics_service.gen'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 
 export type RelaySuspensionConfig = {
   relaySuspensionInterval: number
@@ -163,6 +165,9 @@ export class PeerToPeerAdapter implements MinimumCommunicationsAdapter {
 
     // TODO: MENDEZ: Why is this necessary and not an internal thing of the transport?
     // this.transport.onPeerPositionChange(peer, [position.positionX, position.positionY, position.positionZ])
+  }
+  async getVoiceHandler(): Promise<VoiceHandler> {
+    return createOpusVoiceHandler()
   }
 
   onPeerPositionChange(peerId: string, p: Position3D) {

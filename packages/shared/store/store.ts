@@ -1,5 +1,6 @@
 import { AnyAction, applyMiddleware, compose, createStore, Middleware, StoreEnhancer } from 'redux'
-import createSagaMiddleware from 'redux-saga'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const createSagaMiddleware = require('@redux-saga/core').default
 import { createLogger } from 'redux-logger'
 import { reducers } from './rootReducer'
 import { createRootSaga } from './rootSaga'
@@ -10,11 +11,9 @@ import { setStore } from './isolatedStore'
 import { composeWithDevTools } from 'redux-devtools-extension'
 import { logTrace } from 'unity-interface/trace'
 
-export const buildStore = () => {
-  const sagaMonitor = DEBUG_REDUX ? require('@redux-saga/simple-saga-monitor') : undefined
-
+export const buildStore = (enhancer?: StoreEnhancer<any>) => {
   const sagaMiddleware = createSagaMiddleware({
-    sagaMonitor,
+    sagaMonitor: undefined,
     onError: (error: Error, { sagaStack }: { sagaStack: string }) => {
       defaultLogger.log('SAGA-ERROR: ', error)
       BringDownClientAndReportFatalError(error, ErrorContext.KERNEL_SAGA, { sagaStack })
@@ -44,6 +43,10 @@ export const buildStore = () => {
         })
       )
     )
+  }
+
+  if (enhancer) {
+    enhancers.push(enhancer)
   }
 
   const store = createStore(reducers, composeEnhancers(...enhancers))

@@ -3,7 +3,6 @@ import { store } from 'shared/store/isolatedStore'
 import { getProfileFromStore } from 'shared/profiles/selectors'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 
-import { getVisibleAvatarsUserId } from 'shared/sceneEvents/visibleAvatars'
 import { getInSceneAvatarsUserId } from 'shared/social/avatarTracker'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { getCurrentUserId } from 'shared/session/selectors'
@@ -45,6 +44,7 @@ import { PortContext } from './context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import { PlayersServiceDefinition } from '@dcl/protocol/out-ts/decentraland/kernel/apis/players.gen'
+import { getAllPeers } from 'shared/comms/peers'
 
 export function registerPlayersServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, PlayersServiceDefinition, async () => ({
@@ -92,9 +92,11 @@ export function registerPlayersServiceServerImplementation(port: RpcServerPort<P
     },
     async getConnectedPlayers() {
       return {
-        players: getVisibleAvatarsUserId().map((userId) => {
-          return { userId }
-        })
+        players: Array.from(getAllPeers().values())
+          .filter(($) => $.visible)
+          .map((peer) => {
+            return { userId: peer.ethereumAddress }
+          })
       }
     }
   }))
