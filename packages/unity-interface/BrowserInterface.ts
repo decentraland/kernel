@@ -874,32 +874,7 @@ export class BrowserInterface {
       }
     )
   }
-
-  public async JumpInHome(data: WorldPosition) {
-    const {
-      realm: { serverName }
-    } = data
-
-    notifyStatusThroughChat(`Jumping home to ${serverName}...`)
-
-    changeRealm(serverName).then(
-      () => {
-        TeleportController.goToHome().then(
-          ({ message }) => notifyStatusThroughChat(message),
-          () => {
-            // Do nothing. This is handled inside controller
-          }
-        )
-      },
-      (e) => {
-        const cause = e === 'realm-full' ? ' The requested realm is full.' : ''
-        notifyStatusThroughChat('changerealm: Could not join realm.' + cause)
-        getUnityInstance().ConnectionToRealmFailed(data)
-        defaultLogger.error(e)
-      }
-    )
-  }
-
+  
   public async LoadingHUDReadyForTeleport(data: { x: number; y: number }) {
     TeleportController.LoadingHUDReadyForTeleport(data)
   }

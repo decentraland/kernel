@@ -16,6 +16,7 @@ import { getParcelPosition } from 'shared/scene-loader/selectors'
 import { lastPlayerPosition } from 'shared/world/positionThings'
 import { homePointKey } from 'shared/atlas/utils'
 import { getFromPersistentStorage } from 'atomicHelpers/persistentStorage'
+import { changeToMostPopulatedRealm } from '../dao'
 
 const descriptiveValidWorldRanges = getWorld()
   .validWorldRanges.map((range) => `(X from ${range.xMin} to ${range.xMax}, and Y from ${range.yMin} to ${range.yMax})`)
@@ -68,6 +69,7 @@ export class TeleportController {
 
   public static async goToHome(): Promise<{ message: string; success: boolean }> {
     try {
+      await changeToMostPopulatedRealm()
       const homeCoordinates = await fetchHomePoint()
 
       return TeleportController.goTo(
