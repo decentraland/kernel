@@ -1036,7 +1036,7 @@ export class BrowserInterface {
     )
   }
 
-  public UnpublishScene(data: any) {
+  public UnpublishScene(_data: any) {
     // deprecated
   }
 

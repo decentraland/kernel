@@ -1886,36 +1886,37 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
     members: []
   }
 
-  const members = getMembers(client, channel.userIds ?? [], request.channelId)
-    .filter(({ name }) => {
-      const searchTerm = request.userName.toLocaleLowerCase()
-      const lowerCaseName = name.toLocaleLowerCase()
-      return lowerCaseName.search(searchTerm) >= 0
-    })
-    .slice(request.skip, request.skip + request.limit)
+  const allMembers = getMembers(client, channel.userIds ?? [], request.channelId).filter(({ name }) => {
+    const searchTerm = request.userName.toLocaleLowerCase()
+    const lowerCaseName = name.toLocaleLowerCase()
+    return lowerCaseName.search(searchTerm) >= 0
+  })
 
-  if (members.length === 0) {
+  if (allMembers.length === 0) {
     // it means the channel has no members
     getUnityInstance().UpdateChannelMembers(channelMembersPayload)
     return
   }
 
-  const ownId = client.getUserId()
-
-  // update catalog with missing users, by using default profiles with name and image url
-  sendMissingProfiles(members, ownId)
-
   // we only notify members who are online if presence is enabled, else every joined member
-  const memberIds = members.map((member) => member.userId)
+  const memberIds = allMembers.map((member) => member.userId)
   const onlineOrJoinedMemberIds = getOnlineOrJoinedMembers(memberIds, client)
 
-  const membersPayload = members
+  // we filter the online members and apply the skip and limit pagination
+  const membersProfiles = allMembers
     .filter((member) => onlineOrJoinedMemberIds.includes(member.userId))
-    // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
-    .map((member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true }))
+    .slice(request.skip, request.skip + request.limit)
+  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
+  const membersPayload = membersProfiles.map(
+    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
+  )
 
+  // update catalog with missing users, by using default profiles with name and image url
+  const ownId = client.getUserId()
+  sendMissingProfiles(membersProfiles, ownId)
+
+  // send info to unity
   channelMembersPayload.members.push(...membersPayload)
-
   getUnityInstance().UpdateChannelMembers(channelMembersPayload)
 }
 
