@@ -123,6 +123,7 @@ describe('RestrictedActions tests', () => {
     return {
       sceneData,
       logger: defaultLogger,
+      rendererPort: null as any,
       permissionGranted: new Set(permissions),
       subscribedEvents: new Set(),
       events: [],
