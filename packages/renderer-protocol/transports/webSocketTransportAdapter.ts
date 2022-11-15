@@ -2,7 +2,6 @@ import { Transport, TransportEvents } from '@dcl/rpc'
 import mitt from 'mitt'
 import { CommonRendererOptions } from '../../unity-interface/loader'
 
-export const defer = Promise.prototype.then.bind(Promise.resolve())
 /** @deprecated
  transport to make compatibility binary and string messages swap
  TODO: Remove on ECS6 Legacy code removal
@@ -28,6 +27,8 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
   const connect = function () {
     socket = new WebSocket(url)
 
+    let isConnected = false
+
     const queue: any[] = []
 
     ;(socket as any).binaryType = 'arraybuffer'
@@ -47,12 +48,6 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
     }
 
     socket.addEventListener('close', () => events.emit('close', {}), { once: true })
-
-    if (socket.readyState === socket.OPEN) {
-      defer(() => events.emit('connect', { socket }))
-    } else {
-      socket.addEventListener('open', () => events.emit('connect', { socket }), { once: true })
-    }
 
     socket.addEventListener('error', (err: any) => {
       if (firstConnect === true) {
@@ -76,7 +71,16 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
         }
       }
     })
+
+    events.on('connect', () => {
+      isConnected = true
+    })
+
     socket.addEventListener('message', (message: { data: any }) => {
+      if (!isConnected) {
+        events.emit('connect', { socket })
+      }
+
       if (message.data instanceof ArrayBuffer) {
         events.emit('message', new Uint8Array(message.data))
       } else {
