@@ -18,7 +18,7 @@ import defaultLogger from 'shared/logger'
 import { trackEvent } from '../shared/analytics'
 import { browserInterface } from './BrowserInterface'
 import { webTransport } from '../renderer-protocol/transports/webTransport'
-import { createRendererRpcClient } from '../renderer-protocol/rpcClient'
+import { Transport } from '@dcl/rpc'
 
 export type InitializeUnityResult = {
   container: HTMLElement
@@ -43,7 +43,9 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
   }
 })
 
-async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityGame> {
+async function loadInjectedUnityDelegate(
+  container: HTMLElement
+): Promise<{ renderer: UnityGame; transport: Transport }> {
   // inject unity loader
   const rootArtifactsUrl = rendererOptions.baseUrl || ''
 
@@ -96,11 +98,7 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     return true
   }
 
-  const transport = webTransport({ wasmModule: originalUnity.Module })
-  createRendererRpcClient(transport).catch((e) => {
-    console.error(e)
-    debugger
-  })
+  const transport = webTransport({ wasmModule: originalUnity.Module }, (globalThis as any).DCL)
 
   await engineStartedFuture
   await browserInterface.startedFuture
@@ -112,11 +110,11 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     browserInterface.onUserInteraction.resolve()
   })
 
-  return originalUnity
+  return { renderer: originalUnity, transport }
 }
 
 /** Initialize engine using WS transport (UnityEditor) */
-async function loadWsEditorDelegate(container: HTMLElement): Promise<UnityGame> {
+async function loadWsEditorDelegate(container: HTMLElement) {
   const queryParams = new URLSearchParams(document.location.search)
 
   return initializeUnityEditor(queryParams.get('ws')!, container, defaultOptions)
