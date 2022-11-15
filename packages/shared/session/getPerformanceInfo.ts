@@ -47,7 +47,7 @@ export function incrementAvatarSceneMessages(value: number) {
   commsPerfObservable.emit('avatar-renderer', { value })
 }
 
-export function incrementCommsMessageSent(bytes: number) {
+export function incrementCommsMessageSent(_bytes: number) {
   sentCommsMessagesCounter++
 }
 
