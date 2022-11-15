@@ -158,7 +158,7 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
     this.internalDisconnect(false, error)
   }
 
-  internalDisconnect(kicked: boolean, error?: Error) {
+  internalDisconnect(kicked: boolean, _error?: Error) {
     if (this.ws) {
       const ws = this.ws
       this.ws = null
