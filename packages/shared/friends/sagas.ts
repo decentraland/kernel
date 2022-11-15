@@ -390,29 +390,6 @@ function* configureMatrixClient(action: SetMatrixClient) {
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
 
-  client.onChannelMembers((conversation, members) => {
-    if (!areChannelsEnabled()) return
-
-    if (conversation.name && !conversation.name.startsWith('Empty room')) {
-      updateChannelInfo(conversation, client)
-    }
-
-    // we only notify members who are online if presence is enabled, else every joined member
-    const memberIds = members.map((member) => member.userId)
-    const onlineOrJoinedMemberIds = getOnlineOrJoinedMembers(memberIds, client)
-
-    const channelMembers: ChannelMember[] = members
-      .filter((member) => onlineOrJoinedMemberIds.includes(member.userId))
-      .map((member) => ({
-        userId: getUserIdFromMatrix(member.userId),
-        name: member.name,
-        isOnline: true // TODO - should we avoid this when presence is disabled? - moliva - 2022/11/09
-      }))
-
-    const update: UpdateChannelMembersPayload = { channelId: conversation.id, members: channelMembers }
-    getUnityInstance().UpdateChannelMembers(update)
-  })
-
   client.onChannelMembership((conversation, membership) => {
     if (!areChannelsEnabled()) return
 
@@ -477,25 +454,6 @@ function getOnlineOrJoinedMembersCount(client: SocialAPI, conversation: Conversa
   }
 
   return getOnlineMembersCount(client, conversation.userIds)
-}
-
-function updateChannelInfo(conversation: Conversation, client: SocialAPI) {
-  const onlineMembers = getOnlineOrJoinedMembersCount(client, conversation)
-  const profile = getCurrentUserProfile(store.getState())
-  const muted = profile?.muted?.includes(conversation.id) ?? false
-
-  const channel = {
-    name: getNormalizedRoomName(conversation.name || ''),
-    channelId: conversation.id,
-    unseenMessages: muted ? 0 : conversation.unreadMessages?.length || 0,
-    lastMessageTimestamp: conversation.lastEventTimestamp || undefined,
-    memberCount: onlineMembers,
-    description: '',
-    joined: true,
-    muted
-  }
-
-  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
 }
 
 // this saga needs to throw in case of failure
