@@ -5,7 +5,7 @@ export type WebTransportOptions = {
   wasmModule: any
 }
 
-export function webTransport(options: WebTransportOptions): Transport {
+export function webTransport(options: WebTransportOptions, unityDclInstance: any) {
   const events = mitt<TransportEvents>()
   const ALLOC_SIZE = 8388608
   let heapPtr: number
@@ -17,15 +17,25 @@ export function webTransport(options: WebTransportOptions): Transport {
   }
 
   let isClosed = false
+  let didConnect = false
 
-  ;(globalThis as any).DCL.BinaryMessageFromEngine = function (data: Uint8Array) {
+  unityDclInstance.BinaryMessageFromEngine = function (data: Uint8Array) {
+    if (!didConnect) {
+      throw new Error('Received data from unity before connection was established')
+    }
     const copiedData = new Uint8Array(data)
     events.emit('message', copiedData)
   }
 
   const transport: Transport = {
     ...events,
+    get isConnected() {
+      return didConnect
+    },
     sendMessage(message) {
+      if (!didConnect) {
+        throw new Error('Tried to send a message before connection was established')
+      }
       if (!!sendMessageToRenderer && !isClosed) {
         options.wasmModule.HEAPU8.set(message, heapPtr)
         sendMessageToRenderer(heapPtr, message.length)
@@ -39,7 +49,12 @@ export function webTransport(options: WebTransportOptions): Transport {
     }
   }
 
-  queueMicrotask(() => events.emit('connect', {}))
+  events.on('connect', () => {
+    didConnect = true
+  })
+
+  // connect the transport
+  events.emit('connect', {})
 
   return transport
 }
