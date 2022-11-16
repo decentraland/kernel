@@ -75,12 +75,15 @@ function* trackEvents(action: PayloadAction<MessageEvent, ChatMessage>) {
   const isWallet = yield select(hasWallet)
   switch (type) {
     case SEND_MESSAGE: {
+      const isChannel = payload.messageType === ChatMessageType.PUBLIC && payload.recipient
+
       trackEvent('Send chat message', {
         messageId: payload.messageId,
         from: isWallet ? ChatMessagePlayerType.WALLET : ChatMessagePlayerType.GUEST,
         to: payload.messageType === ChatMessageType.PRIVATE ? ChatMessagePlayerType.WALLET : undefined,
         length: payload.body.length,
-        messageType: payload.messageType
+        messageType: payload.messageType,
+        source: isChannel ? 'channel' : undefined
       })
       break
     }
