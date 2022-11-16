@@ -481,6 +481,7 @@ export interface UnseenPrivateMessage {
 
 export interface FriendsInitializeChatPayload {
   totalUnseenMessages: number
+  channelToJoin?: string
 }
 
 export type FriendsInitializationMessage = {

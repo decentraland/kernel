@@ -16,7 +16,7 @@ import {
   GetOrCreateConversationResponse
 } from 'dcl-social-client'
 
-import { DEBUG_KERNEL_LOG } from 'config'
+import { DEBUG_KERNEL_LOG, CHANNEL_TO_JOIN_CONFIG_URL } from 'config'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import defaultLogger, { createLogger, createDummyLogger } from 'shared/logger'
@@ -177,7 +177,10 @@ function* initializeFriendsSaga() {
 
     // guests must not use the friends & private messaging features
     if (isGuest) {
-      getUnityInstance().InitializeChat({ totalUnseenMessages: 0 })
+      getUnityInstance().InitializeChat({
+        totalUnseenMessages: 0,
+        channelToJoin: CHANNEL_TO_JOIN_CONFIG_URL?.toString()
+      })
       return
     }
 
@@ -552,7 +555,8 @@ function* refreshFriends() {
       totalReceivedRequests: requestedFromIds.length
     }
     const initChatMessage: FriendsInitializeChatPayload = {
-      totalUnseenMessages
+      totalUnseenMessages: totalUnseenMessages,
+      channelToJoin: CHANNEL_TO_JOIN_CONFIG_URL?.toString()
     }
 
     defaultLogger.log('____ initMessage ____', initFriendsMessage)
