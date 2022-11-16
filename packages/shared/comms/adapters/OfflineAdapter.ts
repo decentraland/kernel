@@ -10,7 +10,7 @@ export class OfflineAdapter implements MinimumCommunicationsAdapter {
   async getVoiceHandler(): Promise<VoiceHandler> {
     return createOpusVoiceHandler()
   }
-  async disconnect(_error?: Error | undefined): Promise<void> {}
-  send(_data: Uint8Array, _hints: SendHints): void {}
+  async disconnect(error?: Error | undefined): Promise<void> {}
+  send(data: Uint8Array, hints: SendHints): void {}
   async connect(): Promise<void> {}
 }
