@@ -1,4 +1,5 @@
 import mitt from 'mitt'
+// eslint-ignore @typescript-eslint/no-unused-vars
 
 type BaseNode = {
   cyId: number
@@ -194,7 +195,7 @@ if (document.location.search.includes('AUDIO_DEBUG')) {
 
   AudioNode.prototype.disconnect = decoratePrototype(
     AudioNode.prototype.disconnect,
-    function (this: any, result: any, args: any[]) {
+    function (this: any, _result: any, _args: any[]) {
       events.emit('removeNode', {
         node: this
       })
@@ -203,7 +204,7 @@ if (document.location.search.includes('AUDIO_DEBUG')) {
 
   AudioBufferSourceNode.prototype.start = decoratePrototype(
     AudioBufferSourceNode.prototype.start,
-    function (this: any, result: any, args: any[]) {
+    function (this: any, _result: any, _args: any[]) {
       console.log('WebAudioDebugger: AudioBufferSourceNode start')
     }
   )
@@ -220,14 +221,14 @@ if (document.location.search.includes('AUDIO_DEBUG')) {
 
   PannerNode.prototype.setPosition = decoratePrototype(
     PannerNode.prototype.setPosition,
-    function (this: PannerNode, result: any, args: any[]) {
+    function (this: PannerNode, _result: any, _args: any[]) {
       events.emit('graphChanged', { ...currentGraphState })
     }
   )
 
   AudioListener.prototype.setPosition = decoratePrototype(
     AudioListener.prototype.setPosition,
-    function (this: PannerNode, result: any, args: any[]) {
+    function (this: PannerNode, _result: any, _args: any[]) {
       events.emit('graphChanged', { ...currentGraphState })
     }
   )

@@ -1,14 +1,14 @@
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
 import { CommonRendererOptions } from './loader'
 import { webSocketTransportAdapter } from '../renderer-protocol/transports/webSocketTransportAdapter'
-import { createRendererRpcClient } from '../renderer-protocol/rpcClient'
+import { Transport } from '@dcl/rpc'
 
 /** This connects the local game to a native client via WebSocket */
 export async function initializeUnityEditor(
   wsUrl: string,
   container: HTMLElement,
   options: CommonRendererOptions
-): Promise<UnityGame> {
+): Promise<{ renderer: UnityGame; transport: Transport }> {
   container.innerHTML = `<h3>Connecting...</h3>`
 
   const transport = webSocketTransportAdapter(wsUrl, options)
@@ -22,7 +22,7 @@ export async function initializeUnityEditor(
     container.innerHTML = `<h3 style='color:red'>Disconnected</h3>`
   })
 
-  const gameInstance: UnityGame = {
+  const renderer: UnityGame = {
     Module: {},
     SendMessage(_obj, type, payload) {
       transport.sendMessage({ type, payload } as any)
@@ -35,7 +35,5 @@ export async function initializeUnityEditor(
     }
   }
 
-  createRendererRpcClient(transport).catch((_e) => {})
-
-  return gameInstance
+  return { renderer, transport }
 }

@@ -46,9 +46,9 @@ export class SimulationRoom implements RoomConnection {
     this.tick = setInterval(this.update.bind(this), 60)
     this.roomConnection = new Rfc4RoomConnection({
       events: mitt<CommsAdapterEvents>(),
-      send(data: Uint8Array, hints: SendHints): void {},
+      send(_data: Uint8Array, _hints: SendHints): void {},
       async connect(): Promise<void> {},
-      async disconnect(error?: Error): Promise<void> {},
+      async disconnect(_error?: Error): Promise<void> {},
       async getVoiceHandler() {
         throw new Error('not implemented')
       }
@@ -190,11 +190,11 @@ export class SimulationRoom implements RoomConnection {
     }
   }
 
-  async disconnect(error?: Error | undefined): Promise<void> {
+  async disconnect(_error?: Error | undefined): Promise<void> {
     clearInterval(this.tick)
   }
 
-  send(data: Uint8Array, hints: SendHints): void {}
+  send(_data: Uint8Array, _hints: SendHints): void {}
 
   async connect(): Promise<void> {
     await Promise.all(new Array(100).fill(0).map(() => this.spawnPeer()))
