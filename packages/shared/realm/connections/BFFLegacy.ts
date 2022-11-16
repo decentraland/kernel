@@ -5,7 +5,7 @@ import { localCommsService } from '../local-services/comms'
 import { legacyServices } from '../local-services/legacy'
 import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
-export function localBff(baseUrl: string, about: AboutResponse, _identity: ExplorerIdentity): IRealmAdapter {
+export function localBff(baseUrl: string, about: AboutResponse, identity: ExplorerIdentity): IRealmAdapter {
   const events = mitt<RealmConnectionEvents>()
 
   const services: BffServices = {

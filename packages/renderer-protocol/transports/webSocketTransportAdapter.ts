@@ -90,9 +90,6 @@ export function webSocketTransportAdapter(url: string, options: CommonRendererOp
 
   const transport: Transport = {
     ...events,
-    get isConnected(): boolean {
-      return (socket && socket.readyState === socket.OPEN) || false
-    },
     sendMessage(message: any) {
       send(message)
     },
