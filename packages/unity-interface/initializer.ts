@@ -11,14 +11,14 @@ import { traceDecoratorRendererOptions } from './trace'
 import {
   BringDownClientAndShowError,
   ErrorContext,
-  ReportFatalErrorWithUnityPayload
+  ReportFatalErrorWithUnityPayloadAsync
 } from 'shared/loading/ReportFatalError'
-import { UNEXPECTED_ERROR } from 'shared/loading/types'
 import { store } from 'shared/store/isolatedStore'
 import defaultLogger from 'shared/logger'
+import { trackEvent } from '../shared/analytics'
 import { browserInterface } from './BrowserInterface'
 import { webTransport } from '../renderer-protocol/transports/webTransport'
-import { createRendererRpcClient } from '../renderer-protocol/rpcClient'
+import { Transport } from '@dcl/rpc'
 
 export type InitializeUnityResult = {
   container: HTMLElement
@@ -34,7 +34,8 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
     } catch (e: any) {
       // we log the whole message to gain visibility
       defaultLogger.error(e.message + ' messageFromEngine: ' + type + ' ' + jsonEncodedMessage)
-      throw e
+      trackEvent('non_json_message_from_engine', { type, payload: jsonEncodedMessage })
+      return
     }
     // this is outside of the try-catch to enable V8 path optimizations
     // keep the following line outside the `try`
@@ -42,7 +43,9 @@ const defaultOptions: CommonRendererOptions = traceDecoratorRendererOptions({
   }
 })
 
-async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityGame> {
+async function loadInjectedUnityDelegate(
+  container: HTMLElement
+): Promise<{ renderer: UnityGame; transport: Transport }> {
   // inject unity loader
   const rootArtifactsUrl = rendererOptions.baseUrl || ''
 
@@ -91,25 +94,27 @@ async function loadInjectedUnityDelegate(container: HTMLElement): Promise<UnityG
     }
 
     const error = new Error(`${message} ... file: ${filename} - lineno: ${lineno}`)
-    ReportFatalErrorWithUnityPayload(error, ErrorContext.RENDERER_ERRORHANDLER)
-    BringDownClientAndShowError(UNEXPECTED_ERROR)
+    ReportFatalErrorWithUnityPayloadAsync(error, ErrorContext.RENDERER_ERRORHANDLER)
     return true
   }
 
-  const transport = webTransport({ wasmModule: originalUnity.Module })
-  createRendererRpcClient(transport).catch((e) => {
-    console.error(e)
-    debugger
-  })
+  const transport = webTransport({ wasmModule: originalUnity.Module }, (globalThis as any).DCL)
 
   await engineStartedFuture
   await browserInterface.startedFuture
 
-  return originalUnity
+  document.body.addEventListener('click', () => {
+    browserInterface.onUserInteraction.resolve()
+  })
+  document.body.addEventListener('pointerdown', () => {
+    browserInterface.onUserInteraction.resolve()
+  })
+
+  return { renderer: originalUnity, transport }
 }
 
 /** Initialize engine using WS transport (UnityEditor) */
-async function loadWsEditorDelegate(container: HTMLElement): Promise<UnityGame> {
+async function loadWsEditorDelegate(container: HTMLElement) {
   const queryParams = new URLSearchParams(document.location.search)
 
   return initializeUnityEditor(queryParams.get('ws')!, container, defaultOptions)
@@ -125,6 +130,7 @@ export async function initializeUnity(options: KernelOptions['rendererOptions'])
   if (queryParams.has('ws')) {
     // load unity renderer using WebSocket
     store.dispatch(initializeRenderer(loadWsEditorDelegate, container))
+    browserInterface.onUserInteraction.resolve()
   } else {
     // load injected renderer
     store.dispatch(initializeRenderer(loadInjectedUnityDelegate, container))

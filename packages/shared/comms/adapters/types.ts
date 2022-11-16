@@ -1,4 +1,5 @@
 import { Emitter } from 'mitt'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 
 export interface MinimumCommunicationsAdapter {
   /**
@@ -25,6 +26,8 @@ export interface MinimumCommunicationsAdapter {
    * Event emitter (mitt) with all the events produced by the adapter.
    */
   events: Emitter<CommsAdapterEvents>
+
+  getVoiceHandler(): Promise<VoiceHandler>
 }
 
 export type CommsAdapterEvents = {

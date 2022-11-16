@@ -26,9 +26,7 @@ describe('Fetch catalyst server status', () => {
   })
 
   it('Should return catalyst status servers not included in the deny list', async () => {
-    const stub = sinon.stub(ping, 'ask')
-
-    stub.callsFake(async (domain) => {
+    const askFunction: typeof ping.ask = async (domain) => {
       if (domain.endsWith('/about')) {
         return {
           status: 0,
@@ -64,7 +62,7 @@ describe('Fetch catalyst server status', () => {
           }
         }
       }
-    })
+    }
 
     const NODES = [
       {
@@ -75,7 +73,7 @@ describe('Fetch catalyst server status', () => {
       }
     ]
 
-    const results = await fetchCatalystStatuses(NODES, ['peer-ec1.decentraland.org'])
+    const results = await fetchCatalystStatuses(NODES, ['peer-ec1.decentraland.org'], askFunction)
     expect(results.length).to.eql(1)
     console.log({ a: results[0], b: EXPECTED })
     expect(results[0]).to.eql(EXPECTED)

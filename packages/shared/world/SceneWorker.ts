@@ -8,7 +8,7 @@ import {
   WSS_ENABLED
 } from 'config'
 import { PositionReport } from './positionThings'
-import { createRpcServer, RpcServer, Transport } from '@dcl/rpc'
+import { createRpcServer, RpcClientPort, RpcServer, Transport } from '@dcl/rpc'
 import { WebWorkerTransport } from '@dcl/rpc/dist/transports/WebWorker'
 import { EventDataType } from '@dcl/protocol/out-ts/decentraland/kernel/apis/engine_api.gen'
 import { registerServices } from 'shared/apis/host'
@@ -56,8 +56,8 @@ export enum SceneWorkerReadyState {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const sceneRuntimeRaw =
   process.env.NODE_ENV === 'production'
-    ? require('raw-loader!@dcl/scene-runtime/dist/webworker.js')
-    : require('raw-loader!@dcl/scene-runtime/dist/webworker.dev.js')
+    ? require('@dcl/scene-runtime/dist/webworker.js.txt')
+    : require('@dcl/scene-runtime/dist/webworker.dev.js.txt')
 
 const sceneRuntimeBLOB = new Blob([sceneRuntimeRaw])
 const sceneRuntimeUrl = URL.createObjectURL(sceneRuntimeBLOB)
@@ -106,6 +106,7 @@ export class SceneWorker {
 
   constructor(
     public readonly loadableScene: Readonly<LoadableScene>,
+    rendererPort: RpcClientPort,
     public readonly transport: Transport = buildWebWorkerTransport(loadableScene)
   ) {
     ++globalSceneNumberCounter
@@ -124,6 +125,7 @@ export class SceneWorker {
     }
 
     this.rpcContext = {
+      rendererPort,
       sceneData: {
         isPortableExperience: false,
         useFPSThrottling: false,
@@ -243,7 +245,7 @@ export class SceneWorker {
   }
 
   // when an user leaves the scene
-  onLeave(userId: string, self: boolean) {
+  onLeave(userId: string, _self: boolean) {
     // if the scene is a portable experience, then people never leaves the scene
     if (this.rpcContext.sceneData.isPortableExperience) return
     this.rpcContext.sendSceneEvent('onLeaveScene', { userId })

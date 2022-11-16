@@ -293,7 +293,7 @@ describe('Friends sagas - Channels Feature', () => {
           .mock(getUnityInstance())
           .expects('UpdateTotalUnseenMessagesByChannel')
           .once()
-          .withExactArgs(totalUnseenMessagesByChannel)
+          .calledWithMatch(totalUnseenMessagesByChannel)
         friendsSagas.getUnseenMessagesByChannel()
         sinon.mock(getUnityInstance()).verify()
       })

@@ -23,7 +23,7 @@ import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { browserInterface } from './BrowserInterface'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const hudWorkerRaw = require('raw-loader!../../static/systems/decentraland-ui.scene.js')
+const hudWorkerRaw = require('../../static/systems/decentraland-ui.scene.js.txt')
 const hudWorkerBLOB = new Blob([hudWorkerRaw])
 export const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
 
@@ -65,6 +65,7 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
 
   if (SCENE_DEBUG_PANEL) {
     getUnityInstance().SetKernelConfiguration({ debugConfig: { sceneDebugPanelEnabled: true } })
+    getUnityInstance().ShowFPSPanel()
   }
 
   if (SHOW_FPS_COUNTER) {

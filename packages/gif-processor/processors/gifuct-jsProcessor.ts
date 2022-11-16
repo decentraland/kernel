@@ -1,3 +1,6 @@
+/// <reference types="offscreencanvas" />
+/// <reference lib="dom" />
+
 import { GifData } from '../types'
 import { parseGIF, decompressFrames, ParsedFrame } from 'gifuct-js'
 

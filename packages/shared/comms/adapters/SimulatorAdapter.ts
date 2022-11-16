@@ -18,6 +18,8 @@ import { lastPlayerPosition } from 'shared/world/positionThings'
 import { CommsEvents, RoomConnection } from '../interface'
 import { Rfc4RoomConnection } from '../logic/rfc-4-room-connection'
 import { CommsAdapterEvents, SendHints } from './types'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
+import { createOpusVoiceHandler } from './voice/opusVoiceHandler'
 
 export class SimulationRoom implements RoomConnection {
   events = mitt<CommsEvents>()
@@ -42,13 +44,19 @@ export class SimulationRoom implements RoomConnection {
   constructor(param: string) {
     this.params = new URLSearchParams(param.startsWith('?') ? param.substring(1) : param)
     this.tick = setInterval(this.update.bind(this), 60)
-    const transport = {
+    this.roomConnection = new Rfc4RoomConnection({
       events: mitt<CommsAdapterEvents>(),
-      send(data: Uint8Array, hints: SendHints): void {},
+      send(_data: Uint8Array, _hints: SendHints): void {},
       async connect(): Promise<void> {},
-      async disconnect(error?: Error): Promise<void> {}
-    }
-    this.roomConnection = new Rfc4RoomConnection(transport)
+      async disconnect(_error?: Error): Promise<void> {},
+      async getVoiceHandler() {
+        throw new Error('not implemented')
+      }
+    })
+  }
+
+  async getVoiceHandler(): Promise<VoiceHandler> {
+    return createOpusVoiceHandler()
   }
 
   async spawnPeer(): Promise<string> {
@@ -182,11 +190,11 @@ export class SimulationRoom implements RoomConnection {
     }
   }
 
-  async disconnect(error?: Error | undefined): Promise<void> {
+  async disconnect(_error?: Error | undefined): Promise<void> {
     clearInterval(this.tick)
   }
 
-  send(data: Uint8Array, hints: SendHints): void {}
+  send(_data: Uint8Array, _hints: SendHints): void {}
 
   async connect(): Promise<void> {
     await Promise.all(new Array(100).fill(0).map(() => this.spawnPeer()))

@@ -45,8 +45,7 @@ import {
   isPartialWearable
 } from './types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { CatalystClient, OwnedItemsWithDefinition } from 'dcl-catalyst-client'
-import { fetchJson } from 'dcl-catalyst-commons'
+import { CatalystClient } from 'dcl-catalyst-client/dist/CatalystClient'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
@@ -60,6 +59,7 @@ import {
   waitForRealmAdapter
 } from 'shared/realm/selectors'
 import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
+import { OwnedItemsWithDefinition } from 'dcl-catalyst-client/dist/LambdasAPI'
 
 export const BASE_AVATARS_COLLECTION_ID = 'urn:decentraland:off-chain:base-avatars'
 export const WRONG_FILTERS_ERROR = `You must set one and only one filter for V1. Also, the only collection id allowed is '${BASE_AVATARS_COLLECTION_ID}'`
@@ -285,9 +285,10 @@ async function fetchItemsByIdFromBuilder(
     uuidsItems.map(async (uuid) => {
       const path = `items/${uuid}`
       const headers = authorizeBuilderHeaders(identity, 'get', `/${path}`)
-      const itemResponse = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
+      const itemRequest = await fetch(`${BUILDER_SERVER_URL}/${path}`, {
         headers
-      })) as { data: UnpublishedWearable; ok: boolean; error?: string }
+      })
+      const itemResponse = (await itemRequest.json()) as { data: UnpublishedWearable; ok: boolean; error?: string }
 
       if (!itemResponse.ok) {
         const err = new Error('Cannot load items from Builder')
@@ -315,10 +316,10 @@ async function fetchItemsByCollectionFromBuilder(
 
     const path = `collections/${collectionUuid}/items`
     const headers = authorizeBuilderHeaders(identity, 'get', `/${path}`)
-    const collection: { data: UnpublishedWearable[] } = (await fetchJson(`${BUILDER_SERVER_URL}/${path}`, {
-      headers,
-      timeout: '5m'
-    })) as any
+    const collectionRequest = await fetch(`${BUILDER_SERVER_URL}/${path}`, {
+      headers
+    })
+    const collection = (await collectionRequest.json()) as { data: UnpublishedWearable[] }
     const items = collection.data
       .filter((item) =>
         isRequestingEmotes

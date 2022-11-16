@@ -7,11 +7,7 @@ import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, hasWallet } from 'shared/session/selectors'
 import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER } from 'config'
 import { trackEvent } from 'shared/analytics'
-import {
-  BringDownClientAndShowError,
-  ErrorContext,
-  ReportFatalErrorWithUnityPayload
-} from 'shared/loading/ReportFatalError'
+import { ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { defaultLogger } from 'shared/logger'
 import { saveProfileDelta, sendProfileToRenderer } from 'shared/profiles/actions'
 import { ProfileType } from 'shared/profiles/types'
@@ -236,6 +232,7 @@ export class BrowserInterface {
   private lastBalanceOfMana: number = -1
 
   startedFuture = future<void>()
+  onUserInteraction = future<void>()
 
   /**
    * This is the only method that should be called publically in this class.
@@ -667,7 +664,11 @@ export class BrowserInterface {
   }
 
   public JoinVoiceChat() {
-    store.dispatch(joinVoiceChat())
+    this.onUserInteraction
+      .then(() => {
+        store.dispatch(joinVoiceChat())
+      })
+      .catch(defaultLogger.error)
   }
 
   public LeaveVoiceChat() {
@@ -1028,14 +1029,16 @@ export class BrowserInterface {
     ProfileAsPromise(userIdPayload.value, undefined, ProfileType.DEPLOYED).catch(defaultLogger.error)
   }
 
-  public ReportAvatarFatalError() {
-    // TODO(Brian): Add more parameters?
-    ReportFatalErrorWithUnityPayload(new Error(AVATAR_LOADING_ERROR), ErrorContext.RENDERER_AVATARS)
-    BringDownClientAndShowError(AVATAR_LOADING_ERROR)
+  public ReportAvatarFatalError(payload: any) {
+    defaultLogger.error(payload)
+    ReportFatalErrorWithUnityPayloadAsync(
+      new Error(AVATAR_LOADING_ERROR + ' ' + JSON.stringify(payload)),
+      'renderer#avatars'
+    )
   }
 
-  public UnpublishScene(data: any) {
-    defaultLogger.warn('UnpublishScene', data)
+  public UnpublishScene(_data: any) {
+    // deprecated
   }
 
   public async NotifyStatusThroughChat(data: { value: string }) {

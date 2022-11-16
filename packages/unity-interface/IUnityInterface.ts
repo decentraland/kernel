@@ -43,6 +43,7 @@ import { Avatar, ContentMapping } from '@dcl/schemas'
 import { ILogger } from 'shared/logger'
 import { AddUserProfilesToCatalogPayload, NewProfileForRenderer } from 'shared/profiles/transformations/types'
 import { Emote } from 'shared/catalogs/types'
+import { AboutResponse } from '@dcl/protocol/out-ts/decentraland/bff/http_endpoints.gen'
 
 export type RealmInfo = {
   serverName: string
@@ -218,6 +219,7 @@ export interface IUnityInterface {
   SetENSOwnerQueryResult(searchInput: string, profiles: Avatar[] | undefined, contentServerBaseUrl: string): void
   SendHeaders(endpoint: string, headers: Record<string, string>): void
   SendMemoryUsageToRenderer(): void
+  UpdateRealmAbout(configurations: AboutResponse): void
 
   // *********************************************************************************
   // ************** Builder in world messages **************

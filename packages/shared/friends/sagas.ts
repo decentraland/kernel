@@ -390,29 +390,6 @@ function* configureMatrixClient(action: SetMatrixClient) {
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
 
-  client.onChannelMembers((conversation, members) => {
-    if (!areChannelsEnabled()) return
-
-    if (conversation.name && !conversation.name.startsWith('Empty room')) {
-      updateChannelInfo(conversation, client)
-    }
-
-    // we only notify members who are online
-    const memberIds = members.map((member) => member.userId)
-    const onlineMemberIds = getOnlineMembers(memberIds, client)
-
-    const channelMembers: ChannelMember[] = members
-      .filter((member) => onlineMemberIds.includes(member.userId))
-      .map((member) => ({
-        userId: getUserIdFromMatrix(member.userId),
-        name: member.name,
-        isOnline: true
-      }))
-
-    const update: UpdateChannelMembersPayload = { channelId: conversation.id, members: channelMembers }
-    getUnityInstance().UpdateChannelMembers(update)
-  })
-
   client.onChannelMembership((conversation, membership) => {
     if (!areChannelsEnabled()) return
 
@@ -422,7 +399,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
           break
         }
 
-        const onlineMembers = getOnlineMembersCount(client, conversation.userIds)
+        const onlineMembers = getOnlineOrJoinedMembersCount(client, conversation)
 
         const channel: ChannelInfoPayload = {
           name: getNormalizedRoomName(conversation.name),
@@ -463,23 +440,20 @@ function* configureMatrixClient(action: SetMatrixClient) {
   })
 }
 
-function updateChannelInfo(conversation: Conversation, client: SocialAPI) {
-  const onlineMembers = getOnlineMembersCount(client, conversation.userIds)
-  const profile = getCurrentUserProfile(store.getState())
-  const muted = profile?.muted?.includes(conversation.id) ?? false
+/**
+ * Returns the count of channel members where the count will be the online members when presence feature is enabled
+ * or the total number of users joined when it is not.
+ *
+ * @return `number` of the members of the channel given the above criteria
+ */
+function getOnlineOrJoinedMembersCount(client: SocialAPI, conversation: Conversation): number {
+  const presenceDisabled = getFeatureFlagEnabled(store.getState(), 'matrix_presence_disabled')
 
-  const channel = {
-    name: getNormalizedRoomName(conversation.name || ''),
-    channelId: conversation.id,
-    unseenMessages: muted ? 0 : conversation.unreadMessages?.length || 0,
-    lastMessageTimestamp: conversation.lastEventTimestamp || undefined,
-    memberCount: onlineMembers,
-    description: '',
-    joined: true,
-    muted
+  if (presenceDisabled) {
+    return conversation.userIds?.length || 0
   }
 
-  getUnityInstance().UpdateChannelInfo({ channelInfoPayload: [channel] })
+  return getOnlineMembersCount(client, conversation.userIds)
 }
 
 // this saga needs to throw in case of failure
@@ -1426,7 +1400,7 @@ function* handleLeaveChannel(action: LeaveChannel) {
   }
 }
 
-// Join or create channel
+// Join or create channel via command
 function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
@@ -1494,7 +1468,7 @@ function* handleJoinOrCreateChannel(action: JoinOrCreateChannel) {
   }
 }
 
-// Join channel
+// Join channel via UI
 export async function joinChannel(request: JoinOrCreateChannelPayload) {
   try {
     const client: SocialAPI | null = getSocialClient(store.getState())
@@ -1514,7 +1488,7 @@ export async function joinChannel(request: JoinOrCreateChannelPayload) {
   }
 }
 
-// Create channel
+// Create channel via UI
 export async function createChannel(request: CreateChannelPayload) {
   try {
     const channelId = request.channelId
@@ -1589,7 +1563,7 @@ export function getJoinedChannels(request: GetJoinedChannelsPayload) {
     channelId: conv.conversation.id,
     unseenMessages: conv.conversation.unreadMessages?.length || 0,
     lastMessageTimestamp: conv.conversation.lastEventTimestamp || undefined,
-    memberCount: getOnlineMembersCount(client, conv.conversation.userIds),
+    memberCount: getOnlineOrJoinedMembersCount(client, conv.conversation),
     description: '',
     joined: true,
     muted: profile?.muted?.includes(conv.conversation.id) ?? false
@@ -1835,7 +1809,7 @@ export function muteChannel(muteChannel: MuteChannelPayload) {
     store.dispatch(unmutePlayers([channelId]))
   }
 
-  const onlineMembers = getOnlineMembersCount(client, channel.userIds)
+  const onlineMembers = getOnlineOrJoinedMembersCount(client, channel)
 
   const channelInfo: ChannelInfoPayload = {
     name: channel.name ?? '',
@@ -1883,7 +1857,7 @@ export function getChannelInfo(request: GetChannelInfoPayload) {
 
     const muted = profile?.muted?.includes(channelId) ?? false
 
-    const onlineMembers = getOnlineMembersCount(client, channel.userIds)
+    const onlineMembers = getOnlineOrJoinedMembersCount(client, channel)
 
     channels.push({
       name: getNormalizedRoomName(channel.name || ''),
@@ -1912,35 +1886,37 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
     members: []
   }
 
-  const members = getMembers(client, channel.userIds ?? [], request.channelId)
-    .filter(({ name }) => {
-      const searchTerm = request.userName.toLocaleLowerCase()
-      const lowerCaseName = name.toLocaleLowerCase()
-      return lowerCaseName.search(searchTerm) >= 0
-    })
-    .slice(request.skip, request.skip + request.limit)
+  const allMembers = getMembers(client, channel.userIds ?? [], request.channelId).filter(({ name }) => {
+    const searchTerm = request.userName.toLocaleLowerCase()
+    const lowerCaseName = name.toLocaleLowerCase()
+    return lowerCaseName.search(searchTerm) >= 0
+  })
 
-  if (members.length === 0) {
+  if (allMembers.length === 0) {
     // it means the channel has no members
     getUnityInstance().UpdateChannelMembers(channelMembersPayload)
     return
   }
 
-  const ownId = client.getUserId()
+  // we only notify members who are online if presence is enabled, else every joined member
+  const memberIds = allMembers.map((member) => member.userId)
+  const onlineOrJoinedMemberIds = getOnlineOrJoinedMembers(memberIds, client)
+
+  // we filter the online members and apply the skip and limit pagination
+  const membersProfiles = allMembers
+    .filter((member) => onlineOrJoinedMemberIds.includes(member.userId))
+    .slice(request.skip, request.skip + request.limit)
+  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
+  const membersPayload = membersProfiles.map(
+    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
+  )
 
   // update catalog with missing users, by using default profiles with name and image url
-  sendMissingProfiles(members, ownId)
+  const ownId = client.getUserId()
+  sendMissingProfiles(membersProfiles, ownId)
 
-  // we only notify members who are online
-  const memberIds = members.map((member) => member.userId)
-  const onlineMemberIds = getOnlineMembers(memberIds, client)
-
-  const membersPayload = members
-    .filter((member) => onlineMemberIds.includes(member.userId))
-    .map((member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true }))
-
+  // send info to unity
   channelMembersPayload.members.push(...membersPayload)
-
   getUnityInstance().UpdateChannelMembers(channelMembersPayload)
 }
 
@@ -1995,6 +1971,16 @@ function isAllowedToCreate() {
   if (allowedUsers.allowList.includes(ownId)) {
     return true
   }
+}
+
+function getOnlineOrJoinedMembers(userIds: string[], client: SocialAPI): string[] {
+  const presenceDisabled = getFeatureFlagEnabled(store.getState(), 'matrix_presence_disabled')
+
+  if (presenceDisabled) {
+    return userIds
+  }
+
+  return getOnlineMembers(userIds, client)
 }
 
 /**

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2018",
+    "module": "ESNext",
+    "target": "es2020",
     "diagnostics": false,
     "inlineSourceMap": false,
     "inlineSources": false,
@@ -23,11 +23,11 @@
     "jsxFactory": "createElement",
     "baseUrl": "./packages",
     "lib": [
-      "es2018",
+      "es2020",
       "dom",
       "esnext.asynciterable"
     ],
-    "types": ["@dcl/posix", "offscreencanvas"],
+    "types": ["@dcl/posix"],
     "typeRoots": ["./node_modules"],
     "esModuleInterop": true
   },

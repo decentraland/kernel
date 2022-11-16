@@ -1,5 +1,4 @@
-import { EntityType } from 'dcl-catalyst-commons'
-import { ContentClient, DeploymentData } from 'dcl-catalyst-client'
+import { ContentClient } from 'dcl-catalyst-client/dist/ContentClient'
 import { call, put, select, takeEvery, fork, take, debounce, apply } from 'redux-saga/effects'
 import { hashV1 } from '@dcl/hashing'
 
@@ -54,7 +53,7 @@ import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading
 import { createFakeName } from './utils/fakeName'
 import { getCommsRoom } from 'shared/comms/selectors'
 import { createReceiveProfileOverCommsChannel, requestProfileToPeers } from 'shared/comms/handlers'
-import { Avatar, Profile, Snapshots } from '@dcl/schemas'
+import { Avatar, EntityType, Profile, Snapshots } from '@dcl/schemas'
 import { validateAvatar } from './schemaValidation'
 import { trackEvent } from 'shared/analytics'
 import { EventChannel } from 'redux-saga'
@@ -66,6 +65,7 @@ import {
 } from 'shared/realm/selectors'
 import { IRealmAdapter } from 'shared/realm/types'
 import { unsignedCRC32 } from 'atomicHelpers/crc32'
+import { DeploymentData } from 'dcl-catalyst-client/dist/utils/DeploymentBuilder'
 
 const concatenatedActionTypeUserId = (action: { type: string; payload: { userId: string } }) =>
   action.type + action.payload.userId
@@ -167,9 +167,12 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       userId
     )
     const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+
     if (existingProfileWithCorrectVersion) {
       // resolve the future
       yield call(future.resolve, existingProfile)
+      yield put(profileSuccess(existingProfile))
+      return
     }
   }
 
@@ -191,7 +194,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       (shouldFetchViaComms && (yield call(requestProfileToPeers, roomConnection, userId, versionNumber))) ||
       // then for my profile, try localStorage
       (shouldReadProfileFromLocalStorage && (yield call(readProfileFromLocalStorage))) ||
-      // and then via catalyst
+      // and then via catalyst before localstorage because when you change the name from the builder we need to loaded from the catalyst first.
       (shouldLoadFromCatalyst && (yield call(getRemoteProfile, userId, loadingMyOwnProfile ? 0 : versionNumber))) ||
       // last resort, localStorage
       (shouldFallbackToLocalStorage && (yield call(readProfileFromLocalStorage))) ||

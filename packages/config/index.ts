@@ -122,12 +122,13 @@ export const RESET_TUTORIAL = location.search.includes('RESET_TUTORIAL')
 
 export const ENGINE_DEBUG_PANEL = location.search.includes('ENGINE_DEBUG_PANEL')
 export const SCENE_DEBUG_PANEL = location.search.includes('SCENE_DEBUG_PANEL') && !ENGINE_DEBUG_PANEL
-export const SHOW_FPS_COUNTER = location.search.includes('SHOW_FPS_COUNTER') || DEBUG
+export const SHOW_FPS_COUNTER = location.search.includes('SHOW_FPS_COUNTER') || location.search.includes('DEBUG_MODE')
 export const HAS_INITIAL_POSITION_MARK = location.search.includes('position')
 export const WSS_ENABLED = !!ensureSingleString(qs.get('ws'))
 export const FORCE_SEND_MESSAGE = location.search.includes('FORCE_SEND_MESSAGE')
 
 export const ASSET_BUNDLES_DOMAIN = ensureSingleString(qs.get('ASSET_BUNDLES_DOMAIN'))
+export const SOCIAL_SERVER_URL = ensureSingleString(qs.get('SOCIAL_SERVER_URL'))
 
 export const QS_MAX_VISIBLE_PEERS =
   typeof qs.get('MAX_VISIBLE_PEERS') === 'string' ? parseInt(qs.get('MAX_VISIBLE_PEERS')!, 10) : undefined
@@ -218,6 +219,7 @@ function getDefaultAssetBundlesBaseUrl(network: ETHEREUM_NETWORK): string {
 
 export function getAvatarTextureAPIBaseUrl(network: ETHEREUM_NETWORK): string {
   const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  // TODO!: Change this to point to social once the rollout is complete
   return `https://synapse.decentraland.${tld}/profile-pictures/`
 }
 

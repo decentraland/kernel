@@ -2,6 +2,7 @@ import * as proto from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comm
 import { CommsEvents, RoomConnection } from '../interface'
 import mitt from 'mitt'
 import { AdapterMessageEvent, MinimumCommunicationsAdapter } from '../adapters/types'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 
 /**
  * This class implements Rfc4 on top of a ICommsTransport. The idea behind it is
@@ -21,6 +22,10 @@ export class Rfc4RoomConnection implements RoomConnection {
 
   async connect(): Promise<void> {
     await this.transport.connect()
+  }
+
+  getVoiceHandler(): Promise<VoiceHandler> {
+    return this.transport.getVoiceHandler()
   }
 
   sendPositionMessage(p: Omit<proto.Position, 'index'>): Promise<void> {

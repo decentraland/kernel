@@ -13,8 +13,7 @@ import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import { setMatrixClient } from 'shared/friends/actions'
 import * as friendsSelectors from 'shared/friends/selectors'
-import * as profilesSelectors from 'shared/profiles/selectors'
-import { ProfileUserInfo } from 'shared/profiles/types'
+import { ProfileState, ProfileUserInfo } from 'shared/profiles/types'
 import { getUnityInstance, setUnityInstance } from '../../packages/unity-interface/IUnityInterface'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { FriendRequest, FriendsState } from 'shared/friends/types'
@@ -28,11 +27,13 @@ import {
   TextMessage
 } from 'dcl-social-client'
 import { AddUserProfilesToCatalogPayload } from 'shared/profiles/transformations/types'
-import * as realmSelectors from 'shared/realm/selectors'
-import * as sceneLoaderSelectors from 'shared/scene-loader/selectors'
 import { expectSaga } from 'redux-saga-test-plan'
 import { select } from 'redux-saga/effects'
 import { getRealmConnectionString } from 'shared/realm/selectors'
+import { RootState } from 'shared/store/rootTypes'
+import { StoreEnhancer } from 'redux'
+import { reducers } from 'shared/store/rootReducer'
+import { getParcelPosition } from 'shared/scene-loader/selectors'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -104,15 +105,6 @@ const lastStatusOfFriendsEntries = [
 
 const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
 
-const friendsFromStore: FriendsState = {
-  client: null,
-  socialInfo: {},
-  friends: [],
-  fromFriendRequests: [fromFriendRequest],
-  toFriendRequests: [toFriendRequest],
-  lastStatusOfFriends: new Map()
-}
-
 const profilesFromStore = [
   getMockedAvatar('0xa1', 'john'),
   getMockedAvatar('0xa2', 'mike'),
@@ -159,30 +151,25 @@ const stubClient = {
     }
     return m
   },
+  getDomain: () => 'decentraland.org',
   setStatus: () => Promise.resolve()
 } as unknown as SocialAPI
+
+const friendsFromStore: FriendsState = {
+  client: stubClient,
+  socialInfo: {},
+  friends: friendIds,
+  fromFriendRequests: [fromFriendRequest],
+  toFriendRequests: [toFriendRequest],
+  lastStatusOfFriends: new Map()
+}
 
 const FETCH_CONTENT_SERVER = 'base-url'
 
 function mockStoreCalls(
   opts?: { profiles: number[]; i: number },
   fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>
-) {
-  sinon.stub(realmSelectors, 'ensureRealmAdapterPromise').callsFake(async () => ({} as any))
-  sinon.stub(realmSelectors, 'getFetchContentUrlPrefixFromRealmAdapter').callsFake(() => FETCH_CONTENT_SERVER)
-  sinon.stub(friendsSelectors, 'getPrivateMessagingFriends').callsFake(() => friendIds)
-  sinon.stub(sceneLoaderSelectors, 'getParcelPosition').callsFake(() => ({ x: 1, y: 2 }))
-  sinon.stub(friendsSelectors, 'getPrivateMessaging').callsFake(() => friendsFromStore)
-  sinon
-    .stub(profilesSelectors, 'getProfilesFromStore')
-    .callsFake((_, _userIds, userNameOrId) =>
-      profilesSelectors.filterProfilesByUserNameOrId(profilesFromStore.slice(0, opts?.profiles[opts.i]), userNameOrId)
-    )
-  sinon.stub(friendsSelectors, 'getSocialClient').callsFake(() => stubClient)
-  sinon
-    .stub(friendsSelectors, 'getLastStatusOfFriends')
-    .callsFake(() => fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends)
-
+): StoreEnhancer<any, RootState> {
   // here we list all the functions that should be invoked by this tests
   setUnityInstance({
     AddUserProfilesToCatalog() {},
@@ -195,6 +182,39 @@ function mockStoreCalls(
     UpdateTotalUnseenMessagesByChannel() {},
     UpdateChannelSearchResults() {}
   } as any)
+
+  const userInfo: ProfileState['userInfo'] = {}
+
+  for (const profile of profilesFromStore) {
+    userInfo[profile.data.userId.toLowerCase()] = profile
+  }
+
+  return (createStore) => (reducer, initialState: any) => {
+    // set the initial state for our selectors
+    const $: RootState = initialState || reducers(undefined, {} as any)
+    const state: RootState = {
+      ...$,
+      realm: {
+        ...$.realm,
+        realmAdapter: {
+          services: { legacy: { fetchContentServer: FETCH_CONTENT_SERVER } }
+        } as any
+      },
+      friends: {
+        ...friendsFromStore,
+        lastStatusOfFriends: fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends
+      },
+      sceneLoader: {
+        ...$.sceneLoader,
+        parcelPosition: { x: 1, y: 2 }
+      },
+      profiles: {
+        userInfo
+      }
+    }
+
+    return createStore(reducer, state as any)
+  }
 }
 
 describe('Friends sagas', () => {
@@ -202,10 +222,8 @@ describe('Friends sagas', () => {
 
   describe('get friends', () => {
     beforeEach(() => {
-      const { store } = buildStore()
+      const { store } = buildStore(mockStoreCalls())
       globalThis.globalStore = store
-
-      mockStoreCalls()
     })
 
     afterEach(() => {
@@ -234,8 +252,8 @@ describe('Friends sagas', () => {
         }
 
         sinon.stub(unityInstance, 'UpdateUserPresence').callsFake(() => {}) // friendsSagas.getFriends update user presence internally
-        unityMock.expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
-        unityMock.expects('AddFriends').once().withExactArgs(addedFriends)
+        unityMock.expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
+        unityMock.expects('AddFriends').once().calledWithMatch(addedFriends)
         await friendsSagas.getFriends(request)
         unityMock.verify()
       })
@@ -255,8 +273,8 @@ describe('Friends sagas', () => {
           friends: expectedFriends.users.map((friend) => friend.userId),
           totalFriends: profilesFromStore.length
         }
-        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
+        sinon.mock(getUnityInstance()).expects('AddFriends').once().calledWithMatch(addedFriends)
         await friendsSagas.getFriends(request2)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -277,8 +295,8 @@ describe('Friends sagas', () => {
           friends: expectedFriends.users.map((friend) => friend.userId),
           totalFriends: 4
         }
-        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriends').once().withExactArgs(addedFriends)
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
+        sinon.mock(getUnityInstance()).expects('AddFriends').once().calledWithMatch(addedFriends)
         await friendsSagas.getFriends(request2)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -292,10 +310,8 @@ describe('Friends sagas', () => {
     }
 
     beforeEach(() => {
-      const { store } = buildStore()
+      const { store } = buildStore(mockStoreCalls(opts))
       globalThis.globalStore = store
-
-      mockStoreCalls(opts)
     })
 
     afterEach(() => {
@@ -327,8 +343,8 @@ describe('Friends sagas', () => {
           ]
         }
 
-        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
+        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().calledWithMatch(addedFriendRequests)
         await friendsSagas.getFriendRequests(request)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -356,8 +372,8 @@ describe('Friends sagas', () => {
             .map((profile) => profileToRendererFormat(profile.data, { baseUrl: FETCH_CONTENT_SERVER }))
         }
 
-        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().withExactArgs(addedFriendRequests)
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
+        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().calledWithMatch(addedFriendRequests)
         await friendsSagas.getFriendRequests(request)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -367,10 +383,8 @@ describe('Friends sagas', () => {
   describe('getFriendsWithDirectMessages', () => {
     describe("when there's a client", () => {
       beforeEach(() => {
-        const { store } = buildStore()
+        const { store } = buildStore(mockStoreCalls())
         globalThis.globalStore = store
-
-        mockStoreCalls()
       })
 
       afterEach(() => {
@@ -401,11 +415,11 @@ describe('Friends sagas', () => {
         }
 
         sinon.stub(unityInstance, 'UpdateUserPresence').callsFake(() => {}) // friendsSagas.getFriendsWithDirectMessages update user presence internally
-        unityMock.expects('AddUserProfilesToCatalog').once().withExactArgs(expectedFriends)
+        unityMock.expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
         unityMock
           .expects('AddFriendsWithDirectMessages')
           .once()
-          .withExactArgs(expectedAddFriendsWithDirectMessagesPayload)
+          .calledWithMatch(expectedAddFriendsWithDirectMessagesPayload)
         await friendsSagas.getFriendsWithDirectMessages(request)
         unityMock.verify()
       })
@@ -445,7 +459,7 @@ describe('Friends sagas', () => {
           }))
         }
 
-        sinon.mock(getUnityInstance()).expects('AddChatMessages').once().withExactArgs(addChatMessagesPayload)
+        sinon.mock(getUnityInstance()).expects('AddChatMessages').once().calledWithMatch(addChatMessagesPayload)
         await friendsSagas.getPrivateMessages(request)
         sinon.mock(getUnityInstance()).verify()
       })
@@ -453,34 +467,39 @@ describe('Friends sagas', () => {
   })
 
   describe('update friends status', () => {
-    beforeEach(() => {
-      const { store } = buildStore()
-      globalThis.globalStore = store
-    })
-
     afterEach(() => {
       sinon.restore()
       sinon.reset()
     })
 
     it("should send status when it's not stored in the redux state yet", async () => {
-      mockStoreCalls(undefined, new Map()) // restore statuses
+      // restore statuses
+      const { store } = buildStore(mockStoreCalls(undefined, new Map()))
+      globalThis.globalStore = store
+
       const unityMock = sinon.mock(getUnityInstance())
-      unityMock.expects('UpdateUserPresence').once().withExactArgs({
+      unityMock.expects('UpdateUserPresence').once().calledWithMatch({
         userId: '0xa1',
         realm: lastStatusOfFriendsEntries[0][1].realm,
         position: lastStatusOfFriendsEntries[0][1].position,
         presence: PresenceStatus.ONLINE
       })
       await expectSaga(friendsSagas.initializeStatusUpdateInterval)
-        .provide([[select(getRealmConnectionString), 'realm-test']])
+        .provide([
+          [select(friendsSelectors.getPrivateMessagingFriends), friendIds],
+          [select(getParcelPosition), { x: 1, y: 5 }],
+          [select(friendsSelectors.getSocialClient), stubClient],
+          [select(getRealmConnectionString), 'realm-test']
+        ])
         .dispatch(setMatrixClient(stubClient))
         .silentRun() // due to initializeStatusUpdateInterval saga is a while(true) gen
       unityMock.verify()
     })
 
     it("should send status when it's stored but the new one is different", async () => {
-      mockStoreCalls(undefined, lastStatusOfFriends)
+      const { store } = buildStore(mockStoreCalls(undefined, lastStatusOfFriends))
+      globalThis.globalStore = store
+
       const client: SocialAPI = {
         ...stubClient,
         getUserStatuses: (...friendIds: string[]) => {
@@ -498,7 +517,7 @@ describe('Friends sagas', () => {
       unityMock
         .expects('UpdateUserPresence')
         .once()
-        .withExactArgs({
+        .calledWithMatch({
           userId: '0xa1',
           realm: lastStatusOfFriendsEntries[0][1].realm,
           position: { x: 100, y: 200 },
@@ -506,6 +525,8 @@ describe('Friends sagas', () => {
         })
       await expectSaga(friendsSagas.initializeStatusUpdateInterval)
         .provide([
+          [select(friendsSelectors.getPrivateMessagingFriends), friendIds],
+          [select(getParcelPosition), { x: 1, y: 5 }],
           [select(friendsSelectors.getSocialClient), client], // override the stubClient mocked by mockStoreCalls(). need this to tweak getUserStatuses client function
           [select(getRealmConnectionString), 'realm-test']
         ])
@@ -515,11 +536,18 @@ describe('Friends sagas', () => {
     })
 
     it("should not send status when it's equal to the last sent", async () => {
-      mockStoreCalls(undefined, lastStatusOfFriends)
+      const { store } = buildStore(mockStoreCalls(undefined, lastStatusOfFriends))
+      globalThis.globalStore = store
+
       const unityMock = sinon.mock(getUnityInstance())
       unityMock.expects('UpdateUserPresence').never()
       await expectSaga(friendsSagas.initializeStatusUpdateInterval)
-        .provide([[select(getRealmConnectionString), 'some-realm']])
+        .provide([
+          [select(friendsSelectors.getPrivateMessagingFriends), friendIds],
+          [select(getParcelPosition), { x: 1, y: 5 }],
+          [select(friendsSelectors.getSocialClient), stubClient],
+          [select(getRealmConnectionString), 'some-realm']
+        ])
         .dispatch(setMatrixClient(stubClient))
         .silentRun()
       unityMock.verify()

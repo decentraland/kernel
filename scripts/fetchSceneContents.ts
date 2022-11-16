@@ -7,10 +7,10 @@
  * The scene will be downloaded in the public/downloaded-scenes folder. This can be overriden with the OUTPUT_DIR variable
  */
 
-import fetch from 'node-fetch'
-import { CatalystClient } from 'dcl-catalyst-client'
-import { EntityType, EntityContentItemReference } from 'dcl-catalyst-commons'
+import { fetch } from 'undici'
+import { CatalystClient } from 'dcl-catalyst-client/dist/CatalystClient'
 import * as fs from 'fs'
+import { ContentMapping, EntityType } from '@dcl/schemas'
 
 const sceneId = process.env.SCENE_ID
 const parcel = process.env.PARCEL
@@ -28,26 +28,18 @@ if (!sceneId && !parcel) {
   process.exit(1)
 }
 
-function restrictLength(pending: string[]) {
-  if (pending.length > 5) {
-    return `${pending.length}`
-  } else {
-    return JSON.stringify(pending)
-  }
-}
-
 async function main() {
   const sceneData = sceneId
     ? await client.fetchEntityById(EntityType.SCENE, sceneId)
     : (await client.fetchEntitiesByPointers(EntityType.SCENE, [parcel]))[0]
 
   const pending: Record<string, Promise<any>> = {}
-  const queued: EntityContentItemReference[] = []
+  const queued: ContentMapping[] = []
   const scenePath = `${outputRoot}/${sceneData.pointers[0]}-scene-${sceneData.id}`
 
   await fs.promises.mkdir(scenePath, { recursive: true })
 
-  function download(content: EntityContentItemReference) {
+  function download(content: ContentMapping) {
     const url = `${contentServerUrl}/content/contents/${content.hash}`
     console.log(`Downloading ${content.file} from ${url}`)
     pending[content.file] = fetch(url)
@@ -59,34 +51,10 @@ async function main() {
             const folder = pathParts.join('/')
             await fs.promises.mkdir(`${scenePath}/${folder}`, { recursive: true })
           }
-          const fileStream = fs.createWriteStream(`${scenePath}/${content.file}`)
-
-          await new Promise<void>((resolve, reject) => {
-            response.body.pipe(fileStream)
-            response.body.on('error', (e) => {
-              delete pending[content.file]
-              console.log(
-                `Error downloading file ${content.file}. Pending: ${restrictLength(
-                  Object.keys(pending)
-                )}. Queued: ${restrictLength(queued.map((it) => it.file))}`,
-                e
-              )
-              reject(e)
-            })
-            fileStream.on('finish', () => {
-              delete pending[content.file]
-              console.log(
-                `Finished downloading file ${content.file}. Pending: ${restrictLength(
-                  Object.keys(pending)
-                )}  Queued: ${restrictLength(queued.map((it) => it.file))}`
-              )
-              resolve()
-            })
-          }).finally(() => {
-            if (queued.length > 0) {
-              download(queued.shift())
-            }
-          })
+          fs.writeFileSync(`${scenePath}/${content.file}`, Buffer.from(await response.arrayBuffer()))
+          if (queued.length > 0) {
+            download(queued.shift())
+          }
         } else {
           const text = await response.text()
           console.log(

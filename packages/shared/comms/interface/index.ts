@@ -2,6 +2,7 @@ import { Package } from './types'
 import * as proto from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { Emitter } from 'mitt'
 import { CommsAdapterEvents } from '../adapters/types'
+import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 
 export type CommsEvents = CommsAdapterEvents & {
   // RFC4 messages
@@ -29,4 +30,6 @@ export interface RoomConnection {
   sendParcelSceneMessage(message: proto.Scene): Promise<void>
   sendChatMessage(message: proto.Chat): Promise<void>
   sendVoiceMessage(message: proto.Voice): Promise<void>
+
+  getVoiceHandler(): Promise<VoiceHandler>
 }

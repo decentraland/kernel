@@ -1,25 +1,8 @@
-import { createRpcClient, Transport } from '@dcl/rpc'
-import future, { IFuture } from 'fp-future'
-import { registerCRDTService } from './services/crdtService'
-import { registerEmotesService } from './services/emotesService'
-import { registerRpcTransportService } from './services/transportService'
-import { RendererProtocol } from './types'
+import { createRpcClient, RpcClientPort, Transport } from '@dcl/rpc'
 
-export const rendererProtocol: IFuture<RendererProtocol> = future()
-
-export async function createRendererRpcClient(transport: Transport): Promise<RendererProtocol> {
+export async function createRendererRpcClient(transport: Transport): Promise<RpcClientPort> {
   const rpcClient = await createRpcClient(transport)
   const clientPort = await rpcClient.createPort('renderer-protocol')
 
-  registerRpcTransportService(clientPort)
-
-  const crdtService = registerCRDTService(clientPort)
-  const emotesService = registerEmotesService(clientPort)
-
-  rendererProtocol.resolve({
-    crdtService,
-    emotesService
-  })
-
-  return rendererProtocol
+  return clientPort
 }

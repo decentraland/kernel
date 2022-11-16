@@ -3,7 +3,9 @@ export default class Html {
     const audio = document.getElementById('voice-chat-audio')
     if (!audio) {
       console.error('There is no #voice-chat-audio element to use with VoiceChat. Returning a `new Audio()`')
-      return new Audio()
+      const audio = new Audio()
+      document.body.append(audio)
+      return audio
     }
     return audio as HTMLAudioElement | undefined
   }

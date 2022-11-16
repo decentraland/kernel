@@ -7,6 +7,7 @@ import { ParcelSceneLoadingState } from './types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { Transport } from '@dcl/rpc'
 import { defaultParcelPermissions } from 'shared/apis/host/Permissions'
+import { getClientPort } from 'shared/renderer/selectors'
 
 declare const globalThis: any
 
@@ -82,7 +83,10 @@ export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: 
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   if (!parcelSceneWorker) {
-    parcelSceneWorker = new SceneWorker(loadableScene, transport)
+    const rendererPort = getClientPort(store.getState())
+    if (!rendererPort) throw new Error('Cannot create a scene because there is no clientPort')
+
+    parcelSceneWorker = new SceneWorker(loadableScene, rendererPort, transport)
     setNewParcelScene(parcelSceneWorker)
     queueMicrotask(() => store.dispatch(scenesChanged()))
   }
@@ -177,6 +181,8 @@ async function loadParcelSceneByIdIfMissing(sceneId: string, entity: LoadableSce
     defaultParcelPermissions.forEach(($) => worker.rpcContext.permissionGranted.add($))
     // and enablle FPS throttling, it will lower the frame-rate based on the distance
     worker.rpcContext.sceneData.useFPSThrottling = true
+
+    setNewParcelScene(worker)
   }
 }
 
@@ -189,4 +195,7 @@ export function allScenesEvent<T extends IEventNames>(data: AllScenesEvents<T>) 
   for (const [, scene] of loadedSceneWorkers) {
     scene.rpcContext.sendSceneEvent(data.eventType, data.payload)
   }
+  TEST_OBJECT_ObservableAllScenesEvent.notifyObservers(data)
 }
+
+export const TEST_OBJECT_ObservableAllScenesEvent = new Observable<AllScenesEvents<any>>()

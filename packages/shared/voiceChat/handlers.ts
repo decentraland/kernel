@@ -7,12 +7,14 @@ import { getVoiceHandler, shouldPlayVoice } from './selectors'
 import { voiceChatLogger } from './context'
 import { trackEvent } from 'shared/analytics'
 
+// TODO: create a component to emit opus audio in a specific position that can be used
+// by the voicechat and by the SDK
 export function processVoiceFragment(message: Package<rfc4.Voice>) {
   const state = store.getState()
   const voiceHandler = getVoiceHandler(state)
   const profile = getCurrentUserProfile(state)
 
-  // use getPeed instead of setupPeer to only reproduce voice messages from
+  // use getPeer instead of setupPeer to only reproduce voice messages from
   // known avatars
   const peerTrackingInfo = getPeer(message.address)
 
@@ -21,7 +23,8 @@ export function processVoiceFragment(message: Package<rfc4.Voice>) {
     profile &&
     peerTrackingInfo &&
     peerTrackingInfo.position &&
-    shouldPlayVoice(state, profile, peerTrackingInfo.ethereumAddress)
+    shouldPlayVoice(state, profile, peerTrackingInfo.ethereumAddress) &&
+    voiceHandler.playEncodedAudio
   ) {
     voiceHandler
       .playEncodedAudio(peerTrackingInfo.ethereumAddress, peerTrackingInfo.position, message.data)
