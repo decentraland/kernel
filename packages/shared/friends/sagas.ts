@@ -185,8 +185,6 @@ function* initializeFriendsSaga() {
 
       const shouldRetry = !isLoggedIn && !isGuest
 
-      throw new Error('try new error')
-
       if (shouldRetry) {
         try {
           logger.log('[Social client] Initializing')
@@ -1334,7 +1332,7 @@ function toSocialData(socialIds: string[]) {
 function logAndTrackError(message: string, e: any) {
   const url = getSynapseUrl(store.getState())
   const variant = new URL(url).host.startsWith('synapse.') ? `Synapse` : `Social Service`
-  const msg = `Service: ${variant} - ${message}`
+  const msg = `Social: ${variant} - ${message}`
 
   logger.error(msg, e)
   trackEvent('error', {
