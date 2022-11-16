@@ -7,7 +7,6 @@ import { ParcelSceneLoadingState } from './types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { Transport } from '@dcl/rpc'
 import { defaultParcelPermissions } from 'shared/apis/host/Permissions'
-import { getClientPort } from 'shared/renderer/selectors'
 
 declare const globalThis: any
 
@@ -83,10 +82,7 @@ export function loadParcelSceneWorker(loadableScene: LoadableScene, transport?: 
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   if (!parcelSceneWorker) {
-    const rendererPort = getClientPort(store.getState())
-    if (!rendererPort) throw new Error('Cannot create a scene because there is no clientPort')
-
-    parcelSceneWorker = new SceneWorker(loadableScene, rendererPort, transport)
+    parcelSceneWorker = new SceneWorker(loadableScene, transport)
     setNewParcelScene(parcelSceneWorker)
     queueMicrotask(() => store.dispatch(scenesChanged()))
   }

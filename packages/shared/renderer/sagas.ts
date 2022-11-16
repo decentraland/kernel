@@ -2,7 +2,7 @@ import { call, put, select, take, takeEvery, takeLatest, fork } from 'redux-saga
 import { waitingForRenderer } from 'shared/loading/types'
 import { initializeEngine } from 'unity-interface/dcl'
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
-import { InitializeRenderer, registerRendererPort } from './actions'
+import { InitializeRenderer } from './actions'
 import { getParcelLoadingStarted } from './selectors'
 import { RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
@@ -53,8 +53,6 @@ import { getVoiceHandler } from 'shared/voiceChat/selectors'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { LoadingState } from 'shared/loading/reducer'
-import { RpcClientPort, Transport } from '@dcl/rpc'
-import { createRendererRpcClient } from 'renderer-protocol/rpcClient'
 
 export function* rendererSaga() {
   yield takeEvery(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -236,15 +234,11 @@ function* initializeRenderer(action: InitializeRenderer) {
 
   // start loading the renderer
   try {
-    const { renderer, transport }: { renderer: UnityGame; transport: Transport } = yield call(delegate, container)
+    const renderer: UnityGame = yield call(delegate, container)
 
     const startTime = performance.now()
 
     trackEvent('renderer_initializing_start', {})
-
-    // register the RPC port
-    const rpcClientPort: RpcClientPort = yield call(createRendererRpcClient, transport)
-    yield put(registerRendererPort(rpcClientPort))
 
     // wire the kernel to the renderer, at some point, the `initializeEngine`
     // function _MUST_ send the `signalRendererInitializedCorrectly` action
