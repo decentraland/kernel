@@ -1330,8 +1330,8 @@ function toSocialData(socialIds: string[]) {
 }
 
 function logAndTrackError(message: string, e: any) {
-  const url = getSynapseUrl(store.getState())
-  const variant = new URL(url).host.startsWith('synapse.') ? `Synapse` : `Social Service`
+  const isSynapseEnabled = getFeatureFlagEnabled(store.getState(), 'use-synapse-server')
+  const variant = isSynapseEnabled ? `Synapse` : `Social Service`
   const msg = `Social: ${variant} - ${message}`
 
   logger.error(msg, e)
