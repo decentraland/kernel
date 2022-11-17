@@ -8,15 +8,14 @@ export type PositionTrackEvents = {
 
 export type TrackEvents = PositionTrackEvents & {
   // Comms & Chat Events
-  // TODO - these are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Send chat message']: {
     messageId: string
     from: ChatMessagePlayerType
     to?: ChatMessagePlayerType
     length: number
     messageType: ChatMessageType
+    source?: string
   }
-  // TODO - the above metrics are reintroduced for control, remove asap - moliva - 2022/06/01
   ['Comms Status v2']: Record<string, any>
   ['bff_auth_already_connected']: { address: string }
 
