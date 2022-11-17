@@ -83,7 +83,7 @@
     "@dcl/rpc": "^1.0.1-20220608232056.commit-741737c",
     "@dcl/schemas": "^5.8.1",
     "@dcl/urn-resolver": "^1.4.0",
-    "@ipsme/msgenv-broadcastchannel": "^0.3.2",
+    "@ipsme/msgenv-broadcastchannel": "^0.3.4",
     "@redux-saga/simple-saga-monitor": "^1.1.2",
     "@types/redux-logger": "^3.0.9",
     "blob-to-buffer": "^1.2.8",
