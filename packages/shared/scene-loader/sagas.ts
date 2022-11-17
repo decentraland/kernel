@@ -175,6 +175,8 @@ function* rendererPositionSettler() {
   yield call(waitForRendererInstance)
 
   while (true) {
+    yield take([POSITION_SETTLED, POSITION_UNSETTLED])
+
     const isSettled: boolean = yield select(isPositionSettled)
     const spawnPointAndScene: ReturnType<typeof getPositionSpawnPointAndScene> = yield select(
       getPositionSpawnPointAndScene
@@ -186,7 +188,6 @@ function* rendererPositionSettler() {
     }
     // then update the position in the engine
     getUnityInstance().Teleport(spawnPointAndScene.spawnPoint)
-    yield take([POSITION_SETTLED, POSITION_UNSETTLED])
   }
 }
 
