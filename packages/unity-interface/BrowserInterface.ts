@@ -104,6 +104,15 @@ import {
   searchChannels
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
+import * as IPSME_MsgEnv from '@ipsme/msgenv-broadcastchannel'
+
+function ipsme_handler_(msg: any)
+{
+  // console.log('ipsme_handler_', msg);
+
+}
+
+IPSME_MsgEnv.subscribe(ipsme_handler_);
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
