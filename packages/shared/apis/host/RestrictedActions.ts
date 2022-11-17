@@ -22,6 +22,7 @@ import { assertHasPermission } from './Permissions'
 import { PermissionItem } from '@dcl/protocol/out-ts/decentraland/kernel/apis/permissions.gen'
 import { getRendererModules } from 'shared/renderer/selectors'
 import { store } from 'shared/store/isolatedStore'
+import defaultLogger from 'shared/logger'
 
 export function movePlayerTo(req: MovePlayerToRequest, ctx: PortContext): MovePlayerToResponse {
   //   checks permissions
@@ -75,7 +76,9 @@ export function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Trigge
   }
 
   getUnityInstance().TriggerSelfUserExpression(req.predefinedEmote)
-  void getRendererModules(store.getState())?.emotes?.triggerSelfUserExpression({ id: req.predefinedEmote })
+  getRendererModules(store.getState())
+    ?.emotes?.triggerSelfUserExpression({ id: req.predefinedEmote })
+    .catch(defaultLogger.error)
 
   return {}
 }

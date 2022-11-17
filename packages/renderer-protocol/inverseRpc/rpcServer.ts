@@ -13,6 +13,10 @@ export function createRendererProtocolInverseRpcServer(transport: Transport) {
   server.attachTransport(transport, context)
 }
 
+/*
+ * This function is called when the TransportService works.
+ * And it should register all the kernel services (Renderer->Kernel)
+ */
 async function registerKernelServices(serverPort: RpcServerPort<RendererProtocolContext>) {
   registerEmotesKernelService(serverPort)
 }

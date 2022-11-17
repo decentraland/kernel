@@ -9,6 +9,9 @@ import { createRendererProtocolInverseRpcServer } from '../inverseRpc/rpcServer'
 import { AsyncQueue } from '@well-known-components/pushable-channel'
 import defaultLogger from 'shared/logger'
 
+/*
+ * Create Transport thought the Rpc using the TransportService
+ */
 function createRpcTransport<Context>(
   transportService: codegen.RpcClientModule<TransportServiceDefinition, Context>
 ): Transport {
@@ -49,6 +52,10 @@ function createRpcTransport<Context>(
   return api
 }
 
+/*
+ * This functions creates a inverse transport using the `TransportService`
+ * which is used for the Kernel Services
+ */
 export function registerRpcTransportService<Context>(clientPort: RpcClientPort) {
   try {
     const transportService = codegen.loadService<Context, TransportServiceDefinition>(
