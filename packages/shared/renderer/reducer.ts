@@ -1,9 +1,11 @@
 import { AnyAction } from 'redux'
+import { RegisterRendererPort, REGISTER_RPC_PORT } from './actions'
 import { PARCEL_LOADING_STARTED, RendererState, RENDERER_INITIALIZED_CORRECTLY } from './types'
 
 const INITIAL_STATE: RendererState = {
   initialized: false,
-  parcelLoadingStarted: false
+  parcelLoadingStarted: false,
+  clientPort: undefined
 }
 
 export function rendererReducer(state?: RendererState, action?: AnyAction): RendererState {
@@ -18,6 +20,11 @@ export function rendererReducer(state?: RendererState, action?: AnyAction): Rend
       return {
         ...state,
         initialized: true
+      }
+    case REGISTER_RPC_PORT:
+      return {
+        ...state,
+        clientPort: (action as RegisterRendererPort).payload.clientPort
       }
     case PARCEL_LOADING_STARTED:
       return {
