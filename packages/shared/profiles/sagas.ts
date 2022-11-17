@@ -166,7 +166,7 @@ export function* handleFetchProfile(action: ProfileRequestAction): any {
       getProfileStatusAndData,
       userId
     )
-    const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile)
+    const existingProfileWithCorrectVersion = existingProfile && isExpectedVersion(existingProfile, version)
 
     if (existingProfileWithCorrectVersion) {
       // resolve the future
