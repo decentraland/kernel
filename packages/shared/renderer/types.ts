@@ -4,7 +4,7 @@ export const RENDERER_INITIALIZED_CORRECTLY = '[RENDERER] Renderer initialized c
 export const PARCEL_LOADING_STARTED = '[RENDERER] Parcel loading started'
 export const RENDERER_INITIALIZE = '[RENDERER] Initializing'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { EmotesRendererServiceDefinition } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/emotes.gen'
+import { EmotesRendererServiceDefinition } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/emotes_renderer.gen'
 
 export type RendererState = {
   initialized: boolean
