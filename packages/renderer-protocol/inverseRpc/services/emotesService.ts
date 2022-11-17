@@ -1,9 +1,12 @@
 import { RpcServerPort } from '@dcl/rpc'
 import { RendererProtocolContext } from '../context'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import { EmotesKernelServiceDefinition, EmotesResponse } from '@dcl/protocol/out-ts/decentraland/renderer/emotes.gen'
-import { allScenesEvent } from 'shared/world/parcelSceneManager'
-import { sendPublicChatMessage } from 'shared/comms'
+import {
+  EmotesKernelServiceDefinition,
+  EmotesResponse
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/emotes.gen'
+import { allScenesEvent } from '../../../shared/world/parcelSceneManager'
+import { sendPublicChatMessage } from '../../../shared/comms'
 
 export function registerEmotesKernelService(port: RpcServerPort<RendererProtocolContext>) {
   codegen.registerService(port, EmotesKernelServiceDefinition, async () => ({

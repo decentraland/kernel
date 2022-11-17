@@ -1,11 +1,12 @@
 import { AnyAction } from 'redux'
-import { RegisterRendererPort, REGISTER_RPC_PORT } from './actions'
+import { RegisterRendererModules, RegisterRendererPort, REGISTER_RPC_MODULES, REGISTER_RPC_PORT } from './actions'
 import { PARCEL_LOADING_STARTED, RendererState, RENDERER_INITIALIZED_CORRECTLY } from './types'
 
 const INITIAL_STATE: RendererState = {
   initialized: false,
   parcelLoadingStarted: false,
-  clientPort: undefined
+  clientPort: undefined,
+  modules: undefined
 }
 
 export function rendererReducer(state?: RendererState, action?: AnyAction): RendererState {
@@ -30,6 +31,11 @@ export function rendererReducer(state?: RendererState, action?: AnyAction): Rend
       return {
         ...state,
         parcelLoadingStarted: true
+      }
+    case REGISTER_RPC_MODULES:
+      return {
+        ...state,
+        modules: (action as RegisterRendererModules).payload.modules
       }
     default:
       return state
