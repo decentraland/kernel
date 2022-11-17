@@ -75,7 +75,7 @@ export function triggerEmote(req: TriggerEmoteRequest, ctx: PortContext): Trigge
   }
 
   getUnityInstance().TriggerSelfUserExpression(req.predefinedEmote)
-  void getRendererModules(store.getState())?.emotes.triggerSelfUserExpression({ id: req.predefinedEmote })
+  void getRendererModules(store.getState())?.emotes?.triggerSelfUserExpression({ id: req.predefinedEmote })
 
   return {}
 }

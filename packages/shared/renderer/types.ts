@@ -14,7 +14,7 @@ export type RendererState = {
 }
 
 export type RendererModules = {
-  emotes: codegen.RpcClientModule<EmotesRendererServiceDefinition, any>
+  emotes: codegen.RpcClientModule<EmotesRendererServiceDefinition, any> | undefined
 }
 
 export type RootRendererState = {

@@ -332,7 +332,7 @@ function initChatCommands() {
       sendPublicChatMessage(`␐${expression} ${time}`)
 
       getUnityInstance().TriggerSelfUserExpression(expression)
-      void getRendererModules(store.getState())?.emotes.triggerSelfUserExpression({ id: expression })
+      void getRendererModules(store.getState())?.emotes?.triggerSelfUserExpression({ id: expression })
 
       return {
         messageId: uuid(),

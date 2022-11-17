@@ -65,6 +65,7 @@ export function* rendererSaga() {
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
+  yield takeEvery(REGISTER_RPC_PORT, handleRegisterRpcPort)
 
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
@@ -73,8 +74,6 @@ export function* rendererSaga() {
 
   yield fork(reportRealmChangeToRenderer)
   yield fork(updateChangeVoiceChatHandlerProcess)
-
-  yield takeEvery(REGISTER_RPC_PORT, handleRegisterRpcPort)
 }
 
 /**
@@ -87,13 +86,13 @@ function* handleRegisterRpcPort() {
     return
   }
 
-  registerRpcTransportService(port)
+  if (registerRpcTransportService(port)) {
+    const modules: RendererModules = {
+      emotes: registerEmotesService(port)
+    }
 
-  const modules: RendererModules = {
-    emotes: registerEmotesService(port)
+    yield put(registerRendererModules(modules))
   }
-
-  yield put(registerRendererModules(modules))
 }
 
 /**

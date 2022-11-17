@@ -7,6 +7,7 @@ import {
 } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/transport.gen'
 import { createRendererProtocolInverseRpcServer } from '../inverseRpc/rpcServer'
 import { AsyncQueue } from '@well-known-components/pushable-channel'
+import defaultLogger from 'shared/logger'
 
 function createRpcTransport<Context>(
   transportService: codegen.RpcClientModule<TransportServiceDefinition, Context>
@@ -49,11 +50,16 @@ function createRpcTransport<Context>(
 }
 
 export function registerRpcTransportService<Context>(clientPort: RpcClientPort) {
-  const transportService = codegen.loadService<Context, TransportServiceDefinition>(
-    clientPort,
-    TransportServiceDefinition
-  )
+  try {
+    const transportService = codegen.loadService<Context, TransportServiceDefinition>(
+      clientPort,
+      TransportServiceDefinition
+    )
 
-  const rpcTransport: Transport = createRpcTransport(transportService)
-  createRendererProtocolInverseRpcServer(rpcTransport)
+    const rpcTransport: Transport = createRpcTransport(transportService)
+    createRendererProtocolInverseRpcServer(rpcTransport)
+  } catch (e) {
+    defaultLogger.error('Rpc Transport Service could not be loaded')
+    return undefined
+  }
 }
