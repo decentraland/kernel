@@ -56,7 +56,7 @@ function createRpcTransport<Context>(
  * This functions creates a inverse transport using the `TransportService`
  * which is used for the Kernel Services
  */
-export function registerRpcTransportService<Context>(clientPort: RpcClientPort) {
+export function createRpcTransportService<Context>(clientPort: RpcClientPort) {
   try {
     const transportService = codegen.loadService<Context, TransportServiceDefinition>(
       clientPort,
@@ -65,8 +65,9 @@ export function registerRpcTransportService<Context>(clientPort: RpcClientPort) 
 
     const rpcTransport: Transport = createRpcTransport(transportService)
     createRendererProtocolInverseRpcServer(rpcTransport)
+    return true
   } catch (e) {
     defaultLogger.error('Rpc Transport Service could not be loaded')
-    return undefined
+    return false
   }
 }

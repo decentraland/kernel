@@ -56,7 +56,7 @@ import { LoadingState } from 'shared/loading/reducer'
 import { RpcClientPort, Transport } from '@dcl/rpc'
 import { createRendererRpcClient } from 'renderer-protocol/rpcClient'
 import { registerEmotesService } from 'renderer-protocol/services/emotesService'
-import { registerRpcTransportService } from 'renderer-protocol/services/transportService'
+import { createRpcTransportService } from 'renderer-protocol/services/transportService'
 
 export function* rendererSaga() {
   yield takeEvery(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -86,7 +86,7 @@ function* handleRegisterRpcPort() {
     return
   }
 
-  if (registerRpcTransportService(port)) {
+  if (createRpcTransportService(port)) {
     const modules: RendererModules = {
       emotes: registerEmotesService(port)
     }
