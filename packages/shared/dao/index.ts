@@ -239,6 +239,7 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   return
 }
 
+// TODO: unify this function with the one implementing the realm selection algorithm
 export async function changeToMostPopulatedRealm(): Promise<void> {
   const realmAdapter = getRealmAdapter(store.getState())
   const allCandidates: Candidate[] = getAllCatalystCandidates(store.getState())
