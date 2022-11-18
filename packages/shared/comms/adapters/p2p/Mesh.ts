@@ -84,6 +84,11 @@ export class Mesh {
         case 'closed':
         case 'disconnected':
           this.initiatedConnections.delete(peerId)
+          // NOTE: I think this is not really needed, but during our stress test using wertc,
+          // the dc.close was not always been called, so this is a workaround
+          if (!this.isConnectedTo(peerId)) {
+            this.onConnectionClosed(peerId)
+          }
           break
         default:
           break
@@ -330,6 +335,11 @@ export class Mesh {
         case 'closed':
         case 'disconnected':
           this.receivedConnections.delete(peerId)
+          // NOTE: I think this is not really needed, but during our stress test using wertc,
+          // the dc.close was not always been called, so this is a workaround
+          if (!this.isConnectedTo(peerId)) {
+            this.onConnectionClosed(peerId)
+          }
           break
         default:
           break
