@@ -33,13 +33,15 @@ export function webTransport(options: WebTransportOptions, unityDclInstance: any
       return didConnect
     },
     sendMessage(message) {
-      if (!didConnect) {
-        throw new Error('Tried to send a message before connection was established')
-      }
-      if (!!sendMessageToRenderer && !isClosed) {
-        options.wasmModule.HEAPU8.set(message, heapPtr)
-        sendMessageToRenderer(heapPtr, message.length)
-      }
+      queueMicrotask(() => {
+        if (!didConnect) {
+          throw new Error('Tried to send a message before connection was established')
+        }
+        if (!!sendMessageToRenderer && !isClosed) {
+          options.wasmModule.HEAPU8.set(message, heapPtr)
+          sendMessageToRenderer(heapPtr, message.length)
+        }
+      })
     },
     close() {
       if (!isClosed) {
