@@ -33,6 +33,7 @@ import { getUsedComponentVersions } from 'shared/rolloutVersions'
 import { SocialAPI } from 'dcl-social-client'
 import { joinOrCreateChannel, leaveChannel, sendChannelMessage } from 'shared/friends/actions'
 import { areChannelsEnabled } from 'shared/friends/utils'
+import { getRendererModules } from 'shared/renderer/selectors'
 
 interface IChatCommand {
   name: string
@@ -331,6 +332,9 @@ function initChatCommands() {
       sendPublicChatMessage(`␐${expression} ${time}`)
 
       getUnityInstance().TriggerSelfUserExpression(expression)
+      getRendererModules(store.getState())
+        ?.emotes?.triggerSelfUserExpression({ id: expression })
+        .catch(defaultLogger.error)
 
       return {
         messageId: uuid(),

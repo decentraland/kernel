@@ -353,6 +353,7 @@ export class BrowserInterface {
     trackEvent(data.name as UnityEvent, { context: properties.context || 'unity-event', ...properties })
   }
 
+  /** @deprecated */
   public TriggerExpression(data: { id: string; timestamp: number }) {
     allScenesEvent({
       eventType: 'playerExpression',

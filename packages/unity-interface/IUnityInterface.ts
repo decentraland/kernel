@@ -154,7 +154,10 @@ export interface IUnityInterface {
   ShowNotification(notification: Notification): void
   ConfigureHUDElement(hudElementId: HUDElementID, configuration: HUDConfiguration, extraPayload?: any): void
   ShowWelcomeNotification(): void
+
+  /** @deprecated */
   TriggerSelfUserExpression(expressionId: string): void
+
   UpdateMinimapSceneInformation(info: MinimapSceneInfo[]): void
   SetTutorialEnabled(tutorialConfig: TutorialInitializationMessage): void
   SetTutorialEnabledForUsersThatAlreadyDidTheTutorial(tutorialConfig: TutorialInitializationMessage): void
