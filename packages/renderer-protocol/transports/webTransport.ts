@@ -33,10 +33,13 @@ export function webTransport(options: WebTransportOptions, unityDclInstance: any
       return didConnect
     },
     sendMessage(message) {
+      if (!didConnect) {
+        throw new Error('Tried to send a message before connection was established')
+      }
+      if (isClosed) {
+        throw new Error('Trying to send a message to a closed binary transport')
+      }
       queueMicrotask(() => {
-        if (!didConnect) {
-          throw new Error('Tried to send a message before connection was established')
-        }
         if (!!sendMessageToRenderer && !isClosed) {
           options.wasmModule.HEAPU8.set(message, heapPtr)
           sendMessageToRenderer(heapPtr, message.length)
