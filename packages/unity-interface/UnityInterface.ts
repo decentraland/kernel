@@ -701,6 +701,8 @@ export class UnityInterface implements IUnityInterface {
   // original function after message is sent. If an exception is thrown during SendMessage we assume that it's related
   // to the code executed by the SendMessage on unity's side.
   public SendMessageToUnity(object: string, method: string, payload: any = undefined) {
+    console.log(`[VV] KernelSend: object = ${object} --AND-- method = ${method} --AND-- payload = ${payload}`)
+
     // "this.Module" is not present when using remote websocket renderer, so we just send the message to unity without doing any override.
     if (!this.Module) {
       this.gameInstance.SendMessage(object, method, payload)
