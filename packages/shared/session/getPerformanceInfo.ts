@@ -11,6 +11,11 @@ let receivedCommsMessagesCounter = 0
 let sentCommsMessagesCounter = 0
 let kernelToRendererMessageNativeCounter = 0
 let lastReport = 0
+let commsProtocol = ''
+
+export function overrideCommsProtocol(newProtocol: string) {
+  commsProtocol = newProtocol
+}
 
 export function measurePingTime(ping: number) {
   pingResponseTimes.push(ping)
@@ -210,7 +215,10 @@ export function getPerformanceInfo(data: {
     pingResponsePercentages: pingResponsePercentages.slice(),
 
     // misc metric counters
-    metrics: getAndClearOccurenceCounters()
+    metrics: getAndClearOccurenceCounters(),
+
+    // Comms protocol
+    commsProtocol: commsProtocol
   }
 
   pingResponseTimes.length = 0
