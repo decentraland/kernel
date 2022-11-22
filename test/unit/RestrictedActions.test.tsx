@@ -16,7 +16,7 @@ describe('RestrictedActions tests', () => {
   beforeEach(() => {
     sinon.reset()
     sinon.restore()
-    setUnityInstance({ Teleport: () => { }, TriggerSelfUserExpression: () => { } } as any)
+    setUnityInstance({ Teleport: () => {}, TriggerSelfUserExpression: () => {} } as any)
     buildStore()
   })
 
@@ -123,6 +123,7 @@ describe('RestrictedActions tests', () => {
     return {
       sceneData,
       logger: defaultLogger,
+      rendererPort: null as any,
       permissionGranted: new Set(permissions),
       subscribedEvents: new Set(),
       events: [],

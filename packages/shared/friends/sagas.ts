@@ -1337,11 +1337,14 @@ function toSocialData(socialIds: string[]) {
 }
 
 function logAndTrackError(message: string, e: any) {
-  logger.error(message, e)
+  const isSynapseEnabled = getFeatureFlagEnabled(store.getState(), 'use-synapse-server')
+  const variant = isSynapseEnabled ? `Synapse` : `Social Service`
+  const msg = `${variant} - ${message}`
 
+  logger.error(msg, e)
   trackEvent('error', {
     context: 'kernel#saga',
-    message: message,
+    message: msg,
     stack: '' + e
   })
 }

@@ -2,9 +2,9 @@ import { call, put, select, take, takeEvery, takeLatest, fork } from 'redux-saga
 import { waitingForRenderer } from 'shared/loading/types'
 import { initializeEngine } from 'unity-interface/dcl'
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
-import { InitializeRenderer } from './actions'
-import { getParcelLoadingStarted } from './selectors'
-import { RENDERER_INITIALIZE } from './types'
+import { InitializeRenderer, registerRendererModules, registerRendererPort, REGISTER_RPC_PORT } from './actions'
+import { getClientPort, getParcelLoadingStarted } from './selectors'
+import { RendererModules, RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
 import {
   SendProfileToRenderer,
@@ -53,6 +53,10 @@ import { getVoiceHandler } from 'shared/voiceChat/selectors'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { LoadingState } from 'shared/loading/reducer'
+import { RpcClientPort, Transport } from '@dcl/rpc'
+import { createRendererRpcClient } from 'renderer-protocol/rpcClient'
+import { registerEmotesService } from 'renderer-protocol/services/emotesService'
+import { createRpcTransportService } from 'renderer-protocol/services/transportService'
 
 export function* rendererSaga() {
   yield takeEvery(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -61,6 +65,7 @@ export function* rendererSaga() {
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
+  yield takeEvery(REGISTER_RPC_PORT, handleRegisterRpcPort)
 
   const action: InitializeRenderer = yield take(RENDERER_INITIALIZE)
   yield call(initializeRenderer, action)
@@ -69,6 +74,25 @@ export function* rendererSaga() {
 
   yield fork(reportRealmChangeToRenderer)
   yield fork(updateChangeVoiceChatHandlerProcess)
+}
+
+/**
+ * On every new port we register the services for it and starts the inverse RPC
+ */
+function* handleRegisterRpcPort() {
+  const port: RpcClientPort | undefined = yield select(getClientPort)
+
+  if (!port) {
+    return
+  }
+
+  if (createRpcTransportService(port)) {
+    const modules: RendererModules = {
+      emotes: registerEmotesService(port)
+    }
+
+    yield put(registerRendererModules(modules))
+  }
 }
 
 /**
@@ -234,11 +258,15 @@ function* initializeRenderer(action: InitializeRenderer) {
 
   // start loading the renderer
   try {
-    const renderer: UnityGame = yield call(delegate, container)
+    const { renderer, transport }: { renderer: UnityGame; transport: Transport } = yield call(delegate, container)
 
     const startTime = performance.now()
 
     trackEvent('renderer_initializing_start', {})
+
+    // register the RPC port
+    const rpcClientPort: RpcClientPort = yield call(createRendererRpcClient, transport)
+    yield put(registerRendererPort(rpcClientPort))
 
     // wire the kernel to the renderer, at some point, the `initializeEngine`
     // function _MUST_ send the `signalRendererInitializedCorrectly` action
