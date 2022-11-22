@@ -314,6 +314,7 @@ export class BrowserInterface {
     globalObservable.emit('openUrl', data)
   }
 
+  /** @deprecated */
   public PerformanceReport(data: Record<string, unknown>) {
     let estimatedAllocatedMemory = 0
     let estimatedTotalMemory = 0
@@ -325,7 +326,7 @@ export class BrowserInterface {
     trackEvent('performance report', perfReport)
   }
 
-  // TODO: remove useBinaryTransform after SDK7 is fully in prod
+  /** @deprecated TODO: remove useBinaryTransform after SDK7 is fully in prod */
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 
@@ -342,6 +343,7 @@ export class BrowserInterface {
     // stub. there is no code about this in unity side yet
   }
 
+  /** @deprecated */
   public Track(data: { name: string; properties: { key: string; value: string }[] | null }) {
     const properties: Record<string, string> = {}
     if (data.properties) {
@@ -574,6 +576,7 @@ export class BrowserInterface {
     // It's disabled because of security reasons.
   }
 
+  /** @deprecated */
   public SetDelightedSurveyEnabled(data: { enabled: boolean }) {
     setDelightedSurveyEnabled(data.enabled)
   }
