@@ -207,6 +207,7 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
 
     let adapter: RoomConnection | undefined = undefined
 
+    // TODO: move this to a saga
     overrideCommsProtocol(protocol)
     switch (protocol) {
       case 'offline': {
