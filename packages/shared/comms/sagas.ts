@@ -49,7 +49,12 @@ import { positionReportToCommsPositionRfc4 } from './interface/utils'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 import { incrementCounter } from 'shared/occurences'
 import { RoomConnection } from './interface'
-import { debugCommsGraph, measurePingTime, measurePingTimePercentages } from 'shared/session/getPerformanceInfo'
+import {
+  debugCommsGraph,
+  measurePingTime,
+  measurePingTimePercentages,
+  overrideCommsProtocol
+} from 'shared/session/getPerformanceInfo'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { NotificationType } from 'shared/types'
 import { trackEvent } from 'shared/analytics'
@@ -202,6 +207,8 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
 
     let adapter: RoomConnection | undefined = undefined
 
+    // TODO: move this to a saga
+    overrideCommsProtocol(protocol)
     switch (protocol) {
       case 'offline': {
         adapter = new Rfc4RoomConnection(new OfflineAdapter())
