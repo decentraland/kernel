@@ -103,12 +103,18 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
         },
         async crdtSendToRenderer(req, ctx) {
           // TODO: merge sendCrdt and pullCrdt calls into one
+          //  if req.data.length == 0: the send can be ignored
+          //  when there is only one method, the `if` should be
+          //  implemented in the renderer-side (to check if there is data)
+          //  and here should always call the rpc
 
-          await crdtService.sendCrdt({
-            sceneId: ctx.sceneData.id,
-            payload: req.data,
-            sceneNumber: ctx.sceneData.sceneNumber
-          })
+          if (req.data.length) {
+            await crdtService.sendCrdt({
+              sceneId: ctx.sceneData.id,
+              payload: req.data,
+              sceneNumber: ctx.sceneData.sceneNumber
+            })
+          }
 
           const response = await crdtService.pullCrdt({
             sceneId: ctx.sceneData.id,
