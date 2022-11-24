@@ -179,7 +179,7 @@ function* initializeFriendsSaga() {
     if (isGuest) {
       getUnityInstance().InitializeChat({
         totalUnseenMessages: 0,
-        channelToJoin: CHANNEL_TO_JOIN_CONFIG_URL?.toString()
+        channelToJoin: undefined
       })
       return
     }
