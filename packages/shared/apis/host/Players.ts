@@ -35,7 +35,7 @@ export function sdkCompatibilityAvatar(avatar: AvatarInfo): AvatarForUserData {
     } as any,
     eyeColor: rgbToHex(avatar.eyes.color),
     hairColor: rgbToHex(avatar.hair.color),
-    skinColor: rgbToHex(avatar.hair.color)
+    skinColor: rgbToHex(avatar.skin.color)
   }
 }
 
