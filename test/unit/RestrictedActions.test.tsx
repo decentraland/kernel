@@ -121,11 +121,13 @@ describe('RestrictedActions tests', () => {
   function getContextWithPermissions(...permissions: PermissionItem[]): PortContext {
     const sceneData = buildSceneData(permissions)
     return {
+      ecs7: false,
       sceneData,
       logger: defaultLogger,
       rendererPort: null as any,
       permissionGranted: new Set(permissions),
       subscribedEvents: new Set(),
+      __hack_sentInitialEventToUnity: false,
       events: [],
       sendProtoSceneEvent() {
         throw new Error('not implemented')
@@ -158,6 +160,7 @@ describe('RestrictedActions tests', () => {
     }
 
     return {
+      
       id: 'test',
       isPortableExperience: false,
       useFPSThrottling: false,
