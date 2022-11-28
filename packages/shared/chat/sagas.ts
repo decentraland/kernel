@@ -209,13 +209,21 @@ function initChatCommands() {
 
     if (isValidPosition) {
       const { x, y } = coordinates
-      response = TeleportController.goTo(x, y).message
+      TeleportController.goTo(x, y).then(
+        ({ message }) => notifyStatusThroughChat(message),
+        () => {
+          // Do nothing. This is handled inside controller
+        }
+      )
     } else {
       if (message.trim().toLowerCase() === 'random') {
-        response = TeleportController.goToRandom().message
+        TeleportController.goToRandom().then(
+          ({ message }) => notifyStatusThroughChat(message),
+          () => {
+            // Do nothing. This is handled inside controller
+          }
+        )
       } else if (message.trim().toLowerCase() === 'magic' || message.trim().toLowerCase() === 'crowd') {
-        response = `Teleporting to a crowd of people in current realm...`
-
         TeleportController.goToCrowd().then(
           ({ message }) => notifyStatusThroughChat(message),
           () => {
@@ -223,8 +231,6 @@ function initChatCommands() {
           }
         )
       } else if (message.trim().toLowerCase() === 'home') {
-        response = `Teleporting to home`
-
         TeleportController.goToHome().then(
           ({ message }) => notifyStatusThroughChat(message),
           () => {
@@ -251,6 +257,24 @@ function initChatCommands() {
 
     changeRealm(realmString).catch((e) => {
       notifyStatusThroughChat('changerealm: Could not join realm.')
+      defaultLogger.error(e)
+    })
+
+    return {
+      messageId: uuid(),
+      messageType: ChatMessageType.SYSTEM,
+      sender: 'Decentraland',
+      timestamp: Date.now(),
+      body: response
+    }
+  })
+
+  addChatCommand('world', 'Goes to a world', (message) => {
+    const worldString = `${message.trim()}.dcl.eth`
+    const response = ''
+
+    changeRealm(worldString).catch((e) => {
+      notifyStatusThroughChat('World does not exist.')
       defaultLogger.error(e)
     })
 
