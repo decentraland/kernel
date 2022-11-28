@@ -30,8 +30,6 @@ empty-parcels:
 build-essentials: $(COMPILED_SUPPORT_JS_FILES) empty-parcels
 	echo 'declare module "env" {}' > node_modules/env.d.ts
 	echo 'declare module "dcl" {}' > node_modules/dcl.d.ts
-	cp node_modules/@dcl/scene-runtime/dist/webworker.js node_modules/@dcl/scene-runtime/dist/webworker.js.txt
-	cp node_modules/@dcl/scene-runtime/dist/webworker.dev.js node_modules/@dcl/scene-runtime/dist/webworker.dev.js.txt
 	ESSENTIALS_ONLY=true node ./build.js
 	BUNDLES_ONLY=true node ./build.js
 
