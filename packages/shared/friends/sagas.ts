@@ -175,7 +175,7 @@ function* initializeFriendsSaga() {
 
     const isGuest = yield select(getIsGuestLogin)
 
-    // guests must not use the friends & private messaging features
+    // guests must not use the friends & private messaging features.
     if (isGuest) {
       getUnityInstance().InitializeChat({
         totalUnseenMessages: 0,
