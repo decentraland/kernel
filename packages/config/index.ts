@@ -161,6 +161,8 @@ export const FORCE_RENDERING_STYLE = ensureSingleString(qs.get('FORCE_RENDERING_
 
 const META_CONFIG_URL = ensureSingleString(qs.get('META_CONFIG_URL'))
 
+export const CHANNEL_TO_JOIN_CONFIG_URL = ensureSingleString(qs.get('CHANNEL'))
+
 export namespace commConfigurations {
   export const debug = true
   export const commRadius = 4
