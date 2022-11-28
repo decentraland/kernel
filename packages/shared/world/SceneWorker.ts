@@ -53,19 +53,22 @@ export enum SceneWorkerReadyState {
   DISPOSED = 1 << 9
 }
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const sdk6RuntimeRaw =
   process.env.NODE_ENV === 'production'
-    ? require('@dcl/scene-runtime/dist/sdk6-webworker.js').default
-    : require('@dcl/scene-runtime/dist/sdk6-webworker.dev.js').default
+    ? // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('@dcl/scene-runtime/dist/sdk6-webworker.js').default
+    : // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('@dcl/scene-runtime/dist/sdk6-webworker.dev.js').default
 
 const sdk6RuntimeBLOB = new Blob([sdk6RuntimeRaw])
 const sdk6RuntimeUrl = URL.createObjectURL(sdk6RuntimeBLOB)
 
 const sdk7RuntimeRaw =
   process.env.NODE_ENV === 'production'
-    ? require('@dcl/scene-runtime/dist/sdk7-webworker.js').default
-    : require('@dcl/scene-runtime/dist/sdk7-webworker.dev.js').default
+    ? // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('@dcl/scene-runtime/dist/sdk7-webworker.js').default
+    : // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('@dcl/scene-runtime/dist/sdk7-webworker.dev.js').default
 
 const sdk7RuntimeBLOB = new Blob([sdk7RuntimeRaw])
 const sdk7RuntimeUrl = URL.createObjectURL(sdk7RuntimeBLOB)
@@ -144,7 +147,7 @@ export class SceneWorker {
         isPortableExperience: false,
         useFPSThrottling: false,
         ...loadableScene,
-        sceneNumber,
+        sceneNumber
       },
       logger: this.logger,
       permissionGranted: new Set(),
