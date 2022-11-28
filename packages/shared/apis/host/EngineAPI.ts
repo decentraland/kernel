@@ -102,6 +102,7 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
           return {}
         },
         async crdtSendToRenderer(req, ctx) {
+          if (!ctx.ecs7) throw new Error('Cannot use SDK7 APIs on SDK6 scene')
           // TODO: merge sendCrdt and pullCrdt calls into one
           //  if req.data.length == 0: the send can be ignored
           //  when there is only one method, the `if` should be
@@ -114,6 +115,12 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
               payload: req.data,
               sceneNumber: ctx.sceneData.sceneNumber
             })
+          }
+
+          if (!ctx.__hack_sentInitialEventToUnity) {
+            // https://github.com/decentraland/sdk/issues/474
+            ctx.sendBatch([{ type: 'InitMessagesFinished', payload: '' }])
+            ctx.__hack_sentInitialEventToUnity = true
           }
 
           const response = await crdtService.pullCrdt({
