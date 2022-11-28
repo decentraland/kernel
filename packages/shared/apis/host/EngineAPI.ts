@@ -12,6 +12,7 @@ import {
 import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
 import { registerCRDTService } from 'renderer-protocol/services/crdtService'
+import { RpcServerModule } from '@dcl/rpc/dist/codegen'
 
 function getPayload(payloadType: EAType, payload: Payload): any {
   switch (payloadType) {
@@ -59,62 +60,86 @@ function getPayload(payloadType: EAType, payload: Payload): any {
 }
 
 export function registerEngineApiServiceServerImplementation(port: RpcServerPort<PortContext>) {
-  codegen.registerService(port, EngineApiServiceDefinition, async (port, ctx) => {
-    const crdtService = registerCRDTService(ctx.rendererPort)
+  codegen.registerService(
+    port,
+    EngineApiServiceDefinition,
+    async (port, ctx): Promise<RpcServerModule<EngineApiServiceDefinition, PortContext>> => {
+      const crdtService = registerCRDTService(ctx.rendererPort)
+      return {
+        async sendBatch(req: ManyEntityAction, ctx) {
+          const actions: EntityAction[] = []
 
-    return {
-      async sendBatch(req: ManyEntityAction, ctx) {
-        const actions: EntityAction[] = []
+          for (const action of req.actions) {
+            const actionType = eaTypeToStr(action.type)
+            if (actionType && action.payload) {
+              actions.push({
+                type: actionType,
+                tag: action.tag,
+                payload: getPayload(action.type, action.payload as any)
+              })
+            }
+          }
 
-        for (const action of req.actions) {
-          const actionType = eaTypeToStr(action.type)
-          if (actionType && action.payload) {
-            actions.push({
-              type: actionType,
-              tag: action.tag,
-              payload: getPayload(action.type, action.payload as any)
+          if (actions.length) {
+            ctx.sendBatch(actions)
+          }
+
+          const events: EventData[] = ctx.events
+
+          if (events.length) {
+            ctx.events = []
+          }
+
+          return { events }
+        },
+
+        async subscribe(req, ctx) {
+          ctx.subscribedEvents.add(req.eventId)
+          return {}
+        },
+        async unsubscribe(req, ctx) {
+          ctx.subscribedEvents.delete(req.eventId)
+          return {}
+        },
+        async crdtSendToRenderer(req, ctx) {
+          // TODO: merge sendCrdt and pullCrdt calls into one
+          //  if req.data.length == 0: the send can be ignored
+          //  when there is only one method, the `if` should be
+          //  implemented in the renderer-side (to check if there is data)
+          //  and here should always call the rpc
+
+          if (req.data.length) {
+            await crdtService.sendCrdt({
+              sceneId: ctx.sceneData.id,
+              payload: req.data,
+              sceneNumber: ctx.sceneData.sceneNumber
             })
           }
+
+          const response = await crdtService.pullCrdt({
+            sceneId: ctx.sceneData.id,
+            sceneNumber: ctx.sceneData.sceneNumber
+          })
+
+          return { data: [response.payload] }
+        },
+
+        // @deprecated
+        async crdtGetMessageFromRenderer(_, ctx) {
+          const response = await crdtService.pullCrdt({
+            sceneId: ctx.sceneData.id,
+            sceneNumber: ctx.sceneData.sceneNumber
+          })
+          return { data: [response.payload] }
+        },
+
+        // TODO: implement
+        async crdtGetState() {
+          return { data: [] }
         }
-
-        if (actions.length) {
-          ctx.sendBatch(actions)
-        }
-
-        const events: EventData[] = ctx.events
-
-        if (events.length) {
-          ctx.events = []
-        }
-
-        return { events }
-      },
-
-      async subscribe(req, ctx) {
-        ctx.subscribedEvents.add(req.eventId)
-        return {}
-      },
-      async unsubscribe(req, ctx) {
-        ctx.subscribedEvents.delete(req.eventId)
-        return {}
-      },
-      async crdtSendToRenderer(req, ctx) {
-        return crdtService.sendCrdt({
-          sceneId: ctx.sceneData.id,
-          payload: req.data,
-          sceneNumber: ctx.sceneData.sceneNumber
-        })
-      },
-
-      async crdtGetMessageFromRenderer(_, ctx) {
-        const response = await crdtService.pullCrdt({
-          sceneId: ctx.sceneData.id,
-          sceneNumber: ctx.sceneData.sceneNumber
-        })
-        return { data: [response.payload] }
       }
     }
-  })
+  )
 }
 function eaTypeToStr(type: EAType): EntityActionType | null {
   switch (type) {
