@@ -54,13 +54,21 @@ export enum SceneWorkerReadyState {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const sceneRuntimeRaw =
+const sdk6RuntimeRaw =
   process.env.NODE_ENV === 'production'
-    ? require('@dcl/scene-runtime/dist/webworker.js.txt')
-    : require('@dcl/scene-runtime/dist/webworker.dev.js.txt')
+    ? require('@dcl/scene-runtime/dist/sdk6-webworker.js').default
+    : require('@dcl/scene-runtime/dist/sdk6-webworker.dev.js').default
 
-const sceneRuntimeBLOB = new Blob([sceneRuntimeRaw])
-const sceneRuntimeUrl = URL.createObjectURL(sceneRuntimeBLOB)
+const sdk6RuntimeBLOB = new Blob([sdk6RuntimeRaw])
+const sdk6RuntimeUrl = URL.createObjectURL(sdk6RuntimeBLOB)
+
+const sdk7RuntimeRaw =
+  process.env.NODE_ENV === 'production'
+    ? require('@dcl/scene-runtime/dist/sdk7-webworker.js').default
+    : require('@dcl/scene-runtime/dist/sdk7-webworker.dev.js').default
+
+const sdk7RuntimeBLOB = new Blob([sdk7RuntimeRaw])
+const sdk7RuntimeUrl = URL.createObjectURL(sdk7RuntimeBLOB)
 
 export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready' | 'failed'
 export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
@@ -71,8 +79,12 @@ export const sceneEvents =
 function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
   const loggerName = getSceneNameFromJsonData(loadableScene.entity.metadata) || loadableScene.id
 
-  const worker = new Worker(sceneRuntimeUrl, {
-    name: `Scene(${loggerName},${(loadableScene.entity.metadata as Scene).scene?.base})`
+  const IS_SDK7 = !!loadableScene.entity.metadata.ecs7
+
+  const workerName = IS_SDK7 ? 'SDK7' : 'LegacyScene'
+
+  const worker = new Worker(IS_SDK7 ? sdk7RuntimeUrl : sdk6RuntimeUrl, {
+    name: `${workerName}(${loggerName},${(loadableScene.entity.metadata as Scene).scene?.base})`
   })
 
   worker.addEventListener('error', (err) => {
@@ -125,12 +137,14 @@ export class SceneWorker {
     }
 
     this.rpcContext = {
+      ecs7: (this.metadata as any).ecs7 === true,
+      __hack_sentInitialEventToUnity: false,
       rendererPort,
       sceneData: {
         isPortableExperience: false,
         useFPSThrottling: false,
         ...loadableScene,
-        sceneNumber
+        sceneNumber,
       },
       logger: this.logger,
       permissionGranted: new Set(),

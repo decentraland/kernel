@@ -1,11 +1,27 @@
 #!/usr/bin/env node
 const { build, cliopts } = require('estrella')
+const { readFileSync } = require('fs')
 const path = require('path')
 
 const builtIns = {
   crypto: require.resolve('crypto-browserify'),
   stream: require.resolve('stream-browserify'),
   buffer: require.resolve('./node_modules/buffer/index.js')
+}
+
+const workerLoader = () => {
+  return {
+    name: 'worker-loader',
+    setup(plugin) {
+      plugin.onResolve({ filter: /(.+)-webworker(?:\.dev)?\.js$/ }, (args) => {
+        return { path: args.path, namespace: 'workerUrl' }
+      })
+      plugin.onLoad({ filter: /(.+)-webworker(?:\.dev)?\.js$/, namespace: 'workerUrl' }, async (args) => {
+        const dest = require.resolve(args.path)
+        return { contents: `export default ${JSON.stringify(readFileSync(dest).toString())};` }
+      })
+    }
+  }
 }
 
 const nodeBuiltIns = () => {
@@ -31,7 +47,7 @@ const commonOptions = {
   sourceRoot: path.resolve('./packages'),
   sourcesContent: !!cliopts.watch,
   treeShaking: true,
-  plugins: [nodeBuiltIns()]
+  plugins: [nodeBuiltIns(), workerLoader()]
 }
 
 function createWorker(entry, outfile) {
