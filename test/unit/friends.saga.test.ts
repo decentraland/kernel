@@ -179,6 +179,7 @@ function mockStoreCalls(
     UpdateUserPresence() {},
     AddFriendsWithDirectMessages() {},
     AddFriendRequests() {},
+    AddFriendRequestsDeprecate() {},
     AddChatMessages() {},
     UpdateChannelInfo() {},
     UpdateTotalUnseenMessagesByChannel() {},
@@ -325,6 +326,7 @@ describe('Friends sagas', () => {
     describe("When there're sent and received friend requests", () => {
       it('Should call unity with the declared parameters', async () => {
         const request: GetFriendRequestsPayload = {
+          messageId: '',
           sentLimit: 10,
           sentSkip: 0,
           receivedLimit: 10,
@@ -346,8 +348,8 @@ describe('Friends sagas', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().calledWithMatch(addedFriendRequests)
-        await friendsSagas.getFriendRequests(request)
+        sinon.mock(getUnityInstance()).expects('AddFriendRequestsDeprecate').once().calledWithMatch(addedFriendRequests)
+        await friendsSagas.getFriendRequestsDeprecate(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
@@ -355,6 +357,7 @@ describe('Friends sagas', () => {
     describe("When there're friend requests, but there's also a skip", () => {
       it('Should filter the requests to skip the expected amount', async () => {
         const request: GetFriendRequestsPayload = {
+          messageId: '',
           sentLimit: 10,
           sentSkip: 5,
           receivedLimit: 10,
@@ -375,8 +378,8 @@ describe('Friends sagas', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().calledWithMatch(addedFriendRequests)
-        await friendsSagas.getFriendRequests(request)
+        sinon.mock(getUnityInstance()).expects('AddFriendRequestsDeprecate').once().calledWithMatch(addedFriendRequests)
+        await friendsSagas.getFriendRequestsDeprecate(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })

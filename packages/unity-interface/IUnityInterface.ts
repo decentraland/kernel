@@ -38,7 +38,8 @@ import {
   SetAudioDevicesPayload,
   RequestFriendshipConfirmationPayload,
   RequestFriendshipErrorPayload,
-  FriendRequestPayload
+  FriendRequestPayload,
+  AddFriendRequestsPayloadDeprecate
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -178,6 +179,8 @@ export interface IUnityInterface {
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
   AddFriends(addFriendsPayload: AddFriendsPayload): void
+  // TODO! @Deprecated
+  AddFriendRequestsDeprecate(addFriendRequestsPayload: AddFriendRequestsPayloadDeprecate): void
   AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
   UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
   UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void

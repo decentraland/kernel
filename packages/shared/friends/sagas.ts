@@ -59,7 +59,8 @@ import {
   ChannelMember,
   RequestFriendshipPayload,
   FriendshipErrorCode,
-  FriendRequestPayload
+  FriendRequestPayload,
+  AddFriendRequestsPayloadDeprecate
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import {
@@ -690,7 +691,8 @@ export async function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
-export async function getFriendRequests(request: GetFriendRequestsPayload) {
+// TODO! @Deprecated
+export async function getFriendRequestsDeprecate(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
   const realmAdapter = await ensureRealmAdapterPromise()
   const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
@@ -701,7 +703,7 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   )
   const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
 
-  const addFriendRequestsPayload: AddFriendRequestsPayload = {
+  const addFriendRequestsPayload: AddFriendRequestsPayloadDeprecate = {
     requestedTo: toFriendRequests.map((friend) => friend.userId),
     requestedFrom: fromFriendRequests.map((friend) => friend.userId),
     totalReceivedFriendRequests: friends.fromFriendRequests.length,
@@ -722,7 +724,61 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
 
   // send friend requests
+  getUnityInstance().AddFriendRequestsDeprecate(addFriendRequestsPayload)
+}
+
+// New friend request flow
+export async function getFriendRequests(request: GetFriendRequestsPayload) {
+  const friends: FriendsState = getPrivateMessaging(store.getState())
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+
+  const fromFriendRequests = friends.fromFriendRequests.slice(
+    request.receivedSkip,
+    request.receivedSkip + request.receivedLimit
+  )
+  const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
+
+  const fromIds = fromFriendRequests.map((friend) => friend.userId)
+  const toIds = toFriendRequests.map((friend) => friend.userId)
+
+  const addFriendRequestsPayload: AddFriendRequestsPayload = {
+    messageId: request.messageId,
+    requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend)),
+    requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend)),
+    totalReceivedFriendRequests: friends.fromFriendRequests.length,
+    totalSentFriendRequests: friends.toFriendRequests.length
+  }
+
+  // get friend requests profiles
+  const friendsIds = toIds.concat(fromIds)
+  const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
+  const profilesForRenderer = friendRequestsProfiles.map((friend) =>
+    profileToRendererFormat(friend.data, {
+      baseUrl: fetchContentServerWithPrefix
+    })
+  )
+
+  // send friend requests profiles
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
+
+  // send friend requests
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
+}
+
+/**
+ * Map FriendRequest to FriendRequestPayload
+ * @param friend a FriendRequest type we want to map to FriendRequestPayload
+ * */
+function getFriendRequestInfo(friend: FriendRequest) {
+  return {
+    friendRequestId: friend.friendRequestId,
+    timestamp: friend.createdAt,
+    from: friend.friendRequestId.split('_')[0],
+    to: friend.friendRequestId.split('_')[1],
+    messageBody: friend.message
+  }
 }
 
 export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {

@@ -495,6 +495,7 @@ export interface GetFriendsPayload {
 }
 
 export interface GetFriendRequestsPayload {
+  messageId: string
   sentLimit: number // max amount of entries of sent friend requests to request
   sentSkip: number // the amount of entries of sent friend requests to skip
   receivedLimit: number // max amount of entries of received friend requests to request
@@ -552,9 +553,18 @@ export interface AddFriendsPayload {
   totalFriends: number // total amount of friends
 }
 
-export interface AddFriendRequestsPayload {
+// @TODO! - Deprecated
+export interface AddFriendRequestsPayloadDeprecate {
   requestedTo: string[] // user ids which you sent a request
   requestedFrom: string[] // user ids which you received a request
+  totalReceivedFriendRequests: number // total amount of friend requests received
+  totalSentFriendRequests: number // total amount of friend requests sent
+}
+
+export interface AddFriendRequestsPayload {
+  messageId: string
+  requestedTo: FriendRequestPayload[] // user ids which you sent a request
+  requestedFrom: FriendRequestPayload[] // user ids which you received a request
   totalReceivedFriendRequests: number // total amount of friend requests received
   totalSentFriendRequests: number // total amount of friend requests sent
 }

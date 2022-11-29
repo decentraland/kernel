@@ -36,7 +36,8 @@ import {
   SetAudioDevicesPayload,
   RequestFriendshipConfirmationPayload,
   RequestFriendshipErrorPayload,
-  FriendRequestPayload
+  FriendRequestPayload,
+  AddFriendRequestsPayloadDeprecate
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -376,6 +377,11 @@ export class UnityInterface implements IUnityInterface {
 
   public AddFriends(addFriendsPayload: AddFriendsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
+  }
+
+  // TODO! @Deprecated
+  public AddFriendRequestsDeprecate(addFriendRequestsPayload: AddFriendRequestsPayloadDeprecate): void {
+    this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
 
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {

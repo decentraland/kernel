@@ -100,9 +100,10 @@ import {
   searchChannels,
   joinChannel,
   getChannelMembers,
-  requestFriendship
+  requestFriendship,
+  getFriendRequestsDeprecate
 } from 'shared/friends/sagas'
-import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
+import { areChannelsEnabled, getMatrixIdFromUser, isNewFriendRequestEnabled } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
@@ -490,7 +491,12 @@ export class BrowserInterface {
   }
 
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
+    if (isNewFriendRequestEnabled()) {
+      getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
+    } else {
+      // TODO! @Deprecated
+      getFriendRequestsDeprecate(getFriendRequestsPayload).catch(defaultLogger.error)
+    }
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
