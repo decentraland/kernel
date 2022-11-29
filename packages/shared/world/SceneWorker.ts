@@ -79,14 +79,12 @@ export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCyc
 export const sceneEvents =
   mitt<{ [SCENE_LOAD]: SceneLoad; [SCENE_START]: SceneStart; [SCENE_FAIL]: SceneFail; [SCENE_UNLOAD]: SceneUnload }>()
 
-function buildWebWorkerTransport(loadableScene: LoadableScene): Transport {
+function buildWebWorkerTransport(loadableScene: LoadableScene, sdk7: boolean): Transport {
   const loggerName = getSceneNameFromJsonData(loadableScene.entity.metadata) || loadableScene.id
 
-  const IS_SDK7 = !!loadableScene.entity.metadata.ecs7
+  const workerName = sdk7 ? 'SDK7' : 'LegacyScene'
 
-  const workerName = IS_SDK7 ? 'SDK7' : 'LegacyScene'
-
-  const worker = new Worker(IS_SDK7 ? sdk7RuntimeUrl : sdk6RuntimeUrl, {
+  const worker = new Worker(sdk7 ? sdk7RuntimeUrl : sdk6RuntimeUrl, {
     name: `${workerName}(${loggerName},${(loadableScene.entity.metadata as Scene).scene?.base})`
   })
 
@@ -115,6 +113,7 @@ export class SceneWorker {
   private readonly lastSentPosition = new Vector3(0, 0, 0)
   private readonly lastSentRotation = new Quaternion(0, 0, 0, 1)
   private readonly startLoadingTime = performance.now()
+  public readonly transport: Transport
 
   metadata: Scene
   logger: ILogger
@@ -122,7 +121,7 @@ export class SceneWorker {
   constructor(
     public readonly loadableScene: Readonly<LoadableScene>,
     rendererPort: RpcClientPort,
-    public readonly transport: Transport = buildWebWorkerTransport(loadableScene)
+    _transport?: Transport
   ) {
     ++globalSceneNumberCounter
     const sceneNumber = globalSceneNumberCounter
@@ -139,8 +138,12 @@ export class SceneWorker {
       defaultLogger.error('Invalid scene metadata', loadableScene.entity.metadata, Scene.validate.errors)
     }
 
+    const IS_SDK7 = !!loadableScene.entity.metadata.ecs7 || !!loadableScene.entity.metadata.sdk7
+
+    this.transport = _transport || buildWebWorkerTransport(this.loadableScene, IS_SDK7)
+
     this.rpcContext = {
-      ecs7: (this.metadata as any).ecs7 === true,
+      sdk7: IS_SDK7,
       __hack_sentInitialEventToUnity: false,
       rendererPort,
       sceneData: {
@@ -285,7 +288,8 @@ export class SceneWorker {
         // ---------------------------------------------------------------------
         name: getSceneNameFromJsonData(this.loadableScene.entity.metadata),
         icon: this.metadata.menuBarIcon || '',
-        isPortableExperience: showAsPortableExperience
+        isPortableExperience: showAsPortableExperience,
+        sdk7: this.rpcContext.sdk7
       })
     } else {
       getUnityInstance().LoadParcelScenes([sceneWorkerToLoadableParcelScene(this)])
@@ -461,6 +465,7 @@ function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelSc
     baseUrl: worker.loadableScene.baseUrl,
     baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
     contents: mappings,
-    loadableScene: worker.loadableScene
+    loadableScene: worker.loadableScene,
+    sdk7: worker.rpcContext.sdk7
   }
 }
