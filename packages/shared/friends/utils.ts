@@ -70,3 +70,10 @@ export function getMaxChannels(store: RootMetaState): number {
 export function getUsersAllowedToCreate(store: RootMetaState): UsersAllowed | undefined {
   return getFeatureFlagVariantValue(store, 'users_allowed_to_create_channels') as UsersAllowed | undefined
 }
+
+/*
+ * Returns true if the new friends requests flow is enabled
+ */
+export function isNewFriendRequestEnabled(): boolean {
+  return getFeatureFlagEnabled(store.getState(), 'new_friend_request_flow_enabled')
+}

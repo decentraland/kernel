@@ -6,8 +6,10 @@ export type SocialData = {
 }
 
 export interface FriendRequest {
+  friendRequestId: string
   userId: string
   createdAt: number
+  message?: string
 }
 
 export type FriendsState = {

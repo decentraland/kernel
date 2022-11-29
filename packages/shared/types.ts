@@ -689,11 +689,20 @@ export type AvatarRendererRemovedMessage = {
 export type AvatarRendererMessage = AvatarRendererRemovedMessage | AvatarRendererPositionMessage
 
 export enum ChannelErrorCode {
-  UNKNOWN = 0, // / Any uncategorized channel related error
+  UNKNOWN = 0, // Any uncategorized channel related error
   LIMIT_EXCEEDED = 1, // Reached the max amount of joined channels allowed per user
   WRONG_FORMAT = 2, // Does not meet the name rules
   RESERVED_NAME = 3, // Such as nearby
   ALREADY_EXISTS = 4 // The name has already been used
+}
+
+export enum FriendshipErrorCode {
+  TOO_MANY_REQUESTS_SENT = 0, // Any uncategorized friend request related error
+  NOT_ENOUGH_TIME_PASSED = 1,
+  BLOCKED_USER = 2,
+  NON_EXISTING_USER = 3,
+  INVALID_REQUEST = 4,
+  UNKNOWN = 5
 }
 
 export type JoinOrCreateChannelPayload = CreateChannelPayload
@@ -791,3 +800,29 @@ export type UsersAllowed = {
   mode: number
   allowList: string[]
 }
+
+export type FriendRequestPayload = {
+  friendRequestId: string
+  timestamp: number
+  from: string
+  to: string
+  messageBody?: string | undefined
+}
+
+export type RequestFriendshipPayload = {
+  messageId: string // an unique id to handle the renderer <-> kernel communication
+  userId: string
+  messageBody: string
+}
+
+export type RequestFriendshipConfirmationPayload = {
+  messageId: string // an unique id to handle the renderer <-> kernel communication
+  friendRequest: FriendRequestPayload
+}
+
+export type FriendshipErrorPayload = {
+  messageId: string // an unique id to handle the renderer <-> kernel communication
+  errorCode: number
+}
+
+export type RequestFriendshipErrorPayload = FriendshipErrorPayload

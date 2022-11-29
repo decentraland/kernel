@@ -16,7 +16,7 @@ import {
   GetOrCreateConversationResponse
 } from 'dcl-social-client'
 
-import { DEBUG_KERNEL_LOG, CHANNEL_TO_JOIN_CONFIG_URL } from 'config'
+import { DEBUG_KERNEL_LOG, ethereumConfigurations, CHANNEL_TO_JOIN_CONFIG_URL } from 'config'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import defaultLogger, { createLogger, createDummyLogger } from 'shared/logger'
@@ -56,10 +56,19 @@ import {
   GetChannelsPayload,
   ChannelSearchResultsPayload,
   JoinOrCreateChannelPayload,
-  ChannelMember
+  ChannelMember,
+  RequestFriendshipPayload,
+  FriendshipErrorCode,
+  FriendRequestPayload
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
+import {
+  findProfileByName,
+  getCurrentUserProfile,
+  getProfile,
+  getProfilesFromStore,
+  isAddedToCatalog
+} from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -117,7 +126,8 @@ import {
   areChannelsEnabled,
   getMaxChannels,
   getNormalizedRoomName,
-  getUsersAllowedToCreate
+  getUsersAllowedToCreate,
+  isNewFriendRequestEnabled
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -126,6 +136,9 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { isAddress } from 'eth-connect'
+import { getSelectedNetwork } from 'shared/dao/selectors'
+import { fetchENSOwner } from 'shared/web3'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -212,7 +225,11 @@ function* initializeFriendsSaga() {
   } while (shouldRetryReconnection)
 }
 
-async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, socialId: string) {
+async function handleIncomingFriendshipUpdateStatus(
+  action: FriendshipAction,
+  socialId: string,
+  messageBody?: string | undefined
+) {
   logger.info(`handleIncomingFriendshipUpdateStatus`, action, socialId)
 
   // map social id to user id
@@ -229,7 +246,7 @@ async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, so
   await ensureFriendProfile(userId)
 
   // add to friendRequests & update renderer
-  store.dispatch(updateFriendship(action, userId, true))
+  store.dispatch(updateFriendship(action, userId, true, null, messageBody))
 }
 
 function* configureMatrixClient(action: SetMatrixClient) {
@@ -368,8 +385,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
     }
   })
 
-  client.onFriendshipRequest((socialId) =>
-    handleIncomingFriendshipUpdateStatus(FriendshipAction.REQUESTED_FROM, socialId).catch((error) => {
+  client.onFriendshipRequest((socialId, messageBody) =>
+    handleIncomingFriendshipUpdateStatus(FriendshipAction.REQUESTED_FROM, socialId, messageBody).catch((error) => {
       const message = 'Failed while processing friendship request'
       defaultLogger.error(message, error)
 
@@ -537,14 +554,18 @@ function* refreshFriends() {
 
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
+        friendRequestId: `${getUserIdFromMatrix(request.from)}_${getUserIdFromMatrix(ownId)}`, // 'otherUserId_ownId',
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrix(request.from)
+        userId: getUserIdFromMatrix(request.from),
+        message: request.message
       })
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
+        friendRequestId: `${getUserIdFromMatrix(ownId)}_${getUserIdFromMatrix(request.to)}`, // 'ownId_otherUserId',
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrix(request.to)
+        userId: getUserIdFromMatrix(request.to),
+        message: request.message
       })
     )
 
@@ -961,7 +982,6 @@ export function* initializeStatusUpdateInterval() {
  *
  * @param socialId a string with the aforementioned pattern
  */
-
 function parseUserId(socialId: string) {
   if (EthAddress.validate(socialId) as any) return socialId
   const result = socialId.match(/@(\w+):.*/)
@@ -1046,7 +1066,7 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
 }
 
 function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
-  const { action, userId } = payload
+  const { action, messageId, userId, messageBody } = payload
 
   const client: SocialAPI | undefined = yield select(getSocialClient)
 
@@ -1074,8 +1094,20 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
+    // Get ff value
+    const newFriendRequestFlow = isNewFriendRequestEnabled()
+
+    let friendRequestId = '' // {from}_{to}
+    const ownId = client.getUserId()
+
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
+
+    if (incoming) {
+      friendRequestId = `${getUserIdFromMatrix(userId)}_${getUserIdFromMatrix(ownId)}` // 'otherUserId_ownId'
+    } else {
+      friendRequestId = `${getUserIdFromMatrix(ownId)}_${getUserIdFromMatrix(userId)}` // 'ownId_otherUserId'
+    }
 
     const friendRequestTypeSelector = hasSentFriendshipRequest ? 'toFriendRequests' : 'fromFriendRequests'
     const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = hasSentFriendshipRequest
@@ -1155,13 +1187,25 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId }]
+            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
           }
         }
 
         updateTotalFriendRequestsPayload = {
           ...updateTotalFriendRequestsPayload,
           totalReceivedRequests: updateTotalFriendRequestsPayload.totalReceivedRequests + 1
+        }
+
+        // We only send this message in the new flow
+        if (newFriendRequestFlow) {
+          const fromFriendRequest: FriendRequestPayload = {
+            friendRequestId,
+            timestamp: Date.now(),
+            from: getUserIdFromMatrix(userId),
+            to: getUserIdFromMatrix(ownId),
+            messageBody
+          }
+          getUnityInstance().AddFriendRequest(fromFriendRequest)
         }
 
         break
@@ -1172,13 +1216,29 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId }]
+            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
           }
         }
 
         updateTotalFriendRequestsPayload = {
           ...updateTotalFriendRequestsPayload,
           totalSentRequests: updateTotalFriendRequestsPayload.totalSentRequests + 1
+        }
+
+        // We only send this message in the new flow
+        if (newFriendRequestFlow && messageId) {
+          const toFriendRequest: FriendRequestPayload = {
+            friendRequestId,
+            timestamp: Date.now(),
+            from: getUserIdFromMatrix(userId),
+            to: getUserIdFromMatrix(ownId),
+            messageBody
+          }
+
+          getUnityInstance().RequestFriendshipConfirmation({
+            messageId, // an unique id to handle the renderer <-> kernel communication
+            friendRequest: toFriendRequest
+          })
         }
 
         break
@@ -1200,9 +1260,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
 
     getUnityInstance().UpdateTotalFriendRequests(updateTotalFriendRequestsPayload)
-    getUnityInstance().UpdateTotalFriends({
-      totalFriends
-    })
+    getUnityInstance().UpdateTotalFriends({ totalFriends })
 
     if (newState) {
       yield put(updatePrivateMessagingState(newState))
@@ -1213,7 +1271,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
 
-      getUnityInstance().UpdateFriendshipStatus(payload)
+      if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
+        getUnityInstance().UpdateFriendshipStatus(payload)
+      }
     }
 
     if (!incoming) {
@@ -1311,7 +1371,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
         break
       }
       case FriendshipAction.REQUESTED_TO: {
-        yield client.addAsFriend(socialId)
+        yield client.addAsFriend(socialId, update.messageBody)
         break
       }
       case FriendshipAction.DELETED: {
@@ -1743,6 +1803,7 @@ function notifyJoinChannelError(channelId: string, errorCode: number) {
 /**
  * Send leave channel related error message to unity
  * @param channelId
+ * @param errorCode
  */
 function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode) {
   const leaveChannelError: ChannelErrorPayload = {
@@ -1755,6 +1816,7 @@ function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode)
 /**
  * Send mute/unmute channel related error message to unity
  * @param channelId
+ * @param errorCode
  */
 function notifyMuteChannelError(channelId: string, errorCode: ChannelErrorCode) {
   const muteChannelError: ChannelErrorPayload = {
@@ -1928,6 +1990,69 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
   // send info to unity
   channelMembersPayload.members.push(...membersPayload)
   getUnityInstance().UpdateChannelMembers(channelMembersPayload)
+}
+
+export async function requestFriendship(request: RequestFriendshipPayload) {
+  try {
+    let userId = request.userId
+    let found = false
+    const state = store.getState()
+
+    // search user profile on server
+    if (isAddress(userId)) {
+      // ensure user profile is initialized and send to renderer
+      const avatar = await ensureFriendProfile(userId)
+      found = avatar.hasConnectedWeb3 || false
+    } else {
+      const profileByName = findProfileByName(state, userId)
+      if (profileByName) {
+        userId = profileByName.userId
+        found = true
+      }
+    }
+
+    // if user profile was not found on server -> no connected web3, check if it's a claimed name
+    if (!found) {
+      const net = getSelectedNetwork(state)
+      const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
+      if (address) {
+        // if an address was found for the name, set it as user id
+        userId = address
+        found = true
+      }
+    }
+
+    if (!found) {
+      notifyRequestFriendshipError(request.messageId, FriendshipErrorCode.NON_EXISTING_USER)
+      return
+    }
+
+    // dispatch actions
+    store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
+    store.dispatch(
+      updateFriendship(
+        FriendshipAction.REQUESTED_TO,
+        request.userId.toLowerCase(),
+        false,
+        request.messageId,
+        request.messageBody
+      )
+    )
+  } catch {
+    notifyRequestFriendshipError(request.messageId, FriendshipErrorCode.UNKNOWN)
+  }
+}
+
+/**
+ * Send request friendship related error message to unity
+ * @param messageId - an unique id to handle the renderer <-> kernel communication
+ * @param errorCode
+ */
+function notifyRequestFriendshipError(messageId: string, errorCode: number) {
+  getUnityInstance().RequestFriendshipError({
+    messageId,
+    errorCode
+  })
 }
 
 /**
