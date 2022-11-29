@@ -325,7 +325,7 @@ export class BrowserInterface {
     trackEvent('performance report', perfReport)
   }
 
-  // TODO: remove useBinaryTransform after ECS7 is fully in prod
+  // TODO: remove useBinaryTransform after SDK7 is fully in prod
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 
@@ -578,7 +578,7 @@ export class BrowserInterface {
   public SetScenesLoadRadius(data: { newRadius: number }) {
     parcelLimits.visibleRadius = Math.round(data.newRadius)
 
-    store.dispatch(setWorldLoadingRadius(parcelLimits.visibleRadius))
+    store.dispatch(setWorldLoadingRadius(Math.max(parcelLimits.visibleRadius, 1)))
   }
 
   public GetUnseenMessagesByUser() {
