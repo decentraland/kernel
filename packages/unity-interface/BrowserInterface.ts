@@ -578,7 +578,7 @@ export class BrowserInterface {
   public SetScenesLoadRadius(data: { newRadius: number }) {
     parcelLimits.visibleRadius = Math.round(data.newRadius)
 
-    store.dispatch(setWorldLoadingRadius(parcelLimits.visibleRadius))
+    store.dispatch(setWorldLoadingRadius(Math.max(parcelLimits.visibleRadius, 1)))
   }
 
   public GetUnseenMessagesByUser() {

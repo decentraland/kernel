@@ -285,7 +285,8 @@ export class SceneWorker {
         // ---------------------------------------------------------------------
         name: getSceneNameFromJsonData(this.loadableScene.entity.metadata),
         icon: this.metadata.menuBarIcon || '',
-        isPortableExperience: showAsPortableExperience
+        isPortableExperience: showAsPortableExperience,
+        ecs7: this.rpcContext.ecs7
       })
     } else {
       getUnityInstance().LoadParcelScenes([sceneWorkerToLoadableParcelScene(this)])
@@ -461,6 +462,7 @@ function sceneWorkerToLoadableParcelScene(worker: SceneWorker): LoadableParcelSc
     baseUrl: worker.loadableScene.baseUrl,
     baseUrlBundles: getAssetBundlesBaseUrl(ETHEREUM_NETWORK.MAINNET) + '/',
     contents: mappings,
-    loadableScene: worker.loadableScene
+    loadableScene: worker.loadableScene,
+    ecs7: worker.rpcContext.ecs7
   }
 }
