@@ -121,7 +121,7 @@ describe('RestrictedActions tests', () => {
   function getContextWithPermissions(...permissions: PermissionItem[]): PortContext {
     const sceneData = buildSceneData(permissions)
     return {
-      ecs7: false,
+      sdk7: false,
       sceneData,
       logger: defaultLogger,
       rendererPort: null as any,
@@ -160,7 +160,7 @@ describe('RestrictedActions tests', () => {
     }
 
     return {
-      
+
       id: 'test',
       isPortableExperience: false,
       useFPSThrottling: false,

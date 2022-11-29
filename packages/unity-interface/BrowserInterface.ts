@@ -325,7 +325,7 @@ export class BrowserInterface {
     trackEvent('performance report', perfReport)
   }
 
-  // TODO: remove useBinaryTransform after ECS7 is fully in prod
+  // TODO: remove useBinaryTransform after SDK7 is fully in prod
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 

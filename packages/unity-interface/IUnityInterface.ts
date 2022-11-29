@@ -109,6 +109,7 @@ export interface IUnityInterface {
     icon?: string
     isPortableExperience: boolean
     sceneNumber: number
+    sdk7: boolean
   }): void
 
   /** Sends the camera position & target to the engine */
