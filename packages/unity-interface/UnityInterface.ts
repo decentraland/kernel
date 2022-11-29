@@ -470,6 +470,22 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
   }
 
+  public RequestFriendshipConfirmation(requestFriendshipConfirmationPayload: RequestFriendshipConfirmationPayload) {
+    this.SendMessageToUnity(
+      'Main',
+      'RequestFriendshipConfirmation',
+      JSON.stringify(requestFriendshipConfirmationPayload)
+    )
+  }
+
+  public RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload) {
+    this.SendMessageToUnity('Main', 'RequestFriendshipError', JSON.stringify(requestFriendshipErrorPayload))
+  }
+
+  public AddFriendRequest(friendRequestPayload: FriendRequestPayload) {
+    this.SendMessageToUnity('Main', 'AddFriendRequest', JSON.stringify(friendRequestPayload))
+  }
+
   public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {
     this.SendMessageToUnity('Main', 'JoinChannelConfirmation', JSON.stringify(channelInfoPayload))
   }

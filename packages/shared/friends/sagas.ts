@@ -56,7 +56,10 @@ import {
   GetChannelsPayload,
   ChannelSearchResultsPayload,
   JoinOrCreateChannelPayload,
-  ChannelMember
+  ChannelMember,
+  RequestFriendshipPayload,
+  FriendshipErrorCode,
+  FriendRequestPayload
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import {
@@ -1238,6 +1241,12 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
+    // Get ff value
+    const newFriendRequestFlow = isNewFriendRequestEnabled()
+
+    let friendRequestId = '' // {from}_{to}
+    const ownId = client.getUserId()
+
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
@@ -1404,6 +1413,22 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         updateTotalFriendRequestsPayload = {
           ...updateTotalFriendRequestsPayload,
           totalSentRequests: updateTotalFriendRequestsPayload.totalSentRequests + 1
+        }
+
+        // We only send this message in the new flow
+        if (newFriendRequestFlow && messageId) {
+          const toFriendRequest: FriendRequestPayload = {
+            friendRequestId,
+            timestamp: Date.now(),
+            from: getUserIdFromMatrix(userId),
+            to: getUserIdFromMatrix(ownId),
+            messageBody
+          }
+
+          getUnityInstance().RequestFriendshipConfirmation({
+            messageId, // an unique id to handle the renderer <-> kernel communication
+            friendRequest: toFriendRequest
+          })
         }
 
         break
