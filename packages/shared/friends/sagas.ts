@@ -59,7 +59,9 @@ import {
   ChannelMember,
   RequestFriendshipPayload,
   FriendshipErrorCode,
-  FriendRequestPayload
+  FriendRequestPayload,
+  CancelFriendshipPayload,
+  CancelFriendshipConfirmationPayload
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import {

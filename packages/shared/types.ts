@@ -821,3 +821,12 @@ export type RequestFriendshipConfirmationPayload = {
 }
 
 export type RequestFriendshipErrorPayload = FriendshipErrorPayload
+
+export type CancelFriendshipPayload = {
+  messageId: string
+  friendRequestId: string
+}
+
+export type CancelFriendshipConfirmationPayload = FriendshipConfirmationPayload
+
+export type CancelFriendshipErrorPayload = FriendshipErrorPayload
