@@ -56,9 +56,9 @@ export enum SceneWorkerReadyState {
 const sdk6RuntimeRaw =
   process.env.NODE_ENV === 'production'
     ? // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('@dcl/scene-runtime/dist/sdk6-webworker.js').default
+      require('@dcl/scene-runtime/dist/sdk6-webworker.js').default
     : // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('@dcl/scene-runtime/dist/sdk6-webworker.dev.js').default
+      require('@dcl/scene-runtime/dist/sdk6-webworker.dev.js').default
 
 const sdk6RuntimeBLOB = new Blob([sdk6RuntimeRaw])
 const sdk6RuntimeUrl = URL.createObjectURL(sdk6RuntimeBLOB)
@@ -66,9 +66,9 @@ const sdk6RuntimeUrl = URL.createObjectURL(sdk6RuntimeBLOB)
 const sdk7RuntimeRaw =
   process.env.NODE_ENV === 'production'
     ? // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('@dcl/scene-runtime/dist/sdk7-webworker.js').default
+      require('@dcl/scene-runtime/dist/sdk7-webworker.js').default
     : // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('@dcl/scene-runtime/dist/sdk7-webworker.dev.js').default
+      require('@dcl/scene-runtime/dist/sdk7-webworker.dev.js').default
 
 const sdk7RuntimeBLOB = new Blob([sdk7RuntimeRaw])
 const sdk7RuntimeUrl = URL.createObjectURL(sdk7RuntimeBLOB)
@@ -77,7 +77,7 @@ export type SceneLifeCycleStatusType = 'unloaded' | 'awake' | 'loaded' | 'ready'
 export type SceneLifeCycleStatusReport = { sceneId: string; status: SceneLifeCycleStatusType }
 
 export const sceneEvents =
-  mitt<{ [SCENE_LOAD]: SceneLoad;[SCENE_START]: SceneStart;[SCENE_FAIL]: SceneFail;[SCENE_UNLOAD]: SceneUnload }>()
+  mitt<{ [SCENE_LOAD]: SceneLoad; [SCENE_START]: SceneStart; [SCENE_FAIL]: SceneFail; [SCENE_UNLOAD]: SceneUnload }>()
 
 function buildWebWorkerTransport(loadableScene: LoadableScene, sdk7: boolean): Transport {
   const loggerName = getSceneNameFromJsonData(loadableScene.entity.metadata) || loadableScene.id
