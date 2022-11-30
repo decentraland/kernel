@@ -805,10 +805,12 @@ export type RequestFriendshipPayload = {
   messageBody: string
 }
 
-export type RequestFriendshipConfirmationPayload = {
+export type FriendshipConfirmationPayload = {
   messageId: string // an unique id to handle the renderer <-> kernel communication
   friendRequest: FriendRequestPayload
 }
+
+export type RequestFriendshipConfirmationPayload = FriendshipConfirmationPayload
 
 export type FriendshipErrorPayload = {
   messageId: string // an unique id to handle the renderer <-> kernel communication
