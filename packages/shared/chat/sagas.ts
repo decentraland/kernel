@@ -270,7 +270,7 @@ function initChatCommands() {
   })
 
   addChatCommand('world', 'Goes to a world', (message) => {
-    const worldString = `${message.trim()}.dcl.eth`
+    const worldString = `${message.trim()}`
     const response = ''
 
     changeRealm(worldString).catch((e) => {
