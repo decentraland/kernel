@@ -60,7 +60,7 @@ export class TeleportController {
     }
   }
 
-  public static goToRandom(): { message: string; success: boolean } {
+  public static async goToRandom(): Promise<{ message: string; success: boolean }> {
     const x = Math.floor(Math.random() * 301) - 150
     const y = Math.floor(Math.random() * 301) - 150
     const tpMessage = `Teleporting to random location (${x}, ${y})...`
@@ -69,7 +69,6 @@ export class TeleportController {
 
   public static async goToHome(): Promise<{ message: string; success: boolean }> {
     try {
-      await changeToMostPopulatedRealm()
       const homeCoordinates = await fetchHomePoint()
 
       return TeleportController.goTo(
@@ -86,9 +85,15 @@ export class TeleportController {
     }
   }
 
-  public static goTo(x: number, y: number, teleportMessage?: string): { message: string; success: boolean } {
+  public static async goTo(
+    x: number,
+    y: number,
+    teleportMessage?: string
+  ): Promise<{ message: string; success: boolean }> {
     const tpMessage: string = teleportMessage ? teleportMessage : `Teleporting to ${x}, ${y}...`
     if (isInsideWorldLimits(x, y)) {
+      await changeToMostPopulatedRealm()
+
       store.dispatch(trackTeleportTriggered(tpMessage))
       /// This doesn't work when the logic of activate/deactivate rendering is so tightly coupled with the loading
       /// screen. The code needs rework
