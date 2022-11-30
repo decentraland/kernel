@@ -1243,10 +1243,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    // Get ff value
+    // Get feature flag value
     const newFriendRequestFlow = isNewFriendRequestEnabled()
 
-    let friendRequestId = '' // {from}_{to}
+    let friendRequestId = '' // {from_requester}_{to_requested}
     const ownId = client.getUserId()
 
     const incoming = meta.incoming
