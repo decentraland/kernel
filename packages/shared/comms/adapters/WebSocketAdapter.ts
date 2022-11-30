@@ -103,7 +103,7 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
           case 'peerKicked': {
             const { peerKicked } = message
             notifyStatusThroughChat(peerKicked.reason)
-            throw new Error(message.peerKicked.reason)
+            await this.disconnect(Error(message.peerKicked.reason))
           }
           default: {
             // only welcomeMessage and challengeMessage are valid options for this phase of the protocol
