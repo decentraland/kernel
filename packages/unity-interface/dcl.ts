@@ -21,6 +21,7 @@ import { fetchScenesByLocation } from 'shared/scene-loader/sagas'
 import { sleep } from 'atomicHelpers/sleep'
 import { signalRendererInitializedCorrectly } from 'shared/renderer/actions'
 import { browserInterface } from './BrowserInterface'
+import { LoadableScene } from 'shared/types'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const hudWorkerRaw = require('../../static/systems/decentraland-ui.scene.js.txt')
@@ -81,29 +82,36 @@ export async function initializeEngine(_gameInstance: UnityGame): Promise<void> 
   }
 }
 
-async function startGlobalScene(
-  cid: string,
-  title: string,
-  fileContentUrl: string,
-  content: ContentMapping[] = [],
-  baseUrl: string = location.origin
-) {
-  const metadata: Scene = {
+type GlobalSceneOptions = {
+  ecs7?: boolean
+  content?: ContentMapping[]
+  baseUrl?: string
+}
+async function startGlobalScene(cid: string, title: string, fileContentUrl: string, options: GlobalSceneOptions = {}) {
+  const metadataScene: Scene = {
     display: {
       title: title
     },
-    main: 'game.js',
+    main: 'scene.js',
     scene: {
       base: '0,0',
       parcels: ['0,0']
     }
   }
 
+  const baseUrl = options.baseUrl || location.origin
+  const extraContent = options.content || []
+  const metadata: LoadableScene['entity']['metadata'] = { ...metadataScene }
+
+  if (!!options.ecs7) {
+    metadata.ecs7 = true
+  }
+
   const scene = loadParcelSceneWorker({
     id: cid,
     baseUrl,
     entity: {
-      content: [...content, { file: 'game.js', hash: fileContentUrl }],
+      content: [...extraContent, { file: 'scene.js', hash: fileContentUrl }],
       pointers: [cid],
       timestamp: 0,
       type: EntityType.SCENE,
@@ -191,7 +199,11 @@ export async function reloadPlaygroundScene() {
 
   const hudWorkerBLOB = new Blob([playgroundCode])
   const hudWorkerUrl = URL.createObjectURL(hudWorkerBLOB)
-  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, playgroundContentMapping, playgroundBaseUrl)
+  await startGlobalScene(sceneId, 'SDK Playground', hudWorkerUrl, {
+    content: playgroundContentMapping,
+    baseUrl: playgroundBaseUrl,
+    ecs7: true
+  })
 }
 
 {
