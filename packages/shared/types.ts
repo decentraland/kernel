@@ -799,22 +799,25 @@ export type FriendRequestPayload = {
   messageBody?: string | undefined
 }
 
+export type FriendshipConfirmationPayload = {
+  messageId: string // an unique id to handle the renderer <-> kernel communication
+  friendRequestId: string
+}
+
+export type FriendshipErrorPayload = {
+  messageId: string // an unique id to handle the renderer <-> kernel communication
+  errorCode: number
+}
+
 export type RequestFriendshipPayload = {
   messageId: string // an unique id to handle the renderer <-> kernel communication
   userId: string
   messageBody: string
 }
 
-export type FriendshipConfirmationPayload = {
+export type RequestFriendshipConfirmationPayload = {
   messageId: string // an unique id to handle the renderer <-> kernel communication
   friendRequest: FriendRequestPayload
-}
-
-export type RequestFriendshipConfirmationPayload = FriendshipConfirmationPayload
-
-export type FriendshipErrorPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  errorCode: number
 }
 
 export type RequestFriendshipErrorPayload = FriendshipErrorPayload
