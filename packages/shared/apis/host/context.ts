@@ -16,8 +16,6 @@ export type PortContext = {
     useFPSThrottling: boolean
     readonly sceneNumber: number
   }
-  // this only applies to SDK7. It should be removed by https://github.com/decentraland/sdk/issues/474
-  __hack_sentInitialEventToUnity: boolean
   subscribedEvents: Set<string>
   events: EventData[]
 

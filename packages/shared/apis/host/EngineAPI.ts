@@ -117,12 +117,6 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
             })
           }
 
-          if (!ctx.__hack_sentInitialEventToUnity) {
-            // https://github.com/decentraland/sdk/issues/474
-            ctx.sendBatch([{ type: 'InitMessagesFinished', payload: '' }])
-            ctx.__hack_sentInitialEventToUnity = true
-          }
-
           const response = await crdtService.pullCrdt({
             sceneId: ctx.sceneData.id,
             sceneNumber: ctx.sceneData.sceneNumber
