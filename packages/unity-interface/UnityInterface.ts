@@ -478,8 +478,16 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
+  public CancelFriendshipConfirmation(cancelFriendshipConfirmationPayload: CancelFriendshipConfirmationPayload) {
+    this.SendMessageToUnity('Main', 'CancelFriendshipConfirmation', JSON.stringify(cancelFriendshipConfirmationPayload))
+  }
+
   public RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload) {
     this.SendMessageToUnity('Main', 'RequestFriendshipError', JSON.stringify(requestFriendshipErrorPayload))
+  }
+
+  public CancelFriendshipError(cancelFriendshipErrorPayload: CancelFriendshipErrorPayload) {
+    this.SendMessageToUnity('Main', 'CancelFriendshipError', JSON.stringify(cancelFriendshipErrorPayload))
   }
 
   public AddFriendRequest(friendRequestPayload: FriendRequestPayload) {
