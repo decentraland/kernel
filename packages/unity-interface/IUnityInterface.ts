@@ -38,7 +38,9 @@ import {
   SetAudioDevicesPayload,
   RequestFriendshipConfirmationPayload,
   RequestFriendshipErrorPayload,
-  FriendRequestPayload
+  FriendRequestPayload,
+  CancelFriendshipErrorPayload,
+  CancelFriendshipConfirmationPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -186,7 +188,9 @@ export interface IUnityInterface {
   UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
   UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
   RequestFriendshipConfirmation(requestFriendshipConfirmationPayload: RequestFriendshipConfirmationPayload): void
+  CancelFriendshipConfirmation(cancelFriendshipConfirmationPayload: CancelFriendshipConfirmationPayload): void
   RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload): void
+  CancelFriendshipError(cancelFriendshipErrorPayload: CancelFriendshipErrorPayload): void
   AddFriendRequest(friendRequestPayload: FriendRequestPayload): void
 
   // *********************************************************************************

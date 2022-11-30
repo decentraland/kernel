@@ -59,7 +59,9 @@ import {
   ChannelMember,
   RequestFriendshipPayload,
   FriendshipErrorCode,
-  FriendRequestPayload
+  FriendRequestPayload,
+  CancelFriendshipPayload,
+  CancelFriendshipConfirmationPayload
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import {
@@ -1179,6 +1181,15 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
+        // We only send this message in the new flow
+        if (newFriendRequestFlow && messageId) {
+          const cancelFriendshipConfirmation: CancelFriendshipConfirmationPayload = {
+            messageId,
+            friendRequestId
+          }
+          getUnityInstance().CancelFriendshipConfirmation(cancelFriendshipConfirmation)
+        }
+
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
@@ -2050,6 +2061,31 @@ export async function requestFriendship(request: RequestFriendshipPayload) {
  */
 function notifyRequestFriendshipError(messageId: string, errorCode: number) {
   getUnityInstance().RequestFriendshipError({
+    messageId,
+    errorCode
+  })
+}
+
+export async function cancelFriendship(request: CancelFriendshipPayload) {
+  try {
+    // get userId from requestId - {from}_{to}
+    const userId = request.friendRequestId.split('_')[1]
+
+    // dispatch actions
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+    store.dispatch(updateFriendship(FriendshipAction.CANCELED, userId, false, request.messageId))
+  } catch {
+    notifyCancelFriendshipError(request.messageId, FriendshipErrorCode.UNKNOWN)
+  }
+}
+
+/**
+ * Cancel request friendship related error message to unity
+ * @param messageId - an unique id to handle the renderer <-> kernel communication
+ * @param errorCode
+ */
+function notifyCancelFriendshipError(messageId: string, errorCode: number) {
+  getUnityInstance().CancelFriendshipError({
     messageId,
     errorCode
   })

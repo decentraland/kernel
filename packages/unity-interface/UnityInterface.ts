@@ -36,7 +36,9 @@ import {
   SetAudioDevicesPayload,
   RequestFriendshipConfirmationPayload,
   RequestFriendshipErrorPayload,
-  FriendRequestPayload
+  FriendRequestPayload,
+  CancelFriendshipConfirmationPayload,
+  CancelFriendshipErrorPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -432,8 +434,16 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
+  public CancelFriendshipConfirmation(cancelFriendshipConfirmationPayload: CancelFriendshipConfirmationPayload) {
+    this.SendMessageToUnity('Main', 'CancelFriendshipConfirmation', JSON.stringify(cancelFriendshipConfirmationPayload))
+  }
+
   public RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload) {
     this.SendMessageToUnity('Main', 'RequestFriendshipError', JSON.stringify(requestFriendshipErrorPayload))
+  }
+
+  public CancelFriendshipError(cancelFriendshipErrorPayload: CancelFriendshipErrorPayload) {
+    this.SendMessageToUnity('Main', 'CancelFriendshipError', JSON.stringify(cancelFriendshipErrorPayload))
   }
 
   public AddFriendRequest(friendRequestPayload: FriendRequestPayload) {
