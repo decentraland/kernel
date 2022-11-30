@@ -99,6 +99,9 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
             )
             break
           }
+          case 'peerKicked': {
+            throw new Error(message.peerKicked.reason)
+          }
           default: {
             // only welcomeMessage and challengeMessage are valid options for this phase of the protocol
             throw new Error('Protocol error: server did not provide a challenge')
