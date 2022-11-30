@@ -554,7 +554,7 @@ function* refreshFriends() {
 
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: `${getUserIdFromMatrix(request.from)}_${getUserIdFromMatrix(ownId)}`, // 'otherUserId_ownId',
+        friendRequestId: `${getUserIdFromMatrix(request.from)}_${getUserIdFromMatrix(ownId)}`, // {from_requester}_{to_requested} -> 'otherUserId_ownId',
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.from),
         message: request.message
@@ -562,7 +562,7 @@ function* refreshFriends() {
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: `${getUserIdFromMatrix(ownId)}_${getUserIdFromMatrix(request.to)}`, // 'ownId_otherUserId',
+        friendRequestId: `${getUserIdFromMatrix(ownId)}_${getUserIdFromMatrix(request.to)}`, // {from_requester}_{to_requested} -> 'ownId_otherUserId',
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.to),
         message: request.message
@@ -979,7 +979,6 @@ export function* initializeStatusUpdateInterval() {
 
 /**
  * The social id for the time being should always be of the form `@ethAddress:server`
- *
  * @param socialId a string with the aforementioned pattern
  */
 function parseUserId(socialId: string) {
@@ -1094,15 +1093,18 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    // Get ff value
+    // Get feature flag value
     const newFriendRequestFlow = isNewFriendRequestEnabled()
 
-    let friendRequestId = '' // {from}_{to}
+    let friendRequestId = '' // {from_requester}_{to_requested}
     const ownId = client.getUserId()
 
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
+    // We don't have a mechanism to handle friendships with an auto-generated id,
+    // but for the new flow we need to introduce the concept, so we decided to form
+    // one with the user IDs involved in the friendship events. The rule is {from_requester}_{to_requested}
     if (incoming) {
       friendRequestId = `${getUserIdFromMatrix(userId)}_${getUserIdFromMatrix(ownId)}` // 'otherUserId_ownId'
     } else {
@@ -1271,6 +1273,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
 
+      // We only send the UpdateFriendshipStatus message when:
+      // + It's an incoming update
+      // + The new friend request flow is disabled
+      // + The new friend request flow is enabled and the action is an outgoing delete
       if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
         getUnityInstance().UpdateFriendshipStatus(payload)
       }
