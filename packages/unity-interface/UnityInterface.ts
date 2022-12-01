@@ -379,13 +379,13 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
   }
 
-  // TODO! @Deprecated
-  public AddFriendRequestsDeprecate(addFriendRequestsPayload: AddFriendRequestsPayloadDeprecate): void {
+  // TODO! @deprecated
+  public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayloadDeprecate): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
 
-  public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
-    this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
+  public AddFriendRequestsV2(addFriendRequestsPayload: AddFriendRequestsPayload): void {
+    this.SendMessageToUnity('Main', 'AddFriendRequestsV2', JSON.stringify(addFriendRequestsPayload))
   }
 
   public UpdateTotalUnseenMessagesByUser(

@@ -60,7 +60,8 @@ import {
   RequestFriendshipPayload,
   FriendshipErrorCode,
   FriendRequestPayload,
-  AddFriendRequestsPayloadDeprecate
+  AddFriendRequestsPayloadDeprecate,
+  GetFriendRequestsPayloadDeprecated
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import {
@@ -691,8 +692,8 @@ export async function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
-// TODO! @Deprecated
-export async function getFriendRequestsDeprecate(request: GetFriendRequestsPayload) {
+// TODO! @deprecated
+export async function getFriendRequestsDeprecate(request: GetFriendRequestsPayloadDeprecated) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
   const realmAdapter = await ensureRealmAdapterPromise()
   const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
@@ -724,7 +725,7 @@ export async function getFriendRequestsDeprecate(request: GetFriendRequestsPaylo
   store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
 
   // send friend requests
-  getUnityInstance().AddFriendRequestsDeprecate(addFriendRequestsPayload)
+  getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
 // New friend request flow
@@ -764,7 +765,7 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
 
   // send friend requests
-  getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
+  getUnityInstance().AddFriendRequestsV2(addFriendRequestsPayload)
 }
 
 /**

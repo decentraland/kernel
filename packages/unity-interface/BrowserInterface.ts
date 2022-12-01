@@ -33,7 +33,8 @@ import {
   SetAudioDevicesPayload,
   JoinOrCreateChannelPayload,
   GetChannelMembersPayload,
-  RequestFriendshipPayload
+  RequestFriendshipPayload,
+  GetFriendRequestsPayloadDeprecated
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -103,7 +104,7 @@ import {
   requestFriendship,
   getFriendRequestsDeprecate
 } from 'shared/friends/sagas'
-import { areChannelsEnabled, getMatrixIdFromUser, isNewFriendRequestEnabled } from 'shared/friends/utils'
+import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
 import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } from 'shared/realm/selectors'
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
@@ -490,13 +491,27 @@ export class BrowserInterface {
     getFriends(getFriendsRequest).catch(defaultLogger.error)
   }
 
-  public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    if (isNewFriendRequestEnabled()) {
-      getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
-    } else {
-      // TODO! @Deprecated
-      getFriendRequestsDeprecate(getFriendRequestsPayload).catch(defaultLogger.error)
-    }
+  // TODO! @deprecated
+  public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayloadDeprecated) {
+    getFriendRequestsDeprecate(getFriendRequestsPayload).catch((err) => {
+      defaultLogger.error('error getFriendRequestsDeprecate', err),
+        trackEvent('error', {
+          message: `error getting friend requests ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getFriendRequestsDeprecate'
+        })
+    })
+  }
+
+  public GetFriendRequestsV2(getFriendRequestsPayload: GetFriendRequestsPayload) {
+    getFriendRequests(getFriendRequestsPayload).catch((err) => {
+      defaultLogger.error('error getFriendRequests', err),
+        trackEvent('error', {
+          message: `error getting friend requests ${getFriendRequestsPayload.messageId} ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getFriendRequests'
+        })
+    })
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
