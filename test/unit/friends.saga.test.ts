@@ -34,6 +34,7 @@ import { RootState } from 'shared/store/rootTypes'
 import { StoreEnhancer } from 'redux'
 import { reducers } from 'shared/store/rootReducer'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
+import { encodeFriendRequestId } from 'shared/friends/utils'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -79,13 +80,13 @@ const textMessages: TextMessage[] = [
 const friendIds = ['0xa1', '0xb1', '0xc1', '0xd1']
 
 const fromFriendRequest: FriendRequest = {
-  friendRequestId: '0xa1_ownId', // {from}_{to}
+  friendRequestId: encodeFriendRequestId('ownId', '0xa1'),
   userId: '0xa1',
   createdAt: 123123132
 }
 
 const toFriendRequest: FriendRequest = {
-  friendRequestId: 'ownId_0xa2', // {from}_{to}
+  friendRequestId: encodeFriendRequestId('ownId', '0xa2'),
   userId: '0xa2',
   createdAt: 123123132
 }

@@ -75,5 +75,33 @@ export function getUsersAllowedToCreate(store: RootMetaState): UsersAllowed | un
  * Returns true if the new friends requests flow is enabled
  */
 export function isNewFriendRequestEnabled(): boolean {
-  return getFeatureFlagEnabled(store.getState(), 'new_friend_request_flow_enabled')
+  return getFeatureFlagEnabled(store.getState(), 'new_friend_requests')
+}
+
+/**
+ * Encode friendRequestId from the user IDs involved in the friendship event.
+ * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
+ * @param ownId
+ * @param otherUserId
+ */
+export function encodeFriendRequestId(ownId: string, otherUserId: string) {
+  // We always want the friendRequestId to be formed with the pattern '0x1111ada11111'
+  ownId = getUserIdFromMatrix(ownId)
+  otherUserId = getUserIdFromMatrix(otherUserId)
+
+  return ownId < otherUserId ? `${ownId}_${otherUserId}` : `${otherUserId}_${ownId}`
+}
+
+/**
+ * Decode friendRequestId from the user IDs involved in the friendship event.
+ * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
+ * @param ownId
+ * @param otherUserId
+ * @return `otherUserId`
+ */
+export function decodeFriendRequestId(friendRequestId: string) {
+  const firstUserId = friendRequestId.split('_')[0]
+  const secondUserId = friendRequestId.split('_')[1]
+
+  return firstUserId < secondUserId ? secondUserId : firstUserId
 }
