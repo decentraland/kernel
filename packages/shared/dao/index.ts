@@ -186,7 +186,8 @@ async function resolveOfflineRealmAboutFromConnectionString(
         lambdas: {
           healthy: true,
           publicUrl: `${baseUrl}lambdas`
-        }
+        },
+        acceptingUsers: true
       },
       baseUrl: baseUrl.replace(/\/+$/, '')
     }
