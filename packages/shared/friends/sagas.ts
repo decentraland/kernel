@@ -1178,9 +1178,17 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // We only send this message in the new flow
         if (newFriendRequestFlow && messageId) {
+          const cancelFriendRequest: FriendRequestPayload = {
+            friendRequestId,
+            timestamp: Date.now(),
+            from: getUserIdFromMatrix(userId),
+            to: getUserIdFromMatrix(ownId),
+            messageBody
+          }
+
           const cancelFriendshipConfirmation: CancelFriendshipConfirmationPayload = {
             messageId,
-            friendRequestId
+            friendRequest: cancelFriendRequest
           }
           getUnityInstance().CancelFriendshipConfirmation(cancelFriendshipConfirmation)
         }
@@ -2070,11 +2078,17 @@ function notifyRequestFriendshipError(messageId: string, errorCode: number) {
 
 export async function cancelFriendship(request: CancelFriendshipPayload) {
   try {
+    // get otherUserId value
     const userId = decodeFriendRequestId(request.friendRequestId)
+
+    // search in the store for the message body
+    const messageBody = getPrivateMessaging(store.getState()).toFriendRequests.find(
+      (friend) => friend.friendRequestId === request.friendRequestId
+    )?.message
 
     // dispatch actions
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-    store.dispatch(updateFriendship(FriendshipAction.CANCELED, userId, false, request.messageId))
+    store.dispatch(updateFriendship(FriendshipAction.CANCELED, userId, false, request.messageId, messageBody))
   } catch {
     notifyCancelFriendshipError(request.messageId, FriendshipErrorCode.UNKNOWN)
   }
