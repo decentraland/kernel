@@ -827,6 +827,9 @@ export type CancelFriendshipPayload = {
   friendRequestId: string
 }
 
-export type CancelFriendshipConfirmationPayload = FriendshipConfirmationPayload
+export type CancelFriendshipConfirmationPayload = {
+  messageId: string // an unique id to handle the renderer <-> kernel communication
+  friendRequest: FriendRequestPayload
+}
 
 export type CancelFriendshipErrorPayload = FriendshipErrorPayload
