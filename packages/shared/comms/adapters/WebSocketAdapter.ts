@@ -10,6 +10,7 @@ import mitt from 'mitt'
 import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
 import { createOpusVoiceHandler } from './voice/opusVoiceHandler'
 import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
+import { notifyStatusThroughChat } from 'shared/chat'
 
 // shared writer to leverage pools
 const writer = new Writer()
@@ -98,6 +99,11 @@ export class WebSocketAdapter implements MinimumCommunicationsAdapter {
               })
             )
             break
+          }
+          case 'peerKicked': {
+            const { peerKicked } = message
+            notifyStatusThroughChat(peerKicked.reason)
+            await this.disconnect(Error(message.peerKicked.reason))
           }
           default: {
             // only welcomeMessage and challengeMessage are valid options for this phase of the protocol

@@ -37,7 +37,8 @@ const about: AboutResponse = {
   lambdas: {
     healthy: false,
     publicUrl: 'https://lambdas'
-  }
+  },
+  acceptingUsers: true
 }
 
 const realmAdapter: IRealmAdapter = {
