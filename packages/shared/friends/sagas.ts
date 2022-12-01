@@ -127,7 +127,8 @@ import {
   getMaxChannels,
   getNormalizedRoomName,
   getUsersAllowedToCreate,
-  isNewFriendRequestEnabled
+  isNewFriendRequestEnabled,
+  encodeFriendRequestId
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -554,7 +555,7 @@ function* refreshFriends() {
 
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: `${getUserIdFromMatrix(request.from)}_${getUserIdFromMatrix(ownId)}`, // {from_requester}_{to_requested} -> 'otherUserId_ownId',
+        friendRequestId: encodeFriendRequestId(ownId, request.from),
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.from),
         message: request.message
@@ -562,7 +563,7 @@ function* refreshFriends() {
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: `${getUserIdFromMatrix(ownId)}_${getUserIdFromMatrix(request.to)}`, // {from_requester}_{to_requested} -> 'ownId_otherUserId',
+        friendRequestId: encodeFriendRequestId(ownId, request.from),
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.to),
         message: request.message
@@ -1096,20 +1097,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     // Get feature flag value
     const newFriendRequestFlow = isNewFriendRequestEnabled()
 
-    let friendRequestId = '' // {from_requester}_{to_requested}
     const ownId = client.getUserId()
+    const friendRequestId = encodeFriendRequestId(ownId, userId)
 
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
-
-    // We don't have a mechanism to handle friendships with an auto-generated id,
-    // but for the new flow we need to introduce the concept, so we decided to form
-    // one with the user IDs involved in the friendship events. The rule is {from_requester}_{to_requested}
-    if (incoming) {
-      friendRequestId = `${getUserIdFromMatrix(userId)}_${getUserIdFromMatrix(ownId)}` // 'otherUserId_ownId'
-    } else {
-      friendRequestId = `${getUserIdFromMatrix(ownId)}_${getUserIdFromMatrix(userId)}` // 'ownId_otherUserId'
-    }
 
     const friendRequestTypeSelector = hasSentFriendshipRequest ? 'toFriendRequests' : 'fromFriendRequests'
     const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = hasSentFriendshipRequest
@@ -1198,6 +1190,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           totalReceivedRequests: updateTotalFriendRequestsPayload.totalReceivedRequests + 1
         }
 
+        // TODO!: remove validation once the new flow is the only one
         // We only send this message in the new flow
         if (newFriendRequestFlow) {
           const fromFriendRequest: FriendRequestPayload = {
@@ -1227,6 +1220,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           totalSentRequests: updateTotalFriendRequestsPayload.totalSentRequests + 1
         }
 
+        // TODO!: remove validation once the new flow is the only one
         // We only send this message in the new flow
         if (newFriendRequestFlow && messageId) {
           const toFriendRequest: FriendRequestPayload = {
@@ -1273,6 +1267,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
 
+      // TODO!: remove FF validation once the new flow is the only one
       // We only send the UpdateFriendshipStatus message when:
       // + It's an incoming update
       // + The new friend request flow is disabled
