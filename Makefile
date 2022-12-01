@@ -93,6 +93,14 @@ fetchSceneContents: scripts/fetchSceneContents.js
 update-renderer:  ## Update the renderer
 	npm install @dcl/unity-renderer@latest
 
+# example: make update-renderer-branch BRANCH=main
+update-renderer-branch:
+	curl "https://renderer-artifacts.decentraland.org/branch/$(BRANCH)/unity.data?v=1668803795251" --output node_modules/@dcl/unity-renderer/unity.data --fail
+	curl "https://renderer-artifacts.decentraland.org/branch/$(BRANCH)/unity.framework.js?v=1668803795251" --output node_modules/@dcl/unity-renderer/unity.framework.js --fail
+	curl "https://renderer-artifacts.decentraland.org/branch/$(BRANCH)/unity.loader.js?v=1668803795251" --output node_modules/@dcl/unity-renderer/unity.loader.js --fail
+	curl "https://renderer-artifacts.decentraland.org/branch/$(BRANCH)/unity.symbols.json?v=1668803795251" --output node_modules/@dcl/unity-renderer/unity.symbols.json --fail
+	curl "https://renderer-artifacts.decentraland.org/branch/$(BRANCH)/unity.wasm?v=1668803795251" --output node_modules/@dcl/unity-renderer/unity.wasm --fail
+
 madge: scripts/deps.js
 	@node scripts/deps.js
 	dot packages/ui/decentraland-ui.scene.ts.dot -T pdf -O
