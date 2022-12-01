@@ -130,7 +130,8 @@ import {
   getNormalizedRoomName,
   getUsersAllowedToCreate,
   isNewFriendRequestEnabled,
-  encodeFriendRequestId
+  encodeFriendRequestId,
+  decodeFriendRequestId
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -2069,8 +2070,7 @@ function notifyRequestFriendshipError(messageId: string, errorCode: number) {
 
 export async function cancelFriendship(request: CancelFriendshipPayload) {
   try {
-    // get userId from requestId - {from}_{to}
-    const userId = request.friendRequestId.split('_')[1]
+    const userId = decodeFriendRequestId(request.friendRequestId)
 
     // dispatch actions
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
