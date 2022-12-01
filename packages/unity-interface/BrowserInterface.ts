@@ -708,6 +708,7 @@ export class BrowserInterface {
       let found = false
       const state = store.getState()
 
+      // TODO!: With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
       // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED.
       if (message.action === FriendshipAction.REQUESTED_TO) {

@@ -1225,8 +1225,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     // Get feature flag value
     const newFriendRequestFlow = isNewFriendRequestEnabled()
 
-    let friendRequestId = '' // {from_requester}_{to_requested}
     const ownId = client.getUserId()
+    const friendRequestId = encodeFriendRequestId(ownId, userId)
 
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
@@ -1394,6 +1394,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           totalSentRequests: updateTotalFriendRequestsPayload.totalSentRequests + 1
         }
 
+        // TODO!: remove validation once the new flow is the only one
         // We only send this message in the new flow
         if (newFriendRequestFlow && messageId) {
           const toFriendRequest: FriendRequestPayload = {
