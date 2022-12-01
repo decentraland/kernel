@@ -93,7 +93,7 @@ export function encodeFriendRequestId(ownId: string, otherUserId: string) {
 }
 
 /**
- * Decode friendRequestId from the user IDs involved in the friendship event.
+ * Decode friendRequestId to get otherUserId value.
  * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
  * @param friendRequestId
  * @return `otherUserId`
