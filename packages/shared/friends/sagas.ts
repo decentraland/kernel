@@ -1191,24 +1191,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
-        // TODO!: remove FF validation once the new flow is the only one. We only send this message in the new flow
-        // We only send this message when the action is an outgoing cancel
-        if (!incoming && newFriendRequestFlow && messageId) {
-          const cancelFriendRequest: FriendRequestPayload = {
-            friendRequestId,
-            timestamp: Date.now(),
-            from: getUserIdFromMatrix(userId),
-            to: getUserIdFromMatrix(ownId),
-            messageBody
-          }
-
-          const cancelFriendshipConfirmation: CancelFriendshipConfirmationPayload = {
-            messageId,
-            friendRequest: cancelFriendRequest
-          }
-          getUnityInstance().CancelFriendshipConfirmation(cancelFriendshipConfirmation)
-        }
-
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
@@ -1404,6 +1386,24 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
       case FriendshipAction.CANCELED: {
         yield client.cancelFriendshipRequestTo(socialId)
+
+        // TODO!: remove validation once the new flow is the only one
+        if (newFriendRequestFlow && update.messageId) {
+          const cancelFriendRequest: FriendRequestPayload = {
+            friendRequestId,
+            timestamp: Date.now(),
+            from: getUserIdFromMatrix(ownId),
+            to: getUserIdFromMatrix(update.userId),
+            messageBody: update.messageBody
+          }
+
+          const cancelFriendshipConfirmation: CancelFriendshipConfirmationPayload = {
+            messageId: update.messageId, // an unique id to handle the renderer <-> kernel communication
+            friendRequest: cancelFriendRequest
+          }
+          getUnityInstance().CancelFriendshipConfirmation(cancelFriendshipConfirmation)
+        }
+
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
@@ -2158,6 +2158,11 @@ function notifyFriendshipError(action: FriendshipAction, messageId: string, erro
   switch (action) {
     case FriendshipAction.REQUESTED_TO: {
       notifyRequestFriendshipError(messageId, errorCode)
+      break
+    }
+
+    case FriendshipAction.CANCELED: {
+      notifyCancelFriendshipError(messageId, errorCode)
       break
     }
   }
