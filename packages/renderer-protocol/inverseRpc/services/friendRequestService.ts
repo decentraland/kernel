@@ -11,10 +11,10 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 
       // Return
       return {
-          requestedTo: [],
-          requestedFrom: [],
-          totalReceivedFriendRequests: 3,
-          totalSentFriendRequests: 4
+        requestedTo: [],
+        requestedFrom: [],
+        totalReceivedFriendRequests: 3,
+        totalSentFriendRequests: 4
       }
     }
   }))
