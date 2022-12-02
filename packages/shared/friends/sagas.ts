@@ -1176,8 +1176,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
-        // We only send this message in the new flow
-        if (newFriendRequestFlow && messageId) {
+        // TODO!: remove FF validation once the new flow is the only one. We only send this message in the new flow
+        // We only send this message when the action is an outgoing cancel
+        if (!incoming && newFriendRequestFlow && messageId) {
           const cancelFriendRequest: FriendRequestPayload = {
             friendRequestId,
             timestamp: Date.now(),
