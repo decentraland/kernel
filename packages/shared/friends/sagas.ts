@@ -1232,19 +1232,26 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       try {
         yield apply(client, client.createDirectConversation, [socialData.socialId])
       } catch (e) {
+        // TODO!: remove validation once the new flow is the only one
+        // We only send this message in the new flow
+        if (newFriendRequestFlow && payload.messageId) {
+          notifyFriendshipError(payload.action, payload.messageId, FriendshipErrorCode.UNKNOWN)
+        }
         logAndTrackError('Error while creating direct conversation for friendship', e)
         yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
         return
       }
     } else {
+      // TODO!: remove validation once the new flow is the only one
+      // We only send this message in the new flow
+      if (newFriendRequestFlow && payload.messageId) {
+        notifyFriendshipError(payload.action, payload.messageId, FriendshipErrorCode.UNKNOWN)
+      }
       // if this is the case, a previous call to ensure data load is missing, this is an issue on our end
       logger.error(`handleUpdateFriendship, user not loaded`, userId)
       yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
       return
     }
-
-    // Get feature flag value
-    const newFriendRequestFlow = isNewFriendRequestEnabled()
 
     const ownId = client.getUserId()
     const friendRequestId = encodeFriendRequestId(ownId, userId)
@@ -1417,23 +1424,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           totalSentRequests: updateTotalFriendRequestsPayload.totalSentRequests + 1
         }
 
-        // TODO!: remove validation once the new flow is the only one
-        // We only send this message in the new flow
-        if (newFriendRequestFlow && messageId) {
-          const toFriendRequest: FriendRequestPayload = {
-            friendRequestId,
-            timestamp: Date.now(),
-            from: getUserIdFromMatrix(userId),
-            to: getUserIdFromMatrix(ownId),
-            messageBody
-          }
-
-          getUnityInstance().RequestFriendshipConfirmation({
-            messageId, // an unique id to handle the renderer <-> kernel communication
-            friendRequest: toFriendRequest
-          })
-        }
-
         break
       }
       case FriendshipAction.DELETED: {
@@ -1541,16 +1531,27 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
   const client: SocialAPI | undefined = yield select(getSocialClient)
   const socialData: SocialData = yield select(findPrivateMessagingFriendsByUserId, update.userId)
 
+  // Get feature flag value
+  const newFriendRequestFlow = isNewFriendRequestEnabled()
+
   if (!client) {
     yield call(update.future.resolve, { userId: update.userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
   }
 
   if (!socialData) {
+    // TODO!: remove validation once the new flow is the only one
+    // We only send this message in the new flow
+    if (newFriendRequestFlow && update.messageId) {
+      notifyFriendshipError(update.action, update.messageId, FriendshipErrorCode.UNKNOWN)
+    }
     logger.error(`could not find social data for`, update.userId)
     yield call(update.future.resolve, { userId: update.userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
   }
+
+  const ownId = client.getUserId()
+  const friendRequestId = encodeFriendRequestId(ownId, update.userId)
 
   const { socialId } = socialData
 
@@ -1589,6 +1590,12 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
     }
   } catch (e) {
+    // TODO!: remove validation once the new flow is the only one
+    // We only send this message in the new flow
+    if (newFriendRequestFlow && update.messageId) {
+      notifyFriendshipError(update.action, update.messageId, FriendshipErrorCode.UNKNOWN)
+    }
+
     logAndTrackError('error while acting user friendship action', e)
   }
 
