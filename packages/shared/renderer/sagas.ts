@@ -3,7 +3,7 @@ import { waitingForRenderer } from 'shared/loading/types'
 import { initializeEngine } from 'unity-interface/dcl'
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
 import { InitializeRenderer, registerRendererModules, registerRendererPort, REGISTER_RPC_PORT } from './actions'
-import { getClientPort, getParcelLoadingStarted } from './selectors'
+import { getRendererInterfacePort, getParcelLoadingStarted } from './selectors'
 import { RendererModules, RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -53,7 +53,7 @@ import { getVoiceHandler } from 'shared/voiceChat/selectors'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
 import { LoadingState } from 'shared/loading/reducer'
-import { RpcClientPort, Transport } from '@dcl/rpc'
+import { RpcClient, RpcClientPort, Transport } from '@dcl/rpc'
 import { createRendererRpcClient } from 'renderer-protocol/rpcClient'
 import { registerEmotesService } from 'renderer-protocol/services/emotesService'
 import { createRpcTransportService } from 'renderer-protocol/services/transportService'
@@ -80,7 +80,7 @@ export function* rendererSaga() {
  * On every new port we register the services for it and starts the inverse RPC
  */
 function* handleRegisterRpcPort() {
-  const port: RpcClientPort | undefined = yield select(getClientPort)
+  const port: RpcClientPort | undefined = yield select(getRendererInterfacePort)
 
   if (!port) {
     return
@@ -265,8 +265,11 @@ function* initializeRenderer(action: InitializeRenderer) {
     trackEvent('renderer_initializing_start', {})
 
     // register the RPC port
-    const rpcClientPort: RpcClientPort = yield call(createRendererRpcClient, transport)
-    yield put(registerRendererPort(rpcClientPort))
+    const rpcHandles: {
+      rpcClient: RpcClient
+      rendererProtocol: RpcClientPort
+    } = yield call(createRendererRpcClient, transport)
+    yield put(registerRendererPort(rpcHandles.rpcClient, rpcHandles.rendererProtocol))
 
     // wire the kernel to the renderer, at some point, the `initializeEngine`
     // function _MUST_ send the `signalRendererInitializedCorrectly` action

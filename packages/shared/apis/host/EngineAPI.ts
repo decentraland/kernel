@@ -11,7 +11,6 @@ import {
 
 import { PortContext } from './context'
 import { EntityAction, EntityActionType } from 'shared/types'
-import { registerCRDTService } from 'renderer-protocol/services/crdtService'
 import { RpcServerModule } from '@dcl/rpc/dist/codegen'
 
 function getPayload(payloadType: EAType, payload: Payload): any {
@@ -63,10 +62,11 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
   codegen.registerService(
     port,
     EngineApiServiceDefinition,
-    async (port, ctx): Promise<RpcServerModule<EngineApiServiceDefinition, PortContext>> => {
-      const crdtService = registerCRDTService(ctx.rendererPort)
+    async (): Promise<RpcServerModule<EngineApiServiceDefinition, PortContext>> => {
       return {
         async sendBatch(req: ManyEntityAction, ctx) {
+          if (ctx.sdk7) throw new Error('Cannot use SDK6 APIs on SDK7 scene')
+
           const actions: EntityAction[] = []
 
           for (const action of req.actions) {
@@ -109,13 +109,9 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
           //  implemented in the renderer-side (to check if there is data)
           //  and here should always call the rpc
 
-          if (req.data.length) {
-            await crdtService.sendCrdt({
-              sceneId: ctx.sceneData.id,
-              payload: req.data,
-              sceneNumber: ctx.sceneData.sceneNumber
-            })
-          }
+          const ret = await ctx.rpcSceneControllerService.sendCrdt({
+            payload: req.data
+          })
 
           if (!ctx.__hack_sentInitialEventToUnity) {
             // https://github.com/decentraland/sdk/issues/474
@@ -123,19 +119,13 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
             ctx.__hack_sentInitialEventToUnity = true
           }
 
-          const response = await crdtService.pullCrdt({
-            sceneId: ctx.sceneData.id,
-            sceneNumber: ctx.sceneData.sceneNumber
-          })
-
-          return { data: [response.payload] }
+          return { data: [ret.payload] }
         },
 
         // @deprecated
         async crdtGetMessageFromRenderer(_, ctx) {
-          const response = await crdtService.pullCrdt({
-            sceneId: ctx.sceneData.id,
-            sceneNumber: ctx.sceneData.sceneNumber
+          const response = await ctx.rpcSceneControllerService.sendCrdt({
+            payload: new Uint8Array()
           })
           return { data: [response.payload] }
         },

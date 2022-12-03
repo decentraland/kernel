@@ -5,7 +5,8 @@ import { PARCEL_LOADING_STARTED, RendererState, RENDERER_INITIALIZED_CORRECTLY }
 const INITIAL_STATE: RendererState = {
   initialized: false,
   parcelLoadingStarted: false,
-  clientPort: undefined,
+  rendererInterfacePort: undefined,
+  rpcClient: undefined,
   modules: undefined
 }
 
@@ -25,7 +26,8 @@ export function rendererReducer(state?: RendererState, action?: AnyAction): Rend
     case REGISTER_RPC_PORT:
       return {
         ...state,
-        clientPort: (action as RegisterRendererPort).payload.clientPort
+        rendererInterfacePort: (action as RegisterRendererPort).payload.rendererInterfacePort,
+        rpcClient: (action as RegisterRendererPort).payload.rpcClient
       }
     case PARCEL_LOADING_STARTED:
       return {

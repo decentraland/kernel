@@ -1,4 +1,4 @@
-import { RpcClientPort } from '@dcl/rpc'
+import { RpcClient, RpcClientPort } from '@dcl/rpc'
 
 export const RENDERER_INITIALIZED_CORRECTLY = '[RENDERER] Renderer initialized correctly'
 export const PARCEL_LOADING_STARTED = '[RENDERER] Parcel loading started'
@@ -9,7 +9,8 @@ import { EmotesRendererServiceDefinition } from '@dcl/protocol/out-ts/decentrala
 export type RendererState = {
   initialized: boolean
   parcelLoadingStarted: boolean
-  clientPort: RpcClientPort | undefined
+  rendererInterfacePort: RpcClientPort | undefined
+  rpcClient: RpcClient | undefined
   modules: RendererModules | undefined
 }
 
