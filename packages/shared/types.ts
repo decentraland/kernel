@@ -496,14 +496,7 @@ export interface GetFriendsPayload {
 }
 
 // TODO! @deprecated
-export interface GetFriendRequestsPayloadDeprecated {
-  sentLimit: number // max amount of entries of sent friend requests to request
-  sentSkip: number // the amount of entries of sent friend requests to skip
-  receivedLimit: number // max amount of entries of received friend requests to request
-  receivedSkip: number // the amount of entries of received friend requests to skip
-}
 export interface GetFriendRequestsPayload {
-  messageId: string
   sentLimit: number // max amount of entries of sent friend requests to request
   sentSkip: number // the amount of entries of sent friend requests to skip
   receivedLimit: number // max amount of entries of received friend requests to request

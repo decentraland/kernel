@@ -323,7 +323,6 @@ describe('Friends sagas', () => {
     describe("When there're sent and received friend requests", () => {
       it('Should call unity with the declared parameters', async () => {
         const request: GetFriendRequestsPayload = {
-          messageId: '',
           sentLimit: 10,
           sentSkip: 0,
           receivedLimit: 10,
@@ -354,7 +353,6 @@ describe('Friends sagas', () => {
     describe("When there're friend requests, but there's also a skip", () => {
       it('Should filter the requests to skip the expected amount', async () => {
         const request: GetFriendRequestsPayload = {
-          messageId: '',
           sentLimit: 10,
           sentSkip: 5,
           receivedLimit: 10,

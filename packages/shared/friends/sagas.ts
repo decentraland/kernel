@@ -213,11 +213,7 @@ function* initializeFriendsSaga() {
   } while (shouldRetryReconnection)
 }
 
-async function handleIncomingFriendshipUpdateStatus(
-  action: FriendshipAction,
-  socialId: string,
-  messageBody?: string | undefined
-) {
+async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, socialId: string) {
   logger.info(`handleIncomingFriendshipUpdateStatus`, action, socialId)
 
   // map social id to user id
