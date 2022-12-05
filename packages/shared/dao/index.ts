@@ -186,7 +186,8 @@ async function resolveOfflineRealmAboutFromConnectionString(
         lambdas: {
           healthy: true,
           publicUrl: `${baseUrl}lambdas`
-        }
+        },
+        acceptingUsers: true
       },
       baseUrl: baseUrl.replace(/\/+$/, '')
     }
@@ -257,10 +258,10 @@ export async function changeToMostPopulatedRealm(): Promise<void> {
   }
 
   const sortedArray: Candidate[] = allCandidates.sort((n1, n2) => {
-    if (n1.usersCount > n2.usersCount) {
+    if (n1.usersCount < n2.usersCount) {
       return 1
     }
-    if (n1.usersCount < n2.usersCount) {
+    if (n1.usersCount > n2.usersCount) {
       return -1
     }
     return 0

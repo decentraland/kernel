@@ -597,6 +597,11 @@ function* refreshFriends() {
     getUnityInstance().InitializeFriends(initFriendsMessage)
     getUnityInstance().InitializeChat(initChatMessage)
 
+    // check if lastStatusOfFriends has current statuses. if so, we keep them. if not, we initialize an empty map
+    // initialize an empty map because there is no way to get the current statuses at the very begining of the initialization, the matrix client store is empty at that point
+    const lastStatusOfFriends: Map<string, CurrentUserStatus> = yield getLastStatusOfFriends(store.getState()) ??
+      new Map()
+
     yield put(
       updatePrivateMessagingState({
         client,
@@ -604,8 +609,7 @@ function* refreshFriends() {
         friends: friendIds,
         fromFriendRequests: requestedFromIds,
         toFriendRequests: requestedToIds,
-        // initialize an empty map because there is no way to get the current statuses, the matrix client store is empty at this point
-        lastStatusOfFriends: new Map()
+        lastStatusOfFriends
       })
     )
 

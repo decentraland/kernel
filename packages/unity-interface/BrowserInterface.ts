@@ -329,7 +329,7 @@ export class BrowserInterface {
     trackEvent('performance report', perfReport)
   }
 
-  // TODO: remove useBinaryTransform after ECS7 is fully in prod
+  // TODO: remove useBinaryTransform after SDK7 is fully in prod
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 
@@ -395,7 +395,10 @@ export class BrowserInterface {
 
   public GoTo(data: { x: number; y: number }) {
     notifyStatusThroughChat(`Jumped to ${data.x},${data.y}!`)
-    TeleportController.goTo(data.x, data.y)
+    TeleportController.goTo(data.x, data.y).then(
+      () => {},
+      () => {}
+    )
   }
 
   public GoToMagic() {
@@ -601,7 +604,7 @@ export class BrowserInterface {
   public SetScenesLoadRadius(data: { newRadius: number }) {
     parcelLimits.visibleRadius = Math.round(data.newRadius)
 
-    store.dispatch(setWorldLoadingRadius(parcelLimits.visibleRadius))
+    store.dispatch(setWorldLoadingRadius(Math.max(parcelLimits.visibleRadius, 1)))
   }
 
   public GetUnseenMessagesByUser() {
@@ -896,10 +899,13 @@ export class BrowserInterface {
 
     changeRealm(serverName).then(
       () => {
-        const successMessage = `Jumped to ${x},${y} in realm ${serverName}!`
+        const successMessage = `Welcome to realm ${serverName}!`
         notifyStatusThroughChat(successMessage)
         getUnityInstance().ConnectionToRealmSuccess(data)
-        TeleportController.goTo(x, y, successMessage)
+        TeleportController.goTo(x, y, successMessage).then(
+          () => {},
+          () => {}
+        )
       },
       (e) => {
         const cause = e === 'realm-full' ? ' The requested realm is full.' : ''

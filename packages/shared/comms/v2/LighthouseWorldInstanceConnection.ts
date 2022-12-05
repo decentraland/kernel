@@ -183,14 +183,14 @@ export class LighthouseWorldInstanceConnection implements RoomConnection {
   }
 
   async sendParcelSceneMessage(message: rfc4.Scene): Promise<void> {
-    const topic = message.sceneId
+    if (this.currentIsland) {
+      const sceneData = new SceneData()
+      sceneData.setSceneId(message.sceneId)
+      const text = new TextDecoder().decode(message.data)
+      sceneData.setText(text)
 
-    const sceneData = new SceneData()
-    sceneData.setSceneId(message.sceneId)
-    const text = new TextDecoder().decode(message.data)
-    sceneData.setText(text)
-
-    await this.sendData(topic, sceneData, commsMessageType)
+      await this.sendData(this.currentIsland, sceneData, commsMessageType)
+    }
   }
 
   async sendVoiceMessage(voice: rfc4.Voice): Promise<void> {
