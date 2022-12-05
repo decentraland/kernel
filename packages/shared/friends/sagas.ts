@@ -117,8 +117,7 @@ import {
   areChannelsEnabled,
   getMaxChannels,
   getNormalizedRoomName,
-  getUsersAllowedToCreate,
-  isNewFriendRequestEnabled
+  getUsersAllowedToCreate
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -1120,9 +1119,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    // Get ff value
-    const newFriendRequestFlow = isNewFriendRequestEnabled()
-
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
@@ -1260,9 +1256,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
 
-      if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
-        getUnityInstance().UpdateFriendshipStatus(payload)
-      }
+      getUnityInstance().UpdateFriendshipStatus(payload)
     }
 
     if (!incoming) {

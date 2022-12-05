@@ -503,12 +503,6 @@ export interface GetFriendRequestsPayload {
   receivedSkip: number // the amount of entries of received friend requests to skip
 }
 
-export interface GetFriendsPayload {
-  userNameOrId?: string // text to match
-  limit: number // max amount of entries to request
-  skip: number // amount of entries to skip
-}
-
 export enum FriendshipAction {
   NONE,
   APPROVED,
