@@ -30,6 +30,7 @@ export type FeatureFlagsName =
   | 'matrix_channels_enabled' // enables matrix channels feature
   | 'max_joined_channels' // the max amount of joined channels allowed per user
   | 'users_allowed_to_create_channels' // users who are allowed to create channels
+  | 'new_friend_request_flow_enabled' // enables the new friends request flow
   | 'builder_in_world'
   | 'avatar_lods'
   | 'asset_bundles'

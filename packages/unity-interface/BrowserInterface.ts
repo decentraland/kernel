@@ -490,8 +490,16 @@ export class BrowserInterface {
     getFriends(getFriendsRequest).catch(defaultLogger.error)
   }
 
+  // TODO! @deprecated
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
+    getFriendRequests(getFriendRequestsPayload).catch((err) => {
+      defaultLogger.error('error getFriendRequestsDeprecate', err),
+        trackEvent('error', {
+          message: `error getting friend requests ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getFriendRequestsDeprecate'
+        })
+    })
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {

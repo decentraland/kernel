@@ -673,6 +673,7 @@ export async function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
+// TODO! @deprecated
 export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
   const realmAdapter = await ensureRealmAdapterPromise()
@@ -707,6 +708,47 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   // send friend requests
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
+
+// New friend request flow
+/*
+export async function getFriendRequests(request: GetFriendRequestsPayload) {
+  const friends: FriendsState = getPrivateMessaging(store.getState())
+  const realmAdapter = await ensureRealmAdapterPromise()
+  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+
+  const fromFriendRequests = friends.fromFriendRequests.slice(
+    request.receivedSkip,
+    request.receivedSkip + request.receivedLimit
+  )
+  const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
+
+  const fromIds = fromFriendRequests.map((friend) => friend.userId)
+  const toIds = toFriendRequests.map((friend) => friend.userId)
+
+  const addFriendRequestsPayload: AddFriendRequestsPayload = {
+    messageId: request.messageId,
+    requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend)),
+    requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend)),
+    totalReceivedFriendRequests: friends.fromFriendRequests.length,
+    totalSentFriendRequests: friends.toFriendRequests.length
+  }
+
+  // get friend requests profiles
+  const friendsIds = toIds.concat(fromIds)
+  const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
+  const profilesForRenderer = friendRequestsProfiles.map((friend) =>
+    profileToRendererFormat(friend.data, {
+      baseUrl: fetchContentServerWithPrefix
+    })
+  )
+
+  // send friend requests profiles
+  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+  store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
+
+  // send friend requests
+  getUnityInstance().AddFriendRequestsV2(addFriendRequestsPayload)
+}*/
 
 export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
@@ -965,7 +1007,6 @@ export function* initializeStatusUpdateInterval() {
  *
  * @param socialId a string with the aforementioned pattern
  */
-
 function parseUserId(socialId: string) {
   if (EthAddress.validate(socialId) as any) return socialId
   const result = socialId.match(/@(\w+):.*/)
@@ -1204,9 +1245,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
 
     getUnityInstance().UpdateTotalFriendRequests(updateTotalFriendRequestsPayload)
-    getUnityInstance().UpdateTotalFriends({
-      totalFriends
-    })
+    getUnityInstance().UpdateTotalFriends({ totalFriends })
 
     if (newState) {
       yield put(updatePrivateMessagingState(newState))
@@ -1747,6 +1786,7 @@ function notifyJoinChannelError(channelId: string, errorCode: number) {
 /**
  * Send leave channel related error message to unity
  * @param channelId
+ * @param errorCode
  */
 function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode) {
   const leaveChannelError: ChannelErrorPayload = {
@@ -1759,6 +1799,7 @@ function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode)
 /**
  * Send mute/unmute channel related error message to unity
  * @param channelId
+ * @param errorCode
  */
 function notifyMuteChannelError(channelId: string, errorCode: ChannelErrorCode) {
   const muteChannelError: ChannelErrorPayload = {
