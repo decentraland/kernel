@@ -734,7 +734,7 @@ export async function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
-// @TODO! @deprecated
+// TODO! @deprecated
 export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
   const realmAdapter = await ensureRealmAdapterPromise()
