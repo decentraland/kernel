@@ -79,13 +79,11 @@ const textMessages: TextMessage[] = [
 const friendIds = ['0xa1', '0xb1', '0xc1', '0xd1']
 
 const fromFriendRequest: FriendRequest = {
-  friendRequestId: '0xa1_ownId', // {from}_{to}
   userId: '0xa1',
   createdAt: 123123132
 }
 
 const toFriendRequest: FriendRequest = {
-  friendRequestId: 'ownId_0xa2', // {from}_{to}
   userId: '0xa2',
   createdAt: 123123132
 }
@@ -179,7 +177,6 @@ function mockStoreCalls(
     UpdateUserPresence() {},
     AddFriendsWithDirectMessages() {},
     AddFriendRequests() {},
-    AddFriendRequestsDeprecate() {},
     AddChatMessages() {},
     UpdateChannelInfo() {},
     UpdateTotalUnseenMessagesByChannel() {},
@@ -348,8 +345,8 @@ describe('Friends sagas', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriendRequestsDeprecate').once().calledWithMatch(addedFriendRequests)
-        await friendsSagas.getFriendRequestsDeprecate(request)
+        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().calledWithMatch(addedFriendRequests)
+        await friendsSagas.getFriendRequests(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
@@ -378,8 +375,8 @@ describe('Friends sagas', () => {
         }
 
         sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
-        sinon.mock(getUnityInstance()).expects('AddFriendRequestsDeprecate').once().calledWithMatch(addedFriendRequests)
-        await friendsSagas.getFriendRequestsDeprecate(request)
+        sinon.mock(getUnityInstance()).expects('AddFriendRequests').once().calledWithMatch(addedFriendRequests)
+        await friendsSagas.getFriendRequests(request)
         sinon.mock(getUnityInstance()).verify()
       })
     })
