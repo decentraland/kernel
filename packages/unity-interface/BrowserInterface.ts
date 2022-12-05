@@ -32,9 +32,7 @@ import {
   GetChannelInfoPayload,
   SetAudioDevicesPayload,
   JoinOrCreateChannelPayload,
-  GetChannelMembersPayload,
-  RequestFriendshipPayload,
-  GetFriendRequestsPayloadDeprecated
+  GetChannelMembersPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -100,9 +98,7 @@ import {
   getChannelInfo,
   searchChannels,
   joinChannel,
-  getChannelMembers,
-  requestFriendship,
-  getFriendRequestsDeprecate
+  getChannelMembers
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
@@ -495,24 +491,13 @@ export class BrowserInterface {
   }
 
   // TODO! @deprecated
-  public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayloadDeprecated) {
-    getFriendRequestsDeprecate(getFriendRequestsPayload).catch((err) => {
+  public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
+    getFriendRequests(getFriendRequestsPayload).catch((err) => {
       defaultLogger.error('error getFriendRequestsDeprecate', err),
         trackEvent('error', {
           message: `error getting friend requests ` + err.message,
           context: 'kernel#friendsSaga',
           stack: 'getFriendRequestsDeprecate'
-        })
-    })
-  }
-
-  public GetFriendRequestsV2(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    getFriendRequests(getFriendRequestsPayload).catch((err) => {
-      defaultLogger.error('error getFriendRequests', err),
-        trackEvent('error', {
-          message: `error getting friend requests ${getFriendRequestsPayload.messageId} ` + err.message,
-          context: 'kernel#friendsSaga',
-          stack: 'getFriendRequests'
         })
     })
   }
@@ -749,7 +734,7 @@ export class BrowserInterface {
       }
 
       store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false, null))
+      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
     } catch (error) {
       const message = 'Failed while processing updating friendship status'
       defaultLogger.error(message, error)
@@ -760,17 +745,6 @@ export class BrowserInterface {
         stack: '' + error
       })
     }
-  }
-
-  public RequestFriendship(requestFriendshipPayload: RequestFriendshipPayload) {
-    requestFriendship(requestFriendshipPayload).catch((err) => {
-      defaultLogger.error('error requestFriendship', err),
-        trackEvent('error', {
-          message: `error sending friend request ${requestFriendshipPayload.messageId} ` + err.message,
-          context: 'kernel#friendsSaga',
-          stack: 'requestFriendship'
-        })
-    })
   }
 
   public CreateChannel(createChannelPayload: CreateChannelPayload) {

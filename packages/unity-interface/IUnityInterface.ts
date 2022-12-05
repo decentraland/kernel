@@ -35,11 +35,7 @@ import {
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
-  SetAudioDevicesPayload,
-  RequestFriendshipConfirmationPayload,
-  RequestFriendshipErrorPayload,
-  FriendRequestPayload,
-  AddFriendRequestsPayloadDeprecate
+  SetAudioDevicesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -181,17 +177,13 @@ export interface IUnityInterface {
   FriendNotFound(queryString: string): void
   AddFriends(addFriendsPayload: AddFriendsPayload): void
   // TODO! @deprecated
-  AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayloadDeprecate): void
-  AddFriendRequestsV2(addFriendRequestsPayload: AddFriendRequestsPayload): void
+  AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
   UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
   UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void
   UpdateTotalUnseenMessagesByUser(updateTotalUnseenMessagesByUserPayload: UpdateTotalUnseenMessagesByUserPayload): void
   AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
   UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
   UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
-  RequestFriendshipConfirmation(requestFriendshipConfirmationPayload: RequestFriendshipConfirmationPayload): void
-  RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload): void
-  AddFriendRequest(friendRequestPayload: FriendRequestPayload): void
 
   // *********************************************************************************
   // ************** Channels **************

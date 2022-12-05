@@ -555,17 +555,9 @@ export interface AddFriendsPayload {
 }
 
 // @TODO! - Deprecated
-export interface AddFriendRequestsPayloadDeprecate {
+export interface AddFriendRequestsPayload {
   requestedTo: string[] // user ids which you sent a request
   requestedFrom: string[] // user ids which you received a request
-  totalReceivedFriendRequests: number // total amount of friend requests received
-  totalSentFriendRequests: number // total amount of friend requests sent
-}
-
-export interface AddFriendRequestsPayload {
-  messageId: string
-  requestedTo: FriendRequestPayload[] // user ids which you sent a request
-  requestedFrom: FriendRequestPayload[] // user ids which you received a request
   totalReceivedFriendRequests: number // total amount of friend requests received
   totalSentFriendRequests: number // total amount of friend requests sent
 }
@@ -707,15 +699,6 @@ export enum ChannelErrorCode {
   ALREADY_EXISTS = 4 // The name has already been used
 }
 
-export enum FriendshipErrorCode {
-  TOO_MANY_REQUESTS_SENT = 0, // Any uncategorized friend request related error
-  NOT_ENOUGH_TIME_PASSED = 1,
-  BLOCKED_USER = 2,
-  NON_EXISTING_USER = 3,
-  INVALID_REQUEST = 4,
-  UNKNOWN = 5
-}
-
 export type JoinOrCreateChannelPayload = CreateChannelPayload
 
 export type CreateChannelPayload = {
@@ -811,29 +794,3 @@ export type UsersAllowed = {
   mode: number
   allowList: string[]
 }
-
-export type FriendRequestPayload = {
-  friendRequestId: string
-  timestamp: number
-  from: string
-  to: string
-  messageBody?: string | undefined
-}
-
-export type RequestFriendshipPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  userId: string
-  messageBody: string
-}
-
-export type RequestFriendshipConfirmationPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  friendRequest: FriendRequestPayload
-}
-
-export type FriendshipErrorPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  errorCode: number
-}
-
-export type RequestFriendshipErrorPayload = FriendshipErrorPayload
