@@ -86,7 +86,7 @@ const fromFriendRequest: FriendRequest = {
 }
 
 const toFriendRequest: FriendRequest = {
-  friendRequestId: encodeFriendRequestId('ownId', '0xa2'),
+  friendRequestId: encodeFriendRequestId('ownId', '0xa1'),
   userId: '0xa2',
   createdAt: 123123132
 }
