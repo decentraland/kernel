@@ -40,8 +40,7 @@ import {
   SceneUnload,
   SCENE_FAIL,
   SCENE_START,
-  SCENE_UNLOAD,
-  updateLoadingScreen
+  SCENE_UNLOAD
 } from 'shared/loading/actions'
 import { sceneEvents, SceneWorker } from 'shared/world/SceneWorker'
 import { pickWorldSpawnpoint, positionObservable, receivePositionReport } from 'shared/world/positionThings'
@@ -54,6 +53,7 @@ import { trackEvent } from 'shared/analytics'
 import { getAllowedContentServer } from 'shared/meta/selectors'
 import { CHANGE_LOGIN_STAGE } from 'shared/session/actions'
 import { isLoginCompleted } from 'shared/session/selectors'
+import {updateLoadingScreen} from "../loadingScreen/actions";
 
 export function* sceneLoaderSaga() {
   yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)

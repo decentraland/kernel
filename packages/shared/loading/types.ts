@@ -1,6 +1,6 @@
-import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
-import { INIT_SESSION } from 'shared/session/actions'
-import { action } from 'typesafe-actions'
+import {PARCEL_LOADING_STARTED} from 'shared/renderer/types'
+import {INIT_SESSION} from 'shared/session/actions'
+import {action} from 'typesafe-actions'
 
 export const NOT_STARTED = 'Getting things ready...'
 export const notStarted = () => action(NOT_STARTED)
@@ -23,18 +23,6 @@ export const experienceStarted = () => action(EXPERIENCE_STARTED)
 
 export const TELEPORT_TRIGGERED = 'TELEPORT_TRIGGERED'
 export const trackTeleportTriggered = (payload: string) => action(TELEPORT_TRIGGERED, payload)
-
-export const RENDERING_ACTIVATED = '[RENDERER] Camera activated'
-export const renderingActivated = () => action(RENDERING_ACTIVATED)
-
-export const RENDERING_DEACTIVATED = '[RENDERER] Camera deactivated'
-export const renderingDectivated = () => action(RENDERING_DEACTIVATED)
-
-export const RENDERING_FOREGROUND = '[RENDERER] Foreground'
-export const renderingInForeground = () => action(RENDERING_FOREGROUND)
-
-export const RENDERING_BACKGROUND = '[RENDERER] Background'
-export const renderingInBackground = () => action(RENDERING_BACKGROUND)
 
 export const SCENE_ENTERED = 'Entered into a new scene'
 export const sceneEntered = () => action(SCENE_ENTERED)

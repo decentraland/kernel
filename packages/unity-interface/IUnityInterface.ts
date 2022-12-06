@@ -137,8 +137,13 @@ export interface IUnityInterface {
   SetDisableAssetBundles(): void
   CrashPayloadRequest(): Promise<string>
   ActivateRendering(): void
+
+  /** @deprecated #3642 Kernel will no longer control Loading Screen */
   SetLoadingScreen(data: { isVisible: boolean; message: string; showTips: boolean }): void
+
+  /** @deprecated #3642 Kernel will no longer control Loading Screen */
   FadeInLoadingHUD(data: { xCoord: number; yCoord: number; message?: string }): void
+
   DeactivateRendering(): void
   ReportFocusOn(): void
   ReportFocusOff(): void

@@ -5,22 +5,29 @@ import {
   ExecutionLifecycleEvent,
   EXPERIENCE_STARTED,
   NOT_STARTED,
-  TELEPORT_TRIGGERED,
-  RENDERING_ACTIVATED,
-  RENDERING_DEACTIVATED,
-  RENDERING_FOREGROUND,
-  RENDERING_BACKGROUND
+  TELEPORT_TRIGGERED
 } from './types'
+import {
+  RENDERING_ACTIVATED,
+  RENDERING_BACKGROUND,
+  RENDERING_DEACTIVATED,
+  RENDERING_FOREGROUND
+} from "../loadingScreen/types";
 
 export type LoadingState = {
   status: ExecutionLifecycleEvent
   totalScenes: number
   pendingScenes: number
+  /** @deprecated #3642 Message of the loading state will be moved to Renderer */
   message: string
+  /** @deprecated #3642 Not used */
   renderingActivated: boolean
+  /** @deprecated #3642 Will be moved to Renderer */
   // true if the rendering was activated at least once
   renderingWasActivated: boolean
+  /** @deprecated #3642 Not used */
   isForeground: boolean
+  /** @deprecated #3642 Will be moved to Renderer */
   initialLoad: boolean
   error: string | null
   tldError: {
