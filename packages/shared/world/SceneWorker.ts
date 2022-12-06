@@ -153,7 +153,7 @@ export class SceneWorker {
     this.transport = _transport || buildWebWorkerTransport(this.loadableScene, IS_SDK7)
 
     const rpcSceneControllerService = codegen.loadService<any>(
-      this.rpcContext.scenePort,
+      scenePort,
       RpcSceneControllerServiceDefinition
     )
 
@@ -194,6 +194,7 @@ export class SceneWorker {
     if (loadableScene.entity.metadata.scene?.base) {
       const metadata: Scene = loadableScene.entity.metadata
       const basePosition = parseParcelPosition(metadata.scene?.base)
+
       gridToWorld(basePosition.x, basePosition.y, this.position)
     }
 
