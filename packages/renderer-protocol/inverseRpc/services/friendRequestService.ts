@@ -45,6 +45,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
     },
 
     async sendFriendRequest(req, _) {
+      // Logic
       return {}
     },
 
