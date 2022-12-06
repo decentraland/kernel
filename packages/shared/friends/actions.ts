@@ -6,8 +6,12 @@ import { FriendsState } from './types'
 import { SocialAPI, SocialId } from 'dcl-social-client'
 
 export const UPDATE_FRIENDSHIP = 'Update friendship'
-export const updateFriendship = (_action: FriendshipAction, userId: string, incoming: boolean) =>
-  action(UPDATE_FRIENDSHIP, { action: _action, userId }, { incoming })
+export const updateFriendship = (
+  _action: FriendshipAction,
+  userId: string,
+  incoming: boolean,
+  messageBody?: string | undefined
+) => action(UPDATE_FRIENDSHIP, { action: _action, userId, messageBody }, { incoming })
 export type UpdateFriendship = ReturnType<typeof updateFriendship>
 
 export const SET_MATRIX_CLIENT = '[CHAT] Set Matrix client'

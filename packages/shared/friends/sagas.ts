@@ -16,7 +16,7 @@ import {
   GetOrCreateConversationResponse
 } from 'dcl-social-client'
 
-import { DEBUG_KERNEL_LOG, CHANNEL_TO_JOIN_CONFIG_URL } from 'config'
+import { DEBUG_KERNEL_LOG, ethereumConfigurations, CHANNEL_TO_JOIN_CONFIG_URL } from 'config'
 import { deepEqual } from 'atomicHelpers/deepEqual'
 
 import defaultLogger, { createLogger, createDummyLogger } from 'shared/logger'
@@ -59,7 +59,13 @@ import {
   ChannelMember
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { getCurrentUserProfile, getProfile, getProfilesFromStore, isAddedToCatalog } from 'shared/profiles/selectors'
+import {
+  findProfileByName,
+  getCurrentUserProfile,
+  getProfile,
+  getProfilesFromStore,
+  isAddedToCatalog
+} from 'shared/profiles/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { SocialData, FriendsState, FriendRequest } from 'shared/friends/types'
 import {
@@ -118,6 +124,7 @@ import {
   getMaxChannels,
   getNormalizedRoomName,
   getUsersAllowedToCreate,
+  isNewFriendRequestEnabled,
   encodeFriendRequestId,
   decodeFriendRequestId
 } from './utils'
@@ -128,6 +135,14 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { isAddress } from 'eth-connect'
+import { getSelectedNetwork } from 'shared/dao/selectors'
+import { fetchENSOwner } from 'shared/web3'
+import {
+  FriendshipErrorCode,
+  FriendRequestInfo,
+  SendFriendRequestPayload
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -214,7 +229,11 @@ function* initializeFriendsSaga() {
   } while (shouldRetryReconnection)
 }
 
-async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, socialId: string) {
+async function handleIncomingFriendshipUpdateStatus(
+  action: FriendshipAction,
+  socialId: string,
+  messageBody?: string | undefined
+) {
   logger.info(`handleIncomingFriendshipUpdateStatus`, action, socialId)
 
   // map social id to user id
@@ -231,7 +250,7 @@ async function handleIncomingFriendshipUpdateStatus(action: FriendshipAction, so
   await ensureFriendProfile(userId)
 
   // add to friendRequests & update renderer
-  store.dispatch(updateFriendship(action, userId, true))
+  store.dispatch(updateFriendship(action, userId, true, messageBody))
 }
 
 function* configureMatrixClient(action: SetMatrixClient) {
@@ -370,8 +389,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
     }
   })
 
-  client.onFriendshipRequest((socialId) =>
-    handleIncomingFriendshipUpdateStatus(FriendshipAction.REQUESTED_FROM, socialId).catch((error) => {
+  client.onFriendshipRequest((socialId, messageBody) =>
+    handleIncomingFriendshipUpdateStatus(FriendshipAction.REQUESTED_FROM, socialId, messageBody).catch((error) => {
       const message = 'Failed while processing friendship request'
       defaultLogger.error(message, error)
 
@@ -547,7 +566,7 @@ function* refreshFriends() {
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: encodeFriendRequestId(ownId, request.to),
+        friendRequestId: encodeFriendRequestId(ownId, request.from),
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.to),
         message: request.message
@@ -1041,7 +1060,6 @@ export function* initializeStatusUpdateInterval() {
 
 /**
  * The social id for the time being should always be of the form `@ethAddress:server`
- *
  * @param socialId a string with the aforementioned pattern
  */
 function parseUserId(socialId: string) {
@@ -1128,11 +1146,19 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
 }
 
 function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
-  const { action, userId } = payload
+  const { action, userId, messageBody } = payload
 
   const client: SocialAPI | undefined = yield select(getSocialClient)
 
+  // Get feature flag value
+  const newFriendRequestFlow = isNewFriendRequestEnabled()
+
   if (!client) {
+    // TODO!: remove validation once the new flow is the only one
+    // We only send this message in the new flow
+    if (newFriendRequestFlow) {
+      notifyFriendshipError(payload.action, FriendshipErrorCode.FEC_UNKNOWN)
+    }
     return
   }
 
@@ -1147,10 +1173,20 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       try {
         yield apply(client, client.createDirectConversation, [socialData.socialId])
       } catch (e) {
+        // TODO!: remove validation once the new flow is the only one
+        // We only send this message in the new flow
+        if (newFriendRequestFlow) {
+          notifyFriendshipError(payload.action, FriendshipErrorCode.FEC_UNKNOWN)
+        }
         logAndTrackError('Error while creating direct conversation for friendship', e)
         return
       }
     } else {
+      // TODO!: remove validation once the new flow is the only one
+      // We only send this message in the new flow
+      if (newFriendRequestFlow) {
+        notifyFriendshipError(payload.action, FriendshipErrorCode.FEC_UNKNOWN)
+      }
       // if this is the case, a previous call to ensure data load is missing, this is an issue on our end
       logger.error(`handleUpdateFriendship, user not loaded`, userId)
       return
@@ -1249,6 +1285,19 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           totalReceivedRequests: updateTotalFriendRequestsPayload.totalReceivedRequests + 1
         }
 
+        // TODO!: remove validation once the new flow is the only one
+        // We only send this message in the new flow
+        if (newFriendRequestFlow) {
+          const fromFriendRequest: FriendRequestInfo = {
+            friendRequestId,
+            timestamp: Date.now(),
+            from: getUserIdFromMatrix(userId),
+            to: getUserIdFromMatrix(ownId),
+            messageBody
+          }
+          console.log(fromFriendRequest)
+        }
+
         break
       }
       case FriendshipAction.REQUESTED_TO: {
@@ -1296,7 +1345,18 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
 
-      getUnityInstance().UpdateFriendshipStatus(payload)
+      // TODO!: remove FF validation once the new flow is the only one
+      // We only send the UpdateFriendshipStatus message when:
+      // + The new friend request flow is disabled
+      // + The new friend request flow is enabled and the action is an outgoing delete
+      // + It's an incoming update (except when the new friend request flow is enabled and the action is REQUESTED_FROM)
+      if (
+        !newFriendRequestFlow ||
+        (newFriendRequestFlow && action === FriendshipAction.DELETED) ||
+        (newFriendRequestFlow && incoming && action !== FriendshipAction.REQUESTED_FROM)
+      ) {
+        getUnityInstance().UpdateFriendshipStatus(payload)
+      }
     }
 
     if (!incoming) {
@@ -1358,14 +1418,30 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
   const client: SocialAPI | undefined = yield select(getSocialClient)
   const socialData: SocialData = yield select(findPrivateMessagingFriendsByUserId, update.userId)
 
+  // Get feature flag value
+  const newFriendRequestFlow = isNewFriendRequestEnabled()
+
   if (!client) {
+    // TODO!: remove validation once the new flow is the only one
+    // We only send this message in the new flow
+    if (newFriendRequestFlow) {
+      notifyFriendshipError(update.action, FriendshipErrorCode.FEC_UNKNOWN)
+    }
     return
   }
 
   if (!socialData) {
+    // TODO!: remove validation once the new flow is the only one
+    // We only send this message in the new flow
+    if (newFriendRequestFlow) {
+      notifyFriendshipError(update.action, FriendshipErrorCode.FEC_UNKNOWN)
+    }
     logger.error(`could not find social data for`, update.userId)
     return
   }
+
+  const ownId = client.getUserId()
+  const friendRequestId = encodeFriendRequestId(ownId, update.userId)
 
   const { socialId } = socialData
 
@@ -1394,7 +1470,21 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
         break
       }
       case FriendshipAction.REQUESTED_TO: {
-        yield client.addAsFriend(socialId)
+        yield client.addAsFriend(socialId, update.messageBody)
+
+        // TODO!: remove validation once the new flow is the only one
+        // We only send this message in the new flow
+        if (newFriendRequestFlow) {
+          const toFriendRequest: FriendRequestInfo = {
+            friendRequestId,
+            timestamp: Date.now(),
+            from: getUserIdFromMatrix(ownId),
+            to: getUserIdFromMatrix(update.userId),
+            messageBody: update.messageBody
+          }
+          console.log(toFriendRequest)
+        }
+
         break
       }
       case FriendshipAction.DELETED: {
@@ -1403,6 +1493,12 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
     }
   } catch (e) {
+    // TODO!: remove validation once the new flow is the only one
+    // We only send this message in the new flow
+    if (newFriendRequestFlow) {
+      notifyFriendshipError(update.action, FriendshipErrorCode.FEC_UNKNOWN)
+    }
+
     logAndTrackError('error while acting user friendship action', e)
   }
 
@@ -2013,6 +2109,72 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
   // send info to unity
   channelMembersPayload.members.push(...membersPayload)
   getUnityInstance().UpdateChannelMembers(channelMembersPayload)
+}
+
+export async function requestFriendship(request: SendFriendRequestPayload) {
+  try {
+    let userId = request.userId
+    let found = false
+    const state = store.getState()
+
+    // search user profile on server
+    if (isAddress(userId)) {
+      // ensure user profile is initialized and send to renderer
+      const avatar = await ensureFriendProfile(userId)
+      found = avatar.hasConnectedWeb3 || false
+    } else {
+      const profileByName = findProfileByName(state, userId)
+      if (profileByName) {
+        userId = profileByName.userId
+        found = true
+      }
+    }
+
+    // if user profile was not found on server -> no connected web3, check if it's a claimed name
+    if (!found) {
+      const net = getSelectedNetwork(state)
+      const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
+      if (address) {
+        // if an address was found for the name, set it as user id
+        userId = address
+        found = true
+      }
+    }
+
+    if (!found) {
+      notifyRequestFriendshipError(FriendshipErrorCode.FEC_NON_EXISTING_USER)
+      return
+    }
+
+    // dispatch actions
+    store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
+    store.dispatch(
+      updateFriendship(FriendshipAction.REQUESTED_TO, request.userId.toLowerCase(), false, request.messageBody)
+    )
+  } catch {
+    notifyRequestFriendshipError(FriendshipErrorCode.FEC_UNKNOWN)
+  }
+}
+
+/**
+ * Send request friendship related error message to unity
+ * @param messageId - an unique id to handle the renderer <-> kernel communication
+ * @param errorCode
+ */
+function notifyRequestFriendshipError(errorCode: number) {}
+
+/**
+ * Handle friendship related error message to unity
+ * @param messageId - an unique id to handle the renderer <-> kernel communication
+ * @param errorCode
+ */
+function notifyFriendshipError(action: FriendshipAction, errorCode: number) {
+  switch (action) {
+    case FriendshipAction.REQUESTED_TO: {
+      notifyRequestFriendshipError(errorCode)
+      break
+    }
+  }
 }
 
 /**

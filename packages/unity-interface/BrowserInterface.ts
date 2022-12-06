@@ -695,6 +695,7 @@ export class BrowserInterface {
     store.dispatch(setVoiceChatPolicy(settingsMessage.voiceChatAllowCategory))
   }
 
+  // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     try {
       let { userId } = message
