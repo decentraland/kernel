@@ -748,8 +748,8 @@ export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
 
     // Map response
     const friendRequests = {
-      requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend, 'to')),
-      requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend, 'from')),
+      requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend, false)),
+      requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend, true)),
       totalReceivedFriendRequests: friends.fromFriendRequests.length,
       totalSentFriendRequests: friends.toFriendRequests.length
     }
@@ -764,24 +764,25 @@ export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
 /**
  * Map FriendRequest to FriendRequestPayload
  * @param friend a FriendRequest type we want to map to FriendRequestPayload
+ * @param incoming boolean indicating whether a request is an incoming one (requestedFrom) or not (requestedTo)
  *
  */
-function getFriendRequestInfo(friend: FriendRequest, source: string) {
-  if (source === 'to') {
-    return {
-      friendRequestId: friend.friendRequestId,
-      timestamp: friend.createdAt,
-      from: decodeFriendRequestId(friend.friendRequestId).ownId,
-      to: friend.userId,
-      messageBody: friend.userId
-    }
-  } else {
+function getFriendRequestInfo(friend: FriendRequest, incoming: boolean) {
+  if (incoming) {
     return {
       friendRequestId: friend.friendRequestId,
       timestamp: friend.createdAt,
       from: friend.userId,
       to: decodeFriendRequestId(friend.friendRequestId).ownId,
       messageBody: friend.message
+    }
+  } else {
+    return {
+      friendRequestId: friend.friendRequestId,
+      timestamp: friend.createdAt,
+      from: decodeFriendRequestId(friend.friendRequestId).ownId,
+      to: friend.userId,
+      messageBody: friend.userId
     }
   }
 }
