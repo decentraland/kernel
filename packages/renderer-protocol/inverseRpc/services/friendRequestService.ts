@@ -3,14 +3,13 @@ import { RendererProtocolContext } from '../context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import {
   FriendRequestKernelServiceDefinition,
+  FriendshipErrorCode,
   GetFriendRequestsReply
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import { getFriendRequestsNew } from '../../../shared/friends/sagas'
-import { FriendshipErrorCode } from '@dcl/protocol/out-ts/decentraland/renderer/common/friends.gen'
 
 export function registerFriendRequestKernelService(port: RpcServerPort<RendererProtocolContext>) {
   codegen.registerService(port, FriendRequestKernelServiceDefinition, async () => ({
-    // (_) -> It's the context
     async getFriendRequests(req, _) {
       try {
         const friendRequestReply = await getFriendRequestsNew({
@@ -43,6 +42,22 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 
         return getFriendRequestsReply
       }
+    },
+
+    async sendFriendRequest(req, _) {
+      return {}
+    },
+
+    async cancelFriendRequest(req, _) {
+      return {}
+    },
+
+    async acceptFriendRequest(req, _) {
+      return {}
+    },
+
+    async rejectFriendRequest(req, _) {
+      return {}
     }
   }))
 }
