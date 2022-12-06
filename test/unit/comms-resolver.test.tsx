@@ -36,7 +36,8 @@ describe('Comms resolver', () => {
         lambdas: {
           healthy: true,
           publicUrl: 'https://peer.decentraland.org/lambdas'
-        }
+        },
+        acceptingUsers: true
       },
       baseUrl: 'https://peer.decentraland.org'
     })
@@ -64,7 +65,8 @@ describe('Comms resolver', () => {
         lambdas: {
           healthy: true,
           publicUrl: 'https://peer.decentraland.zone/lambdas'
-        }
+        },
+        acceptingUsers: true
       },
       baseUrl: 'https://peer.decentraland.zone'
     })
@@ -91,7 +93,8 @@ describe('Comms resolver', () => {
         lambdas: {
           healthy: true,
           publicUrl: 'https://peer.decentraland.zone/lambdas'
-        }
+        },
+        acceptingUsers: true
       },
       baseUrl: 'https://peer.decentraland.zone'
     })
@@ -118,7 +121,8 @@ describe('Comms resolver', () => {
         lambdas: {
           healthy: true,
           publicUrl: 'http://peer.decentraland.zone/lambdas'
-        }
+        },
+        acceptingUsers: true
       },
       baseUrl: 'http://peer.decentraland.zone'
     })

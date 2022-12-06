@@ -198,7 +198,8 @@ function* initializeCatalystCandidates() {
 
 export async function checkValidRealm(baseUrl: string): Promise<PingResult | null> {
   const pingResult = await ping(baseUrl + '/about')
-  if (pingResult.status === ServerConnectionStatus.OK) {
+  const acceptingUsers = pingResult.result && (pingResult.result.acceptingUsers ?? true)
+  if (pingResult.status === ServerConnectionStatus.OK && acceptingUsers) {
     return pingResult
   }
   return null
