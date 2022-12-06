@@ -155,3 +155,32 @@ export function validateFriendRequestId(friendRequestId: string, ownId: string) 
 
   return friendRequestId.includes(ownId)
 }
+
+/**
+ * Encode friendRequestId from the user IDs involved in the friendship event.
+ * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
+ * @param ownId
+ * @param otherUserId
+ */
+export function encodeFriendRequestId(ownId: string, otherUserId: string) {
+  // We always want the friendRequestId to be formed with the pattern '0x1111ada11111'
+  ownId = getUserIdFromMatrix(ownId)
+  otherUserId = getUserIdFromMatrix(otherUserId)
+
+  return ownId < otherUserId ? `${ownId}_${otherUserId}` : `${otherUserId}_${ownId}`
+}
+
+/**
+ * Decode friendRequestId to get otherUserId value.
+ * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
+ * @param friendRequestId
+ * @return `{ ownId, otherUserId }`
+ */
+export function decodeFriendRequestId(friendRequestId: string) {
+  const firstUserId = friendRequestId.split('_')[0]
+  const secondUserId = friendRequestId.split('_')[1]
+
+  return firstUserId < secondUserId
+    ? { ownId: firstUserId, otherUserId: secondUserId }
+    : { ownId: secondUserId, otherUserId: firstUserId }
+}
