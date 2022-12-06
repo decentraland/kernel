@@ -117,7 +117,9 @@ import {
   areChannelsEnabled,
   getMaxChannels,
   getNormalizedRoomName,
-  getUsersAllowedToCreate
+  getUsersAllowedToCreate,
+  encodeFriendRequestId,
+  decodeFriendRequestId
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -537,14 +539,18 @@ function* refreshFriends() {
 
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
+        friendRequestId: encodeFriendRequestId(ownId, request.from),
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrix(request.from)
+        userId: getUserIdFromMatrix(request.from),
+        message: request.message
       })
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
+        friendRequestId: encodeFriendRequestId(ownId, request.to),
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrix(request.to)
+        userId: getUserIdFromMatrix(request.to),
+        message: request.message
       })
     )
 
@@ -673,7 +679,7 @@ export async function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
-// TODO! @deprecated
+// @TODO! @deprecated
 export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
   const realmAdapter = await ensureRealmAdapterPromise()
@@ -710,45 +716,75 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
 }
 
 // New friend request flow
-/*
-export async function getFriendRequests(request: GetFriendRequestsPayload) {
-  const friends: FriendsState = getPrivateMessaging(store.getState())
-  const realmAdapter = await ensureRealmAdapterPromise()
-  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
+  try {
+    // Get friends
+    const friends: FriendsState = getPrivateMessaging(store.getState())
 
-  const fromFriendRequests = friends.fromFriendRequests.slice(
-    request.receivedSkip,
-    request.receivedSkip + request.receivedLimit
-  )
-  const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
+    const realmAdapter = await ensureRealmAdapterPromise()
+    const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
-  const fromIds = fromFriendRequests.map((friend) => friend.userId)
-  const toIds = toFriendRequests.map((friend) => friend.userId)
+    //
+    const fromFriendRequests = friends.fromFriendRequests.slice(
+      request.receivedSkip,
+      request.receivedSkip + request.receivedLimit
+    )
+    const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
+    const fromIds = fromFriendRequests.map((friend) => friend.userId)
+    const toIds = toFriendRequests.map((friend) => friend.userId)
 
-  const addFriendRequestsPayload: AddFriendRequestsPayload = {
-    messageId: request.messageId,
-    requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend)),
-    requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend)),
-    totalReceivedFriendRequests: friends.fromFriendRequests.length,
-    totalSentFriendRequests: friends.toFriendRequests.length
+    // Get profiles
+    const friendsIds = toIds.concat(fromIds)
+    const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
+    const profilesForRenderer = friendRequestsProfiles.map((friend) =>
+      profileToRendererFormat(friend.data, {
+        baseUrl: fetchContentServerWithPrefix
+      })
+    )
+
+    // Send profiles to unity
+    getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+    store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
+
+    // Map response
+    const friendRequests = {
+      requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend, 'to')),
+      requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend, 'from')),
+      totalReceivedFriendRequests: friends.fromFriendRequests.length,
+      totalSentFriendRequests: friends.toFriendRequests.length
+    }
+
+    // Return requests
+    return friendRequests
+  } catch {
+    throw new Error()
   }
+}
 
-  // get friend requests profiles
-  const friendsIds = toIds.concat(fromIds)
-  const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
-  const profilesForRenderer = friendRequestsProfiles.map((friend) =>
-    profileToRendererFormat(friend.data, {
-      baseUrl: fetchContentServerWithPrefix
-    })
-  )
-
-  // send friend requests profiles
-  getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
-  store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
-
-  // send friend requests
-  getUnityInstance().AddFriendRequestsV2(addFriendRequestsPayload)
-}*/
+/**
+ * Map FriendRequest to FriendRequestPayload
+ * @param friend a FriendRequest type we want to map to FriendRequestPayload
+ *
+ */
+function getFriendRequestInfo(friend: FriendRequest, source: string) {
+  if (source === 'to') {
+    return {
+      friendRequestId: friend.friendRequestId,
+      timestamp: friend.createdAt,
+      from: decodeFriendRequestId(friend.friendRequestId).ownId,
+      to: friend.userId,
+      messageBody: friend.userId
+    }
+  } else {
+    return {
+      friendRequestId: friend.friendRequestId,
+      timestamp: friend.createdAt,
+      from: friend.userId,
+      to: decodeFriendRequestId(friend.friendRequestId).ownId,
+      messageBody: friend.message
+    }
+  }
+}
 
 export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {
   const client: SocialAPI | null = getSocialClient(store.getState())
@@ -1119,6 +1155,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
+    const ownId = client.getUserId()
+    const friendRequestId = encodeFriendRequestId(ownId, userId)
+
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
@@ -1200,7 +1239,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId }]
+            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
           }
         }
 
@@ -1217,7 +1256,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId }]
+            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
           }
         }
 

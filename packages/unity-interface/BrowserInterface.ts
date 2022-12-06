@@ -490,7 +490,7 @@ export class BrowserInterface {
     getFriends(getFriendsRequest).catch(defaultLogger.error)
   }
 
-  // TODO! @deprecated
+  // @TODO! @deprecated
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
     getFriendRequests(getFriendRequestsPayload).catch((err) => {
       defaultLogger.error('error getFriendRequestsDeprecate', err),

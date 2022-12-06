@@ -495,7 +495,7 @@ export interface GetFriendsPayload {
   skip: number // amount of entries to skip
 }
 
-// TODO! @deprecated
+// @TODO! @deprecated
 export interface GetFriendRequestsPayload {
   sentLimit: number // max amount of entries of sent friend requests to request
   sentSkip: number // the amount of entries of sent friend requests to skip
@@ -541,7 +541,7 @@ export interface AddFriendsPayload {
   totalFriends: number // total amount of friends
 }
 
-// @TODO! - Deprecated
+// @TODO! - @deprecated
 export interface AddFriendRequestsPayload {
   requestedTo: string[] // user ids which you sent a request
   requestedFrom: string[] // user ids which you received a request

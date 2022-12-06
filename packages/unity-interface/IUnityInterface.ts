@@ -176,7 +176,7 @@ export interface IUnityInterface {
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
   AddFriends(addFriendsPayload: AddFriendsPayload): void
-  // TODO! @deprecated
+  // @TODO! @deprecated
   AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
   UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
   UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void
