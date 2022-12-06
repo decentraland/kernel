@@ -686,15 +686,6 @@ export enum ChannelErrorCode {
   ALREADY_EXISTS = 4 // The name has already been used
 }
 
-export enum FriendshipErrorCode {
-  TOO_MANY_REQUESTS_SENT = 0, // Any uncategorized friend request related error
-  NOT_ENOUGH_TIME_PASSED = 1,
-  BLOCKED_USER = 2,
-  NON_EXISTING_USER = 3,
-  INVALID_REQUEST = 4,
-  UNKNOWN = 5
-}
-
 export type JoinOrCreateChannelPayload = CreateChannelPayload
 
 export type CreateChannelPayload = {
@@ -790,34 +781,3 @@ export type UsersAllowed = {
   mode: number
   allowList: string[]
 }
-
-export type FriendRequestPayload = {
-  friendRequestId: string
-  timestamp: number
-  from: string
-  to: string
-  messageBody?: string | undefined
-}
-
-export type FriendshipConfirmationPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  friendRequestId: string
-}
-
-export type FriendshipErrorPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  errorCode: number
-}
-
-export type RequestFriendshipPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  userId: string
-  messageBody: string
-}
-
-export type RequestFriendshipConfirmationPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  friendRequest: FriendRequestPayload
-}
-
-export type RequestFriendshipErrorPayload = FriendshipErrorPayload

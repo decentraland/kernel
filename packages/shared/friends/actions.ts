@@ -10,9 +10,8 @@ export const updateFriendship = (
   _action: FriendshipAction,
   userId: string,
   incoming: boolean,
-  messageId: string | null,
   messageBody?: string | undefined
-) => action(UPDATE_FRIENDSHIP, { action: _action, messageId, userId, messageBody }, { incoming })
+) => action(UPDATE_FRIENDSHIP, { action: _action, userId, messageBody }, { incoming })
 export type UpdateFriendship = ReturnType<typeof updateFriendship>
 
 export const SET_MATRIX_CLIENT = '[CHAT] Set Matrix client'

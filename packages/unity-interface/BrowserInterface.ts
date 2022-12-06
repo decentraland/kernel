@@ -695,13 +695,13 @@ export class BrowserInterface {
     store.dispatch(setVoiceChatPolicy(settingsMessage.voiceChatAllowCategory))
   }
 
+  // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     try {
       let { userId } = message
       let found = false
       const state = store.getState()
 
-      // TODO!: With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
       if (message.action === FriendshipAction.REQUESTED_TO) {
         const avatar = await ensureFriendProfile(userId)
@@ -735,7 +735,7 @@ export class BrowserInterface {
       }
 
       store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false, null))
+      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
     } catch (error) {
       const message = 'Failed while processing updating friendship status'
       defaultLogger.error(message, error)
