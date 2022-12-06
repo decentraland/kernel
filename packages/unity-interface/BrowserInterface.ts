@@ -32,8 +32,7 @@ import {
   GetChannelInfoPayload,
   SetAudioDevicesPayload,
   JoinOrCreateChannelPayload,
-  GetChannelMembersPayload,
-  RequestFriendshipPayload
+  GetChannelMembersPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -99,8 +98,7 @@ import {
   getChannelInfo,
   searchChannels,
   joinChannel,
-  getChannelMembers,
-  requestFriendship
+  getChannelMembers
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
@@ -748,17 +746,6 @@ export class BrowserInterface {
         stack: '' + error
       })
     }
-  }
-
-  public RequestFriendship(requestFriendshipPayload: RequestFriendshipPayload) {
-    requestFriendship(requestFriendshipPayload).catch((err) => {
-      defaultLogger.error('error requestFriendship', err),
-        trackEvent('error', {
-          message: `error sending friend request ${requestFriendshipPayload.messageId} ` + err.message,
-          context: 'kernel#friendsSaga',
-          stack: 'requestFriendship'
-        })
-    })
   }
 
   public CreateChannel(createChannelPayload: CreateChannelPayload) {

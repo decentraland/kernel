@@ -1293,7 +1293,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             to: getUserIdFromMatrix(ownId),
             messageBody
           }
-          getUnityInstance().AddFriendRequest(fromFriendRequest)
+          console.log(fromFriendRequest)
         }
 
         break
@@ -1480,11 +1480,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
             to: getUserIdFromMatrix(update.userId),
             messageBody: update.messageBody
           }
-
-          getUnityInstance().RequestFriendshipConfirmation({
-            messageId: update.messageId, // an unique id to handle the renderer <-> kernel communication
-            friendRequest: toFriendRequest
-          })
+          console.log(toFriendRequest)
         }
 
         break
@@ -2169,12 +2165,7 @@ export async function requestFriendship(request: RequestFriendshipPayload) {
  * @param messageId - an unique id to handle the renderer <-> kernel communication
  * @param errorCode
  */
-function notifyRequestFriendshipError(messageId: string, errorCode: number) {
-  getUnityInstance().RequestFriendshipError({
-    messageId,
-    errorCode
-  })
-}
+function notifyRequestFriendshipError(messageId: string, errorCode: number) {}
 
 /**
  * Handle friendship related error message to unity

@@ -33,10 +33,7 @@ import {
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
   ChannelErrorPayload,
-  SetAudioDevicesPayload,
-  RequestFriendshipConfirmationPayload,
-  RequestFriendshipErrorPayload,
-  FriendRequestPayload
+  SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -424,22 +421,6 @@ export class UnityInterface implements IUnityInterface {
 
   public FriendNotFound(queryString: string) {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
-  }
-
-  public RequestFriendshipConfirmation(requestFriendshipConfirmationPayload: RequestFriendshipConfirmationPayload) {
-    this.SendMessageToUnity(
-      'Main',
-      'RequestFriendshipConfirmation',
-      JSON.stringify(requestFriendshipConfirmationPayload)
-    )
-  }
-
-  public RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload) {
-    this.SendMessageToUnity('Main', 'RequestFriendshipError', JSON.stringify(requestFriendshipErrorPayload))
-  }
-
-  public AddFriendRequest(friendRequestPayload: FriendRequestPayload) {
-    this.SendMessageToUnity('Main', 'AddFriendRequest', JSON.stringify(friendRequestPayload))
   }
 
   public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {
