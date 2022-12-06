@@ -1,6 +1,6 @@
-import {PARCEL_LOADING_STARTED} from 'shared/renderer/types'
-import {INIT_SESSION} from 'shared/session/actions'
-import {action} from 'typesafe-actions'
+import { PARCEL_LOADING_STARTED } from 'shared/renderer/types'
+import { INIT_SESSION } from 'shared/session/actions'
+import { action } from 'typesafe-actions'
 
 export const NOT_STARTED = 'Getting things ready...'
 export const notStarted = () => action(NOT_STARTED)

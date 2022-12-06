@@ -1,5 +1,5 @@
-import {LoadableScene} from 'shared/types'
-import {action} from 'typesafe-actions'
+import { LoadableScene } from 'shared/types'
+import { action } from 'typesafe-actions'
 
 export const SCENE_LOAD = '[SCENE MANAGER] Loading scene'
 export const SCENE_START = '[SCENE MANAGER] Started scene'
@@ -26,4 +26,3 @@ export const UPDATE_STATUS_MESSAGE = '[RENDERER] Update loading message'
 export const updateStatusMessage = (message: string, loadPercentage: number) =>
   action(UPDATE_STATUS_MESSAGE, { message, loadPercentage })
 export type UpdateStatusMessage = ReturnType<typeof updateStatusMessage>
-

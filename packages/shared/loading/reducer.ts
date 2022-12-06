@@ -1,18 +1,12 @@
 import { AnyAction } from 'redux'
 import { PENDING_SCENES, InformPendingScenes, UPDATE_STATUS_MESSAGE } from './actions'
-import {
-  FATAL_ERROR,
-  ExecutionLifecycleEvent,
-  EXPERIENCE_STARTED,
-  NOT_STARTED,
-  TELEPORT_TRIGGERED
-} from './types'
+import { FATAL_ERROR, ExecutionLifecycleEvent, EXPERIENCE_STARTED, NOT_STARTED, TELEPORT_TRIGGERED } from './types'
 import {
   RENDERING_ACTIVATED,
   RENDERING_BACKGROUND,
   RENDERING_DEACTIVATED,
   RENDERING_FOREGROUND
-} from "../loadingScreen/types";
+} from '../loadingScreen/types'
 
 export type LoadingState = {
   status: ExecutionLifecycleEvent

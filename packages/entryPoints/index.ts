@@ -1,4 +1,4 @@
-import {renderingInBackground, renderingInForeground} from "../shared/loadingScreen/types";
+import { renderingInBackground, renderingInForeground } from '../shared/loadingScreen/types'
 
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 

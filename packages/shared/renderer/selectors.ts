@@ -1,5 +1,5 @@
-import {store} from 'shared/store/isolatedStore'
-import {RendererModules, RootRendererState} from './types'
+import { store } from 'shared/store/isolatedStore'
+import { RendererModules, RootRendererState } from './types'
 
 export function isRendererInitialized(state: RootRendererState) {
   return state && state.renderer && state.renderer.initialized

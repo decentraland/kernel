@@ -1,5 +1,5 @@
 ﻿/** All members declared here are used for Loading screen reporting only, and thus are deprecated, and will be removed */
-import {action} from "typesafe-actions";
+import { action } from 'typesafe-actions'
 
 export const RENDERING_ACTIVATED = '[RENDERER] Camera activated'
 export const renderingActivated = () => action(RENDERING_ACTIVATED)

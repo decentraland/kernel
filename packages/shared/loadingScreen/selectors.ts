@@ -1,12 +1,12 @@
-﻿import {RootState} from "../store/rootTypes";
-import {DEBUG_DISABLE_LOADING} from "../../config";
-import {LoginState} from "@dcl/kernel-interface";
-import {getIsSignUp} from "../session/selectors";
-import {RootRendererState} from "../renderer/types";
+﻿import { RootState } from '../store/rootTypes'
+import { DEBUG_DISABLE_LOADING } from '../../config'
+import { LoginState } from '@dcl/kernel-interface'
+import { getIsSignUp } from '../session/selectors'
+import { RootRendererState } from '../renderer/types'
 
 /** @deprecated #3642 */
 export function isLoadingScreenVisible(state: RootState) {
-  const {session, renderer, sceneLoader} = state
+  const { session, renderer, sceneLoader } = state
 
   if (state.loading.renderingWasActivated && DEBUG_DISABLE_LOADING) {
     // hack, remove in RFC-1
@@ -51,7 +51,7 @@ export function isRendererVisible(state: RootState) {
   }
 
   // some login stages requires the renderer to be turned off
-  const {loginState} = state.session
+  const { loginState } = state.session
   if (loginState === LoginState.WAITING_PROFILE && getIsSignUp(state)) {
     return true
   }

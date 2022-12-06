@@ -106,7 +106,7 @@ import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } f
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
 import { rendererSignalSceneReady } from 'shared/world/actions'
 import { requestMediaDevice } from '../shared/voiceChat/sagas'
-import {renderingActivated, renderingDectivated} from "../shared/loadingScreen/types";
+import { renderingActivated, renderingDectivated } from '../shared/loadingScreen/types'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}

@@ -1,4 +1,4 @@
-﻿import {action} from 'typesafe-actions';
+﻿import { action } from 'typesafe-actions'
 
 export const UPDATE_LOADING_SCREEN = '[RENDERER] Refresh loading screen visible'
 

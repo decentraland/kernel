@@ -1,26 +1,34 @@
-import {AnyAction} from 'redux'
-import {fork, put, race, select, take, takeEvery, takeLatest} from 'redux-saga/effects'
+import { AnyAction } from 'redux'
+import { fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 
-import {RENDERER_INITIALIZED_CORRECTLY} from 'shared/renderer/types'
-import {CHANGE_LOGIN_STAGE, ChangeLoginStateAction} from 'shared/session/actions'
-import {trackEvent} from '../analytics'
-import {lastPlayerPosition} from '../world/positionThings'
+import { RENDERER_INITIALIZED_CORRECTLY } from 'shared/renderer/types'
+import { CHANGE_LOGIN_STAGE, ChangeLoginStateAction } from 'shared/session/actions'
+import { trackEvent } from '../analytics'
+import { lastPlayerPosition } from '../world/positionThings'
 
-import {informPendingScenes, SCENE_CHANGED, SCENE_FAIL, SCENE_LOAD, SCENE_START, SceneFail, SceneLoad} from './actions'
-import {experienceStarted, metricsAuthSuccessful, metricsUnityClientLoaded} from './types'
-import {getCurrentUserId} from 'shared/session/selectors'
-import {LoginState} from '@dcl/kernel-interface'
-import {call} from 'redux-saga-test-plan/matchers'
-import {RootState} from 'shared/store/rootTypes'
-import {onLoginCompleted} from 'shared/session/sagas'
-import {getResourcesURL} from 'shared/location'
-import {getSelectedNetwork} from 'shared/dao/selectors'
-import {getAssetBundlesBaseUrl} from 'config'
-import {loadedSceneWorkers} from 'shared/world/parcelSceneManager'
-import {SceneWorkerReadyState} from 'shared/world/SceneWorker'
-import {LoadableScene} from 'shared/types'
-import {updateLoadingScreen} from "../loadingScreen/actions";
-import {ACTIONS_FOR_LOADING} from "../loadingScreen/sagas";
+import {
+  informPendingScenes,
+  SCENE_CHANGED,
+  SCENE_FAIL,
+  SCENE_LOAD,
+  SCENE_START,
+  SceneFail,
+  SceneLoad
+} from './actions'
+import { experienceStarted, metricsAuthSuccessful, metricsUnityClientLoaded } from './types'
+import { getCurrentUserId } from 'shared/session/selectors'
+import { LoginState } from '@dcl/kernel-interface'
+import { call } from 'redux-saga-test-plan/matchers'
+import { RootState } from 'shared/store/rootTypes'
+import { onLoginCompleted } from 'shared/session/sagas'
+import { getResourcesURL } from 'shared/location'
+import { getSelectedNetwork } from 'shared/dao/selectors'
+import { getAssetBundlesBaseUrl } from 'config'
+import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
+import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
+import { LoadableScene } from 'shared/types'
+import { updateLoadingScreen } from '../loadingScreen/actions'
+import { ACTIONS_FOR_LOADING } from '../loadingScreen/sagas'
 
 export function* loadingSaga() {
   yield takeEvery(SCENE_LOAD, trackLoadTime)
