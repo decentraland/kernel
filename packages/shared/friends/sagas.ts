@@ -2052,9 +2052,9 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     let found = false
     const state = store.getState()
 
-    // search user profile on server
+    // Search user profile on server
     if (isAddress(userId)) {
-      // ensure user profile is initialized and send to renderer
+      // Ensure user profile is initialized and send it to renderer
       const avatar = await ensureFriendProfile(userId)
       found = avatar.hasConnectedWeb3 || false
     } else {
@@ -2065,12 +2065,12 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       }
     }
 
-    // if user profile was not found on server -> no connected web3, check if it's a claimed name
+    // If user profile was not found on the server -> no connected web3, check if it has a name claimed
     if (!found) {
       const net = getSelectedNetwork(state)
       const address = await fetchENSOwner(ethereumConfigurations[net].names, userId)
       if (address) {
-        // if an address was found for the name, set it as user id
+        // If an address was found by the name, set it as user id
         userId = address
         found = true
       }
@@ -2080,11 +2080,10 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       return FriendshipErrorCode.FEC_NON_EXISTING_USER
     }
 
-    // dispatch actions
+    // Update user data
     store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
-    store.dispatch(
-      updateFriendship(FriendshipAction.REQUESTED_TO, request.userId.toLowerCase(), false, request.messageBody)
-    )
+
+    // Add as friend
   } catch {
     return FriendshipErrorCode.FEC_UNKNOWN
   }

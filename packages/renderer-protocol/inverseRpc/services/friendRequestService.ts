@@ -4,9 +4,10 @@ import * as codegen from '@dcl/rpc/dist/codegen'
 import {
   FriendRequestKernelServiceDefinition,
   FriendshipErrorCode,
-  GetFriendRequestsReply
+  GetFriendRequestsReply,
+  SendFriendRequestReply
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
-import { getFriendRequestsNew } from '../../../shared/friends/sagas'
+import { getFriendRequestsNew, requestFriendship } from '../../../shared/friends/sagas'
 
 export function registerFriendRequestKernelService(port: RpcServerPort<RendererProtocolContext>) {
   codegen.registerService(port, FriendRequestKernelServiceDefinition, async () => ({
@@ -45,8 +46,19 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
     },
 
     async sendFriendRequest(req, _) {
-      // Logic
-      return {}
+      try {
+        const requestFriendshipReply = await requestFriendship(req)
+
+        return {}
+      } catch {
+        const sendFriendRequestReply: SendFriendRequestReply = {
+          message: {
+            $case: 'error',
+            error: FriendshipErrorCode.FEC_UNKNOWN
+          }
+        }
+        return sendFriendRequestReply
+      }
     },
 
     async cancelFriendRequest(req, _) {
