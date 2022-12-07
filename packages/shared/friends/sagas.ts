@@ -565,7 +565,7 @@ function* refreshFriends() {
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: encodeFriendRequestId(ownId, request.from),
+        friendRequestId: encodeFriendRequestId(ownId, request.to),
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.to),
         message: request.message
