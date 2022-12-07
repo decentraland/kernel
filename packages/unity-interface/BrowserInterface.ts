@@ -539,6 +539,7 @@ export class BrowserInterface {
         store.dispatch(rendererSignalSceneReady(sceneId, sceneNumber))
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'DeactivateRenderingACK': {
         /**
          * This event is called everytime the renderer deactivates its camera
@@ -547,6 +548,7 @@ export class BrowserInterface {
         console.log('DeactivateRenderingACK')
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'ActivateRenderingACK': {
         /**
          * This event is called everytime the renderer activates the main camera
