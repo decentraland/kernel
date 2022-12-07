@@ -229,6 +229,9 @@ export class SceneWorker {
     queueMicrotask(() => {
       // this NEEDS to run in a microtask because sagas control this .dispose
       sceneEvents.emit(SCENE_UNLOAD, signalSceneUnload(this.loadableScene))
+
+      // TODO: Should this rpc call be moved somewhere else?
+      this.rpcContext.rpcSceneControllerService.unloadScene({})
     })
 
     if ((this.ready & disposingFlags) === 0) {
