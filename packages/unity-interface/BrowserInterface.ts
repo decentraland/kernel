@@ -70,7 +70,7 @@ import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
 import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
-import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
+import { AVATAR_LOADING_ERROR } from 'shared/loading/types'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { store } from 'shared/store/isolatedStore'
@@ -106,6 +106,7 @@ import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } f
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
 import { rendererSignalSceneReady } from 'shared/world/actions'
 import { requestMediaDevice } from '../shared/voiceChat/sagas'
+import { renderingActivated, renderingDectivated } from '../shared/loadingScreen/types'
 
 declare const globalThis: { gifProcessor?: GIFProcessor }
 export const futures: Record<string, IFuture<any>> = {}
@@ -538,6 +539,7 @@ export class BrowserInterface {
         store.dispatch(rendererSignalSceneReady(sceneId, sceneNumber))
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'DeactivateRenderingACK': {
         /**
          * This event is called everytime the renderer deactivates its camera
@@ -546,6 +548,7 @@ export class BrowserInterface {
         console.log('DeactivateRenderingACK')
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'ActivateRenderingACK': {
         /**
          * This event is called everytime the renderer activates the main camera

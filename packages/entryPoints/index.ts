@@ -1,10 +1,11 @@
+import { renderingInBackground, renderingInForeground } from '../shared/loadingScreen/types'
+
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
 import { sdk } from '@dcl/schemas'
 import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
-import { renderingInBackground, renderingInForeground } from 'shared/loading/types'
 import { gridToWorld, parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
 import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
 import 'unity-interface/trace'
