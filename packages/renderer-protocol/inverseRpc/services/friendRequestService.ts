@@ -7,33 +7,45 @@ import {
   GetFriendRequestsReply,
   SendFriendRequestReply
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
-import { getFriendRequestsNew, requestFriendship } from '../../../shared/friends/sagas'
+import { getFriendRequestsProtocol, requestFriendship } from '../../../shared/friends/sagas'
+import defaultLogger from '../../../shared/logger'
 
 export function registerFriendRequestKernelService(port: RpcServerPort<RendererProtocolContext>) {
   codegen.registerService(port, FriendRequestKernelServiceDefinition, async () => ({
     async getFriendRequests(req, _) {
       try {
-        const friendRequestReply = await getFriendRequestsNew({
-          sentLimit: req.sentLimit,
-          sentSkip: req.sentSkip,
-          receivedLimit: req.receivedLimit,
-          receivedSkip: req.receivedSkip
-        })
+        // Go get friend requests
+        const friendRequests = await getFriendRequestsProtocol(req)
 
-        const getFriendRequestsReply: GetFriendRequestsReply = {
-          message: {
-            $case: 'reply',
-            reply: {
-              requestedTo: friendRequestReply.requestedTo,
-              requestedFrom: friendRequestReply.requestedFrom,
-              totalReceivedFriendRequests: friendRequestReply.totalReceivedFriendRequests,
-              totalSentFriendRequests: friendRequestReply.totalSentFriendRequests
+        let getFriendRequestsReply: GetFriendRequestsReply = {}
+
+        // Check the response
+        if (friendRequests.error !== null) {
+          getFriendRequestsReply = {
+            message: {
+              $case: 'error',
+              error: FriendshipErrorCode.FEC_UNKNOWN
+            }
+          }
+        } else {
+          getFriendRequestsReply = {
+            message: {
+              $case: 'reply',
+              reply: {
+                requestedTo: friendRequests.reply.requestedTo,
+                requestedFrom: friendRequests.reply.requestedFrom,
+                totalReceivedFriendRequests: friendRequests.reply.totalReceivedFriendRequests,
+                totalSentFriendRequests: friendRequests.reply.totalSentFriendRequests
+              }
             }
           }
         }
 
+        // Send response back to renderer
         return getFriendRequestsReply
-      } catch {
+      } catch (err) {
+        defaultLogger.error('Error while getting friend requests via rpc', err)
+
         const getFriendRequestsReply: GetFriendRequestsReply = {
           message: {
             $case: 'error',
@@ -41,6 +53,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           }
         }
 
+        // Send response back to renderer
         return getFriendRequestsReply
       }
     },
