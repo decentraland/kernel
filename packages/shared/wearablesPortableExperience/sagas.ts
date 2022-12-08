@@ -17,6 +17,7 @@ import {
   PROCESS_WEARABLES,
   removeDesiredPortableExperience
 } from './actions'
+import { store } from 'shared/store/isolatedStore'
 
 export function* wearablesPortableExperienceSaga(): any {
   yield takeLatest(PROFILE_SUCCESS, handleSelfProfileSuccess)
@@ -141,4 +142,10 @@ export async function wearableToSceneEntity(wearable: WearableV2, defaultBaseUrl
       version: 'v3'
     }
   }
+}
+
+globalThis.__debug_wearables = async function(address) {
+  const r = await fetch(`https://peer.decentraland.org/lambdas/collections/wearables-by-owner/${address}`)
+  const wearables: { urn: string }[] = await r.json()
+  store.dispatch(wearablesRequest({ wearableIds: wearables.map($ => $.urn) }))
 }
