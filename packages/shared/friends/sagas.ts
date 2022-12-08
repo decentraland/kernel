@@ -118,8 +118,7 @@ import {
   getMaxChannels,
   getNormalizedRoomName,
   getUsersAllowedToCreate,
-  encodeFriendRequestId,
-  decodeFriendRequestId
+  encodeFriendRequestId
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -128,6 +127,11 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import {
+  FriendshipErrorCode,
+  GetFriendRequestsReplyOk,
+  FriendRequestInfo
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -716,7 +720,7 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
 }
 
 // New friend request flow
-export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
+export async function getFriendRequestsProtocol(request: GetFriendRequestsPayload) {
   try {
     // Get friends
     const friends: FriendsState = getPrivateMessaging(store.getState())
@@ -724,7 +728,6 @@ export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
     const realmAdapter = await ensureRealmAdapterPromise()
     const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
-    //
     const fromFriendRequests = friends.fromFriendRequests.slice(
       request.receivedSkip,
       request.receivedSkip + request.receivedLimit
@@ -747,7 +750,7 @@ export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
     store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
 
     // Map response
-    const friendRequests = {
+    const friendRequests: GetFriendRequestsReplyOk = {
       requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend, false)),
       requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend, true)),
       totalReceivedFriendRequests: friends.fromFriendRequests.length,
@@ -755,9 +758,12 @@ export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
     }
 
     // Return requests
-    return friendRequests
-  } catch {
-    throw new Error()
+    return { reply: friendRequests, error: null }
+  } catch (err) {
+    logAndTrackError('Error while getting friend requests via rpc', err)
+
+    // Return error
+    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
@@ -769,21 +775,25 @@ export async function getFriendRequestsNew(request: GetFriendRequestsPayload) {
  */
 function getFriendRequestInfo(friend: FriendRequest, incoming: boolean) {
   if (incoming) {
-    return {
+    const ownId = store.getState().friends.client?.getUserId() ?? ''
+    const friendRequest: FriendRequestInfo = {
       friendRequestId: friend.friendRequestId,
       timestamp: friend.createdAt,
       from: friend.userId,
-      to: decodeFriendRequestId(friend.friendRequestId).ownId,
+      to: getUserIdFromMatrix(ownId),
       messageBody: friend.message
     }
+    return friendRequest
   } else {
-    return {
+    const ownId = store.getState().friends.client?.getUserId() ?? ''
+    const friendRequest: FriendRequestInfo = {
       friendRequestId: friend.friendRequestId,
       timestamp: friend.createdAt,
-      from: decodeFriendRequestId(friend.friendRequestId).ownId,
+      from: getUserIdFromMatrix(ownId),
       to: friend.userId,
       messageBody: friend.userId
     }
+    return friendRequest
   }
 }
 
