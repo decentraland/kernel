@@ -108,7 +108,7 @@ import { rendererSignalSceneReady } from 'shared/world/actions'
 import { requestMediaDevice } from '../shared/voiceChat/sagas'
 import { renderingActivated, renderingDectivated } from '../shared/loadingScreen/types'
 
-declare const globalThis: { gifProcessor?: GIFProcessor }
+declare const globalThis: { gifProcessor?: GIFProcessor; __debug_wearables: any }
 export const futures: Record<string, IFuture<any>> = {}
 
 type UnityEvent = any
