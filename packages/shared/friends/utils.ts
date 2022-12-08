@@ -169,18 +169,3 @@ export function encodeFriendRequestId(ownId: string, otherUserId: string) {
 
   return ownId < otherUserId ? `${ownId}_${otherUserId}` : `${otherUserId}_${ownId}`
 }
-
-/**
- * Decode friendRequestId to get otherUserId value.
- * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
- * @param friendRequestId
- * @return `{ ownId, otherUserId }`
- */
-export function decodeFriendRequestId(friendRequestId: string) {
-  const firstUserId = friendRequestId.split('_')[0]
-  const secondUserId = friendRequestId.split('_')[1]
-
-  return firstUserId < secondUserId
-    ? { ownId: firstUserId, otherUserId: secondUserId }
-    : { ownId: secondUserId, otherUserId: firstUserId }
-}
