@@ -33,12 +33,7 @@ import {
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
   ChannelErrorPayload,
-  SetAudioDevicesPayload,
-  RequestFriendshipConfirmationPayload,
-  RequestFriendshipErrorPayload,
-  FriendRequestPayload,
-  CancelFriendshipConfirmationPayload,
-  CancelFriendshipErrorPayload
+  SetAudioDevicesPayload
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -123,6 +118,7 @@ export class UnityInterface implements IUnityInterface {
     icon?: string
     isPortableExperience: boolean
     sceneNumber: number
+    sdk7: boolean
   }) {
     /**
      * UI Scenes are scenes that does not check any limit or boundary. The
@@ -380,6 +376,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
   }
 
+  // @TODO! @deprecated
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
@@ -424,30 +421,6 @@ export class UnityInterface implements IUnityInterface {
 
   public FriendNotFound(queryString: string) {
     this.SendMessageToUnity('Main', 'FriendNotFound', JSON.stringify(queryString))
-  }
-
-  public RequestFriendshipConfirmation(requestFriendshipConfirmationPayload: RequestFriendshipConfirmationPayload) {
-    this.SendMessageToUnity(
-      'Main',
-      'RequestFriendshipConfirmation',
-      JSON.stringify(requestFriendshipConfirmationPayload)
-    )
-  }
-
-  public CancelFriendshipConfirmation(cancelFriendshipConfirmationPayload: CancelFriendshipConfirmationPayload) {
-    this.SendMessageToUnity('Main', 'CancelFriendshipConfirmation', JSON.stringify(cancelFriendshipConfirmationPayload))
-  }
-
-  public RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload) {
-    this.SendMessageToUnity('Main', 'RequestFriendshipError', JSON.stringify(requestFriendshipErrorPayload))
-  }
-
-  public CancelFriendshipError(cancelFriendshipErrorPayload: CancelFriendshipErrorPayload) {
-    this.SendMessageToUnity('Main', 'CancelFriendshipError', JSON.stringify(cancelFriendshipErrorPayload))
-  }
-
-  public AddFriendRequest(friendRequestPayload: FriendRequestPayload) {
-    this.SendMessageToUnity('Main', 'AddFriendRequest', JSON.stringify(friendRequestPayload))
   }
 
   public JoinChannelConfirmation(channelInfoPayload: ChannelInfoPayloads) {

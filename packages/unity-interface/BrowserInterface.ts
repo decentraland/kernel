@@ -32,9 +32,7 @@ import {
   GetChannelInfoPayload,
   SetAudioDevicesPayload,
   JoinOrCreateChannelPayload,
-  GetChannelMembersPayload,
-  RequestFriendshipPayload,
-  CancelFriendshipPayload
+  GetChannelMembersPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -45,7 +43,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { receivePositionReport } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -101,8 +99,7 @@ import {
   searchChannels,
   joinChannel,
   getChannelMembers,
-  requestFriendship,
-  cancelFriendship
+  UpdateFriendshipAsPromise
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
@@ -329,7 +326,7 @@ export class BrowserInterface {
     trackEvent('performance report', perfReport)
   }
 
-  // TODO: remove useBinaryTransform after ECS7 is fully in prod
+  // TODO: remove useBinaryTransform after SDK7 is fully in prod
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 
@@ -395,7 +392,10 @@ export class BrowserInterface {
 
   public GoTo(data: { x: number; y: number }) {
     notifyStatusThroughChat(`Jumped to ${data.x},${data.y}!`)
-    TeleportController.goTo(data.x, data.y)
+    TeleportController.goTo(data.x, data.y).then(
+      () => {},
+      () => {}
+    )
   }
 
   public GoToMagic() {
@@ -491,8 +491,16 @@ export class BrowserInterface {
     getFriends(getFriendsRequest).catch(defaultLogger.error)
   }
 
+  // @TODO! @deprecated
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
+    getFriendRequests(getFriendRequestsPayload).catch((err) => {
+      defaultLogger.error('error getFriendRequestsDeprecate', err),
+        trackEvent('error', {
+          message: `error getting friend requests ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getFriendRequestsDeprecate'
+        })
+    })
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
@@ -582,7 +590,7 @@ export class BrowserInterface {
   public SetScenesLoadRadius(data: { newRadius: number }) {
     parcelLimits.visibleRadius = Math.round(data.newRadius)
 
-    store.dispatch(setWorldLoadingRadius(parcelLimits.visibleRadius))
+    store.dispatch(setWorldLoadingRadius(Math.max(parcelLimits.visibleRadius, 1)))
   }
 
   public GetUnseenMessagesByUser() {
@@ -688,6 +696,7 @@ export class BrowserInterface {
     store.dispatch(setVoiceChatPolicy(settingsMessage.voiceChatAllowCategory))
   }
 
+  // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     try {
       let { userId } = message
@@ -696,6 +705,7 @@ export class BrowserInterface {
 
       // TODO!: With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       if (message.action === FriendshipAction.REQUESTED_TO) {
         const avatar = await ensureFriendProfile(userId)
 
@@ -721,6 +731,7 @@ export class BrowserInterface {
         }
       }
 
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       if (message.action === FriendshipAction.REQUESTED_TO && !found) {
         // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
         getUnityInstance().FriendNotFound(userId)
@@ -728,7 +739,7 @@ export class BrowserInterface {
       }
 
       store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false, null))
+      await UpdateFriendshipAsPromise(message.action, userId.toLowerCase(), false)
     } catch (error) {
       const message = 'Failed while processing updating friendship status'
       defaultLogger.error(message, error)
@@ -739,28 +750,6 @@ export class BrowserInterface {
         stack: '' + error
       })
     }
-  }
-
-  public RequestFriendship(requestFriendshipPayload: RequestFriendshipPayload) {
-    requestFriendship(requestFriendshipPayload).catch((err) => {
-      defaultLogger.error('error requestFriendship', err),
-        trackEvent('error', {
-          message: `error sending friend request ${requestFriendshipPayload.messageId} ` + err.message,
-          context: 'kernel#friendsSaga',
-          stack: 'requestFriendship'
-        })
-    })
-  }
-
-  public CancelFriendship(cancelFriendshipPayload: CancelFriendshipPayload) {
-    cancelFriendship(cancelFriendshipPayload).catch((err) => {
-      defaultLogger.error('error cancelFriendship', err),
-        trackEvent('error', {
-          message: `error canceling friend request ${cancelFriendshipPayload.messageId} ` + err.message,
-          context: 'kernel#friendsSaga',
-          stack: 'cancelFriendshipPayload'
-        })
-    })
   }
 
   public CreateChannel(createChannelPayload: CreateChannelPayload) {
@@ -889,10 +878,13 @@ export class BrowserInterface {
 
     changeRealm(serverName).then(
       () => {
-        const successMessage = `Jumped to ${x},${y} in realm ${serverName}!`
+        const successMessage = `Welcome to realm ${serverName}!`
         notifyStatusThroughChat(successMessage)
         getUnityInstance().ConnectionToRealmSuccess(data)
-        TeleportController.goTo(x, y, successMessage)
+        TeleportController.goTo(x, y, successMessage).then(
+          () => {},
+          () => {}
+        )
       },
       (e) => {
         const cause = e === 'realm-full' ? ' The requested realm is full.' : ''

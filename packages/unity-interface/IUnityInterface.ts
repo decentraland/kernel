@@ -35,12 +35,7 @@ import {
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
-  SetAudioDevicesPayload,
-  RequestFriendshipConfirmationPayload,
-  RequestFriendshipErrorPayload,
-  FriendRequestPayload,
-  CancelFriendshipErrorPayload,
-  CancelFriendshipConfirmationPayload
+  SetAudioDevicesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -114,6 +109,7 @@ export interface IUnityInterface {
     icon?: string
     isPortableExperience: boolean
     sceneNumber: number
+    sdk7: boolean
   }): void
 
   /** Sends the camera position & target to the engine */
@@ -180,6 +176,7 @@ export interface IUnityInterface {
   UpdateUserPresence(status: UpdateUserStatusMessage): void
   FriendNotFound(queryString: string): void
   AddFriends(addFriendsPayload: AddFriendsPayload): void
+  // @TODO! @deprecated
   AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void
   UpdateTotalUnseenMessages(updateTotalUnseenMessagesPayload: UpdateTotalUnseenMessagesPayload): void
   UpdateUserUnseenMessages(updateUserUnseenMessagesPayload: UpdateUserUnseenMessagesPayload): void
@@ -187,11 +184,6 @@ export interface IUnityInterface {
   AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
   UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
   UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
-  RequestFriendshipConfirmation(requestFriendshipConfirmationPayload: RequestFriendshipConfirmationPayload): void
-  CancelFriendshipConfirmation(cancelFriendshipConfirmationPayload: CancelFriendshipConfirmationPayload): void
-  RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload): void
-  CancelFriendshipError(cancelFriendshipErrorPayload: CancelFriendshipErrorPayload): void
-  AddFriendRequest(friendRequestPayload: FriendRequestPayload): void
 
   // *********************************************************************************
   // ************** Channels **************
