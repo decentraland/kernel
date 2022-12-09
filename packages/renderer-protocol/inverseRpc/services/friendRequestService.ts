@@ -18,7 +18,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 
         let getFriendRequestsReply: GetFriendRequestsReply = {}
 
-        // Check the response
+        // Check the response type
         if (friendRequests.error !== null) {
           getFriendRequestsReply = {
             message: {
