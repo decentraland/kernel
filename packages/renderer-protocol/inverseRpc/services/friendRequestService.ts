@@ -60,9 +60,38 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 
     async sendFriendRequest(req, _) {
       try {
-        const requestFriendshipReply = await requestFriendship(req)
+        // Handle send friend request
+        const sendFriendRequest = await requestFriendship(req)
 
-        return {}
+        let sendFriendRequestReply: SendFriendRequestReply = {}
+
+        // Check the response
+        if (sendFriendRequest.error !== null) {
+          sendFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: sendFriendRequest.error
+            }
+          }
+        } else if (sendFriendRequest.reply.friendRequest) {
+          sendFriendRequestReply = {
+            message: {
+              $case: 'reply',
+              reply: {
+                friendRequest: {
+                  friendRequestId: sendFriendRequest.reply.friendRequest.friendRequestId,
+                  timestamp: sendFriendRequest.reply.friendRequest.timestamp,
+                  to: sendFriendRequest.reply.friendRequest.to,
+                  from: sendFriendRequest.reply.friendRequest.from,
+                  messageBody: sendFriendRequest.reply.friendRequest.messageBody
+                }
+              }
+            }
+          }
+        }
+
+        // Send response back to renderer
+        return sendFriendRequestReply
       } catch {
         const sendFriendRequestReply: SendFriendRequestReply = {
           message: {
@@ -70,6 +99,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
             error: FriendshipErrorCode.FEC_UNKNOWN
           }
         }
+
+        // Send response back to renderer
         return sendFriendRequestReply
       }
     },

@@ -703,6 +703,7 @@ export class BrowserInterface {
       const state = store.getState()
 
       // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       if (message.action === FriendshipAction.REQUESTED_TO) {
         const avatar = await ensureFriendProfile(userId)
 
@@ -728,6 +729,7 @@ export class BrowserInterface {
         }
       }
 
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       if (message.action === FriendshipAction.REQUESTED_TO && !found) {
         // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
         getUnityInstance().FriendNotFound(userId)

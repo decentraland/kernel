@@ -141,7 +141,8 @@ import {
   FriendshipErrorCode,
   SendFriendRequestPayload,
   GetFriendRequestsReplyOk,
-  FriendRequestInfo
+  FriendRequestInfo,
+  SendFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
@@ -2059,6 +2060,12 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     let found = false
     const state = store.getState()
 
+    const ownId = store.getState().friends.client?.getUserId()
+
+    if (!ownId) {
+      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    }
+
     // Search user profile on server
     if (isAddress(userId)) {
       // Ensure user profile is initialized and send it to renderer
@@ -2084,15 +2091,28 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     if (!found) {
-      return FriendshipErrorCode.FEC_NON_EXISTING_USER
+      return { reply: null, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
     }
 
     // Update user data
     store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
 
     // Add as friend
+    store.dispatch(updateFriendship(FriendshipAction.REQUESTED_TO, userId.toLowerCase(), false, request.messageBody))
+
+    const sendFriendRequest: SendFriendRequestReplyOk = {
+      friendRequest: {
+        friendRequestId: encodeFriendRequestId(ownId, userId),
+        timestamp: Date.now(),
+        from: getUserIdFromMatrix(ownId),
+        to: userId,
+        messageBody: request.messageBody
+      }
+    }
+
+    return { reply: sendFriendRequest, error: null }
   } catch {
-    return FriendshipErrorCode.FEC_UNKNOWN
+    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
