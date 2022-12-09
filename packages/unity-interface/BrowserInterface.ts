@@ -43,7 +43,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { receivePositionReport } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -98,7 +98,8 @@ import {
   getChannelInfo,
   searchChannels,
   joinChannel,
-  getChannelMembers
+  getChannelMembers,
+  UpdateFriendshipAsPromise
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
@@ -737,7 +738,7 @@ export class BrowserInterface {
       }
 
       store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+      await UpdateFriendshipAsPromise(message.action, userId.toLowerCase(), false)
     } catch (error) {
       const message = 'Failed while processing updating friendship status'
       defaultLogger.error(message, error)

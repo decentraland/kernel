@@ -4,14 +4,17 @@ import { ChatMessage, FriendshipAction } from 'shared/types'
 
 import { FriendsState } from './types'
 import { SocialAPI, SocialId } from 'dcl-social-client'
+import { IFuture } from 'fp-future'
+import { FriendshipErrorCode } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
 export const UPDATE_FRIENDSHIP = 'Update friendship'
 export const updateFriendship = (
   _action: FriendshipAction,
   userId: string,
   incoming: boolean,
+  future: IFuture<{ userId: string; error: FriendshipErrorCode | null }>,
   messageBody?: string | undefined
-) => action(UPDATE_FRIENDSHIP, { action: _action, userId, messageBody }, { incoming })
+) => action(UPDATE_FRIENDSHIP, { action: _action, userId, future, messageBody }, { incoming })
 export type UpdateFriendship = ReturnType<typeof updateFriendship>
 
 export const SET_MATRIX_CLIENT = '[CHAT] Set Matrix client'

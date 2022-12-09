@@ -144,6 +144,7 @@ import {
   FriendRequestInfo,
   SendFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
+import future from 'fp-future'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -251,7 +252,7 @@ async function handleIncomingFriendshipUpdateStatus(
   await ensureFriendProfile(userId)
 
   // add to friendRequests & update renderer
-  store.dispatch(updateFriendship(action, userId, true, messageBody))
+  await UpdateFriendshipAsPromise(action, userId, true, messageBody)
 }
 
 function* configureMatrixClient(action: SetMatrixClient) {
@@ -1434,6 +1435,7 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
       case FriendshipAction.REQUESTED_TO: {
         yield client.addAsFriend(socialId, update.messageBody)
+        yield call(update.future.resolve, { userId: update.userId, error: null })
         break
       }
       case FriendshipAction.DELETED: {
@@ -2098,22 +2100,47 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
 
     // Add as friend
-    store.dispatch(updateFriendship(FriendshipAction.REQUESTED_TO, userId.toLowerCase(), false, request.messageBody))
+    const response = await UpdateFriendshipAsPromise(
+      FriendshipAction.REQUESTED_TO,
+      userId.toLowerCase(),
+      false,
+      request.messageBody
+    )
 
-    const sendFriendRequest: SendFriendRequestReplyOk = {
-      friendRequest: {
-        friendRequestId: encodeFriendRequestId(ownId, userId),
-        timestamp: Date.now(),
-        from: getUserIdFromMatrix(ownId),
-        to: userId,
-        messageBody: request.messageBody
+    if (!response.error) {
+      const sendFriendRequest: SendFriendRequestReplyOk = {
+        friendRequest: {
+          friendRequestId: encodeFriendRequestId(ownId, userId),
+          timestamp: Date.now(),
+          from: getUserIdFromMatrix(ownId),
+          to: userId,
+          messageBody: request.messageBody
+        }
       }
-    }
 
-    return { reply: sendFriendRequest, error: null }
-  } catch {
+      // Return response
+      return { reply: sendFriendRequest, error: null }
+    } else {
+      // Return error
+      return { reply: null, error: response.error }
+    }
+  } catch (err) {
+    logAndTrackError('Error while sending friend request via rpc', err)
+
+    // Return error
     return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
+}
+
+export async function UpdateFriendshipAsPromise(
+  action: FriendshipAction,
+  userId: string,
+  incoming: boolean,
+  messageBody?: string
+): Promise<{ userId: string; error: FriendshipErrorCode | null }> {
+  const fut = future<{ userId: string; error: FriendshipErrorCode | null }>()
+  store.dispatch(updateFriendship(action, userId.toLowerCase(), incoming, fut, messageBody))
+  return fut
 }
 
 /**

@@ -19,7 +19,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 
         let getFriendRequestsReply: GetFriendRequestsReply = {}
 
-        // Check the response
+        // Check the response type
         if (friendRequests.error !== null) {
           getFriendRequestsReply = {
             message: {
@@ -65,7 +65,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 
         let sendFriendRequestReply: SendFriendRequestReply = {}
 
-        // Check the response
+        // Check the response type
         if (sendFriendRequest.error !== null) {
           sendFriendRequestReply = {
             message: {
@@ -92,7 +92,9 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 
         // Send response back to renderer
         return sendFriendRequestReply
-      } catch {
+      } catch (err) {
+        defaultLogger.error('Error while sending friend request via rpc', err)
+
         const sendFriendRequestReply: SendFriendRequestReply = {
           message: {
             $case: 'error',
