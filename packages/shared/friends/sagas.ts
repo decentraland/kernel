@@ -2403,6 +2403,17 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
   }
 }
 
+export async function UpdateFriendshipAsPromise(
+  action: FriendshipAction,
+  userId: string,
+  incoming: boolean,
+  messageBody?: string
+): Promise<{ userId: string; error: FriendshipErrorCode | null }> {
+  const fut = future<{ userId: string; error: FriendshipErrorCode | null }>()
+  store.dispatch(updateFriendship(action, userId.toLowerCase(), incoming, fut, messageBody))
+  return fut
+}
+
 /**
  * TODO: This method should be removed once we implement the correct member resolution in Explorer
  * Checks which members are present in the profile catalog and sends partial profiles for missing users
