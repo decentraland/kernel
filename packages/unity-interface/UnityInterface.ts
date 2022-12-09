@@ -277,7 +277,15 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
-    this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
+    if (wearables.length > 10) {
+      const clone = wearables.slice()
+      while (clone.length) {
+        wearables = clone.splice(0, 10)
+        this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
+      }
+    } else {
+      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
+    }
   }
 
   public AddEmotesToCatalog(emotes: Emote[], context?: string) {
