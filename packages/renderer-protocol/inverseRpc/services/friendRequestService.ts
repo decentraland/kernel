@@ -2,12 +2,13 @@ import { RpcServerPort } from '@dcl/rpc'
 import { RendererProtocolContext } from '../context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import {
+  CancelFriendRequestReply,
   FriendRequestKernelServiceDefinition,
   FriendshipErrorCode,
   GetFriendRequestsReply,
   SendFriendRequestReply
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
-import { getFriendRequestsProtocol, requestFriendship } from '../../../shared/friends/sagas'
+import { cancelFriendRequest, getFriendRequestsProtocol, requestFriendship } from '../../../shared/friends/sagas'
 import defaultLogger from '../../../shared/logger'
 
 export function registerFriendRequestKernelService(port: RpcServerPort<RendererProtocolContext>) {
@@ -108,7 +109,29 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
     },
 
     async cancelFriendRequest(req, _) {
-      return {}
+      try {
+        // Handle cancel friend request
+        const cancelFriend = await cancelFriendRequest(req)
+
+        console.log(cancelFriend)
+
+        const cancelFriendRequestReply: CancelFriendRequestReply = {}
+
+        // Send response back to renderer
+        return cancelFriendRequestReply
+      } catch (err) {
+        defaultLogger.error('Error while canceling friend request via rpc', err)
+
+        const cancelFriendRequestReply: CancelFriendRequestReply = {
+          message: {
+            $case: 'error',
+            error: FriendshipErrorCode.FEC_UNKNOWN
+          }
+        }
+
+        // Send response back to renderer
+        return cancelFriendRequestReply
+      }
     },
 
     async acceptFriendRequest(req, _) {

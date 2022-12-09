@@ -142,7 +142,9 @@ import {
   SendFriendRequestPayload,
   GetFriendRequestsReplyOk,
   FriendRequestInfo,
-  SendFriendRequestReplyOk
+  SendFriendRequestReplyOk,
+  CancelFriendRequestPayload,
+  CancelFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import future from 'fp-future'
 
@@ -1427,7 +1429,6 @@ function* handleOutgoingUpdateFriendshipStatus(update: UpdateFriendship['payload
       }
       case FriendshipAction.CANCELED: {
         yield client.cancelFriendshipRequestTo(socialId)
-
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
@@ -2144,25 +2145,53 @@ export async function UpdateFriendshipAsPromise(
   return fut
 }
 
-/*
-export async function cancelFriendship(request: CancelFriendshipPayload) {
+export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
   try {
-    // get otherUserId value
-    const userId = decodeFriendRequestId(request.friendRequestId)
+    // Get ownId value
+    const ownId = store.getState().friends.client?.getUserId()
 
-    // search in the store for the message body
+    if (!ownId) {
+      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    }
+
+    // Get otherUserId value
+    const userId = ''
+
+    // Search in the store for the message body
     const messageBody = getPrivateMessaging(store.getState()).toFriendRequests.find(
       (friend) => friend.friendRequestId === request.friendRequestId
     )?.message
 
-    // dispatch actions
+    // Update user data
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-    store.dispatch(updateFriendship(FriendshipAction.CANCELED, userId, false, request.messageId, messageBody))
-  } catch {
-    notifyCancelFriendshipError(request.messageId, FriendshipErrorCode.UNKNOWN)
+
+    // Add as friend
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.CANCELED, userId.toLowerCase(), false)
+
+    if (!response.error) {
+      const sendFriendRequest: CancelFriendRequestReplyOk = {
+        friendRequest: {
+          friendRequestId: request.friendRequestId,
+          timestamp: Date.now(),
+          from: getUserIdFromMatrix(ownId),
+          to: getUserIdFromMatrix(userId),
+          messageBody
+        }
+      }
+
+      // Return response
+      return { reply: sendFriendRequest, error: null }
+    } else {
+      // Return error
+      return { reply: null, error: response.error }
+    }
+  } catch (err) {
+    logAndTrackError('Error while canceling friend request via rpc', err)
+
+    // Return error
+    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
-*/
 
 /**
  * TODO: This method should be removed once we implement the correct member resolution in Explorer
