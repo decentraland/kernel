@@ -277,6 +277,10 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
+    const clone = wearables.slice()
+    wearables = clone.filter((element, index) => {
+      return wearables.indexOf(element) === index
+    });
     this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
   }
 
