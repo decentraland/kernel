@@ -277,10 +277,11 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
-    if (wearables.length > 10) {
+    const messageLimit = 50;
+    if (wearables.length > messageLimit) {
       const clone = wearables.slice()
       while (clone.length) {
-        wearables = clone.splice(0, 10)
+        wearables = clone.splice(0, messageLimit)
         this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
       }
     } else {
