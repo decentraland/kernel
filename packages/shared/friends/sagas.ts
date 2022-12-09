@@ -78,7 +78,8 @@ import {
   isFriend,
   getLastStatusOfFriends,
   getChannels,
-  getAllFriendsConversationsWithMessages
+  getAllFriendsConversationsWithMessages,
+  getOwnId
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -2064,7 +2065,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     let found = false
     const state = store.getState()
 
-    const ownId = store.getState().friends.client?.getUserId()
+    const ownId = getOwnId(state)
 
     if (!ownId) {
       return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
