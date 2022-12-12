@@ -2149,7 +2149,7 @@ export async function UpdateFriendshipAsPromise(
 export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
   try {
     // Get ownId value
-    const ownId = store.getState().friends.client?.getUserId()
+    const ownId = getOwnId(store.getState())
 
     if (!ownId) {
       return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
