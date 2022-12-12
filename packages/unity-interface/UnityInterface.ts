@@ -278,7 +278,7 @@ export class UnityInterface implements IUnityInterface {
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
     const _ = require("lodash");
-    wearables = _.uniqBy([wearables], 'id')
+    wearables = _.uniqBy(wearables, 'id')
     this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
   }
 
