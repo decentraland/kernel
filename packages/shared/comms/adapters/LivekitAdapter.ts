@@ -1,12 +1,14 @@
+import * as proto from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
 import { Room, RoomEvent, RemoteParticipant, Participant, DataPacket_Kind, DisconnectReason } from 'livekit-client'
 import mitt from 'mitt'
-import { ILogger } from 'shared/logger'
+import defaultLogger, { ILogger } from 'shared/logger'
 import { incrementCommsMessageSent } from 'shared/session/getPerformanceInfo'
 import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 import { commsLogger } from '../context'
 import { createLiveKitVoiceHandler } from './voice/liveKitVoiceHandler'
 import { CommsAdapterEvents, MinimumCommunicationsAdapter, SendHints } from './types'
 import future from 'fp-future'
+import { trackEvent } from 'shared/analytics'
 
 export type LivekitConfig = {
   url: string
@@ -65,7 +67,16 @@ export class LivekitAdapter implements MinimumCommunicationsAdapter {
     try {
       await this.connectedFuture
       if (!this.disconnected) {
-        await this.room.localParticipant.publishData(data, reliable ? DataPacket_Kind.RELIABLE : DataPacket_Kind.LOSSY)
+        if (data.length > 65000) {
+          const message = proto.Packet.decode(data)
+          defaultLogger.error('Skipping big message over comms', message)
+          trackEvent('invalid_comms_message_too_big', { message: JSON.stringify(message) })
+        } else {
+          await this.room.localParticipant.publishData(
+            data,
+            reliable ? DataPacket_Kind.RELIABLE : DataPacket_Kind.LOSSY
+          )
+        }
       }
     } catch (err: any) {
       // this fails in some cases, catch is needed

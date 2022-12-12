@@ -9,11 +9,11 @@ export function getParcelLoadingStarted(state: RootRendererState) {
   return state && state.renderer && state.renderer.parcelLoadingStarted
 }
 
-export function getRendererInterfacePort(state: RootRendererState) {
-  return state && state.renderer && state.renderer.rendererInterfacePort
+export function getClientPort(state: RootRendererState) {
+  return state && state.renderer && state.renderer.clientPort
 }
 
-export function getRendererRpcClient(state: RootRendererState) {
+export function getClient(state: RootRendererState) {
   return state && state.renderer && state.renderer.rpcClient
 }
 

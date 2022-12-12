@@ -7,7 +7,7 @@ import { ParcelSceneLoadingState } from './types'
 import { getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { Transport } from '@dcl/rpc'
 import { defaultParcelPermissions } from 'shared/apis/host/Permissions'
-import { getRendererRpcClient } from 'shared/renderer/selectors'
+import { getClient } from 'shared/renderer/selectors'
 
 declare const globalThis: any
 
@@ -83,7 +83,7 @@ export async function loadParcelSceneWorker(loadableScene: LoadableScene, transp
   let parcelSceneWorker = loadedSceneWorkers.get(sceneId)
 
   if (!parcelSceneWorker) {
-    const rpcClient = getRendererRpcClient(store.getState())
+    const rpcClient = getClient(store.getState())
     if (!rpcClient) throw new Error('Cannot create a scene because there is no rpcClient')
 
     parcelSceneWorker = await SceneWorker.createSceneWorker(loadableScene, rpcClient, transport)

@@ -83,4 +83,5 @@ export type TrackEvents = PositionTrackEvents & {
   ['Invalid user version']: { address: string; version: number }
   ['non_json_message_from_engine']: { type: string; payload: string }
   ['invalid_denied_catalyst_url']: { url: string }
+  ['invalid_comms_message_too_big']: { message: string }
 }

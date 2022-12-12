@@ -9,7 +9,7 @@ import { EmotesRendererServiceDefinition } from '@dcl/protocol/out-ts/decentrala
 export type RendererState = {
   initialized: boolean
   parcelLoadingStarted: boolean
-  rendererInterfacePort: RpcClientPort | undefined
+  clientPort: RpcClientPort | undefined
   rpcClient: RpcClient | undefined
   modules: RendererModules | undefined
 }
