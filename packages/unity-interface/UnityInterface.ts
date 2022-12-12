@@ -289,12 +289,12 @@ export class UnityInterface implements IUnityInterface {
       let stringToSend = JSON.stringify({ wearables, context })
       //THERE IS AN ISSUE WITH SENSING A BIG STRING OVER THE NETWORK TO UNITY
       //IF THE STRING IS BIGGER THAN THE SAFE VALUE, WE NEED TO ADD A CAP
-      if (stringToSend.length > 1) {
+      if (stringToSend.length > 1306299) {
         //CAP AT 600 WEARABLES. ASSUMING THAT THE BIGGEST WEARABLES HAS 2000 characters
         this.ShowNotification({
           type: NotificationType.GENERIC,
           message:
-            "[PLACEHOLDER] Your wearables list couldn't be fully loaded, some assets might not load, bear with us while we solve the issue [PLACEHOLDER] ",
+            "Your wearables list couldn't be fully loaded, some assets might not load, bear with us while we solve the issue",
           buttonMessage: 'OK',
           timer: 10
         })
