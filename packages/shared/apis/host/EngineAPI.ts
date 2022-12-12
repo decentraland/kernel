@@ -65,7 +65,8 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
     async (): Promise<RpcServerModule<EngineApiServiceDefinition, PortContext>> => {
       return {
         async sendBatch(req: ManyEntityAction, ctx) {
-          if (ctx.sdk7) throw new Error('Cannot use SDK6 APIs on SDK7 scene')
+          // TODO: Re-enable throw after fixing initMessagesFinished issue: https://github.com/decentraland/sdk/issues/474
+          // if (ctx.sdk7) throw new Error('Cannot use SDK6 APIs on SDK7 scene')
 
           const actions: EntityAction[] = []
 
