@@ -1,4 +1,5 @@
 import { Vector3 } from '@dcl/ecs-math'
+import lodash from 'lodash'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, RENDERER_WS } from 'config'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } from './IUnityInterface'
@@ -283,8 +284,7 @@ export class UnityInterface implements IUnityInterface {
       this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
     } else {
       //REMOVE DUPLICATES
-      const _ = require('lodash')
-      wearables = _.uniqBy(wearables, 'id')
+      wearables = lodash.uniqBy(wearables, 'id')
 
       let stringToSend = JSON.stringify({ wearables, context })
       //THERE IS AN ISSUE WITH SENSING A BIG STRING OVER THE NETWORK TO UNITY
