@@ -1421,6 +1421,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       } else {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
+    }
 
       // TODO!: remove FF validation once the new flow is the only one
       // We only send the UpdateFriendshipStatus message when:
