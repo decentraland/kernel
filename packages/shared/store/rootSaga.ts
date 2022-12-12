@@ -20,6 +20,7 @@ import { sceneEventsSaga } from '../sceneEvents/sagas'
 import { sceneLoaderSaga } from '../scene-loader/sagas'
 import { worldSagas } from '../world/sagas'
 import { bffSaga } from 'shared/realm/sagas'
+import { loadingScreenSaga } from '../loadingScreen/sagas'
 
 export function createRootSaga() {
   return function* rootSaga() {
@@ -36,6 +37,7 @@ export function createRootSaga() {
     yield fork(daoSaga)
     yield fork(metricSaga)
     yield fork(loadingSaga)
+    yield fork(loadingScreenSaga)
     yield fork(socialSaga)
     yield fork(questsSaga)
     yield fork(rendererSaga)
