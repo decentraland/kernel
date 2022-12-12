@@ -18,7 +18,6 @@ import {
 } from '@dcl/protocol/out-ts/decentraland/kernel/apis/environment_api.gen'
 import { EnvironmentRealm, Platform } from './../IEnvironmentAPI'
 import { PortContextService } from './context'
-import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import { IRealmAdapter } from 'shared/realm/types'
 import { realmToConnectionString, urlWithProtocol } from 'shared/realm/resolver'
 
