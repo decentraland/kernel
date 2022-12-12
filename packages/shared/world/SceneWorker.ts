@@ -152,10 +152,7 @@ export class SceneWorker {
 
     this.transport = _transport || buildWebWorkerTransport(this.loadableScene, IS_SDK7)
 
-    const rpcSceneControllerService = codegen.loadService<any>(
-      scenePort,
-      RpcSceneControllerServiceDefinition
-    )
+    const rpcSceneControllerService = codegen.loadService<any>(scenePort, RpcSceneControllerServiceDefinition)
 
     this.rpcContext = {
       sdk7: IS_SDK7,
@@ -229,10 +226,9 @@ export class SceneWorker {
     queueMicrotask(() => {
       // this NEEDS to run in a microtask because sagas control this .dispose
       sceneEvents.emit(SCENE_UNLOAD, signalSceneUnload(this.loadableScene))
-
-      // TODO: Should this rpc call be moved somewhere else?
-      this.rpcContext.rpcSceneControllerService.unloadScene({})
     })
+
+    void this.rpcContext.rpcSceneControllerService.unloadScene({})
 
     if ((this.ready & disposingFlags) === 0) {
       this.ready |= SceneWorkerReadyState.DISPOSING
