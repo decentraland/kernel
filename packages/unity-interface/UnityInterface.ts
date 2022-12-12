@@ -1,5 +1,5 @@
 import { Vector3 } from '@dcl/ecs-math'
-import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL } from 'config'
+import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, RENDERER_WS } from 'config'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } from './IUnityInterface'
 import {
@@ -33,7 +33,8 @@ import {
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
   ChannelErrorPayload,
-  SetAudioDevicesPayload
+  SetAudioDevicesPayload,
+  NotificationType
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -277,19 +278,32 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
-    //const _ = require("lodash")
-    //wearables = _.uniqBy(wearables, 'id')
+    if (RENDERER_WS) {
+      //WE ARE IN DESKTOP. SEND ALL THE WEARABLE LIST
+      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
+    } else {
+      //REMOVE DUPLICATES
+      const _ = require('lodash')
+      wearables = _.uniqBy(wearables, 'id')
 
-    let stringToSend = JSON.stringify({ wearables, context });
-    while(true){
-      if(stringToSend.length < 1306299){
-        break;
+      let stringToSend = JSON.stringify({ wearables, context })
+      //THERE IS AN ISSUE WITH SENSING A BIG STRING OVER THE NETWORK TO UNITY
+      //IF THE STRING IS BIGGER THAN THE SAFE VALUE, WE NEED TO ADD A CAP
+      if (stringToSend.length > 1) {
+        //CAP AT 600 WEARABLES. ASSUMING THAT THE BIGGEST WEARABLES HAS 2000 characters
+        this.ShowNotification({
+          type: NotificationType.GENERIC,
+          message:
+            "[PLACEHOLDER] Your wearables list couldn't be fully loaded, some assets might not load, bear with us while we solve the issue [PLACEHOLDER] ",
+          buttonMessage: 'OK',
+          timer: 10
+        })
+        wearables = wearables.slice(0, 600 + 1)
+        stringToSend = JSON.stringify({ wearables, context })
       }
-      wearables.pop()
-      stringToSend = JSON.stringify({ wearables, context })
-    }
 
-    this.SendMessageToUnity('Main', 'AddWearablesToCatalog', stringToSend)
+      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', stringToSend)
+    }
   }
 
   public AddEmotesToCatalog(emotes: Emote[], context?: string) {
