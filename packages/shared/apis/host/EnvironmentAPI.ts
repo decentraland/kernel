@@ -64,8 +64,7 @@ export function registerEnvironmentApiServiceServerImplementation(
       return {
         clientUri: location.href,
         configurations: {
-          questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl,
-          enableBinaryTransform: `${transformSerializeOpt.useBinaryTransform}`
+          questsServerUrl: getServerConfigurations(getSelectedNetwork(store.getState())).questsUrl
         }
       }
     },

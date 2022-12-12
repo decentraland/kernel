@@ -81,7 +81,6 @@ import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
-import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import {
   getFriendRequests,
   getFriends,
@@ -329,8 +328,6 @@ export class BrowserInterface {
   // TODO: remove useBinaryTransform after SDK7 is fully in prod
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
-
-    transformSerializeOpt.useBinaryTransform = !!data.useBinaryTransform
 
     this.startedFuture.resolve()
   }
