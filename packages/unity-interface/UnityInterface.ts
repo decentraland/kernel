@@ -278,7 +278,7 @@ export class UnityInterface implements IUnityInterface {
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
     const jsonString = JSON.stringify({ wearables, context })
-    const result = jsonString.match(/.{1,500000}/g) || []
+    const result = jsonString.match(/.{1,1306299}/g) || []
     for(var i = 0;i<result.length;i++){
       this.SendMessageToUnity('Main', 'AddWearablesToCatalog', result[i])
     }
