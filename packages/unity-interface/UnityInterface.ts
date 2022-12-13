@@ -304,13 +304,14 @@ export class UnityInterface implements IUnityInterface {
         counter++
       }
 
-      const payload = '{"wearables": [' + wearablesStringArray.slice(0, counter).join(',') + '], "context":' + context?.toString() + '}'
+      const payload =
+        '{"wearables": [' +
+        wearablesStringArray.slice(0, counter).join(',') +
+        '], "context":"' +
+        context?.toString() +
+        '"}'
       //We send to Unity the resultant values analyzed
-      this.SendMessageToUnity(
-        'Main',
-        'AddWearablesToCatalog',
-           payload
-      )
+      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', payload)
 
       //If counter is less than length, then the wearables have been truncated and we need to warn the user
       if (counter < wearablesStringArray.length) {
