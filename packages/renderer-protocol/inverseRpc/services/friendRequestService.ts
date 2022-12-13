@@ -6,9 +6,15 @@ import {
   FriendRequestKernelServiceDefinition,
   FriendshipErrorCode,
   GetFriendRequestsReply,
+  RejectFriendRequestReply,
   SendFriendRequestReply
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
-import { cancelFriendRequest, getFriendRequestsProtocol, requestFriendship } from '../../../shared/friends/sagas'
+import {
+  cancelFriendRequest,
+  getFriendRequestsProtocol,
+  rejectFriendRequest,
+  requestFriendship
+} from '../../../shared/friends/sagas'
 import defaultLogger from '../../../shared/logger'
 
 export function registerFriendRequestKernelService(port: RpcServerPort<RendererProtocolContext>) {
@@ -162,7 +168,52 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
     },
 
     async rejectFriendRequest(req, _) {
-      return {}
+      try {
+        // Handle reject friend request
+        const rejectFriend = await rejectFriendRequest(req)
+
+        let rejectFriendRequestReply: RejectFriendRequestReply = {}
+
+        // Check response type
+        if (rejectFriend.error !== null) {
+          rejectFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: rejectFriend.error
+            }
+          }
+        } else if (rejectFriend.reply.friendRequest) {
+          rejectFriendRequestReply = {
+            message: {
+              $case: 'reply',
+              reply: {
+                friendRequest: {
+                  friendRequestId: rejectFriend.reply.friendRequest.friendRequestId,
+                  timestamp: rejectFriend.reply.friendRequest.timestamp,
+                  to: rejectFriend.reply.friendRequest.to,
+                  from: rejectFriend.reply.friendRequest.from,
+                  messageBody: rejectFriend.reply.friendRequest.messageBody
+                }
+              }
+            }
+          }
+        }
+
+        // Send response back to renderer
+        return rejectFriendRequestReply
+      } catch (err) {
+        defaultLogger.error('Error while rejecting friend request via rpc', err)
+
+        const rejectFriendRequestReply: RejectFriendRequestReply = {
+          message: {
+            $case: 'error',
+            error: FriendshipErrorCode.FEC_UNKNOWN
+          }
+        }
+
+        // Send response back to renderer
+        return rejectFriendRequestReply
+      }
     }
   }))
 }

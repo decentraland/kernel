@@ -148,7 +148,9 @@ import {
   FriendRequestInfo,
   SendFriendRequestReplyOk,
   CancelFriendRequestPayload,
-  CancelFriendRequestReplyOk
+  CancelFriendRequestReplyOk,
+  RejectFriendRequestPayload,
+  RejectFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import future from 'fp-future'
 
@@ -2181,6 +2183,57 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
 
     if (!response.error) {
       const sendFriendRequest: CancelFriendRequestReplyOk = {
+        friendRequest: {
+          friendRequestId: request.friendRequestId,
+          timestamp: Date.now(),
+          from: getUserIdFromMatrix(ownId),
+          to: userId,
+          messageBody
+        }
+      }
+
+      // Return response
+      return { reply: sendFriendRequest, error: null }
+    } else {
+      // Return error
+      return { reply: null, error: response.error }
+    }
+  } catch (err) {
+    logAndTrackError('Error while canceling friend request via rpc', err)
+
+    // Return error
+    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+  }
+}
+
+export async function rejectFriendRequest(request: RejectFriendRequestPayload) {
+  try {
+    // Get ownId value
+    const ownId = getOwnId(store.getState())
+    if (!ownId) {
+      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    }
+
+    // Validate request
+    const isValid = validateFriendRequestId(request.friendRequestId, ownId)
+    if (!isValid) {
+      return { reply: null, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
+    }
+
+    // Get otherUserId value
+    const userId = decodeFriendRequestId(request.friendRequestId, ownId)
+
+    // Search in the store for the message body
+    const messageBody = getMessageBody(store.getState(), userId)
+
+    // Update user data
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+
+    // Add as friend
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, userId.toLowerCase(), false)
+
+    if (!response.error) {
+      const sendFriendRequest: RejectFriendRequestReplyOk = {
         friendRequest: {
           friendRequestId: request.friendRequestId,
           timestamp: Date.now(),
