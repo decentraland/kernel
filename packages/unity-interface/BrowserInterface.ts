@@ -70,7 +70,7 @@ import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
 import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
-import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
+import { AVATAR_LOADING_ERROR } from 'shared/loading/types'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { store } from 'shared/store/isolatedStore'
@@ -81,7 +81,6 @@ import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
-import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import {
   getFriendRequests,
   getFriends,
@@ -107,8 +106,9 @@ import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } f
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
 import { rendererSignalSceneReady } from 'shared/world/actions'
 import { requestMediaDevice } from '../shared/voiceChat/sagas'
+import { renderingActivated, renderingDectivated } from '../shared/loadingScreen/types'
 
-declare const globalThis: { gifProcessor?: GIFProcessor }
+declare const globalThis: { gifProcessor?: GIFProcessor; __debug_wearables: any }
 export const futures: Record<string, IFuture<any>> = {}
 
 type UnityEvent = any
@@ -330,8 +330,6 @@ export class BrowserInterface {
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 
-    transformSerializeOpt.useBinaryTransform = !!data.useBinaryTransform
-
     this.startedFuture.resolve()
   }
 
@@ -547,6 +545,7 @@ export class BrowserInterface {
         store.dispatch(rendererSignalSceneReady(sceneId, sceneNumber))
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'DeactivateRenderingACK': {
         /**
          * This event is called everytime the renderer deactivates its camera
@@ -555,6 +554,7 @@ export class BrowserInterface {
         console.log('DeactivateRenderingACK')
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'ActivateRenderingACK': {
         /**
          * This event is called everytime the renderer activates the main camera

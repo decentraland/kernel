@@ -139,13 +139,15 @@ import { isAddress } from 'eth-connect'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { fetchENSOwner } from 'shared/web3'
 import {
-  FriendshipErrorCode,
   SendFriendRequestPayload,
   GetFriendRequestsReplyOk,
-  FriendRequestInfo,
   SendFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import future from 'fp-future'
+import {
+  FriendRequestInfo,
+  FriendshipErrorCode
+} from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
