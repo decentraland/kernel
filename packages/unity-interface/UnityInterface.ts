@@ -298,17 +298,22 @@ export class UnityInterface implements IUnityInterface {
       const SAFE_THRESHOLD = 1300000
       let counter = 0
       let totalLength = 0
-      while(counter < wearablesStringArray.length && totalLength < SAFE_THRESHOLD) {
+      while (counter < wearablesStringArray.length && totalLength < SAFE_THRESHOLD) {
         // accumulate while size is lower than threshold
         totalLength += wearablesStringArray[counter].length
         counter++
       }
 
+      const payload = '{"wearables": [' + wearablesStringArray.slice(0, counter).join(',') + '], "context":' + context?.toString() + '}'
       //We send to Unity the resultant values analyzed
-      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', '{"wearables": [' + wearablesStringArray.slice(counter).join(',') + '], "context":' + context + '}')
+      this.SendMessageToUnity(
+        'Main',
+        'AddWearablesToCatalog',
+           payload
+      )
 
       //If counter is less than length, then the wearables have been truncated and we need to warn the user
-      if(counter < wearablesStringArray.length){
+      if (counter < wearablesStringArray.length) {
         this.ShowNotification({
           type: NotificationType.GENERIC,
           message:
