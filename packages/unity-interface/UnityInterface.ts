@@ -285,10 +285,10 @@ export class UnityInterface implements IUnityInterface {
       //If we are in desktop, we can send the message normally
       this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
     } else {
-      //First, we remove the duplicate wearables entries. 
+      //First, we remove the duplicate wearables entries.
       wearables = lodash.uniqBy(wearables, 'id')
 
-      let stringToSend = JSON.stringify({ wearables, context })      
+      let stringToSend = JSON.stringify({ wearables, context })
       //We need the string to be shorter than this length
       if (stringToSend.length > 1306299) {
         //We put a theoretical cap at 600 wearables, assuming a bad scenario while each of them will have 2000 characters
