@@ -127,7 +127,9 @@ import {
   getNormalizedRoomName,
   getUsersAllowedToCreate,
   isNewFriendRequestEnabled,
-  encodeFriendRequestId
+  encodeFriendRequestId,
+  decodeFriendRequestId,
+  validateFriendRequestId
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -2160,12 +2162,13 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
     }
 
     // Validate request
+    const isValid = validateFriendRequestId(request.friendRequestId, ownId)
+    if (!isValid) {
+      return { reply: null, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
+    }
 
     // Get otherUserId value
-    const userId = 'decodeFriendRequestId(request.friendRequestId)'
-    if (!userId) {
-      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
-    }
+    const userId = decodeFriendRequestId(request.friendRequestId, ownId)
 
     // Search in the store for the message body
     const messageBody = getMessageBody(store.getState(), userId)

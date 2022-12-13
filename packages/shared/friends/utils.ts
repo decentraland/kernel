@@ -94,19 +94,34 @@ export function encodeFriendRequestId(ownId: string, otherUserId: string) {
 
 /**
  * Decode friendRequestId to get otherUserId value.
- * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
+ * This function should be used only when we are sure that `ownId` is part of `friendRequestId`.
  * @param friendRequestId
+ * @param ownId
  * @return `otherUserId`
  */
 export function decodeFriendRequestId(friendRequestId: string, ownId: string) {
-  // Get ids from the friendRequestId
-  // const ids = friendRequestId.split('_')
+  // The friendRequestId follows the pattern '0x1111ada11111'
+  ownId = getUserIdFromMatrix(ownId)
 
-  // Match ownId with one of the ids
-  // const match = ''
+  // Get index of the ownId
+  const index = friendRequestId.indexOf(ownId)
 
-  const otherUserId = ''
+  // Return the id placed in the other index
+  if (index === 0) {
+    return friendRequestId.split('_')[1]
+  } else {
+    return friendRequestId.split('_')[0]
+  }
+}
 
-  // Return the otherUserId
-  return otherUserId
+/**
+ * Validate if the `ownId` is part of the `friendRequestId`.
+ * @param friendRequestId
+ * @param ownId
+ */
+export function validateFriendRequestId(friendRequestId: string, ownId: string) {
+  // The friendRequestId follows the pattern '0x1111ada11111'
+  ownId = getUserIdFromMatrix(ownId)
+
+  return friendRequestId.includes(ownId)
 }
