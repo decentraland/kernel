@@ -3,6 +3,7 @@ import { RendererProtocolContext } from '../context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import {
+  acceptFriendRequest,
   cancelFriendRequest,
   getFriendRequestsProtocol,
   rejectFriendRequest,
@@ -27,7 +28,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
     },
 
     async acceptFriendRequest(req, _) {
-      return {}
+      return handleRequest(acceptFriendRequest, req)
     },
 
     async rejectFriendRequest(req, _) {
