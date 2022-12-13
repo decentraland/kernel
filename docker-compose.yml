@@ -1,4 +1,4 @@
-version: "1.0"
+version: "3"
 services:
   kernel:
     build:
@@ -6,8 +6,9 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./:/app
-      - ./init.sh:/init.sh
     entrypoint: sh -c "/init.sh"
+    environment:
+      PUPPETEER_SKIP_DOWNLOAD: "true"
     ports:
       - 7666:7666
       - 8080:8080
