@@ -287,7 +287,7 @@ export class UnityInterface implements IUnityInterface {
       wearables = lodash.uniqBy(wearables, 'id')
 
       let stringToSend = JSON.stringify({ wearables, context })
-      //THERE IS AN ISSUE WITH SENSING A BIG STRING OVER THE NETWORK TO UNITY
+      //THERE IS AN ISSUE WITH PROCESSING A LARGE STRING IN UNITY WEBGL
       //IF THE STRING IS BIGGER THAN THE SAFE VALUE, WE NEED TO ADD A CAP
       if (stringToSend.length > 1306299) {
         //CAP AT 600 WEARABLES. ASSUMING THAT THE BIGGEST WEARABLES HAS 2000 characters
