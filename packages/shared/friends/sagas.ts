@@ -157,6 +157,7 @@ import {
   FriendshipErrorCode,
   FriendRequestInfo
 } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
+import { ReceiveFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/friend_request_renderer.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1169,7 +1170,7 @@ function* handleSendPrivateMessage(action: SendPrivateMessage) {
 }
 
 function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
-  const { action, userId, future } = payload
+  const { action, userId, future, messageBody } = payload
 
   const client: SocialAPI | undefined = yield select(getSocialClient)
 
@@ -1294,6 +1295,25 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         updateTotalFriendRequestsPayload = {
           ...updateTotalFriendRequestsPayload,
           totalReceivedRequests: updateTotalFriendRequestsPayload.totalReceivedRequests + 1
+        }
+
+        // TODO!: remove FF validation once the new flow is the only one
+        if (newFriendRequestFlow && incoming) {
+          // Build message
+          const receiveFriendRequest: ReceiveFriendRequestPayload = {
+            friendRequest: {
+              friendRequestId,
+              timestamp: Date.now(),
+              to: getUserIdFromMatrix(ownId),
+              from: getUserIdFromMatrix(userId),
+              messageBody
+            }
+          }
+          console.log(receiveFriendRequest)
+          // Send messsage to renderer via rpc
+          // void rendererProtocol.then(async (protocol) => {
+          //   await protocol.friendRequestRendererService.receiveFriendRequest(receiveFriendRequest)
+          // })
         }
 
         break
