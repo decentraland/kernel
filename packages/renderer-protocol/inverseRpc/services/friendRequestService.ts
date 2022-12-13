@@ -176,14 +176,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         let rejectFriendRequestReply: RejectFriendRequestReply = {}
 
         // Check response type
-        if (rejectFriend.error !== null) {
-          rejectFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: rejectFriend.error
-            }
-          }
-        } else if (rejectFriend.reply.friendRequest) {
+        if (rejectFriend.reply?.friendRequest) {
           rejectFriendRequestReply = {
             message: {
               $case: 'reply',
@@ -196,6 +189,13 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
                   messageBody: rejectFriend.reply.friendRequest.messageBody
                 }
               }
+            }
+          }
+        } else {
+          rejectFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: rejectFriend.error ?? FriendshipErrorCode.FEC_UNKNOWN
             }
           }
         }
