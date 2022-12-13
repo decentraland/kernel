@@ -288,11 +288,27 @@ export class UnityInterface implements IUnityInterface {
       //First, we remove the duplicate wearables entries.
       wearables = lodash.uniqBy(wearables, 'id')
 
-      let stringToSend = JSON.stringify({ wearables, context })
-      //We need the string to be shorter than this length
-      if (stringToSend.length > 1306299) {
-        //We put a theoretical cap at 600 wearables, assuming a bad scenario while each of them will have 2000 characters
-        //We also send a warning to show the user what we are doing
+      //Then, we map to a string array to find the limit of wearables we can add
+      function stringifyWearable(num) {
+        return JSON.stringify(num)
+      }
+      const wearablesStringArray: string[] = wearables.map(stringifyWearable)
+
+      //Theoretical limit is at 1306299. Added a smaller value to keep it safe
+      const SAFE_THRESHOLD = 1300000
+      let counter = 0
+      let totalLength = 0
+      while(counter < wearablesStringArray.length && totalLength < SAFE_THRESHOLD) {
+        // accumulate while size is lower than threshold
+        totalLength += wearablesStringArray[counter].length
+        counter++
+      }
+
+      //We send to Unity the resultant values analyzed
+      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', '{"wearables": [' + wearablesStringArray.slice(counter).join(',') + '], "context":' + context + '}')
+
+      //If counter is less than length, then the wearables have been truncated and we need to warn the user
+      if(counter < wearablesStringArray.length){
         this.ShowNotification({
           type: NotificationType.GENERIC,
           message:
@@ -300,11 +316,7 @@ export class UnityInterface implements IUnityInterface {
           buttonMessage: 'OK',
           timer: 10
         })
-        wearables = wearables.slice(0, 600 + 1)
-        stringToSend = JSON.stringify({ wearables, context })
       }
-
-      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', stringToSend)
     }
   }
 
