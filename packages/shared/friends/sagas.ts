@@ -79,7 +79,8 @@ import {
   getLastStatusOfFriends,
   getChannels,
   getAllFriendsConversationsWithMessages,
-  getOwnId
+  getOwnId,
+  getMessageBody
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -2154,18 +2155,20 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
   try {
     // Get ownId value
     const ownId = getOwnId(store.getState())
-
     if (!ownId) {
       return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
     }
 
+    // Validate request
+
     // Get otherUserId value
-    const userId = ''
+    const userId = 'decodeFriendRequestId(request.friendRequestId)'
+    if (!userId) {
+      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    }
 
     // Search in the store for the message body
-    const messageBody = getPrivateMessaging(store.getState()).toFriendRequests.find(
-      (friend) => friend.friendRequestId === request.friendRequestId
-    )?.message
+    const messageBody = getMessageBody(store.getState(), userId)
 
     // Update user data
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
@@ -2179,7 +2182,7 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
           friendRequestId: request.friendRequestId,
           timestamp: Date.now(),
           from: getUserIdFromMatrix(ownId),
-          to: getUserIdFromMatrix(userId),
+          to: userId,
           messageBody
         }
       }

@@ -113,9 +113,32 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         // Handle cancel friend request
         const cancelFriend = await cancelFriendRequest(req)
 
-        console.log(cancelFriend)
+        let cancelFriendRequestReply: CancelFriendRequestReply = {}
 
-        const cancelFriendRequestReply: CancelFriendRequestReply = {}
+        // Check the response type
+        if (cancelFriend.error !== null) {
+          cancelFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: cancelFriend.error
+            }
+          }
+        } else if (cancelFriend.reply.friendRequest) {
+          cancelFriendRequestReply = {
+            message: {
+              $case: 'reply',
+              reply: {
+                friendRequest: {
+                  friendRequestId: cancelFriend.reply.friendRequest.friendRequestId,
+                  timestamp: cancelFriend.reply.friendRequest.timestamp,
+                  to: cancelFriend.reply.friendRequest.to,
+                  from: cancelFriend.reply.friendRequest.from,
+                  messageBody: cancelFriend.reply.friendRequest.messageBody
+                }
+              }
+            }
+          }
+        }
 
         // Send response back to renderer
         return cancelFriendRequestReply
