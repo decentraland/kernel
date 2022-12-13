@@ -1,11 +1,11 @@
 import { notStarted } from './loading/types'
 import { buildStore } from './store/store'
 import { globalObservable } from './observables'
-import { isRendererVisible } from './loading/selectors'
 import { RootStore } from './store/rootTypes'
 import { initializeSessionObserver } from './session/sagas'
 import { hookAnalyticsObservables } from './analytics/hook-observable'
 import { beforeUnloadAction } from './actions'
+import { isRendererVisible } from './loadingScreen/selectors'
 
 declare const globalThis: { globalStore: RootStore }
 

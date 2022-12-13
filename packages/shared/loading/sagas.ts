@@ -1,34 +1,21 @@
 import { AnyAction } from 'redux'
 import { fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
 
-import { PARCEL_LOADING_STARTED, RENDERER_INITIALIZED_CORRECTLY } from 'shared/renderer/types'
-import { AUTHENTICATE, ChangeLoginStateAction, CHANGE_LOGIN_STAGE, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
+import { RENDERER_INITIALIZED_CORRECTLY } from 'shared/renderer/types'
+import { CHANGE_LOGIN_STAGE, ChangeLoginStateAction } from 'shared/session/actions'
 import { trackEvent } from '../analytics'
 import { lastPlayerPosition } from '../world/positionThings'
 
 import {
   informPendingScenes,
-  PENDING_SCENES,
-  SceneFail,
-  SceneLoad,
   SCENE_CHANGED,
   SCENE_FAIL,
   SCENE_LOAD,
   SCENE_START,
-  SCENE_UNLOAD,
-  updateLoadingScreen,
-  UPDATE_STATUS_MESSAGE
+  SceneFail,
+  SceneLoad
 } from './actions'
-import {
-  metricsUnityClientLoaded,
-  metricsAuthSuccessful,
-  experienceStarted,
-  RENDERING_ACTIVATED,
-  RENDERING_DEACTIVATED,
-  RENDERING_BACKGROUND,
-  RENDERING_FOREGROUND,
-  TELEPORT_TRIGGERED
-} from './types'
+import { experienceStarted, metricsAuthSuccessful, metricsUnityClientLoaded } from './types'
 import { getCurrentUserId } from 'shared/session/selectors'
 import { LoginState } from '@dcl/kernel-interface'
 import { call } from 'redux-saga-test-plan/matchers'
@@ -40,31 +27,8 @@ import { getAssetBundlesBaseUrl } from 'config'
 import { loadedSceneWorkers } from 'shared/world/parcelSceneManager'
 import { SceneWorkerReadyState } from 'shared/world/SceneWorker'
 import { LoadableScene } from 'shared/types'
-import { SET_REALM_ADAPTER } from 'shared/realm/actions'
-import { POSITION_SETTLED, POSITION_UNSETTLED, SET_SCENE_LOADER } from 'shared/scene-loader/actions'
-
-// The following actions may change the status of the loginVisible
-const ACTIONS_FOR_LOADING = [
-  AUTHENTICATE,
-  CHANGE_LOGIN_STAGE,
-  PARCEL_LOADING_STARTED,
-  PENDING_SCENES,
-  RENDERER_INITIALIZED_CORRECTLY,
-  RENDERING_ACTIVATED,
-  RENDERING_BACKGROUND,
-  RENDERING_DEACTIVATED,
-  RENDERING_FOREGROUND,
-  SCENE_FAIL,
-  SCENE_LOAD,
-  SIGNUP_SET_IS_SIGNUP,
-  TELEPORT_TRIGGERED,
-  UPDATE_STATUS_MESSAGE,
-  SET_REALM_ADAPTER,
-  SET_SCENE_LOADER,
-  POSITION_SETTLED,
-  POSITION_UNSETTLED,
-  SCENE_UNLOAD
-]
+import { updateLoadingScreen } from '../loadingScreen/actions'
+import { ACTIONS_FOR_LOADING } from '../loadingScreen/sagas'
 
 export function* loadingSaga() {
   yield takeEvery(SCENE_LOAD, trackLoadTime)
@@ -72,10 +36,6 @@ export function* loadingSaga() {
 
   yield fork(translateActions)
   yield fork(initialSceneLoading)
-
-  yield takeLatest(ACTIONS_FOR_LOADING, function* () {
-    yield put(updateLoadingScreen())
-  })
 
   yield takeLatest([SCENE_FAIL, SCENE_LOAD, SCENE_START, SCENE_CHANGED], handleReportPendingScenes)
 }

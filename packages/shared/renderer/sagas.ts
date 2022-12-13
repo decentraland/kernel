@@ -3,7 +3,7 @@ import { waitingForRenderer } from 'shared/loading/types'
 import { initializeEngine } from 'unity-interface/dcl'
 import type { UnityGame } from '@dcl/unity-renderer/src/index'
 import { InitializeRenderer, registerRendererModules, registerRendererPort, REGISTER_RPC_PORT } from './actions'
-import { getClientPort, getParcelLoadingStarted } from './selectors'
+import { getClientPort } from './selectors'
 import { RendererModules, RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
 import {
@@ -17,8 +17,6 @@ import { profileToRendererFormat } from 'shared/profiles/transformations/profile
 import { isCurrentUserId, getCurrentIdentity, getCurrentUserId } from 'shared/session/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
-import { UPDATE_LOADING_SCREEN } from 'shared/loading/actions'
-import { isLoadingScreenVisible, getLoadingState } from 'shared/loading/selectors'
 import { SignUpSetIsSignUp, SIGNUP_SET_IS_SIGNUP } from 'shared/session/actions'
 import { isFeatureToggleEnabled } from 'shared/selectors'
 import { CurrentRealmInfoForRenderer, NotificationType, VOICE_CHAT_FEATURE_TOGGLE } from 'shared/types'
@@ -47,12 +45,10 @@ import { IRealmAdapter } from 'shared/realm/types'
 import { SET_REALM_ADAPTER } from 'shared/realm/actions'
 import { getAllowedContentServer } from 'shared/meta/selectors'
 import { SetCurrentScene, SET_CURRENT_SCENE } from 'shared/world/actions'
-import { RootState } from 'shared/store/rootTypes'
 import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 import { getVoiceHandler } from 'shared/voiceChat/selectors'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
-import { LoadingState } from 'shared/loading/reducer'
 import { RpcClientPort, Transport } from '@dcl/rpc'
 import { createRendererRpcClient } from 'renderer-protocol/rpcClient'
 import { registerEmotesService } from 'renderer-protocol/services/emotesService'
@@ -61,7 +57,6 @@ import { createRpcTransportService } from 'renderer-protocol/services/transportS
 export function* rendererSaga() {
   yield takeEvery(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
   yield takeLatest(SIGNUP_SET_IS_SIGNUP, sendSignUpToRenderer)
-  yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreen)
   yield takeEvery(VOICE_PLAYING_UPDATE, updateUserVoicePlayingRenderer)
   yield takeEvery(VOICE_RECORDING_UPDATE, updatePlayerVoiceRecordingRenderer)
   yield takeEvery(SET_VOICE_CHAT_ERROR, handleVoiceChatError)
@@ -209,45 +204,6 @@ function* listenToWhetherSceneSupportsVoiceChat(data: SetCurrentScene) {
   yield call(waitForRendererInstance)
 
   getUnityInstance().SetVoiceChatEnabledByScene(nowEnabled)
-}
-
-/**
- * This saga hides, show and update the loading screen
- */
-function* updateLoadingScreen() {
-  yield call(waitForRendererInstance)
-
-  const isVisible = yield select(isLoadingScreenVisible)
-
-  const parcelLoadingStarted = yield select(getParcelLoadingStarted)
-  const loadingState: LoadingState = yield select(getLoadingState)
-  const loadingMessage: string | undefined = yield select((state: RootState): string | undefined => {
-    const msgs: string[] = []
-    if (!state.realm.realmAdapter) msgs.push('Picking realm...')
-    else if (!state.sceneLoader) msgs.push('Initializing world loader...')
-    else if (!parcelLoadingStarted) msgs.push('Fetching initial parcels...')
-    else if (!state.sceneLoader.positionSettled) msgs.push('Waiting for spawn point...')
-
-    if (!state.comms.context) msgs.push('Connecting to comms...')
-
-    if (state.loading.pendingScenes && state.loading.totalScenes > 1) {
-      msgs.push(
-        `Initializing scenes ${state.loading.totalScenes - state.loading.pendingScenes}/${state.loading.totalScenes}...`
-      )
-    } else if (state.loading.renderingWasActivated) {
-      msgs.push(`Waiting for initial render...`)
-    }
-
-    msgs.push(loadingState.message)
-    return msgs.join('\n')
-  })
-
-  const loadingScreen = {
-    isVisible,
-    message: loadingMessage || loadingState.message || loadingState.status || '',
-    showTips: loadingState.initialLoad || !parcelLoadingStarted
-  }
-  getUnityInstance().SetLoadingScreen(loadingScreen)
 }
 
 function* initializeRenderer(action: InitializeRenderer) {
