@@ -70,7 +70,7 @@ import { ensureFriendProfile } from 'shared/friends/ensureFriendProfile'
 import { emotesRequest, wearablesRequest } from 'shared/catalogs/actions'
 import { EmotesRequestFilters, WearablesRequestFilters } from 'shared/catalogs/types'
 import { fetchENSOwnerProfile } from './fetchENSOwnerProfile'
-import { AVATAR_LOADING_ERROR, renderingActivated, renderingDectivated } from 'shared/loading/types'
+import { AVATAR_LOADING_ERROR } from 'shared/loading/types'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { globalObservable } from 'shared/observables'
 import { store } from 'shared/store/isolatedStore'
@@ -81,7 +81,6 @@ import { Authenticator } from '@dcl/crypto'
 import { denyPortableExperiences, removeScenePortableExperience } from 'shared/portableExperiences/actions'
 import { setDecentralandTime } from 'shared/apis/host/EnvironmentAPI'
 import { Avatar, generateLazyValidator, JSONSchema } from '@dcl/schemas'
-import { transformSerializeOpt } from 'unity-interface/transformSerializationOpt'
 import {
   getFriendRequests,
   getFriends,
@@ -107,8 +106,9 @@ import { ensureRealmAdapterPromise, getFetchContentUrlPrefixFromRealmAdapter } f
 import { setWorldLoadingRadius } from 'shared/scene-loader/actions'
 import { rendererSignalSceneReady } from 'shared/world/actions'
 import { requestMediaDevice } from '../shared/voiceChat/sagas'
+import { renderingActivated, renderingDectivated } from '../shared/loadingScreen/types'
 
-declare const globalThis: { gifProcessor?: GIFProcessor }
+declare const globalThis: { gifProcessor?: GIFProcessor; __debug_wearables: any }
 export const futures: Record<string, IFuture<any>> = {}
 
 type UnityEvent = any
@@ -330,8 +330,6 @@ export class BrowserInterface {
   public SystemInfoReport(data: SystemInfoPayload & { useBinaryTransform?: boolean }) {
     trackEvent('system info report', data)
 
-    transformSerializeOpt.useBinaryTransform = !!data.useBinaryTransform
-
     this.startedFuture.resolve()
   }
 
@@ -547,6 +545,7 @@ export class BrowserInterface {
         store.dispatch(rendererSignalSceneReady(sceneId, sceneNumber))
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'DeactivateRenderingACK': {
         /**
          * This event is called everytime the renderer deactivates its camera
@@ -555,6 +554,7 @@ export class BrowserInterface {
         console.log('DeactivateRenderingACK')
         break
       }
+      /** @deprecated #3642 Will be moved to Renderer */
       case 'ActivateRenderingACK': {
         /**
          * This event is called everytime the renderer activates the main camera
@@ -696,7 +696,7 @@ export class BrowserInterface {
     store.dispatch(setVoiceChatPolicy(settingsMessage.voiceChatAllowCategory))
   }
 
-  // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
+  // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED.
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     try {
       let { userId } = message
@@ -705,7 +705,7 @@ export class BrowserInterface {
 
       // TODO!: With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
       // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
-      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED.
       if (message.action === FriendshipAction.REQUESTED_TO) {
         const avatar = await ensureFriendProfile(userId)
 
@@ -731,7 +731,7 @@ export class BrowserInterface {
         }
       }
 
-      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED.
       if (message.action === FriendshipAction.REQUESTED_TO && !found) {
         // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
         getUnityInstance().FriendNotFound(userId)

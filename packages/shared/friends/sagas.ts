@@ -142,10 +142,8 @@ import { isAddress } from 'eth-connect'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { fetchENSOwner } from 'shared/web3'
 import {
-  FriendshipErrorCode,
   SendFriendRequestPayload,
   GetFriendRequestsReplyOk,
-  FriendRequestInfo,
   SendFriendRequestReplyOk,
   CancelFriendRequestPayload,
   CancelFriendRequestReplyOk,
@@ -153,6 +151,10 @@ import {
   RejectFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import future from 'fp-future'
+import {
+  FriendshipErrorCode,
+  FriendRequestInfo
+} from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1340,7 +1342,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     // TODO!: remove FF validation once the new flow is the only one
     // We only send the UpdateFriendshipStatus message when:
     // + The new friend request flow is disabled
-    // + The new friend request flow is enabled and the action is an outgoing delete
+    // + The new friend request flow is enabled and the action is an incoming/outgoing delete
     if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
       getUnityInstance().UpdateFriendshipStatus(payload)
     }
