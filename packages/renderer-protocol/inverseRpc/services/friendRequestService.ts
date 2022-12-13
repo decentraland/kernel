@@ -1,13 +1,14 @@
 import { RpcServerPort } from '@dcl/rpc'
 import { RendererProtocolContext } from '../context'
 import * as codegen from '@dcl/rpc/dist/codegen'
-import {
-  FriendRequestKernelServiceDefinition,
-  FriendshipErrorCode,
-  GetFriendRequestsReply
-} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
+
 import { getFriendRequestsProtocol } from '../../../shared/friends/sagas'
 import defaultLogger from '../../../shared/logger'
+import { FriendshipErrorCode } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
+import {
+  FriendRequestKernelServiceDefinition,
+  GetFriendRequestsReply
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
 export function registerFriendRequestKernelService(port: RpcServerPort<RendererProtocolContext>) {
   codegen.registerService(port, FriendRequestKernelServiceDefinition, async () => ({
@@ -26,7 +27,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
               error: FriendshipErrorCode.FEC_UNKNOWN
             }
           }
-        } else {
+        } else if (friendRequests.reply) {
           getFriendRequestsReply = {
             message: {
               $case: 'reply',

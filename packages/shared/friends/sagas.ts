@@ -127,11 +127,11 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { GetFriendRequestsReplyOk } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import {
   FriendshipErrorCode,
-  GetFriendRequestsReplyOk,
   FriendRequestInfo
-} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
+} from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
