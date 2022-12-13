@@ -279,18 +279,20 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
+    //We are manipulating this method since we currently cannot process large string in UnityWebGL.
+    //This is a mitigation while we implement proper pagination
     if (RENDERER_WS) {
-      //WE ARE IN DESKTOP. SEND ALL THE WEARABLE LIST
+      //If we are in desktop, we can send the message normally
       this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
     } else {
-      //REMOVE DUPLICATES
+      //First, we remove the duplicate wearables entries. 
       wearables = lodash.uniqBy(wearables, 'id')
 
-      let stringToSend = JSON.stringify({ wearables, context })
-      //THERE IS AN ISSUE WITH PROCESSING A LARGE STRING IN UNITY WEBGL
-      //IF THE STRING IS BIGGER THAN THE SAFE VALUE, WE NEED TO ADD A CAP
+      let stringToSend = JSON.stringify({ wearables, context })      
+      //We need the string to be shorter than this length
       if (stringToSend.length > 1306299) {
-        //CAP AT 600 WEARABLES. ASSUMING THAT THE BIGGEST WEARABLES HAS 2000 characters
+        //We put a theoretical cap at 600 wearables, assuming a bad scenario while each of them will have 2000 characters
+        //We also send a warning to show the user what we are doing
         this.ShowNotification({
           type: NotificationType.GENERIC,
           message:
