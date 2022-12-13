@@ -34,15 +34,7 @@ import { getFetchContentServerFromRealmAdapter } from 'shared/realm/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
 import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
-import {
-  SceneFail,
-  SceneStart,
-  SceneUnload,
-  SCENE_FAIL,
-  SCENE_START,
-  SCENE_UNLOAD,
-  updateLoadingScreen
-} from 'shared/loading/actions'
+import { SceneFail, SceneStart, SceneUnload, SCENE_FAIL, SCENE_START, SCENE_UNLOAD } from 'shared/loading/actions'
 import { sceneEvents, SceneWorker } from 'shared/world/SceneWorker'
 import { pickWorldSpawnpoint, positionObservable, receivePositionReport } from 'shared/world/positionThings'
 import { encodeParcelPosition, gridToWorld, worldToGrid } from 'atomicHelpers/parcelScenePositions'
@@ -54,6 +46,7 @@ import { trackEvent } from 'shared/analytics'
 import { getAllowedContentServer } from 'shared/meta/selectors'
 import { CHANGE_LOGIN_STAGE } from 'shared/session/actions'
 import { isLoginCompleted } from 'shared/session/selectors'
+import { updateLoadingScreen } from '../loadingScreen/actions'
 
 export function* sceneLoaderSaga() {
   yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
