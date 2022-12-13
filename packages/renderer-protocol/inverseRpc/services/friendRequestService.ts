@@ -3,6 +3,7 @@ import { RendererProtocolContext } from '../context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
 import {
+  acceptFriendRequest,
   cancelFriendRequest,
   getFriendRequestsProtocol,
   rejectFriendRequest,
@@ -11,6 +12,7 @@ import {
 import defaultLogger from '../../../shared/logger'
 import { FriendshipErrorCode } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 import {
+  AcceptFriendRequestReply,
   CancelFriendRequestReply,
   FriendRequestKernelServiceDefinition,
   GetFriendRequestsReply,
@@ -165,7 +167,52 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
     },
 
     async acceptFriendRequest(req, _) {
-      return {}
+      try {
+        // Handle reject friend request
+        const acceptFriend = await acceptFriendRequest(req)
+
+        let acceptFriendRequestReply: AcceptFriendRequestReply = {}
+
+        // Check response type
+        if (acceptFriend.reply?.friendRequest) {
+          acceptFriendRequestReply = {
+            message: {
+              $case: 'reply',
+              reply: {
+                friendRequest: {
+                  friendRequestId: acceptFriend.reply.friendRequest.friendRequestId,
+                  timestamp: acceptFriend.reply.friendRequest.timestamp,
+                  to: acceptFriend.reply.friendRequest.to,
+                  from: acceptFriend.reply.friendRequest.from,
+                  messageBody: acceptFriend.reply.friendRequest.messageBody
+                }
+              }
+            }
+          }
+        } else {
+          acceptFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: acceptFriend.error ?? FriendshipErrorCode.FEC_UNKNOWN
+            }
+          }
+        }
+
+        // Send response back to renderer
+        return acceptFriendRequestReply
+      } catch (err) {
+        defaultLogger.error('Error while accepting friend request via rpc', err)
+
+        const acceptFriendRequestReply: AcceptFriendRequestReply = {
+          message: {
+            $case: 'error',
+            error: FriendshipErrorCode.FEC_UNKNOWN
+          }
+        }
+
+        // Send response back to renderer
+        return acceptFriendRequestReply
+      }
     },
 
     async rejectFriendRequest(req, _) {
