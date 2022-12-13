@@ -145,8 +145,8 @@ import {
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import future from 'fp-future'
 import {
-  FriendRequestInfo,
-  FriendshipErrorCode
+  FriendshipErrorCode,
+  FriendRequestInfo
 } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
