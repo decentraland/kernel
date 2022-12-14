@@ -6,7 +6,6 @@ import { getPerformanceInfo } from '../../../shared/session/getPerformanceInfo'
 import { getUnityInstance } from '../../../unity-interface/IUnityInterface'
 import { trackEvent } from '../../../shared/analytics'
 import { setDelightedSurveyEnabled } from '../../../unity-interface/delightedSurvey'
-import { transformSerializeOpt } from '../../../unity-interface/transformSerializationOpt'
 import { browserInterface } from '../../..//unity-interface/BrowserInterface'
 
 type UnityEvent = any
@@ -41,8 +40,6 @@ export function registerAnalyticsKernelService(port: RpcServerPort<RendererProto
     },
     async systemInfoReport(req, _) {
       trackEvent('system info report', req)
-
-      transformSerializeOpt.useBinaryTransform = !!req.useBinaryTransform
 
       // @deprecated
       browserInterface.startedFuture.resolve()
