@@ -1,6 +1,7 @@
 import { createRpcServer, RpcServerPort, Transport } from '@dcl/rpc'
 import { RendererProtocolContext } from './context'
 import { registerEmotesKernelService } from './services/emotesService'
+import { registerAnalyticsKernelService } from './services/analyticsService'
 
 export function createRendererProtocolInverseRpcServer(transport: Transport) {
   const server = createRpcServer<RendererProtocolContext>({})
@@ -19,4 +20,5 @@ export function createRendererProtocolInverseRpcServer(transport: Transport) {
  */
 async function registerKernelServices(serverPort: RpcServerPort<RendererProtocolContext>) {
   registerEmotesKernelService(serverPort)
+  registerAnalyticsKernelService(serverPort)
 }

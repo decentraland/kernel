@@ -1,5 +1,6 @@
 import { Vector3 } from '@dcl/ecs-math'
-import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL } from 'config'
+import lodash from 'lodash'
+import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, RENDERER_WS } from 'config'
 import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } from './IUnityInterface'
 import {
@@ -32,7 +33,8 @@ import {
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
   ChannelErrorPayload,
-  SetAudioDevicesPayload
+  SetAudioDevicesPayload,
+  NotificationType
 } from 'shared/types'
 import { nativeMsgBridge } from './nativeMessagesBridge'
 import { createUnityLogger, ILogger } from 'shared/logger'
@@ -260,7 +262,51 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddWearablesToCatalog(wearables: WearableV2[], context?: string) {
-    this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
+    //We are manipulating this method since we currently cannot process large string in UnityWebGL.
+    //This is a mitigation while we implement proper pagination
+    if (RENDERER_WS) {
+      //If we are in desktop, we can send the message normally
+      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', JSON.stringify({ wearables, context }))
+    } else {
+      //First, we remove the duplicate wearables entries.
+      wearables = lodash.uniqBy(wearables, 'id')
+
+      //Then, we map to a string array to find the limit of wearables we can add
+      function stringifyWearable(num) {
+        return JSON.stringify(num)
+      }
+      const wearablesStringArray: string[] = wearables.map(stringifyWearable)
+
+      //Theoretical limit is at 1306299. Added a smaller value to keep it safe
+      const SAFE_THRESHOLD = 1300000
+      let counter = 0
+      let totalLength = 0
+      while (counter < wearablesStringArray.length && totalLength < SAFE_THRESHOLD) {
+        // accumulate while size is lower than threshold
+        totalLength += wearablesStringArray[counter].length
+        counter++
+      }
+
+      const payload =
+        '{"wearables": [' +
+        wearablesStringArray.slice(0, counter).join(',') +
+        '], "context":"' +
+        context?.toString() +
+        '"}'
+      //We send to Unity the resultant values analyzed
+      this.SendMessageToUnity('Main', 'AddWearablesToCatalog', payload)
+
+      //If counter is less than length, then the wearables have been truncated and we need to warn the user
+      if (counter < wearablesStringArray.length) {
+        this.ShowNotification({
+          type: NotificationType.GENERIC,
+          message:
+            "Your wearables list couldn't be fully loaded, some assets might not load, bear with us while we solve the issue",
+          buttonMessage: 'OK',
+          timer: 10
+        })
+      }
+    }
   }
 
   public AddEmotesToCatalog(emotes: Emote[], context?: string) {
