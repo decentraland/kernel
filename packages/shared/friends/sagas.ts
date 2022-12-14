@@ -1281,6 +1281,21 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
+        // TODO!: remove FF validation once the new flow is the only one
+        if (newFriendRequestFlow && incoming) {
+          // Build message
+          const cancelFriendRequest = {
+            userId: getUserIdFromMatrix(userId)
+          }
+
+          // Send messsage to renderer via rpc
+          getRendererModules(store.getState())
+            ?.friendRequest?.cancelFriendRequest(cancelFriendRequest)
+            .catch((err) => {
+              logAndTrackError('Error canceling to renderer push notifications about receiving a friend request.', err)
+            })
+        }
+
         break
       }
       case FriendshipAction.REQUESTED_FROM: {
