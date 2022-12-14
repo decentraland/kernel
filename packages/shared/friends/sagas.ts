@@ -739,7 +739,6 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
 }
 
-// New friend request flow
 export async function getFriendRequestsProtocol(request: GetFriendRequestsPayload) {
   try {
     // Get friends
@@ -748,11 +747,15 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     const realmAdapter = await ensureRealmAdapterPromise()
     const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
 
+    // Paginate incoming requests
     const fromFriendRequests = friends.fromFriendRequests.slice(
       request.receivedSkip,
       request.receivedSkip + request.receivedLimit
     )
+    // Paginate outgoing requests
     const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
+
+    // Map usersIds we need to get the profiles
     const fromIds = fromFriendRequests.map((friend) => friend.userId)
     const toIds = toFriendRequests.map((friend) => friend.userId)
 
@@ -811,7 +814,7 @@ function getFriendRequestInfo(friend: FriendRequest, incoming: boolean) {
       timestamp: friend.createdAt,
       from: getUserIdFromMatrix(ownId),
       to: friend.userId,
-      messageBody: friend.userId
+      messageBody: friend.message
     }
     return friendRequest
   }
