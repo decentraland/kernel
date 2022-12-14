@@ -17,7 +17,7 @@ import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { trackEvent } from 'shared/analytics'
 import { getSceneNameFromJsonData } from 'shared/selectors'
 import { Scene } from '@dcl/schemas'
-import { RpcSceneControllerServiceDefinition } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/rpc_scene_controller.gen'
+import { RpcSceneControllerServiceDefinition } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/scene_controller.gen'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import {
   signalSceneLoad,
