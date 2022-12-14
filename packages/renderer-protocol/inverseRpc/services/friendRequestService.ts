@@ -30,14 +30,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         let getFriendRequestsReply: GetFriendRequestsReply = {}
 
         // Check the response type
-        if (friendRequests.error !== null) {
-          getFriendRequestsReply = {
-            message: {
-              $case: 'error',
-              error: FriendshipErrorCode.FEC_UNKNOWN
-            }
-          }
-        } else if (friendRequests.reply) {
+        if (friendRequests.reply) {
           getFriendRequestsReply = {
             message: {
               $case: 'reply',
@@ -47,6 +40,13 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
                 totalReceivedFriendRequests: friendRequests.reply.totalReceivedFriendRequests,
                 totalSentFriendRequests: friendRequests.reply.totalSentFriendRequests
               }
+            }
+          }
+        } else {
+          getFriendRequestsReply = {
+            message: {
+              $case: 'error',
+              error: friendRequests.error ?? FriendshipErrorCode.FEC_UNKNOWN
             }
           }
         }
@@ -76,14 +76,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         let sendFriendRequestReply: SendFriendRequestReply = {}
 
         // Check the response type
-        if (sendFriendRequest.error !== null) {
-          sendFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: sendFriendRequest.error
-            }
-          }
-        } else if (sendFriendRequest.reply.friendRequest) {
+        if (sendFriendRequest.reply?.friendRequest) {
           sendFriendRequestReply = {
             message: {
               $case: 'reply',
@@ -96,6 +89,13 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
                   messageBody: sendFriendRequest.reply.friendRequest.messageBody
                 }
               }
+            }
+          }
+        } else {
+          sendFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: sendFriendRequest.error ?? FriendshipErrorCode.FEC_UNKNOWN
             }
           }
         }
@@ -125,14 +125,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         let cancelFriendRequestReply: CancelFriendRequestReply = {}
 
         // Check the response type
-        if (cancelFriend.error !== null) {
-          cancelFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: cancelFriend.error
-            }
-          }
-        } else if (cancelFriend.reply.friendRequest) {
+        if (cancelFriend.reply?.friendRequest) {
           cancelFriendRequestReply = {
             message: {
               $case: 'reply',
@@ -145,6 +138,13 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
                   messageBody: cancelFriend.reply.friendRequest.messageBody
                 }
               }
+            }
+          }
+        } else {
+          cancelFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: cancelFriend.error ?? FriendshipErrorCode.FEC_UNKNOWN
             }
           }
         }
@@ -223,14 +223,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         let rejectFriendRequestReply: RejectFriendRequestReply = {}
 
         // Check response type
-        if (rejectFriend.error !== null) {
-          rejectFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: rejectFriend.error
-            }
-          }
-        } else if (rejectFriend.reply.friendRequest) {
+        if (rejectFriend.reply?.friendRequest) {
           rejectFriendRequestReply = {
             message: {
               $case: 'reply',
@@ -243,6 +236,13 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
                   messageBody: rejectFriend.reply.friendRequest.messageBody
                 }
               }
+            }
+          }
+        } else {
+          rejectFriendRequestReply = {
+            message: {
+              $case: 'error',
+              error: rejectFriend.error ?? FriendshipErrorCode.FEC_UNKNOWN
             }
           }
         }
