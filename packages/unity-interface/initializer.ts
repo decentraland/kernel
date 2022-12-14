@@ -101,7 +101,6 @@ async function loadInjectedUnityDelegate(
   const transport = webTransport({ wasmModule: originalUnity.Module }, (globalThis as any).DCL)
 
   await engineStartedFuture
-  await browserInterface.startedFuture
 
   document.body.addEventListener('click', () => {
     browserInterface.onUserInteraction.resolve()
