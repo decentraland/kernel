@@ -788,8 +788,8 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
 }
 
 /**
- * Map FriendRequest to FriendRequestPayload
- * @param friend a FriendRequest type we want to map to FriendRequestPayload
+ * Map FriendRequest to FriendRequestInfo
+ * @param friend a FriendRequest type we want to map to FriendRequestInfo
  * @param incoming boolean indicating whether a request is an incoming one (requestedFrom) or not (requestedTo)
  *
  */
