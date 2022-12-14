@@ -158,6 +158,7 @@ import {
   FriendRequestInfo
 } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 import { ReceiveFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/friend_request_renderer.gen'
+import { getRendererModules } from 'shared/renderer/selectors'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1306,11 +1307,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
               messageBody
             }
           }
-          console.log(receiveFriendRequest)
+
           // Send messsage to renderer via rpc
-          // void rendererProtocol.then(async (protocol) => {
-          //   await protocol.friendRequestRendererService.receiveFriendRequest(receiveFriendRequest)
-          // })
+          getRendererModules(store.getState())
+            ?.friendRequest?.receiveFriendRequest(receiveFriendRequest)
+            .catch((err) => {
+              logAndTrackError('Error sending to renderer push notifications about receiving a friend request.', err)
+            })
         }
 
         break
