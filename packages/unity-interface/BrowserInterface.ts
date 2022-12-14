@@ -497,7 +497,7 @@ export class BrowserInterface {
         trackEvent('error', {
           message: `error getting friend requests ` + err.message,
           context: 'kernel#friendsSaga',
-          stack: 'getFriendRequestsDeprecate'
+          stack: 'getFriendRequests'
         })
     })
   }
