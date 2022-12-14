@@ -794,7 +794,7 @@ function getFriendRequestInfo(friend: FriendRequest, incoming: boolean) {
       timestamp: friend.createdAt,
       from: getUserIdFromMatrix(ownId),
       to: friend.userId,
-      messageBody: friend.userId
+      messageBody: friend.message
     }
     return friendRequest
   }
