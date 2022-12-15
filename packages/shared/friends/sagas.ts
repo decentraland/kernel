@@ -125,8 +125,8 @@ import {
   getMaxChannels,
   getNormalizedRoomName,
   getUsersAllowedToCreate,
-  isNewFriendRequestEnabled,
-  encodeFriendRequestId
+  encodeFriendRequestId,
+  isNewFriendRequestEnabled
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
