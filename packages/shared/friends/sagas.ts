@@ -1333,14 +1333,14 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       } else {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
-    }
 
-    // TODO!: remove FF validation once the new flow is the only one
-    // We only send the UpdateFriendshipStatus message when:
-    // + The new friend request flow is disabled
-    // + The new friend request flow is enabled and the action is an incoming/outgoing delete
-    if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
-      getUnityInstance().UpdateFriendshipStatus(payload)
+      // TODO!: remove FF validation once the new flow is the only one
+      // We only send the UpdateFriendshipStatus message when:
+      // + The new friend request flow is disabled
+      // + The new friend request flow is enabled and the action is an incoming/outgoing delete
+      if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
+        getUnityInstance().UpdateFriendshipStatus(payload)
+      }
     }
 
     if (!incoming) {
