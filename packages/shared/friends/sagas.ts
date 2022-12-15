@@ -786,12 +786,12 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     }
 
     // Return requests
-    return { reply: friendRequests, error: null }
+    return { reply: friendRequests, error: undefined }
   } catch (err) {
     logAndTrackError('Error while getting friend requests via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
@@ -1173,7 +1173,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   const newFriendRequestFlow = isNewFriendRequestEnabled()
 
   if (!client) {
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
   }
 
@@ -1189,13 +1189,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield apply(client, client.createDirectConversation, [socialData.socialId])
       } catch (e) {
         logAndTrackError('Error while creating direct conversation for friendship', e)
-        yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+        yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
         return
       }
     } else {
       // if this is the case, a previous call to ensure data load is missing, this is an issue on our end
       logger.error(`handleUpdateFriendship, user not loaded`, userId)
-      yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+      yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
       return
     }
 
@@ -1353,7 +1353,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       yield call(refreshFriends)
     }
 
-    yield call(future.resolve, { userId: userId, error: null })
+    yield call(future.resolve, { userId, error: null })
   } catch (e) {
     if (e instanceof UnknownUsersError) {
       const profile: Avatar | undefined = yield call(ensureFriendProfile, userId)
@@ -1364,7 +1364,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     // in case of any error, re initialize friends, to possibly correct state in both kernel and renderer
     yield call(refreshFriends)
 
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
   }
 }
 
@@ -2080,7 +2080,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     const ownId = getOwnId(state)
 
     if (!ownId) {
-      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
     }
 
     // Search user profile on server
@@ -2108,11 +2108,11 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     if (!found) {
-      return { reply: null, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
     }
 
     // Update user data
-    store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
 
     // Add as friend
     const response = await UpdateFriendshipAsPromise(
@@ -2134,16 +2134,16 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       }
 
       // Return response
-      return { reply: sendFriendRequest, error: null }
+      return { reply: sendFriendRequest, error: undefined }
     } else {
       // Return error
-      return { reply: null, error: response.error }
+      return { reply: undefined, error: response.error }
     }
   } catch (err) {
     logAndTrackError('Error while sending friend request via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
