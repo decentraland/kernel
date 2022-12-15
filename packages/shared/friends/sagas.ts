@@ -2107,7 +2107,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     // Update user data
-    store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
 
     // Add as friend
     const response = await UpdateFriendshipAsPromise(
