@@ -178,15 +178,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           acceptFriendRequestReply = {
             message: {
               $case: 'reply',
-              reply: {
-                friendRequest: {
-                  friendRequestId: acceptFriend.reply.friendRequest.friendRequestId,
-                  timestamp: acceptFriend.reply.friendRequest.timestamp,
-                  to: acceptFriend.reply.friendRequest.to,
-                  from: acceptFriend.reply.friendRequest.from,
-                  messageBody: acceptFriend.reply.friendRequest.messageBody
-                }
-              }
+              reply: acceptFriend.reply
             }
           }
         } else {
