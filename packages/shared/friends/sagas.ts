@@ -2163,13 +2163,13 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
     // Get ownId value
     const ownId = getOwnId(store.getState())
     if (!ownId) {
-      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
     }
 
     // Validate request
     const isValid = validateFriendRequestId(request.friendRequestId, ownId)
     if (!isValid) {
-      return { reply: null, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
     }
 
     // Get otherUserId value
@@ -2196,16 +2196,16 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
       }
 
       // Return response
-      return { reply: sendFriendRequest, error: null }
+      return { reply: sendFriendRequest, error: undefined }
     } else {
       // Return error
-      return { reply: null, error: response.error }
+      return { reply: undefined, error: response.error }
     }
   } catch (err) {
     logAndTrackError('Error while canceling friend request via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
