@@ -2299,8 +2299,8 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
         friendRequest: {
           friendRequestId: request.friendRequestId,
           timestamp: Date.now(),
-          from: getUserIdFromMatrix(ownId),
-          to: userId,
+          from: userId,
+          to: getUserIdFromMatrix(ownId),
           messageBody
         }
       }
