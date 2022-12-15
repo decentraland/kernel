@@ -2269,13 +2269,13 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
     // Get ownId value
     const ownId = getOwnId(store.getState())
     if (!ownId) {
-      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
     }
 
     // Validate request
     const isValid = validateFriendRequestId(request.friendRequestId, ownId)
     if (!isValid) {
-      return { reply: null, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
     }
 
     // Get otherUserId value
@@ -2288,7 +2288,7 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
 
     // Add as friend
-    const response = await UpdateFriendshipAsPromise(FriendshipAction.CANCELED, userId.toLowerCase(), false)
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.APPROVED, userId.toLowerCase(), false)
 
     if (!response.error) {
       const sendFriendRequest: AcceptFriendRequestReplyOk = {
@@ -2302,16 +2302,16 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
       }
 
       // Return response
-      return { reply: sendFriendRequest, error: null }
+      return { reply: sendFriendRequest, error: undefined }
     } else {
       // Return error
-      return { reply: null, error: response.error }
+      return { reply: undefined, error: response.error }
     }
   } catch (err) {
     logAndTrackError('Error while accepting friend request via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
