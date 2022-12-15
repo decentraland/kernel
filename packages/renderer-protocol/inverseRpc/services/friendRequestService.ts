@@ -25,12 +25,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           getFriendRequestsReply = {
             message: {
               $case: 'reply',
-              reply: {
-                requestedTo: friendRequests.reply.requestedTo,
-                requestedFrom: friendRequests.reply.requestedFrom,
-                totalReceivedFriendRequests: friendRequests.reply.totalReceivedFriendRequests,
-                totalSentFriendRequests: friendRequests.reply.totalSentFriendRequests
-              }
+              reply: friendRequests.reply
             }
           }
         } else {
@@ -59,15 +54,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           sendFriendRequestReply = {
             message: {
               $case: 'reply',
-              reply: {
-                friendRequest: {
-                  friendRequestId: sendFriendRequest.reply.friendRequest.friendRequestId,
-                  timestamp: sendFriendRequest.reply.friendRequest.timestamp,
-                  to: sendFriendRequest.reply.friendRequest.to,
-                  from: sendFriendRequest.reply.friendRequest.from,
-                  messageBody: sendFriendRequest.reply.friendRequest.messageBody
-                }
-              }
+              reply: sendFriendRequest.reply
             }
           }
         } else {
