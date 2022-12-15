@@ -1168,7 +1168,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   const newFriendRequestFlow = isNewFriendRequestEnabled()
 
   if (!client) {
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
   }
 
@@ -1184,13 +1184,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield apply(client, client.createDirectConversation, [socialData.socialId])
       } catch (e) {
         logAndTrackError('Error while creating direct conversation for friendship', e)
-        yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+        yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
         return
       }
     } else {
       // if this is the case, a previous call to ensure data load is missing, this is an issue on our end
       logger.error(`handleUpdateFriendship, user not loaded`, userId)
-      yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+      yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
       return
     }
 
@@ -1348,7 +1348,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       yield call(refreshFriends)
     }
 
-    yield call(future.resolve, { userId: userId, error: null })
+    yield call(future.resolve, { userId, error: null })
   } catch (e) {
     if (e instanceof UnknownUsersError) {
       const profile: Avatar | undefined = yield call(ensureFriendProfile, userId)
@@ -1359,7 +1359,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     // in case of any error, re initialize friends, to possibly correct state in both kernel and renderer
     yield call(refreshFriends)
 
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
   }
 }
 
