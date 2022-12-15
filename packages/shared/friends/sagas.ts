@@ -781,12 +781,12 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     }
 
     // Return requests
-    return { reply: friendRequests, error: null }
+    return { reply: friendRequests, error: undefined }
   } catch (err) {
     logAndTrackError('Error while getting friend requests via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
@@ -2075,7 +2075,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     const ownId = getOwnId(state)
 
     if (!ownId) {
-      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
     }
 
     // Search user profile on server
@@ -2103,7 +2103,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     if (!found) {
-      return { reply: null, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
     }
 
     // Update user data
@@ -2129,16 +2129,16 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       }
 
       // Return response
-      return { reply: sendFriendRequest, error: null }
+      return { reply: sendFriendRequest, error: undefined }
     } else {
       // Return error
-      return { reply: null, error: response.error }
+      return { reply: undefined, error: response.error }
     }
   } catch (err) {
     logAndTrackError('Error while sending friend request via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
