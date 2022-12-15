@@ -70,3 +70,24 @@ export function getMaxChannels(store: RootMetaState): number {
 export function getUsersAllowedToCreate(store: RootMetaState): UsersAllowed | undefined {
   return getFeatureFlagVariantValue(store, 'users_allowed_to_create_channels') as UsersAllowed | undefined
 }
+
+/*
+ * Returns true if the new friends requests flow is enabled
+ */
+export function isNewFriendRequestEnabled(): boolean {
+  return getFeatureFlagEnabled(store.getState(), 'new_friend_requests')
+}
+
+/**
+ * Encode friendRequestId from the user IDs involved in the friendship event.
+ * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId` : `otherUserId_ownId`
+ * @param ownId
+ * @param otherUserId
+ */
+export function encodeFriendRequestId(ownId: string, otherUserId: string) {
+  // We always want the friendRequestId to be formed with the pattern '0x1111ada11111'
+  ownId = getUserIdFromMatrix(ownId)
+  otherUserId = getUserIdFromMatrix(otherUserId)
+
+  return ownId < otherUserId ? `${ownId}_${otherUserId}` : `${otherUserId}_${ownId}`
+}
