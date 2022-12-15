@@ -117,7 +117,8 @@ import {
   areChannelsEnabled,
   getMaxChannels,
   getNormalizedRoomName,
-  getUsersAllowedToCreate
+  getUsersAllowedToCreate,
+  encodeFriendRequestId
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -126,6 +127,11 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
+import { GetFriendRequestsReplyOk } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
+import {
+  FriendshipErrorCode,
+  FriendRequestInfo
+} from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -537,14 +543,18 @@ function* refreshFriends() {
 
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
+        friendRequestId: encodeFriendRequestId(ownId, request.from),
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrix(request.from)
+        userId: getUserIdFromMatrix(request.from),
+        message: request.message
       })
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
+        friendRequestId: encodeFriendRequestId(ownId, request.to),
         createdAt: request.createdAt,
-        userId: getUserIdFromMatrix(request.to)
+        userId: getUserIdFromMatrix(request.to),
+        message: request.message
       })
     )
 
@@ -673,6 +683,7 @@ export async function getFriends(request: GetFriendsPayload) {
   updateUserStatus(client, ...friendsSocialIds)
 }
 
+// @TODO! @deprecated
 export async function getFriendRequests(request: GetFriendRequestsPayload) {
   const friends: FriendsState = getPrivateMessaging(store.getState())
   const realmAdapter = await ensureRealmAdapterPromise()
@@ -706,6 +717,87 @@ export async function getFriendRequests(request: GetFriendRequestsPayload) {
 
   // send friend requests
   getUnityInstance().AddFriendRequests(addFriendRequestsPayload)
+}
+
+export async function getFriendRequestsProtocol(request: GetFriendRequestsPayload) {
+  try {
+    // Get friends
+    const friends: FriendsState = getPrivateMessaging(store.getState())
+
+    const realmAdapter = await ensureRealmAdapterPromise()
+    const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
+
+    // Paginate incoming requests
+    const fromFriendRequests = friends.fromFriendRequests.slice(
+      request.receivedSkip,
+      request.receivedSkip + request.receivedLimit
+    )
+    // Paginate outgoing requests
+    const toFriendRequests = friends.toFriendRequests.slice(request.sentSkip, request.sentSkip + request.sentLimit)
+
+    // Map usersIds we need to get the profiles
+    const fromIds = fromFriendRequests.map((friend) => friend.userId)
+    const toIds = toFriendRequests.map((friend) => friend.userId)
+
+    // Get profiles
+    const friendsIds = toIds.concat(fromIds)
+    const friendRequestsProfiles: ProfileUserInfo[] = getProfilesFromStore(store.getState(), friendsIds)
+    const profilesForRenderer = friendRequestsProfiles.map((friend) =>
+      profileToRendererFormat(friend.data, {
+        baseUrl: fetchContentServerWithPrefix
+      })
+    )
+
+    // Send profiles to unity
+    getUnityInstance().AddUserProfilesToCatalog({ users: profilesForRenderer })
+    store.dispatch(addedProfilesToCatalog(friendRequestsProfiles.map((friend) => friend.data)))
+
+    // Map response
+    const friendRequests: GetFriendRequestsReplyOk = {
+      requestedTo: toFriendRequests.map((friend) => getFriendRequestInfo(friend, false)),
+      requestedFrom: fromFriendRequests.map((friend) => getFriendRequestInfo(friend, true)),
+      totalReceivedFriendRequests: friends.fromFriendRequests.length,
+      totalSentFriendRequests: friends.toFriendRequests.length
+    }
+
+    // Return requests
+    return { reply: friendRequests, error: null }
+  } catch (err) {
+    logAndTrackError('Error while getting friend requests via rpc', err)
+
+    // Return error
+    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+  }
+}
+
+/**
+ * Map FriendRequest to FriendRequestInfo
+ * @param friend a FriendRequest type we want to map to FriendRequestInfo
+ * @param incoming boolean indicating whether a request is an incoming one (requestedFrom) or not (requestedTo)
+ *
+ */
+function getFriendRequestInfo(friend: FriendRequest, incoming: boolean) {
+  if (incoming) {
+    const ownId = store.getState().friends.client?.getUserId() ?? ''
+    const friendRequest: FriendRequestInfo = {
+      friendRequestId: friend.friendRequestId,
+      timestamp: friend.createdAt,
+      from: friend.userId,
+      to: getUserIdFromMatrix(ownId),
+      messageBody: friend.message
+    }
+    return friendRequest
+  } else {
+    const ownId = store.getState().friends.client?.getUserId() ?? ''
+    const friendRequest: FriendRequestInfo = {
+      friendRequestId: friend.friendRequestId,
+      timestamp: friend.createdAt,
+      from: getUserIdFromMatrix(ownId),
+      to: friend.userId,
+      messageBody: friend.message
+    }
+    return friendRequest
+  }
 }
 
 export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {
@@ -965,7 +1057,6 @@ export function* initializeStatusUpdateInterval() {
  *
  * @param socialId a string with the aforementioned pattern
  */
-
 function parseUserId(socialId: string) {
   if (EthAddress.validate(socialId) as any) return socialId
   const result = socialId.match(/@(\w+):.*/)
@@ -1078,6 +1169,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
+    const ownId = client.getUserId()
+    const friendRequestId = encodeFriendRequestId(ownId, userId)
+
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
@@ -1159,7 +1253,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId }]
+            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
           }
         }
 
@@ -1176,7 +1270,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId }]
+            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
           }
         }
 
@@ -1204,9 +1298,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
 
     getUnityInstance().UpdateTotalFriendRequests(updateTotalFriendRequestsPayload)
-    getUnityInstance().UpdateTotalFriends({
-      totalFriends
-    })
+    getUnityInstance().UpdateTotalFriends({ totalFriends })
 
     if (newState) {
       yield put(updatePrivateMessagingState(newState))
@@ -1747,6 +1839,7 @@ function notifyJoinChannelError(channelId: string, errorCode: number) {
 /**
  * Send leave channel related error message to unity
  * @param channelId
+ * @param errorCode
  */
 function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode) {
   const leaveChannelError: ChannelErrorPayload = {
@@ -1759,6 +1852,7 @@ function notifyLeaveChannelError(channelId: string, errorCode: ChannelErrorCode)
 /**
  * Send mute/unmute channel related error message to unity
  * @param channelId
+ * @param errorCode
  */
 function notifyMuteChannelError(channelId: string, errorCode: ChannelErrorCode) {
   const muteChannelError: ChannelErrorPayload = {
