@@ -2292,7 +2292,7 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
 
     // Add as friend
-    const response = await UpdateFriendshipAsPromise(FriendshipAction.CANCELED, userId.toLowerCase(), false)
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.APPROVED, userId.toLowerCase(), false)
 
     if (!response.error) {
       const acceptFriendRequest: AcceptFriendRequestReplyOk = {
