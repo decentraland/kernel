@@ -1226,6 +1226,21 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       }
       case FriendshipAction.APPROVED: {
         totalFriends += 1
+
+        // TODO!: remove FF validation once the new flow is the only one
+        if (newFriendRequestFlow && incoming) {
+          // Build message
+          const approveFriendRequest = {
+            userId: getUserIdFromMatrix(userId)
+          }
+
+          // Send messsage to renderer via rpc
+          getRendererModules(store.getState())
+            ?.friendRequest?.approveFriendRequest(approveFriendRequest)
+            .catch((err) => {
+              logAndTrackError('Error sending to renderer push notifications about approving a friend request.', err)
+            })
+        }
       }
       // The approved should not have a break since it should execute all the code as the rejected case
       // Also the rejected needs to be directly after the Approved to make sure this works
@@ -1261,6 +1276,21 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
         }
 
+        // TODO!: remove FF validation once the new flow is the only one
+        if (newFriendRequestFlow && incoming && action === FriendshipAction.REJECTED) {
+          // Build message
+          const rejectFriendRequest = {
+            userId: getUserIdFromMatrix(userId)
+          }
+
+          // Send messsage to renderer via rpc
+          getRendererModules(store.getState())
+            ?.friendRequest?.rejectFriendRequest(rejectFriendRequest)
+            .catch((err) => {
+              logAndTrackError('Error sending to renderer push notifications about rejecting a friend request.', err)
+            })
+        }
+
         break
       }
 
@@ -1279,6 +1309,21 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           ...updateTotalFriendRequestsPayload,
           [updateTotalFriendRequestsPayloadSelector]:
             updateTotalFriendRequestsPayload[updateTotalFriendRequestsPayloadSelector] - 1
+        }
+
+        // TODO!: remove FF validation once the new flow is the only one
+        if (newFriendRequestFlow && incoming) {
+          // Build message
+          const cancelFriendRequest = {
+            userId: getUserIdFromMatrix(userId)
+          }
+
+          // Send messsage to renderer via rpc
+          getRendererModules(store.getState())
+            ?.friendRequest?.cancelFriendRequest(cancelFriendRequest)
+            .catch((err) => {
+              logAndTrackError('Error sending to renderer push notifications about canceling a friend request.', err)
+            })
         }
 
         break
