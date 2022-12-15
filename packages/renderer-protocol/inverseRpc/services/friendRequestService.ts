@@ -29,7 +29,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
             }
           }
         } else {
-          getFriendRequestsReply = buildGetFriendRequestsError(friendRequests.error)
+          getFriendRequestsReply = buildFriendRequestsError(friendRequests.error)
         }
 
         // Send response back to renderer
@@ -38,7 +38,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         defaultLogger.error('Error while getting friend requests via rpc', err)
 
         // Send response back to renderer
-        return buildGetFriendRequestsError()
+        return buildFriendRequestsError()
       }
     },
 
@@ -58,7 +58,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
             }
           }
         } else {
-          sendFriendRequestReply = buildSendFriendRequestError(sendFriendRequest.error)
+          sendFriendRequestReply = buildFriendRequestsError(sendFriendRequest.error)
         }
 
         // Send response back to renderer
@@ -67,7 +67,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         defaultLogger.error('Error while sending friend request via rpc', err)
 
         // Send response back to renderer
-        return buildSendFriendRequestError()
+        return buildFriendRequestsError()
       }
     },
 
@@ -85,32 +85,17 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
   }))
 }
 
+type FriendshipError = { message: { $case: 'error'; error: FriendshipErrorCode } }
+
 /**
  * Build get friend requests error message to send to renderer
  * @param error - an int representing an error code
  */
-function buildGetFriendRequestsError(error?: FriendshipErrorCode) {
-  const message: GetFriendRequestsReply = {
+function buildFriendRequestsError(error?: FriendshipErrorCode): FriendshipError {
+  return {
     message: {
-      $case: 'error',
+      $case: 'error' as const,
       error: error ?? FriendshipErrorCode.FEC_UNKNOWN
     }
   }
-
-  return message
-}
-
-/**
- * Build send friend request error message to send to renderer
- * @param error - an int representing an error code
- */
-function buildSendFriendRequestError(error?: FriendshipErrorCode) {
-  const message: SendFriendRequestReply = {
-    message: {
-      $case: 'error',
-      error: error ?? FriendshipErrorCode.FEC_UNKNOWN
-    }
-  }
-
-  return message
 }
