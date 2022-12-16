@@ -81,39 +81,16 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         // Handle reject friend request
         const acceptFriend = await acceptFriendRequest(req)
 
-        let acceptFriendRequestReply: AcceptFriendRequestReply = {}
-
-        // Check response type
-        if (acceptFriend.reply?.friendRequest) {
-          acceptFriendRequestReply = {
-            message: {
-              $case: 'reply',
-              reply: acceptFriend.reply
-            }
-          }
-        } else {
-          acceptFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: acceptFriend.error ?? FriendshipErrorCode.FEC_UNKNOWN
-            }
-          }
-        }
+        // Build cancel friend request reply
+        const acceptFriendRequestReply: AcceptFriendRequestReply = buildResponse(acceptFriend)
 
         // Send response back to renderer
         return acceptFriendRequestReply
       } catch (err) {
         defaultLogger.error('Error while accepting friend request via rpc', err)
 
-        const acceptFriendRequestReply: AcceptFriendRequestReply = {
-          message: {
-            $case: 'error',
-            error: FriendshipErrorCode.FEC_UNKNOWN
-          }
-        }
-
         // Send response back to renderer
-        return acceptFriendRequestReply
+        return buildErrorResponse()
       }
     },
 
