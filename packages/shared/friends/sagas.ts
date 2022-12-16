@@ -134,7 +134,6 @@ import {
   getMaxChannels,
   getNormalizedRoomName,
   getUsersAllowedToCreate,
-  isNewFriendRequestEnabled,
   encodeFriendRequestId,
   isNewFriendRequestEnabled,
   decodeFriendRequestId,
