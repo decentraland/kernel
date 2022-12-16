@@ -126,8 +126,8 @@ import {
   getMaxChannels,
   getNormalizedRoomName,
   getUsersAllowedToCreate,
-  isNewFriendRequestEnabled,
   encodeFriendRequestId,
+  isNewFriendRequestEnabled,
   decodeFriendRequestId,
   validateFriendRequestId
 } from './utils'
