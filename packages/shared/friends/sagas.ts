@@ -1767,6 +1767,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   getUnityInstance().AddChatMessages(addChatMessages)
 }
 
+// Find members that are not added to the catalog. It filters the own profile.
 function findMissingMembers(members: ChannelMember[], ownId: string) {
   return members.filter((member) => {
     const localUserId = getUserIdFromMatrix(member.userId)
@@ -1777,7 +1778,9 @@ function findMissingMembers(members: ChannelMember[], ownId: string) {
 function getMembers(client: SocialAPI, userIds: string[], channelId: string) {
   return userIds.map((userId): ChannelMember => {
     const memberInfo = client.getMemberInfo(channelId, userId)
-    return { userId, name: memberInfo.displayName ?? '' }
+    // ensure member user id is fully qualified, in some cases the userId is just the localpart
+    const normalizedUserId = getMatrixIdFromUser(userId)
+    return { userId: normalizedUserId, name: memberInfo.displayName ?? '' }
   })
 }
 
@@ -2014,14 +2017,15 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
   const membersProfiles = allMembers
     .filter((member) => onlineOrJoinedMemberIds.includes(member.userId))
     .slice(request.skip, request.skip + request.limit)
-  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
-  const membersPayload = membersProfiles.map(
-    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
-  )
 
   // update catalog with missing users, by using default profiles with name and image url
   const ownId = client.getUserId()
   sendMissingProfiles(membersProfiles, ownId)
+
+  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
+  const membersPayload = membersProfiles.map(
+    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
+  )
 
   // send info to unity
   channelMembersPayload.members.push(...membersPayload)
