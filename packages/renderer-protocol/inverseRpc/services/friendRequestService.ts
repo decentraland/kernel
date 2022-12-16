@@ -2,12 +2,13 @@ import { RpcServerPort } from '@dcl/rpc'
 import { RendererProtocolContext } from '../context'
 import * as codegen from '@dcl/rpc/dist/codegen'
 
-import { getFriendRequestsProtocol } from '../../../shared/friends/sagas'
+import { getFriendRequestsProtocol, requestFriendship } from '../../../shared/friends/sagas'
 import defaultLogger from '../../../shared/logger'
 import { FriendshipErrorCode } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 import {
   FriendRequestKernelServiceDefinition,
-  GetFriendRequestsReply
+  GetFriendRequestsReply,
+  SendFriendRequestReply
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
 export function registerFriendRequestKernelService(port: RpcServerPort<RendererProtocolContext>) {
@@ -24,21 +25,11 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           getFriendRequestsReply = {
             message: {
               $case: 'reply',
-              reply: {
-                requestedTo: friendRequests.reply.requestedTo,
-                requestedFrom: friendRequests.reply.requestedFrom,
-                totalReceivedFriendRequests: friendRequests.reply.totalReceivedFriendRequests,
-                totalSentFriendRequests: friendRequests.reply.totalSentFriendRequests
-              }
+              reply: friendRequests.reply
             }
           }
         } else {
-          getFriendRequestsReply = {
-            message: {
-              $case: 'error',
-              error: friendRequests.error ?? FriendshipErrorCode.FEC_UNKNOWN
-            }
-          }
+          getFriendRequestsReply = buildFriendRequestsError(friendRequests.error)
         }
 
         // Send response back to renderer
@@ -46,20 +37,38 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       } catch (err) {
         defaultLogger.error('Error while getting friend requests via rpc', err)
 
-        const getFriendRequestsReply: GetFriendRequestsReply = {
-          message: {
-            $case: 'error',
-            error: FriendshipErrorCode.FEC_UNKNOWN
-          }
-        }
-
         // Send response back to renderer
-        return getFriendRequestsReply
+        return buildFriendRequestsError()
       }
     },
 
     async sendFriendRequest(req, _) {
-      return {}
+      try {
+        // Handle send friend request
+        const sendFriendRequest = await requestFriendship(req)
+
+        let sendFriendRequestReply: SendFriendRequestReply = {}
+
+        // Check the response type
+        if (sendFriendRequest.reply?.friendRequest) {
+          sendFriendRequestReply = {
+            message: {
+              $case: 'reply',
+              reply: sendFriendRequest.reply
+            }
+          }
+        } else {
+          sendFriendRequestReply = buildFriendRequestsError(sendFriendRequest.error)
+        }
+
+        // Send response back to renderer
+        return sendFriendRequestReply
+      } catch (err) {
+        defaultLogger.error('Error while sending friend request via rpc', err)
+
+        // Send response back to renderer
+        return buildFriendRequestsError()
+      }
     },
 
     async cancelFriendRequest(req, _) {
@@ -74,4 +83,19 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       return {}
     }
   }))
+}
+
+type FriendshipError = { message: { $case: 'error'; error: FriendshipErrorCode } }
+
+/**
+ * Build get friend requests error message to send to renderer
+ * @param error - an int representing an error code
+ */
+function buildFriendRequestsError(error?: FriendshipErrorCode): FriendshipError {
+  return {
+    message: {
+      $case: 'error' as const,
+      error: error ?? FriendshipErrorCode.FEC_UNKNOWN
+    }
+  }
 }
