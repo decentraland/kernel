@@ -1360,7 +1360,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           }
 
           // Send messsage to renderer via rpc
-          // Send messsage to renderer via rpc
           yield apply(friendRequestModule, friendRequestModule.receiveFriendRequest, [receiveFriendRequest])
         }
 
