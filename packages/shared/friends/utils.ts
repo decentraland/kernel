@@ -26,9 +26,16 @@ export function getUserIdFromMatrix(userId: string) {
  * @example
  * from: '0x1111ada11111'
  * to: '@0x1111ada11111:decentraland.org'
+ *
+ * @example
+ * from: @0x1111ada11111:decentraland.org'
+ * to: '@0x1111ada11111:decentraland.org'
  * */
 export function getMatrixIdFromUser(userId: string) {
   const domain = store.getState().friends.client?.getDomain() ?? 'decentraland.org'
+  if (userId.startsWith('@') && userId.endsWith(domain)) {
+    return userId
+  }
   return `@${userId.toLowerCase()}:${domain}`
 }
 

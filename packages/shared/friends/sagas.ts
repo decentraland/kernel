@@ -138,7 +138,7 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import { isAddress } from 'eth-connect'
+import { isAddress } from 'eth-connect/eth-connect'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { fetchENSOwner } from 'shared/web3'
 import {
@@ -1338,20 +1338,22 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       } else {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
-    }
 
-    // TODO!: remove FF validation once the new flow is the only one
-    // We only send the UpdateFriendshipStatus message when:
-    // + The new friend request flow is disabled
-    // + The new friend request flow is enabled and the action is an incoming/outgoing delete
-    if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
-      getUnityInstance().UpdateFriendshipStatus(payload)
+      // TODO!: remove FF validation once the new flow is the only one
+      // We only send the UpdateFriendshipStatus message when:
+      // + The new friend request flow is disabled
+      // + The new friend request flow is enabled and the action is an incoming/outgoing delete
+      if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
+        getUnityInstance().UpdateFriendshipStatus(payload)
+      }
     }
 
     if (!incoming) {
       // refresh self & renderer friends status if update was triggered by renderer
       yield call(refreshFriends)
     }
+
+    yield call(future.resolve, { userId, error: null })
 
     yield call(future.resolve, { userId, error: null })
   } catch (e) {
@@ -1810,6 +1812,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   getUnityInstance().AddChatMessages(addChatMessages)
 }
 
+// Find members that are not added to the catalog. It filters the own profile.
 function findMissingMembers(members: ChannelMember[], ownId: string) {
   return members.filter((member) => {
     const localUserId = getUserIdFromMatrix(member.userId)
@@ -1820,7 +1823,9 @@ function findMissingMembers(members: ChannelMember[], ownId: string) {
 function getMembers(client: SocialAPI, userIds: string[], channelId: string) {
   return userIds.map((userId): ChannelMember => {
     const memberInfo = client.getMemberInfo(channelId, userId)
-    return { userId, name: memberInfo.displayName ?? '' }
+    // ensure member user id is fully qualified, in some cases the userId is just the localpart
+    const normalizedUserId = getMatrixIdFromUser(userId)
+    return { userId: normalizedUserId, name: memberInfo.displayName ?? '' }
   })
 }
 
@@ -2057,14 +2062,15 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
   const membersProfiles = allMembers
     .filter((member) => onlineOrJoinedMemberIds.includes(member.userId))
     .slice(request.skip, request.skip + request.limit)
-  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
-  const membersPayload = membersProfiles.map(
-    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
-  )
 
   // update catalog with missing users, by using default profiles with name and image url
   const ownId = client.getUserId()
   sendMissingProfiles(membersProfiles, ownId)
+
+  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
+  const membersPayload = membersProfiles.map(
+    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
+  )
 
   // send info to unity
   channelMembersPayload.members.push(...membersPayload)

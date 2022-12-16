@@ -22,7 +22,15 @@
     },
     {
       "file": "models/EP_01.glb",
-      "hash": "QmPNiWeuf2xDJJy6zGteBpad6xMeYZ58Zqyx6U5id4b758"
+      "hash": "QmXmas201"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_02": [
@@ -48,7 +56,15 @@
     },
     {
       "file": "models/EP_02.glb",
-      "hash": "QmPMDiyccNRLXQgHeyFi6tibXm8kP3A6DcTjq2bSsnN8D7"
+      "hash": "QmXmas202"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_03": [
@@ -74,7 +90,15 @@
     },
     {
       "file": "models/EP_03.glb",
-      "hash": "QmQyeu5ZjFzJFZ2bz4zdYX8yjRFS1QqCg4CF67XuQc31Uw"
+      "hash": "QmXmas203"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_04": [
@@ -100,7 +124,15 @@
     },
     {
       "file": "models/EP_04.glb",
-      "hash": "Qma9aXnxq2jBvfiKj2374cUWvdJZnS6LoHkbojBq3NfxKQ"
+      "hash": "QmXmas204"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_05": [
@@ -126,7 +158,15 @@
     },
     {
       "file": "models/EP_05.glb",
-      "hash": "QmcyG3AGHXScmQrULP7cKXjuvnQtqydHwvgQMHKRhYGfTA"
+      "hash": "QmXmas205"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_06": [
@@ -152,7 +192,15 @@
     },
     {
       "file": "models/EP_06.glb",
-      "hash": "QmX4bcPybJchnjs6mtEyJJrmvs8R6Yf1ZY7goM4xnDxWAa"
+      "hash": "QmXmas206"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_07": [
@@ -178,7 +226,15 @@
     },
     {
       "file": "models/EP_07.glb",
-      "hash": "QmV5WtLZ6KsaNvKoGm6rEt6TQGVHvLg58iDDyniAwp5MXM"
+      "hash": "QmXmas207"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_08": [
@@ -204,7 +260,15 @@
     },
     {
       "file": "models/EP_08.glb",
-      "hash": "Qma1cw8Ln8if6MsKy8E2wj2fTddDDktvJvEhjuJLHAo1Ws"
+      "hash": "QmXmas208"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_09": [
@@ -230,7 +294,15 @@
     },
     {
       "file": "models/EP_09.glb",
-      "hash": "QmUschpqQoMRLK4BFme5TmHb1HYEAxCGBqdnLpXKVXbxFZ"
+      "hash": "QmXmas209"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_10": [
@@ -256,7 +328,15 @@
     },
     {
       "file": "models/EP_10.glb",
-      "hash": "QmTsvnJp8R2yrdADusiMXHdHjNe7PDr4SaPRd9Y6S1zLku"
+      "hash": "QmXmas210"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_11": [
@@ -282,7 +362,15 @@
     },
     {
       "file": "models/EP_11.glb",
-      "hash": "QmbhQnr6VavXXPVjjwhCaJqRQDkGAg81UpiV5AYVTorNim"
+      "hash": "QmXmas211"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ],
   "EP_12": [
@@ -308,7 +396,15 @@
     },
     {
       "file": "models/EP_12.glb",
-      "hash": "QmWrgVvGLrpNtXjVJC7VAwyqmnHMF9uc5hHnW1hP93ooVa"
+      "hash": "QmXmas212"
+    },
+    {
+      "file": "models/EmptyParcels-TX.png",
+      "hash": "QmXmasEmptyParcels"
+    },
+    {
+      "file": "models/EmptyParcels-TX-Emissive.png",
+      "hash": "QmXmasEmptyParcelsEmissive"
     }
   ]
 }
