@@ -126,8 +126,8 @@ import {
   getMaxChannels,
   getNormalizedRoomName,
   getUsersAllowedToCreate,
-  isNewFriendRequestEnabled,
   encodeFriendRequestId,
+  isNewFriendRequestEnabled,
   decodeFriendRequestId,
   validateFriendRequestId
 } from './utils'
@@ -138,7 +138,7 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import { isAddress } from 'eth-connect'
+import { isAddress } from 'eth-connect/eth-connect'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { fetchENSOwner } from 'shared/web3'
 import {
@@ -788,12 +788,12 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     }
 
     // Return requests
-    return { reply: friendRequests, error: null }
+    return { reply: friendRequests, error: undefined }
   } catch (err) {
     logAndTrackError('Error while getting friend requests via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
@@ -1175,7 +1175,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   const newFriendRequestFlow = isNewFriendRequestEnabled()
 
   if (!client) {
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
   }
 
@@ -1191,13 +1191,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         yield apply(client, client.createDirectConversation, [socialData.socialId])
       } catch (e) {
         logAndTrackError('Error while creating direct conversation for friendship', e)
-        yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+        yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
         return
       }
     } else {
       // if this is the case, a previous call to ensure data load is missing, this is an issue on our end
       logger.error(`handleUpdateFriendship, user not loaded`, userId)
-      yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+      yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
       return
     }
 
@@ -1340,14 +1340,14 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       } else {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
-    }
 
-    // TODO!: remove FF validation once the new flow is the only one
-    // We only send the UpdateFriendshipStatus message when:
-    // + The new friend request flow is disabled
-    // + The new friend request flow is enabled and the action is an incoming/outgoing delete
-    if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
-      getUnityInstance().UpdateFriendshipStatus(payload)
+      // TODO!: remove FF validation once the new flow is the only one
+      // We only send the UpdateFriendshipStatus message when:
+      // + The new friend request flow is disabled
+      // + The new friend request flow is enabled and the action is an incoming/outgoing delete
+      if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
+        getUnityInstance().UpdateFriendshipStatus(payload)
+      }
     }
 
     if (!incoming) {
@@ -1355,7 +1355,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       yield call(refreshFriends)
     }
 
-    yield call(future.resolve, { userId: userId, error: null })
+    yield call(future.resolve, { userId, error: null })
+
+    yield call(future.resolve, { userId, error: null })
   } catch (e) {
     if (e instanceof UnknownUsersError) {
       const profile: Avatar | undefined = yield call(ensureFriendProfile, userId)
@@ -1366,7 +1368,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     // in case of any error, re initialize friends, to possibly correct state in both kernel and renderer
     yield call(refreshFriends)
 
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
   }
 }
 
@@ -1812,6 +1814,7 @@ export async function getChannelMessages(request: GetChannelMessagesPayload) {
   getUnityInstance().AddChatMessages(addChatMessages)
 }
 
+// Find members that are not added to the catalog. It filters the own profile.
 function findMissingMembers(members: ChannelMember[], ownId: string) {
   return members.filter((member) => {
     const localUserId = getUserIdFromMatrix(member.userId)
@@ -1822,7 +1825,9 @@ function findMissingMembers(members: ChannelMember[], ownId: string) {
 function getMembers(client: SocialAPI, userIds: string[], channelId: string) {
   return userIds.map((userId): ChannelMember => {
     const memberInfo = client.getMemberInfo(channelId, userId)
-    return { userId, name: memberInfo.displayName ?? '' }
+    // ensure member user id is fully qualified, in some cases the userId is just the localpart
+    const normalizedUserId = getMatrixIdFromUser(userId)
+    return { userId: normalizedUserId, name: memberInfo.displayName ?? '' }
   })
 }
 
@@ -2059,14 +2064,15 @@ export async function getChannelMembers(request: GetChannelMembersPayload) {
   const membersProfiles = allMembers
     .filter((member) => onlineOrJoinedMemberIds.includes(member.userId))
     .slice(request.skip, request.skip + request.limit)
-  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
-  const membersPayload = membersProfiles.map(
-    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
-  )
 
   // update catalog with missing users, by using default profiles with name and image url
   const ownId = client.getUserId()
   sendMissingProfiles(membersProfiles, ownId)
+
+  // TODO - should we avoid setting `isOnline` when presence is disabled? - moliva - 2022/11/09
+  const membersPayload = membersProfiles.map(
+    (member) => ((member.userId = getUserIdFromMatrix(member.userId)), { ...member, isOnline: true })
+  )
 
   // send info to unity
   channelMembersPayload.members.push(...membersPayload)
@@ -2082,7 +2088,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     const ownId = getOwnId(state)
 
     if (!ownId) {
-      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
     }
 
     // Search user profile on server
@@ -2110,11 +2116,11 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     if (!found) {
-      return { reply: null, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
     }
 
     // Update user data
-    store.dispatch(updateUserData(request.userId.toLowerCase(), getMatrixIdFromUser(request.userId)))
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
 
     // Add as friend
     const response = await UpdateFriendshipAsPromise(
@@ -2136,16 +2142,16 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       }
 
       // Return response
-      return { reply: sendFriendRequest, error: null }
+      return { reply: sendFriendRequest, error: undefined }
     } else {
       // Return error
-      return { reply: null, error: response.error }
+      return { reply: undefined, error: response.error }
     }
   } catch (err) {
     logAndTrackError('Error while sending friend request via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 
@@ -2165,13 +2171,13 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
     // Get ownId value
     const ownId = getOwnId(store.getState())
     if (!ownId) {
-      return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
     }
 
     // Validate request
     const isValid = validateFriendRequestId(request.friendRequestId, ownId)
     if (!isValid) {
-      return { reply: null, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
+      return { reply: undefined, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
     }
 
     // Get otherUserId value
@@ -2198,16 +2204,16 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
       }
 
       // Return response
-      return { reply: sendFriendRequest, error: null }
+      return { reply: sendFriendRequest, error: undefined }
     } else {
       // Return error
-      return { reply: null, error: response.error }
+      return { reply: undefined, error: response.error }
     }
   } catch (err) {
     logAndTrackError('Error while canceling friend request via rpc', err)
 
     // Return error
-    return { reply: null, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
   }
 }
 

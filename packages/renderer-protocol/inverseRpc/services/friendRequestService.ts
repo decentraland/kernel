@@ -32,21 +32,11 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           getFriendRequestsReply = {
             message: {
               $case: 'reply',
-              reply: {
-                requestedTo: friendRequests.reply.requestedTo,
-                requestedFrom: friendRequests.reply.requestedFrom,
-                totalReceivedFriendRequests: friendRequests.reply.totalReceivedFriendRequests,
-                totalSentFriendRequests: friendRequests.reply.totalSentFriendRequests
-              }
+              reply: friendRequests.reply
             }
           }
         } else {
-          getFriendRequestsReply = {
-            message: {
-              $case: 'error',
-              error: friendRequests.error ?? FriendshipErrorCode.FEC_UNKNOWN
-            }
-          }
+          getFriendRequestsReply = buildFriendRequestsError(friendRequests.error)
         }
 
         // Send response back to renderer
@@ -54,15 +44,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       } catch (err) {
         defaultLogger.error('Error while getting friend requests via rpc', err)
 
-        const getFriendRequestsReply: GetFriendRequestsReply = {
-          message: {
-            $case: 'error',
-            error: FriendshipErrorCode.FEC_UNKNOWN
-          }
-        }
-
         // Send response back to renderer
-        return getFriendRequestsReply
+        return buildFriendRequestsError()
       }
     },
 
@@ -78,24 +61,11 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           sendFriendRequestReply = {
             message: {
               $case: 'reply',
-              reply: {
-                friendRequest: {
-                  friendRequestId: sendFriendRequest.reply.friendRequest.friendRequestId,
-                  timestamp: sendFriendRequest.reply.friendRequest.timestamp,
-                  to: sendFriendRequest.reply.friendRequest.to,
-                  from: sendFriendRequest.reply.friendRequest.from,
-                  messageBody: sendFriendRequest.reply.friendRequest.messageBody
-                }
-              }
+              reply: sendFriendRequest.reply
             }
           }
         } else {
-          sendFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: sendFriendRequest.error ?? FriendshipErrorCode.FEC_UNKNOWN
-            }
-          }
+          sendFriendRequestReply = buildFriendRequestsError(sendFriendRequest.error)
         }
 
         // Send response back to renderer
@@ -103,15 +73,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       } catch (err) {
         defaultLogger.error('Error while sending friend request via rpc', err)
 
-        const sendFriendRequestReply: SendFriendRequestReply = {
-          message: {
-            $case: 'error',
-            error: FriendshipErrorCode.FEC_UNKNOWN
-          }
-        }
-
         // Send response back to renderer
-        return sendFriendRequestReply
+        return buildFriendRequestsError()
       }
     },
 
@@ -127,24 +90,11 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
           cancelFriendRequestReply = {
             message: {
               $case: 'reply',
-              reply: {
-                friendRequest: {
-                  friendRequestId: cancelFriend.reply.friendRequest.friendRequestId,
-                  timestamp: cancelFriend.reply.friendRequest.timestamp,
-                  to: cancelFriend.reply.friendRequest.to,
-                  from: cancelFriend.reply.friendRequest.from,
-                  messageBody: cancelFriend.reply.friendRequest.messageBody
-                }
-              }
+              reply: cancelFriend.reply
             }
           }
         } else {
-          cancelFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: cancelFriend.error ?? FriendshipErrorCode.FEC_UNKNOWN
-            }
-          }
+          cancelFriendRequestReply = buildFriendRequestsError(cancelFriend.error)
         }
 
         // Send response back to renderer
@@ -152,15 +102,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       } catch (err) {
         defaultLogger.error('Error while canceling friend request via rpc', err)
 
-        const cancelFriendRequestReply: CancelFriendRequestReply = {
-          message: {
-            $case: 'error',
-            error: FriendshipErrorCode.FEC_UNKNOWN
-          }
-        }
-
         // Send response back to renderer
-        return cancelFriendRequestReply
+        return buildFriendRequestsError()
       }
     },
 
@@ -209,4 +152,19 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       }
     }
   }))
+}
+
+type FriendshipError = { message: { $case: 'error'; error: FriendshipErrorCode } }
+
+/**
+ * Build friend requests error message to send to renderer
+ * @param error - an int representing an error code
+ */
+function buildFriendRequestsError(error?: FriendshipErrorCode): FriendshipError {
+  return {
+    message: {
+      $case: 'error' as const,
+      error: error ?? FriendshipErrorCode.FEC_UNKNOWN
+    }
+  }
 }
