@@ -127,12 +127,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
             }
           }
         } else {
-          rejectFriendRequestReply = {
-            message: {
-              $case: 'error',
-              error: rejectFriend.error ?? FriendshipErrorCode.FEC_UNKNOWN
-            }
-          }
+          rejectFriendRequestReply = buildFriendRequestsError(rejectFriend.error)
         }
 
         // Send response back to renderer
@@ -140,15 +135,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       } catch (err) {
         defaultLogger.error('Error while rejecting friend request via rpc', err)
 
-        const rejectFriendRequestReply: RejectFriendRequestReply = {
-          message: {
-            $case: 'error',
-            error: FriendshipErrorCode.FEC_UNKNOWN
-          }
-        }
-
         // Send response back to renderer
-        return rejectFriendRequestReply
+        return buildFriendRequestsError()
       }
     }
   }))
