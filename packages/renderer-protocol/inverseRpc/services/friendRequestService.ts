@@ -94,7 +94,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
             }
           }
         } else {
-          rejectFriendRequestReply = buildFriendRequestsError(rejectFriend.error)
+          rejectFriendRequestReply = buildResponse(rejectFriend)
         }
 
         // Send response back to renderer
@@ -103,7 +103,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         defaultLogger.error('Error while rejecting friend request via rpc', err)
 
         // Send response back to renderer
-        return buildFriendRequestsError()
+        return buildErrorResponse()
       }
     }
   }))
