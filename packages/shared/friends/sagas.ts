@@ -159,6 +159,7 @@ import {
 } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 import { ReceiveFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/friend_request_renderer.gen'
 import { getRendererModules } from 'shared/renderer/selectors'
+import { RendererModules } from 'shared/renderer/types'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -1178,6 +1179,20 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   // Get feature flag value
   const newFriendRequestFlow = isNewFriendRequestEnabled()
 
+  // Get renderer modules
+  const rendererModules: RendererModules | undefined = yield select(getRendererModules)
+  if (!rendererModules) {
+    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    return
+  }
+
+  // Get friend request module
+  const friendRequestModule = rendererModules.friendRequest
+  if (!friendRequestModule) {
+    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    return
+  }
+
   if (!client) {
     yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
@@ -1235,11 +1250,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           }
 
           // Send messsage to renderer via rpc
-          getRendererModules(store.getState())
-            ?.friendRequest?.approveFriendRequest(approveFriendRequest)
-            .catch((err) => {
-              logAndTrackError('Error sending to renderer push notifications about approving a friend request.', err)
-            })
+          yield apply(friendRequestModule, friendRequestModule.approveFriendRequest, [approveFriendRequest])
         }
       }
       // The approved should not have a break since it should execute all the code as the rejected case
@@ -1284,11 +1295,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           }
 
           // Send messsage to renderer via rpc
-          getRendererModules(store.getState())
-            ?.friendRequest?.rejectFriendRequest(rejectFriendRequest)
-            .catch((err) => {
-              logAndTrackError('Error sending to renderer push notifications about rejecting a friend request.', err)
-            })
+          yield apply(friendRequestModule, friendRequestModule.rejectFriendRequest, [rejectFriendRequest])
         }
 
         break
@@ -1319,11 +1326,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           }
 
           // Send messsage to renderer via rpc
-          getRendererModules(store.getState())
-            ?.friendRequest?.cancelFriendRequest(cancelFriendRequest)
-            .catch((err) => {
-              logAndTrackError('Error sending to renderer push notifications about canceling a friend request.', err)
-            })
+          yield apply(friendRequestModule, friendRequestModule.cancelFriendRequest, [cancelFriendRequest])
         }
 
         break
@@ -1357,11 +1360,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
           }
 
           // Send messsage to renderer via rpc
-          getRendererModules(store.getState())
-            ?.friendRequest?.receiveFriendRequest(receiveFriendRequest)
-            .catch((err) => {
-              logAndTrackError('Error sending to renderer push notifications about receiving a friend request.', err)
-            })
+          // Send messsage to renderer via rpc
+          yield apply(friendRequestModule, friendRequestModule.receiveFriendRequest, [receiveFriendRequest])
         }
 
         break
