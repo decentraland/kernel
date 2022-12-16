@@ -166,6 +166,7 @@ import {
 import { ReceiveFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/friend_request_renderer.gen'
 import { getRendererModules } from 'shared/renderer/selectors'
 import { RendererModules } from 'shared/renderer/types'
+import { RendererModules } from 'shared/renderer/types'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
