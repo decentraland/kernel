@@ -19,19 +19,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         // Go get friend requests
         const friendRequests = await getFriendRequestsProtocol(req)
 
-        let getFriendRequestsReply: GetFriendRequestsReply = {}
-
-        // Check the response type
-        if (friendRequests.reply) {
-          getFriendRequestsReply = {
-            message: {
-              $case: 'reply',
-              reply: friendRequests.reply
-            }
-          }
-        } else {
-          getFriendRequestsReply = buildFriendRequestsError(friendRequests.error)
-        }
+        // Build send friend request reply
+        const getFriendRequestsReply: GetFriendRequestsReply = buildResponse(friendRequests.reply, friendRequests.error)
 
         // Send response back to renderer
         return getFriendRequestsReply
@@ -39,7 +28,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         defaultLogger.error('Error while getting friend requests via rpc', err)
 
         // Send response back to renderer
-        return buildFriendRequestsError()
+        return buildErrorResponse()
       }
     },
 
@@ -48,19 +37,11 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         // Handle send friend request
         const sendFriendRequest = await requestFriendship(req)
 
-        let sendFriendRequestReply: SendFriendRequestReply = {}
-
-        // Check the response type
-        if (sendFriendRequest.reply?.friendRequest) {
-          sendFriendRequestReply = {
-            message: {
-              $case: 'reply',
-              reply: sendFriendRequest.reply
-            }
-          }
-        } else {
-          sendFriendRequestReply = buildFriendRequestsError(sendFriendRequest.error)
-        }
+        // Build send friend request reply
+        const sendFriendRequestReply: SendFriendRequestReply = buildResponse(
+          sendFriendRequest.reply,
+          sendFriendRequest.error
+        )
 
         // Send response back to renderer
         return sendFriendRequestReply
@@ -68,7 +49,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         defaultLogger.error('Error while sending friend request via rpc', err)
 
         // Send response back to renderer
-        return buildFriendRequestsError()
+        return buildErrorResponse()
       }
     },
 
@@ -77,19 +58,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         // Handle cancel friend request
         const cancelFriend = await cancelFriendRequest(req)
 
-        let cancelFriendRequestReply: CancelFriendRequestReply = {}
-
-        // Check the response type
-        if (cancelFriend.reply?.friendRequest) {
-          cancelFriendRequestReply = {
-            message: {
-              $case: 'reply',
-              reply: cancelFriend.reply
-            }
-          }
-        } else {
-          cancelFriendRequestReply = buildFriendRequestsError(cancelFriend.error)
-        }
+        // Build cancel friend request reply
+        const cancelFriendRequestReply: CancelFriendRequestReply = buildResponse(cancelFriend.reply, cancelFriend.error)
 
         // Send response back to renderer
         return cancelFriendRequestReply
@@ -97,7 +67,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         defaultLogger.error('Error while canceling friend request via rpc', err)
 
         // Send response back to renderer
-        return buildFriendRequestsError()
+        return buildErrorResponse()
       }
     },
 
@@ -114,14 +84,37 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
 type FriendshipError = { message: { $case: 'error'; error: FriendshipErrorCode } }
 
 /**
- * Build friend requests error message to send to renderer
- * @param error - an int representing an error code
+ * Build friend requests error message to send to renderer.
+ * @param error - an int representing an error code.
  */
-function buildFriendRequestsError(error?: FriendshipErrorCode): FriendshipError {
+function buildErrorResponse(error?: FriendshipErrorCode): FriendshipError {
   return {
     message: {
       $case: 'error' as const,
       error: error ?? FriendshipErrorCode.FEC_UNKNOWN
     }
+  }
+}
+
+/**
+ * Build friend requests success message to send to renderer.
+ * @param reply - a FriendRequestReplyOk kind of type.
+ */
+function wrapReply<T>(reply: T) {
+  return { message: { $case: 'reply' as const, reply: reply as NonNullable<T> } }
+}
+
+/**
+ * Build friend requests message to send to renderer.
+ * If the friendRequest object is truthy, the function returns the result of calling `wrapReply` on the `friendRequest` object.
+ * If the friendRequest object is falsy, the function returns the result of calling `buildErrorResponse` with the `error` value.
+ * @param friendRequest - it can represent any kind of FriendRequestReplyOk type.
+ * @param error - an int representing an error code.
+ */
+function buildResponse<T>(friendRequest: T, error?: FriendshipErrorCode) {
+  if (friendRequest) {
+    return wrapReply(friendRequest)
+  } else {
+    return buildErrorResponse(error)
   }
 }
