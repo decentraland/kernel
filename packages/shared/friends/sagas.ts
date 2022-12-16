@@ -1182,14 +1182,14 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
   // Get renderer modules
   const rendererModules: RendererModules | undefined = yield select(getRendererModules)
   if (!rendererModules) {
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
   }
 
   // Get friend request module
   const friendRequestModule = rendererModules.friendRequest
   if (!friendRequestModule) {
-    yield call(future.resolve, { userId: userId, error: FriendshipErrorCode.FEC_UNKNOWN })
+    yield call(future.resolve, { userId, error: FriendshipErrorCode.FEC_UNKNOWN })
     return
   }
 
