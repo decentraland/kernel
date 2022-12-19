@@ -1354,8 +1354,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     }
 
     yield call(future.resolve, { userId, error: null })
-
-    yield call(future.resolve, { userId, error: null })
   } catch (e) {
     if (e instanceof UnknownUsersError) {
       const profile: Avatar | undefined = yield call(ensureFriendProfile, userId)
