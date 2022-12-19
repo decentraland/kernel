@@ -83,7 +83,7 @@ import {
   getMessageBody
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
-import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
+import { SEND_PRIVATE_MESSAGE, SendPrivateMessage, sendPrivateMessage } from 'shared/chat/actions'
 import {
   updateFriendship,
   UPDATE_FRIENDSHIP,
@@ -1251,6 +1251,19 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
           // Send messsage to renderer via rpc
           yield apply(friendRequestModule, friendRequestModule.approveFriendRequest, [approveFriendRequest])
+
+          // If the friend request has a non-empty message body, it must be registered as part of the messages history of that user
+          if (messageBody) {
+            const chatMessage: ChatMessage = {
+              messageId: uuid(),
+              messageType: ChatMessageType.PRIVATE,
+              sender: getUserIdFromMatrix(userId),
+              recipient: getUserIdFromMatrix(ownId),
+              timestamp: Date.now(),
+              body: messageBody
+            }
+            store.dispatch(sendPrivateMessage(userId, chatMessage))
+          }
         }
       }
       // The approved should not have a break since it should execute all the code as the rejected case
