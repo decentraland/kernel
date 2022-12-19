@@ -43,7 +43,7 @@ import {
 import { getPerformanceInfo } from 'shared/session/getPerformanceInfo'
 import { receivePositionReport } from 'shared/world/positionThings'
 import { sendMessage } from 'shared/chat/actions'
-import { leaveChannel, updateFriendship, updateUserData } from 'shared/friends/actions'
+import { leaveChannel, updateUserData } from 'shared/friends/actions'
 import { changeRealm } from 'shared/dao'
 import { notifyStatusThroughChat } from 'shared/chat'
 import { fetchENSOwner } from 'shared/web3'
@@ -97,7 +97,8 @@ import {
   getChannelInfo,
   searchChannels,
   joinChannel,
-  getChannelMembers
+  getChannelMembers,
+  UpdateFriendshipAsPromise
 } from 'shared/friends/sagas'
 import { areChannelsEnabled, getMatrixIdFromUser } from 'shared/friends/utils'
 import { ProfileAsPromise } from 'shared/profiles/ProfileAsPromise'
@@ -490,8 +491,16 @@ export class BrowserInterface {
     getFriends(getFriendsRequest).catch(defaultLogger.error)
   }
 
+  // @TODO! @deprecated
   public GetFriendRequests(getFriendRequestsPayload: GetFriendRequestsPayload) {
-    getFriendRequests(getFriendRequestsPayload).catch(defaultLogger.error)
+    getFriendRequests(getFriendRequestsPayload).catch((err) => {
+      defaultLogger.error('error getFriendRequestsDeprecate', err),
+        trackEvent('error', {
+          message: `error getting friend requests ` + err.message,
+          context: 'kernel#friendsSaga',
+          stack: 'getFriendRequests'
+        })
+    })
   }
 
   public async MarkMessagesAsSeen(userId: MarkMessagesAsSeenPayload) {
@@ -690,6 +699,7 @@ export class BrowserInterface {
     store.dispatch(setVoiceChatPolicy(settingsMessage.voiceChatAllowCategory))
   }
 
+  // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED.
   public async UpdateFriendshipStatus(message: FriendshipUpdateStatusMessage) {
     try {
       let { userId } = message
@@ -697,6 +707,7 @@ export class BrowserInterface {
       const state = store.getState()
 
       // TODO - fix this hack: search should come from another message and method should only exec correct updates (userId, action) - moliva - 01/05/2020
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED.
       if (message.action === FriendshipAction.REQUESTED_TO) {
         const avatar = await ensureFriendProfile(userId)
 
@@ -722,6 +733,7 @@ export class BrowserInterface {
         }
       }
 
+      // @TODO! @deprecated - With the new friend request flow, the only action that will be triggered by this message is FriendshipAction.DELETED.
       if (message.action === FriendshipAction.REQUESTED_TO && !found) {
         // if we still haven't the user by now (meaning the user has never logged and doesn't have a profile in the dao, or the user id is for a non wallet user or name is not correct) -> fail
         getUnityInstance().FriendNotFound(userId)
@@ -729,7 +741,7 @@ export class BrowserInterface {
       }
 
       store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
-      store.dispatch(updateFriendship(message.action, userId.toLowerCase(), false))
+      await UpdateFriendshipAsPromise(message.action, userId.toLowerCase(), false)
     } catch (error) {
       const message = 'Failed while processing updating friendship status'
       defaultLogger.error(message, error)

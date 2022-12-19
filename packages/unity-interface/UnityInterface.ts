@@ -405,6 +405,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
   }
 
+  // @TODO! @deprecated
   public AddFriendRequests(addFriendRequestsPayload: AddFriendRequestsPayload): void {
     this.SendMessageToUnity('Main', 'AddFriendRequests', JSON.stringify(addFriendRequestsPayload))
   }
