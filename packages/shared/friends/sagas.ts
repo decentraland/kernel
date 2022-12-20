@@ -2086,7 +2086,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     const ownId = getOwnId(state)
 
     if (!ownId) {
-      return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
     }
 
     // Search user profile on server
@@ -2114,7 +2114,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     if (!found) {
-      return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_NON_EXISTING_USER)
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_NON_EXISTING_USER)
     }
 
     // Update user data
@@ -2143,13 +2143,13 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       return buildFriendRequestReply(sendFriendRequest)
     } else {
       // Return error
-      return buildFriendRequstErrorResponse(response.error)
+      return buildFriendRequestErrorResponse(response.error)
     }
   } catch (err) {
     logAndTrackError('Error while sending friend request via rpc', err)
 
     // Return error
-    return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
   }
 }
 
@@ -2169,13 +2169,13 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
     // Get ownId value
     const ownId = getOwnId(store.getState())
     if (!ownId) {
-      return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
     }
 
     // Validate request
     const isValid = validateFriendRequestId(request.friendRequestId, ownId)
     if (!isValid) {
-      return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
     }
 
     // Get otherUserId value
@@ -2205,13 +2205,13 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
       return buildFriendRequestReply(cancelFriendRequest)
     } else {
       // Return error
-      return buildFriendRequstErrorResponse(response.error)
+      return buildFriendRequestErrorResponse(response.error)
     }
   } catch (err) {
     logAndTrackError('Error while canceling friend request via rpc', err)
 
     // Return error
-    return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
   }
 }
 
@@ -2220,13 +2220,13 @@ export async function rejectFriendRequest(request: RejectFriendRequestPayload) {
     // Get ownId value
     const ownId = getOwnId(store.getState())
     if (!ownId) {
-      return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
     }
 
     // Validate request
     const isValid = validateFriendRequestId(request.friendRequestId, ownId)
     if (!isValid) {
-      return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
     }
 
     // Get otherUserId value
@@ -2256,13 +2256,13 @@ export async function rejectFriendRequest(request: RejectFriendRequestPayload) {
       return buildFriendRequestReply(rejectFriendRequest)
     } else {
       // Return error
-      return buildFriendRequstErrorResponse(response.error)
+      return buildFriendRequestErrorResponse(response.error)
     }
   } catch (err) {
     logAndTrackError('Error while canceling friend request via rpc', err)
 
     // Return error
-    return buildFriendRequstErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
   }
 }
 
@@ -2350,7 +2350,7 @@ function getOnlineMembersCount(client: SocialAPI, userIds?: string[]): number {
  * Build friend requests error message.
  * @param error - an int representing an error code.
  */
-function buildFriendRequstErrorResponse(error: FriendshipErrorCode) {
+function buildFriendRequestErrorResponse(error: FriendshipErrorCode) {
   return { reply: undefined, error }
 }
 
