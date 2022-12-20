@@ -2168,6 +2168,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
 
     if (!ownId) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
     }
 
     // Search user profile on server
