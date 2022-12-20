@@ -2188,7 +2188,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
 
     // Check whether the users are already friends
     if (isFriend(store.getState(), userId)) {
-      return { reply: undefined, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
     }
 
     // Update user data
