@@ -28,7 +28,7 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
     },
 
     async acceptFriendRequest(req, _) {
-      return handleRequest(cancelFriendRequest, req)
+      return handleRequest(acceptFriendRequest, req)
     },
 
     async rejectFriendRequest(req, _) {
