@@ -2350,8 +2350,8 @@ function getOnlineMembersCount(client: SocialAPI, userIds?: string[]): number {
  * Build friend requests error message.
  * @param error - an int representing an error code.
  */
-function buildFriendRequstErrorResponse(error?: FriendshipErrorCode) {
-  return { reply: undefined, error: error ?? FriendshipErrorCode.FEC_UNKNOWN }
+function buildFriendRequstErrorResponse(error: FriendshipErrorCode) {
+  return { reply: undefined, error }
 }
 
 /**
