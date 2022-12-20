@@ -79,3 +79,11 @@ export const isFriend = (store: RootFriendsState, userId: string) => store.frien
 export const getLastStatusOfFriends = (store: RootFriendsState) => store.friends.lastStatusOfFriends
 
 export const getOwnId = (store: RootFriendsState) => store.friends.client?.getUserId()
+
+export const getMessageBody = (store: RootFriendsState, friendRequestId: string): string | undefined => {
+  const messageBody = getPrivateMessaging(store).toFriendRequests.find(
+    (friend) => friend.friendRequestId === friendRequestId
+  )?.message
+
+  return messageBody
+}
