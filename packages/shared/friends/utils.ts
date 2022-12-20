@@ -3,7 +3,6 @@ import { RootMetaState } from 'shared/meta/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { store } from 'shared/store/isolatedStore'
 import { FriendshipAction, UsersAllowed } from 'shared/types'
-import { getCoolDownOfFriendRequests, getNumberOfFriendRequests } from './selectors'
 
 /**
  * Get the local part of the userId from matrixUserId
@@ -177,42 +176,3 @@ export function isItBlockedUser(userId: string) {
 export const DEFAULT_MAX_NUMBER_OF_REQUESTS = 5
 
 export const COOLDOWN_TIME = 1000 // 1 second
-
-/**
- * Check whether the user has reached the max number of sent requests to a given user
- * @param userId
- * @returns true if the user has reached the max number of sent requests, false otherwise
- */
-export function reachedMaxNumberOfRequests(userId: string) {
-  // Get number friend requests sent in a session to the given user
-  const sentRequests = getNumberOfFriendRequests(store.getState())
-  const number = sentRequests.get(userId) ?? 0
-
-  // TODO Juli: Get max number allowed from config or ff
-  const maxNumber = DEFAULT_MAX_NUMBER_OF_REQUESTS
-
-  // Check current number vs max number allowed
-  if (number < maxNumber) {
-    return false
-  }
-  return true
-}
-
-/**
- * Check whether there is a remaining cooldown time to send a friend request to a given user.
- * @param userId
- * @returns true if there is a remaining cooldown time and it hasn't expired yet, false otherwise
- */
-export function isRemainingCooldown(userId: string) {
-  const currentTime = Date.now()
-
-  // Get the remaining cooldown time for the given user
-  const coolDownTimer = getCoolDownOfFriendRequests(store.getState())
-  const remainingCooldownTime = coolDownTimer.get(userId)
-
-  // If there is a remaining cooldown time and it hasn't expired yet, return false
-  if (remainingCooldownTime && currentTime < remainingCooldownTime) {
-    return true
-  }
-  return false
-}
