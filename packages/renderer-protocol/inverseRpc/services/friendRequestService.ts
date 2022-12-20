@@ -83,19 +83,8 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
         // Handle reject friend request
         const rejectFriend = await rejectFriendRequest(req)
 
-        let rejectFriendRequestReply: RejectFriendRequestReply = {}
-
-        // Check response type
-        if (rejectFriend.reply?.friendRequest) {
-          rejectFriendRequestReply = {
-            message: {
-              $case: 'reply',
-              reply: rejectFriend.reply
-            }
-          }
-        } else {
-          rejectFriendRequestReply = buildResponse(rejectFriend)
-        }
+        // Build reject friend request reply
+        const rejectFriendRequestReply: RejectFriendRequestReply = buildResponse(rejectFriend)
 
         // Send response back to renderer
         return rejectFriendRequestReply
