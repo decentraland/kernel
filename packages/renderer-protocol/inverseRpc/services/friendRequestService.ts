@@ -76,6 +76,11 @@ function buildResponse<T>(friendRequest: ResponseType<T>) {
   }
 }
 
+/**
+ * Abstract the flow of request handling of friend requests.
+ * @param handler - a function that takes in a request object and returns a Promise of a ResponseType object.
+ * @param req - a request object.
+ */
 async function handleRequest<T, U>(handler: (r: T) => Promise<ResponseType<U>>, req: T) {
   try {
     // Handle request
