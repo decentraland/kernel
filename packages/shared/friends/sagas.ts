@@ -86,7 +86,9 @@ import {
   getAllFriendsConversationsWithMessages,
   getOwnId,
   getMessageBody,
-  isPendingRequest
+  isPendingRequest,
+  getNumberOfFriendRequests,
+  getCoolDownOfFriendRequests
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -135,7 +137,9 @@ import {
   encodeFriendRequestId,
   isNewFriendRequestEnabled,
   decodeFriendRequestId,
-  validateFriendRequestId
+  validateFriendRequestId,
+  reachedMaxNumberOfRequests,
+  isRemainingCooldown
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -628,6 +632,11 @@ function* refreshFriends() {
     const lastStatusOfFriends: Map<string, CurrentUserStatus> = yield getLastStatusOfFriends(store.getState()) ??
       new Map()
 
+    const numberOfFriendRequests: Map<string, number> = yield getNumberOfFriendRequests(store.getState()) ?? new Map()
+
+    const coolDownOfFriendRequests: Map<string, number> = yield getCoolDownOfFriendRequests(store.getState()) ??
+      new Map()
+
     yield put(
       updatePrivateMessagingState({
         client,
@@ -635,7 +644,9 @@ function* refreshFriends() {
         friends: friendIds,
         fromFriendRequests: requestedFromIds,
         toFriendRequests: requestedToIds,
-        lastStatusOfFriends
+        lastStatusOfFriends,
+        numberOfFriendRequests,
+        coolDownOfFriendRequests
       })
     )
 
@@ -1252,7 +1263,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             userId: getUserIdFromMatrix(userId)
           }
 
-          // Send messsage to renderer via rpc
+          // Send message to renderer via rpc
           yield apply(friendRequestModule, friendRequestModule.approveFriendRequest, [approveFriendRequest])
         }
       }
@@ -1297,7 +1308,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             userId: getUserIdFromMatrix(userId)
           }
 
-          // Send messsage to renderer via rpc
+          // Send message to renderer via rpc
           yield apply(friendRequestModule, friendRequestModule.rejectFriendRequest, [rejectFriendRequest])
         }
 
@@ -1328,7 +1339,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             userId: getUserIdFromMatrix(userId)
           }
 
-          // Send messsage to renderer via rpc
+          // Send message to renderer via rpc
           yield apply(friendRequestModule, friendRequestModule.cancelFriendRequest, [cancelFriendRequest])
         }
 
@@ -2200,6 +2211,18 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     // Check if the users are already friends or if a friend request has already been sent.
     if (isFriend(store.getState(), userId) || isPendingRequest(store.getState(), userId)) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+    }
+
+    // Check whether the user has reached the max number of sent requests to a given user
+    const maxNumberOfRequests = reachedMaxNumberOfRequests(userId)
+    if (maxNumberOfRequests) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_TOO_MANY_REQUESTS_SENT)
+    }
+
+    // Check whether there is a remaining cooldown time to send a friend request to a given user.
+    const cooldown = isRemainingCooldown(userId)
+    if (cooldown) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_NOT_ENOUGH_TIME_PASSED)
     }
 
     // Update user data

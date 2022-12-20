@@ -165,7 +165,9 @@ const friendsFromStore: FriendsState = {
   friends: friendIds,
   fromFriendRequests: [fromFriendRequest],
   toFriendRequests: [toFriendRequest],
-  lastStatusOfFriends: new Map()
+  lastStatusOfFriends: new Map(),
+  numberOfFriendRequests: new Map(),
+  coolDownOfFriendRequests: new Map()
 }
 
 const FETCH_CONTENT_SERVER = 'base-url'
