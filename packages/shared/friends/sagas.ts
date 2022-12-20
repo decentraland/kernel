@@ -2186,6 +2186,11 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_NON_EXISTING_USER)
     }
 
+    // Check whether the users are already friends
+    if (isFriend(store.getState(), userId)) {
+      return { reply: undefined, error: FriendshipErrorCode.FEC_INVALID_REQUEST }
+    }
+
     // Update user data
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
 
