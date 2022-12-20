@@ -118,7 +118,8 @@ globalThis.DecentralandKernel = {
         store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
       } else {
         // 3. fallback to 0,0
-        store.dispatch(teleportToAction({ position: { x: 0, y: 100, z: 0 } }))
+        const { x, y } = { x: -116, y: 105 } // '0,0'
+        store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
       }
 
       // Initializes the Session Saga
