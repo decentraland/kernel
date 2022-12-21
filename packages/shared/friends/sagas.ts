@@ -2581,6 +2581,8 @@ function hasRemainingCooldown(userId: string) {
   const coolDownTimer = getCoolDownOfFriendRequests(store.getState())
   const remainingCooldownTime = coolDownTimer.get(userId)
 
+  const cooldownWindow = COOLDOWN_TIME
+
   // If there is a remaining cooldown time and it hasn't expired yet, return false
   return remainingCooldownTime && currentTime < remainingCooldownTime
 }
