@@ -138,7 +138,8 @@ import {
   isNewFriendRequestEnabled,
   decodeFriendRequestId,
   validateFriendRequestId,
-  DEFAULT_MAX_NUMBER_OF_REQUESTS
+  DEFAULT_MAX_NUMBER_OF_REQUESTS,
+  COOLDOWN_TIME
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -2219,7 +2220,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     // Check whether there is a remaining cooldown time to send a friend request to a given user.
-    const cooldown = isRemainingCooldown(userId)
+    const cooldown = hasRemainingCooldown(userId)
     if (cooldown) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_NOT_ENOUGH_TIME_PASSED)
     }
@@ -2532,40 +2533,47 @@ function buildFriendRequestReply<T>(reply: NonNullable<T>) {
 }
 
 /**
- * Check whether the user has reached the max number of sent requests to a given user
- * @param userId
+ * Check whether the user has reached the max number allowed of sent requests to a given user. If not, update the friends state.
+ * @param userId - the user to check the number of requests for.
  * @returns true if the user has reached the max number of sent requests, false otherwise
  */
 export function reachedMaxNumberOfRequests(userId: string) {
-  // Get number friend requests sent in a session to the given user
+  // Get number friend requests sent in the current session to the given user
   const sentRequests = getNumberOfFriendRequests(store.getState())
   const number = sentRequests.get(userId) ?? 0
 
-  // TODO Juli: Get max number allowed from config or ff
+  // Get the maximum number of requests allowed
   const maxNumber = DEFAULT_MAX_NUMBER_OF_REQUESTS
 
-  // Check current number vs max number allowed
+  // Check if the current number of requests is less than the maximum allowed
   if (number < maxNumber) {
+    // Update the number of sent requests and return false
+    sentRequests.set(userId, number + 1)
     return false
   }
   return true
 }
 
 /**
- * Check whether there is a remaining cooldown time to send a friend request to a given user.
- * @param userId
+ * Check whether there is a remaining cooldown time to send a friend request to a given user. If not, update the friends state.
+ * @param userId - the user to check the cooldown time for.
  * @returns true if there is a remaining cooldown time and it hasn't expired yet, false otherwise
  */
-export function isRemainingCooldown(userId: string) {
+export function hasRemainingCooldown(userId: string) {
   const currentTime = Date.now()
 
   // Get the remaining cooldown time for the given user
   const coolDownTimer = getCoolDownOfFriendRequests(store.getState())
   const remainingCooldownTime = coolDownTimer.get(userId)
 
+  const cooldownWindow = COOLDOWN_TIME
+
   // If there is a remaining cooldown time and it hasn't expired yet, return false
   if (remainingCooldownTime && currentTime < remainingCooldownTime) {
     return true
+  } else {
+    // Update the cooldown timer and return false
+    coolDownTimer.set(userId, currentTime + cooldownWindow)
+    return false
   }
-  return false
 }
