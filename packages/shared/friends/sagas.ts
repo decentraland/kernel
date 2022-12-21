@@ -148,7 +148,9 @@ import {
   CancelFriendRequestPayload,
   CancelFriendRequestReplyOk,
   RejectFriendRequestPayload,
-  RejectFriendRequestReplyOk
+  RejectFriendRequestReplyOk,
+  AcceptFriendRequestPayload,
+  AcceptFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import future from 'fp-future'
 import {
@@ -2260,6 +2262,57 @@ export async function rejectFriendRequest(request: RejectFriendRequestPayload) {
     }
   } catch (err) {
     logAndTrackError('Error while canceling friend request via rpc', err)
+
+    // Return error
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+  }
+}
+
+export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
+  try {
+    // Get ownId value
+    const ownId = getOwnId(store.getState())
+    if (!ownId) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+    }
+
+    // Validate request
+    const isValid = validateFriendRequestId(request.friendRequestId, ownId)
+    if (!isValid) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+    }
+
+    // Get otherUserId value
+    const userId = decodeFriendRequestId(request.friendRequestId, ownId)
+
+    // Search in the store for the message body
+    const messageBody = getMessageBody(store.getState(), userId)
+
+    // Update user data
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+
+    // Add as friend
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.APPROVED, userId.toLowerCase(), false)
+
+    if (!response.error) {
+      const acceptFriendRequest: AcceptFriendRequestReplyOk = {
+        friendRequest: {
+          friendRequestId: request.friendRequestId,
+          timestamp: Date.now(),
+          from: userId,
+          to: getUserIdFromMatrix(ownId),
+          messageBody
+        }
+      }
+
+      // Return response
+      return buildFriendRequestReply(acceptFriendRequest)
+    } else {
+      // Return error
+      return buildFriendRequestErrorResponse(response.error)
+    }
+  } catch (err) {
+    logAndTrackError('Error while accepting friend request via rpc', err)
 
     // Return error
     return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
