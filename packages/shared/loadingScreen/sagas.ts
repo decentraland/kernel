@@ -63,7 +63,6 @@ function* updateLoadingScreenInternal() {
     if (!state.realm.realmAdapter) msgs.push('Picking realm...')
     else if (!state.sceneLoader) msgs.push('Initializing world loader...')
     else if (!parcelLoadingStarted) msgs.push('Fetching initial parcels...')
-    else if (!state.sceneLoader.positionSettled) msgs.push('Waiting for spawn point...')
 
     if (!state.comms.context) msgs.push('Connecting to comms...')
 
