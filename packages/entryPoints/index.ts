@@ -7,7 +7,13 @@ import { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { gridToWorld, parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
-import { DEBUG_WS_MESSAGES, ETHEREUM_NETWORK, HAS_INITIAL_POSITION_MARK, OPEN_AVATAR_EDITOR } from '../config/index'
+import {
+  DEBUG_WS_MESSAGES,
+  ETHEREUM_NETWORK,
+  HAS_INITIAL_POSITION_MARK,
+  OPEN_AVATAR_EDITOR,
+  RESET_TUTORIAL
+} from '../config/index'
 import 'unity-interface/trace'
 import { getInitialPositionFromUrl } from 'shared/world/positionThings'
 import { getPreviewSceneId, loadPreviewScene, reloadPlaygroundScene } from '../unity-interface/dcl'
@@ -15,10 +21,10 @@ import { initializeUnity } from '../unity-interface/initializer'
 import { HUDElementID, RenderProfile } from 'shared/types'
 import { foregroundChangeObservable, isForeground } from 'shared/world/worldState'
 import { getCurrentIdentity } from 'shared/session/selectors'
-import { realmInitialized } from 'shared/dao'
+import { changeRealm, realmInitialized } from 'shared/dao'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { WorldConfig } from 'shared/meta/types'
-import { getFeatureFlagEnabled, getFeatureFlags, getWorldConfig } from 'shared/meta/selectors'
+import { getFeatureFlagEnabled, getFeatureFlags, getFeatureFlagVariantValue, getWorldConfig } from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { ensureUnityInterface } from 'shared/renderer'
 import { globalObservable } from 'shared/observables'
@@ -238,19 +244,40 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     return
   }
 
-  const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
-  const tutorialConfig = {
-    fromDeepLink: HAS_INITIAL_POSITION_MARK,
-    enableNewTutorialCamera: enableNewTutorialCamera
-  }
+  const NEEDS_TUTORIAL =
+    RESET_TUTORIAL ||
+    // those who didn't do the tutorial yet
+    (!profile.tutorialStep &&
+      // skip the tutorial for people coming from a link with a position
+      !HAS_INITIAL_POSITION_MARK)
 
-  i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
+  // only enable the old tutorial if the feature flag new_tutorial is off
+  // this code should be removed once the "hardcoded" tutorial is removed
+  // from the renderer
+  if (NEEDS_TUTORIAL) {
+    if (!getFeatureFlagEnabled(store.getState(), 'new_tutorial')) {
+      const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
+      const tutorialConfig = {
+        fromDeepLink: HAS_INITIAL_POSITION_MARK,
+        enableNewTutorialCamera: enableNewTutorialCamera
+      }
+
+      i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
+    } else {
+      try {
+        const realm: string = getFeatureFlagVariantValue(store.getState(), 'new_tutorial') || 'menduz.dcl.eth'
+        await changeRealm(realm)
+        // TODO: track metric of "starting onboarding"
+      } catch (err) {
+        console.error(err)
+        // TODO: trackError
+      }
+    }
+  }
 
   const isGuest = !identity.hasConnectedWeb3
   const friendsActivated = !isGuest && !getFeatureFlagEnabled(store.getState(), 'matrix_disabled')
-  const BUILDER_IN_WORLD_ENABLED = !isGuest && getFeatureFlagEnabled(store.getState(), 'builder_in_world')
 
-  i.ConfigureHUDElement(HUDElementID.BUILDER_PROJECTS_PANEL, { active: BUILDER_IN_WORLD_ENABLED, visible: false })
   i.ConfigureHUDElement(HUDElementID.FRIENDS, { active: friendsActivated, visible: false })
 
   function reportForeground() {
