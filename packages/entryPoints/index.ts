@@ -3,7 +3,7 @@ import { renderingInBackground, renderingInForeground } from '../shared/loadingS
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
 import { sdk } from '@dcl/schemas'
-import { createLogger } from 'shared/logger'
+import defaultLogger, { createLogger } from 'shared/logger'
 import { IDecentralandKernel, IEthereumProvider, KernelOptions, KernelResult, LoginState } from '@dcl/kernel-interface'
 import { ErrorContext, BringDownClientAndReportFatalError } from 'shared/loading/ReportFatalError'
 import { gridToWorld, parseParcelPosition } from '../atomicHelpers/parcelScenePositions'
@@ -24,7 +24,12 @@ import { getCurrentIdentity } from 'shared/session/selectors'
 import { changeRealm, realmInitialized } from 'shared/dao'
 import { ensureMetaConfigurationInitialized } from 'shared/meta'
 import { WorldConfig } from 'shared/meta/types'
-import { getFeatureFlagEnabled, getFeatureFlags, getFeatureFlagVariantValue, getWorldConfig } from 'shared/meta/selectors'
+import {
+  getFeatureFlagEnabled,
+  getFeatureFlags,
+  getFeatureFlagVariantValue,
+  getWorldConfig
+} from 'shared/meta/selectors'
 import { kernelConfigForRenderer } from '../unity-interface/kernelConfigForRenderer'
 import { ensureUnityInterface } from 'shared/renderer'
 import { globalObservable } from 'shared/observables'
@@ -44,6 +49,7 @@ import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { sendHomeScene } from '../shared/atlas/actions'
 import { homePointKey } from '../shared/atlas/utils'
 import { teleportToAction } from 'shared/scene-loader/actions'
+import { trackEvent } from 'shared/analytics'
 
 const logger = createLogger('kernel: ')
 
@@ -265,12 +271,15 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
     } else {
       try {
-        const realm: string = getFeatureFlagVariantValue(store.getState(), 'new_tutorial') || 'menduz.dcl.eth'
-        await changeRealm(realm)
-        // TODO: track metric of "starting onboarding"
+        const realm: string | undefined = getFeatureFlagVariantValue(store.getState(), 'new_tutorial')
+        if (realm) {
+          await changeRealm(realm)
+          trackEvent('onboarding_started', { onboardingRealm: realm })
+        } else {
+          defaultLogger.warn('No realm was providede for the onboarding experience.')
+        }
       } catch (err) {
         console.error(err)
-        // TODO: trackError
       }
     }
   }

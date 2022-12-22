@@ -68,11 +68,11 @@ export function registerFriendRequestKernelService(port: RpcServerPort<RendererP
       }
     },
 
-    async acceptFriendRequest(req, _) {
+    async acceptFriendRequest(_req, _) {
       return {}
     },
 
-    async rejectFriendRequest(req, _) {
+    async rejectFriendRequest(_req, _) {
       return {}
     }
   }))
