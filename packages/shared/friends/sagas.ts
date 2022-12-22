@@ -776,13 +776,8 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     // Get friends
     const friends: FriendsState = getPrivateMessaging(store.getState())
 
-    // Reject blocked users
-    const blockedUsers = await handleBlockedUsers(friends.fromFriendRequests)
-    blockedUsers
-      .filter((blockedUser) => blockedUser.error)
-      .forEach((blockedUser) =>
-        defaultLogger.warn(`Failed while processing friend request from blocked user ${blockedUser.userId}`)
-      )
+    // Reject blockedUsers
+    handleBlockedUsers(friends.fromFriendRequests)
 
     const realmAdapter = await ensureRealmAdapterPromise()
     const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
@@ -2580,8 +2575,6 @@ function hasRemainingCooldown(userId: string) {
   // Get the remaining cooldown time for the given user
   const coolDownTimer = getCoolDownOfFriendRequests(store.getState())
   const remainingCooldownTime = coolDownTimer.get(userId)
-
-  const cooldownWindow = COOLDOWN_TIME
 
   // If there is a remaining cooldown time and it hasn't expired yet, return false
   return remainingCooldownTime && currentTime < remainingCooldownTime
