@@ -1245,10 +1245,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
-          const request = {
+          // Build message
+          const approveFriendRequest = {
             userId: getUserIdFromMatrix(userId)
           }
-          handlePushNotifications(friendRequestModule.approveFriendRequest, request)
+
+          // Send messsage to renderer via rpc
+          yield apply(friendRequestModule, friendRequestModule.approveFriendRequest, [approveFriendRequest])
         }
       }
       // The approved should not have a break since it should execute all the code as the rejected case
@@ -1287,11 +1290,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming && action === FriendshipAction.REJECTED) {
-          const request = {
+          // Build message
+          const rejectFriendRequest = {
             userId: getUserIdFromMatrix(userId)
           }
 
-          handlePushNotifications(friendRequestModule.rejectFriendRequest, request)
+          // Send messsage to renderer via rpc
+          yield apply(friendRequestModule, friendRequestModule.rejectFriendRequest, [rejectFriendRequest])
         }
 
         break
@@ -1316,10 +1321,13 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
-          const request = {
+          // Build message
+          const cancelFriendRequest = {
             userId: getUserIdFromMatrix(userId)
           }
-          handlePushNotifications(friendRequestModule.cancelFriendRequest, request)
+
+          // Send messsage to renderer via rpc
+          yield apply(friendRequestModule, friendRequestModule.cancelFriendRequest, [cancelFriendRequest])
         }
 
         break
@@ -1341,7 +1349,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
-          const request: ReceiveFriendRequestPayload = {
+          // Build message
+          const receiveFriendRequest: ReceiveFriendRequestPayload = {
             friendRequest: {
               friendRequestId,
               timestamp: Date.now(),
@@ -1351,7 +1360,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
             }
           }
 
-          handlePushNotifications(friendRequestModule.receiveFriendRequest, request)
+          // Send messsage to renderer via rpc
+          yield apply(friendRequestModule, friendRequestModule.receiveFriendRequest, [receiveFriendRequest])
         }
 
         break
@@ -2476,14 +2486,4 @@ function buildFriendRequestErrorResponse(error: FriendshipErrorCode) {
  */
 function buildFriendRequestReply<T>(reply: NonNullable<T>) {
   return { reply, error: undefined }
-}
-
-/**
- * Abstract the flow of friend requests push notifications handling.
- * @param handler - a function of a FriendRequestRendererService type that takes in a request object.
- * @param req - a request object.
- */
-function handlePushNotifications<T>(handler: (r: T) => void, req: T) {
-  // Send message to renderer
-  handler(req)
 }
