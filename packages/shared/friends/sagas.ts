@@ -80,7 +80,8 @@ import {
   getChannels,
   getAllFriendsConversationsWithMessages,
   getOwnId,
-  getMessageBody
+  getMessageBody,
+  isPendingRequest
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -2186,8 +2187,8 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_NON_EXISTING_USER)
     }
 
-    // Check whether the users are already friends
-    if (isFriend(store.getState(), userId)) {
+    // Check if the users are already friends or if a friend request has already been sent.
+    if (isFriend(store.getState(), userId) || isPendingRequest(store.getState(), userId)) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
     }
 

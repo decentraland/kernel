@@ -76,6 +76,9 @@ export const findPrivateMessagingFriendsByUserId = (store: RootFriendsState, use
 
 export const isFriend = (store: RootFriendsState, userId: string) => store.friends.friends.includes(userId)
 
+export const isPendingRequest = (store: RootFriendsState, userId: string) =>
+  store.friends.toFriendRequests.filter((request) => request.userId === userId)
+
 export const getLastStatusOfFriends = (store: RootFriendsState) => store.friends.lastStatusOfFriends
 
 export const getOwnId = (store: RootFriendsState) => store.friends.client?.getUserId()
