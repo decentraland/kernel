@@ -125,6 +125,7 @@ export interface IUnityInterface {
   /** Tells the engine which scenes to load */
 
   LoadParcelScenes(parcelsToLoad: LoadableParcelScene[]): void
+  /** @deprecated */
   UnloadScene(sceneId: string): void
   UnloadSceneV2(sceneNumber: number): void
   SendSceneMessage(messages: string): void
