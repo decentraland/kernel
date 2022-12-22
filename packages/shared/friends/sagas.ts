@@ -139,7 +139,8 @@ import {
   decodeFriendRequestId,
   validateFriendRequestId,
   DEFAULT_MAX_NUMBER_OF_REQUESTS,
-  COOLDOWN_TIME
+  COOLDOWN_TIME,
+  isBlocked
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -773,6 +774,9 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
   try {
     // Get friends
     const friends: FriendsState = getPrivateMessaging(store.getState())
+
+    // Reject blockedUsers
+    handleBlockedUsers(friends.fromFriendRequests)
 
     const realmAdapter = await ensureRealmAdapterPromise()
     const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
@@ -2537,7 +2541,7 @@ function buildFriendRequestReply<T>(reply: NonNullable<T>) {
  * @param userId - the user to check the number of requests for.
  * @returns true if the user has reached the max number of sent requests, false otherwise
  */
-export function reachedMaxNumberOfRequests(userId: string) {
+function reachedMaxNumberOfRequests(userId: string) {
   // Get number friend requests sent in the current session to the given user
   const sentRequests = getNumberOfFriendRequests(store.getState())
   const number = sentRequests.get(userId) ?? 0
@@ -2559,7 +2563,7 @@ export function reachedMaxNumberOfRequests(userId: string) {
  * @param userId - the user to check the cooldown time for.
  * @returns true if there is a remaining cooldown time and it hasn't expired yet, false otherwise
  */
-export function hasRemainingCooldown(userId: string) {
+function hasRemainingCooldown(userId: string) {
   const currentTime = Date.now()
 
   // Get the remaining cooldown time for the given user
@@ -2576,4 +2580,18 @@ export function hasRemainingCooldown(userId: string) {
     coolDownTimer.set(userId, currentTime + cooldownWindow)
     return false
   }
+}
+
+function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
+  const blockedIds = fromFriendRequests.filter((fromFriendRequest) => isBlocked(fromFriendRequest.userId))
+
+  blockedIds.map(
+    async (fromFriendRequest) =>
+      await UpdateFriendshipAsPromise(
+        FriendshipAction.REJECTED,
+        fromFriendRequest.userId.toLowerCase(),
+        false,
+        fromFriendRequest.message
+      )
+  )
 }

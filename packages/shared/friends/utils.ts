@@ -162,7 +162,7 @@ export function validateFriendRequestId(friendRequestId: string, ownId: string) 
  * @param userId - the ID of the user to check
  * @returns true if the user is blocked, false otherwise
  */
-export function isItBlockedUser(userId: string) {
+export function isBlocked(userId: string) {
   // Get the user's profile
   const profile = getCurrentUserProfile(store.getState())
 
