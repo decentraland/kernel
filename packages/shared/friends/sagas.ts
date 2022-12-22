@@ -1271,7 +1271,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
-          const request = {
+          // Build message
+          const approveFriendRequest = {
             userId: getUserIdFromMatrix(userId)
           }
 
@@ -1315,7 +1316,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming && action === FriendshipAction.REJECTED) {
-          const request = {
+          // Build message
+          const rejectFriendRequest = {
             userId: getUserIdFromMatrix(userId)
           }
 
@@ -1345,7 +1347,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
-          const request = {
+          // Build message
+          const cancelFriendRequest = {
             userId: getUserIdFromMatrix(userId)
           }
 
