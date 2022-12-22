@@ -1,5 +1,4 @@
 import { renderingInBackground, renderingInForeground } from '../shared/loadingScreen/types'
-
 declare const globalThis: { DecentralandKernel: IDecentralandKernel }
 
 import { sdk } from '@dcl/schemas'
