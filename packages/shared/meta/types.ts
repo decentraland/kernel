@@ -31,7 +31,6 @@ export type FeatureFlagsName =
   | 'max_joined_channels' // the max amount of joined channels allowed per user
   | 'users_allowed_to_create_channels' // users who are allowed to create channels
   | 'new_friend_requests' // enables the new friends request flow
-  | 'builder_in_world'
   | 'avatar_lods'
   | 'asset_bundles'
   | 'explorev2'
@@ -45,6 +44,7 @@ export type FeatureFlagsName =
   | 'livekit-voicechat'
   | 'ping_enabled'
   | 'use-synapse-server'
+  | 'new_tutorial'
 
 export type BannedUsers = Record<string, Ban[]>
 

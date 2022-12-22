@@ -233,8 +233,8 @@ export class SceneWorker {
       getUnityInstance().UnloadSceneV2(this.rpcContext.sceneData.sceneNumber)
     } catch (err: any) {
       defaultLogger.error(err)
+      getUnityInstance().UnloadScene(this.loadableScene.id)
     }
-    getUnityInstance().UnloadScene(this.loadableScene.id)
     this.ready |= SceneWorkerReadyState.DISPOSED
   }
 

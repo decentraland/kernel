@@ -155,6 +155,7 @@ export class UnityInterface implements IUnityInterface {
     this.SendMessageToUnity('Main', 'LoadParcelScenes', JSON.stringify(parcelsToLoad[0]))
   }
 
+  /** @deprecated */
   public UnloadScene(sceneId: string) {
     this.SendMessageToUnity('Main', 'UnloadScene', sceneId)
   }
