@@ -2259,6 +2259,9 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
         }
       }
 
+      // Update state
+      updateFriendsState(userId)
+
       // Return response
       return buildFriendRequestReply(sendFriendRequest)
     } else {
@@ -2545,7 +2548,7 @@ function buildFriendRequestReply<T>(reply: NonNullable<T>) {
 }
 
 /**
- * Check whether the user has reached the max number allowed of sent requests to a given user. If not, update the friends state.
+ * Check whether the user has reached the max number allowed of sent requests to a given user.
  * @param userId - the user to check the number of requests for.
  * @returns true if the user has reached the max number of sent requests, false otherwise
  */
@@ -2558,16 +2561,11 @@ function reachedMaxNumberOfRequests(userId: string) {
   const maxNumber = DEFAULT_MAX_NUMBER_OF_REQUESTS
 
   // Check if the current number of requests is less than the maximum allowed
-  if (number < maxNumber) {
-    // Update the number of sent requests and return false
-    sentRequests.set(userId, number + 1)
-    return false
-  }
-  return true
+  return number >= maxNumber ?? false
 }
 
 /**
- * Check whether there is a remaining cooldown time to send a friend request to a given user. If not, update the friends state.
+ * Check whether there is a remaining cooldown time to send a friend request to a given user.
  * @param userId - the user to check the cooldown time for.
  * @returns true if there is a remaining cooldown time and it hasn't expired yet, false otherwise
  */
@@ -2578,16 +2576,8 @@ function hasRemainingCooldown(userId: string) {
   const coolDownTimer = getCoolDownOfFriendRequests(store.getState())
   const remainingCooldownTime = coolDownTimer.get(userId)
 
-  const cooldownWindow = COOLDOWN_TIME_MS
-
   // If there is a remaining cooldown time and it hasn't expired yet, return false
-  if (remainingCooldownTime && currentTime < remainingCooldownTime) {
-    return true
-  } else {
-    // Update the cooldown timer and return false
-    coolDownTimer.set(userId, currentTime + cooldownWindow)
-    return false
-  }
+  return (remainingCooldownTime && currentTime < remainingCooldownTime) ?? false
 }
 
 /**
@@ -2614,4 +2604,27 @@ function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
 async function handleBlockedUser(id: string, message?: string) {
   // Update their friendship status as rejected
   await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, id.toLowerCase(), false, message)
+}
+
+/**
+ * Updates the friends state { numberOfFriendRequests, coolDownOfFriendRequests } in the store with the given user id.
+ * @param userId - the id of the user to update the friends state for.
+ */
+function updateFriendsState(userId: string) {
+  // Get the current state from the store
+  const state = store.getState()
+
+  const { numberOfFriendRequests, coolDownOfFriendRequests } = getPrivateMessaging(state)
+
+  // Update the number of sent requests and return false
+  const number = numberOfFriendRequests.get(userId) ?? 0
+  numberOfFriendRequests.set(userId, number + 1)
+
+  // Update the cooldown timer and return false
+  const currentTime = Date.now()
+  coolDownOfFriendRequests.set(userId, currentTime + COOLDOWN_TIME_MS)
+
+  const newState = { ...state.friends, numberOfFriendRequests, coolDownOfFriendRequests }
+
+  store.dispatch(updatePrivateMessagingState(newState))
 }
