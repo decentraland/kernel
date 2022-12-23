@@ -167,12 +167,9 @@ export function isBlocked(userId: string) {
   const profile = getCurrentUserProfile(store.getState())
 
   // Check whether the user is blocked
-  if (profile?.blocked?.includes(userId)) {
-    return true
-  }
-  return false
+  return profile?.blocked?.includes(userId) ?? false
 }
 
 export const DEFAULT_MAX_NUMBER_OF_REQUESTS = 5
 
-export const COOLDOWN_TIME = 1000 // 1 second
+export const COOLDOWN_TIME_MS = 1000 // 1 second

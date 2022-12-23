@@ -139,7 +139,7 @@ import {
   decodeFriendRequestId,
   validateFriendRequestId,
   DEFAULT_MAX_NUMBER_OF_REQUESTS,
-  COOLDOWN_TIME,
+  COOLDOWN_TIME_MS,
   isBlocked
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
@@ -634,11 +634,10 @@ function* refreshFriends() {
       new Map()
 
     // Check if numberOfFriendRequests has values. If so, we keep them. If not, we initialize an empty map.
-    const numberOfFriendRequests: Map<string, number> = yield getNumberOfFriendRequests(store.getState()) ?? new Map()
+    const numberOfFriendRequests: Map<string, number> = yield select(getNumberOfFriendRequests) ?? new Map()
 
     // Check if coolDownOfFriendRequests has values. If so, we keep them. If not, we initialize an empty map.
-    const coolDownOfFriendRequests: Map<string, number> = yield getCoolDownOfFriendRequests(store.getState()) ??
-      new Map()
+    const coolDownOfFriendRequests: Map<string, number> = yield select(getCoolDownOfFriendRequests) ?? new Map()
 
     yield put(
       updatePrivateMessagingState({
@@ -778,7 +777,7 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     const friends: FriendsState = getPrivateMessaging(store.getState())
 
     // Reject blockedUsers
-    handleBlockedUsers(friends.fromFriendRequests)
+    await handleBlockedUsers(friends.fromFriendRequests)
 
     const realmAdapter = await ensureRealmAdapterPromise()
     const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
@@ -1455,7 +1454,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
     // Updates the friendship status of a blocked user to rejected after processing their incoming friend request.
     if (FriendshipAction.REQUESTED_FROM === action && isBlocked(userId) && newFriendRequestFlow && incoming) {
-      yield call(handleBlockedUser, userId)
+      yield call(handleBlockedUser, userId, messageBody)
     }
 
     yield call(future.resolve, { userId, error: null })
@@ -2579,7 +2578,7 @@ function hasRemainingCooldown(userId: string) {
   const coolDownTimer = getCoolDownOfFriendRequests(store.getState())
   const remainingCooldownTime = coolDownTimer.get(userId)
 
-  const cooldownWindow = COOLDOWN_TIME
+  const cooldownWindow = COOLDOWN_TIME_MS
 
   // If there is a remaining cooldown time and it hasn't expired yet, return false
   if (remainingCooldownTime && currentTime < remainingCooldownTime) {
@@ -2600,22 +2599,19 @@ function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
   const blockedIds = fromFriendRequests.filter((fromFriendRequest) => isBlocked(fromFriendRequest.userId))
 
   // For each blocked user, update their friendship status as rejected
-  blockedIds.map(
-    async (fromFriendRequest) =>
-      await UpdateFriendshipAsPromise(
-        FriendshipAction.REJECTED,
-        fromFriendRequest.userId.toLowerCase(),
-        false,
-        fromFriendRequest.message
-      )
-  )
+  const promises = blockedIds.map(async (fromFriendRequest) => {
+    return handleBlockedUser(fromFriendRequest.userId, fromFriendRequest.message)
+  })
+
+  // Wait for all Promises to resolve
+  return Promise.all(promises)
 }
 
 /**
  * Processes (update their friendship status as rejected) a friend request from a blocked user.
  * @param id - the id of the user whose friend request is being processed.
  */
-async function handleBlockedUser(id: string) {
+async function handleBlockedUser(id: string, message?: string) {
   // Update their friendship status as rejected
-  await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, id.toLowerCase(), false)
+  await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, id.toLowerCase(), false, message)
 }
