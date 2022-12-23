@@ -67,7 +67,7 @@
     "@dcl/legacy-ecs": "^6.11.8",
     "@dcl/protocol": "^1.0.0-3766287015.commit-7d88411",
     "@dcl/rpc": "^1.1.1",
-    "@dcl/scene-runtime": "^7.0.3-20221223142508.commit-cf66d86",
+    "@dcl/scene-runtime": "^7.0.3-20221223152034.commit-23102ad",
     "@dcl/schemas": "^5.29.0",
     "@dcl/urn-resolver": "^2.0.3",
     "@redux-saga/simple-saga-monitor": "^1.1.3",
