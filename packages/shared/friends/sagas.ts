@@ -777,7 +777,7 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     const friends: FriendsState = getPrivateMessaging(store.getState())
 
     // Reject blockedUsers
-    handleBlockedUsers(friends.fromFriendRequests)
+    await handleBlockedUsers(friends.fromFriendRequests)
 
     const realmAdapter = await ensureRealmAdapterPromise()
     const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
