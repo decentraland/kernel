@@ -105,6 +105,7 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
       return movePlayerTo(req, ctx)
     },
     async changeRealm(req: ChangeRealmRequest, ctx: PortContext) {
+      if (!ctx.sdk7) throw new Error('API only available for SDK7')
       if (!isPositionValid(lastPlayerPosition, ctx)) {
         ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
         return { success: false }
@@ -125,6 +126,7 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
       return { success: false }
     },
     async openExternalUrl(req: OpenExternalUrlRequest, ctx: PortContext) {
+      if (!ctx.sdk7) throw new Error('API only available for SDK7')
       if (!isPositionValid(lastPlayerPosition, ctx)) {
         ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
         return { success: false }
@@ -134,6 +136,7 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
       return { success }
     },
     async openNftDialog(req: OpenNftDialogRequest, ctx: PortContext) {
+      if (!ctx.sdk7) throw new Error('API only available for SDK7')
       if (!isPositionValid(lastPlayerPosition, ctx)) {
         ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
         return { success: false }
@@ -144,6 +147,7 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
       return { success }
     },
     async setCommunicationsAdapter(req: CommsAdapterRequest, ctx: PortContext) {
+      if (!ctx.sdk7) throw new Error('API only available for SDK7')
       if (!isPositionValid(lastPlayerPosition, ctx)) {
         ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
         return { success: false }
@@ -161,6 +165,7 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
       return { success: false }
     },
     async teleportTo(req: TeleportToRequest, ctx: PortContext) {
+      if (!ctx.sdk7) throw new Error('API only available for SDK7')
       if (!isPositionValid(lastPlayerPosition, ctx) || !req.worldPosition) {
         ctx.logger.error('Error: Player is not inside of scene', lastPlayerPosition)
         return { success: false }
