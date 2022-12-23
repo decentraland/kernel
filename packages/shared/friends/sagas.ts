@@ -779,9 +779,9 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     // Reject blocked users
     const blockedUsers = await handleBlockedUsers(friends.fromFriendRequests)
     blockedUsers
-      .filter((blockedUser) => blockedUser.error !== null)
+      .filter((blockedUser) => blockedUser.error)
       .forEach((blockedUser) =>
-        defaultLogger.warn(`Failed while processing friend requests from blocked user ${blockedUser.userId}`)
+        defaultLogger.warn(`Failed while processing friend request from blocked user ${blockedUser.userId}`)
       )
 
     const realmAdapter = await ensureRealmAdapterPromise()
