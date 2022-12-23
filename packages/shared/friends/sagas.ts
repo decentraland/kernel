@@ -1369,9 +1369,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
-          if (isBlocked(userId)) {
-            yield call(handleBlockedUser, userId)
-          } else {
+          if (!isBlocked(userId)) {
             // Build message
             const receiveFriendRequest: ReceiveFriendRequestPayload = {
               friendRequest: {
@@ -1451,6 +1449,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
     if (!incoming) {
       // refresh self & renderer friends status if update was triggered by renderer
       yield call(refreshFriends)
+    }
+
+    if (FriendshipAction.REQUESTED_FROM === action && incoming && newFriendRequestFlow) {
+      yield call(handleBlockedUser, userId)
     }
 
     yield call(future.resolve, { userId, error: null })
