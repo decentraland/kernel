@@ -776,8 +776,13 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
     // Get friends
     const friends: FriendsState = getPrivateMessaging(store.getState())
 
-    // Reject blockedUsers
-    await handleBlockedUsers(friends.fromFriendRequests)
+    // Reject blocked users
+    const blockedUsers = await handleBlockedUsers(friends.fromFriendRequests)
+    blockedUsers
+      .filter((blockedUser) => blockedUser.error !== null)
+      .forEach((blockedUser) =>
+        defaultLogger.warn(`Failed while processing friend requests from blocked user ${blockedUser.userId}`)
+      )
 
     const realmAdapter = await ensureRealmAdapterPromise()
     const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
@@ -2561,7 +2566,7 @@ function reachedMaxNumberOfRequests(userId: string) {
   const maxNumber = DEFAULT_MAX_NUMBER_OF_REQUESTS
 
   // Check if the current number of requests is less than the maximum allowed
-  return number < maxNumber ?? false
+  return number >= maxNumber
 }
 
 /**
@@ -2577,7 +2582,7 @@ function hasRemainingCooldown(userId: string) {
   const remainingCooldownTime = coolDownTimer.get(userId)
 
   // If there is a remaining cooldown time and it hasn't expired yet, return false
-  return (remainingCooldownTime && currentTime < remainingCooldownTime) ?? false
+  return remainingCooldownTime && currentTime < remainingCooldownTime
 }
 
 /**
@@ -2589,9 +2594,9 @@ function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
   const blockedIds = fromFriendRequests.filter((fromFriendRequest) => isBlocked(fromFriendRequest.userId))
 
   // For each blocked user, update their friendship status as rejected
-  const promises = blockedIds.map(async (fromFriendRequest) => {
-    return handleBlockedUser(fromFriendRequest.userId, fromFriendRequest.message)
-  })
+  const promises = blockedIds.map(async (fromFriendRequest) =>
+    handleBlockedUser(fromFriendRequest.userId, fromFriendRequest.message)
+  )
 
   // Wait for all Promises to resolve
   return Promise.all(promises)
@@ -2603,7 +2608,7 @@ function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
  */
 async function handleBlockedUser(id: string, message?: string) {
   // Update their friendship status as rejected
-  await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, id.toLowerCase(), false, message)
+  return await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, id.toLowerCase(), false, message)
 }
 
 /**
