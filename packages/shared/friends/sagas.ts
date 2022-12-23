@@ -2561,7 +2561,7 @@ function reachedMaxNumberOfRequests(userId: string) {
   const maxNumber = DEFAULT_MAX_NUMBER_OF_REQUESTS
 
   // Check if the current number of requests is less than the maximum allowed
-  return number >= maxNumber ?? false
+  return number < maxNumber ?? false
 }
 
 /**
