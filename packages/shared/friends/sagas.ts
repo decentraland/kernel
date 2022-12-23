@@ -1370,6 +1370,9 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
           // Build message
+          if (isBlocked(userId)) {
+            yield call(handleBlockedUser, [userId])
+          }
           const receiveFriendRequest: ReceiveFriendRequestPayload = {
             friendRequest: {
               friendRequestId,
@@ -2594,4 +2597,8 @@ function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
         fromFriendRequest.message
       )
   )
+}
+
+async function handleBlockedUser(id: string) {
+  await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, id.toLowerCase(), false)
 }
