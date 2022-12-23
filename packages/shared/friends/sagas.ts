@@ -1371,7 +1371,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (newFriendRequestFlow && incoming) {
           // Build message
           if (isBlocked(userId)) {
-            yield call(handleBlockedUser, [userId])
+            yield call(handleBlockedUser, userId)
           }
           const receiveFriendRequest: ReceiveFriendRequestPayload = {
             friendRequest: {
