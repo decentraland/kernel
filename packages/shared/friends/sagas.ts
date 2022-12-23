@@ -633,8 +633,10 @@ function* refreshFriends() {
     const lastStatusOfFriends: Map<string, CurrentUserStatus> = yield getLastStatusOfFriends(store.getState()) ??
       new Map()
 
+    // Check if numberOfFriendRequests has values. If so, we keep them. If not, we initialize an empty map.
     const numberOfFriendRequests: Map<string, number> = yield getNumberOfFriendRequests(store.getState()) ?? new Map()
 
+    // Check if coolDownOfFriendRequests has values. If so, we keep them. If not, we initialize an empty map.
     const coolDownOfFriendRequests: Map<string, number> = yield getCoolDownOfFriendRequests(store.getState()) ??
       new Map()
 
@@ -1451,7 +1453,8 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       yield call(refreshFriends)
     }
 
-    if (FriendshipAction.REQUESTED_FROM === action && incoming && newFriendRequestFlow) {
+    // Updates the friendship status of a blocked user to rejected after processing their incoming friend request.
+    if (FriendshipAction.REQUESTED_FROM === action && isBlocked(userId) && newFriendRequestFlow && incoming) {
       yield call(handleBlockedUser, userId)
     }
 
@@ -2588,9 +2591,15 @@ function hasRemainingCooldown(userId: string) {
   }
 }
 
+/**
+ * Filters and processes (update their friendship status as rejected) friend requests from blocked users.
+ * @param fromFriendRequests - an array of from friend requests.
+ */
 function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
+  // Get the ids of users who have been blocked
   const blockedIds = fromFriendRequests.filter((fromFriendRequest) => isBlocked(fromFriendRequest.userId))
 
+  // For each blocked user, update their friendship status as rejected
   blockedIds.map(
     async (fromFriendRequest) =>
       await UpdateFriendshipAsPromise(
@@ -2602,6 +2611,11 @@ function handleBlockedUsers(fromFriendRequests: FriendRequest[]) {
   )
 }
 
+/**
+ * Processes (update their friendship status as rejected) a friend request from a blocked user.
+ * @param id - the id of the user whose friend request is being processed.
+ */
 async function handleBlockedUser(id: string) {
+  // Update their friendship status as rejected
   await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, id.toLowerCase(), false)
 }
