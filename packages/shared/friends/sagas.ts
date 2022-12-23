@@ -1369,22 +1369,23 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
 
         // TODO!: remove FF validation once the new flow is the only one
         if (newFriendRequestFlow && incoming) {
-          // Build message
           if (isBlocked(userId)) {
             yield call(handleBlockedUser, userId)
-          }
-          const receiveFriendRequest: ReceiveFriendRequestPayload = {
-            friendRequest: {
-              friendRequestId,
-              timestamp: Date.now(),
-              to: getUserIdFromMatrix(ownId),
-              from: getUserIdFromMatrix(userId),
-              messageBody
+          } else {
+            // Build message
+            const receiveFriendRequest: ReceiveFriendRequestPayload = {
+              friendRequest: {
+                friendRequestId,
+                timestamp: Date.now(),
+                to: getUserIdFromMatrix(ownId),
+                from: getUserIdFromMatrix(userId),
+                messageBody
+              }
             }
-          }
 
-          // Send messsage to renderer via rpc
-          yield apply(friendRequestModule, friendRequestModule.receiveFriendRequest, [receiveFriendRequest])
+            // Send messsage to renderer via rpc
+            yield apply(friendRequestModule, friendRequestModule.receiveFriendRequest, [receiveFriendRequest])
+          }
         }
 
         break
