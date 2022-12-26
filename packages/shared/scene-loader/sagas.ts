@@ -130,7 +130,7 @@ function* teleportHandler(action: TeleportToAction) {
   commsLogger.info("vv 00",  action );
 
   yield put(setParcelPosition(worldToGrid(action.payload.position)))
-  commsLogger.info("vv 01 worldToGrid",  action.payload.position );
+  commsLogger.info("vv 01 worldToGrid",  worldToGrid(action.payload.position) );
 
   const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
   try {
