@@ -209,7 +209,7 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   }
 
   const catalystURL = new URL(realmConfig.baseUrl)
-  console.log("vv " + realmConfig.baseUrl);
+  console.log("vv " + realmString + " forceChange " + forceChange + " realmConfig " + realmConfig);
   if (!forceChange) {
     const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
     if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
