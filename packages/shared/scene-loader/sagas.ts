@@ -47,6 +47,7 @@ import { getAllowedContentServer } from 'shared/meta/selectors'
 import { CHANGE_LOGIN_STAGE } from 'shared/session/actions'
 import { isLoginCompleted } from 'shared/session/selectors'
 import { updateLoadingScreen } from '../loadingScreen/actions'
+import {commsLogger} from "../comms/context";
 
 export function* sceneLoaderSaga() {
   yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
@@ -126,11 +127,15 @@ A scene can fail loading due to an error or timeout.
 */
 
 function* teleportHandler(action: TeleportToAction) {
+  commsLogger.info("vv 00",  action );
+
   yield put(setParcelPosition(worldToGrid(action.payload.position)))
+  commsLogger.info("vv 01 worldToGrid",  action.payload.position );
 
   const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
   try {
     // look for the target scene
+
     const pointer = encodeParcelPosition(worldToGrid(action.payload.position))
     const command: SetDesiredScenesCommand = yield apply(sceneLoader, sceneLoader.fetchScenesByLocation, [[pointer]])
 
