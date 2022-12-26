@@ -209,7 +209,7 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   }
 
   const catalystURL = new URL(realmConfig.baseUrl)
-  console.log("vv " + realmString + " forceChange " + forceChange + " realmConfig " + realmConfig);
+  commsLogger.info("vv " + realmString + " forceChange " + forceChange + " realmConfig " + realmConfig);
   if (!forceChange) {
     const denylistedCatalysts: string[] = getDisabledCatalystConfig(store.getState()) ?? []
     if (denylistedCatalysts.find((denied) => new URL(denied).host === catalystURL.host)) {
@@ -220,8 +220,8 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   const currentRealmAdapter = getRealmAdapter(store.getState())
   const identity = getCurrentIdentity(store.getState())
 
-  console.log("vv currentRealmAdapter " + currentRealmAdapter);
-  console.log("vv identity " + identity);
+  commsLogger.info("vv currentRealmAdapter " + currentRealmAdapter);
+  commsLogger.info("vv identity " + identity);
 
   // if not forceChange, then cancel operation if we are inside the desired realm
   if (!forceChange && currentRealmAdapter && currentRealmAdapter.baseUrl === realmConfig.baseUrl) {
