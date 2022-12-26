@@ -220,6 +220,9 @@ export async function changeRealm(realmString: string, forceChange: boolean = fa
   const currentRealmAdapter = getRealmAdapter(store.getState())
   const identity = getCurrentIdentity(store.getState())
 
+  console.log("vv currentRealmAdapter " + currentRealmAdapter);
+  console.log("vv identity " + identity);
+
   // if not forceChange, then cancel operation if we are inside the desired realm
   if (!forceChange && currentRealmAdapter && currentRealmAdapter.baseUrl === realmConfig.baseUrl) {
     return
