@@ -109,7 +109,7 @@ function* waitForSceneLoader() {
 // to unsettle the position.
 function* unsettlePositionOnSceneLoader() {
   const lastPosition: ReadOnlyVector2 = yield select(getParcelPosition)
-  console.log("vv 0 " + lastPosition.x)
+  console.log("vv 0 " + lastPosition.x + lastPosition.y)
   yield put(teleportToAction({ position: gridToWorld(lastPosition.x, lastPosition.y) }))
 }
 
