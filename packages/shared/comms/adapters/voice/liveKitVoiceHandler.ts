@@ -18,6 +18,9 @@ import { getSpatialParamsFor, isChrome } from '../../../voiceChat/utils'
 import { startLoopback } from './loopback'
 
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
+import { store } from 'shared/store/isolatedStore'
+import { shouldPlayVoice } from 'shared/voiceChat/selectors'
 
 type ParticipantInfo = {
   participant: RemoteParticipant
@@ -70,7 +73,11 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
       participantsInfo.set(participant.identity, $)
 
       participant.on(ParticipantEvent.IsSpeakingChanged, (talking: boolean) => {
-        onUserTalkingCallback(participant.identity, talking)
+        const audioPublication = participant.getTrack(Track.Source.Microphone)
+        if (audioPublication && audioPublication.track) {
+          const audioTrack = audioPublication.track as RemoteAudioTrack
+          onUserTalkingCallback(participant.identity, audioTrack.isMuted ? false : talking)
+        }
       })
 
       logger.info('Adding participant', participant.identity)
@@ -323,6 +330,18 @@ export const createLiveKitVoiceHandler = async (room: Room): Promise<VoiceHandle
         const address = participant.identity
         const peer = getPeer(address)
         const participantInfo = participantsInfo.get(address)
+
+        const state = store.getState()
+        const profile = getCurrentUserProfile(state)
+        if (profile) {
+          const muted = !shouldPlayVoice(state, profile, address)
+          const audioPublication = participant.getTrack(Track.Source.Microphone)
+          if (audioPublication && audioPublication.track) {
+            const audioTrack = audioPublication.track as RemoteAudioTrack
+            audioTrack.setMuted(muted)
+          }
+        }
+
         if (participantInfo) {
           const spatialParams = peer?.position || position
           for (const [_, { panNode }] of participantInfo.tracks) {
