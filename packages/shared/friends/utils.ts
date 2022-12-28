@@ -92,7 +92,7 @@ export function isNewFriendRequestEnabled(): boolean {
  * @param ownId
  * @param otherUserId
  * @param incoming indicates whether the action was incoming (true) or outgoing (false)
- * @param action represents the action being taken on the friend
+ * @param action represents the action being taken
  */
 export function encodeFriendRequestId(ownId: string, otherUserId: string, incoming: boolean, action: FriendshipAction) {
   // We always want the friendRequestId to be formed with the pattern '0x1111ada11111'
