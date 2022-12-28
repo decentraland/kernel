@@ -36,7 +36,8 @@ const about: AboutResponse = {
   healthy: true,
   lambdas: {
     healthy: false,
-    publicUrl: 'https://lambdas'
+    publicUrl: 'https://lambdas',
+    publicUrl2: 'https://lamb2'
   },
   acceptingUsers: true
 }

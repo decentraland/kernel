@@ -185,7 +185,8 @@ async function resolveOfflineRealmAboutFromConnectionString(
         healthy: true,
         lambdas: {
           healthy: true,
-          publicUrl: `${baseUrl}lambdas`
+          publicUrl: `${baseUrl}lambdas`,
+          publicUrl2: `${baseUrl}lamb2`
         },
         acceptingUsers: true
       },
