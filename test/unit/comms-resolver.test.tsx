@@ -124,7 +124,7 @@ describe('Comms resolver', () => {
         lambdas: {
           healthy: true,
           publicUrl: 'http://peer.decentraland.zone/lambdas',
-          publicUrl2: 'https://peer.decentraland.zone/lamb2'
+          publicUrl2: 'http://peer.decentraland.zone/lamb2'
         },
         acceptingUsers: true
       },
