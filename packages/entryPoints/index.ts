@@ -249,8 +249,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     return
   }
 
-  const NEEDS_TUTORIAL =
-    RESET_TUTORIAL || !profile.tutorialStep
+  const NEEDS_TUTORIAL = RESET_TUTORIAL || !profile.tutorialStep
 
   // only enable the old tutorial if the feature flag new_tutorial is off
   // this code should be removed once the "hardcoded" tutorial is removed
