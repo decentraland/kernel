@@ -576,7 +576,7 @@ function* refreshFriends() {
 
     const requestedFromIds = fromFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: encodeFriendRequestId(ownId, request.from),
+        friendRequestId: encodeFriendRequestId(ownId, request.from, true, FriendshipAction.REQUESTED_FROM),
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.from),
         message: request.message
@@ -584,7 +584,7 @@ function* refreshFriends() {
     )
     const requestedToIds = toFriendRequests.map(
       (request): FriendRequest => ({
-        friendRequestId: encodeFriendRequestId(ownId, request.to),
+        friendRequestId: encodeFriendRequestId(ownId, request.to, false, FriendshipAction.REQUESTED_TO),
         createdAt: request.createdAt,
         userId: getUserIdFromMatrix(request.to),
         message: request.message
@@ -1221,11 +1221,11 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    const ownId = client.getUserId()
-    const friendRequestId = encodeFriendRequestId(ownId, userId)
-
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
+
+    const ownId = client.getUserId()
+    const friendRequestId = encodeFriendRequestId(ownId, userId, incoming, action)
 
     const friendRequestTypeSelector = hasSentFriendshipRequest ? 'toFriendRequests' : 'fromFriendRequests'
     const updateTotalFriendRequestsPayloadSelector: keyof UpdateTotalFriendRequestsPayload = hasSentFriendshipRequest
@@ -2206,7 +2206,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     if (!response.error) {
       const sendFriendRequest: SendFriendRequestReplyOk = {
         friendRequest: {
-          friendRequestId: encodeFriendRequestId(ownId, userId),
+          friendRequestId: encodeFriendRequestId(ownId, userId, false, FriendshipAction.REQUESTED_TO),
           timestamp: Date.now(),
           from: getUserIdFromMatrix(ownId),
           to: userId,
