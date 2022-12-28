@@ -250,11 +250,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   }
 
   const NEEDS_TUTORIAL =
-    RESET_TUTORIAL ||
-    // those who didn't do the tutorial yet
-    (!profile.tutorialStep &&
-      // skip the tutorial for people coming from a link with a position
-      !HAS_INITIAL_POSITION_MARK)
+    RESET_TUTORIAL || !profile.tutorialStep
 
   // only enable the old tutorial if the feature flag new_tutorial is off
   // this code should be removed once the "hardcoded" tutorial is removed
