@@ -30,7 +30,11 @@ import {
   getSceneLoader,
   getPositionSettled
 } from './selectors'
-import {getFetchContentServerFromRealmAdapter, isWorldActiveSelector, isWorldLoaderActive} from 'shared/realm/selectors'
+import {
+  getFetchContentServerFromRealmAdapter,
+  isWorldActiveSelector,
+  isWorldLoaderActive
+} from 'shared/realm/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
 import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
@@ -47,7 +51,7 @@ import { getAllowedContentServer } from 'shared/meta/selectors'
 import { CHANGE_LOGIN_STAGE } from 'shared/session/actions'
 import { isLoginCompleted } from 'shared/session/selectors'
 import { updateLoadingScreen } from '../loadingScreen/actions'
-import {commsLogger} from "../comms/context";
+import { commsLogger } from '../comms/context'
 
 export function* sceneLoaderSaga() {
   yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
@@ -126,10 +130,10 @@ A scene can fail loading due to an error or timeout.
 */
 
 function* teleportHandler(action: TeleportToAction) {
-  commsLogger.info("vv 00",  action );
+  commsLogger.info('vv 00', action)
 
   yield put(setParcelPosition(worldToGrid(action.payload.position)))
-  commsLogger.info("vv 01 worldToGrid",  worldToGrid(action.payload.position) );
+  commsLogger.info('vv 01 worldToGrid', worldToGrid(action.payload.position))
 
   const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
   try {
@@ -232,8 +236,7 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
       })
       yield put(setSceneLoader(loader))
 
-      if(isWorld)
-        yield call( teleportHandler, teleportToAction({ position: gridToWorld(0, 0) }))
+      if (isWorld) yield call(teleportHandler, teleportToAction({ position: gridToWorld(0, 0) }))
     }
 
     yield put(signalParcelLoadingStarted())

@@ -13,7 +13,3 @@ export type SetCatalystCandidates = ReturnType<typeof setCatalystCandidates>
 export const SELECT_NETWORK = '[DAO] Select network'
 export const selectNetwork = (network: ETHEREUM_NETWORK) => action(SELECT_NETWORK, network)
 export type SelectNetworkAction = ReturnType<typeof selectNetwork>
-
-export const CATALYST_REALMS_SCAN_REQUESTED = '[Request] Catalyst Realms scan'
-export const catalystRealmsScanRequested = () => action(CATALYST_REALMS_SCAN_REQUESTED)
-export type CatalystRealmsScanRequested = ReturnType<typeof catalystRealmsScanRequested>

@@ -7,7 +7,7 @@ import { IRealmAdapter, RootRealmState, OFFLINE_REALM } from './types'
 
 export const isWorldLoaderActive = (realmAdapter: IRealmAdapter) =>
   !!realmAdapter?.about.configurations?.scenesUrn?.length ||
-    realmAdapter?.about.configurations?.cityLoaderContentServer === ''
+  realmAdapter?.about.configurations?.cityLoaderContentServer === ''
 
 export function isWorldActiveSelector(state: RootRealmState) {
   return state.realm.realmAdapter && isWorldLoaderActive(state.realm.realmAdapter)

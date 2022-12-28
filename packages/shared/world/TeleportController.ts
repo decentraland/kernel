@@ -94,7 +94,7 @@ export class TeleportController {
     if (isInsideWorldLimits(x, y)) {
       await changeToMostPopulatedRealm()
 
-      console.log("vv 1 goto" + tpMessage)
+      console.log('vv 1 goto' + tpMessage)
       store.dispatch(trackTeleportTriggered(tpMessage))
       /// This doesn't work when the logic of activate/deactivate rendering is so tightly coupled with the loading
       /// screen. The code needs rework
