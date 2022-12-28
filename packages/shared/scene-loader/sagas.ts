@@ -30,7 +30,7 @@ import {
   getSceneLoader,
   getPositionSettled
 } from './selectors'
-import { getFetchContentServerFromRealmAdapter } from 'shared/realm/selectors'
+import {getFetchContentServerFromRealmAdapter, isWorldActiveSelector, isWorldLoaderActive} from 'shared/realm/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
 import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
@@ -110,7 +110,6 @@ function* waitForSceneLoader() {
 // to unsettle the position.
 function* unsettlePositionOnSceneLoader() {
   const lastPosition: ReadOnlyVector2 = yield select(getParcelPosition)
-  console.log("vv 0 " + lastPosition.x + lastPosition.y)
   yield put(teleportToAction({ position: gridToWorld(lastPosition.x, lastPosition.y) }))
 }
 
@@ -196,6 +195,7 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 
 // This saga reacts to new realms/bff and creates the proper scene loader
 function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
+  const isWorld = yield select(isWorldActiveSelector)
   const adapter: IRealmAdapter | undefined = action.payload
 
   if (!adapter) {
@@ -203,10 +203,9 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
   } else {
     // if the /about endpoint returns scenesUrn(s) then those need to be loaded
     // and the genesis city should not start
-    const loadFixedWorld =
-      !!adapter.about.configurations?.scenesUrn?.length || adapter.about.configurations?.cityLoaderContentServer === ''
+    const willLoadFixedWorld = isWorldLoaderActive(adapter)
 
-    if (loadFixedWorld) {
+    if (willLoadFixedWorld) {
       // TODO: disable green blockers here
 
       const loader: ISceneLoader = yield call(createWorldLoader, {
@@ -232,6 +231,9 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
         emptyParcelsBaseUrl
       })
       yield put(setSceneLoader(loader))
+
+      if(isWorld)
+        yield call( teleportHandler, teleportToAction({ position: gridToWorld(0, 0) }))
     }
 
     yield put(signalParcelLoadingStarted())
