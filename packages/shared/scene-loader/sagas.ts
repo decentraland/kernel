@@ -51,7 +51,6 @@ import {getAllowedContentServer} from 'shared/meta/selectors'
 import {CHANGE_LOGIN_STAGE} from 'shared/session/actions'
 import {isLoginCompleted} from 'shared/session/selectors'
 import {updateLoadingScreen} from '../loadingScreen/actions'
-import {commsLogger} from "../comms/context";
 
 export function* sceneLoaderSaga() {
   yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
@@ -114,16 +113,10 @@ function* waitForSceneLoader() {
 // to unsettle the position.
 function* unsettlePositionOnSceneLoader() {
   const fromWorld = yield select(isPreviousAdapterWorld)
-  commsLogger.info("vv -0", fromWorld);
 
-  if (fromWorld) {
-    yield put(teleportToAction({position: gridToWorld(0, 0)}))
-  }
-  else {
-    const lastPosition: ReadOnlyVector2 = yield select(getParcelPosition)
-    commsLogger.info("vv 0", lastPosition);
-    yield put(teleportToAction({position: gridToWorld(lastPosition.x, lastPosition.y)}))
-  }
+  const unsettledPosition: ReadOnlyVector2 = fromWorld? new Vector2(0,0) : yield select(getParcelPosition)
+
+  yield put(teleportToAction({position: gridToWorld(unsettledPosition.x, unsettledPosition.y)}))
 }
 
 /*
@@ -139,10 +132,8 @@ A scene can fail loading due to an error or timeout.
 */
 
 function* teleportHandler(action: TeleportToAction) {
-  commsLogger.info("vv 00", action);
 
   yield put(setParcelPosition(worldToGrid(action.payload.position)))
-  commsLogger.info("vv 01 worldToGrid", worldToGrid(action.payload.position));
 
   const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
   try {
@@ -219,7 +210,6 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
 
     if (willLoadFixedWorld) {
       // TODO: disable green blockers here
-
       const loader: ISceneLoader = yield call(createWorldLoader, {
         urns: adapter!.about.configurations!.scenesUrn
       })
