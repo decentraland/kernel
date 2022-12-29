@@ -113,7 +113,7 @@ function* waitForSceneLoader() {
 // to unsettle the position.
 function* unsettlePositionOnSceneLoader() {
   const fromWorld = yield select(isPreviousAdapterWorld)
-  const unsettledPosition: ReadOnlyVector2 = fromWorld? new Vector2(0,0) : yield select(getParcelPosition)
+  const unsettledPosition: ReadOnlyVector2 = fromWorld ? new Vector2(0, 0) : yield select(getParcelPosition)
 
   yield put(teleportToAction({ position: gridToWorld(unsettledPosition.x, unsettledPosition.y) }))
 }
