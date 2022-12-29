@@ -258,8 +258,9 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     if (!getFeatureFlagEnabled(store.getState(), 'new_tutorial')) {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
       const tutorialConfig = {
-        //TODO: hardcoding this value to true since the initial scene is currently default the xmas scene.
+        //TODO: hardcoding this value to true since currently default scene is the xmas scnee.
         // If this is no hardcoded, the tutorial will never start on a default scene that is not genesis plaza
+        // We should plan a way which allows different default scenes
         fromDeepLink: true,
         enableNewTutorialCamera: enableNewTutorialCamera
       }
