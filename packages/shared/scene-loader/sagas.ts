@@ -30,7 +30,11 @@ import {
   getSceneLoader,
   getPositionSettled
 } from './selectors'
-import { getFetchContentServerFromRealmAdapter, isPreviousAdapterWorld } from 'shared/realm/selectors'
+import {
+  getFetchContentServerFromRealmAdapter,
+  isPreviousAdapterWorld,
+  isWorldLoaderActive
+} from 'shared/realm/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
 import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
@@ -199,8 +203,7 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
   } else {
     // if the /about endpoint returns scenesUrn(s) then those need to be loaded
     // and the genesis city should not start
-    const loadFixedWorld =
-      !!adapter.about.configurations?.scenesUrn?.length || adapter.about.configurations?.cityLoaderContentServer === ''
+    const loadFixedWorld = isWorldLoaderActive(adapter)
 
     if (loadFixedWorld) {
       // TODO: disable green blockers here
