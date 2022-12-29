@@ -30,7 +30,7 @@ import {
   getSceneLoader,
   getPositionSettled
 } from './selectors'
-import {getFetchContentServerFromRealmAdapter, isPreviousAdapterWorld} from 'shared/realm/selectors'
+import { getFetchContentServerFromRealmAdapter, isPreviousAdapterWorld } from 'shared/realm/selectors'
 import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
 import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
 import { BEFORE_UNLOAD } from 'shared/actions'
