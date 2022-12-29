@@ -249,12 +249,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     return
   }
 
-  const NEEDS_TUTORIAL =
-    RESET_TUTORIAL ||
-    // those who didn't do the tutorial yet
-    (!profile.tutorialStep &&
-      // skip the tutorial for people coming from a link with a position
-      !HAS_INITIAL_POSITION_MARK)
+  const NEEDS_TUTORIAL = RESET_TUTORIAL || !profile.tutorialStep
 
   // only enable the old tutorial if the feature flag new_tutorial is off
   // this code should be removed once the "hardcoded" tutorial is removed
@@ -263,7 +258,10 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     if (!getFeatureFlagEnabled(store.getState(), 'new_tutorial')) {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
       const tutorialConfig = {
-        fromDeepLink: HAS_INITIAL_POSITION_MARK,
+        //TODO: hardcoding this value to true since currently default scene is the xmas scnee.
+        // If this is no hardcoded, the tutorial will never start on a default scene that is not genesis plaza
+        // We should plan a way which allows different default scenes
+        fromDeepLink: true,
         enableNewTutorialCamera: enableNewTutorialCamera
       }
 
