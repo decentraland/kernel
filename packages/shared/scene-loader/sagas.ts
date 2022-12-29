@@ -30,7 +30,11 @@ import {
   getSceneLoader,
   getPositionSettled
 } from './selectors'
-import {getFetchContentServerFromRealmAdapter, isWorldActiveSelector, isWorldLoaderActive} from 'shared/realm/selectors'
+import {
+  getFetchContentServerFromRealmAdapter,
+  isPreviousAdapterWorld,
+  isWorldLoaderActive
+} from 'shared/realm/selectors'
 import {ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand} from './types'
 import {getSceneWorkerBySceneID, setDesiredParcelScenes} from 'shared/world/parcelSceneManager'
 import {BEFORE_UNLOAD} from 'shared/actions'
@@ -197,7 +201,7 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 
 // This saga reacts to new realms/bff and creates the proper scene loader
 function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
-  const isWorld = yield select(isWorldActiveSelector)
+  const isWorld = yield select(isPreviousAdapterWorld)
   const adapter: IRealmAdapter | undefined = action.payload
 
   commsLogger.info("vv -0", isWorld);
@@ -235,12 +239,14 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
         emptyParcelsBaseUrl
       })
       yield put(setSceneLoader(loader))
+
+      if (isWorld) {
+        // yield call(teleportHandler, teleportToAction({position: gridToWorld(0, 0)}))
+        yield TeleportController.goToHome();
+      }
     }
 
-    if (isWorld) {
-      // yield call(teleportHandler, teleportToAction({position: gridToWorld(0, 0)}))
-      yield TeleportController.goToHome();
-    }
+
 
     yield put(signalParcelLoadingStarted())
 
