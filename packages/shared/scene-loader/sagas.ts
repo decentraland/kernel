@@ -52,7 +52,6 @@ import {CHANGE_LOGIN_STAGE} from 'shared/session/actions'
 import {isLoginCompleted} from 'shared/session/selectors'
 import {updateLoadingScreen} from '../loadingScreen/actions'
 import {commsLogger} from "../comms/context";
-import {TeleportController} from "../world/TeleportController";
 
 export function* sceneLoaderSaga() {
   yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
@@ -114,9 +113,17 @@ function* waitForSceneLoader() {
 // We teleport the user to its current position on every change of scene loader
 // to unsettle the position.
 function* unsettlePositionOnSceneLoader() {
-  const lastPosition: ReadOnlyVector2 = yield select(getParcelPosition)
-  commsLogger.info("vv 0", lastPosition);
-  yield put(teleportToAction({position: gridToWorld(lastPosition.x, lastPosition.y)}))
+  const fromWorld = yield select(isPreviousAdapterWorld)
+  commsLogger.info("vv -0", fromWorld);
+
+  if (fromWorld) {
+    yield put(teleportToAction({position: gridToWorld(0, 0)}))
+  }
+  else {
+    const lastPosition: ReadOnlyVector2 = yield select(getParcelPosition)
+    commsLogger.info("vv 0", lastPosition);
+    yield put(teleportToAction({position: gridToWorld(lastPosition.x, lastPosition.y)}))
+  }
 }
 
 /*
@@ -201,10 +208,7 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 
 // This saga reacts to new realms/bff and creates the proper scene loader
 function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
-  const isWorld = yield select(isPreviousAdapterWorld)
   const adapter: IRealmAdapter | undefined = action.payload
-
-  commsLogger.info("vv -0", isWorld);
 
   if (!adapter) {
     yield put(setSceneLoader(undefined))
@@ -239,14 +243,7 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
         emptyParcelsBaseUrl
       })
       yield put(setSceneLoader(loader))
-
-      if (isWorld) {
-        // yield call(teleportHandler, teleportToAction({position: gridToWorld(0, 0)}))
-        yield TeleportController.goToHome();
-      }
     }
-
-
 
     yield put(signalParcelLoadingStarted())
 

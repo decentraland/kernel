@@ -99,13 +99,9 @@ function isPositionValid(position: Vector3, ctx: PortContext) {
 export function registerRestrictedActionsServiceServerImplementation(port: RpcServerPort<PortContext>) {
   codegen.registerService(port, RestrictedActionsServiceDefinition, async () => ({
     async triggerEmote(req: TriggerEmoteRequest, ctx: PortContext) {
-      console.log("VV: 0 " + req)
-
       return triggerEmote(req, ctx)
     },
     async movePlayerTo(req: MovePlayerToRequest, ctx: PortContext) {
-      console.log("VV: 1 " + req)
-
       return movePlayerTo(req, ctx)
     },
     async changeRealm(req: ChangeRealmRequest, ctx: PortContext) {
@@ -118,7 +114,6 @@ export function registerRestrictedActionsServiceServerImplementation(port: RpcSe
       // TODO: add visual prompt for the user
       const userApprovedChangingRealm = true // await unity.promptChangeRealm(sceneId, req.message, req.realm)
 
-      console.log("VV: 2 " + req)
       if (userApprovedChangingRealm) {
         try {
           await changeRealm(req.realm)
