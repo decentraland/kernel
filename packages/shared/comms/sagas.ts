@@ -1,4 +1,4 @@
-import { put, takeEvery, select, call, takeLatest, fork, take, race, delay, apply } from 'redux-saga/effects'
+import { put, takeEvery, select, call, fork, take, race, delay, apply } from 'redux-saga/effects'
 
 import { commsEstablished, establishingComms, FATAL_ERROR } from 'shared/loading/types'
 import { commsLogger } from './context'
@@ -27,7 +27,7 @@ import { EventChannel } from 'redux-saga'
 import { ExplorerIdentity } from 'shared/session/types'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms.gen'
-import { selectAndReconnectRealm } from 'shared/dao/sagas'
+import { clearRealmFromQueryString, selectAndReconnectRealm } from 'shared/dao/sagas'
 import { waitForMetaConfigurationInitialization } from 'shared/meta/sagas'
 import { getCommsConfig, getFeatureFlagEnabled, getMaxVisiblePeers } from 'shared/meta/selectors'
 import { getCurrentIdentity } from 'shared/session/selectors'
@@ -58,12 +58,13 @@ import {
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { NotificationType } from 'shared/types'
 import { trackEvent } from 'shared/analytics'
+import { TeleportController } from 'shared/world/TeleportController'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
 const INTERVAL_ANNOUNCE_PROFILE = 1000
 
 export function* commsSaga() {
-  yield takeLatest(HANDLE_ROOM_DISCONNECTION, handleRoomDisconnectionSaga)
+  yield takeEvery(HANDLE_ROOM_DISCONNECTION, handleRoomDisconnectionSaga)
 
   yield takeEvery(FATAL_ERROR, function* () {
     // set null context on fatal error. this will bring down comms.
@@ -260,6 +261,8 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
     notifyStatusThroughChat('Error connecting to comms. Will try another realm')
     yield put(setRealmAdapter(undefined))
     yield put(setRoomConnection(undefined))
+    yield call(clearRealmFromQueryString)
+    yield call(selectAndReconnectRealm)
   }
 }
 
@@ -556,16 +559,43 @@ export async function disconnectRoom(context: RoomConnection) {
   }
 }
 
+function showErrorNotification(message: string) {
+  getUnityInstance().ShowNotification({
+    type: NotificationType.GENERIC,
+    message,
+    buttonMessage: 'OK',
+    timer: 15
+  })
+}
+
 // this saga handles the suddenly disconnection of a CommsContext
 function* handleRoomDisconnectionSaga(action: HandleRoomDisconnection) {
   const room: RoomConnection = yield select(getCommsRoom)
 
+  // only if we are receiving an action corresponding to the current state
   if (room && room === action.payload.context) {
     // this also remove the context
     yield put(setRoomConnection(undefined))
 
     if (action.payload.context) {
-      notifyStatusThroughChat(`Lost connection to realm`)
+      showErrorNotification(`Lost connection to realm`)
+    }
+
+    const realm: IRealmAdapter | undefined = yield select(getRealmAdapter)
+    // when the RoomConnection gets disconnected, it may be necessary to bring
+    // the user to a functional realm. The realm will be chosen by the same
+    // algorithm as the one used when the application starts.
+    // ONLY IF the current realm has a fixedAdapter. otherwise, archipelago may
+    // assign another realm
+    if (!realm || realm.about.comms?.fixedAdapter) {
+      yield call(clearRealmFromQueryString)
+
+      // if it was a WORLD, then we take the user to their home-point (if possible)
+      if (realm?.about.configurations?.realmName?.endsWith('.dcl.eth')) {
+        yield apply(TeleportController, TeleportController.goToHome, [])
+      }
+
+      yield call(selectAndReconnectRealm)
     }
   }
 }

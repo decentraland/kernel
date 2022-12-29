@@ -1,9 +1,4 @@
-import {
-  setCatalystCandidates,
-  SET_CATALYST_CANDIDATES,
-  SetCatalystCandidates,
-  catalystRealmsScanRequested
-} from './actions'
+import { setCatalystCandidates, SET_CATALYST_CANDIDATES, SetCatalystCandidates } from './actions'
 import { call, put, takeEvery, select, take } from 'redux-saga/effects'
 import { PIN_CATALYST, ETHEREUM_NETWORK, PREVIEW, rootURLPreviewMode } from 'config'
 import { waitForMetaConfigurationInitialization, waitForNetworkSelected } from '../meta/sagas'
@@ -77,12 +72,12 @@ function* pickCatalystRealm() {
   return urlWithProtocol(realm.hostname)
 }
 
-function qsRealm() {
+function getRealmFromQueryString() {
   const qs = new URLSearchParams(document.location.search)
   return qs.get('realm')
 }
 
-function clearQsRealm() {
+export function clearRealmFromQueryString() {
   const q = new URLSearchParams(globalThis.location.search)
   q.delete('realm')
   globalThis.history.replaceState({}, 'realm', `?${q.toString()}`)
@@ -114,7 +109,7 @@ export function* selectAndReconnectRealm() {
     // if no realm was selected, then do the whole initialization dance
   } catch (e: any) {
     // if it failed, try changing the queryString
-    clearQsRealm()
+    clearRealmFromQueryString()
     try {
       // and try again
       yield call(tryConnectRealm)
@@ -135,17 +130,16 @@ function* waitForCandidates() {
 function* selectRealm() {
   const network: ETHEREUM_NETWORK = yield call(waitForNetworkSelected)
 
-  yield call(initializeCatalystCandidates)
-
   const candidatesReceived = yield select(getCatalystCandidatesReceived)
 
   if (!candidatesReceived) {
+    yield call(initializeCatalystCandidates)
     yield call(waitForCandidates)
   }
 
   const realm: string | undefined =
     // query param (dao candidates & cached)
-    (yield call(qsRealm)) ||
+    (yield call(getRealmFromQueryString)) ||
     // preview mode
     (PREVIEW ? rootURLPreviewMode() : null) ||
     // CATALYST from url parameter
@@ -177,7 +171,6 @@ async function getRealmFromLocalStorage(network: ETHEREUM_NETWORK) {
 
 function* initializeCatalystCandidates() {
   yield call(waitForMetaConfigurationInitialization)
-  yield put(catalystRealmsScanRequested())
 
   const catalystsNodesEndpointURL: string | undefined = yield select(getCatalystNodesEndpoint)
 
