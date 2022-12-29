@@ -1338,7 +1338,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            fromFriendRequests: [...state.fromFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
+            fromFriendRequests: [
+              ...state.fromFriendRequests,
+              { createdAt: Date.now(), userId, friendRequestId, message: messageBody }
+            ]
           }
         }
 
@@ -1372,7 +1375,10 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         if (!request) {
           newState = {
             ...state,
-            toFriendRequests: [...state.toFriendRequests, { createdAt: Date.now(), userId, friendRequestId }]
+            toFriendRequests: [
+              ...state.toFriendRequests,
+              { createdAt: Date.now(), userId, friendRequestId, message: messageBody }
+            ]
           }
         }
 
