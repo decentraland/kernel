@@ -199,7 +199,8 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
   const isWorld = yield select(isWorldActiveSelector)
   const adapter: IRealmAdapter | undefined = action.payload
-  console.log("vv isWorld")
+
+  commsLogger.info("vv -0", isWorld);
 
   if (!adapter) {
     yield put(setSceneLoader(undefined))
