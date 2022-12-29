@@ -258,7 +258,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     if (!getFeatureFlagEnabled(store.getState(), 'new_tutorial')) {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
       const tutorialConfig = {
-        fromDeepLink: true,
+        fromDeepLink: HAS_INITIAL_POSITION_MARK,
         enableNewTutorialCamera: enableNewTutorialCamera
       }
 
