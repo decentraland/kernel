@@ -1,10 +1,10 @@
-import { apply, call, delay, fork, put, race, select, take, takeEvery, takeLatest } from 'redux-saga/effects'
-import { SetRealmAdapterAction, SET_REALM_ADAPTER } from 'shared/realm/actions'
-import { IRealmAdapter } from 'shared/realm/types'
-import { signalParcelLoadingStarted } from 'shared/renderer/actions'
-import { store } from 'shared/store/isolatedStore'
-import { LoadableScene } from 'shared/types'
-import { getUnityInstance } from 'unity-interface/IUnityInterface'
+import {apply, call, delay, fork, put, race, select, take, takeEvery, takeLatest} from 'redux-saga/effects'
+import {SetRealmAdapterAction, SET_REALM_ADAPTER} from 'shared/realm/actions'
+import {IRealmAdapter} from 'shared/realm/types'
+import {signalParcelLoadingStarted} from 'shared/renderer/actions'
+import {store} from 'shared/store/isolatedStore'
+import {LoadableScene} from 'shared/types'
+import {getUnityInstance} from 'unity-interface/IUnityInterface'
 import {
   positionSettled,
   PositionSettled,
@@ -20,8 +20,8 @@ import {
   TeleportToAction,
   TELEPORT_TO
 } from './actions'
-import { createGenesisCityLoader } from './genesis-city-loader-impl'
-import { createWorldLoader } from './world-loader-impl'
+import {createGenesisCityLoader} from './genesis-city-loader-impl'
+import {createWorldLoader} from './world-loader-impl'
 import {
   getLoadingRadius,
   getParcelPosition,
@@ -31,23 +31,24 @@ import {
   getPositionSettled
 } from './selectors'
 import {getFetchContentServerFromRealmAdapter, isWorldActiveSelector, isWorldLoaderActive} from 'shared/realm/selectors'
-import { ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand } from './types'
-import { getSceneWorkerBySceneID, setDesiredParcelScenes } from 'shared/world/parcelSceneManager'
-import { BEFORE_UNLOAD } from 'shared/actions'
-import { SceneFail, SceneStart, SceneUnload, SCENE_FAIL, SCENE_START, SCENE_UNLOAD } from 'shared/loading/actions'
-import { sceneEvents, SceneWorker } from 'shared/world/SceneWorker'
-import { pickWorldSpawnpoint, positionObservable, receivePositionReport } from 'shared/world/positionThings'
-import { encodeParcelPosition, gridToWorld, worldToGrid } from 'atomicHelpers/parcelScenePositions'
-import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
-import { ENABLE_EMPTY_SCENES, LOS, PREVIEW, rootURLPreviewMode } from 'config'
-import { getResourcesURL } from 'shared/location'
-import { Vector2 } from '@dcl/ecs-math'
-import { trackEvent } from 'shared/analytics'
-import { getAllowedContentServer } from 'shared/meta/selectors'
-import { CHANGE_LOGIN_STAGE } from 'shared/session/actions'
-import { isLoginCompleted } from 'shared/session/selectors'
-import { updateLoadingScreen } from '../loadingScreen/actions'
+import {ISceneLoader, SceneLoaderPositionReport, SetDesiredScenesCommand} from './types'
+import {getSceneWorkerBySceneID, setDesiredParcelScenes} from 'shared/world/parcelSceneManager'
+import {BEFORE_UNLOAD} from 'shared/actions'
+import {SceneFail, SceneStart, SceneUnload, SCENE_FAIL, SCENE_START, SCENE_UNLOAD} from 'shared/loading/actions'
+import {sceneEvents, SceneWorker} from 'shared/world/SceneWorker'
+import {pickWorldSpawnpoint, positionObservable, receivePositionReport} from 'shared/world/positionThings'
+import {encodeParcelPosition, gridToWorld, worldToGrid} from 'atomicHelpers/parcelScenePositions'
+import {waitForRendererInstance} from 'shared/renderer/sagas-helper'
+import {ENABLE_EMPTY_SCENES, LOS, PREVIEW, rootURLPreviewMode} from 'config'
+import {getResourcesURL} from 'shared/location'
+import {Vector2} from '@dcl/ecs-math'
+import {trackEvent} from 'shared/analytics'
+import {getAllowedContentServer} from 'shared/meta/selectors'
+import {CHANGE_LOGIN_STAGE} from 'shared/session/actions'
+import {isLoginCompleted} from 'shared/session/selectors'
+import {updateLoadingScreen} from '../loadingScreen/actions'
 import {commsLogger} from "../comms/context";
+import {TeleportController} from "../world/TeleportController";
 
 export function* sceneLoaderSaga() {
   yield takeLatest(SET_REALM_ADAPTER, setSceneLoaderOnSetRealmAction)
@@ -110,7 +111,8 @@ function* waitForSceneLoader() {
 // to unsettle the position.
 function* unsettlePositionOnSceneLoader() {
   const lastPosition: ReadOnlyVector2 = yield select(getParcelPosition)
-  yield put(teleportToAction({ position: gridToWorld(lastPosition.x, lastPosition.y) }))
+  commsLogger.info("vv 0", lastPosition);
+  yield put(teleportToAction({position: gridToWorld(lastPosition.x, lastPosition.y)}))
 }
 
 /*
@@ -126,10 +128,10 @@ A scene can fail loading due to an error or timeout.
 */
 
 function* teleportHandler(action: TeleportToAction) {
-  commsLogger.info("vv 00",  action );
+  commsLogger.info("vv 00", action);
 
   yield put(setParcelPosition(worldToGrid(action.payload.position)))
-  commsLogger.info("vv 01 worldToGrid",  worldToGrid(action.payload.position) );
+  commsLogger.info("vv 01 worldToGrid", worldToGrid(action.payload.position));
 
   const sceneLoader: ISceneLoader = yield call(waitForSceneLoader)
   try {
@@ -197,6 +199,7 @@ function* onPositionSettled(action: PositionSettled | PositionSettled) {
 function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
   const isWorld = yield select(isWorldActiveSelector)
   const adapter: IRealmAdapter | undefined = action.payload
+  console.log("vv isWorld")
 
   if (!adapter) {
     yield put(setSceneLoader(undefined))
@@ -231,9 +234,11 @@ function* setSceneLoaderOnSetRealmAction(action: SetRealmAdapterAction) {
         emptyParcelsBaseUrl
       })
       yield put(setSceneLoader(loader))
+    }
 
-      if(isWorld)
-        yield call( teleportHandler, teleportToAction({ position: gridToWorld(0, 0) }))
+    if (isWorld) {
+      // yield call(teleportHandler, teleportToAction({position: gridToWorld(0, 0)}))
+      yield TeleportController.goToHome();
     }
 
     yield put(signalParcelLoadingStarted())
@@ -313,7 +318,7 @@ function* onWorldPositionChange() {
       }
     }
 
-    const { unload } = yield race({
+    const {unload} = yield race({
       timeout: delay(5000),
       newSceneLoader: take(SET_SCENE_LOADER),
       newParcel: take(SET_PARCEL_POSITION),
@@ -329,6 +334,6 @@ function* onWorldPositionChange() {
 export async function fetchScenesByLocation(positions: string[]): Promise<LoadableScene[]> {
   const sceneLoader = getSceneLoader(store.getState())
   if (!sceneLoader) return []
-  const { scenes } = await sceneLoader.fetchScenesByLocation(positions)
+  const {scenes} = await sceneLoader.fetchScenesByLocation(positions)
   return scenes
 }
