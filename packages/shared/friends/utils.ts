@@ -99,42 +99,26 @@ export function encodeFriendRequestId(ownId: string, otherUserId: string, incomi
   ownId = getUserIdFromMatrix(ownId)
   otherUserId = getUserIdFromMatrix(otherUserId)
 
-  // Dispatcher is the last 4 characters of the user id of the user who initiated the friendship, that is, sent the friend request
-  let dispatcher = ''
+  // requester is the last 4 characters of the user id of the user who initiated the friendship, that is, sent the friend request
+  let requester = ''
 
   // If the friend request is incoming and the action is either CANCELED or REQUESTED_FROM,
-  // set the dispatcher to the last 4 characters of the otherUserId
+  // set the requester to the last 4 characters of the otherUserId. Otherwise set the requester to the last 4 characters of the ownId
   if (incoming) {
-    switch (action) {
-      case FriendshipAction.CANCELED:
-        dispatcher = otherUserId.substring(otherUserId.length - 4)
-        break
-      case FriendshipAction.REQUESTED_FROM:
-        dispatcher = otherUserId.substring(otherUserId.length - 4)
-        break
-      // Otherwise set the dispatcher to the last 4 characters of the ownId
-      default:
-        dispatcher = ownId.substring(ownId.length - 4)
-        break
-    }
+    requester =
+      action === FriendshipAction.CANCELED || action === FriendshipAction.REQUESTED_FROM
+        ? otherUserId.substring(otherUserId.length - 4)
+        : ownId.substring(ownId.length - 4)
     // If the friend request is outgoing and the action is either APPROVED or REJECTED,
-    // set the dispatcher to the last 4 characters of the otherUserId
+    // set the requester to the last 4 characters of the otherUserId. Otherwise set the requester to the last 4 characters of the ownId
   } else {
-    switch (action) {
-      case FriendshipAction.APPROVED:
-        dispatcher = otherUserId.substring(otherUserId.length - 4)
-        break
-      case FriendshipAction.REJECTED:
-        dispatcher = otherUserId.substring(otherUserId.length - 4)
-        break
-      // Otherwise set the dispatcher to the last 4 characters of the ownId
-      default:
-        dispatcher = ownId.substring(ownId.length - 4)
-        break
-    }
+    requester =
+      action === FriendshipAction.APPROVED || action === FriendshipAction.REJECTED
+        ? otherUserId.substring(otherUserId.length - 4)
+        : ownId.substring(ownId.length - 4)
   }
 
-  return ownId < otherUserId ? `${ownId}_${otherUserId}_${dispatcher}` : `${otherUserId}_${ownId}_${dispatcher}`
+  return ownId < otherUserId ? `${ownId}_${otherUserId}_${requester}` : `${otherUserId}_${ownId}_${requester}`
 }
 
 /**
