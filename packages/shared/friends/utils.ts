@@ -88,7 +88,13 @@ export function isNewFriendRequestEnabled(): boolean {
 /**
  * Encode friendRequestId from the user IDs involved in the friendship event.
  * **It is important to send the ownId as the first parameter, otherwise it will cause bugs.**
- * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId_dispatcher` : `otherUserId_ownId_dispatcher`
+ * The rule is: `ownId` < `otherUserId` ? `ownId_otherUserId_requester` : `otherUserId_ownId_requester`
+ *
+ * If the friend request is incoming and the action is either CANCELED or REQUESTED_FROM or
+ * if the friend request is outgoing and the action is either APPROVED or REJECTED,
+ * set the requester to the last 4 characters of the otherUserId.
+ * Otherwise set the requester to the last 4 characters of the ownId.
+ *
  * @param ownId
  * @param otherUserId
  * @param incoming indicates whether the action was incoming (true) or outgoing (false)
@@ -99,18 +105,13 @@ export function encodeFriendRequestId(ownId: string, otherUserId: string, incomi
   ownId = getUserIdFromMatrix(ownId)
   otherUserId = getUserIdFromMatrix(otherUserId)
 
-  // requester is the last 4 characters of the user id of the user who initiated the friendship, that is, sent the friend request
   let requester = ''
 
-  // If the friend request is incoming and the action is either CANCELED or REQUESTED_FROM,
-  // set the requester to the last 4 characters of the otherUserId. Otherwise set the requester to the last 4 characters of the ownId
   if (incoming) {
     requester =
       action === FriendshipAction.CANCELED || action === FriendshipAction.REQUESTED_FROM
         ? otherUserId.substring(otherUserId.length - 4)
         : ownId.substring(ownId.length - 4)
-    // If the friend request is outgoing and the action is either APPROVED or REJECTED,
-    // set the requester to the last 4 characters of the otherUserId. Otherwise set the requester to the last 4 characters of the ownId
   } else {
     requester =
       action === FriendshipAction.APPROVED || action === FriendshipAction.REJECTED
