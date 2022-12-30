@@ -100,22 +100,36 @@ export function encodeFriendRequestId(ownId: string, otherUserId: string, incomi
   otherUserId = getUserIdFromMatrix(otherUserId)
 
   // Dispatcher is the last 4 characters of the user id of the user who initiated the friendship, that is, sent the friend request
-  let dispatcher = ownId.substring(ownId.length - 4)
+  let dispatcher = ''
 
   // If the friend request is incoming and the action is either CANCELED or REQUESTED_FROM,
   // set the dispatcher to the last 4 characters of the otherUserId
   if (incoming) {
     switch (action) {
-      case FriendshipAction.CANCELED || FriendshipAction.REQUESTED_FROM:
+      case FriendshipAction.CANCELED:
         dispatcher = otherUserId.substring(otherUserId.length - 4)
+        break
+      case FriendshipAction.REQUESTED_FROM:
+        dispatcher = otherUserId.substring(otherUserId.length - 4)
+        break
+      // Otherwise set the dispatcher to the last 4 characters of the ownId
+      default:
+        dispatcher = ownId.substring(ownId.length - 4)
         break
     }
     // If the friend request is outgoing and the action is either APPROVED or REJECTED,
     // set the dispatcher to the last 4 characters of the otherUserId
   } else {
     switch (action) {
-      case FriendshipAction.APPROVED || FriendshipAction.REJECTED:
+      case FriendshipAction.APPROVED:
         dispatcher = otherUserId.substring(otherUserId.length - 4)
+        break
+      case FriendshipAction.REJECTED:
+        dispatcher = otherUserId.substring(otherUserId.length - 4)
+        break
+      // Otherwise set the dispatcher to the last 4 characters of the ownId
+      default:
+        dispatcher = ownId.substring(ownId.length - 4)
         break
     }
   }
