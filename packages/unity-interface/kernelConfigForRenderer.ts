@@ -1,5 +1,5 @@
 import { KernelConfigForRenderer } from 'shared/types'
-import { getAvatarTextureAPIBaseUrl, commConfigurations, WSS_ENABLED } from 'config'
+import { getAvatarTextureAPIBaseUrl, commConfigurations } from 'config'
 import { nameValidCharacterRegex, nameValidRegex } from 'shared/profiles/utils/names'
 import { getWorld } from '@dcl/schemas'
 import { injectVersions } from 'shared/rolloutVersions'
@@ -27,10 +27,7 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       nameValidRegex: nameValidRegex.toString().replace(/[/]/g, '')
     },
     debugConfig: undefined,
-    gifSupported:
-      typeof (window as any).OffscreenCanvas !== 'undefined' &&
-      typeof (window as any).OffscreenCanvasRenderingContext2D === 'function' &&
-      !WSS_ENABLED,
+    gifSupported: false,
     network,
     validWorldRanges: getWorld().validWorldRanges,
     kernelVersion: versions['@dcl/kernel'] || 'unknown-kernel-version',
