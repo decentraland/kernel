@@ -1,41 +1,39 @@
 import { store } from '../../store/isolatedStore'
-import { getCommsIsland } from '../../comms/selectors'
 import { getRealmAdapter } from '../../realm/selectors'
 import * as codegen from '@dcl/rpc/dist/codegen'
 import { RpcServerPort } from '@dcl/rpc/dist/types'
 import {
   GetRealmResponse,
-  GetTimeResponse,
+  GetWorldTimeResponse,
   RuntimeServiceDefinition
 } from '@dcl/protocol/out-ts/decentraland/kernel/apis/runtime.gen'
 import { PortContextService } from './context'
-import { getDecentralandTime, toEnvironmentRealmType } from './EnvironmentAPI'
+import { getDecentralandTime } from './EnvironmentAPI'
+import { urlWithProtocol } from '../../realm/resolver'
 
 export function registerEnvironmentApiServiceServerImplementation(
   port: RpcServerPort<PortContextService<'sceneData'>>
 ) {
   codegen.registerService(port, RuntimeServiceDefinition, async () => ({
-    async getTime(): Promise<GetTimeResponse> {
+    async getWorldTime(): Promise<GetWorldTimeResponse> {
       const time = getDecentralandTime()
 
       return { seconds: time }
     },
     async getRealm(): Promise<GetRealmResponse> {
       const realmAdapter = getRealmAdapter(store.getState())
-      const island = getCommsIsland(store.getState()) ?? ''
 
       if (!realmAdapter) {
         return {}
       }
-
-      const realmInfo = toEnvironmentRealmType(realmAdapter, island)
+      const baseUrl = urlWithProtocol(new URL(realmAdapter.baseUrl).hostname)
 
       return {
-        currentRealm: {
-          domain: realmInfo.domain,
-          room: realmInfo.room,
-          name: realmInfo.serverName,
-          protocol: realmInfo.protocol
+        realmInfo: {
+          baseUrl,
+          realmName: realmAdapter.about.configurations?.realmName ?? '',
+          networkId: realmAdapter.about.configurations?.networkId ?? 1,
+          commsAdapter: realmAdapter.about.comms?.fixedAdapter ?? ''
         }
       }
     }
