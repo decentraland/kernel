@@ -1223,9 +1223,6 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       return
     }
 
-    const ownId = client.getUserId()
-    const friendRequestId = encodeFriendRequestId(ownId, userId)
-
     const incoming = meta.incoming
     const hasSentFriendshipRequest = state.toFriendRequests.some((request) => request.userId === userId)
 
