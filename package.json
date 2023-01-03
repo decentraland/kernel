@@ -67,7 +67,7 @@
     "@dcl/legacy-ecs": "^6.11.8",
     "@dcl/protocol": "https://sdk-team-cdn.decentraland.org/@dcl/protocol/branch//dcl-protocol-1.0.0-3833446623.commit-95e845b.tgz",
     "@dcl/rpc": "^1.1.1",
-    "@dcl/scene-runtime": "^7.0.3-20221223152034.commit-23102ad",
+    "@dcl/scene-runtime": "https://sdk-team-cdn.decentraland.org/@dcl/scene-runtime/branch/feat/runtime-api/dcl-scene-runtime-7.0.3-20230103225832.commit-2c63695.tgz",
     "@dcl/schemas": "^5.29.0",
     "@dcl/urn-resolver": "^2.0.3",
     "@redux-saga/simple-saga-monitor": "^1.1.3",
