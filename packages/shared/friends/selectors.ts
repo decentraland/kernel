@@ -85,9 +85,7 @@ export const getLastStatusOfFriends = (store: RootFriendsState) => store.friends
 export const getOwnId = (store: RootFriendsState) => store.friends.client?.getUserId()
 
 export const getMessageBody = (store: RootFriendsState, friendRequestId: string): string | undefined => {
-  const messageBody = getPendingRequests(store).find(
-    (friend) => friend.friendRequestId === friendRequestId
-  )?.message
+  const messageBody = getPendingRequests(store).find((friend) => friend.friendRequestId === friendRequestId)?.message
 
   return messageBody
 }
