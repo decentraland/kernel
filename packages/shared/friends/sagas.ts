@@ -807,30 +807,26 @@ export async function getFriendRequestsProtocol(request: GetFriendRequestsPayloa
  * Map FriendRequest to FriendRequestInfo
  * @param friend a FriendRequest type we want to map to FriendRequestInfo
  * @param incoming boolean indicating whether a request is an incoming one (requestedFrom) or not (requestedTo)
- *
  */
 function getFriendRequestInfo(friend: FriendRequest, incoming: boolean) {
-  if (incoming) {
-    const ownId = store.getState().friends.client?.getUserId() ?? ''
-    const friendRequest: FriendRequestInfo = {
-      friendRequestId: friend.friendRequestId,
-      timestamp: friend.createdAt,
-      from: friend.userId,
-      to: getUserIdFromMatrix(ownId),
-      messageBody: friend.message
-    }
-    return friendRequest
-  } else {
-    const ownId = store.getState().friends.client?.getUserId() ?? ''
-    const friendRequest: FriendRequestInfo = {
-      friendRequestId: friend.friendRequestId,
-      timestamp: friend.createdAt,
-      from: getUserIdFromMatrix(ownId),
-      to: friend.userId,
-      messageBody: friend.message
-    }
-    return friendRequest
-  }
+  const ownId = store.getState().friends.client?.getUserId() ?? ''
+  const friendRequest: FriendRequestInfo = incoming
+    ? {
+        friendRequestId: friend.friendRequestId,
+        timestamp: friend.createdAt,
+        from: friend.userId,
+        to: getUserIdFromMatrix(ownId),
+        messageBody: friend.message
+      }
+    : {
+        friendRequestId: friend.friendRequestId,
+        timestamp: friend.createdAt,
+        from: getUserIdFromMatrix(ownId),
+        to: friend.userId,
+        messageBody: friend.message
+      }
+
+  return friendRequest
 }
 
 export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPayload) {
@@ -2263,7 +2259,7 @@ export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
     const userId = decodeFriendRequestId(request.friendRequestId, ownId)
 
     // Search in the store for the message body
-    const messageBody = getMessageBody(store.getState(), userId)
+    const messageBody = getMessageBody(store.getState(), request.friendRequestId)
 
     // Update user data
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
@@ -2314,7 +2310,7 @@ export async function rejectFriendRequest(request: RejectFriendRequestPayload) {
     const userId = decodeFriendRequestId(request.friendRequestId, ownId)
 
     // Search in the store for the message body
-    const messageBody = getMessageBody(store.getState(), userId)
+    const messageBody = getMessageBody(store.getState(), request.friendRequestId)
 
     // Update user data
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
@@ -2365,7 +2361,7 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
     const userId = decodeFriendRequestId(request.friendRequestId, ownId)
 
     // Search in the store for the message body
-    const messageBody = getMessageBody(store.getState(), userId)
+    const messageBody = getMessageBody(store.getState(), request.friendRequestId)
 
     // Update user data
     store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))

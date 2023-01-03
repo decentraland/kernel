@@ -1,6 +1,6 @@
 import { Conversation, ConversationType } from 'dcl-social-client'
 import { UpdateTotalFriendRequestsPayload } from 'shared/types'
-import { RootFriendsState } from './types'
+import { FriendRequest, RootFriendsState } from './types'
 import { getUserIdFromMatrix } from './utils'
 
 export const getSocialClient = (store: RootFriendsState) => store.friends.client
@@ -85,9 +85,13 @@ export const getLastStatusOfFriends = (store: RootFriendsState) => store.friends
 export const getOwnId = (store: RootFriendsState) => store.friends.client?.getUserId()
 
 export const getMessageBody = (store: RootFriendsState, friendRequestId: string): string | undefined => {
-  const messageBody = getPrivateMessaging(store).toFriendRequests.find(
+  const messageBody = getPendingRequests(store).find(
     (friend) => friend.friendRequestId === friendRequestId
   )?.message
 
   return messageBody
+}
+
+const getPendingRequests = (store: RootFriendsState): FriendRequest[] => {
+  return store.friends.fromFriendRequests.concat(store.friends.toFriendRequests)
 }
