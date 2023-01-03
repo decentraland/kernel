@@ -105,4 +105,3 @@ export const getNumberOfFriendRequests = (store: RootFriendsState) => store.frie
 
 // Time between friend requests sent in a session (in-memory) per requested user.
 export const getCoolDownOfFriendRequests = (store: RootFriendsState) => store.friends.coolDownOfFriendRequests
-
