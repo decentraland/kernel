@@ -138,9 +138,9 @@ import {
   isNewFriendRequestEnabled,
   decodeFriendRequestId,
   validateFriendRequestId,
-  DEFAULT_MAX_NUMBER_OF_REQUESTS,
   COOLDOWN_TIME_MS,
-  isBlocked
+  isBlocked,
+  getAntiSpamLimits
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -2563,7 +2563,7 @@ function reachedMaxNumberOfRequests(userId: string) {
   const number = sentRequests.get(userId) ?? 0
 
   // Get the maximum number of requests allowed
-  const maxNumber = DEFAULT_MAX_NUMBER_OF_REQUESTS
+  const maxNumber = getAntiSpamLimits(store.getState()).maxNumberRequest
 
   // Check if the current number of requests is less than the maximum allowed
   return number >= maxNumber

@@ -2,7 +2,7 @@ import { getFeatureFlagEnabled, getFeatureFlagVariantValue } from 'shared/meta/s
 import { RootMetaState } from 'shared/meta/types'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { FriendshipAction, UsersAllowed } from 'shared/types'
+import { FriendshipAction, AntiSpamConfig, UsersAllowed } from 'shared/types'
 
 /**
  * Get the local part of the userId from matrixUserId
@@ -172,4 +172,18 @@ export function isBlocked(userId: string) {
 
 export const DEFAULT_MAX_NUMBER_OF_REQUESTS = 5
 
-export const COOLDOWN_TIME_MS = 1000 // 1 second
+export const COOLDOWN_TIME_MS = 10000 // 10 seconds
+
+/**
+ * Returns the anti-spam config, that is, the max number allowed of sent requests to a given user and
+ * the cooldown timer in ms to send a friend request to a given user.
+ */
+export function getAntiSpamLimits(store: RootMetaState): AntiSpamConfig {
+  // Set default config
+  const config: AntiSpamConfig = {
+    maxNumberRequest: DEFAULT_MAX_NUMBER_OF_REQUESTS,
+    cooldownTimeMs: COOLDOWN_TIME_MS
+  }
+
+  return (getFeatureFlagVariantValue(store, 'friend_request_anti_spam_config') as AntiSpamConfig) ?? config
+}

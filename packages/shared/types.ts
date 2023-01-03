@@ -791,45 +791,7 @@ export type UsersAllowed = {
   allowList: string[]
 }
 
-export type FriendRequestPayload = {
-  friendRequestId: string
-  timestamp: number
-  from: string
-  to: string
-  messageBody?: string | undefined
+export type AntiSpamConfig = {
+  maxNumberRequest: number
+  cooldownTimeMs: number
 }
-
-export type FriendshipConfirmationPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  friendRequestId: string
-}
-
-export type FriendshipErrorPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  errorCode: number
-}
-
-export type RequestFriendshipPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  userId: string
-  messageBody: string
-}
-
-export type RequestFriendshipConfirmationPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  friendRequest: FriendRequestPayload
-}
-
-export type RequestFriendshipErrorPayload = FriendshipErrorPayload
-
-export type CancelFriendshipPayload = {
-  messageId: string
-  friendRequestId: string
-}
-
-export type CancelFriendshipConfirmationPayload = {
-  messageId: string // an unique id to handle the renderer <-> kernel communication
-  friendRequest: FriendRequestPayload
-}
-
-export type CancelFriendshipErrorPayload = FriendshipErrorPayload
