@@ -121,7 +121,6 @@ export interface IUnityInterface {
     rotateIfTargetIsNotSet?: boolean
   ): void
 
-  /** Tells the engine which scenes to load */
   SendSceneMessage(messages: string): void
   /** @deprecated send it with the kernelConfigForRenderer instead. */
   SetSceneDebugPanel(): void

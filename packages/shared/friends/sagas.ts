@@ -79,7 +79,8 @@ import {
   getLastStatusOfFriends,
   getChannels,
   getAllFriendsConversationsWithMessages,
-  getOwnId
+  getOwnId,
+  getMessageBody
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -126,7 +127,9 @@ import {
   getNormalizedRoomName,
   getUsersAllowedToCreate,
   encodeFriendRequestId,
-  isNewFriendRequestEnabled
+  isNewFriendRequestEnabled,
+  decodeFriendRequestId,
+  validateFriendRequestId
 } from './utils'
 import { AuthChain } from '@dcl/kernel-interface/dist/dcl-crypto'
 import { mutePlayers, unmutePlayers } from 'shared/social/actions'
@@ -135,13 +138,19 @@ import { OFFLINE_REALM } from 'shared/realm/types'
 import { calculateDisplayName } from 'shared/profiles/transformations/processServerProfile'
 import { uuid } from 'atomicHelpers/math'
 import { NewProfileForRenderer } from 'shared/profiles/transformations/types'
-import { isAddress } from 'eth-connect'
+import { isAddress } from 'eth-connect/eth-connect'
 import { getSelectedNetwork } from 'shared/dao/selectors'
 import { fetchENSOwner } from 'shared/web3'
 import {
   SendFriendRequestPayload,
   GetFriendRequestsReplyOk,
-  SendFriendRequestReplyOk
+  SendFriendRequestReplyOk,
+  CancelFriendRequestPayload,
+  CancelFriendRequestReplyOk,
+  RejectFriendRequestPayload,
+  RejectFriendRequestReplyOk,
+  AcceptFriendRequestPayload,
+  AcceptFriendRequestReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 import future from 'fp-future'
 import {
@@ -2079,7 +2088,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     const ownId = getOwnId(state)
 
     if (!ownId) {
-      return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
     }
 
     // Search user profile on server
@@ -2107,7 +2116,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     if (!found) {
-      return { reply: undefined, error: FriendshipErrorCode.FEC_NON_EXISTING_USER }
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_NON_EXISTING_USER)
     }
 
     // Update user data
@@ -2133,16 +2142,16 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       }
 
       // Return response
-      return { reply: sendFriendRequest, error: undefined }
+      return buildFriendRequestReply(sendFriendRequest)
     } else {
       // Return error
-      return { reply: undefined, error: response.error }
+      return buildFriendRequestErrorResponse(response.error)
     }
   } catch (err) {
     logAndTrackError('Error while sending friend request via rpc', err)
 
     // Return error
-    return { reply: undefined, error: FriendshipErrorCode.FEC_UNKNOWN }
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
   }
 }
 
@@ -2155,6 +2164,159 @@ export async function UpdateFriendshipAsPromise(
   const fut = future<{ userId: string; error: FriendshipErrorCode | null }>()
   store.dispatch(updateFriendship(action, userId.toLowerCase(), incoming, fut, messageBody))
   return fut
+}
+
+export async function cancelFriendRequest(request: CancelFriendRequestPayload) {
+  try {
+    // Get ownId value
+    const ownId = getOwnId(store.getState())
+    if (!ownId) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+    }
+
+    // Validate request
+    const isValid = validateFriendRequestId(request.friendRequestId, ownId)
+    if (!isValid) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+    }
+
+    // Get otherUserId value
+    const userId = decodeFriendRequestId(request.friendRequestId, ownId)
+
+    // Search in the store for the message body
+    const messageBody = getMessageBody(store.getState(), userId)
+
+    // Update user data
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+
+    // Add as friend
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.CANCELED, userId.toLowerCase(), false)
+
+    if (!response.error) {
+      const cancelFriendRequest: CancelFriendRequestReplyOk = {
+        friendRequest: {
+          friendRequestId: request.friendRequestId,
+          timestamp: Date.now(),
+          from: getUserIdFromMatrix(ownId),
+          to: userId,
+          messageBody
+        }
+      }
+
+      // Return response
+      return buildFriendRequestReply(cancelFriendRequest)
+    } else {
+      // Return error
+      return buildFriendRequestErrorResponse(response.error)
+    }
+  } catch (err) {
+    logAndTrackError('Error while canceling friend request via rpc', err)
+
+    // Return error
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+  }
+}
+
+export async function rejectFriendRequest(request: RejectFriendRequestPayload) {
+  try {
+    // Get ownId value
+    const ownId = getOwnId(store.getState())
+    if (!ownId) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+    }
+
+    // Validate request
+    const isValid = validateFriendRequestId(request.friendRequestId, ownId)
+    if (!isValid) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+    }
+
+    // Get otherUserId value
+    const userId = decodeFriendRequestId(request.friendRequestId, ownId)
+
+    // Search in the store for the message body
+    const messageBody = getMessageBody(store.getState(), userId)
+
+    // Update user data
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+
+    // Add as friend
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.REJECTED, userId.toLowerCase(), false)
+
+    if (!response.error) {
+      const rejectFriendRequest: RejectFriendRequestReplyOk = {
+        friendRequest: {
+          friendRequestId: request.friendRequestId,
+          timestamp: Date.now(),
+          from: userId,
+          to: getUserIdFromMatrix(ownId),
+          messageBody
+        }
+      }
+
+      // Return response
+      return buildFriendRequestReply(rejectFriendRequest)
+    } else {
+      // Return error
+      return buildFriendRequestErrorResponse(response.error)
+    }
+  } catch (err) {
+    logAndTrackError('Error while canceling friend request via rpc', err)
+
+    // Return error
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+  }
+}
+
+export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
+  try {
+    // Get ownId value
+    const ownId = getOwnId(store.getState())
+    if (!ownId) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+    }
+
+    // Validate request
+    const isValid = validateFriendRequestId(request.friendRequestId, ownId)
+    if (!isValid) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+    }
+
+    // Get otherUserId value
+    const userId = decodeFriendRequestId(request.friendRequestId, ownId)
+
+    // Search in the store for the message body
+    const messageBody = getMessageBody(store.getState(), userId)
+
+    // Update user data
+    store.dispatch(updateUserData(userId.toLowerCase(), getMatrixIdFromUser(userId)))
+
+    // Add as friend
+    const response = await UpdateFriendshipAsPromise(FriendshipAction.APPROVED, userId.toLowerCase(), false)
+
+    if (!response.error) {
+      const acceptFriendRequest: AcceptFriendRequestReplyOk = {
+        friendRequest: {
+          friendRequestId: request.friendRequestId,
+          timestamp: Date.now(),
+          from: userId,
+          to: getUserIdFromMatrix(ownId),
+          messageBody
+        }
+      }
+
+      // Return response
+      return buildFriendRequestReply(acceptFriendRequest)
+    } else {
+      // Return error
+      return buildFriendRequestErrorResponse(response.error)
+    }
+  } catch (err) {
+    logAndTrackError('Error while accepting friend request via rpc', err)
+
+    // Return error
+    return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
+  }
 }
 
 /**
@@ -2235,4 +2397,20 @@ function getOnlineMembersCount(client: SocialAPI, userIds?: string[]): number {
   if (!userIds) return 0
 
   return getOnlineMembers(userIds, client).length
+}
+
+/**
+ * Build friend requests error message.
+ * @param error - an int representing an error code.
+ */
+function buildFriendRequestErrorResponse(error: FriendshipErrorCode) {
+  return { reply: undefined, error }
+}
+
+/**
+ * Build friend requests success message.
+ * @param reply - a FriendRequestReplyOk kind of type.
+ */
+function buildFriendRequestReply<T>(reply: NonNullable<T>) {
+  return { reply, error: undefined }
 }

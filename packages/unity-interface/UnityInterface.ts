@@ -144,8 +144,6 @@ export class UnityInterface implements IUnityInterface {
     }
   }
 
-  /** Tells the engine which scenes to load */
-
   public SendSceneMessage(messages: string) {
     this.SendMessageToUnity(`SceneController`, `SendSceneMessage`, messages)
   }
