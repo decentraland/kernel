@@ -56,12 +56,7 @@ import {
   GetChannelsPayload,
   ChannelSearchResultsPayload,
   JoinOrCreateChannelPayload,
-  ChannelMember,
-  RequestFriendshipPayload,
-  FriendshipErrorCode,
-  FriendRequestPayload,
-  CancelFriendshipPayload,
-  CancelFriendshipConfirmationPayload
+  ChannelMember
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import {
@@ -170,7 +165,6 @@ import {
 } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 import { ReceiveFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/friend_request_renderer.gen'
 import { getRendererModules } from 'shared/renderer/selectors'
-import { RendererModules } from 'shared/renderer/types'
 import { RendererModules } from 'shared/renderer/types'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
@@ -1443,13 +1437,12 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       }
     }
 
-      // TODO!: remove FF validation once the new flow is the only one
-      // We only send the UpdateFriendshipStatus message when:
-      // + The new friend request flow is disabled
-      // + The new friend request flow is enabled and the action is an incoming/outgoing delete
-      if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
-        getUnityInstance().UpdateFriendshipStatus(payload)
-      }
+    // TODO!: remove FF validation once the new flow is the only one
+    // We only send the UpdateFriendshipStatus message when:
+    // + The new friend request flow is disabled
+    // + The new friend request flow is enabled and the action is an incoming/outgoing delete
+    if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
+      getUnityInstance().UpdateFriendshipStatus(payload)
     }
 
     if (!incoming) {
@@ -2443,17 +2436,6 @@ export async function acceptFriendRequest(request: AcceptFriendRequestPayload) {
     // Return error
     return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
   }
-}
-
-export async function UpdateFriendshipAsPromise(
-  action: FriendshipAction,
-  userId: string,
-  incoming: boolean,
-  messageBody?: string
-): Promise<{ userId: string; error: FriendshipErrorCode | null }> {
-  const fut = future<{ userId: string; error: FriendshipErrorCode | null }>()
-  store.dispatch(updateFriendship(action, userId.toLowerCase(), incoming, fut, messageBody))
-  return fut
 }
 
 /**
