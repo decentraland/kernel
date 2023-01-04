@@ -32,9 +32,7 @@ import {
   GetChannelInfoPayload,
   SetAudioDevicesPayload,
   JoinOrCreateChannelPayload,
-  GetChannelMembersPayload,
-  RequestFriendshipPayload,
-  CancelFriendshipPayload
+  GetChannelMembersPayload
 } from 'shared/types'
 import {
   getSceneWorkerBySceneID,
@@ -754,28 +752,6 @@ export class BrowserInterface {
         stack: '' + error
       })
     }
-  }
-
-  public RequestFriendship(requestFriendshipPayload: RequestFriendshipPayload) {
-    requestFriendship(requestFriendshipPayload).catch((err) => {
-      defaultLogger.error('error requestFriendship', err),
-        trackEvent('error', {
-          message: `error sending friend request ${requestFriendshipPayload.messageId} ` + err.message,
-          context: 'kernel#friendsSaga',
-          stack: 'requestFriendship'
-        })
-    })
-  }
-
-  public CancelFriendship(cancelFriendshipPayload: CancelFriendshipPayload) {
-    cancelFriendship(cancelFriendshipPayload).catch((err) => {
-      defaultLogger.error('error cancelFriendship', err),
-        trackEvent('error', {
-          message: `error canceling friend request ${cancelFriendshipPayload.messageId} ` + err.message,
-          context: 'kernel#friendsSaga',
-          stack: 'cancelFriendshipPayload'
-        })
-    })
   }
 
   public CreateChannel(createChannelPayload: CreateChannelPayload) {
