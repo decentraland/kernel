@@ -45,7 +45,9 @@ export async function fetchCatalystRealms(nodesEndpoint: string | undefined): Pr
   if (nodes.length === 0) {
     throw new Error('no nodes are available in the DAO for the current network')
   }
-  return nodes
+  console.log(`NODES: ${nodes}`)
+  // return nodes
+  return [{ domain: 'https://peer-testing-4.decentraland.org' }]
 }
 
 export async function fetchCatalystStatus(

@@ -176,6 +176,7 @@ async function getRealmFromLocalStorage(network: ETHEREUM_NETWORK) {
 }
 
 function* initializeCatalystCandidates() {
+  console.log('ASDFL;KJSADFLKJASDFLKAJSDFLKAJSDF;LKAJSDF;LKAJSDF;LKASDF')
   yield call(waitForMetaConfigurationInitialization)
   yield put(catalystRealmsScanRequested())
 
@@ -186,6 +187,9 @@ function* initializeCatalystCandidates() {
 
   const denylistedCatalysts: string[] = (yield select(getDisabledCatalystConfig)) ?? []
 
+  console.log(`nodes: ${nodes}`)
+  console.log(`nodes added: ${added}`)
+
   const candidates: Candidate[] = yield call(
     fetchCatalystStatuses,
     added.map((url) => ({ domain: url })).concat(nodes),
@@ -193,6 +197,10 @@ function* initializeCatalystCandidates() {
     ask
   )
 
+  console.log(`candidates nodes: `)
+  candidates.forEach((candidate) => {
+    console.log(`node: ${candidate.domain}`)
+  })
   yield put(setCatalystCandidates(candidates))
 }
 

@@ -273,11 +273,25 @@ export function profileServerRequest(userId: string, version?: number): Promise<
   async function doTheRequest() {
     const bff = await ensureRealmAdapterPromise()
     try {
-      let url = `${bff.services.legacy.lambdasServer}/profiles/${userId}`
-      if (version) url = url + `&version=${version}`
-      else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
+      const url = `http://peer-testing-4.decentraland.org/lambdas/profiles`
+      // if (version) url = url + `&version=${version}`
+      // else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
+      console.log('----------------------------- LLEGA -----------------------------')
 
-      const response = await fetch(url)
+      const response = await fetch(url, {
+        method: 'post',
+        body: JSON.stringify({
+          ids: [
+            '0xE94eFbA60a1EE83242c98Ee94df1b6C26Cc192B4',
+            '0x5e5d9d1dfd87e9b8b069b8e5d708db92be5ade99',
+            '0xA87D168717538e86D71aC48BACcaeb84162DE602',
+            '0x69D30b1875d39E13A01AF73CCFED6d84839e84f2',
+            '0xb7DF441676bf3bDb13ad622ADE983d84f86B0df4',
+            '0x636B2B2B2adD82CEEB9D6dd642638A16948544e6',
+            '0xB39045ad4Ca77F38f479725C711FE37049cdF967'
+          ]
+        })
+      })
 
       if (!response.ok) {
         throw new Error(`Invalid response from ${url}`)
