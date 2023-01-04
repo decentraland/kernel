@@ -100,8 +100,12 @@ const getPendingRequests = (store: RootFriendsState): FriendRequest[] => {
   return store.friends.fromFriendRequests.concat(store.friends.toFriendRequests)
 }
 
-// Number of friend requests sent in a session (in-memory) per requested user.
+/**
+ * Number of friend requests sent in a session (in-memory) per requested user.
+ */
 export const getNumberOfFriendRequests = (store: RootFriendsState) => store.friends.numberOfFriendRequests
 
-// Time between friend requests sent in a session (in-memory) per requested user.
+/**
+ * Time between friend requests sent in a session (in-memory) per requested user.
+ */
 export const getCoolDownOfFriendRequests = (store: RootFriendsState) => store.friends.coolDownOfFriendRequests
