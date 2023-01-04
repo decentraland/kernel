@@ -7,7 +7,8 @@ import {
   GetFriendsPayload,
   GetFriendsWithDirectMessagesPayload,
   GetPrivateMessagesPayload,
-  PresenceStatus
+  PresenceStatus,
+  FriendshipAction
 } from 'shared/types'
 import sinon from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
@@ -80,13 +81,13 @@ const textMessages: TextMessage[] = [
 const friendIds = ['0xa1', '0xb1', '0xc1', '0xd1']
 
 const fromFriendRequest: FriendRequest = {
-  friendRequestId: encodeFriendRequestId('ownId', '0xa1'),
+  friendRequestId: encodeFriendRequestId('ownId', '0xa1', true, FriendshipAction.REQUESTED_FROM),
   userId: '0xa1',
   createdAt: 123123132
 }
 
 const toFriendRequest: FriendRequest = {
-  friendRequestId: encodeFriendRequestId('ownId', '0xa1'),
+  friendRequestId: encodeFriendRequestId('ownId', '0xa1', false, FriendshipAction.REQUESTED_TO),
   userId: '0xa2',
   createdAt: 123123132
 }
