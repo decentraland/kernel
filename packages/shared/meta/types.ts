@@ -42,6 +42,7 @@ export type FeatureFlagsName =
   | 'web_cap_fps' // caps the web client FPS
   | 'disabled-catalyst'
   | 'livekit-voicechat'
+  | 'gif-web'
   | 'ping_enabled'
   | 'use-synapse-server'
   | 'new_tutorial'

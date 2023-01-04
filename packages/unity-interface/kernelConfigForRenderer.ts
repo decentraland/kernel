@@ -1,10 +1,11 @@
 import { KernelConfigForRenderer } from 'shared/types'
-import { getAvatarTextureAPIBaseUrl, commConfigurations } from 'config'
+import { getAvatarTextureAPIBaseUrl, commConfigurations, WSS_ENABLED } from 'config'
 import { nameValidCharacterRegex, nameValidRegex } from 'shared/profiles/utils/names'
 import { getWorld } from '@dcl/schemas'
 import { injectVersions } from 'shared/rolloutVersions'
 import { store } from 'shared/store/isolatedStore'
 import { getSelectedNetwork } from 'shared/dao/selectors'
+import { isGifWebSupported } from 'shared/meta/selectors'
 
 export function kernelConfigForRenderer(): KernelConfigForRenderer {
   const versions = injectVersions({})
@@ -27,7 +28,11 @@ export function kernelConfigForRenderer(): KernelConfigForRenderer {
       nameValidRegex: nameValidRegex.toString().replace(/[/]/g, '')
     },
     debugConfig: undefined,
-    gifSupported: false,
+    gifSupported:
+      typeof (window as any).OffscreenCanvas !== 'undefined' &&
+      typeof (window as any).OffscreenCanvasRenderingContext2D === 'function' &&
+      !WSS_ENABLED &&
+      isGifWebSupported(globalState),
     network,
     validWorldRanges: getWorld().validWorldRanges,
     kernelVersion: versions['@dcl/kernel'] || 'unknown-kernel-version',
