@@ -76,6 +76,9 @@ export const findPrivateMessagingFriendsByUserId = (store: RootFriendsState, use
 
 export const isFriend = (store: RootFriendsState, userId: string) => store.friends.friends.includes(userId)
 
+/**
+ * Return true if the friend request has already been sent (toFriendRequests). Otherwise, false.
+ */
 export const isPendingRequest = (store: RootFriendsState, userId: string) => {
   return store.friends.toFriendRequests.filter((request) => request.userId === userId).length > 0
 }
@@ -90,6 +93,9 @@ export const getMessageBody = (store: RootFriendsState, friendRequestId: string)
   return messageBody
 }
 
+/**
+ * Get all sent and received pending requests.
+ */
 const getPendingRequests = (store: RootFriendsState): FriendRequest[] => {
   return store.friends.fromFriendRequests.concat(store.friends.toFriendRequests)
 }
