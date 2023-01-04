@@ -1435,16 +1435,15 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
       } else {
         yield call(handleOutgoingUpdateFriendshipStatus, payload)
       }
-    }
 
-    // TODO!: remove FF validation once the new flow is the only one
-    // We only send the UpdateFriendshipStatus message when:
-    // + The new friend request flow is disabled
-    // + The new friend request flow is enabled and the action is an incoming/outgoing delete
-    if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
-      getUnityInstance().UpdateFriendshipStatus(payload)
+      // TODO!: remove FF validation once the new flow is the only one
+      // We only send the UpdateFriendshipStatus message when:
+      // + The new friend request flow is disabled
+      // + The new friend request flow is enabled and the action is an incoming/outgoing delete
+      if (!newFriendRequestFlow || (newFriendRequestFlow && action === FriendshipAction.DELETED)) {
+        getUnityInstance().UpdateFriendshipStatus(payload)
+      }
     }
-
     if (!incoming) {
       // refresh self & renderer friends status if update was triggered by renderer
       yield call(refreshFriends)
@@ -2186,7 +2185,6 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     const ownId = getOwnId(state)
 
     if (!ownId) {
-      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_UNKNOWN)
     }
 
