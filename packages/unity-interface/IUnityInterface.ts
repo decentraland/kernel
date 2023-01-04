@@ -35,12 +35,7 @@ import {
   ChannelInfoPayloads,
   UpdateChannelMembersPayload,
   ChannelSearchResultsPayload,
-  SetAudioDevicesPayload,
-  RequestFriendshipConfirmationPayload,
-  RequestFriendshipErrorPayload,
-  FriendRequestPayload,
-  CancelFriendshipErrorPayload,
-  CancelFriendshipConfirmationPayload
+  SetAudioDevicesPayload
 } from '../shared/types'
 import { FeatureFlag } from 'shared/meta/types'
 import { IFuture } from 'fp-future'
@@ -198,11 +193,6 @@ export interface IUnityInterface {
   AddFriendsWithDirectMessages(addFriendsWithDirectMessagesPayload: AddFriendsWithDirectMessagesPayload): void
   UpdateTotalFriendRequests(updateTotalFriendRequestsPayload: UpdateTotalFriendRequestsPayload): void
   UpdateTotalFriends(updateTotalFriendsPayload: UpdateTotalFriendsPayload): void
-  RequestFriendshipConfirmation(requestFriendshipConfirmationPayload: RequestFriendshipConfirmationPayload): void
-  CancelFriendshipConfirmation(cancelFriendshipConfirmationPayload: CancelFriendshipConfirmationPayload): void
-  RequestFriendshipError(requestFriendshipErrorPayload: RequestFriendshipErrorPayload): void
-  CancelFriendshipError(cancelFriendshipErrorPayload: CancelFriendshipErrorPayload): void
-  AddFriendRequest(friendRequestPayload: FriendRequestPayload): void
 
   // *********************************************************************************
   // ************** Channels **************
