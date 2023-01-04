@@ -1444,6 +1444,7 @@ function* handleUpdateFriendship({ payload, meta }: UpdateFriendship) {
         getUnityInstance().UpdateFriendshipStatus(payload)
       }
     }
+
     if (!incoming) {
       // refresh self & renderer friends status if update was triggered by renderer
       yield call(refreshFriends)
