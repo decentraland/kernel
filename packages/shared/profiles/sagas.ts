@@ -274,7 +274,7 @@ export function profileServerRequest(userId: string, version?: number): Promise<
     const bff = await ensureRealmAdapterPromise()
     try {
       // let url = `${bff.services.legacy.lambdasServer}/profiles/${userId}`
-      let url = `${bff.services.legacy.lambdasServer}/profiles/`
+      let url = `${bff.services.legacy.lambdasServer}/profiles`
       // const url = `http://peer-testing-4.decentraland.org/lambdas/profiles`
       if (version) url = url + `&version=${version}`
       else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
