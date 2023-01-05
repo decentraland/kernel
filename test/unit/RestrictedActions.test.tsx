@@ -128,7 +128,6 @@ describe('RestrictedActions tests', () => {
       scenePort: null as any,
       permissionGranted: new Set(permissions),
       subscribedEvents: new Set(),
-      __hack_sentInitialEventToUnity: false,
       events: [],
       sendProtoSceneEvent() {
         throw new Error('not implemented')

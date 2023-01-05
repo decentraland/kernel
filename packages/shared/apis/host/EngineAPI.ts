@@ -114,12 +114,6 @@ export function registerEngineApiServiceServerImplementation(port: RpcServerPort
             payload: req.data
           })
 
-          if (!ctx.__hack_sentInitialEventToUnity) {
-            // https://github.com/decentraland/sdk/issues/474
-            ctx.sendBatch([{ type: 'InitMessagesFinished', payload: '' }])
-            ctx.__hack_sentInitialEventToUnity = true
-          }
-
           return { data: [ret.payload] }
         },
 

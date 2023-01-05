@@ -159,7 +159,6 @@ export class SceneWorker {
 
     this.rpcContext = {
       sdk7: IS_SDK7,
-      __hack_sentInitialEventToUnity: false,
       scenePort,
       rpcSceneControllerService,
       sceneData: {
