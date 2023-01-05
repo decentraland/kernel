@@ -10,7 +10,7 @@ import {
   PresenceStatus,
   FriendshipAction
 } from 'shared/types'
-import sinon from 'sinon'
+import sinon, { assert } from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import { setMatrixClient } from 'shared/friends/actions'
 import * as friendsSelectors from 'shared/friends/selectors'
@@ -36,8 +36,16 @@ import { StoreEnhancer } from 'redux'
 import { reducers } from 'shared/store/rootReducer'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 import { encodeFriendRequestId } from 'shared/friends/utils'
+import {
+  FriendRequestInfo,
+  FriendshipErrorCode
+} from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
+import {
+  CancelFriendRequestPayload,
+  GetFriendRequestsReplyOk
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
-function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
+function getMockedAvatar(userId: string, name: string, blocked: string[]): ProfileUserInfo {
   return {
     data: {
       avatar: {
@@ -52,6 +60,7 @@ function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
       description: '',
       ethAddress: userId,
       hasClaimedName: false,
+      blocked,
       name,
       tutorialStep: 1,
       userId,
@@ -107,13 +116,17 @@ const lastStatusOfFriendsEntries = [
   ]
 ] as const
 
+// const numberOfFriendRequestsEntries = [ ['0xc1', 9] ] as const
+
 const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
 
+// const numberOfFriendRequests = new Map<string, number>(numberOfFriendRequestsEntries)
+
 const profilesFromStore = [
-  getMockedAvatar('0xa1', 'john'),
-  getMockedAvatar('0xa2', 'mike'),
-  getMockedAvatar('0xc1', 'agus'),
-  getMockedAvatar('0xd1', 'boris')
+  getMockedAvatar('0xa1', 'john', []),
+  getMockedAvatar('0xa2', 'mike', []),
+  getMockedAvatar('0xc1', 'agus', []),
+  getMockedAvatar('0xd1', 'boris', [])
 ]
 
 const getMockedConversation = (userIds: string[]): Conversation => ({
@@ -156,7 +169,8 @@ const stubClient = {
     return m
   },
   getDomain: () => 'decentraland.org',
-  setStatus: () => Promise.resolve()
+  setStatus: () => Promise.resolve(),
+  getMessageBody: () => undefined
 } as unknown as SocialAPI
 
 const friendsFromStore: FriendsState = {
@@ -173,8 +187,8 @@ const friendsFromStore: FriendsState = {
 const FETCH_CONTENT_SERVER = 'base-url'
 
 function mockStoreCalls(
-  opts?: { profiles: number[]; i: number },
-  fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>
+  fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>,
+  fakenumberOfFriendRequests?: Map<string, number>
 ): StoreEnhancer<any, RootState> {
   // here we list all the functions that should be invoked by this tests
   setUnityInstance({
@@ -208,7 +222,8 @@ function mockStoreCalls(
       },
       friends: {
         ...friendsFromStore,
-        lastStatusOfFriends: fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends
+        lastStatusOfFriends: fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends,
+        numberOfFriendRequests: fakenumberOfFriendRequests || friendsFromStore.numberOfFriendRequests
       },
       sceneLoader: {
         ...$.sceneLoader,
@@ -226,7 +241,7 @@ function mockStoreCalls(
 describe('Friends sagas', () => {
   sinon.mock()
 
-  describe('get friends', () => {
+  describe('Get friends', () => {
     beforeEach(() => {
       const { store } = buildStore(mockStoreCalls())
       globalThis.globalStore = store
@@ -309,19 +324,14 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('get friend requests', () => {
-    const opts = {
-      profiles: [2, 0],
-      i: 0
-    }
-
+  // @TODO! @deprecated
+  describe('Get friend requests', () => {
     beforeEach(() => {
-      const { store } = buildStore(mockStoreCalls(opts))
+      const { store } = buildStore(mockStoreCalls())
       globalThis.globalStore = store
     })
 
     afterEach(() => {
-      opts.i = +1
       sinon.restore()
       sinon.reset()
     })
@@ -386,7 +396,54 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('getFriendsWithDirectMessages', () => {
+  describe('Get friend requests via protocol', () => {
+    beforeEach(() => {
+      const { store } = buildStore(mockStoreCalls())
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    describe("When there're sent and received friend requests and there is no exception", () => {
+      it('Should return an undefined error and GetFriendRequestsReplyOk reply', async () => {
+        const request: GetFriendRequestsPayload = {
+          sentLimit: 10,
+          sentSkip: 0,
+          receivedLimit: 10,
+          receivedSkip: 0
+        }
+
+        const friendRequests: GetFriendRequestsReplyOk = {
+          requestedTo: friendsFromStore.toFriendRequests.map((friend) => getFriendRequestInfo(friend, false)),
+          requestedFrom: friendsFromStore.fromFriendRequests.map((friend) => getFriendRequestInfo(friend, true)),
+          totalReceivedFriendRequests: friendsFromStore.fromFriendRequests.length,
+          totalSentFriendRequests: friendsFromStore.toFriendRequests.length
+        }
+
+        const expectedResponse = {
+          reply: friendRequests,
+          error: undefined
+        }
+
+        const expectedFriends: AddUserProfilesToCatalogPayload = {
+          users: [
+            profileToRendererFormat(profilesFromStore[0].data, { baseUrl: FETCH_CONTENT_SERVER }),
+            profileToRendererFormat(profilesFromStore[1].data, { baseUrl: FETCH_CONTENT_SERVER })
+          ]
+        }
+
+        sinon.mock(getUnityInstance()).expects('AddUserProfilesToCatalog').once().calledWithMatch(expectedFriends)
+        const response = await friendsSagas.getFriendRequestsProtocol(request)
+        assert.match(response, expectedResponse)
+        sinon.mock(getUnityInstance()).verify()
+      })
+    })
+  })
+
+  describe('Get friends with direct messages', () => {
     describe("when there's a client", () => {
       beforeEach(() => {
         const { store } = buildStore(mockStoreCalls())
@@ -432,7 +489,7 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('get private messages from specific chat', () => {
+  describe('Get Private messages from specific chat', () => {
     describe('When a private chat is opened', () => {
       beforeEach(() => {
         const { store } = buildStore()
@@ -472,15 +529,15 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('update friends status', () => {
+  describe('Update friends status', () => {
     afterEach(() => {
       sinon.restore()
       sinon.reset()
     })
 
-    it("should send status when it's not stored in the redux state yet", async () => {
+    it("Should send status when it's not stored in the redux state yet", async () => {
       // restore statuses
-      const { store } = buildStore(mockStoreCalls(undefined, new Map()))
+      const { store } = buildStore(mockStoreCalls(new Map()))
       globalThis.globalStore = store
 
       const unityMock = sinon.mock(getUnityInstance())
@@ -502,8 +559,8 @@ describe('Friends sagas', () => {
       unityMock.verify()
     })
 
-    it("should send status when it's stored but the new one is different", async () => {
-      const { store } = buildStore(mockStoreCalls(undefined, lastStatusOfFriends))
+    it("Should send status when it's stored but the new one is different", async () => {
+      const { store } = buildStore(mockStoreCalls(lastStatusOfFriends))
       globalThis.globalStore = store
 
       const client: SocialAPI = {
@@ -541,8 +598,8 @@ describe('Friends sagas', () => {
       unityMock.verify()
     })
 
-    it("should not send status when it's equal to the last sent", async () => {
-      const { store } = buildStore(mockStoreCalls(undefined, lastStatusOfFriends))
+    it("Should not send status when it's equal to the last sent", async () => {
+      const { store } = buildStore(mockStoreCalls(lastStatusOfFriends))
       globalThis.globalStore = store
 
       const unityMock = sinon.mock(getUnityInstance())
@@ -559,4 +616,116 @@ describe('Friends sagas', () => {
       unityMock.verify()
     })
   })
+
+  describe('Cancel friend requests via protocol', () => {
+    beforeEach(() => {
+      const { store } = buildStore(mockStoreCalls())
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    describe('When a user cancels a sent friend request, but the ownId is not part of the friendRequestId.', () => {
+      it('Should return FEC_INVALID_REQUEST error', async () => {
+        const request: CancelFriendRequestPayload = {
+          friendRequestId: `not_matching_userId`
+        }
+
+        const expectedResponse = {
+          reply: undefined,
+          error: FriendshipErrorCode.FEC_INVALID_REQUEST
+        }
+
+        const response = await friendsSagas.cancelFriendRequest(request)
+        assert.match(response, expectedResponse)
+        sinon.mock(getUnityInstance()).verify()
+      })
+    })
+  })
+  //
+  //  describe.only('Anti-spam validations', () => {
+  //    beforeEach(() => {
+  //      const { store } = buildStore(mockStoreCalls(undefined, numberOfFriendRequests))
+  //      globalThis.globalStore = store
+  //    })
+  //
+  //    afterEach(() => {
+  //      sinon.restore()
+  //      sinon.reset()
+  //    })
+  //
+  //    describe.only('When the user has reached the max number of sent requests', () => {
+  //      it('Should return true', async () => {
+  //        const request: SendFriendRequestPayload = {
+  //          userId: '0xc9',
+  //          messageBody: 'undefined'
+  //        }
+  //
+  //        const expectedResponse = {
+  //          reply: undefined,
+  //          error: FriendshipErrorCode.FEC_TOO_MANY_REQUESTS_SENT
+  //        }
+  //
+  //        const response = friendsSagas.requestFriendship(request)
+  //
+  //        assert.match(response, expectedResponse)
+  //      })
+  //    })
+  //
+  //    describe('When the user has not sent a friend request to that user yet', () => {
+  //      it('Should return false', () => {
+  //        const expectedResponse = true
+  //
+  //        const response = hasRemainingCooldown('0xc1')
+  //
+  //        assert.match(response, expectedResponse)
+  //      })
+  //    })
+  //
+  //    describe('When there is a remaining cooldown time and it has not expired yet', () => {
+  //      it('Should return true', () => {
+  //        const expectedResponse = true
+  //
+  //        const response = reachedMaxNumberOfRequests('0xc1')
+  //
+  //        assert.match(response, expectedResponse)
+  //      })
+  //    })
+  //
+  //    describe('When there is remaining cooldown time but it has expired', () => {
+  //      it('Should return false', () => {
+  //        const expectedResponse = true
+  //
+  //        const response = reachedMaxNumberOfRequests('0xc1')
+  //
+  //        assert.match(response, expectedResponse)
+  //      })
+  //    })
+  //  })
 })
+
+/**
+ * Helper func to map FriendRequest to FriendRequestInfo
+ */
+function getFriendRequestInfo(friend: FriendRequest, incoming: boolean) {
+  const friendRequest: FriendRequestInfo = incoming
+    ? {
+        friendRequestId: friend.friendRequestId,
+        timestamp: friend.createdAt,
+        from: friend.userId,
+        to: stubClient.getUserId(),
+        messageBody: friend.message
+      }
+    : {
+        friendRequestId: friend.friendRequestId,
+        timestamp: friend.createdAt,
+        from: stubClient.getUserId(),
+        to: friend.userId,
+        messageBody: friend.message
+      }
+
+  return friendRequest
+}
