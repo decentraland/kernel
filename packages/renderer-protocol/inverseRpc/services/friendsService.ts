@@ -22,7 +22,7 @@ export function registerFriendsKernelService(port: RpcServerPort<RendererProtoco
 }
 
 /**
- * Abstract the flow of request handling of friend requests.
+ * Abstract the flow of request handling of friends kernel service.
  * @param handler - a function that takes in a request object and returns a Promise of a ResponseType object.
  * @param req - a request object.
  */
