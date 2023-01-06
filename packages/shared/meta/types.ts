@@ -31,6 +31,7 @@ export type FeatureFlagsName =
   | 'max_joined_channels' // the max amount of joined channels allowed per user
   | 'users_allowed_to_create_channels' // users who are allowed to create channels
   | 'new_friend_requests' // enables the new friends request flow
+  | 'friend_request_anti_spam_config' // json with anti-spam config values
   | 'avatar_lods'
   | 'asset_bundles'
   | 'explorev2'

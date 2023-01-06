@@ -1,7 +1,8 @@
 import { getFeatureFlagEnabled, getFeatureFlagVariantValue } from 'shared/meta/selectors'
 import { RootMetaState } from 'shared/meta/types'
+import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { store } from 'shared/store/isolatedStore'
-import { FriendshipAction, UsersAllowed } from 'shared/types'
+import { FriendshipAction, AntiSpamConfig, UsersAllowed } from 'shared/types'
 
 /**
  * Get the local part of the userId from matrixUserId
@@ -28,7 +29,7 @@ export function getUserIdFromMatrix(userId: string) {
  * to: '@0x1111ada11111:decentraland.org'
  *
  * @example
- * from: @0x1111ada11111:decentraland.org'
+ * from: '@0x1111ada11111:decentraland.org'
  * to: '@0x1111ada11111:decentraland.org'
  * */
 export function getMatrixIdFromUser(userId: string) {
@@ -154,4 +155,35 @@ export function validateFriendRequestId(friendRequestId: string, ownId: string) 
   ownId = getUserIdFromMatrix(ownId)
 
   return friendRequestId.includes(ownId)
+}
+
+/**
+ * Check whether a user is blocked by the current user
+ * @param userId - the ID of the user to check
+ * @returns true if the user is blocked, false otherwise
+ */
+export function isBlocked(userId: string) {
+  // Get the user's profile
+  const profile = getCurrentUserProfile(store.getState())
+
+  // Check whether the user is blocked
+  return profile?.blocked?.includes(userId) ?? false
+}
+
+export const DEFAULT_MAX_NUMBER_OF_REQUESTS = 5
+
+export const COOLDOWN_TIME_MS = 10000 // 10 seconds
+
+/**
+ * Returns the anti-spam config, that is, the max number allowed of sent requests to a given user and
+ * the cooldown timer in ms to send a friend request to a given user.
+ */
+export function getAntiSpamLimits(store: RootMetaState): AntiSpamConfig {
+  // Set default config
+  const config: AntiSpamConfig = {
+    maxNumberRequest: DEFAULT_MAX_NUMBER_OF_REQUESTS,
+    cooldownTimeMs: COOLDOWN_TIME_MS
+  }
+
+  return (getFeatureFlagVariantValue(store, 'friend_request_anti_spam_config') as AntiSpamConfig) ?? config
 }
