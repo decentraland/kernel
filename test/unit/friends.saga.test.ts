@@ -578,7 +578,7 @@ describe('Friends sagas', () => {
     describe('When the given user id is not a friend and it is not a pending request', () => {
       it('Should return FriendshipStatus.NONE', () => {
         const request: GetFriendshipStatusRequest = {
-          userId: 'some_user_id' // 0xa1
+          userId: 'some_user_id'
         }
 
         const expectedResponse = FriendshipStatus.NONE
