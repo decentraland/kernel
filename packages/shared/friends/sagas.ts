@@ -81,9 +81,10 @@ import {
   getAllFriendsConversationsWithMessages,
   getOwnId,
   getMessageBody,
-  isPendingRequest,
+  isToPendingRequest,
   getNumberOfFriendRequests,
-  getCoolDownOfFriendRequests
+  getCoolDownOfFriendRequests,
+  isFromPendingRequest
 } from 'shared/friends/selectors'
 import { USER_AUTHENTIFIED } from 'shared/session/actions'
 import { SEND_PRIVATE_MESSAGE, SendPrivateMessage } from 'shared/chat/actions'
@@ -166,6 +167,10 @@ import {
 import { ReceiveFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/renderer_services/friend_request_renderer.gen'
 import { getRendererModules } from 'shared/renderer/selectors'
 import { RendererModules } from 'shared/renderer/types'
+import {
+  FriendshipStatus,
+  GetFriendshipStatusRequest
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friends_kernel.gen'
 
 const logger = DEBUG_KERNEL_LOG ? createLogger('chat: ') : createDummyLogger()
 
@@ -727,6 +732,17 @@ export async function getFriends(request: GetFriendsPayload) {
 
   const friendsSocialIds = friendIdsToReturn.map(getMatrixIdFromUser)
   updateUserStatus(client, ...friendsSocialIds)
+}
+
+export function getFriendshipStatus(request: GetFriendshipStatusRequest) {
+  const userId = getUserIdFromMatrix(request.userId)
+  const state = store.getState()
+
+  // Check user status
+  if (isFriend(state, userId)) return FriendshipStatus.APPROVED
+  if (isToPendingRequest(state, userId)) return FriendshipStatus.REQUESTED_TO
+  if (isFromPendingRequest(state, userId)) return FriendshipStatus.REQUESTED_FROM
+  return FriendshipStatus.NONE
 }
 
 // @TODO! @deprecated
@@ -2218,7 +2234,7 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
     }
 
     // Check if the users are already friends or if a friend request has already been sent.
-    if (isFriend(store.getState(), userId) || isPendingRequest(store.getState(), userId)) {
+    if (isFriend(store.getState(), userId) || isToPendingRequest(store.getState(), userId)) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
     }
 
