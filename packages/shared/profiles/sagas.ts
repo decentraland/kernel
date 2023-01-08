@@ -275,7 +275,7 @@ export function profileServerRequest(userId: string, version?: number): Promise<
     try {
       let url = `${bff.services.legacy.lambdasServer}/profiles/${userId}`
       if (version) url = url + `&version=${version}`
-      else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
+      //else if (!userId.startsWith('default')) url = url + `&no-cache=${Math.random()}`
 
       const response = await fetch(url)
 
