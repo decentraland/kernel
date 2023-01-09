@@ -575,37 +575,43 @@ describe('Friends sagas', () => {
       sinon.reset()
     })
 
-    it('Should return FriendshipStatus.NONE, when the given user id is not a friend and it is not a pending request', () => {
-      const request: GetFriendshipStatusRequest = {
-        userId: 'some_user_id'
-      }
+    context('When the given user id is not a friend and it is not a pending request', () => {
+      it('Should return FriendshipStatus.NONE', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: 'some_user_id'
+        }
 
-      const expectedResponse = FriendshipStatus.NONE
+        const expectedResponse = FriendshipStatus.NONE
 
-      const response = friendsSagas.getFriendshipStatus(request)
-      assert.match(response, expectedResponse)
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
     })
 
-    it('Should return FriendshipStatus.APPROVED, when the given user id is a friend', () => {
-      const request: GetFriendshipStatusRequest = {
-        userId: '0xa1'
-      }
+    context('When the given user id is a friend', () => {
+      it('Should return FriendshipStatus.APPROVED', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: '0xa1'
+        }
 
-      const expectedResponse = FriendshipStatus.APPROVED
+        const expectedResponse = FriendshipStatus.APPROVED
 
-      const response = friendsSagas.getFriendshipStatus(request)
-      assert.match(response, expectedResponse)
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
     })
 
-    it('Should return FriendshipStatus.REQUESTED_TO, when the given user id is a to pending request', () => {
-      const request: GetFriendshipStatusRequest = {
-        userId: '0xa2'
-      }
+    context('When the given user id is a to pending request', () => {
+      it('Should return FriendshipStatus.REQUESTED_TO', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: '0xa2'
+        }
 
-      const expectedResponse = FriendshipStatus.REQUESTED_TO
+        const expectedResponse = FriendshipStatus.REQUESTED_TO
 
-      const response = friendsSagas.getFriendshipStatus(request)
-      assert.match(response, expectedResponse)
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
     })
   })
 })
