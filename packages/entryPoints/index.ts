@@ -129,7 +129,7 @@ globalThis.DecentralandKernel = {
         store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
       } else {
         // 3. fallback to 0,0
-        const { x, y } = { x: -116, y: 105 } // '0,0'
+        const { x, y } = { x: 0, y: 0 } // '0,0'
         store.dispatch(teleportToAction({ position: gridToWorld(x, y) }))
       }
 
