@@ -735,7 +735,8 @@ export async function getFriends(request: GetFriendsPayload) {
 }
 
 export function getFriendshipStatus(request: GetFriendshipStatusRequest) {
-  const userId = getUserIdFromMatrix(request.userId)
+  // The userId is expected to always come from Renderer and follow the pattern `0x1111ada11111`
+  const userId = request.userId
   const state = store.getState()
 
   // Check user status
