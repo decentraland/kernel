@@ -65,7 +65,7 @@
     "@dcl/hashing": "^1.1.2",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
     "@dcl/legacy-ecs": "^6.11.8",
-    "@dcl/protocol": "https://sdk-team-cdn.decentraland.org/@dcl/protocol/branch//dcl-protocol-1.0.0-3858115792.commit-2b92c76.tgz",
+    "@dcl/protocol": "^1.0.0-3874844989.commit-d6daab3",
     "@dcl/rpc": "^1.1.1",
     "@dcl/scene-runtime": "^7.0.3-20221223152034.commit-23102ad",
     "@dcl/schemas": "^5.29.0",
