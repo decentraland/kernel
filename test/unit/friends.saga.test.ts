@@ -44,6 +44,10 @@ import {
   CancelFriendRequestPayload,
   GetFriendRequestsReplyOk
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
+import {
+  FriendshipStatus,
+  GetFriendshipStatusRequest
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friends_kernel.gen'
 
 function getMockedAvatar(userId: string, name: string, blocked: string[]): ProfileUserInfo {
   return {
@@ -705,6 +709,57 @@ describe('Friends sagas', () => {
   //      })
   //    })
   //  })
+
+  describe('Get Friendship Status', () => {
+    beforeEach(() => {
+      const { store } = buildStore(mockStoreCalls())
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    context('When the given user id is not a friend and it is not a pending request', () => {
+      it('Should return FriendshipStatus.NONE', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: 'some_user_id'
+        }
+
+        const expectedResponse = FriendshipStatus.NONE
+
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+
+    context('When the given user id is a friend', () => {
+      it('Should return FriendshipStatus.APPROVED', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: '0xa1'
+        }
+
+        const expectedResponse = FriendshipStatus.APPROVED
+
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+
+    context('When the given user id is a to pending request', () => {
+      it('Should return FriendshipStatus.REQUESTED_TO', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: '0xa2'
+        }
+
+        const expectedResponse = FriendshipStatus.REQUESTED_TO
+
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+  })
 })
 
 /**
