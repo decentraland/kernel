@@ -765,3 +765,8 @@ export type UsersAllowed = {
   mode: number
   allowList: string[]
 }
+
+export type AntiSpamConfig = {
+  maxNumberRequest: number
+  cooldownTimeMs: number
+}
