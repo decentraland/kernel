@@ -618,7 +618,7 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe.only('Send friend request via protocol', () => {
+  describe('Send friend request via protocol', () => {
     beforeEach(() => {
       const { store } = buildStore(mockStoreCalls())
       globalThis.globalStore = store
