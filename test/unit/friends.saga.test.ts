@@ -106,9 +106,14 @@ const toFriendRequest: FriendRequest = {
   createdAt: 123123132
 }
 
-const numberOfFriendRequestsEntries = [['0xd9', 20]] as const
-
+const numberOfFriendRequestsEntries = [
+  ['0xd9', 11],
+  ['0xd7', 1]
+] as const
 const numberOfFriendRequests: Map<string, number> = new Map(numberOfFriendRequestsEntries)
+
+const coolDownOfFriendRequestsEntries = [['0xd7', Date.now() + 10000]] as const
+const coolDownOfFriendRequests: Map<string, number> = new Map(coolDownOfFriendRequestsEntries)
 
 const lastStatusOfFriendsEntries = [
   [
@@ -124,15 +129,15 @@ const lastStatusOfFriendsEntries = [
     }
   ]
 ] as const
-
 const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
 
 const profilesFromStore = [
-  getMockedAvatar('0xa1', 'john'),
-  getMockedAvatar('0xa2', 'mike'),
-  getMockedAvatar('0xc1', 'agus'),
-  getMockedAvatar('0xd1', 'boris'),
-  getMockedAvatar('0xd9', 'juli')
+  getMockedAvatar('0xa1', 'john'), // It's friend and it's pending request (we should check this)
+  getMockedAvatar('0xa2', 'mike'), // We use this one as getOwnId / getUserId
+  getMockedAvatar('0xc1', 'agus'), // It's friend
+  getMockedAvatar('0xd1', 'boris'), // It's friend
+  getMockedAvatar('0xd9', 'juli'), // It's friend and it's not pending
+  getMockedAvatar('0xd7', 'martha') // It's friend and it's not pending
 ]
 
 const getMockedConversation = (userIds: string[]): Conversation => ({
@@ -195,7 +200,8 @@ const FETCH_CONTENT_SERVER = 'base-url'
 
 function mockStoreCalls(
   fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>,
-  fakeNumberOfFriendRequests?: Map<string, number>
+  fakeNumberOfFriendRequests?: Map<string, number>,
+  fakeCoolDownOfFriendRequests?: Map<string, number>
 ): StoreEnhancer<any, RootState> {
   // here we list all the functions that should be invoked by this tests
   setUnityInstance({
@@ -230,7 +236,8 @@ function mockStoreCalls(
       friends: {
         ...friendsFromStore,
         lastStatusOfFriends: fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends,
-        numberOfFriendRequests: fakeNumberOfFriendRequests || friendsFromStore.numberOfFriendRequests
+        numberOfFriendRequests: fakeNumberOfFriendRequests || friendsFromStore.numberOfFriendRequests,
+        coolDownOfFriendRequests: fakeCoolDownOfFriendRequests || friendsFromStore.coolDownOfFriendRequests
       },
       sceneLoader: {
         ...$.sceneLoader,
@@ -677,7 +684,7 @@ describe('Friends sagas', () => {
 
   describe('Send friend request via protocol', () => {
     beforeEach(() => {
-      const { store } = buildStore(mockStoreCalls(undefined, numberOfFriendRequests))
+      const { store } = buildStore(mockStoreCalls(undefined, numberOfFriendRequests, coolDownOfFriendRequests))
       globalThis.globalStore = store
     })
 
@@ -720,25 +727,39 @@ describe('Friends sagas', () => {
       })
     })
 
-    context(
-      'When the user sends a friend request to a user, but it has reached the max number of sent requests',
-      () => {
-        it('Should return FriendshipStatus.FEC_TOO_MANY_REQUESTS_SENT', async () => {
-          const request: SendFriendRequestPayload = {
-            userId: '0xd9',
-            messageBody: 'u r so cool'
-          }
+    context('When the user sends a friend request to a user, but it`s reached the max number of sent requests', () => {
+      it('Should return FriendshipStatus.FEC_TOO_MANY_REQUESTS_SENT', async () => {
+        const request: SendFriendRequestPayload = {
+          userId: '0xd9',
+          messageBody: 'u r so cool'
+        }
 
-          const expectedResponse = {
-            reply: undefined,
-            error: FriendshipErrorCode.FEC_TOO_MANY_REQUESTS_SENT
-          }
+        const expectedResponse = {
+          reply: undefined,
+          error: FriendshipErrorCode.FEC_TOO_MANY_REQUESTS_SENT
+        }
 
-          const response = await friendsSagas.requestFriendship(request)
-          assert.match(response, expectedResponse)
-        })
-      }
-    )
+        const response = await friendsSagas.requestFriendship(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+
+    context('When the user sends a friend request to a user, but it is spamming', () => {
+      it('Should return FriendshipStatus.FEC_NOT_ENOUGH_TIME_PASSED', async () => {
+        const request: SendFriendRequestPayload = {
+          userId: '0xd7',
+          messageBody: 'u r so cool'
+        }
+
+        const expectedResponse = {
+          reply: undefined,
+          error: FriendshipErrorCode.FEC_NOT_ENOUGH_TIME_PASSED
+        }
+
+        const response = await friendsSagas.requestFriendship(request)
+        assert.match(response, expectedResponse)
+      })
+    })
   })
 
   describe('Cancel friend requests via protocol', () => {
