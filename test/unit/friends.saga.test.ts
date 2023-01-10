@@ -48,6 +48,7 @@ import {
   FriendshipStatus,
   GetFriendshipStatusRequest
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friends_kernel.gen'
+import { SendFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
 function getMockedAvatar(userId: string, name: string, blocked: string[]): ProfileUserInfo {
   return {
@@ -174,6 +175,7 @@ const stubClient = {
   },
   getDomain: () => 'decentraland.org',
   setStatus: () => Promise.resolve(),
+  getOwnId: () => '0xa2',
   getMessageBody: () => undefined
 } as unknown as SocialAPI
 
@@ -621,96 +623,8 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('Cancel friend requests via protocol', () => {
-    beforeEach(() => {
-      const { store } = buildStore(mockStoreCalls())
-      globalThis.globalStore = store
-    })
 
-    afterEach(() => {
-      sinon.restore()
-      sinon.reset()
-    })
-
-    describe('When a user cancels a sent friend request, but the ownId is not part of the friendRequestId.', () => {
-      it('Should return FEC_INVALID_REQUEST error', async () => {
-        const request: CancelFriendRequestPayload = {
-          friendRequestId: `not_matching_userId`
-        }
-
-        const expectedResponse = {
-          reply: undefined,
-          error: FriendshipErrorCode.FEC_INVALID_REQUEST
-        }
-
-        const response = await friendsSagas.cancelFriendRequest(request)
-        assert.match(response, expectedResponse)
-        sinon.mock(getUnityInstance()).verify()
-      })
-    })
-  })
-  //
-  //  describe.only('Anti-spam validations', () => {
-  //    beforeEach(() => {
-  //      const { store } = buildStore(mockStoreCalls(undefined, numberOfFriendRequests))
-  //      globalThis.globalStore = store
-  //    })
-  //
-  //    afterEach(() => {
-  //      sinon.restore()
-  //      sinon.reset()
-  //    })
-  //
-  //    describe.only('When the user has reached the max number of sent requests', () => {
-  //      it('Should return true', async () => {
-  //        const request: SendFriendRequestPayload = {
-  //          userId: '0xc9',
-  //          messageBody: 'undefined'
-  //        }
-  //
-  //        const expectedResponse = {
-  //          reply: undefined,
-  //          error: FriendshipErrorCode.FEC_TOO_MANY_REQUESTS_SENT
-  //        }
-  //
-  //        const response = friendsSagas.requestFriendship(request)
-  //
-  //        assert.match(response, expectedResponse)
-  //      })
-  //    })
-  //
-  //    describe('When the user has not sent a friend request to that user yet', () => {
-  //      it('Should return false', () => {
-  //        const expectedResponse = true
-  //
-  //        const response = hasRemainingCooldown('0xc1')
-  //
-  //        assert.match(response, expectedResponse)
-  //      })
-  //    })
-  //
-  //    describe('When there is a remaining cooldown time and it has not expired yet', () => {
-  //      it('Should return true', () => {
-  //        const expectedResponse = true
-  //
-  //        const response = reachedMaxNumberOfRequests('0xc1')
-  //
-  //        assert.match(response, expectedResponse)
-  //      })
-  //    })
-  //
-  //    describe('When there is remaining cooldown time but it has expired', () => {
-  //      it('Should return false', () => {
-  //        const expectedResponse = true
-  //
-  //        const response = reachedMaxNumberOfRequests('0xc1')
-  //
-  //        assert.match(response, expectedResponse)
-  //      })
-  //    })
-  //  })
-
-  describe('Get Friendship Status', () => {
+  describe('Get friendship status', () => {
     beforeEach(() => {
       const { store } = buildStore(mockStoreCalls())
       globalThis.globalStore = store
@@ -757,6 +671,64 @@ describe('Friends sagas', () => {
 
         const response = friendsSagas.getFriendshipStatus(request)
         assert.match(response, expectedResponse)
+      })
+    })
+  })
+
+  describe('Send friend request via protocol', () => {
+    beforeEach(() => {
+      const { store } = buildStore(mockStoreCalls())
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    context('When the user tries to send a friend request to themself', () => {
+      it('Should return FriendshipStatus.FEC_INVALID_REQUEST', async () => {
+        const request: SendFriendRequestPayload = {
+          userId: '0xa2',
+          messageBody: 'u r so cool'
+        }
+
+        const expectedResponse = {
+          reply: undefined,
+          error: FriendshipErrorCode.FEC_INVALID_REQUEST
+        }
+
+        const response = await friendsSagas.requestFriendship(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+  })
+
+  describe('Cancel friend requests via protocol', () => {
+    beforeEach(() => {
+      const { store } = buildStore(mockStoreCalls())
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    describe('When a user cancels a sent friend request, but the ownId is not part of the friendRequestId.', () => {
+      it('Should return FEC_INVALID_REQUEST error', async () => {
+        const request: CancelFriendRequestPayload = {
+          friendRequestId: `not_matching_userId`
+        }
+
+        const expectedResponse = {
+          reply: undefined,
+          error: FriendshipErrorCode.FEC_INVALID_REQUEST
+        }
+
+        const response = await friendsSagas.cancelFriendRequest(request)
+        assert.match(response, expectedResponse)
+        sinon.mock(getUnityInstance()).verify()
       })
     })
   })
