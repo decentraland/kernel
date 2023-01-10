@@ -56,7 +56,8 @@ import {
   GetChannelsPayload,
   ChannelSearchResultsPayload,
   JoinOrCreateChannelPayload,
-  ChannelMember
+  ChannelMember,
+  FriendshipStatusOld
 } from 'shared/types'
 import { waitForRendererInstance } from 'shared/renderer/sagas-helper'
 import {
@@ -1046,6 +1047,17 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
 
   if (!userId) return
 
+  const state = store.getState()
+  const parsedUserId = getUserIdFromMatrix(userId)
+  let friendshipStatus = FriendshipStatusOld.NOT_FRIEND
+  if (isFriend(state, parsedUserId)) {
+    friendshipStatus = FriendshipStatusOld.FRIEND
+  } else if (isToPendingRequest(state, parsedUserId)) {
+    friendshipStatus = FriendshipStatusOld.REQUESTED_TO
+  } else if (isFromPendingRequest(state, parsedUserId)) {
+    friendshipStatus = FriendshipStatusOld.REQUESTED_FROM
+  }
+
   // treat 'unavailable' status as 'online'
   const isOnline = isPeerAvatarAvailable(userId) || status.presence !== PresenceType.OFFLINE
 
@@ -1053,7 +1065,8 @@ function sendUpdateUserStatus(id: string, status: CurrentUserStatus) {
     userId,
     realm: status.realm,
     position: status.position,
-    presence: isOnline ? PresenceStatus.ONLINE : PresenceStatus.OFFLINE
+    presence: isOnline ? PresenceStatus.ONLINE : PresenceStatus.OFFLINE,
+    friendshipStatus
   }
 
   getUnityInstance().UpdateUserPresence(updateMessage)

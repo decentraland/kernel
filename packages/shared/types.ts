@@ -529,11 +529,19 @@ type Realm = {
   serverName: string
 }
 
+export enum FriendshipStatusOld {
+  NOT_FRIEND,
+  FRIEND,
+  REQUESTED_FROM,
+  REQUESTED_TO
+}
+
 export type UpdateUserStatusMessage = {
   userId: string
   realm: Realm | undefined
   position: Vector2Component | undefined
   presence: PresenceStatus
+  friendshipStatus: FriendshipStatusOld
 }
 
 export interface AddFriendsPayload {
