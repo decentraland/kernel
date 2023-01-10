@@ -40,6 +40,8 @@ import {
   FriendshipStatus,
   GetFriendshipStatusRequest
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friends_kernel.gen'
+import { SendFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
+import { FriendshipErrorCode } from '@dcl/protocol/out-ts/decentraland/renderer/common/friend_request_common.gen'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -160,7 +162,8 @@ const stubClient = {
     return m
   },
   getDomain: () => 'decentraland.org',
-  setStatus: () => Promise.resolve()
+  setStatus: () => Promise.resolve(),
+  getOwnId: () => '0xa2'
 } as unknown as SocialAPI
 
 const friendsFromStore: FriendsState = {
@@ -564,7 +567,7 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('Get Friendship Status', () => {
+  describe('Get friendship status', () => {
     beforeEach(() => {
       const { store } = buildStore(mockStoreCalls())
       globalThis.globalStore = store
@@ -610,6 +613,35 @@ describe('Friends sagas', () => {
         const expectedResponse = FriendshipStatus.REQUESTED_TO
 
         const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+  })
+
+  describe('Send friend request via protocol', () => {
+    beforeEach(() => {
+      const { store } = buildStore(mockStoreCalls())
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    context('When the user tries to send a friend request to themself', () => {
+      it('Should return FriendshipStatus.FEC_INVALID_REQUEST', async () => {
+        const request: SendFriendRequestPayload = {
+          userId: '0xa2',
+          messageBody: 'u r so cool'
+        }
+
+        const expectedResponse = {
+          reply: undefined,
+          error: FriendshipErrorCode.FEC_INVALID_REQUEST
+        }
+
+        const response = await friendsSagas.requestFriendship(request)
         assert.match(response, expectedResponse)
       })
     })

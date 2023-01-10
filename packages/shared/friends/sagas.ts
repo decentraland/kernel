@@ -2234,6 +2234,11 @@ export async function requestFriendship(request: SendFriendRequestPayload) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_NON_EXISTING_USER)
     }
 
+    // Check if the user is trying to send a friend request to themself
+    if (getUserIdFromMatrix(ownId) === userId) {
+      return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
+    }
+
     // Check if the users are already friends or if a friend request has already been sent.
     if (isFriend(store.getState(), userId) || isToPendingRequest(store.getState(), userId)) {
       return buildFriendRequestErrorResponse(FriendshipErrorCode.FEC_INVALID_REQUEST)
