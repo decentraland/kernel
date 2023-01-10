@@ -10,7 +10,7 @@ import {
   PresenceStatus,
   FriendshipAction
 } from 'shared/types'
-import sinon from 'sinon'
+import sinon, { assert } from 'sinon'
 import * as friendsSagas from '../../packages/shared/friends/sagas'
 import { setMatrixClient } from 'shared/friends/actions'
 import * as friendsSelectors from 'shared/friends/selectors'
@@ -36,6 +36,10 @@ import { StoreEnhancer } from 'redux'
 import { reducers } from 'shared/store/rootReducer'
 import { getParcelPosition } from 'shared/scene-loader/selectors'
 import { encodeFriendRequestId } from 'shared/friends/utils'
+import {
+  FriendshipStatus,
+  GetFriendshipStatusRequest
+} from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friends_kernel.gen'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -165,7 +169,9 @@ const friendsFromStore: FriendsState = {
   friends: friendIds,
   fromFriendRequests: [fromFriendRequest],
   toFriendRequests: [toFriendRequest],
-  lastStatusOfFriends: new Map()
+  lastStatusOfFriends: new Map(),
+  numberOfFriendRequests: new Map(),
+  coolDownOfFriendRequests: new Map()
 }
 
 const FETCH_CONTENT_SERVER = 'base-url'
@@ -555,6 +561,57 @@ describe('Friends sagas', () => {
         .dispatch(setMatrixClient(stubClient))
         .silentRun()
       unityMock.verify()
+    })
+  })
+
+  describe('Get Friendship Status', () => {
+    beforeEach(() => {
+      const { store } = buildStore(mockStoreCalls())
+      globalThis.globalStore = store
+    })
+
+    afterEach(() => {
+      sinon.restore()
+      sinon.reset()
+    })
+
+    context('When the given user id is not a friend and it is not a pending request', () => {
+      it('Should return FriendshipStatus.NONE', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: 'some_user_id'
+        }
+
+        const expectedResponse = FriendshipStatus.NONE
+
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+
+    context('When the given user id is a friend', () => {
+      it('Should return FriendshipStatus.APPROVED', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: '0xa1'
+        }
+
+        const expectedResponse = FriendshipStatus.APPROVED
+
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+
+    context('When the given user id is a to pending request', () => {
+      it('Should return FriendshipStatus.REQUESTED_TO', () => {
+        const request: GetFriendshipStatusRequest = {
+          userId: '0xa2'
+        }
+
+        const expectedResponse = FriendshipStatus.REQUESTED_TO
+
+        const response = friendsSagas.getFriendshipStatus(request)
+        assert.match(response, expectedResponse)
+      })
     })
   })
 })
