@@ -49,6 +49,7 @@ import {
   GetFriendshipStatusRequest
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friends_kernel.gen'
 import { SendFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
+import { store } from 'shared/store/isolatedStore'
 
 function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
@@ -105,6 +106,10 @@ const toFriendRequest: FriendRequest = {
   createdAt: 123123132
 }
 
+const numberOfFriendRequestsEntries = [['0xd9', 20]] as const
+
+const numberOfFriendRequests: Map<string, number> = new Map(numberOfFriendRequestsEntries)
+
 const lastStatusOfFriendsEntries = [
   [
     '@0xa1:decentraland.org',
@@ -126,7 +131,8 @@ const profilesFromStore = [
   getMockedAvatar('0xa1', 'john'),
   getMockedAvatar('0xa2', 'mike'),
   getMockedAvatar('0xc1', 'agus'),
-  getMockedAvatar('0xd1', 'boris')
+  getMockedAvatar('0xd1', 'boris'),
+  getMockedAvatar('0xd9', 'juli')
 ]
 
 const getMockedConversation = (userIds: string[]): Conversation => ({
@@ -171,9 +177,7 @@ const stubClient = {
   getDomain: () => 'decentraland.org',
   setStatus: () => Promise.resolve(),
   getOwnId: () => '0xa2',
-  getMessageBody: () => undefined,
-  updateUserData: () => {},
-  UpdateFriendshipAsPromise: () => Promise.resolve()
+  getMessageBody: () => undefined
 } as unknown as SocialAPI
 
 const friendsFromStore: FriendsState = {
@@ -191,7 +195,7 @@ const FETCH_CONTENT_SERVER = 'base-url'
 
 function mockStoreCalls(
   fakeLastStatusOfFriends?: Map<string, CurrentUserStatus>,
-  fakenumberOfFriendRequests?: Map<string, number>
+  fakeNumberOfFriendRequests?: Map<string, number>
 ): StoreEnhancer<any, RootState> {
   // here we list all the functions that should be invoked by this tests
   setUnityInstance({
@@ -226,7 +230,7 @@ function mockStoreCalls(
       friends: {
         ...friendsFromStore,
         lastStatusOfFriends: fakeLastStatusOfFriends || friendsFromStore.lastStatusOfFriends,
-        numberOfFriendRequests: fakenumberOfFriendRequests || friendsFromStore.numberOfFriendRequests
+        numberOfFriendRequests: fakeNumberOfFriendRequests || friendsFromStore.numberOfFriendRequests
       },
       sceneLoader: {
         ...$.sceneLoader,
@@ -492,7 +496,7 @@ describe('Friends sagas', () => {
     })
   })
 
-  describe('Get Private messages from specific chat', () => {
+  describe('Get private messages from specific chat', () => {
     describe('When a private chat is opened', () => {
       beforeEach(() => {
         const { store } = buildStore()
@@ -673,7 +677,7 @@ describe('Friends sagas', () => {
 
   describe('Send friend request via protocol', () => {
     beforeEach(() => {
-      const { store } = buildStore(mockStoreCalls())
+      const { store } = buildStore(mockStoreCalls(undefined, numberOfFriendRequests))
       globalThis.globalStore = store
     })
 
@@ -685,7 +689,7 @@ describe('Friends sagas', () => {
     context('When the user tries to send a friend request to themself', () => {
       it('Should return FriendshipStatus.FEC_INVALID_REQUEST', async () => {
         const request: SendFriendRequestPayload = {
-          userId: '0xa2',
+          userId: friendsSelectors.getOwnId(store.getState())!,
           messageBody: 'u r so cool'
         }
 
@@ -698,6 +702,43 @@ describe('Friends sagas', () => {
         assert.match(response, expectedResponse)
       })
     })
+
+    context('When the user sends a friend request to a user who is a friend already', () => {
+      it('Should return FriendshipStatus.FEC_INVALID_REQUEST', async () => {
+        const request: SendFriendRequestPayload = {
+          userId: friendIds[0],
+          messageBody: 'u r so cool'
+        }
+
+        const expectedResponse = {
+          reply: undefined,
+          error: FriendshipErrorCode.FEC_INVALID_REQUEST
+        }
+
+        const response = await friendsSagas.requestFriendship(request)
+        assert.match(response, expectedResponse)
+      })
+    })
+
+    context(
+      'When the user sends a friend request to a user, but it has reached the max number of sent requests',
+      () => {
+        it('Should return FriendshipStatus.FEC_TOO_MANY_REQUESTS_SENT', async () => {
+          const request: SendFriendRequestPayload = {
+            userId: '0xd9',
+            messageBody: 'u r so cool'
+          }
+
+          const expectedResponse = {
+            reply: undefined,
+            error: FriendshipErrorCode.FEC_TOO_MANY_REQUESTS_SENT
+          }
+
+          const response = await friendsSagas.requestFriendship(request)
+          assert.match(response, expectedResponse)
+        })
+      }
+    )
   })
 
   describe('Cancel friend requests via protocol', () => {
@@ -724,7 +765,6 @@ describe('Friends sagas', () => {
 
         const response = await friendsSagas.cancelFriendRequest(request)
         assert.match(response, expectedResponse)
-        sinon.mock(getUnityInstance()).verify()
       })
     })
   })
