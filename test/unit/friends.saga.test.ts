@@ -50,7 +50,7 @@ import {
 } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friends_kernel.gen'
 import { SendFriendRequestPayload } from '@dcl/protocol/out-ts/decentraland/renderer/kernel_services/friend_request_kernel.gen'
 
-function getMockedAvatar(userId: string, name: string, blocked: string[]): ProfileUserInfo {
+function getMockedAvatar(userId: string, name: string): ProfileUserInfo {
   return {
     data: {
       avatar: {
@@ -65,7 +65,6 @@ function getMockedAvatar(userId: string, name: string, blocked: string[]): Profi
       description: '',
       ethAddress: userId,
       hasClaimedName: false,
-      blocked,
       name,
       tutorialStep: 1,
       userId,
@@ -121,17 +120,13 @@ const lastStatusOfFriendsEntries = [
   ]
 ] as const
 
-// const numberOfFriendRequestsEntries = [ ['0xc1', 9] ] as const
-
 const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
 
-// const numberOfFriendRequests = new Map<string, number>(numberOfFriendRequestsEntries)
-
 const profilesFromStore = [
-  getMockedAvatar('0xa1', 'john', []),
-  getMockedAvatar('0xa2', 'mike', []),
-  getMockedAvatar('0xc1', 'agus', []),
-  getMockedAvatar('0xd1', 'boris', [])
+  getMockedAvatar('0xa1', 'john'),
+  getMockedAvatar('0xa2', 'mike'),
+  getMockedAvatar('0xc1', 'agus'),
+  getMockedAvatar('0xd1', 'boris')
 ]
 
 const getMockedConversation = (userIds: string[]): Conversation => ({
@@ -176,7 +171,9 @@ const stubClient = {
   getDomain: () => 'decentraland.org',
   setStatus: () => Promise.resolve(),
   getOwnId: () => '0xa2',
-  getMessageBody: () => undefined
+  getMessageBody: () => undefined,
+  updateUserData: () => {},
+  UpdateFriendshipAsPromise: () => Promise.resolve()
 } as unknown as SocialAPI
 
 const friendsFromStore: FriendsState = {
@@ -623,7 +620,6 @@ describe('Friends sagas', () => {
     })
   })
 
-
   describe('Get friendship status', () => {
     beforeEach(() => {
       const { store } = buildStore(mockStoreCalls())
@@ -715,7 +711,7 @@ describe('Friends sagas', () => {
       sinon.reset()
     })
 
-    describe('When a user cancels a sent friend request, but the ownId is not part of the friendRequestId.', () => {
+    context('When a user cancels a sent friend request, but the ownId is not part of the friendRequestId.', () => {
       it('Should return FEC_INVALID_REQUEST error', async () => {
         const request: CancelFriendRequestPayload = {
           friendRequestId: `not_matching_userId`
