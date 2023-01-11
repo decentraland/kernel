@@ -96,13 +96,13 @@ const friendIds = ['0xa1', '0xb1', '0xc1', '0xd1']
 
 const fromFriendRequest: FriendRequest = {
   friendRequestId: encodeFriendRequestId('ownId', '0xa1', true, FriendshipAction.REQUESTED_FROM),
-  userId: '0xa1',
+  userId: '0xz1',
   createdAt: 123123132
 }
 
 const toFriendRequest: FriendRequest = {
   friendRequestId: encodeFriendRequestId('ownId', '0xa1', false, FriendshipAction.REQUESTED_TO),
-  userId: '0xa2',
+  userId: '0xz2',
   createdAt: 123123132
 }
 
@@ -132,12 +132,12 @@ const lastStatusOfFriendsEntries = [
 const lastStatusOfFriends = new Map<string, CurrentUserStatus>(lastStatusOfFriendsEntries)
 
 const profilesFromStore = [
-  getMockedAvatar('0xa1', 'john'), // It's friend and it's pending request (we should check this)
+  getMockedAvatar('0xa1', 'john'), // It's friend
   getMockedAvatar('0xa2', 'mike'), // We use this one as getOwnId / getUserId
   getMockedAvatar('0xc1', 'agus'), // It's friend
   getMockedAvatar('0xd1', 'boris'), // It's friend
-  getMockedAvatar('0xd9', 'juli'), // It's friend and it's not pending
-  getMockedAvatar('0xd7', 'martha') // It's friend and it's not pending
+  getMockedAvatar('0xd9', 'juli'), // It's not friend and it's not pending
+  getMockedAvatar('0xd7', 'martha') // It's not friend and it's not pending
 ]
 
 const getMockedConversation = (userIds: string[]): Conversation => ({
@@ -671,7 +671,7 @@ describe('Friends sagas', () => {
     context('When the given user id is a to pending request', () => {
       it('Should return FriendshipStatus.REQUESTED_TO', () => {
         const request: GetFriendshipStatusRequest = {
-          userId: '0xa2'
+          userId: '0xz2'
         }
 
         const expectedResponse = FriendshipStatus.REQUESTED_TO
