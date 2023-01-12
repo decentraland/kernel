@@ -657,8 +657,13 @@ function* refreshFriends() {
   }
 }
 
-function getFriendIds(client: SocialAPI): string[] {
-  const friends: string[] = client.getAllFriends()
+async function getFriendIds(client: SocialAPI): Promise<string[]> {
+  let friends: string[]
+  if (getFeatureFlagEnabled(store.getState(), 'use-synapse-server')) {
+    friends = client.getAllFriends()
+  } else {
+    friends = await client.getAllFriendsAddresses()
+  }
 
   return friends.map(($) => parseUserId($)).filter(Boolean) as string[]
 }
