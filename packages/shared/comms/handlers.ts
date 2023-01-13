@@ -162,6 +162,9 @@ function processProfileUpdatedMessage(message: Package<proto.AnnounceProfileVers
 
     // remove duplicates
     ;[_, changed] = ensureTrackingUniqueAndLatest(peerTrackingInfo)
+    if (!changed) {
+      return
+    }
 
     const profileVersion = +message.data.profileVersion
 
