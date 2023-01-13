@@ -24,10 +24,11 @@ export function rendererReducer(state?: RendererState, action?: AnyAction): Rend
         initialized: true
       }
     case REGISTER_RPC_PORT:
+      const { payload } = action as RegisterRendererPort
       return {
         ...state,
-        clientPort: (action as RegisterRendererPort).payload.rendererInterfacePort,
-        rpcClient: (action as RegisterRendererPort).payload.rpcClient
+        clientPort: payload.rendererInterfacePort,
+        rpcClient: payload.rpcClient
       }
     case PARCEL_LOADING_STARTED:
       return {
