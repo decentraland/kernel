@@ -18,6 +18,10 @@ import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms
 const peerMap = new Map<string, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
+avatarMessageObservable.subscribe((data) => {
+  console.log(`[avatarMessageObservable] ${JSON.stringify(data)}`)
+})
+
 export function getAllPeers() {
   return new Map(peerMap)
 }
@@ -185,11 +189,13 @@ export function removeAllPeers() {
  */
 export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   let currentPeer = peer
+  let changed = false
 
   peerMap.forEach((info, address) => {
     if (info.ethereumAddress === currentPeer.ethereumAddress && address !== peer.ethereumAddress) {
       if (info.lastProfileVersion < currentPeer.lastProfileVersion) {
         removePeerByAddress(address)
+        changed = true
       } else if (info.lastProfileVersion > currentPeer.lastProfileVersion) {
         removePeerByAddress(currentPeer.ethereumAddress)
 
@@ -201,7 +207,7 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
     }
   })
 
-  return currentPeer
+  return [currentPeer, changed]
 }
 
 export function processAvatarVisibility(maxVisiblePeers: number, myAddress: string | undefined) {
