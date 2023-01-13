@@ -420,6 +420,7 @@ export class UnityInterface implements IUnityInterface {
   }
 
   public AddFriends(addFriendsPayload: AddFriendsPayload): void {
+    console.log('JULI Unity Instance addFriends:', JSON.stringify(addFriendsPayload))
     this.SendMessageToUnity('Main', 'AddFriends', JSON.stringify(addFriendsPayload))
   }
 
