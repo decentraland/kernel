@@ -699,11 +699,15 @@ export async function getFriends(request: GetFriendsPayload) {
   const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(realmAdapter)
   const friendsIds: string[] = getPrivateMessagingFriends(store.getState())
 
+  console.log('JULI getFriends request: ', JSON.stringify(request))
+
   const filteredFriends: Array<ProfileUserInfo> = getProfilesFromStore(
     store.getState(),
     friendsIds,
     request.userNameOrId
   )
+
+  console.log('JULI getFriends profiles: ', JSON.stringify(filteredFriends))
 
   const friendsToReturn = filteredFriends.slice(request.skip, request.skip + request.limit)
 
@@ -720,6 +724,8 @@ export async function getFriends(request: GetFriendsPayload) {
     friends: friendIdsToReturn,
     totalFriends: friendsIds.length
   }
+
+  console.log('JULI getFriends add friends: ', JSON.stringify(addFriendsPayload))
 
   getUnityInstance().AddFriends(addFriendsPayload)
 

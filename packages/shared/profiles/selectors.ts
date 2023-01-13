@@ -26,6 +26,7 @@ export const getProfilesFromStore = (
   userNameOrId?: string
 ): Array<ProfileUserInfo> => {
   const profiles = userIds.map((userId) => getProfileFromStore(store, userId))
+  console.log('JULI getProfilesFromStore profiles: ', JSON.stringify(profiles))
   return filterProfilesByUserNameOrId(profiles, userNameOrId)
 }
 
@@ -77,6 +78,11 @@ export const isAddedToCatalog = (store: RootProfileState, userId: string): boole
     (info) => !!info.addedToCatalog,
     () => false
   )
+
+export const getAddedToCatalog = (store: RootProfileState, userId: string) => {
+  const prof: ProfileUserInfo | undefined = store.profiles.userInfo[userId.toLowerCase()]
+  return prof?.status === 'ok' || prof?.status === 'loading' ? prof : undefined
+}
 
 export const getEthereumAddress = (store: RootProfileState, userId: string): string | undefined =>
   getProfileValueIfOkOrLoading(
