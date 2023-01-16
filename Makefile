@@ -12,7 +12,7 @@ CWD = $(shell pwd)
 SOURCE_SUPPORT_TS_FILES := $(wildcard scripts/*.ts)
 COMPILED_SUPPORT_JS_FILES := $(subst .ts,.js,$(SOURCE_SUPPORT_TS_FILES))
 
-EMPTY_SCENES := public/empty-scenes/xmas
+EMPTY_SCENES := public/empty-scenes/common
 
 scripts/%.js: $(SOURCE_SUPPORT_TS_FILES) scripts/tsconfig.json
 	@node_modules/.bin/tsc --build scripts/tsconfig.json
@@ -21,7 +21,7 @@ static/default-profile/contents:
 	@node ./static/default-profile/download_all.js
 
 empty-parcels:
-	cd public/empty-scenes/xmas && (node generate_all.js || true)
+	cd public/empty-scenes/common && (node generate_all.js || true)
 	mkdir -p static/loader/empty-scenes || true
 	rm -rf static/loader/empty-scenes/*
 	cp $(EMPTY_SCENES)/mappings.json static/loader/empty-scenes/mappings.json
