@@ -29,7 +29,7 @@ export function registerEnvironmentApiServiceServerImplementation(
       return {
         id: ctx.sceneData.id,
         baseUrl: ctx.sceneData.baseUrl,
-        useFPSThrottling: ctx.sceneData.useFPSThrottling,
+        useFPSThrottling: ctx.sceneData.useFPSThrottling ?? false,
         entity: {
           content: ctx.sceneData.entity.content,
           metadataJson: JSON.stringify(ctx.sceneData.entity.metadata)

@@ -49,10 +49,11 @@ import { VoiceHandler } from 'shared/voiceChat/VoiceHandler'
 import { getVoiceHandler } from 'shared/voiceChat/selectors'
 import { SceneWorker } from 'shared/world/SceneWorker'
 import { getSceneWorkerBySceneID } from 'shared/world/parcelSceneManager'
-import { RpcClientPort, Transport } from '@dcl/rpc'
+import { RpcClient, RpcClientPort, Transport } from '@dcl/rpc'
 import { createRendererRpcClient } from 'renderer-protocol/rpcClient'
 import { registerEmotesService } from 'renderer-protocol/services/emotesService'
 import { createRpcTransportService } from 'renderer-protocol/services/transportService'
+import { registerFriendRequestRendererService } from 'renderer-protocol/services/friendRequestService'
 
 export function* rendererSaga() {
   yield takeEvery(SEND_PROFILE_TO_RENDERER, handleSubmitProfileToRenderer)
@@ -83,7 +84,8 @@ function* handleRegisterRpcPort() {
 
   if (createRpcTransportService(port)) {
     const modules: RendererModules = {
-      emotes: registerEmotesService(port)
+      emotes: registerEmotesService(port),
+      friendRequest: registerFriendRequestRendererService(port)
     }
 
     yield put(registerRendererModules(modules))
@@ -221,8 +223,11 @@ function* initializeRenderer(action: InitializeRenderer) {
     trackEvent('renderer_initializing_start', {})
 
     // register the RPC port
-    const rpcClientPort: RpcClientPort = yield call(createRendererRpcClient, transport)
-    yield put(registerRendererPort(rpcClientPort))
+    const rpcHandles: {
+      rpcClient: RpcClient
+      rendererInterfacePort: RpcClientPort
+    } = yield call(createRendererRpcClient, transport)
+    yield put(registerRendererPort(rpcHandles.rpcClient, rpcHandles.rendererInterfacePort))
 
     // wire the kernel to the renderer, at some point, the `initializeEngine`
     // function _MUST_ send the `signalRendererInitializedCorrectly` action

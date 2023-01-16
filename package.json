@@ -79,7 +79,7 @@
     "dcl-catalyst-client": "^13.0.15",
     "dcl-quests-client": "^2.10.0",
     "dcl-scene-writer": "^1.1.2",
-    "dcl-social-client": "^1.21.0",
+    "dcl-social-client": "1.21.0",
     "decentraland-ecs": "^6.0.4",
     "devtools-protocol": "0.0.615714",
     "estrella": "^1.4.1",
