@@ -108,14 +108,14 @@ export function getFeatureFlagEnabled(store: RootMetaState, featureName: Feature
  */
 export function getFeatureFlagVariantName(store: RootMetaState, featureName: FeatureFlagsName): string {
   const ff = getFeatureFlags(store)
-  if(getFeatureFlagEnabled(store, featureName)) {
+  if (getFeatureFlagEnabled(store, featureName)) {
     const variant = ff.variants[featureName]
     if (variant && variant.enabled) {
       return variant.name
     }
-    return 'undefined';
+    return 'undefined'
   }
-  return 'undefined';
+  return 'undefined'
 }
 
 export function getFeatureFlags(store: RootMetaState): FeatureFlag {
