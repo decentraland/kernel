@@ -6,7 +6,6 @@ import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } fro
 import {
   HUDConfiguration,
   InstancedSpawnPoint,
-  LoadableParcelScene,
   Notification,
   ChatMessage,
   HUDElementID,
@@ -143,25 +142,6 @@ export class UnityInterface implements IUnityInterface {
     if (cameraTarget || rotateIfTargetIsNotSet) {
       this.SendMessageToUnity('CameraController', 'SetRotation', JSON.stringify({ x, y: theY, z, cameraTarget }))
     }
-  }
-
-  /** Tells the engine which scenes to load */
-
-  public LoadParcelScenes(parcelsToLoad: LoadableParcelScene[]) {
-    if (parcelsToLoad.length > 1) {
-      throw new Error('Only one scene at a time!')
-    }
-
-    this.SendMessageToUnity('Main', 'LoadParcelScenes', JSON.stringify(parcelsToLoad[0]))
-  }
-
-  /** @deprecated */
-  public UnloadScene(sceneId: string) {
-    this.SendMessageToUnity('Main', 'UnloadScene', sceneId)
-  }
-
-  public UnloadSceneV2(sceneNumber: number) {
-    this.SendMessageToUnity('Main', 'UnloadSceneV2', JSON.stringify(sceneNumber))
   }
 
   public SendSceneMessage(messages: string) {
