@@ -10,9 +10,10 @@ import {
   SendProfileToRenderer,
   addedProfileToCatalog,
   SEND_PROFILE_TO_RENDERER,
-  sendProfileToRenderer
+  sendProfileToRenderer,
+  addProfileToLastSentProfileStatuses
 } from 'shared/profiles/actions'
-import { getProfileFromStore } from 'shared/profiles/selectors'
+import { getLastSentProfileStatuses, getProfileFromStore } from 'shared/profiles/selectors'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { isCurrentUserId, getCurrentIdentity, getCurrentUserId } from 'shared/session/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -295,11 +296,19 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
       getUnityInstance().LoadProfile(forRenderer)
     }
   } else {
+    const lastSentStatuses: Map<string, NewProfileForRenderer> = yield select(getLastSentProfileStatuses)
+    const lastSentProfileStatus = lastSentStatuses[userId]
+
     const forRenderer = profileToRendererFormat(profile.data, {
       baseUrl: fetchContentServerWithPrefix
     })
-    getUnityInstance().AddUserProfileToCatalog(forRenderer)
-    yield put(addedProfileToCatalog(userId, profile.data))
+
+    // Add deep equal check before submitting profile to renderer
+    if (!lastSentProfileStatus || !deepEqual(lastSentProfileStatus, forRenderer)) {
+      getUnityInstance().AddUserProfileToCatalog(forRenderer)
+      yield put(addedProfileToCatalog(userId, profile.data))
+      yield put(addProfileToLastSentProfileStatuses(userId, forRenderer))
+    }
 
     // send to Avatars scene
     receivePeerUserData(profile.data, fetchContentServerWithPrefix)

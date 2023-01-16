@@ -1,4 +1,5 @@
 import { Avatar } from '@dcl/schemas'
+import { NewProfileForRenderer } from './transformations/types'
 
 export const REMOTE_AVATAR_IS_INVALID = `Remote avatar for profile is invalid`
 
@@ -10,6 +11,7 @@ export type ProfileState = {
   userInfo: {
     [key: string]: ProfileUserInfo
   }
+  lastSentProfileStatuses: Map<string, NewProfileForRenderer>
 }
 
 export type RootProfileState = {

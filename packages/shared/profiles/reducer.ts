@@ -8,11 +8,14 @@ import {
   ProfileSuccessAction,
   AddedProfilesToCatalog,
   ADDED_PROFILES_TO_CATALOG,
-  ProfileFailureAction
+  ProfileFailureAction,
+  ADD_PROFILE_TO_LAST_SENT_STATUSES,
+  AddProfileToLastSentProfileStatuses
 } from './actions'
 
 const INITIAL_PROFILES: ProfileState = {
-  userInfo: {}
+  userInfo: {},
+  lastSentProfileStatuses: new Map()
 }
 
 export function profileReducer(state?: ProfileState, action?: AnyAction): ProfileState {
@@ -63,6 +66,15 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
             ...state.userInfo[action.payload.userId.toLowerCase()],
             addedToCatalog: true
           }
+        }
+      }
+    case ADD_PROFILE_TO_LAST_SENT_STATUSES:
+      const lastSentStatus = (action as AddProfileToLastSentProfileStatuses).payload.profile
+      return {
+        ...state,
+        lastSentProfileStatuses: {
+          ...state.lastSentProfileStatuses,
+          [action.payload.userId]: lastSentStatus
         }
       }
 
