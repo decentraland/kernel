@@ -103,6 +103,21 @@ export function getFeatureFlagEnabled(store: RootMetaState, featureName: Feature
   return false
 }
 
+/**
+ * Returns the feature flag variant name
+ */
+export function getFeatureFlagVariantName(store: RootMetaState, featureName: FeatureFlagsName): string {
+  const ff = getFeatureFlags(store)
+  if (getFeatureFlagEnabled(store, featureName)) {
+    const variant = ff.variants[featureName]
+    if (variant && variant.enabled) {
+      return variant.name
+    }
+    return 'undefined'
+  }
+  return 'undefined'
+}
+
 export function getFeatureFlags(store: RootMetaState): FeatureFlag {
   return store.meta.config.featureFlagsV2 || { flags: {}, variants: {} }
 }
