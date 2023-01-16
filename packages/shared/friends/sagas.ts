@@ -400,7 +400,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
       }
 
       // send total unseen messages update
-      const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
+      const friends = await getFriendIds(client)
+      const totalUnreadMessages = getTotalUnseenMessages(client, ownId, friends)
       const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
         total: totalUnreadMessages
       }
@@ -445,7 +446,7 @@ function* configureMatrixClient(action: SetMatrixClient) {
     handleIncomingFriendshipUpdateStatus(FriendshipAction.REJECTED, socialId)
   )
 
-  client.onChannelMembership((conversation, membership) => {
+  client.onChannelMembership(async (conversation, membership) => {
     if (!areChannelsEnabled()) return
 
     switch (membership) {
@@ -483,7 +484,8 @@ function* configureMatrixClient(action: SetMatrixClient) {
         }
 
         // send total unseen messages update
-        const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), getFriendIds(client))
+        const friends = await getFriendIds(client)
+        const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), friends)
         const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
           total: totalUnreadMessages
         }
@@ -888,7 +890,8 @@ export async function markAsSeenPrivateChatMessages(userId: MarkMessagesAsSeenPa
   }
 
   // get total user unread messages
-  const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), getFriendIds(client))
+  const friends = await getFriendIds(client)
+  const totalUnreadMessages = getTotalUnseenMessages(client, client.getUserId(), friends)
 
   const updateUnseenMessages: UpdateUserUnseenMessagesPayload = {
     userId: userId.userId,
@@ -1861,7 +1864,8 @@ export async function markAsSeenChannelMessages(request: MarkChannelMessagesAsSe
   }
 
   // get total user unread messages
-  const totalUnreadMessages = getTotalUnseenMessages(client, ownId, getFriendIds(client))
+  const friends = await getFriendIds(client)
+  const totalUnreadMessages = getTotalUnseenMessages(client, ownId, friends)
   const updateTotalUnseenMessages: UpdateTotalUnseenMessagesPayload = {
     total: totalUnreadMessages
   }
