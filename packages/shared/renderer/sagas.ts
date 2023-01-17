@@ -8,12 +8,11 @@ import { RendererModules, RENDERER_INITIALIZE } from './types'
 import { trackEvent } from 'shared/analytics'
 import {
   SendProfileToRenderer,
-  addedProfileToCatalog,
   SEND_PROFILE_TO_RENDERER,
   sendProfileToRenderer,
-  addProfileToLastSentProfileStatuses
+  addProfileToLastSentProfileVersionAndCatalog
 } from 'shared/profiles/actions'
-import { getLastSentProfileStatuses, getProfileFromStore } from 'shared/profiles/selectors'
+import { getLastSentProfileVersion, getProfileFromStore } from 'shared/profiles/selectors'
 import { profileToRendererFormat } from 'shared/profiles/transformations/profileToRendererFormat'
 import { isCurrentUserId, getCurrentIdentity, getCurrentUserId } from 'shared/session/selectors'
 import { ExplorerIdentity } from 'shared/session/types'
@@ -296,18 +295,17 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
       getUnityInstance().LoadProfile(forRenderer)
     }
   } else {
-    const lastSentStatuses: Map<string, NewProfileForRenderer> = yield select(getLastSentProfileStatuses)
-    const lastSentProfileStatus = lastSentStatuses[userId]
+    const lastSentProfileVersion: number | undefined = yield select(getLastSentProfileVersion, userId)
 
     const forRenderer = profileToRendererFormat(profile.data, {
       baseUrl: fetchContentServerWithPrefix
     })
 
-    // Add deep equal check before submitting profile to renderer
-    if (!lastSentProfileStatus || !deepEqual(lastSentProfileStatus, forRenderer)) {
+    // Add version check before submitting profile to renderer
+    if (!lastSentProfileVersion || lastSentProfileVersion < forRenderer.version) {
       getUnityInstance().AddUserProfileToCatalog(forRenderer)
-      yield put(addedProfileToCatalog(userId, profile.data))
-      yield put(addProfileToLastSentProfileStatuses(userId, forRenderer))
+      // Update catalog and last sent profile status
+      yield put(addProfileToLastSentProfileVersionAndCatalog(userId, forRenderer.version))
     }
 
     // send to Avatars scene

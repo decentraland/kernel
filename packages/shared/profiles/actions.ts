@@ -2,7 +2,6 @@ import { Avatar } from '@dcl/schemas'
 import { IFuture } from 'fp-future'
 import { action } from 'typesafe-actions'
 import { ProfileType } from './types'
-import { NewProfileForRenderer } from './transformations/types'
 
 // Profile fetching
 
@@ -57,10 +56,12 @@ export const addedProfileToCatalog = (userId: string, profile: Avatar) =>
   action(ADDED_PROFILE_TO_CATALOG, { userId, profile })
 export type AddedProfileToCatalog = ReturnType<typeof addedProfileToCatalog>
 
-export const ADD_PROFILE_TO_LAST_SENT_STATUSES = 'Add profile to last sent profile statuses'
-export const addProfileToLastSentProfileStatuses = (userId: string, profile: NewProfileForRenderer) =>
-  action(ADD_PROFILE_TO_LAST_SENT_STATUSES, { userId, profile })
-export type AddProfileToLastSentProfileStatuses = ReturnType<typeof addProfileToLastSentProfileStatuses>
+export const ADD_PROFILE_TO_LAST_SENT_VERSION_AND_CATALOG = 'Add profile to last sent profile version and catalog'
+export const addProfileToLastSentProfileVersionAndCatalog = (userId: string, version: number) =>
+  action(ADD_PROFILE_TO_LAST_SENT_VERSION_AND_CATALOG, { userId, version })
+export type AddProfileToLastSentProfileVersionAndCatalog = ReturnType<
+  typeof addProfileToLastSentProfileVersionAndCatalog
+>
 
 export const ADDED_PROFILES_TO_CATALOG = '[Success] Added profiles to catalog'
 export const addedProfilesToCatalog = (profiles: Avatar[]) => action(ADDED_PROFILES_TO_CATALOG, { profiles })
