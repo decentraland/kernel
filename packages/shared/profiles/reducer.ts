@@ -81,7 +81,7 @@ export function profileReducer(state?: ProfileState, action?: AnyAction): Profil
         },
         lastSentProfileVersion: {
           ...state.lastSentProfileVersion,
-          [payload.userId]: payload.version
+          [payload.userId.toLowerCase()]: payload.version
         }
       }
 
