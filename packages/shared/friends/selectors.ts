@@ -79,8 +79,15 @@ export const isFriend = (store: RootFriendsState, userId: string) => store.frien
 /**
  * Return true if the friend request has already been sent (toFriendRequests). Otherwise, false.
  */
-export const isPendingRequest = (store: RootFriendsState, userId: string) => {
+export const isToPendingRequest = (store: RootFriendsState, userId: string) => {
   return store.friends.toFriendRequests.filter((request) => request.userId === userId).length > 0
+}
+
+/**
+ * Return true if the friend request has already been received (fromFriendRequests). Otherwise, false.
+ */
+export const isFromPendingRequest = (store: RootFriendsState, userId: string) => {
+  return store.friends.fromFriendRequests.filter((request) => request.userId === userId).length > 0
 }
 
 export const getLastStatusOfFriends = (store: RootFriendsState) => store.friends.lastStatusOfFriends
@@ -99,3 +106,13 @@ export const getMessageBody = (store: RootFriendsState, friendRequestId: string)
 const getPendingRequests = (store: RootFriendsState): FriendRequest[] => {
   return store.friends.fromFriendRequests.concat(store.friends.toFriendRequests)
 }
+
+/**
+ * Number of friend requests sent in a session (in-memory) per requested user.
+ */
+export const getNumberOfFriendRequests = (store: RootFriendsState) => store.friends.numberOfFriendRequests
+
+/**
+ * Time between friend requests sent in a session (in-memory) per requested user.
+ */
+export const getCoolDownOfFriendRequests = (store: RootFriendsState) => store.friends.coolDownOfFriendRequests

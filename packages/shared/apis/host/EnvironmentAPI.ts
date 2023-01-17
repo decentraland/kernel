@@ -49,6 +49,7 @@ export function registerEnvironmentApiServiceServerImplementation(
     async areUnsafeRequestAllowed(): Promise<AreUnsafeRequestAllowedResponse> {
       return { status: getFeatureFlagEnabled(store.getState(), 'unsafe-request') }
     },
+    // @deprecated use GetRealm from Runtime instead
     async getCurrentRealm(): Promise<GetCurrentRealmResponse> {
       const realmAdapter = getRealmAdapter(store.getState())
       const island = getCommsIsland(store.getState()) ?? '' // We shouldn't send undefined because it would break contract
@@ -67,28 +68,34 @@ export function registerEnvironmentApiServiceServerImplementation(
         }
       }
     },
+    // @deprecated use GetTime from Runtime instead
     async getDecentralandTime(): Promise<GetDecentralandTimeResponse> {
-      let time = decentralandTimeData.time
-
-      // if time is not paused we calculate the current time to avoid
-      // constantly receiving messages from the renderer
-      if (!decentralandTimeData.isPaused) {
-        const offsetMsecs = Date.now() - decentralandTimeData.receivedAt
-        const offsetSecs = offsetMsecs / 1000
-        const offsetInDecentralandUnits = offsetSecs / decentralandTimeData.timeNormalizationFactor
-        time += offsetInDecentralandUnits
-
-        if (time >= decentralandTimeData.cycleTime) {
-          time = 0.01
-        }
-      }
-
-      //convert time to seconds
-      time = time * 3600
-
+      const time = getDecentralandTime()
       return { seconds: time }
     }
   }))
+}
+
+export function getDecentralandTime() {
+  let time = decentralandTimeData.time
+
+  // if time is not paused we calculate the current time to avoid
+  // constantly receiving messages from the renderer
+  if (!decentralandTimeData.isPaused) {
+    const offsetMsecs = Date.now() - decentralandTimeData.receivedAt
+    const offsetSecs = offsetMsecs / 1000
+    const offsetInDecentralandUnits = offsetSecs / decentralandTimeData.timeNormalizationFactor
+    time += offsetInDecentralandUnits
+
+    if (time >= decentralandTimeData.cycleTime) {
+      time = 0.01
+    }
+  }
+
+  //convert time to seconds
+  time = time * 3600
+
+  return time
 }
 
 export function toEnvironmentRealmType(realm: IRealmAdapter, island: string | undefined): EnvironmentRealm {

@@ -225,9 +225,9 @@ function* initializeRenderer(action: InitializeRenderer) {
     // register the RPC port
     const rpcHandles: {
       rpcClient: RpcClient
-      rendererProtocol: RpcClientPort
+      rendererInterfacePort: RpcClientPort
     } = yield call(createRendererRpcClient, transport)
-    yield put(registerRendererPort(rpcHandles.rpcClient, rpcHandles.rendererProtocol))
+    yield put(registerRendererPort(rpcHandles.rpcClient, rpcHandles.rendererInterfacePort))
 
     // wire the kernel to the renderer, at some point, the `initializeEngine`
     // function _MUST_ send the `signalRendererInitializedCorrectly` action
