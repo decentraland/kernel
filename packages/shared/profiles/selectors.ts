@@ -106,7 +106,7 @@ export function filterProfilesByUserNameOrId(
 }
 
 export const getLastSentProfileVersion = (store: RootProfileState, userId: string) =>
-  store.profiles.lastSentProfileVersion[userId] as number | undefined
+  store.profiles.lastSentProfileVersion[userId.toLowerCase()] as number | undefined
 
 function getProfileValueIfOkOrLoading<T>(
   store: RootProfileState,
