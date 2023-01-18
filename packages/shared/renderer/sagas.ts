@@ -304,7 +304,7 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
     // Add version check before submitting profile to renderer
     if (!lastSentProfileVersion || lastSentProfileVersion < forRenderer.version) {
       getUnityInstance().AddUserProfileToCatalog(forRenderer)
-      // Update catalog and last sent profile status
+      // Update catalog and last sent profile version
       yield put(addProfileToLastSentProfileVersionAndCatalog(userId, forRenderer.version))
     }
 
