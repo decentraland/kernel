@@ -262,7 +262,7 @@ function* sendSignUpToRenderer(action: SignUpSetIsSignUp) {
 }
 
 let lastSentProfile: NewProfileForRenderer | null = null
-function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
+export function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   const { userId } = action.payload
 
   yield call(waitForRendererInstance)
