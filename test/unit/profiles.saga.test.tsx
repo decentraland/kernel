@@ -7,10 +7,10 @@ import { dynamic } from 'redux-saga-test-plan/providers'
 import { call, select } from 'redux-saga/effects'
 import { getCommsRoom } from 'shared/comms/selectors'
 import {
-  SEND_PROFILE_TO_RENDERER,
   addProfileToLastSentProfileVersionAndCatalog,
   profileRequest,
-  profileSuccess
+  profileSuccess,
+  ADD_PROFILE_TO_LAST_SENT_VERSION_AND_CATALOG
 } from 'shared/profiles/actions'
 import { handleFetchProfile, profileServerRequest } from 'shared/profiles/sagas'
 import { getLastSentProfileVersion, getProfileFromStore } from 'shared/profiles/selectors'
@@ -25,6 +25,7 @@ import { PROFILE_SUCCESS } from '../../packages/shared/profiles/actions'
 import { profileSaga } from '../../packages/shared/profiles/sagas'
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { buildStore } from 'shared/store/store'
+import { IRealmAdapter } from 'shared/realm/types'
 
 const profile: Avatar = { data: 'profile' } as any
 
@@ -139,14 +140,16 @@ describe('fetchProfile behavior', () => {
   })
 })
 
-describe.only('Handle submit profile to renderer', () => {
+describe('Handle submit profile to renderer', () => {
   sinon.mock()
+
+  const unityInstance = getUnityInstance()
+  const unityMock = sinon.mock(unityInstance)
 
   beforeEach(() => {
     sinon.reset()
     sinon.restore()
     buildStore()
-    sinon.stub(realmSelectors, 'getFetchContentUrlPrefixFromRealmAdapter').callsFake(() => 'base-url/contents/')
   })
 
   afterEach(() => {
@@ -154,45 +157,51 @@ describe.only('Handle submit profile to renderer', () => {
     sinon.reset()
   })
 
-  const unityInstance = getUnityInstance()
-  const unityMock = sinon.mock(unityInstance)
-
   context('When the profile has already been sent, and it doesnt have any updates', () => {
-    it('Does not send the AddUserProfileToCatalog message', async () => {
+    it('Does not send the AddUserProfileToCatalog message.', async () => {
       const userId = '0x11pizarnik00'
 
       const profile = getMockedProfileUserInfo(userId, '')
+
+      const realmAdapter = {} as IRealmAdapter
+
+      unityMock.expects('AddUserProfilesToCatalog').never()
 
       await expectSaga(handleSubmitProfileToRenderer, { type: 'SEND_PROFILE_TO_RENDERER', payload: { userId } })
         .provide([
           [call(waitForRendererInstance), true],
           [select(getProfileFromStore, userId), profile],
-          [call(realmSelectors.waitForRealmAdapter), true],
+          [call(realmSelectors.waitForRealmAdapter), realmAdapter],
+          [call(realmSelectors.getFetchContentUrlPrefixFromRealmAdapter, realmAdapter), 'base-url/contents/'],
           [select(isCurrentUserId, userId), false],
           [select(getLastSentProfileVersion, userId), 1]
         ])
         .run()
         .then((response) => {
           const putEffects = response.effects.put
-          const lastPut = putEffects[putEffects.length - 1].payload.action
-          expect(lastPut.type).to.eq(SEND_PROFILE_TO_RENDERER)
+          expect(putEffects).to.be.undefined
         })
-      unityMock.expects('AddUserProfilesToCatalog').never()
+
       unityMock.verify()
     })
   })
 
   context('When the profile has already been sent, and it has updates', () => {
-    it('Sends the AddUserProfileToCatalog message', async () => {
+    it('Sends the AddUserProfileToCatalog message.', async () => {
       const userId = '0x11pizarnik00'
 
       const profile = getMockedProfileUserInfo(userId, '', 3)
+
+      const realmAdapter = {} as IRealmAdapter
+
+      unityMock.expects('AddUserProfileToCatalog').once()
 
       await expectSaga(handleSubmitProfileToRenderer, { type: 'SEND_PROFILE_TO_RENDERER', payload: { userId } })
         .provide([
           [call(waitForRendererInstance), true],
           [select(getProfileFromStore, userId), profile],
-          [call(realmSelectors.waitForRealmAdapter), true],
+          [call(realmSelectors.waitForRealmAdapter), realmAdapter],
+          [call(realmSelectors.getFetchContentUrlPrefixFromRealmAdapter, realmAdapter), 'base-url/contents/'],
           [select(isCurrentUserId, userId), false],
           [select(getLastSentProfileVersion, userId), 1]
         ])
@@ -201,9 +210,9 @@ describe.only('Handle submit profile to renderer', () => {
         .then((response) => {
           const putEffects = response.effects.put
           const lastPut = putEffects[putEffects.length - 1].payload.action
-          expect(lastPut.type).to.eq(SEND_PROFILE_TO_RENDERER)
+          expect(lastPut.type).to.eq(ADD_PROFILE_TO_LAST_SENT_VERSION_AND_CATALOG)
         })
-      unityMock.expects('AddUserProfilesToCatalog').once()
+
       unityMock.verify()
     })
   })
