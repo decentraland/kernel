@@ -255,9 +255,11 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   // only enable the old tutorial if the feature flag new_tutorial is off
   // this code should be removed once the "hardcoded" tutorial is removed
   // from the renderer
+  console.log("AAAAA " + NEEDS_TUTORIAL)
   if (NEEDS_TUTORIAL) {
     if (getFeatureFlagVariantName(store.getState(), 'new_tutorial_variant') === 'disabled') {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
+      console.log("BBBBB " + enableNewTutorialCamera)
       const tutorialConfig = {
         //TODO: hardcoding this value to true since currently default scene is the xmas scnee.
         // If this is no hardcoded, the tutorial will never start on a default scene that is not genesis plaza
@@ -268,6 +270,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
       i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
     } else {
+      console.log("CCCCC por el else ")
       try {
         const realm: string | undefined = getFeatureFlagVariantValue(store.getState(), 'new_tutorial_variant')
         if (realm) {
