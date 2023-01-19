@@ -158,7 +158,7 @@ describe('Handle submit profile to renderer', () => {
   })
 
   context('When the profile has already been sent, and it doesnt have any updates', () => {
-    it('Does not send the AddUserProfileToCatalog message', async () => {
+    it('Does not send the AddUserProfileToCatalog message.', async () => {
       const userId = '0x11pizarnik00'
 
       const profile = getMockedProfileUserInfo(userId, '')
@@ -187,7 +187,7 @@ describe('Handle submit profile to renderer', () => {
   })
 
   context('When the profile has already been sent, and it has updates', () => {
-    it('Sends the AddUserProfileToCatalog message', async () => {
+    it('Sends the AddUserProfileToCatalog message.', async () => {
       const userId = '0x11pizarnik00'
 
       const profile = getMockedProfileUserInfo(userId, '', 3)
