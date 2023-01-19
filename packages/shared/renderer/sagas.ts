@@ -262,19 +262,18 @@ function* sendSignUpToRenderer(action: SignUpSetIsSignUp) {
 }
 
 let lastSentProfile: NewProfileForRenderer | null = null
-function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
+export function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   const { userId } = action.payload
 
   yield call(waitForRendererInstance)
 
   const profile: ProfileUserInfo | null = yield select(getProfileFromStore, userId)
   if (!profile || !profile.data) {
-    debugger
     return
   }
 
   const bff: IRealmAdapter = yield call(waitForRealmAdapter)
-  const fetchContentServerWithPrefix = getFetchContentUrlPrefixFromRealmAdapter(bff)
+  const fetchContentServerWithPrefix = yield call(getFetchContentUrlPrefixFromRealmAdapter, bff)
 
   if (yield select(isCurrentUserId, userId)) {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
@@ -297,12 +296,12 @@ function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): any {
   } else {
     const lastSentProfileVersion: number | undefined = yield select(getLastSentProfileVersion, userId)
 
-    const forRenderer = profileToRendererFormat(profile.data, {
-      baseUrl: fetchContentServerWithPrefix
-    })
-
     // Add version check before submitting profile to renderer
-    if (!lastSentProfileVersion || lastSentProfileVersion < forRenderer.version) {
+    if (!lastSentProfileVersion || lastSentProfileVersion < profile.data.version) {
+      const forRenderer = profileToRendererFormat(profile.data, {
+        baseUrl: fetchContentServerWithPrefix
+      })
+
       getUnityInstance().AddUserProfileToCatalog(forRenderer)
       // Update catalog and last sent profile version
       yield put(addProfileToLastSentProfileVersionAndCatalog(userId, forRenderer.version))
