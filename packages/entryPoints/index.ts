@@ -257,6 +257,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   // from the renderer
   console.log("AAAAA " + NEEDS_TUTORIAL)
   if (NEEDS_TUTORIAL) {
+    console.log("KKKK " + getFeatureFlagVariantName(store.getState(), 'new_tutorial_variant'))
     if (getFeatureFlagVariantName(store.getState(), 'new_tutorial_variant') === 'disabled') {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
       console.log("BBBBB " + enableNewTutorialCamera)
