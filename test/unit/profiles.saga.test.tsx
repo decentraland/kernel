@@ -140,7 +140,7 @@ describe('fetchProfile behavior', () => {
   })
 })
 
-describe.only('Handle submit profile to renderer', () => {
+describe('Handle submit profile to renderer', () => {
   sinon.mock()
 
   const unityInstance = getUnityInstance()
