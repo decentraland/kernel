@@ -186,6 +186,35 @@ describe('Handle submit profile to renderer', () => {
     })
   })
 
+  context('When the profile has already been sent, the version is 0 and it doesnt have any updates', () => {
+    it('Does not send the AddUserProfileToCatalog message.', async () => {
+      const userId = '0x11pizarnik00'
+
+      const profile = getMockedProfileUserInfo(userId, '', 0)
+
+      const realmAdapter = {} as IRealmAdapter
+
+      unityMock.expects('AddUserProfilesToCatalog').never()
+
+      await expectSaga(handleSubmitProfileToRenderer, { type: 'SEND_PROFILE_TO_RENDERER', payload: { userId } })
+        .provide([
+          [call(waitForRendererInstance), true],
+          [select(getProfileFromStore, userId), profile],
+          [call(realmSelectors.waitForRealmAdapter), realmAdapter],
+          [call(realmSelectors.getFetchContentUrlPrefixFromRealmAdapter, realmAdapter), 'base-url/contents/'],
+          [select(isCurrentUserId, userId), false],
+          [select(getLastSentProfileVersion, userId), 0]
+        ])
+        .run()
+        .then((response) => {
+          const putEffects = response.effects.put
+          expect(putEffects).to.be.undefined
+        })
+
+      unityMock.verify()
+    })
+  })
+
   context('When the profile has already been sent, and it has updates', () => {
     it('Sends the AddUserProfileToCatalog message.', async () => {
       const userId = '0x11pizarnik00'

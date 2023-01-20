@@ -297,7 +297,8 @@ export function* handleSubmitProfileToRenderer(action: SendProfileToRenderer): a
     const lastSentProfileVersion: number | undefined = yield select(getLastSentProfileVersion, userId)
 
     // Add version check before submitting profile to renderer
-    if (!lastSentProfileVersion || lastSentProfileVersion < profile.data.version) {
+    // Technically profile version might be `0` and make `!lastSentProfileVersion` always true
+    if (typeof lastSentProfileVersion !== 'number' || lastSentProfileVersion < profile.data.version) {
       const forRenderer = profileToRendererFormat(profile.data, {
         baseUrl: fetchContentServerWithPrefix
       })
