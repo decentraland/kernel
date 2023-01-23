@@ -244,7 +244,8 @@ function mockStoreCalls(
         parcelPosition: { x: 1, y: 2 }
       },
       profiles: {
-        userInfo
+        userInfo,
+        lastSentProfileVersion: new Map()
       }
     }
 
