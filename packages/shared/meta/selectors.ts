@@ -129,7 +129,10 @@ export const getSynapseUrl = (store: RootMetaState): string => {
 
   const defaultSocialServerUrl = store.meta.config.socialServerUrl ?? 'https://social.decentraland.zone'
 
-  return SOCIAL_SERVER_URL ?? defaultSocialServerUrl
+  console.log(`[AGUS] ${SOCIAL_SERVER_URL} ?? ${defaultSocialServerUrl}`)
+  // return SOCIAL_SERVER_URL ?? defaultSocialServerUrl
+  console.log('[AGUS] que onda aca, devolvio local hsot?')
+  return 'http://localhost:8081'
 }
 
 export const getCatalystNodesEndpoint = (store: RootMetaState): string | undefined =>

@@ -516,6 +516,7 @@ function getOnlineOrJoinedMembersCount(client: SocialAPI, conversation: Conversa
 // this saga needs to throw in case of failure
 function* initializePrivateMessaging() {
   const synapseUrl: string = yield select(getSynapseUrl)
+  console.log(`[AGUS] la synapseUrl: ${synapseUrl}`)
   const identity: ExplorerIdentity | undefined = yield select(getCurrentIdentity)
 
   if (!identity) return
@@ -558,7 +559,11 @@ function* refreshFriends() {
     const ownId = client.getUserId()
 
     // init friends
+    // todo: check if need to change anything here
+    console.log('[AGUS] about to get friends id in refresh friends')
     const friendIds: string[] = yield getFriendIds(client)
+    console.log('[AGUS] already yield friends')
+    console.debug(friendIds)
     const friendsSocial: SocialData[] = []
 
     // init friend requests
@@ -662,9 +667,13 @@ function* refreshFriends() {
 async function getFriendIds(client: SocialAPI): Promise<string[]> {
   let friends: string[]
   if (getFeatureFlagEnabled(store.getState(), 'use-synapse-server')) {
+    console.log('[AGUS] using synapse')
     friends = client.getAllFriends()
   } else {
+    console.log('[AGUS] using the social service')
     friends = await client.getAllFriendsAddresses()
+    console.log('[AGUS] the friends are: ')
+    console.debug(friends)
   }
 
   return friends.map(($) => parseUserId($)).filter(Boolean) as string[]

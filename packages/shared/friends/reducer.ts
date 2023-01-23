@@ -32,6 +32,8 @@ export function friendsReducer(state?: State, action?: AnyAction): State {
   }
   switch (action.type) {
     case UPDATE_PRIVATE_MESSAGING: {
+      console.log('[AGUS] adding friends ids to friends state')
+      console.debug(state)
       return reducePrivateMessaging(state, action as UpdatePrivateMessagingState)
     }
     case SET_MATRIX_CLIENT: {
