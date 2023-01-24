@@ -1,7 +1,7 @@
 import { Vector3 } from '@dcl/ecs-math'
 import lodash from 'lodash'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, RENDERER_WS } from 'config'
-import { AirdropInfo } from 'shared/airdrops/interface'
+import { BringDownClientAndShowError } from 'shared/loading/ReportFatalError'
 import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } from './IUnityInterface'
 import {
   HUDConfiguration,
@@ -371,10 +371,6 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
-  public TriggerAirdropDisplay(_data: AirdropInfo) {
-    // Disabled for security reasons
-  }
-
   public AddMessageToChatWindow(message: ChatMessage) {
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
@@ -732,40 +728,11 @@ export class UnityInterface implements IUnityInterface {
     this.SendBuilderMessage('SetBuilderConfiguration', JSON.stringify(config))
   }
 
-  // NOTE: we override wasm's setThrew function before sending message to unity and restore it to it's
-  // original function after message is sent. If an exception is thrown during SendMessage we assume that it's related
-  // to the code executed by the SendMessage on unity's side.
   public SendMessageToUnity(object: string, method: string, payload: any = undefined) {
-    // "this.Module" is not present when using remote websocket renderer, so we just send the message to unity without doing any override.
-    if (!this.Module) {
-      this.gameInstance.SendMessage(object, method, payload)
-      return
-    }
-
-    incrementCounter(method as any)
-
-    const originalSetThrew = this.Module['setThrew']
-    const unityModule = this.Module
-
-    function overrideSetThrew() {
-      unityModule['setThrew'] = function () {
-        incrementCounter(`setThrew:${method}`)
-        const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}.`
-        unityLogger.error(error)
-        // eslint-disable-next-line prefer-rest-params
-        return originalSetThrew.apply(this, arguments)
-      }
-    }
-
-    function restoreSetThrew() {
-      unityModule['setThrew'] = originalSetThrew
-    }
-
-    overrideSetThrew()
     try {
       this.gameInstance.SendMessage(object, method, payload)
-    } finally {
-      restoreSetThrew()
+    } catch (e) {
+      BringDownClientAndShowError(e)
     }
   }
 }
