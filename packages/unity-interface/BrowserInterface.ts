@@ -912,7 +912,8 @@ export class BrowserInterface {
   public ScenesLoadingFeedback(data: { message: string; loadPercentage: number }) {
     const { message, loadPercentage } = data
     const currentTime = now()
-    const elapsed = currentTime - getLastUpdateTime(store.getState())
+    const last = getLastUpdateTime(store.getState())
+    const elapsed = currentTime - (last || 0)
     if (elapsed > timeBetweenLoadingUpdatesInMillis) {
       store.dispatch(updateStatusMessage(message, loadPercentage, currentTime))
     }

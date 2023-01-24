@@ -23,6 +23,8 @@ export type LoadingState = {
   isForeground: boolean
   /** @deprecated #3642 Will be moved to Renderer */
   initialLoad: boolean
+
+  lastUpdate: number | null
   error: string | null
   tldError: {
     tld: string
