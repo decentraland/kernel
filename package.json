@@ -76,7 +76,7 @@
     "@well-known-components/pushable-channel": "^1.0.3",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.0",
-    "dcl-catalyst-client": "^13.0.15",
+    "dcl-catalyst-client": "^14.0.6",
     "dcl-quests-client": "^2.10.0",
     "dcl-scene-writer": "^1.1.2",
     "dcl-social-client": "1.21.0",
