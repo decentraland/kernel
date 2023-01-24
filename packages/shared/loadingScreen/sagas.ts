@@ -72,7 +72,7 @@ function* updateLoadingScreenInternal() {
 
   const loadingScreen = {
     isVisible,
-    message: loadingMessage || loadingState.message || loadingState.status || '',
+    message: loadingMessage || loadingState.message || '',
     showTips: loadingState.initialLoad || !parcelLoadingStarted
   }
   getUnityInstance().SetLoadingScreen(loadingScreen)
