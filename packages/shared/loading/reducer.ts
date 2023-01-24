@@ -42,6 +42,7 @@ export function loadingReducer(state?: LoadingState, action?: AnyAction): Loadin
       totalScenes: 0,
       pendingScenes: 0,
       message: '',
+      lastUpdate: 0,
       renderingActivated: false,
       renderingWasActivated: false,
       isForeground: true,
@@ -79,7 +80,7 @@ export function loadingReducer(state?: LoadingState, action?: AnyAction): Loadin
     return { ...state, message: action.payload }
   }
   if (action.type === UPDATE_STATUS_MESSAGE) {
-    return { ...state, message: action.payload.message }
+    return { ...state, message: action.payload.message, lastUpdate: action.payload.lastUpdate }
   }
   if (action.type === FATAL_ERROR) {
     return { ...state, error: action.payload.type }
