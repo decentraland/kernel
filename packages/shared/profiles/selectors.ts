@@ -39,6 +39,7 @@ export const getProfile = (store: RootProfileState, userId: string): Avatar | nu
 
 export const getCurrentUserProfile = (store: RootProfileState & RootSessionState): Avatar | null => {
   const currentUserId = getCurrentUserId(store)
+  console.log("CURRENT USER PORFILE " + currentUserId)
   return currentUserId ? getProfile(store, currentUserId) : null
 }
 
