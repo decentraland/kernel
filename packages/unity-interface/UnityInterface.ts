@@ -1,7 +1,6 @@
 import { Vector3 } from '@dcl/ecs-math'
 import lodash from 'lodash'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, RENDERER_WS } from 'config'
-import { BringDownClientAndShowError } from 'shared/loading/ReportFatalError'
 import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } from './IUnityInterface'
 import {
   HUDConfiguration,
@@ -731,8 +730,19 @@ export class UnityInterface implements IUnityInterface {
   public SendMessageToUnity(object: string, method: string, payload: any = undefined) {
     try {
       this.gameInstance.SendMessage(object, method, payload)
-    } catch (e) {
-      BringDownClientAndShowError(e)
+    } catch (e: any) {
+      incrementCounter(`setThrew:${method}`)
+      unityLogger.error(
+        `Error on "${
+          method
+        }" from kernel to unity-renderer, with args (${
+          payload
+        }). Reported message is: "${
+          e.message
+        }", stack trace:\n${
+          e.stack
+        }`
+      )
     }
   }
 }
