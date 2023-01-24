@@ -40,7 +40,7 @@ export const ACTIONS_FOR_LOADING = [
 
 /** @deprecated #3642 */
 export function* loadingScreenSaga() {
-  yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreenInternal)
+  // yield takeLatest(UPDATE_LOADING_SCREEN, updateLoadingScreenInternal)
 
   yield takeLatest(ACTIONS_FOR_LOADING, function* () {
     yield put(updateLoadingScreen())
