@@ -731,7 +731,11 @@ export class UnityInterface implements IUnityInterface {
     try {
       this.gameInstance.SendMessage(object, method, payload)
     } catch (e: any) {
-      incrementCounter(`setThrew:${method}`)
+      // "this.Module" is not present when using remote websocket renderer
+      // so the `incrementCounter` call in the error handler can't be made
+      if (this.Module) {
+        incrementCounter(`setThrew:${method}`)
+      }
       unityLogger.error(
         `Error on "${
           method
