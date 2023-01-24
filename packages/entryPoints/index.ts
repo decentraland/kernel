@@ -262,6 +262,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     const NEW_TUTORIAL_FEATURE_FLAG = getFeatureFlagVariantName(store.getState(), 'new_tutorial_variant')
     const IS_NEW_TUTORIAL_DISABLED =
       NEW_TUTORIAL_FEATURE_FLAG === 'disabled' || NEW_TUTORIAL_FEATURE_FLAG === 'undefined'
+      console.log("IS_NEW_TUTORIAL_DISABLED " + IS_NEW_TUTORIAL_DISABLED)
     if (IS_NEW_TUTORIAL_DISABLED) {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
       const tutorialConfig = {
@@ -274,6 +275,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
       i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
     } else {
+      console.log("GOING TO CHANGE REALM " + IS_NEW_TUTORIAL_DISABLED)
       try {
         const realm: string | undefined = getFeatureFlagVariantValue(store.getState(), 'new_tutorial_variant')
         if (realm) {
