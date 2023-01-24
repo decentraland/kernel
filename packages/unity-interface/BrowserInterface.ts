@@ -5,7 +5,14 @@ import { findProfileByName } from 'shared/profiles/selectors'
 import { TeleportController } from 'shared/world/TeleportController'
 import { reportScenesAroundParcel, setHomeScene } from 'shared/atlas/actions'
 import { getCurrentIdentity, getCurrentUserId, hasWallet } from 'shared/session/selectors'
-import { DEBUG, ethereumConfigurations, parcelLimits, playerConfigurations, WORLD_EXPLORER, timeBetweenLoadingUpdatesInMillis } from 'config'
+import {
+  DEBUG,
+  ethereumConfigurations,
+  parcelLimits,
+  playerConfigurations,
+  WORLD_EXPLORER,
+  timeBetweenLoadingUpdatesInMillis
+} from 'config'
 import { trackEvent } from 'shared/analytics'
 import { ReportFatalErrorWithUnityPayloadAsync } from 'shared/loading/ReportFatalError'
 import { defaultLogger } from 'shared/logger'
@@ -230,7 +237,9 @@ const validateRendererSaveProfileV0 = generateLazyValidator<RendererSaveProfile>
 const validateRendererSaveProfileV1 = generateLazyValidator<RendererSaveProfile>(rendererSaveProfileSchemaV1)
 
 // Returns the current time in millis
-function now() { return new Date().getTime() }
+function now() {
+  return new Date().getTime()
+}
 
 // the BrowserInterface is a visitor for messages received from Unity
 export class BrowserInterface {
