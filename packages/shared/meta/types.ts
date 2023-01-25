@@ -47,6 +47,7 @@ export type FeatureFlagsName =
   | 'ping_enabled'
   | 'use-synapse-server'
   | 'new_tutorial_variant'
+  | 'enable_legacy_comms_v2'
 
 export type BannedUsers = Record<string, Ban[]>
 
