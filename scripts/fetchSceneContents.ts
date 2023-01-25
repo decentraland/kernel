@@ -10,7 +10,7 @@
 import { fetch } from 'undici'
 import { CatalystClient } from 'dcl-catalyst-client/dist/CatalystClient'
 import * as fs from 'fs'
-import { ContentMapping, EntityType } from '@dcl/schemas'
+import { ContentMapping } from '@dcl/schemas'
 
 const sceneId = process.env.SCENE_ID
 const parcel = process.env.PARCEL
@@ -30,8 +30,8 @@ if (!sceneId && !parcel) {
 
 async function main() {
   const sceneData = sceneId
-    ? await client.fetchEntityById(EntityType.SCENE, sceneId)
-    : (await client.fetchEntitiesByPointers(EntityType.SCENE, [parcel]))[0]
+    ? await client.fetchEntityById(sceneId)
+    : (await client.fetchEntitiesByPointers([parcel]))[0]
 
   const pending: Record<string, Promise<any>> = {}
   const queued: ContentMapping[] = []
