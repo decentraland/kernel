@@ -18,10 +18,6 @@ import * as rfc4 from '@dcl/protocol/out-ts/decentraland/kernel/comms/rfc4/comms
 const peerMap = new Map<string, PeerInformation>()
 export const avatarMessageObservable = new Observable<AvatarMessage>()
 
-avatarMessageObservable.subscribe((data) => {
-  console.log(`[avatarMessageObservable] ${JSON.stringify(data)}`)
-})
-
 export function getAllPeers() {
   return new Map(peerMap)
 }
