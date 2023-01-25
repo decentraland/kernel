@@ -58,7 +58,7 @@ import { NotificationType } from 'shared/types'
 import { trackEvent } from 'shared/analytics'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
-const INTERVAL_ANNOUNCE_PROFILE = 1000
+const INTERVAL_ANNOUNCE_PROFILE = 10000
 
 export function* commsSaga() {
   yield takeLatest(HANDLE_ROOM_DISCONNECTION, handleRoomDisconnectionSaga)
