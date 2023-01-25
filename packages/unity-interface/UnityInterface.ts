@@ -735,6 +735,7 @@ export class UnityInterface implements IUnityInterface {
   public SendMessageToUnity(object: string, method: string, payload: any = undefined) {
     try {
       this.gameInstance.SendMessage(object, method, payload)
+      incrementCounter(method as any)
     } catch (e: any) {
       incrementCounter(`setThrew:${method}`)
       unityLogger.error(
