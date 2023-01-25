@@ -465,12 +465,18 @@ function* handleCommsReconnectionInterval() {
  */
 function* handleAnnounceProfile() {
   while (true) {
+    // We notify the network of our profile's latest version when:
     yield race({
+      // Our local profile is updated 
       SEND_PROFILE_TO_RENDERER: take(SEND_PROFILE_TO_RENDERER),
+      // The profile got updated on a catalyst
       DEPLOY_PROFILE_SUCCESS: take(DEPLOY_PROFILE_SUCCESS),
+      // The current user's island changed
       SET_COMMS_ISLAND: take(SET_COMMS_ISLAND),
-      timeout: delay(INTERVAL_ANNOUNCE_PROFILE),
-      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION)
+      // The current user's realm/catalyst changed
+      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION),
+      // Periodically just in case other users did not notice the current user
+      timeout: delay(INTERVAL_ANNOUNCE_PROFILE)
     })
 
     const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
