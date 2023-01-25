@@ -16,7 +16,7 @@ import {
 import { notifyStatusThroughChat } from 'shared/chat'
 import { bindHandlersToCommsContext, createSendMyProfileOverCommsChannel, sendPing } from './handlers'
 import { Rfc4RoomConnection } from './logic/rfc-4-room-connection'
-import { DEPLOY_PROFILE_SUCCESS, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
+import { DEPLOY_PROFILE_SUCCESS, SendProfileToRenderer, SEND_PROFILE_TO_RENDERER } from 'shared/profiles/actions'
 import { getCurrentUserProfile } from 'shared/profiles/selectors'
 import { Avatar, IPFSv2, Snapshots } from '@dcl/schemas'
 import { commConfigurations, COMMS_GRAPH, DEBUG_COMMS, genericAvatarSnapshots, PREFERED_ISLAND } from 'config'
@@ -58,7 +58,7 @@ import { NotificationType } from 'shared/types'
 import { trackEvent } from 'shared/analytics'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
-const INTERVAL_ANNOUNCE_PROFILE = 1000
+const INTERVAL_ANNOUNCE_PROFILE = 10_000 // 10 seconds
 
 export function* commsSaga() {
   yield takeLatest(HANDLE_ROOM_DISCONNECTION, handleRoomDisconnectionSaga)
@@ -464,25 +464,35 @@ function* handleCommsReconnectionInterval() {
  * sendCurrentProfile and then does it.
  */
 function* handleAnnounceProfile() {
-  let lastSend = -1000
-
   while (true) {
-    yield race({
-      SEND_PROFILE_TO_RENDERER: take(SEND_PROFILE_TO_RENDERER),
+    // We notify the network of our profile's latest version when:
+    const reason: { sendProfileToRenderer?: SendProfileToRenderer } = yield race({
+      // A local profile is updated in the renderer
+      sendProfileToRenderer: take(SEND_PROFILE_TO_RENDERER),
+      // The profile got updated on a catalyst
       DEPLOY_PROFILE_SUCCESS: take(DEPLOY_PROFILE_SUCCESS),
+      // The current user's island changed
       SET_COMMS_ISLAND: take(SET_COMMS_ISLAND),
-      timeout: delay(INTERVAL_ANNOUNCE_PROFILE),
-      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION)
+      // The current user's realm/catalyst changed
+      SET_WORLD_CONTEXT: take(SET_ROOM_CONNECTION),
+      // Periodically just in case other users did not notice the current user
+      timeout: delay(INTERVAL_ANNOUNCE_PROFILE)
     })
 
-    const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
     const profile: Avatar | null = yield select(getCurrentUserProfile)
-    const now = performance.now()
-    const deltaTime = now - lastSend
 
-    if (roomConnection && profile && deltaTime > 1000 /* one sec */) {
+    // skip this process when there is no local profile
+    if (!profile) continue
+
+    if (reason.sendProfileToRenderer && profile.userId !== reason.sendProfileToRenderer.payload.userId) {
+      // skip this process when sendProfileToRenderer is called for a different avatar
+      continue
+    }
+
+    const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
+
+    if (roomConnection) {
       roomConnection.sendProfileMessage({ profileVersion: profile.version }).catch(commsLogger.error)
-      lastSend = now
     }
   }
 }
