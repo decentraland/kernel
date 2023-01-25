@@ -467,8 +467,8 @@ function* handleAnnounceProfile() {
   while (true) {
     // We notify the network of our profile's latest version when:
     yield race({
-      // Our local profile is updated 
-      SEND_PROFILE_TO_RENDERER: take(SEND_PROFILE_TO_RENDERER),
+      // Our local profile is updated
+      SEND_PROFILE_TO_RENDERER: take(SEND_PROFILE_TO_RENDERER621764),
       // The profile got updated on a catalyst
       DEPLOY_PROFILE_SUCCESS: take(DEPLOY_PROFILE_SUCCESS),
       // The current user's island changed
