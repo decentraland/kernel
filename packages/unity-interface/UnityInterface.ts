@@ -732,40 +732,15 @@ export class UnityInterface implements IUnityInterface {
     this.SendBuilderMessage('SetBuilderConfiguration', JSON.stringify(config))
   }
 
-  // NOTE: we override wasm's setThrew function before sending message to unity and restore it to it's
-  // original function after message is sent. If an exception is thrown during SendMessage we assume that it's related
-  // to the code executed by the SendMessage on unity's side.
   public SendMessageToUnity(object: string, method: string, payload: any = undefined) {
-    // "this.Module" is not present when using remote websocket renderer, so we just send the message to unity without doing any override.
-    if (!this.Module) {
-      this.gameInstance.SendMessage(object, method, payload)
-      return
-    }
-
-    incrementCounter(method as any)
-
-    const originalSetThrew = this.Module['setThrew']
-    const unityModule = this.Module
-
-    function overrideSetThrew() {
-      unityModule['setThrew'] = function () {
-        incrementCounter(`setThrew:${method}`)
-        const error = `Error while sending Message to Unity. Object: ${object}. Method: ${method}.`
-        unityLogger.error(error)
-        // eslint-disable-next-line prefer-rest-params
-        return originalSetThrew.apply(this, arguments)
-      }
-    }
-
-    function restoreSetThrew() {
-      unityModule['setThrew'] = originalSetThrew
-    }
-
-    overrideSetThrew()
     try {
       this.gameInstance.SendMessage(object, method, payload)
-    } finally {
-      restoreSetThrew()
+      incrementCounter(method as any)
+    } catch (e: any) {
+      incrementCounter(`setThrew:${method}`)
+      unityLogger.error(
+        `Error on "${method}" from kernel to unity-renderer, with args (${payload}). Reported message is: "${e.message}", stack trace:\n${e.stack}`
+      )
     }
   }
 }
