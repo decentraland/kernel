@@ -1,6 +1,7 @@
 import { Vector3 } from '@dcl/ecs-math'
 import lodash from 'lodash'
 import { WSS_ENABLED, WORLD_EXPLORER, RESET_TUTORIAL, RENDERER_WS } from 'config'
+import { AirdropInfo } from 'shared/airdrops/interface'
 import { HotSceneInfo, IUnityInterface, setUnityInstance, MinimapSceneInfo } from './IUnityInterface'
 import {
   HUDConfiguration,
@@ -370,6 +371,10 @@ export class UnityInterface implements IUnityInterface {
     )
   }
 
+  public TriggerAirdropDisplay(_data: AirdropInfo) {
+    // Disabled for security reasons
+  }
+
   public AddMessageToChatWindow(message: ChatMessage) {
     if (message.body.length > 1000) {
       trackEvent('long_chat_message_ignored', { message: message.body, sender: message.sender })
@@ -731,11 +736,7 @@ export class UnityInterface implements IUnityInterface {
     try {
       this.gameInstance.SendMessage(object, method, payload)
     } catch (e: any) {
-      // "this.Module" is not present when using remote websocket renderer
-      // so the `incrementCounter` call in the error handler can't be made
-      if (this.Module) {
-        incrementCounter(`setThrew:${method}`)
-      }
+      incrementCounter(`setThrew:${method}`)
       unityLogger.error(
         `Error on "${
           method
