@@ -252,6 +252,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   const NEEDS_TUTORIAL = RESET_TUTORIAL || !profile.tutorialStep
 
+  console.log("PROFILE TUTORIAL STEP " + HAS_INITIAL_POSITION_MARK)
   console.log("PROFILE TUTORIAL STEP " + profile.tutorialStep)
   console.log("PROFILE TUTORIAL STEP BOOL " + !profile.tutorialStep)
 
