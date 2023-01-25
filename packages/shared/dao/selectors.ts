@@ -12,7 +12,7 @@ export const getAllCatalystCandidates = (store: RootDaoState & RootMetaState) =>
   const candidates = getCatalystCandidates(store).filter((it) => !!it)
   const enableLegacyComms: boolean = getFeatureFlagEnabled(store, 'enable_legacy_comms_v2')
 
-  return candidates.filter($ => {
+  return candidates.filter(($) => {
     if ($.protocol === 'v3') return true
     return enableLegacyComms
   })
