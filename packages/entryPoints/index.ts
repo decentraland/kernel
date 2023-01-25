@@ -26,6 +26,7 @@ import { WorldConfig } from 'shared/meta/types'
 import {
   getFeatureFlagEnabled,
   getFeatureFlags,
+  getFeatureFlagVariantName,
   getFeatureFlagVariantValue,
   getWorldConfig
 } from 'shared/meta/selectors'
@@ -255,7 +256,10 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   // this code should be removed once the "hardcoded" tutorial is removed
   // from the renderer
   if (NEEDS_TUTORIAL) {
-    if (!getFeatureFlagEnabled(store.getState(), 'new_tutorial')) {
+    const NEW_TUTORIAL_FEATURE_FLAG = getFeatureFlagVariantName(store.getState(), 'new_tutorial_variant')
+    const IS_NEW_TUTORIAL_DISABLED =
+      NEW_TUTORIAL_FEATURE_FLAG === 'disabled' || NEW_TUTORIAL_FEATURE_FLAG === 'undefined'
+    if (IS_NEW_TUTORIAL_DISABLED) {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
       const tutorialConfig = {
         //TODO: hardcoding this value to true since currently default scene is the xmas scnee.
@@ -268,7 +272,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
       i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
     } else {
       try {
-        const realm: string | undefined = getFeatureFlagVariantValue(store.getState(), 'new_tutorial')
+        const realm: string | undefined = getFeatureFlagVariantValue(store.getState(), 'new_tutorial_variant')
         if (realm) {
           await changeRealm(realm)
           trackEvent('onboarding_started', { onboardingRealm: realm })
