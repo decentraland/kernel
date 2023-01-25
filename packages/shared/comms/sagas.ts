@@ -464,6 +464,8 @@ function* handleCommsReconnectionInterval() {
  * sendCurrentProfile and then does it.
  */
 function* handleAnnounceProfile() {
+  let lastSend = -1000
+
   while (true) {
     yield race({
       SEND_PROFILE_TO_RENDERER: take(SEND_PROFILE_TO_RENDERER),
@@ -475,9 +477,12 @@ function* handleAnnounceProfile() {
 
     const roomConnection: RoomConnection | undefined = yield select(getCommsRoom)
     const profile: Avatar | null = yield select(getCurrentUserProfile)
+    const now = performance.now()
+    const deltaTime = now - lastSend
 
-    if (roomConnection && profile) {
+    if (roomConnection && profile && deltaTime > 1000 /* one sec */) {
       roomConnection.sendProfileMessage({ profileVersion: profile.version }).catch(commsLogger.error)
+      lastSend = now
     }
   }
 }
