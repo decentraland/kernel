@@ -268,7 +268,6 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
       i.ConfigureTutorial(profile.tutorialStep, tutorialConfig)
     } else {
-      console.log("GOING TO CHANGE REALM " + IS_NEW_TUTORIAL_DISABLED)
       try {
         const realm: string | undefined = getFeatureFlagVariantValue(store.getState(), 'new_tutorial_variant')
         if (realm) {
