@@ -737,7 +737,9 @@ export class UnityInterface implements IUnityInterface {
       this.gameInstance.SendMessage(object, method, payload)
     } catch (e: any) {
       incrementCounter(`setThrew:${method}`)
-      unityLogger.error(`Error on "${method}" from kernel to unity-renderer, with args (${payload}). Reported message is: "${e.message}", stack trace:\n${e.stack}`)
+      unityLogger.error(
+        `Error on "${method}" from kernel to unity-renderer, with args (${payload}). Reported message is: "${e.message}", stack trace:\n${e.stack}`
+      )
     }
   }
 }
