@@ -92,16 +92,28 @@ function* initSession() {
 }
 
 function* authenticate(action: AuthenticateAction) {
+  function now() {
+    return new Date().getTime()
+  }
+  let lastTime = now()
+  function mark(a: any) {
+    const thisTime = now()
+    logger.info(`${new Date().toISOString()} (+${thisTime - lastTime}): mark ${a}`)
+    lastTime = now()
+  }
+  mark(`starting auth`)
   const { isGuest, provider } = action.payload
   // setup provider
   requestManager.setProvider(provider)
 
   yield put(changeLoginState(LoginState.SIGNATURE_PENDING))
+  mark(`pending sig`)
 
   let identity: ExplorerIdentity
 
   try {
     identity = yield authorize(requestManager)
+    mark(`got auth`)
   } catch (e: any) {
     if (('' + (e.message || e.toString())).includes('User denied message signature')) {
       yield put(signUpCancel())
@@ -111,9 +123,11 @@ function* authenticate(action: AuthenticateAction) {
     }
   }
 
+  mark(`do I have renderer?`)
   yield put(changeLoginState(LoginState.WAITING_RENDERER))
 
   yield call(waitForRendererInstance)
+  mark(`I do, and renderer is init`)
 
   yield put(changeLoginState(LoginState.WAITING_PROFILE))
 
@@ -122,10 +136,13 @@ function* authenticate(action: AuthenticateAction) {
   yield put(selectNetwork(net))
   registerProviderNetChanges()
 
+  mark(`let's auth`)
   // 1. authenticate our user
   yield put(userAuthentified(identity, net, isGuest))
+  mark(`let's wait for comms auth`)
   // 2. wait for comms to connect, it only requires the Identity authentication
   yield call(waitForRoomConnection)
+  mark(`I have room`)
   // 3. then ask for our profile
   const avatar: Avatar = yield call(
     ProfileAsPromise,
@@ -133,6 +150,7 @@ function* authenticate(action: AuthenticateAction) {
     0,
     isGuest ? ProfileType.LOCAL : ProfileType.DEPLOYED
   )
+  mark(`I have avatar`)
 
   // 4. continue with signin/signup (only not in preview)
   const isSignUp = avatar.version <= 0 && !PREVIEW
@@ -142,7 +160,9 @@ function* authenticate(action: AuthenticateAction) {
   }
 
   // 5. finish sign in
+  mark(`but do I have meta?`)
   yield call(ensureMetaConfigurationInitialized)
+  mark(`yes I do -- Login state completed`)
   yield put(changeLoginState(LoginState.COMPLETED))
 
   if (!isGuest) {
