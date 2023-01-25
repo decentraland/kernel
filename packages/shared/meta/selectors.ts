@@ -129,7 +129,6 @@ export const getSynapseUrl = (store: RootMetaState): string => {
 
   const defaultSocialServerUrl = store.meta.config.socialServerUrl ?? 'https://social.decentraland.zone'
 
-  console.log(`[AGUS] ${SOCIAL_SERVER_URL} ?? ${defaultSocialServerUrl}`)
   return SOCIAL_SERVER_URL ?? defaultSocialServerUrl
 }
 
