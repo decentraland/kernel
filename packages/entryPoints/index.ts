@@ -252,25 +252,17 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
 
   const NEEDS_TUTORIAL = RESET_TUTORIAL || !profile.tutorialStep
 
-  console.log("PROFILE TUTORIAL STEP " + HAS_INITIAL_POSITION_MARK)
-  console.log("PROFILE TUTORIAL STEP " + profile.tutorialStep)
-  console.log("PROFILE TUTORIAL STEP BOOL " + !profile.tutorialStep)
-
   // only enable the old tutorial if the feature flag new_tutorial is off
   // this code should be removed once the "hardcoded" tutorial is removed
   // from the renderer
   if (NEEDS_TUTORIAL) {
     const NEW_TUTORIAL_FEATURE_FLAG = getFeatureFlagVariantName(store.getState(), 'new_tutorial_variant')
     const IS_NEW_TUTORIAL_DISABLED =
-      NEW_TUTORIAL_FEATURE_FLAG === 'disabled' || NEW_TUTORIAL_FEATURE_FLAG === 'undefined'
-      console.log("IS_NEW_TUTORIAL_DISABLED " + IS_NEW_TUTORIAL_DISABLED)
+      NEW_TUTORIAL_FEATURE_FLAG === 'disabled' || NEW_TUTORIAL_FEATURE_FLAG === 'undefined' || HAS_INITIAL_POSITION_MARK
     if (IS_NEW_TUTORIAL_DISABLED) {
       const enableNewTutorialCamera = worldConfig ? worldConfig.enableNewTutorialCamera ?? false : false
       const tutorialConfig = {
-        //TODO: hardcoding this value to true since currently default scene is the xmas scnee.
-        // If this is no hardcoded, the tutorial will never start on a default scene that is not genesis plaza
-        // We should plan a way which allows different default scenes
-        fromDeepLink: true,
+        fromDeepLink: HAS_INITIAL_POSITION_MARK,
         enableNewTutorialCamera: enableNewTutorialCamera
       }
 
