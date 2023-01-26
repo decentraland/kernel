@@ -230,7 +230,7 @@ async function connectAdapter(connStr: string, identity: ExplorerIdentity): Prom
       const result = await signedFetch(
         url,
         identity,
-        { method: 'POST' },
+        { method: 'POST', responseBodyType: 'json' },
         {
           intent: 'dcl:explorer:comms-handshake',
           signer: 'dcl:explorer',
