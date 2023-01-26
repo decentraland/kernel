@@ -56,6 +56,8 @@ import {
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { NotificationType } from 'shared/types'
 import { trackEvent } from 'shared/analytics'
+import { getCatalystCandidates } from 'shared/dao/selectors'
+import { setCatalystCandidates } from 'shared/dao/actions'
 import { signedFetch } from 'atomicHelpers/signedFetch'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
@@ -214,6 +216,17 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
     yield put(setRoomConnection(adapter))
   } catch (error: any) {
     notifyStatusThroughChat('Error connecting to comms. Will try another realm')
+
+    const realmAdapter: IRealmAdapter | undefined = yield select(getRealmAdapter)
+    const candidates = yield select(getCatalystCandidates)
+    for (const candidate of candidates) {
+      if (candidate.domain === realmAdapter!.baseUrl) {
+        candidate.lastConnectionAttempt = Date.now()
+        break
+      }
+    }
+    store.dispatch(setCatalystCandidates(candidates))
+
     yield put(setRealmAdapter(undefined))
     yield put(setRoomConnection(undefined))
   }
