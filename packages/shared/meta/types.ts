@@ -46,6 +46,7 @@ export type FeatureFlagsName =
   | 'gif-web'
   | 'ping_enabled'
   | 'use-synapse-server'
+  | 'use-social-server-friendships' // get friendships from social service v1 API
   | 'new_tutorial_variant'
   | 'enable_legacy_comms_v2'
 
