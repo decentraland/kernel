@@ -56,9 +56,15 @@ import {
 import { getUnityInstance } from 'unity-interface/IUnityInterface'
 import { NotificationType } from 'shared/types'
 import { trackEvent } from 'shared/analytics'
+import { signedFetch } from 'atomicHelpers/signedFetch'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
-const INTERVAL_ANNOUNCE_PROFILE = 10_000 // 10 seconds
+// this interval should be fast because this will be the delay other people around
+// you will experience to fully show your avatar. i.e. if we set it to 10sec, people
+// in the genesis plaza will have to wait up to 10 seconds (if already connected) to
+// see you. if they missed the report by one second, then they will wait 19seconds to
+// see you.
+const INTERVAL_ANNOUNCE_PROFILE = 2_000 // 2 seconds
 
 export function* commsSaga() {
   yield takeLatest(HANDLE_ROOM_DISCONNECTION, handleRoomDisconnectionSaga)
@@ -197,53 +203,9 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
   try {
     const identity: ExplorerIdentity = yield select(getCurrentIdentity)
 
-    const ix = action.payload.event.connStr.indexOf(':')
-    const protocol = action.payload.event.connStr.substring(0, ix)
-    const url = action.payload.event.connStr.substring(ix + 1)
-
     yield put(setCommsIsland(action.payload.event.islandId))
 
-    let adapter: RoomConnection | undefined = undefined
-
-    // TODO: move this to a saga
-    overrideCommsProtocol(protocol)
-    switch (protocol) {
-      case 'offline': {
-        adapter = new Rfc4RoomConnection(new OfflineAdapter())
-        break
-      }
-      case 'ws-room': {
-        const finalUrl = !url.startsWith('ws:') && !url.startsWith('wss:') ? 'wss://' + url : url
-
-        adapter = new Rfc4RoomConnection(new WebSocketAdapter(finalUrl, identity))
-        break
-      }
-      case 'simulator': {
-        adapter = new SimulationRoom(url)
-        break
-      }
-      case 'livekit': {
-        const theUrl = new URL(url)
-        const token = theUrl.searchParams.get('access_token')
-        if (!token) {
-          throw new Error('No access token')
-        }
-        adapter = new Rfc4RoomConnection(
-          new LivekitAdapter({
-            logger: commsLogger,
-            url: theUrl.origin + theUrl.pathname,
-            token
-          })
-        )
-        break
-      }
-      case 'lighthouse': {
-        adapter = yield call(createLighthouseConnection, url)
-        break
-      }
-    }
-
-    if (!adapter) throw new Error(`A communications adapter could not be created for protocol=${protocol}`)
+    const adapter: RoomConnection = yield call(connectAdapter, action.payload.event.connStr, identity)
 
     globalThis.__DEBUG_ADAPTER = adapter
 
@@ -257,9 +219,92 @@ function* handleConnectToComms(action: ConnectToCommsAction) {
   }
 }
 
-function* createLighthouseConnection(url: string) {
-  const commsConfig: CommsConfig = yield select(getCommsConfig)
-  const identity: ExplorerIdentity = yield select(getCurrentIdentity)
+async function connectAdapter(connStr: string, identity: ExplorerIdentity): Promise<RoomConnection> {
+  const ix = connStr.indexOf(':')
+  const protocol = connStr.substring(0, ix)
+  const url = connStr.substring(ix + 1)
+
+  // TODO: move this to a saga
+  overrideCommsProtocol(protocol)
+
+  switch (protocol) {
+    case 'signed-login': {
+      // this communications protocol signals a "required handshake" to connect
+      // to a server which requires a signature from part of the user in order
+      // to authenticate them
+      const result = await signedFetch(
+        url,
+        identity,
+        { method: 'POST', responseBodyType: 'json' },
+        {
+          intent: 'dcl:explorer:comms-handshake',
+          signer: 'dcl:explorer',
+          isGuest: !identity.hasConnectedWeb3
+        }
+      )
+
+      const response: SignedLoginResult = result.json
+      if (!result.ok || typeof response !== 'object') {
+        throw new Error(
+          'There was an error acquiring the communications connection. Decentraland will try to connect to another realm'
+        )
+      }
+
+      type SignedLoginResult = {
+        fixedAdapter?: string
+        message?: string
+      }
+
+      if (typeof response.fixedAdapter === 'string' && !response.fixedAdapter.startsWith('signed-login:')) {
+        return connectAdapter(response.fixedAdapter, identity)
+      }
+
+      if (typeof response.message === 'string') {
+        throw new Error(`There was an error acquiring the communications connection: ${response.message}`)
+      }
+
+      trackEvent('error', {
+        message: 'Error in signed-login response: ' + JSON.stringify(response),
+        context: 'comms',
+        stack: 'connectAdapter'
+      })
+
+      throw new Error(`An unknown error was detected while trying to connect to the selected realm.`)
+    }
+    case 'offline': {
+      return new Rfc4RoomConnection(new OfflineAdapter())
+    }
+    case 'ws-room': {
+      const finalUrl = !url.startsWith('ws:') && !url.startsWith('wss:') ? 'wss://' + url : url
+
+      return new Rfc4RoomConnection(new WebSocketAdapter(finalUrl, identity))
+    }
+    case 'simulator': {
+      return new SimulationRoom(url)
+    }
+    case 'livekit': {
+      const theUrl = new URL(url)
+      const token = theUrl.searchParams.get('access_token')
+      if (!token) {
+        throw new Error('No access token')
+      }
+      return new Rfc4RoomConnection(
+        new LivekitAdapter({
+          logger: commsLogger,
+          url: theUrl.origin + theUrl.pathname,
+          token
+        })
+      )
+    }
+    case 'lighthouse': {
+      return createLighthouseConnection(url, identity)
+    }
+  }
+  throw new Error(`A communications adapter could not be created for protocol=${protocol}`)
+}
+
+function createLighthouseConnection(url: string, identity: ExplorerIdentity) {
+  const commsConfig: CommsConfig = getCommsConfig(store.getState())
   const peerConfig: LighthouseConnectionConfig = {
     connectionConfig: {
       iceServers: commConfigurations.defaultIceServers
