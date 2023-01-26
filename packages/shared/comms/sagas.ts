@@ -59,7 +59,12 @@ import { trackEvent } from 'shared/analytics'
 import { signedFetch } from 'atomicHelpers/signedFetch'
 
 const TIME_BETWEEN_PROFILE_RESPONSES = 1000
-const INTERVAL_ANNOUNCE_PROFILE = 10_000 // 10 seconds
+// this interval should be fast because this will be the delay other people around
+// you will experience to fully show your avatar. i.e. if we set it to 10sec, people
+// in the genesis plaza will have to wait up to 10 seconds (if already connected) to
+// see you. if they missed the report by one second, then they will wait 19seconds to
+// see you.
+const INTERVAL_ANNOUNCE_PROFILE = 2_000 // 2 seconds
 
 export function* commsSaga() {
   yield takeLatest(HANDLE_ROOM_DISCONNECTION, handleRoomDisconnectionSaga)
