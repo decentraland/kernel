@@ -80,7 +80,7 @@
     "dcl-quests-client": "^2.10.0",
     "dcl-scene-writer": "^1.1.2",
     "dcl-social-client": "^1.23.2",
-    "decentraland-ecs": "^6.0.4",
+    "decentraland-ecs": "^6.11.11",
     "devtools-protocol": "0.0.615714",
     "estrella": "^1.4.1",
     "eth-connect": "^6.0.3",
