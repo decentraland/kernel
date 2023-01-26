@@ -64,7 +64,7 @@
     "@dcl/feature-flags": "^1.1.0",
     "@dcl/hashing": "^1.1.2",
     "@dcl/kernel-interface": "^2.0.0-20210922153939.commit-017905d",
-    "@dcl/legacy-ecs": "^6.11.8",
+    "@dcl/legacy-ecs": "^6.11.11",
     "@dcl/protocol": "^1.0.0-4009547712.commit-472ea24",
     "@dcl/rpc": "^1.1.1",
     "@dcl/scene-runtime": "^7.0.3-20230125201152.commit-2ffd670",
