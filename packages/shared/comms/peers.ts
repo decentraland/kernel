@@ -185,11 +185,13 @@ export function removeAllPeers() {
  */
 export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
   let currentPeer = peer
+  let changed = false
 
   peerMap.forEach((info, address) => {
     if (info.ethereumAddress === currentPeer.ethereumAddress && address !== peer.ethereumAddress) {
       if (info.lastProfileVersion < currentPeer.lastProfileVersion) {
         removePeerByAddress(address)
+        changed = true
       } else if (info.lastProfileVersion > currentPeer.lastProfileVersion) {
         removePeerByAddress(currentPeer.ethereumAddress)
 
@@ -201,7 +203,7 @@ export function ensureTrackingUniqueAndLatest(peer: PeerInformation) {
     }
   })
 
-  return currentPeer
+  return [currentPeer, changed]
 }
 
 export function processAvatarVisibility(maxVisiblePeers: number, myAddress: string | undefined) {
