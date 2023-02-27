@@ -1,3 +1,8 @@
+# IMPORTANT! This repository is no longer maintained. Migrated to unity-renderer
+
+This repository was merged to the unity-renderer repository on the following path:
+https://github.com/decentraland/unity-renderer/tree/dev/browser-interface
+
 # Decentraland Explorer
 
 This is the [decentraland explorer](https://play.decentraland.org) official repository.
