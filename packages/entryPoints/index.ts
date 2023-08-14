@@ -181,12 +181,24 @@ globalThis.DecentralandKernel = {
 }
 
 async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
+  function now() {
+    return new Date().getTime()
+  }
+  let lastTime = now()
+  function mark(a: any) {
+    const thisTime = now()
+    logger.info(`${new Date().toISOString()} (+${thisTime - lastTime}): mark ${a}`)
+    lastTime = now()
+  }
+  mark(`starting load website systems`)
   const i = (await ensureUnityInterface()).unityInterface
+  mark(`unity ensured`)
 
   // NOTE(Brian): Scene download manager uses meta config to determine which empty parcels we want
   //              so ensuring meta configuration is initialized in this stage is a must
   // NOTE(Pablo): We also need meta configuration to know if we need to enable voice chat
   await ensureMetaConfigurationInitialized()
+  mark(`meta ensured`)
 
   //Note: This should be sent to unity before any other feature because some features may need a system init from FeatureFlag
   //      For example disable AssetBundles needs a system from FeatureFlag
@@ -196,13 +208,16 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   const worldConfig: WorldConfig | undefined = getWorldConfig(store.getState())
   const renderProfile = worldConfig ? worldConfig.renderProfile ?? RenderProfile.DEFAULT : RenderProfile.DEFAULT
   i.SetRenderProfile(renderProfile)
+  mark(`profile set and ensured`)
 
   // killswitch, disable asset bundles
   if (!getFeatureFlagEnabled(store.getState(), 'asset_bundles')) {
     i.SetDisableAssetBundles()
   }
 
+  mark(`starting huds...`)
   i.ConfigureHUDElement(HUDElementID.MINIMAP, { active: true, visible: true })
+  mark(`after minimap hud`)
   i.ConfigureHUDElement(HUDElementID.NOTIFICATION, { active: true, visible: true })
   i.ConfigureHUDElement(HUDElementID.AVATAR_EDITOR, { active: true, visible: OPEN_AVATAR_EDITOR })
   i.ConfigureHUDElement(HUDElementID.SIGNUP, { active: true, visible: false })
@@ -220,6 +235,7 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
   i.ConfigureHUDElement(HUDElementID.QUESTS_PANEL, { active: questEnabled, visible: false })
   i.ConfigureHUDElement(HUDElementID.QUESTS_TRACKER, { active: questEnabled, visible: true })
   i.ConfigureHUDElement(HUDElementID.PROFILE_HUD, { active: true, visible: true })
+  mark(`after all the other huds`)
 
   // The elements below, require the taskbar to be active before being activated.
   {
@@ -232,18 +248,26 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     i.ConfigureHUDElement(HUDElementID.CONTROLS_HUD, { active: true, visible: false })
     i.ConfigureHUDElement(HUDElementID.HELP_AND_SUPPORT_HUD, { active: true, visible: false })
   }
+  mark(`after taskbar huds`)
 
   const configForRenderer = kernelConfigForRenderer()
   configForRenderer.comms.voiceChatEnabled = true
+
+  mark(`before set config`)
 
   i.SetKernelConfiguration(configForRenderer)
   i.ConfigureHUDElement(HUDElementID.USERS_AROUND_LIST_HUD, { active: true, visible: false })
   i.ConfigureHUDElement(HUDElementID.GRAPHIC_CARD_WARNING, { active: true, visible: true })
 
+  mark(`after set config`)
+
   await onLoginCompleted()
 
+  mark(`after login completed`)
   const identity = getCurrentIdentity(store.getState())!
   const profile = getCurrentUserProfile(store.getState())!
+
+  mark(`after currentProfile sent`)
 
   if (!profile) {
     BringDownClientAndReportFatalError(new Error('Profile missing during unity initialization'), 'kernel#init')
@@ -282,6 +306,8 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     }
   }
 
+  mark(`after tutorial sent`)
+
   const isGuest = !identity.hasConnectedWeb3
   const friendsActivated = !isGuest && !getFeatureFlagEnabled(store.getState(), 'matrix_disabled')
 
@@ -304,9 +330,11 @@ async function loadWebsiteSystems(options: KernelOptions['kernelOptions']) {
     i.SetDisableAssetBundles()
     await startPreview(i)
   }
+  mark(`asking for realm initialized...`)
 
   await realmInitialized()
 
+  mark(`realm initialized!`)
   return true
 }
 
