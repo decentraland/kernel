@@ -27,7 +27,7 @@
   "devDependencies": {
     "@dcl/eslint-config": "^1.0.5-20220608210046.commit-d51d9ec",
     "@dcl/posix": "^1.0.3",
-    "@dcl/unity-renderer": "^1.0.68557-20221221195847.commit-f743b85",
+    "@dcl/unity-renderer": "^1.0.71809-20230112133213.commit-14d33f9",
     "@protobuf-ts/protoc": "^2.8.1",
     "@types/chai": "^4.1.3",
     "@types/events": "^1.2.0",
